@@ -3,8 +3,7 @@ blueapi
 
 |code_ci| |docs_ci| |coverage| |pypi_version| |license|
 
-This is where you should write a short paragraph that describes what your module does,
-how it does it, and why people should use it.
+Lightweight library for creating Bluesky-as-a-service applications. 
 
 ============== ==============================================================
 PyPI           ``pip install blueapi``
@@ -13,20 +12,7 @@ Documentation  https://DiamondLightSource.github.io/blueapi
 Releases       https://github.com/DiamondLightSource/blueapi/releases
 ============== ==============================================================
 
-This is where you should put some images or code snippets that illustrate
-some relevant examples. If it is a library then you might put some
-introductory code here:
-
-.. code:: python
-
-    from blueapi.hello import HelloClass
-
-    hello = HelloClass("me")
-    print(hello.format_greeting())
-
-Or if it is a commandline tool then you might put some example commands here::
-
-    blueapi person --times=2
+TODO: Talk about automagic plan endpoints
 
 .. |code_ci| image:: https://github.com/DiamondLightSource/blueapi/workflows/Code%20CI/badge.svg?branch=master
     :target: https://github.com/DiamondLightSource/blueapi/actions?query=workflow%3A%22Code+CI%22

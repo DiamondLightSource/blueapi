@@ -70,23 +70,38 @@ class BlueskyApp:
         asyncio.run(self.run_async())
 
     async def run_async(self) -> None:
-        await setup_app(self._context)
+        controller = BlueskyController(self._context)
+        await setup_app(controller)
         await asyncio.wait(asyncio.all_tasks())
 
 
-async def setup_app(ctx: BlueskyContext) -> None:
+class BlueskyController:
+    _context: BlueskyContext
+
+    def __init__(self, context: BlueskyContext) -> None:
+        self._context = context
+
+    async def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
+        await asyncio.sleep(5)
+
+    async def get_plans(self) -> Iterable[Plan]:
+        return self._context.plans.values()
+
+
+async def setup_app(controller: BlueskyController) -> None:
     routes = web.RouteTableDef()
 
     @routes.put("/plans/{name}/run")
     async def handle_plan_request(request: web.Request) -> web.Response:
         plan_name = request.match_info["name"]
-        params = await request.json()
-        return web.json_response({"plan": plan_name, "params": params})
+        params = (await request.json())["model_params"]
+        asyncio.create_task(controller.run_plan(plan_name, params))
+        return web.json_response({"plan": plan_name, "status": "started"})
 
     @routes.get("/plans")
     async def get_plans(request: web.Request) -> web.Response:
         return web.json_response(
-            {plan.name: {"model": "TBD"} for plan in ctx.plans.values()}
+            {plan.name: {"model": "TBD"} for plan in (await controller.get_plans())}
         )
 
     app = web.Application()

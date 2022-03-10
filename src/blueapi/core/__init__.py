@@ -2,7 +2,9 @@ from .app import (
     AgnosticBlueskyController,
     BlueskyApp,
     BlueskyAppBase,
+    BlueskyService,
     ControllerBuilder,
+    Plan,
 )
 
 __all__ = [
@@ -10,4 +12,6 @@ __all__ = [
     "BlueskyAppBase",
     "AgnosticBlueskyController",
     "ControllerBuilder",
+    "BlueskyService",
+    "Plan",
 ]

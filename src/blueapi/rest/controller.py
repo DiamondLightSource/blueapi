@@ -4,12 +4,13 @@ from typing import Optional
 
 from aiohttp import web
 
-from blueapi.core import AgnosticBlueskyController, ControllerBuilder
+from blueapi.core import BlueskyService, ControllerBuilder
 
 
 @dataclass
 class RestEndpointSettings:
     plans: str = "/plans"
+    run_plan: str = "/plans/{name}/run"
 
 
 class RestController(ControllerBuilder):
@@ -18,17 +19,17 @@ class RestController(ControllerBuilder):
     def __init__(self, endpoints: Optional[RestEndpointSettings] = None) -> None:
         self._endpoints = endpoints or RestEndpointSettings()
 
-    async def run_forever(self, controller: AgnosticBlueskyController) -> None:
+    async def run_forever(self, controller: BlueskyService) -> None:
         routes = web.RouteTableDef()
 
-        @routes.put(f"{self._endpoints.plans}/{{name}}/run")
+        @routes.put(self._endpoints.run_plan)
         async def handle_plan_request(request: web.Request) -> web.Response:
             plan_name = request.match_info["name"]
             params = (await request.json())["model_params"]
             asyncio.create_task(controller.run_plan(plan_name, params))
             return web.json_response({"plan": plan_name, "status": "started"})
 
-        @routes.get(f"{self._endpoints.plans}")
+        @routes.get(self._endpoints.plans)
         async def get_plans(request: web.Request) -> web.Response:
             return web.json_response(
                 {plan.name: {"model": "TBD"} for plan in (await controller.get_plans())}

@@ -55,7 +55,17 @@ class BlueskyContext:
     plans: Dict[str, Plan] = field(default_factory=dict)
 
 
-class AgnosticBlueskyController:
+class BlueskyService(ABC):
+    @abstractmethod
+    async def run_plan(self, __name: str, __params: Mapping[str, Any]) -> None:
+        ...
+
+    @abstractmethod
+    async def get_plans(self) -> Iterable[Plan]:
+        ...
+
+
+class AgnosticBlueskyController(BlueskyService):
     _context: BlueskyContext
 
     def __init__(self, context: BlueskyContext) -> None:
@@ -70,7 +80,7 @@ class AgnosticBlueskyController:
 
 class ControllerBuilder(ABC):
     @abstractmethod
-    async def run_forever(self, __controller: AgnosticBlueskyController) -> None:
+    async def run_forever(self, __controller: BlueskyService) -> None:
         ...
 
 

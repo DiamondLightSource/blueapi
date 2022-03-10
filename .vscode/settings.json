@@ -11,5 +11,6 @@
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
         "source.organizeImports": true
-    }
+    },
+    "esbonio.server.enabled": true
 }

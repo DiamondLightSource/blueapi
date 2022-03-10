@@ -55,27 +55,7 @@ class BlueskyContext:
     plans: Dict[str, Plan] = field(default_factory=dict)
 
 
-class BlueskyApp:
-    _context: BlueskyContext
-
-    def __init__(self, context: Optional[BlueskyContext] = None) -> None:
-        self._context = context or BlueskyContext()
-
-    def plan(self, plan: PlanGenerator) -> PlanGenerator:
-        schema = schema_for_func(plan)
-        self._context.plans[plan.__name__] = Plan(plan.__name__, schema, plan)
-        return plan
-
-    def run(self) -> None:
-        asyncio.run(self.run_async())
-
-    async def run_async(self) -> None:
-        controller = BlueskyController(self._context)
-        await setup_app(controller)
-        await asyncio.wait(asyncio.all_tasks())
-
-
-class BlueskyController:
+class AgnosticBlueskyController:
     _context: BlueskyContext
 
     def __init__(self, context: BlueskyContext) -> None:
@@ -88,26 +68,33 @@ class BlueskyController:
         return self._context.plans.values()
 
 
-async def setup_app(controller: BlueskyController) -> None:
-    routes = web.RouteTableDef()
+class ControllerBuilder(ABC):
+    @abstractmethod
+    async def run_forever(self, __controller: AgnosticBlueskyController) -> None:
+        ...
 
-    @routes.put("/plans/{name}/run")
-    async def handle_plan_request(request: web.Request) -> web.Response:
-        plan_name = request.match_info["name"]
-        params = (await request.json())["model_params"]
-        asyncio.create_task(controller.run_plan(plan_name, params))
-        return web.json_response({"plan": plan_name, "status": "started"})
 
-    @routes.get("/plans")
-    async def get_plans(request: web.Request) -> web.Response:
-        return web.json_response(
-            {plan.name: {"model": "TBD"} for plan in (await controller.get_plans())}
+class BlueskyApp:
+    _context: BlueskyContext
+    _controller_builders: List[ControllerBuilder]
+
+    def __init__(self, context: Optional[BlueskyContext] = None) -> None:
+        self._context = context or BlueskyContext()
+        self._controller_builders = []
+
+    def plan(self, plan: PlanGenerator) -> PlanGenerator:
+        schema = schema_for_func(plan)
+        self._context.plans[plan.__name__] = Plan(plan.__name__, schema, plan)
+        return plan
+
+    def run(self) -> None:
+        asyncio.run(self.run_async())
+
+    async def run_async(self) -> None:
+        controller = AgnosticBlueskyController(self._context)
+        await asyncio.wait(
+            [builder.run_forever(controller) for builder in self._controller_builders]
         )
 
-    app = web.Application()
-    app.add_routes(routes)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", 8080)
-    await site.start()
-    print(f"running {site}")
+    def control_with(self, builder: ControllerBuilder) -> None:
+        self._controller_builders.append(builder)

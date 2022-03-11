@@ -21,9 +21,12 @@ class RestClient(BlueskyService):
 
     async def get_plans(self) -> Iterable[Plan]:
         return await self._get_object(self.url + self.settings.plans, List[Plan])
+        # return await self._get_json(self.url + self.settings.plans)
 
     async def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
-        await self._get_json(self.url + self.settings.run_plan)
+        await self._put_command(
+            self.url + self.settings.run_plan, {"name": name, "params": params}
+        )
 
     async def _get_object(self, url: str, target: Type[T]) -> T:
         return deserialize(await self._get_json(url), target)
@@ -31,6 +34,14 @@ class RestClient(BlueskyService):
     async def _get_json(self, url: str) -> Mapping[str, Any]:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    raise IOError(f"Bad status on HTTP response: {resp}")
+
+    async def _put_command(self, url: str, parameters: Mapping[str, Any]) -> None:
+        async with aiohttp.ClientSession() as session:
+            async with session.put(url) as resp:
                 if resp.status == 200:
                     return await resp.json()
                 else:

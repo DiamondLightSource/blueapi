@@ -1,10 +1,13 @@
 import asyncio
+import logging
 from dataclasses import dataclass
 from typing import Optional
 
 from aiohttp import web
 
 from blueapi.core import BlueskyService, ControllerBuilder
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -20,6 +23,8 @@ class RestController(ControllerBuilder):
         self._endpoints = endpoints or RestEndpointSettings()
 
     async def run_forever(self, controller: BlueskyService) -> None:
+        LOGGER.info("Initializing REST controller")
+
         routes = web.RouteTableDef()
 
         @routes.put(self._endpoints.run_plan)
@@ -29,11 +34,15 @@ class RestController(ControllerBuilder):
             asyncio.create_task(controller.run_plan(plan_name, params))
             return web.json_response({"plan": plan_name, "status": "started"})
 
+        LOGGER.info(f"Endpoint initialized: {self._endpoints.run_plan}")
+
         @routes.get(self._endpoints.plans)
         async def get_plans(request: web.Request) -> web.Response:
             return web.json_response(
                 {plan.name: {"model": "TBD"} for plan in (await controller.get_plans())}
             )
+
+        LOGGER.info(f"Endpoint initialized: {self._endpoints.plans}")
 
         app = web.Application()
         app.add_routes(routes)
@@ -48,5 +57,5 @@ class RestController(ControllerBuilder):
         await runner.setup()
         site = web.TCPSite(runner, "0.0.0.0", 8080)
         await site.start()
-        print(f"running {site}")
+        LOGGER.info(f"running {site}")
         await done.wait()

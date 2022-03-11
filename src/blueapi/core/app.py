@@ -1,4 +1,5 @@
 import asyncio
+import imp
 from abc import ABC, abstractmethod
 from ast import Call
 from ctypes import Union
@@ -22,6 +23,7 @@ from typing import (
 
 import aiohttp
 from aiohttp import web
+from apischema.metadata import skip
 from bluesky.utils import Msg
 
 from .params import schema_for_func
@@ -33,7 +35,7 @@ PlanGenerator = Callable[..., Generator[Msg, Any, None]]
 class Plan:
     name: str
     model: Type[Any]
-    func: PlanGenerator
+    func: PlanGenerator = field(metadata=skip)
 
 
 class BlueskyAppBase(ABC):

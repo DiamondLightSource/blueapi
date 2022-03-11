@@ -9,8 +9,13 @@ app = BlueskyApp()
 
 
 @app.plan
-def fake_experiment(points: List[float], metadata: Mapping[str, Any]):
+def sleep(time: float):
     yield from bps.sleep(5)
+
+
+@app.plan
+def move(motor: str, pos: float):
+    yield from bps.mv(motor, pos)
 
 
 app.control_with(RestController())

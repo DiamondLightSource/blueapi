@@ -11,7 +11,7 @@ LOGGER = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-def run_worker_in_thread(
+def run_worker_in_own_thread(
     worker: Worker[T], executor: Optional[ThreadPoolExecutor] = None
 ) -> None:
     """

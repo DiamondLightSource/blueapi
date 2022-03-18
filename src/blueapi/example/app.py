@@ -4,8 +4,7 @@ import bluesky.plan_stubs as bps
 from apischema.json_schema import deserialization_schema
 from fastapi import FastAPI
 
-from blueapi.core import BlueskyContext, BlueskyController
-from blueapi.core.app import Plan
+from blueapi.core import BlueskyContext, BlueskyController, Plan
 
 ctx = BlueskyContext()
 

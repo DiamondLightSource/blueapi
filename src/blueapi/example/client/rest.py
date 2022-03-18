@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Mapping, Optional, Type, TypeVar, Union
+from typing import Any, List, Mapping, Optional, TypeVar, Union
 
 import aiohttp
 

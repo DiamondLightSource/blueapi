@@ -18,7 +18,7 @@ from .rest import RestClient
     "--url",
     type=str,
     help="REST API URL",
-    default="http://localhost:8080",
+    default="http://localhost:8000",
 )
 @click.version_option(version=__version__)
 @click.pass_context
@@ -35,18 +35,3 @@ def main(ctx, url: str) -> None:
 def get_plans(ctx) -> None:
     client: RestClient = ctx.obj["rest_client"]
     print(asyncio.run(client.get_plans()))
-
-
-@main.command(name="run")
-@click.pass_context
-@click.argument("name", type=str, nargs=1)
-@click.option(
-    "-p",
-    "--parameters",
-    type=str,
-    help='JSON-encoded parameters, e.g. \{"foo": 1, "bar": 2}',
-)
-def get_plans(ctx, name: str, parameters: str) -> None:
-    parameters_dict = json.loads(parameters) if parameters is not None else {}
-    client: RestClient = ctx.obj["rest_client"]
-    print(asyncio.run(client.run_plan(name, parameters_dict)))

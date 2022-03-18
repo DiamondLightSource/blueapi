@@ -1,15 +1,19 @@
-from typing import Any, Iterable, List, Mapping, Optional, Type, TypeVar
+from dataclasses import dataclass
+from typing import Any, Iterable, List, Mapping, Optional, Type, TypeVar, Union
 
 import aiohttp
-from apischema import deserialize
-
-from blueapi.core import BlueskyService, Plan
-from blueapi.rest.controller import RestEndpointSettings
 
 T = TypeVar("T")
 
+_Json = Union[List[Any], Mapping[str, Any]]
 
-class RestClient(BlueskyService):
+
+@dataclass
+class RestEndpointSettings:
+    plans: str = "/plans"
+
+
+class RestClient:
     url: str
     settings: RestEndpointSettings
 
@@ -19,29 +23,12 @@ class RestClient(BlueskyService):
         self.url = url
         self.settings = settings or RestEndpointSettings()
 
-    async def get_plans(self) -> Iterable[Plan]:
-        return await self._get_object(self.url + self.settings.plans, List[Plan])
-        # return await self._get_json(self.url + self.settings.plans)
+    async def get_plans(self) -> _Json:
+        return await self._get_json(self.url + self.settings.plans)
 
-    async def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
-        await self._put_command(
-            self.url + self.settings.run_plan, {"name": name, "params": params}
-        )
-
-    async def _get_object(self, url: str, target: Type[T]) -> T:
-        return deserialize(await self._get_json(url), target)
-
-    async def _get_json(self, url: str) -> Mapping[str, Any]:
+    async def _get_json(self, url: str) -> _Json:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
-                if resp.status == 200:
-                    return await resp.json()
-                else:
-                    raise IOError(f"Bad status on HTTP response: {resp}")
-
-    async def _put_command(self, url: str, parameters: Mapping[str, Any]) -> None:
-        async with aiohttp.ClientSession() as session:
-            async with session.put(url) as resp:
                 if resp.status == 200:
                     return await resp.json()
                 else:

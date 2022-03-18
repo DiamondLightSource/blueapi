@@ -1,4 +1,4 @@
-import blueapi.client.cli
+from .cli import main
 
 if __name__ == "__main__":
-    blueapi.client.cli.main()
+    main()

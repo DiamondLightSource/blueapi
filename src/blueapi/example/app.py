@@ -39,3 +39,4 @@ async def get_plans() -> List[Mapping[str, Any]]:
 @app.put("/plans/{name}/run")
 async def run_plan(name: str, params: Mapping[str, Any]) -> uuid.UUID:
     await controller.run_plan(name, params)
+    return uuid.uuid1()

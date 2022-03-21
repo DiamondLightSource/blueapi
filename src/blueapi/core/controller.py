@@ -25,7 +25,8 @@ class BlueskyControllerBase(ABC):
 
         Args:
             __name (str): The name of the plan to run
-            __params (Mapping[str, Any]): The parameters for the plan in deserialized form
+            __params (Mapping[str, Any]): The parameters for the plan in
+                                          deserialized form
         """
 
         ...

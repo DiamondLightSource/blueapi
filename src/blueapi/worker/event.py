@@ -36,5 +36,9 @@ class RunnerState(Enum):
 
 @dataclass
 class WorkerEvent:
+    """
+    Event emitted by a worker when the runner state changes
+    """
+
     task: Optional[Task]
     state: RunnerState

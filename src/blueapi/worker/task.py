@@ -9,31 +9,35 @@ from bluesky import Msg, RunEngine
 
 @dataclass
 class TaskContext:
+    """
+    Context passed to running tasks
+    """
+
     run_engine: RunEngine
 
 
 class Task(ABC):
+    """
+    Object that can run with a TaskContext
+    """
+
     @abstractmethod
     def do_task(self, ctx: TaskContext) -> None:
+        """
+        Perform the task using the context
+
+        Args:
+            ctx (TaskContext): Context for the task
+        """
         ...
-
-
-class TaskState(Enum):
-    REQUESTED = "REQUESTED"
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
-    COMPLETE = "COMPLETE"
-
-
-@dataclass
-class TaskEvent:
-    task: Task
-    state: TaskState
-    timestamp: datetime
 
 
 @dataclass
 class RunPlan(Task):
+    """
+    Task that will run a plan
+    """
+
     plan: Generator[Msg, None, Any]
 
     def do_task(self, ctx: TaskContext) -> None:

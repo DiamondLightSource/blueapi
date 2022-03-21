@@ -14,16 +14,39 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BlueskyControllerBase(ABC):
+    """
+    Object to control Bluesky, bridge between API and worker
+    """
+
     @abstractmethod
     async def run_plan(self, __name: str, __params: Mapping[str, Any]) -> None:
+        """
+        Run a named plan with parameters
+
+        Args:
+            __name (str): The name of the plan to run
+            __params (Mapping[str, Any]): The parameters for the plan in deserialized form
+        """
+
         ...
 
     @abstractmethod
     async def get_plans(self) -> Iterable[Plan]:
+        """
+        Get a all plans that can be run
+
+        Returns:
+            Iterable[Plan]: Iterable of plans
+        """
+
         ...
 
 
 class BlueskyController(BlueskyControllerBase):
+    """
+    Default implementation of BlueskyControllerBase
+    """
+
     _context: BlueskyContext
     _worker: Worker
 
@@ -49,5 +72,12 @@ class BlueskyController(BlueskyControllerBase):
 
 
 def make_default_worker() -> Worker:
+    """
+    Helper function to make a worker
+
+    Returns:
+        Worker: A new worker with sensible default parameters
+    """
+
     run_engine = RunEngine(context_managers=[])
     return RunEngineWorker(run_engine)

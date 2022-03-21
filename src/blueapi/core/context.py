@@ -7,6 +7,10 @@ from .schema import schema_for_func
 
 @dataclass
 class BlueskyContext:
+    """
+    Context for building a Bluesky application
+    """
+
     plans: Dict[str, Plan] = field(default_factory=dict)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:

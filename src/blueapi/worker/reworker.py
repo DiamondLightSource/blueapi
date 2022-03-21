@@ -4,8 +4,9 @@ from typing import Callable, List, Optional
 
 from bluesky import RunEngine
 
+from .event import RawRunEngineState, RunnerState, WorkerEvent
 from .task import Task, TaskContext
-from .worker import RawRunEngineState, RunnerState, Worker, WorkerEvent
+from .worker import Worker
 
 LOGGER = logging.getLogger(__name__)
 

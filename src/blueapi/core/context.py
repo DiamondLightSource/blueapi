@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict
 
 from .bluesky_types import Plan, PlanGenerator
-from .params import schema_for_func
+from .schema import schema_for_func
 
 
 @dataclass

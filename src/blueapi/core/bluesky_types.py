@@ -9,6 +9,10 @@ PlanGenerator = Callable[..., Generator[Msg, Any, None]]
 
 @dataclass
 class Plan:
+    """
+    A plan that can be run
+    """
+
     name: str
     model: Type[Any]
     func: PlanGenerator = field(metadata=skip)

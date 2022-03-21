@@ -1,3 +1,5 @@
+import logging
+import uuid
 from typing import Any, List, Mapping
 
 import bluesky.plan_stubs as bps
@@ -7,6 +9,7 @@ from fastapi import FastAPI
 from blueapi.core import BlueskyContext, BlueskyController, Plan
 
 ctx = BlueskyContext()
+logging.basicConfig(level=logging.INFO)
 
 
 @ctx.plan
@@ -31,3 +34,9 @@ async def get_plans() -> List[Mapping[str, Any]]:
         return {"name": plan.name, "schema": deserialization_schema(plan.model)}
 
     return list(map(display_plan, await controller.get_plans()))
+
+
+@app.put("/plans/{name}/run")
+async def run_plan(name: str, params: Mapping[str, Any]) -> uuid.UUID:
+    await controller.run_plan(name, params)
+    return uuid.uuid1()

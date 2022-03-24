@@ -7,7 +7,7 @@ verify_ssl = true
 blueapi = {editable = true, extras = ["dev"], path = "."}
 
 [packages]
-blueapi = {editable = true, extras = ["example", "client"], path = "."}
+blueapi = {editable = true, extras = ["example", "client", "plans"], path = "."}
 
 [scripts]
 example-server = "uvicorn blueapi.example:app"

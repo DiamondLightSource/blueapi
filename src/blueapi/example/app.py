@@ -1,9 +1,13 @@
+import itertools
 import logging
+import re
 import uuid
-from typing import Any, List, Mapping
+from typing import Any, List, Mapping, Optional
 
 import bluesky.plan_stubs as bps
+import bluesky.plans as bp
 from apischema.json_schema import deserialization_schema
+from bluesky.protocols import Movable, Readable
 from fastapi import FastAPI
 
 from blueapi.core import BlueskyContext, BlueskyController, Plan
@@ -18,8 +22,19 @@ def sleep(time: float):
 
 
 @ctx.plan
-def move(motor: str, pos: float):
-    yield from bps.mv(motor, pos)
+def move(positions: Mapping[Movable, Any]):
+    yield from bps.mv(*itertools.chain.from_iterable(positions.items()))
+
+
+@ctx.plan
+def count_all_matching(match_str: str, metadata: Optional[Mapping[str, Any]] = None):
+    matcher = re.compile(match_str)
+    matching = filter(lambda ability: matcher.match(ability.name), abilities.visit())
+    metadata = metadata or {}
+
+    yield from bp.count(
+        list(matching), md={**metadata, **{"matching_regex": match_str}}
+    )
 
 
 controller = BlueskyController(ctx)

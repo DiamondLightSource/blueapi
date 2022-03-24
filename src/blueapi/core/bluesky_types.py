@@ -4,7 +4,8 @@ from typing import Any, Callable, Generator, Type
 from apischema.metadata import skip
 from bluesky.utils import Msg
 
-PlanGenerator = Callable[..., Generator[Msg, Any, None]]
+MsgGenerator = Generator[Msg, Any, None]
+PlanGenerator = Callable[..., MsgGenerator]
 
 
 @dataclass

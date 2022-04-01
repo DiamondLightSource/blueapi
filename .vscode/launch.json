@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "justMyCode": false,
-            "program": "${file}",
+            "module": "pytest",
             "purpose": [
                 "debug-test"
             ],
@@ -20,6 +20,18 @@
                 // https://github.com/microsoft/vscode-python/issues/693
                 "PYTEST_ADDOPTS": "--no-cov"
             },
+        },
+        {
+            "name": "Example Server",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "blueapi.example.app:app",
+                "--reload",
+                "--port", //these arg are optional
+                "8000"
+            ]
         }
     ]
 }

@@ -23,5 +23,8 @@ class BlueskyContext:
         self.plan_functions[plan.__name__] = plan
         return plan
 
+    def ability(self, ability):
+        ...
+
     def inject_abilities(self, plan: PlanGenerator) -> PlanGenerator:
         return lambda *args, **kwargs: plan(self.abilities, *args, **kwargs)

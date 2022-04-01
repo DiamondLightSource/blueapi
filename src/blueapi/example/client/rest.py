@@ -22,6 +22,9 @@ class RestClient:
     async def get_plans(self) -> _Json:
         return await self._get_json("/plan")
 
+    async def get_plan(self, name: str) -> _Json:
+        return await self._get_json(f"/plan/{name}")
+
     async def _get_json(self, path: str) -> _Json:
         async with aiohttp.ClientSession() as session:
             async with session.get(self.url + path) as resp:

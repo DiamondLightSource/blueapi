@@ -51,10 +51,16 @@ async def app_startup():
 
 @app.get("/plan")
 async def get_plans() -> List[Mapping[str, Any]]:
-    def display_plan(plan: Plan) -> Mapping[str, Any]:
-        return {"name": plan.name, "schema": deserialization_schema(plan.model)}
+    return list(map(_display_plan, controller.plans.values()))
 
-    return list(map(display_plan, await controller.get_plans()))
+
+@app.get("/plan/{name}")
+async def get_plan(name: str) -> Mapping[str, Any]:
+    return _display_plan(controller.plans[name])
+
+
+def _display_plan(plan: Plan) -> Mapping[str, Any]:
+    return {"name": plan.name, "schema": deserialization_schema(plan.model)}
 
 
 @app.get("/ability")

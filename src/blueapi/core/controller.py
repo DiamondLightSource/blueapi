@@ -75,7 +75,7 @@ class BlueskyController(BlueskyControllerBase):
     async def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
         LOGGER.info(f"Asked to run plan {name} with {params}")
         loop = asyncio.get_running_loop()
-        plan = self._context.plans[name].func(**params)
+        plan = self._context.plan_functions[name](**params)
         task = RunPlan(plan)
         loop.call_soon_threadsafe(self._worker.submit_task, task)
 

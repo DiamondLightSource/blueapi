@@ -7,8 +7,8 @@ from typing import Any, List, Mapping, Optional
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 from apischema.json_schema import deserialization_schema
-from bluesky.protocols import Movable, Readable
-from fastapi import FastAPI
+from bluesky.protocols import Movable
+from fastapi import FastAPI, Request
 
 from blueapi.core import BlueskyContext, BlueskyController, Plan
 from blueapi.core.bluesky_types import Ability
@@ -49,7 +49,7 @@ async def app_startup():
     await controller.run_workers()
 
 
-@app.get("/plans")
+@app.get("/plan")
 async def get_plans() -> List[Mapping[str, Any]]:
     def display_plan(plan: Plan) -> Mapping[str, Any]:
         return {"name": plan.name, "schema": deserialization_schema(plan.model)}
@@ -57,12 +57,12 @@ async def get_plans() -> List[Mapping[str, Any]]:
     return list(map(display_plan, await controller.get_plans()))
 
 
-@app.get("/abilities")
+@app.get("/ability")
 async def get_abilities() -> List[Ability]:
     return list((await controller.get_abilities()).values())
 
 
-@app.put("/plans/{name}/run")
-async def run_plan(name: str, params: Mapping[str, Any]) -> uuid.UUID:
-    await controller.run_plan(name, params)
+@app.put("/plan/{name}/run")
+async def run_plan(request: Request, name: str) -> uuid.UUID:
+    await controller.run_plan(name, await request.json())
     return uuid.uuid1()

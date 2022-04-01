@@ -15,10 +15,12 @@ class BlueskyContext:
 
     plans: Dict[str, Plan] = field(default_factory=dict)
     abilities: AbilityRegistry = field(default_factory=dict)
+    plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         schema = schema_for_func(plan)
-        self.plans[plan.__name__] = Plan(plan.__name__, schema, plan)
+        self.plans[plan.__name__] = Plan(plan.__name__, schema)
+        self.plan_functions[plan.__name__] = plan
         return plan
 
     def inject_abilities(self, plan: PlanGenerator) -> PlanGenerator:

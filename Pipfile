@@ -10,7 +10,7 @@ blueapi = {editable = true, extras = ["dev"], path = "."}
 blueapi = {editable = true, extras = ["example", "client"], path = "."}
 
 [scripts]
-example-server = "uvicorn blueapi.example:app"
+example-server = "uvicorn blueapi.example.server:app"
 example-client = "python -m blueapi.example.client"
 lint = "pre-commit run --all-files --show-diff-on-failure --color=always -v"
 tests = "pytest"

@@ -1,7 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Generator, List, Mapping, Type
 
-from apischema.metadata import skip
 from bluesky.utils import Msg
 
 PlanGenerator = Callable[..., Generator[Msg, Any, None]]
@@ -15,7 +14,6 @@ class Plan:
 
     name: str
     model: Type[Any]
-    func: PlanGenerator = field(metadata=skip)
 
 
 @dataclass

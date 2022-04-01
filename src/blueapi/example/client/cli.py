@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import click
 
@@ -29,7 +30,10 @@ def main(ctx, url: str) -> None:
 @click.pass_context
 def get_plans(ctx) -> None:
     client: RestClient = ctx.obj["rest_client"]
-    print(asyncio.run(client.get_plans()))
+    plans = asyncio.run(client.get_plans())
+    print("PLANS")
+    for plan in plans:
+        print("\t" + plan["name"])  # type: ignore
 
 
 @main.command(name="abilities")
@@ -37,3 +41,12 @@ def get_plans(ctx) -> None:
 def get_abilities(ctx) -> None:
     client: RestClient = ctx.obj["rest_client"]
     print(asyncio.run(client.get_abilities()))
+
+
+@main.command(name="run")
+@click.argument("name", type=str)
+@click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
+@click.pass_context
+def run_plan(ctx, name: str, parameters: str) -> None:
+    client: RestClient = ctx.obj["rest_client"]
+    print(asyncio.run(client.run_plan(name, json.loads(parameters))))

@@ -32,7 +32,7 @@ class RestClient:
         self, url: str, params: Optional[Mapping[str, Any]] = None
     ) -> _Json:
         async with aiohttp.ClientSession() as session:
-            async with session.put(url, data=params or {}) as resp:
+            async with session.put(url, json=params or {}) as resp:
                 if resp.status == 200:
                     return await resp.json()
                 else:

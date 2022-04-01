@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 @ctx.plan
-def sleep(duration: float):
+def sleep(time: float):
     yield from bps.sleep(5)
 
 

@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from typing import Any, List, Mapping, Optional, TypeVar, Union
+from typing import Any, List, Mapping, TypeVar, Union
 
 import aiohttp
 
@@ -8,23 +7,17 @@ T = TypeVar("T")
 _Json = Union[List[Any], Mapping[str, Any]]
 
 
-@dataclass
-class RestEndpointSettings:
-    plans: str = "/plans"
-
-
 class RestClient:
     url: str
-    settings: RestEndpointSettings
 
-    def __init__(
-        self, url: str, settings: Optional[RestEndpointSettings] = None
-    ) -> None:
+    def __init__(self, url: str) -> None:
         self.url = url
-        self.settings = settings or RestEndpointSettings()
 
     async def get_plans(self) -> _Json:
-        return await self._get_json(self.url + self.settings.plans)
+        return await self._get_json(self.url + "/plans")
+
+    async def get_abilities(self) -> _Json:
+        return await self._get_json(self.url + "/abilities")
 
     async def _get_json(self, url: str) -> _Json:
         async with aiohttp.ClientSession() as session:

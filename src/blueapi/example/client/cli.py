@@ -30,3 +30,10 @@ def main(ctx, url: str) -> None:
 def get_plans(ctx) -> None:
     client: RestClient = ctx.obj["rest_client"]
     print(asyncio.run(client.get_plans()))
+
+
+@main.command(name="abilities")
+@click.pass_context
+def get_abilities(ctx) -> None:
+    client: RestClient = ctx.obj["rest_client"]
+    print(asyncio.run(client.get_abilities()))

@@ -28,3 +28,4 @@ class Device:
 class Ability:
     name: str
     devices: List[Device]
+    protocols: List[str]

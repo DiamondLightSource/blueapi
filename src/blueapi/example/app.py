@@ -11,6 +11,7 @@ from bluesky.protocols import Movable, Readable
 from fastapi import FastAPI
 
 from blueapi.core import BlueskyContext, BlueskyController, Plan
+from blueapi.core.bluesky_types import Ability
 
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
@@ -43,12 +44,22 @@ controller = BlueskyController(ctx)
 app = FastAPI()
 
 
+@app.on_event("startup")
+async def app_startup():
+    await controller.run_workers()
+
+
 @app.get("/plans")
 async def get_plans() -> List[Mapping[str, Any]]:
     def display_plan(plan: Plan) -> Mapping[str, Any]:
         return {"name": plan.name, "schema": deserialization_schema(plan.model)}
 
     return list(map(display_plan, await controller.get_plans()))
+
+
+@app.get("/abilities")
+async def get_abilities() -> List[Ability]:
+    return list((await controller.get_abilities()).values())
 
 
 @app.put("/plans/{name}/run")

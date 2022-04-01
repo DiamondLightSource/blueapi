@@ -8,7 +8,7 @@ from bluesky import RunEngine
 from blueapi.worker import RunEngineWorker, RunPlan, Worker, run_worker_in_own_thread
 
 from .bluesky_types import Plan
-from .context import BlueskyContext
+from .context import AbilityRegistry, BlueskyContext
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +17,10 @@ class BlueskyControllerBase(ABC):
     """
     Object to control Bluesky, bridge between API and worker
     """
+
+    @abstractmethod
+    async def run_workers(self) -> None:
+        ...
 
     @abstractmethod
     async def run_plan(self, __name: str, __params: Mapping[str, Any]) -> None:
@@ -42,6 +46,10 @@ class BlueskyControllerBase(ABC):
 
         ...
 
+    @abstractmethod
+    async def get_abilities(self) -> AbilityRegistry:
+        ...
+
 
 class BlueskyController(BlueskyControllerBase):
     """
@@ -58,8 +66,11 @@ class BlueskyController(BlueskyControllerBase):
 
         if worker is None:
             worker = make_default_worker()
-            run_worker_in_own_thread(worker)  # TODO: Don't do this in __init__
+
         self._worker = worker
+
+    async def run_workers(self) -> None:
+        run_worker_in_own_thread(self._worker)
 
     async def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
         LOGGER.info(f"Asked to run plan {name} with {params}")
@@ -70,6 +81,9 @@ class BlueskyController(BlueskyControllerBase):
 
     async def get_plans(self) -> Iterable[Plan]:
         return self._context.plans.values()
+
+    async def get_abilities(self) -> AbilityRegistry:
+        return self._context.abilities
 
 
 def make_default_worker() -> Worker:

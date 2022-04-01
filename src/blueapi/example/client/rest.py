@@ -8,27 +8,31 @@ T = TypeVar("T")
 _Json = Union[List[Any], Mapping[str, Any]]
 
 
-@dataclass
-class RestEndpointSettings:
-    plans: str = "/plans"
-
-
 class RestClient:
     url: str
-    settings: RestEndpointSettings
 
-    def __init__(
-        self, url: str, settings: Optional[RestEndpointSettings] = None
-    ) -> None:
+    def __init__(self, url: str) -> None:
         self.url = url
-        self.settings = settings or RestEndpointSettings()
+
+    async def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
+        await self._put_json(self.url + f"/plan/{name}/run", params)
 
     async def get_plans(self) -> _Json:
-        return await self._get_json(self.url + self.settings.plans)
+        return await self._get_json(self.url + "/plan")
 
     async def _get_json(self, url: str) -> _Json:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    raise IOError(f"Bad status on HTTP response: {resp}")
+
+    async def _put_json(
+        self, url: str, params: Optional[Mapping[str, Any]] = None
+    ) -> _Json:
+        async with aiohttp.ClientSession() as session:
+            async with session.put(url, data=params or {}) as resp:
                 if resp.status == 200:
                     return await resp.json()
                 else:

@@ -15,4 +15,3 @@ class Plan:
 
     name: str
     model: Type[Any]
-    func: PlanGenerator = field(metadata=skip)

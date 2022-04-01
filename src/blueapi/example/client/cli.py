@@ -1,6 +1,5 @@
 import asyncio
 import json
-from typing import Iterable
 
 import click
 

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, Mapping, Optional
+from typing import Any, Mapping, Optional
 
 from bluesky import RunEngine
 
@@ -31,13 +31,14 @@ class BlueskyControllerBase(ABC):
 
         ...
 
+    @property
     @abstractmethod
-    async def get_plans(self) -> Iterable[Plan]:
+    def plans(self) -> Mapping[str, Plan]:
         """
         Get a all plans that can be run
 
         Returns:
-            Iterable[Plan]: Iterable of plans
+            Mapping[str, Plan]: Mapping of plans for quick lookup by name
         """
 
         ...
@@ -68,8 +69,9 @@ class BlueskyController(BlueskyControllerBase):
         task = RunPlan(plan)
         loop.call_soon_threadsafe(self._worker.submit_task, task)
 
-    async def get_plans(self) -> Iterable[Plan]:
-        return self._context.plans.values()
+    @property
+    def plans(self) -> Mapping[str, Plan]:
+        return self._context.plans
 
 
 def make_default_worker() -> Worker:

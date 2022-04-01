@@ -7,7 +7,7 @@ from bluesky import RunEngine
 
 from blueapi.worker import RunEngineWorker, RunPlan, Worker, run_worker_in_own_thread
 
-from .bluesky_types import Plan
+from .bluesky_types import Ability, Plan
 from .context import AbilityRegistry, BlueskyContext
 
 LOGGER = logging.getLogger(__name__)
@@ -47,8 +47,9 @@ class BlueskyControllerBase(ABC):
 
         ...
 
+    @property
     @abstractmethod
-    async def get_abilities(self) -> AbilityRegistry:
+    def abilities(self) -> Mapping[str, Ability]:
         ...
 
 
@@ -84,7 +85,8 @@ class BlueskyController(BlueskyControllerBase):
     def plans(self) -> Mapping[str, Plan]:
         return self._context.plans
 
-    async def get_abilities(self) -> AbilityRegistry:
+    @property
+    def abilities(self) -> Mapping[str, Ability]:
         return self._context.abilities
 
 

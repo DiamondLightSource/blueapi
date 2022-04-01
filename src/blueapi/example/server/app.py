@@ -65,7 +65,7 @@ def _display_plan(plan: Plan) -> Mapping[str, Any]:
 
 @app.get("/ability")
 async def get_abilities() -> List[Ability]:
-    return list((await controller.get_abilities()).values())
+    return list(controller.abilities.values())
 
 
 @app.put("/plan/{name}/run")

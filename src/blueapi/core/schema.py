@@ -1,17 +1,6 @@
 from dataclasses import make_dataclass
 from inspect import Parameter, signature
-from typing import (
-    Any,
-    Callable,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
 from apischema import deserialize
 from apischema.conversions.conversions import Conversion

@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any, Callable, Iterable, Mapping, Type
+from typing import Any, Callable, Iterable, Type
 
 from apischema.conversions.conversions import Conversion
 

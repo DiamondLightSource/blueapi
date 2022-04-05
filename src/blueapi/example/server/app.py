@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import logging
 import uuid
@@ -51,7 +52,7 @@ app = FastAPI()
 
 @app.on_event("startup")
 async def app_startup():
-    await controller.run_workers()
+    asyncio.create_task(controller.run_workers())
 
 
 @app.get("/plan")

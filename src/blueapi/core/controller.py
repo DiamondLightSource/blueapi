@@ -5,6 +5,7 @@ from typing import Any, Mapping, Optional
 
 from bluesky import RunEngine
 
+from blueapi.utils import concurrent_future_to_aio_future
 from blueapi.worker import RunEngineWorker, RunPlan, Worker, run_worker_in_own_thread
 
 from .bluesky_types import Ability, Plan
@@ -68,11 +69,10 @@ class BlueskyController(BlueskyControllerBase):
 
         if worker is None:
             worker = make_default_worker()
-
         self._worker = worker
 
     async def run_workers(self) -> None:
-        run_worker_in_own_thread(self._worker)
+        await concurrent_future_to_aio_future(run_worker_in_own_thread(self._worker))
 
     async def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
         LOGGER.info(f"Asked to run plan {name} with {params}")

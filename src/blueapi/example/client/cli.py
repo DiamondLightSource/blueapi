@@ -36,6 +36,13 @@ def get_plans(ctx) -> None:
         print("\t" + plan["name"])  # type: ignore
 
 
+@main.command(name="abilities")
+@click.pass_context
+def get_abilities(ctx) -> None:
+    client: RestClient = ctx.obj["rest_client"]
+    print(asyncio.run(client.get_abilities()))
+
+
 @main.command(name="plan")
 @click.argument("name", type=str)
 @click.pass_context

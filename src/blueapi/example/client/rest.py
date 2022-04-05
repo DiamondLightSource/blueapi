@@ -13,6 +13,9 @@ class RestClient:
     def __init__(self, url: str) -> None:
         self.url = url
 
+    async def get_abilities(self) -> _Json:
+        return await self._get_json("/ability")
+
     async def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
         await self._put_json(f"/plan/{name}/run", params)
 

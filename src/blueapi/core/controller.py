@@ -8,7 +8,7 @@ from bluesky import RunEngine
 from blueapi.utils import concurrent_future_to_aio_future
 from blueapi.worker import RunEngineWorker, RunPlan, Worker, run_worker_in_own_thread
 
-from .bluesky_types import Plan
+from .bluesky_types import Ability, Plan
 from .context import BlueskyContext
 
 LOGGER = logging.getLogger(__name__)
@@ -48,6 +48,11 @@ class BlueskyControllerBase(ABC):
 
         ...
 
+    @property
+    @abstractmethod
+    def abilities(self) -> Mapping[str, Ability]:
+        ...
+
 
 class BlueskyController(BlueskyControllerBase):
     """
@@ -79,6 +84,10 @@ class BlueskyController(BlueskyControllerBase):
     @property
     def plans(self) -> Mapping[str, Plan]:
         return self._context.plans
+
+    @property
+    def abilities(self) -> Mapping[str, Ability]:
+        return self._context.abilities
 
 
 def make_default_worker() -> Worker:

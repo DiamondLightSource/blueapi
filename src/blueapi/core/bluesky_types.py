@@ -1,9 +1,34 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Generator, Type
+from typing import Any, Callable, Generator, Type, Union
 
+from bluesky.protocols import (
+    Checkable,
+    Flyable,
+    Hinted,
+    Movable,
+    Pausable,
+    Readable,
+    Stageable,
+    Stoppable,
+    Subscribable,
+)
 from bluesky.utils import Msg
 
 PlanGenerator = Callable[..., Generator[Msg, Any, None]]
+
+Ability = Union[
+    Checkable,
+    Flyable,
+    Hinted,
+    Movable,
+    Pausable,
+    Readable,
+    Stageable,
+    Stoppable,
+    Subscribable,
+]
+
+BLUESKY_PROTOCOLS = list(Ability.__args__)  # type: ignore
 
 
 @dataclass

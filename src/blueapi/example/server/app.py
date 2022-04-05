@@ -9,6 +9,7 @@ import bluesky.plans as bp
 from apischema.json_schema import deserialization_schema
 from bluesky.protocols import Flyable, Movable, Readable
 from fastapi import FastAPI, Request
+from ophyd.sim import Syn2DGauss, SynAxis
 
 from blueapi.core import BlueskyContext, BlueskyController, Plan
 from blueapi.core.bluesky_types import BLUESKY_PROTOCOLS, Ability
@@ -39,6 +40,23 @@ def count_all_matching(match_str: str, metadata: Optional[Mapping[str, Any]] = N
         list(matching), md={**metadata, **{"matching_regex": match_str}}
     )
 
+
+x = SynAxis(name="x", delay=0.1)
+y = SynAxis(name="y", delay=0.1)
+det = Syn2DGauss(
+    name="det",
+    motor0=x,
+    motor_field0="x",
+    motor1=y,
+    motor_field1="y",
+    center=(0, 0),
+    Imax=1,
+    labels={"detectors"},
+)
+
+ctx.ability(x)
+ctx.ability(y)
+ctx.ability(det)
 
 controller = BlueskyController(ctx)
 

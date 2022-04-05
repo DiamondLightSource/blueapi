@@ -28,6 +28,8 @@ Ability = Union[
     Subscribable,
 ]
 
+NamedAbility = Union[Readable, Flyable]
+
 BLUESKY_PROTOCOLS = list(Ability.__args__)  # type: ignore
 
 

@@ -1,6 +1,21 @@
 from dataclasses import make_dataclass
 from inspect import Parameter, signature
-from typing import Any, Callable, List, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
+
+from apischema import deserialize
+from apischema.conversions.conversions import Conversion
+from apischema.conversions.converters import AnyConversion, default_deserialization
 
 
 def schema_for_func(func: Callable[..., Any]) -> Type:
@@ -42,3 +57,21 @@ def schema_for_func(func: Callable[..., Any]) -> Type:
 
     data_class = make_dataclass(class_name, fields)
     return data_class
+
+
+T = TypeVar("T")
+
+
+def nested_deserialize_with_overrides(
+    schema: Type[T], obj: Any, overrides: Optional[Iterable[Conversion]] = None
+) -> T:
+    conversions = {conversion.target: conversion for conversion in overrides or []}
+
+    def deserialize_with_converters(a_type: Type[Any]) -> Optional[AnyConversion]:
+        # If the type is in _conversions then we can override the function used to
+        # resolve the parameter, otherwise we use apischema's default deserializer
+        if a_type in conversions.keys():
+            return conversions[a_type]
+        return default_deserialization(a_type)
+
+    return deserialize(schema, obj, default_conversion=deserialize_with_converters)

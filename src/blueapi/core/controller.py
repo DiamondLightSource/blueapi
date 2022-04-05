@@ -10,6 +10,8 @@ from blueapi.worker import RunEngineWorker, RunPlan, Worker, run_worker_in_own_t
 
 from .bluesky_types import Ability, Plan
 from .context import BlueskyContext
+from .device_lookup import create_bluesky_protocol_conversions
+from .schema import nested_deserialize_with_overrides
 
 LOGGER = logging.getLogger(__name__)
 
@@ -76,9 +78,12 @@ class BlueskyController(BlueskyControllerBase):
 
     async def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
         LOGGER.info(f"Asked to run plan {name} with {params}")
+
         loop = asyncio.get_running_loop()
-        plan = self._context.plan_functions[name](**params)
-        task = RunPlan(plan)
+        plan = self._context.plans[name]
+        plan_function = self._context.plan_functions[name]
+        sanitized_params = lookup_params(self._context, plan, params)
+        task = RunPlan(plan_function(**sanitized_params))
         loop.call_soon_threadsafe(self._worker.submit_task, task)
 
     @property
@@ -100,3 +105,12 @@ def make_default_worker() -> Worker:
 
     run_engine = RunEngine(context_managers=[])
     return RunEngineWorker(run_engine)
+
+
+def lookup_params(
+    ctx: BlueskyContext, plan: Plan, params: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    overrides = list(
+        create_bluesky_protocol_conversions(lambda name: ctx.abilities[name])
+    )
+    return nested_deserialize_with_overrides(plan.model, params, overrides).__dict__

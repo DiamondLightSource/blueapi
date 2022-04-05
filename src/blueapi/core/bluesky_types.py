@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Any, Callable, Generator, List, Mapping, Type, Union
+from dataclasses import dataclass
+from typing import Any, Callable, Generator, Type, Union
 
 from bluesky.protocols import (
     Checkable,
@@ -27,8 +27,6 @@ Ability = Union[
     Stoppable,
     Subscribable,
 ]
-
-NamedAbility = Union[Readable, Flyable]
 
 BLUESKY_PROTOCOLS = list(Ability.__args__)  # type: ignore
 

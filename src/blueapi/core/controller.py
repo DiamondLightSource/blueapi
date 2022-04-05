@@ -8,7 +8,7 @@ from bluesky import RunEngine
 from blueapi.worker import RunEngineWorker, RunPlan, Worker, run_worker_in_own_thread
 
 from .bluesky_types import Ability, Plan
-from .context import AbilityRegistry, BlueskyContext
+from .context import BlueskyContext
 
 LOGGER = logging.getLogger(__name__)
 

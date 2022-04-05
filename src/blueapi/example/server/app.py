@@ -10,6 +10,7 @@ from bluesky.protocols import Flyable, Movable, Readable
 from fastapi import FastAPI, Request
 from ophyd.sim import Syn2DGauss, SynAxis
 
+import blueapi.plans
 from blueapi.core import (
     BLUESKY_PROTOCOLS,
     Ability,
@@ -21,16 +22,7 @@ from blueapi.core import (
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
 
-
-@ctx.plan
-def sleep(time: float):
-    yield from bps.sleep(5)
-
-
-@ctx.plan
-def move(positions: Mapping[Movable, Any]):
-    yield from bps.mv(*itertools.chain.from_iterable(positions.items()))
-
+ctx.plan_module(blueapi.plans)
 
 x = SynAxis(name="x", delay=0.1)
 y = SynAxis(name="y", delay=0.1)

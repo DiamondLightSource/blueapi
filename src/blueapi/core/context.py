@@ -33,6 +33,3 @@ class BlueskyContext:
                 raise KeyError("Must supply a name for this ability")
 
         self.abilities[name] = ability
-
-    def inject_abilities(self, plan: PlanGenerator) -> PlanGenerator:
-        return lambda *args, **kwargs: plan(self.abilities, *args, **kwargs)

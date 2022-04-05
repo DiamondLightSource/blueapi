@@ -2,16 +2,16 @@ import itertools
 import logging
 import re
 import uuid
-from typing import Any, List, Mapping, Optional
+from typing import Any, Iterable, List, Mapping, Optional
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 from apischema.json_schema import deserialization_schema
-from bluesky.protocols import Movable
+from bluesky.protocols import Flyable, Movable, Readable
 from fastapi import FastAPI, Request
 
 from blueapi.core import BlueskyContext, BlueskyController, Plan
-from blueapi.core.bluesky_types import Ability
+from blueapi.core.bluesky_types import BLUESKY_PROTOCOLS, Ability
 
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
@@ -30,7 +30,9 @@ def move(positions: Mapping[Movable, Any]):
 @ctx.plan
 def count_all_matching(match_str: str, metadata: Optional[Mapping[str, Any]] = None):
     matcher = re.compile(match_str)
-    matching = filter(lambda ability: matcher.match(ability.name), abilities.visit())
+    matching = filter(
+        lambda ability: matcher.match(ability.name), ctx.abilities.values()
+    )
     metadata = metadata or {}
 
     yield from bp.count(
@@ -64,11 +66,33 @@ def _display_plan(plan: Plan) -> Mapping[str, Any]:
 
 
 @app.get("/ability")
-async def get_abilities() -> List[Ability]:
-    return list(controller.abilities.values())
+async def get_abilities() -> List[Mapping[str, Any]]:
+    return list(map(_display_ability, controller.abilities.values()))
+
+
+@app.get("/ability/{name}")
+async def get_ability(name: str) -> Mapping[str, Any]:
+    return _display_ability(controller.abilities[name])
 
 
 @app.put("/plan/{name}/run")
 async def run_plan(request: Request, name: str) -> uuid.UUID:
     await controller.run_plan(name, await request.json())
     return uuid.uuid1()
+
+
+def _display_ability(ability: Ability) -> Mapping[str, Any]:
+    if isinstance(ability, Readable) or isinstance(ability, Flyable):
+        name = ability.name
+    else:
+        name = "UNKNOWN"
+    return {
+        "name": name,
+        "protocols": list(_protocol_names(ability)),
+    }
+
+
+def _protocol_names(ability: Ability) -> Iterable[str]:
+    for protocol in BLUESKY_PROTOCOLS:
+        if isinstance(ability, protocol):
+            yield protocol.__name__

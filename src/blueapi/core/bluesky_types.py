@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Generator, List, Mapping, Type, Union
 
 from bluesky.protocols import (
@@ -16,7 +16,7 @@ from bluesky.utils import Msg
 
 PlanGenerator = Callable[..., Generator[Msg, Any, None]]
 
-BlueskyAbility = Union[
+Ability = Union[
     Checkable,
     Flyable,
     Hinted,
@@ -28,6 +28,8 @@ BlueskyAbility = Union[
     Subscribable,
 ]
 
+BLUESKY_PROTOCOLS = list(Ability.__args__)  # type: ignore
+
 
 @dataclass
 class Plan:
@@ -37,16 +39,3 @@ class Plan:
 
     name: str
     model: Type[Any]
-
-
-@dataclass
-class Device:
-    name: str
-    metadata: Mapping[str, Any]
-
-
-@dataclass
-class Ability:
-    name: str
-    devices: List[Device]
-    protocols: List[str]

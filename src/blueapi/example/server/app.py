@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 from typing import Any, List, Mapping
@@ -26,6 +27,11 @@ controller = BlueskyController(ctx)
 
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def app_startup():
+    asyncio.create_task(controller.run_workers())
 
 
 @app.get("/plan")

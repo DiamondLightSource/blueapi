@@ -1,5 +1,5 @@
 import logging
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Optional, TypeVar
 
 from blueapi.utils import handle_all_exceptions
@@ -13,7 +13,7 @@ T = TypeVar("T")
 
 def run_worker_in_own_thread(
     worker: Worker[T], executor: Optional[ThreadPoolExecutor] = None
-) -> None:
+) -> Future:
     """
     Helper function, make a worker run in a new thread managed by a ThreadPoolExecutor
 
@@ -24,7 +24,7 @@ def run_worker_in_own_thread(
 
     if executor is None:
         executor = ThreadPoolExecutor(1, "run-engine-worker")
-    executor.submit(_run_worker_thread, worker)
+    return executor.submit(_run_worker_thread, worker)
 
 
 @handle_all_exceptions

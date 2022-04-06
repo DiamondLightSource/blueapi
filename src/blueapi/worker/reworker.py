@@ -4,6 +4,8 @@ from typing import Callable, List, Optional
 
 from bluesky import RunEngine
 
+from blueapi.core import EventStream, EventStreamBase
+
 from .event import RawRunEngineState, RunnerState, WorkerEvent
 from .task import Task, TaskContext
 from .worker import Worker
@@ -22,7 +24,7 @@ class RunEngineWorker(Worker[Task]):
     _run_engine: RunEngine
     _task_queue: Queue  # type: ignore
     _current_task: Optional[Task]
-    _subscribers: List[Callable[[WorkerEvent], None]]
+    _worker_events: EventStream
 
     def __init__(
         self,
@@ -31,7 +33,7 @@ class RunEngineWorker(Worker[Task]):
         self._run_engine = run_engine
         self._task_queue = Queue()
         self._current_task = None
-        self._subscribers = []
+        self._worker_events = EventStream()
 
     def submit_task(self, task: Task) -> None:
         LOGGER.info(f"Submitting: {task}")
@@ -49,9 +51,9 @@ class RunEngineWorker(Worker[Task]):
         ctx = TaskContext(self._run_engine)
         self._current_task.do_task(ctx)
 
-    def subscribe(self, callback: Callable[[WorkerEvent], None]) -> int:
-        self._subscribers.append(callback)
-        return len(self._subscribers) - 1
+    @property
+    def worker_events(self) -> EventStreamBase[WorkerEvent, int]:
+        return self.worker_events
 
     def _on_state_change(
         self,
@@ -64,8 +66,4 @@ class RunEngineWorker(Worker[Task]):
         else:
             old_state = RunnerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        self._notify(WorkerEvent(self._current_task, new_state))
-
-    def _notify(self, event: WorkerEvent) -> None:
-        for callback in self._subscribers:
-            callback(event)
+        self._worker_events.notify(WorkerEvent(self._current_task, new_state))

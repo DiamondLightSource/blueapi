@@ -5,9 +5,10 @@ import uuid
 from typing import Any, Iterable, List, Mapping
 
 import bluesky.plan_stubs as bps
+from apischema import serialize
 from apischema.json_schema import deserialization_schema
 from bluesky.protocols import Flyable, Movable, Readable
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket
 from ophyd.sim import Syn2DGauss, SynAxis
 
 from blueapi.core import (
@@ -84,10 +85,18 @@ async def get_ability(name: str) -> Mapping[str, Any]:
     return _display_ability(controller.abilities[name])
 
 
-@app.put("/plan/{name}/run")
+@app.put("/run/{name}")
 async def run_plan(request: Request, name: str) -> uuid.UUID:
     await controller.run_plan(name, await request.json())
     return uuid.uuid1()
+
+
+@app.websocket("/run/status")
+async def subscribe_run_status(websocket: WebSocket) -> None:
+    await websocket.accept()
+    with await controller.worker_events() as events:
+        async for event in events:
+            await websocket.send_json(serialize(event))
 
 
 def _display_ability(ability: Ability) -> Mapping[str, Any]:

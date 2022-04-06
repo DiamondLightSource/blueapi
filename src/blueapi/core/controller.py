@@ -1,14 +1,20 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Mapping, Optional
+from typing import Any, AsyncIterable, Awaitable, Callable, Mapping, Optional
 
 from bluesky import RunEngine
 
-from blueapi.utils import concurrent_future_to_aio_future
-from blueapi.worker import RunEngineWorker, RunPlan, Worker, run_worker_in_own_thread
+from blueapi.utils import async_events, concurrent_future_to_aio_future
+from blueapi.worker import (
+    RunEngineWorker,
+    RunPlan,
+    Worker,
+    WorkerEvent,
+    run_worker_in_own_thread,
+)
 
-from .bluesky_types import Ability, Plan
+from .bluesky_types import Ability, DataEvent, Plan, StatusEvent
 from .context import BlueskyContext
 from .device_lookup import create_bluesky_protocol_conversions
 from .schema import nested_deserialize_with_overrides
@@ -36,6 +42,10 @@ class BlueskyControllerBase(ABC):
                                           deserialized form
         """
 
+        ...
+
+    @abstractmethod
+    async def worker_events(self) -> AsyncIterable[WorkerEvent]:
         ...
 
     @property
@@ -85,6 +95,10 @@ class BlueskyController(BlueskyControllerBase):
         sanitized_params = lookup_params(self._context, plan, params)
         task = RunPlan(plan_function(**sanitized_params))
         loop.call_soon_threadsafe(self._worker.submit_task, task)
+
+    async def worker_events(self) -> AsyncIterable[WorkerEvent]:
+        async for value in async_events(self._worker.worker_events.subscribe):
+            yield value
 
     @property
     def plans(self) -> Mapping[str, Plan]:

@@ -1,11 +1,20 @@
 import asyncio
 import json
+from functools import wraps
 
 import click
 
 from blueapi import __version__
 
 from .rest import RestClient
+
+
+def click_async(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(f(*args, **kwargs))
+
+    return wrapper
 
 
 @click.group(invoke_without_command=True)
@@ -63,6 +72,13 @@ def get_plan(ctx, name: str) -> None:
 @click.argument("name", type=str)
 @click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
 @click.pass_context
-def run_plan(ctx, name: str, parameters: str) -> None:
+@click_async
+async def run_plan(ctx, name: str, parameters: str) -> None:
     client: RestClient = ctx.obj["rest_client"]
-    print(asyncio.run(client.run_plan(name, json.loads(parameters))))
+
+    messages = client.subscribe_worker_events()
+    do_plan = client.run_plan(name, json.loads(parameters))
+
+    asyncio.create_task(do_plan)
+    async for message in messages:
+        print(message)

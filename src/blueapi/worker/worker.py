@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Callable, Generic, TypeVar
+
+from blueapi.core import EventStreamBase
 
 from .event import WorkerEvent
 
@@ -11,6 +14,10 @@ class Worker(ABC, Generic[T]):
     Entity that takes and runs tasks. Intended to be a central,
     atomic worker rather than a load distributor
     """
+
+    @property
+    def worker_events(self) -> EventStreamBase[WorkerEvent, int]:
+        ...
 
     @abstractmethod
     def submit_task(self, task: T) -> None:
@@ -27,17 +34,4 @@ class Worker(ABC, Generic[T]):
         """
         Run all tasks as-submitted. Blocks thread.
         """
-        ...
-
-    @abstractmethod
-    def subscribe(self, callback: Callable[[WorkerEvent], None]) -> int:
-        """Notify worker events
-
-        Args:
-            callback (Callable[[WorkerEvent], None]): What to do with events
-
-        Returns:
-            int: An identifier for the subscription
-        """
-
         ...

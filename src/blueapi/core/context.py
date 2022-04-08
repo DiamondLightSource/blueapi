@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, Optional
 
+from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
 
 from blueapi.core import Ability, Plan, PlanGenerator, schema_for_func
@@ -12,6 +13,9 @@ class BlueskyContext:
     Context for building a Bluesky application
     """
 
+    run_engine: RunEngine = field(
+        default_factory=lambda: RunEngine(context_managers=[])
+    )
     plans: Dict[str, Plan] = field(default_factory=dict)
     abilities: Dict[str, Ability] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)

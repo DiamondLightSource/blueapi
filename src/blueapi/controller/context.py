@@ -3,10 +3,7 @@ from typing import Dict, Optional
 
 from bluesky.protocols import Flyable, Readable
 
-from .bluesky_types import Ability, Plan, PlanGenerator
-from .schema import schema_for_func
-
-AbilityRegistry = Dict[str, Ability]
+from blueapi.core import Ability, Plan, PlanGenerator, schema_for_func
 
 
 @dataclass
@@ -16,7 +13,7 @@ class BlueskyContext:
     """
 
     plans: Dict[str, Plan] = field(default_factory=dict)
-    abilities: AbilityRegistry = field(default_factory=dict)
+    abilities: Dict[str, Ability] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:

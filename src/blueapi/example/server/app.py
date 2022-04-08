@@ -13,6 +13,7 @@ from ophyd.sim import Syn2DGauss, SynAxis
 
 from blueapi.controller import BlueskyContext, BlueskyController
 from blueapi.core import BLUESKY_PROTOCOLS, Ability, Plan
+from blueapi.worker import WorkerEvent
 
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
@@ -89,6 +90,11 @@ async def run_plan(request: Request, name: str) -> uuid.UUID:
 @app.websocket("/run/status")
 async def subscribe_run_status(websocket: WebSocket) -> None:
     await websocket.accept()
+
+    async def reply(event: WorkerEvent):
+        await websocket.send_json(serialize(event))
+
+    controller.worker_events.subscribe(reply)
     with await controller.worker_events() as events:
         async for event in events:
             await websocket.send_json(serialize(event))

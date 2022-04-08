@@ -6,6 +6,8 @@ from bluesky import RunEngine
 
 from blueapi.core import (
     Ability,
+    AsyncEventStreamBase,
+    AsyncEventStreamWrapper,
     Plan,
     create_bluesky_protocol_conversions,
     nested_deserialize_with_overrides,
@@ -55,9 +57,9 @@ class BlueskyController(BlueskyControllerBase):
         task = RunPlan(plan_function(**sanitized_params))
         loop.call_soon_threadsafe(self._worker.submit_task, task)
 
-    async def worker_events(self) -> AsyncIterable[WorkerEvent]:
-        async for value in async_events(self._worker.worker_events.subscribe):
-            yield value
+    @property
+    def worker_events(self) -> AsyncEventStreamBase:
+        return AsyncEventStreamWrapper(self._worker.worker_events)
 
     @property
     def plans(self) -> Mapping[str, Plan]:

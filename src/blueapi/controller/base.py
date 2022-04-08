@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Mapping
 
-from blueapi.core import Ability, Plan
+from blueapi.core import Ability, AsyncEventStreamBase, Plan
 
 
 class BlueskyControllerBase(ABC):
@@ -24,6 +24,11 @@ class BlueskyControllerBase(ABC):
                                           deserialized form
         """
 
+        ...
+
+    @property
+    @abstractmethod
+    def worker_events(self) -> AsyncEventStreamBase:
         ...
 
     @property

@@ -11,13 +11,8 @@ from bluesky.protocols import Flyable, Movable, Readable
 from fastapi import FastAPI, Request, WebSocket
 from ophyd.sim import Syn2DGauss, SynAxis
 
-from blueapi.core import (
-    BLUESKY_PROTOCOLS,
-    Ability,
-    BlueskyContext,
-    BlueskyController,
-    Plan,
-)
+from blueapi.controller import BlueskyContext, BlueskyController
+from blueapi.core import BLUESKY_PROTOCOLS, Ability, Plan
 
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)

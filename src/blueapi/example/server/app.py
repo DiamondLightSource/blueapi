@@ -18,14 +18,8 @@ from requests import request
 from yaml import serialize
 
 from blueapi.core import BLUESKY_PROTOCOLS, Ability, BlueskyContext, Plan
-from blueapi.worker import (
-    RunEngineWorker,
-    RunPlan,
-    WorkerEvent,
-    run_worker_in_own_thread,
-)
-
-from ..messaging_app import MessageContext, MessagingApp
+from blueapi.messaging import MessageContext, MessagingApp, StompMessagingApp
+from blueapi.worker import RunEngineWorker, RunPlan, WorkerEvent
 
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
@@ -62,7 +56,7 @@ ctx.ability(det)
 worker = RunEngineWorker(ctx)
 
 
-app = MessagingApp("127.0.0.1", 61613)
+app: MessagingApp = StompMessagingApp("127.0.0.1", 61613)
 app.connect()
 
 
@@ -78,15 +72,16 @@ def on_run_request(_: MessageContext, task: RunPlan) -> None:
     worker.submit_task(task)
 
 
-app.subscribe(on_run_request, destination="worker.run")
+app.subscribe("worker.run", on_run_request)
 
 
 def get_plans(message_context: MessageContext, message: str) -> None:
     plans = list(map(_display_plan, ctx.plans.values()))
-    message_context.reply(plans)
+    # TODO: Handle cannot reply case
+    app.send(message_context.reply_destination or "default", plans)
 
 
-app.subscribe(get_plans, destination="worker.plans")
+app.subscribe("worker.plans", get_plans)
 
 
 def _display_plan(plan: Plan) -> Mapping[str, Any]:

@@ -1,5 +1,5 @@
 from .base import MessageListener, MessagingApp
 from .context import MessageContext
-from .stomp import StompMessagingApp
+from .stompapp import StompMessagingApp
 
 __all__ = ["MessageListener", "MessagingApp", "MessageContext", "StompMessagingApp"]

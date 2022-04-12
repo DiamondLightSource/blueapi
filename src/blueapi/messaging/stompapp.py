@@ -17,6 +17,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class StompMessagingApp(MessagingApp):
+    """
+    MessagingApp that uses the stompp protocol, meant for use
+    with ActiveMQ.
+    """
+
     _conn: stomp.Connection
     _sub_num: int
     _listener: stomp.ConnectionListener

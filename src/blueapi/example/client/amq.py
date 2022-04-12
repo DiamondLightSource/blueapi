@@ -25,3 +25,8 @@ class AmqClient:
         return self.app.send_and_recieve(
             "worker.plans", "", List[Mapping[str, Any]]
         ).result(5.0)
+
+    def get_abilities(self) -> _Json:
+        return self.app.send_and_recieve(
+            "worker.abilities", "", List[Mapping[str, Any]]
+        ).result(5.0)

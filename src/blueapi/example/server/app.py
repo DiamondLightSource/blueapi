@@ -68,6 +68,13 @@ def get_plans(message_context: MessageContext, message: str) -> None:
     app.send(message_context.reply_destination, plans)
 
 
+@app.listener("worker.abilities")
+def get_abilities(message_context: MessageContext, message: str) -> None:
+    abilities = list(map(_display_ability, ctx.abilities.values()))
+    assert message_context.reply_destination is not None
+    app.send(message_context.reply_destination, abilities)
+
+
 def _display_plan(plan: Plan) -> Mapping[str, Any]:
     return {"name": plan.name}
 

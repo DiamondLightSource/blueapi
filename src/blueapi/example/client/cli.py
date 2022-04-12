@@ -43,23 +43,7 @@ def get_plans(ctx) -> None:
 @click.pass_context
 def get_abilities(ctx) -> None:
     client: AmqClient = ctx.obj["client"]
-    print(asyncio.run(client.get_abilities()))
-
-
-@main.command(name="plan")
-@click.argument("name", type=str)
-@click.pass_context
-def get_plan(ctx, name: str) -> None:
-    client: AmqClient = ctx.obj["client"]
-    plan = asyncio.run(client.get_plan(name))
-
-    name = plan["name"]  # type: ignore
-    schema = plan["schema"]  # type: ignore
-    print(f"PLAN: {name}")
-
-    from pprint import pprint
-
-    pprint(schema)
+    print(client.get_abilities())
 
 
 @main.command(name="run")

@@ -2,9 +2,10 @@ import inspect
 import json
 import logging
 import uuid
+from concurrent.futures import Future
 from ctypes import Union
 from re import S
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
 import stomp
 from apischema import deserialize, serialize
@@ -38,6 +39,8 @@ class MessageContext:
 
 MessageListener = Callable[[MessageContext, Any], None]
 
+T = TypeVar("T")
+
 
 class MessagingApp:
     _conn: stomp.Connection
@@ -55,11 +58,36 @@ class MessagingApp:
 
         self._subscriptions = {}
 
-    def send(self, destination: str, obj: Any) -> None:
-        return self._send_str(destination, json.dumps(serialize(obj)))
+    def send_and_recieve(
+        self,
+        destination: str,
+        obj: Any,
+        reply_type: Optional[Type[T]] = None,
+        timeout: Optional[float] = None,
+    ) -> T:
+        future: Future = Future()
+
+        def on_reply(_: MessageContext, message: Any) -> None:
+            future.set_result(message)
+
+        self.send(destination, obj, on_reply, reply_type=reply_type)
+        return future.result(timeout)
+
+    def send(
+        self,
+        destination: str,
+        obj: Any,
+        on_reply: Optional[MessageListener] = None,
+        reply_type: Optional[Type[T]] = None,
+    ) -> None:
+        return self._send_str(destination, json.dumps(serialize(obj)), on_reply)
 
     def _send_str(
-        self, destination: str, message: str, on_reply: Optional[MessageListener] = None
+        self,
+        destination: str,
+        message: str,
+        on_reply: Optional[MessageListener] = None,
+        reply_type: Optional[Type[T]] = None,
     ) -> None:
         LOGGER.info(f"SENDING {message} to {destination}")
 
@@ -67,17 +95,19 @@ class MessagingApp:
         if on_reply is not None:
             reply_queue_name = f"temp.{uuid.uuid1()}"
             headers = {**headers, "reply-to": reply_queue_name}
-            self.subscribe(on_reply, reply_queue_name)
+            self.subscribe(on_reply, reply_queue_name, obj_type=reply_type)
         self._conn.send(headers=headers, body=message, destination=destination)
 
     def subscribe(
         self,
         callback: MessageListener,
         destination: str,
+        obj_type: Optional[Type] = None,
     ) -> None:
         LOGGER.info(f"New subscription to {destination}")
 
-        obj_type = _determine_deserialization_type(callback, default=str)
+        if obj_type is None:
+            obj_type = _determine_deserialization_type(callback, default=str)
 
         def wrapper(frame: Frame) -> None:
             as_dict = json.loads(frame.body)

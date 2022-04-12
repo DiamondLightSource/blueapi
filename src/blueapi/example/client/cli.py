@@ -33,7 +33,7 @@ def main(ctx, url: str) -> None:
 @click.pass_context
 def get_plans(ctx) -> None:
     client: AmqClient = ctx.obj["client"]
-    plans = asyncio.run(client.get_plans())
+    plans = client.get_plans()
     print("PLANS")
     for plan in plans:
         print("\t" + plan["name"])  # type: ignore

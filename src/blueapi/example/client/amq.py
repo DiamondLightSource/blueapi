@@ -22,5 +22,4 @@ class AmqClient:
         self.app.send("worker.run", {"name": name, "params": params})
 
     def get_plans(self) -> _Json:
-        self.app.send("worker.plans", "")
-        return {}
+        return self.app.send_and_recieve("worker.plans", "", Mapping[str, Any])

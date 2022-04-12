@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, List, Mapping
 
 import bluesky.plan_stubs as bps
+import numpy as np
 import stomp
 from apischema import deserialize
 from apischema.json_schema import deserialization_schema
@@ -68,20 +69,16 @@ def _on_worker_event(event: WorkerEvent) -> None:
 worker.subscribe(_on_worker_event)
 
 
+@app.listener(destination="worker.run")
 def on_run_request(_: MessageContext, task: RunPlan) -> None:
     worker.submit_task(task)
 
 
-app.subscribe("worker.run", on_run_request)
-
-
+@app.listener("worker.plans")
 def get_plans(message_context: MessageContext, message: str) -> None:
     plans = list(map(_display_plan, ctx.plans.values()))
     assert message_context.reply_destination is not None
     app.send(message_context.reply_destination, plans)
-
-
-app.subscribe("worker.plans", get_plans)
 
 
 def _display_plan(plan: Plan) -> Mapping[str, Any]:

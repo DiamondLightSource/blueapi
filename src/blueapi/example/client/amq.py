@@ -2,7 +2,7 @@ from typing import Any, List, Mapping, Optional, TypeVar, Union
 
 import aiohttp
 
-from ..messaging_app import MessageContext, MessagingApp
+from blueapi.messaging import MessagingApp
 
 T = TypeVar("T")
 
@@ -22,4 +22,6 @@ class AmqClient:
         self.app.send("worker.run", {"name": name, "params": params})
 
     def get_plans(self) -> _Json:
-        return self.app.send_and_recieve("worker.plans", "", Mapping[str, Any])
+        return self.app.send_and_recieve(
+            "worker.plans", "", List[Mapping[str, Any]]
+        ).result(5.0)

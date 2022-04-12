@@ -4,7 +4,7 @@ import json
 import click
 
 from blueapi import __version__
-from blueapi.example.messaging_app import MessagingApp
+from blueapi.messaging import StompMessagingApp
 
 from .amq import AmqClient
 
@@ -24,7 +24,7 @@ def main(ctx, url: str) -> None:
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
     ctx.ensure_object(dict)
-    client = AmqClient(MessagingApp())
+    client = AmqClient(StompMessagingApp())
     ctx.obj["client"] = client
     client.app.connect()
 

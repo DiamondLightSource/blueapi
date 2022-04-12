@@ -57,9 +57,17 @@ class MessagingApp:
     def send(self, destination: str, obj: Any) -> None:
         return self._send_str(destination, json.dumps(serialize(obj)))
 
-    def _send_str(self, destination: str, message: str) -> None:
+    def _send_str(
+        self, destination: str, message: str, on_reply: Optional[MessageListener] = None
+    ) -> None:
         LOGGER.info(f"SENDING {message} to {destination}")
-        self._conn.send(body=message, destination=destination)
+
+        headers: Dict[str, Any] = {}
+        if on_reply is not None:
+            reply_queue_name = f"temp.{uuid.uuid1()}"
+            headers = {**headers, "reply-to": reply_queue_name}
+            self.subscribe(on_reply, reply_queue_name)
+        self._conn.send(headers=headers, body=message, destination=destination)
 
     def subscribe(
         self,

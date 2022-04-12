@@ -36,9 +36,9 @@ def sleep(time: float):
     yield from bps.sleep(5)
 
 
-@ctx.plan
-def move(positions: Mapping[Movable, Any]):
-    yield from bps.mv(*itertools.chain.from_iterable(positions.items()))
+# @ctx.plan
+# def move(positions: Mapping[Movable, Any]):
+#     yield from bps.mv(*itertools.chain.from_iterable(positions.items()))
 
 
 x = SynAxis(name="x", delay=0.1)

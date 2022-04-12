@@ -68,7 +68,7 @@ class MessagingApp:
     ) -> T:
         future: Future = Future()
 
-        def on_reply(_: MessageContext, message: Any) -> None:
+        def on_reply(context: MessageContext, message: Any) -> None:
             future.set_result(message)
 
         self.send(destination, obj, on_reply, reply_type=reply_type)
@@ -94,7 +94,7 @@ class MessagingApp:
 
         headers: Dict[str, Any] = {}
         if on_reply is not None:
-            reply_queue_name = f"temp.{uuid.uuid1()}"
+            reply_queue_name = f"transient.{uuid.uuid1()}"
             headers = {**headers, "reply-to": reply_queue_name}
             self.subscribe(on_reply, reply_queue_name, obj_type=reply_type)
         self._conn.send(headers=headers, body=message, destination=destination)

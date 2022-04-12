@@ -78,7 +78,7 @@ def on_run_request(_: MessageContext, task: RunPlan) -> None:
     worker.submit_task(task)
 
 
-app.subscribe(on_run_request, destination="worker.run", obj_type=RunPlan)
+app.subscribe(on_run_request, destination="worker.run")
 
 
 def get_plans(message_context: MessageContext, message: str) -> None:

@@ -1,3 +1,4 @@
+import inspect
 import json
 import logging
 import uuid
@@ -73,9 +74,10 @@ class MessagingApp:
         self,
         callback: MessageListener,
         destination: str,
-        obj_type: Type = str,
     ) -> None:
         LOGGER.info(f"New subscription to {destination}")
+
+        obj_type = _determine_deserialization_type(callback, default=str)
 
         def wrapper(frame: Frame) -> None:
             as_dict = json.loads(frame.body)
@@ -105,3 +107,15 @@ class MessagingApp:
             callback(frame)
         else:
             LOGGER.warn(f"No subscription active for id: {sub_id}")
+
+
+def _determine_deserialization_type(
+    listener: MessageListener, default: Type = str
+) -> Type:
+
+    _, message = inspect.signature(listener).parameters.values()
+    a_type = message.annotation
+    if a_type is not inspect.Parameter.empty:
+        return a_type
+    else:
+        return default

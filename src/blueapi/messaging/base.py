@@ -31,7 +31,7 @@ class MessagingApp(ABC):
 
         callback.__annotations__["reply"] = reply_type
         self.send(destination, obj, callback)
-        return future.result(timeout)
+        return future
 
     @abstractmethod
     def subscribe(

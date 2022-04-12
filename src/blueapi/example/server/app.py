@@ -1,22 +1,10 @@
-import asyncio
 import itertools
 import logging
-
-# worker.run_forever()
-import time
-import uuid
-from dataclasses import dataclass
-from typing import Any, Iterable, List, Mapping
+from typing import Any, Iterable, Mapping
 
 import bluesky.plan_stubs as bps
-import numpy as np
-import stomp
-from apischema import deserialize
-from apischema.json_schema import deserialization_schema
 from bluesky.protocols import Flyable, Movable, Readable
 from ophyd.sim import Syn2DGauss, SynAxis
-from requests import request
-from yaml import serialize
 
 from blueapi.core import BLUESKY_PROTOCOLS, Ability, BlueskyContext, Plan
 from blueapi.messaging import MessageContext, MessagingApp, StompMessagingApp
@@ -54,9 +42,6 @@ ctx.ability(y)
 ctx.ability(det)
 
 
-worker = RunEngineWorker(ctx)
-
-
 app: MessagingApp = StompMessagingApp("127.0.0.1", 61613)
 app.connect()
 
@@ -65,6 +50,8 @@ def _on_worker_event(event: WorkerEvent) -> None:
     print(event)
     app.send("worker.event", event)
 
+
+worker = RunEngineWorker(ctx)
 
 worker.subscribe(_on_worker_event)
 

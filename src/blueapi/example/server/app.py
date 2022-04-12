@@ -90,7 +90,7 @@ app.subscribe(get_plans, destination="worker.plans")
 
 
 def _display_plan(plan: Plan) -> Mapping[str, Any]:
-    return {"name": plan.name, "schema": deserialization_schema(plan.model)}
+    return {"name": plan.name}
 
 
 def _display_ability(ability: Ability) -> Mapping[str, Any]:

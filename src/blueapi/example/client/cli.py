@@ -10,20 +10,27 @@ from .amq import AmqClient
 
 @click.group(invoke_without_command=True)
 @click.option(
-    "-u",
-    "--url",
+    "-h",
+    "--host",
     type=str,
-    help="REST API URL",
-    default="http://localhost:8000",
+    help="Broker host",
+    default="127.0.0.1",
+)
+@click.option(
+    "-p",
+    "--port",
+    type=int,
+    help="Broker port",
+    default=61613,
 )
 @click.version_option(version=__version__)
 @click.pass_context
-def main(ctx, url: str) -> None:
+def main(ctx, host: str, port: int) -> None:
     # if no command is supplied, run with the options passed
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
     ctx.ensure_object(dict)
-    client = AmqClient(StompMessagingApp())
+    client = AmqClient(StompMessagingApp(host, port))
     ctx.obj["client"] = client
     client.app.connect()
 

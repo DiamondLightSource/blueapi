@@ -4,7 +4,7 @@ from typing import Type
 from .base import MessageListener
 
 
-def _determine_deserialization_type(
+def determine_deserialization_type(
     listener: MessageListener, default: Type = str
 ) -> Type:
 

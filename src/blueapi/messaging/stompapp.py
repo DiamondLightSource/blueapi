@@ -11,7 +11,7 @@ from blueapi.utils import handle_all_exceptions
 
 from .base import MessageListener, MessagingApp
 from .context import MessageContext
-from .utils import _determine_deserialization_type
+from .utils import determine_deserialization_type
 
 LOGGER = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class StompMessagingApp(MessagingApp):
     def subscribe(self, destination: str, callback: MessageListener) -> None:
         LOGGER.info(f"New subscription to {destination}")
 
-        obj_type = _determine_deserialization_type(callback, default=str)
+        obj_type = determine_deserialization_type(callback, default=str)
 
         def wrapper(frame: Frame) -> None:
             as_dict = json.loads(frame.body)

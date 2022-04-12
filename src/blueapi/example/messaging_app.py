@@ -12,6 +12,7 @@ from apischema import deserialize, serialize
 from stomp.utils import Frame
 
 from blueapi.core import schema_for_func
+from blueapi.utils import handle_all_exceptions
 
 LOGGER = logging.getLogger(__name__)
 
@@ -129,6 +130,7 @@ class MessagingApp:
     def await_terminated(self) -> None:
         self._conn.heartbeat_terminate_event.wait()
 
+    @handle_all_exceptions
     def _on_message(self, frame: Frame) -> None:
         LOGGER.info(f"Recieved {frame}")
         sub_id = frame.headers.get("subscription")

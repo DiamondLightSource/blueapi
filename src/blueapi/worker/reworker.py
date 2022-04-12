@@ -1,9 +1,6 @@
-import imp
 import logging
 from queue import Queue
 from typing import Callable, List, Optional
-
-from bluesky import RunEngine
 
 from blueapi.core import BlueskyContext
 

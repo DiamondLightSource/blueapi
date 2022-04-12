@@ -1,6 +1,4 @@
-from typing import Any, List, Mapping, Optional, TypeVar, Union
-
-import aiohttp
+from typing import Any, List, Mapping, TypeVar, Union
 
 from blueapi.messaging import MessagingApp
 

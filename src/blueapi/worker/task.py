@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Union
 
-from apischema import deserialize, deserializer, identity, serializer
+from apischema import deserializer, identity, serializer
 from apischema.conversions import Conversion
 
 from blueapi.core import (

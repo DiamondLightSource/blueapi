@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Mapping, Union
 
 from apischema import deserialize, deserializer, identity, serializer
@@ -54,7 +54,7 @@ class RunPlan(Task):
     """
 
     name: str
-    params: Mapping[str, Any]
+    params: Mapping[str, Any] = field(default_factory=dict)
     # plan: Generator[Msg, None, Any]
 
     def do_task(self, ctx: BlueskyContext) -> None:

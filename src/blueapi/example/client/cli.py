@@ -4,8 +4,9 @@ import json
 import click
 
 from blueapi import __version__
+from blueapi.messaging import StompMessagingApp
 
-from .rest import RestClient
+from .amq import AmqClient
 
 
 @click.group(invoke_without_command=True)
@@ -23,14 +24,16 @@ def main(ctx, url: str) -> None:
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
     ctx.ensure_object(dict)
-    ctx.obj["rest_client"] = RestClient(url)
+    client = AmqClient(StompMessagingApp())
+    ctx.obj["client"] = client
+    client.app.connect()
 
 
 @main.command(name="plans")
 @click.pass_context
 def get_plans(ctx) -> None:
-    client: RestClient = ctx.obj["rest_client"]
-    plans = asyncio.run(client.get_plans())
+    client: AmqClient = ctx.obj["client"]
+    plans = client.get_plans()
     print("PLANS")
     for plan in plans:
         print("\t" + plan["name"])  # type: ignore
@@ -39,24 +42,8 @@ def get_plans(ctx) -> None:
 @main.command(name="abilities")
 @click.pass_context
 def get_abilities(ctx) -> None:
-    client: RestClient = ctx.obj["rest_client"]
-    print(asyncio.run(client.get_abilities()))
-
-
-@main.command(name="plan")
-@click.argument("name", type=str)
-@click.pass_context
-def get_plan(ctx, name: str) -> None:
-    client: RestClient = ctx.obj["rest_client"]
-    plan = asyncio.run(client.get_plan(name))
-
-    name = plan["name"]  # type: ignore
-    schema = plan["schema"]  # type: ignore
-    print(f"PLAN: {name}")
-
-    from pprint import pprint
-
-    pprint(schema)
+    client: AmqClient = ctx.obj["client"]
+    print(client.get_abilities())
 
 
 @main.command(name="run")
@@ -64,5 +51,5 @@ def get_plan(ctx, name: str) -> None:
 @click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
 @click.pass_context
 def run_plan(ctx, name: str, parameters: str) -> None:
-    client: RestClient = ctx.obj["rest_client"]
-    print(asyncio.run(client.run_plan(name, json.loads(parameters))))
+    client: AmqClient = ctx.obj["client"]
+    client.run_plan(name, json.loads(parameters))

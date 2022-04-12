@@ -25,13 +25,7 @@
             "name": "Example Server",
             "type": "python",
             "request": "launch",
-            "module": "uvicorn",
-            "args": [
-                "blueapi.example.server.app:app",
-                "--reload",
-                "--port", //these arg are optional
-                "8000"
-            ]
+            "module": "blueapi.example.server",
         }
     ]
 }

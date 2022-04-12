@@ -29,9 +29,9 @@ class RunEngineWorker(Worker[Task]):
 
     def __init__(
         self,
-        run_engine: RunEngine,
+        ctx: BlueskyContext,
     ) -> None:
-        self._run_engine = run_engine
+        self._ctx = ctx
         self._task_queue = Queue()
         self._current_task = None
         self._subscribers = []
@@ -41,13 +41,16 @@ class RunEngineWorker(Worker[Task]):
         self._task_queue.put(task)
 
     def run_forever(self) -> None:
-        self._run_engine.state_hook = self._on_state_change
+        LOGGER.info("Worker starting")
+        self._ctx.run_engine.state_hook = self._on_state_change
 
         while True:
             self._cycle()
 
     def _cycle(self) -> None:
+        LOGGER.info("Awaiting task")
         next_task: Task = self._task_queue.get()
+        LOGGER.info(f"Got new task: {next_task}")
         self._current_task = next_task  # Informing mypy that the task is not None
         self._current_task.do_task(self._ctx)
 

@@ -1,7 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, Union
+
+from apischema import deserialize, deserializer, identity, serializer
+from apischema.conversions import Conversion
 
 from blueapi.core import (
     BlueskyContext,
@@ -15,6 +18,20 @@ class Task(ABC):
     """
     Object that can run with a TaskContext
     """
+
+    _union: Any = None
+
+    # You can use __init_subclass__ to register new subclass automatically
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # Deserializers stack directly as a Union
+        deserializer(Conversion(identity, source=cls, target=Task))
+        # Only Base serializer must be registered (and updated for each subclass) as
+        # a Union, and not be inherited
+        Task._union = cls if Task._union is None else Union[Task._union, cls]
+        serializer(
+            Conversion(identity, source=Task, target=Task._union, inherited=False)
+        )
 
     @abstractmethod
     def do_task(self, ctx: BlueskyContext) -> None:

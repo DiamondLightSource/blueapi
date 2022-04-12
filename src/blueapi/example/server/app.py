@@ -1,17 +1,31 @@
 import asyncio
 import itertools
 import logging
+
+# worker.run_forever()
+import time
 import uuid
+from dataclasses import dataclass
 from typing import Any, Iterable, List, Mapping
 
 import bluesky.plan_stubs as bps
+import stomp
+from apischema import deserialize
 from apischema.json_schema import deserialization_schema
 from bluesky.protocols import Flyable, Movable, Readable
-from fastapi import FastAPI, Request
 from ophyd.sim import Syn2DGauss, SynAxis
+from requests import request
+from yaml import serialize
 
-from blueapi.controller import BlueskyContext, BlueskyController
-from blueapi.core import BLUESKY_PROTOCOLS, Ability, Plan
+from blueapi.core import BLUESKY_PROTOCOLS, Ability, BlueskyContext, Plan
+from blueapi.worker import (
+    RunEngineWorker,
+    RunPlan,
+    WorkerEvent,
+    run_worker_in_own_thread,
+)
+
+from ..messaging_app import MessageContext, MessagingApp
 
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
@@ -44,45 +58,39 @@ ctx.ability(x)
 ctx.ability(y)
 ctx.ability(det)
 
-controller = BlueskyController(ctx)
+
+worker = RunEngineWorker(ctx)
 
 
-app = FastAPI()
+app = MessagingApp("127.0.0.1", 61613)
+app.connect()
 
 
-@app.on_event("startup")
-async def app_startup():
-    asyncio.create_task(controller.run_workers())
+def _on_worker_event(event: WorkerEvent) -> None:
+    print(event)
+    app.send("worker.event", event)
 
 
-@app.get("/plan")
-async def get_plans() -> List[Mapping[str, Any]]:
-    return list(map(_display_plan, controller.plans.values()))
+worker.subscribe(_on_worker_event)
 
 
-@app.get("/plan/{name}")
-async def get_plan(name: str) -> Mapping[str, Any]:
-    return _display_plan(controller.plans[name])
+def on_run_request(_: MessageContext, task: RunPlan) -> None:
+    worker.submit_task(task)
+
+
+app.subscribe(on_run_request, destination="worker.run", obj_type=RunPlan)
+
+
+def get_plans(message_context: MessageContext, message: str) -> None:
+    plans = list(map(_display_plan, ctx.plans.values()))
+    message_context.reply(plans)
+
+
+app.subscribe(get_plans, destination="worker.plans")
 
 
 def _display_plan(plan: Plan) -> Mapping[str, Any]:
     return {"name": plan.name, "schema": deserialization_schema(plan.model)}
-
-
-@app.get("/ability")
-async def get_abilities() -> List[Mapping[str, Any]]:
-    return list(map(_display_ability, controller.abilities.values()))
-
-
-@app.get("/ability/{name}")
-async def get_ability(name: str) -> Mapping[str, Any]:
-    return _display_ability(controller.abilities[name])
-
-
-@app.put("/plan/{name}/run")
-async def run_plan(request: Request, name: str) -> uuid.UUID:
-    await controller.run_plan(name, await request.json())
-    return uuid.uuid1()
 
 
 def _display_ability(ability: Ability) -> Mapping[str, Any]:
@@ -100,3 +108,6 @@ def _protocol_names(ability: Ability) -> Iterable[str]:
     for protocol in BLUESKY_PROTOCOLS:
         if isinstance(ability, protocol):
             yield protocol.__name__
+
+
+worker.run_forever()

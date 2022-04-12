@@ -4,7 +4,8 @@ from typing import Dict, Optional
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
 
-from blueapi.core import Ability, Plan, PlanGenerator, schema_for_func
+from .bluesky_types import Ability, Plan, PlanGenerator
+from .schema import schema_for_func
 
 
 @dataclass

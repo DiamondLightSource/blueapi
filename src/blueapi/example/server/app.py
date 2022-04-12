@@ -77,6 +77,7 @@ app.subscribe("worker.run", on_run_request)
 
 def get_plans(message_context: MessageContext, message: str) -> None:
     plans = list(map(_display_plan, ctx.plans.values()))
+    assert message_context.reply_destination is not None
     app.send(message_context.reply_destination, plans)
 
 

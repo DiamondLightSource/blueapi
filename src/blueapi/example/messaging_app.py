@@ -19,13 +19,22 @@ LOGGER = logging.getLogger(__name__)
 
 class MessageContext:
     _app: "MessagingApp"
+    _destination: str
     _reply_destination: Optional[str]
 
     def __init__(
-        self, app: "MessagingApp", reply_destination: Optional[str] = None
+        self,
+        app: "MessagingApp",
+        destination: str,
+        reply_destination: Optional[str] = None,
     ) -> None:
         self._app = app
+        self._destination = destination
         self._reply_destination = reply_destination
+
+    @property
+    def destination(self) -> str:
+        return self._destination
 
     @property
     def can_reply(self) -> bool:
@@ -94,7 +103,7 @@ class MessagingApp:
 
         headers: Dict[str, Any] = {}
         if on_reply is not None:
-            reply_queue_name = f"transient.{uuid.uuid1()}"
+            reply_queue_name = f"/temp-queue/{uuid.uuid1()}"
             headers = {**headers, "reply-to": reply_queue_name}
             self.subscribe(on_reply, reply_queue_name, obj_type=reply_type)
         self._conn.send(headers=headers, body=message, destination=destination)
@@ -114,7 +123,9 @@ class MessagingApp:
             as_dict = json.loads(frame.body)
             value = deserialize(obj_type, as_dict)
 
-            context = MessageContext(self, frame.headers.get("reply-to"))
+            context = MessageContext(
+                self, frame.headers["destination"], frame.headers.get("reply-to")
+            )
             callback(context, value)
 
         # sub_id = str(uuid.uuid1())

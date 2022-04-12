@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
+from functools import partial
 from typing import Any, Callable, Optional, Type
 
 from .context import MessageContext
@@ -40,6 +41,13 @@ class MessagingApp(ABC):
         __callback: MessageListener,
     ) -> None:
         ...
+
+    def listener(self, destination: str):
+        def decorator(callback: MessageListener) -> MessageListener:
+            self.subscribe(destination, callback)
+            return callback
+
+        return decorator
 
     @abstractmethod
     def connect(self) -> None:

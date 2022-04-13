@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from blueapi.core import EventStream
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.core import DataEvent, EventStream
 
 from .event import TaskEvent, WorkerEvent
 

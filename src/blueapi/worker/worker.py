@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Generic, TypeVar
+from typing import Generic, TypeVar
 
-from .event import WorkerEvent
+from blueapi.core import DataEvent, EventStream
+
+from .event import TaskEvent, WorkerEvent
 
 T = TypeVar("T")
 
@@ -13,12 +15,13 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def submit_task(self, task: T) -> None:
+    def submit_task(self, __name: str, __task: T) -> None:
         """
         Submit a task to be run
 
         Args:
-            task (T): The task to run
+            __name (str): A unique name to identify this task
+            __task (T): The task to run
         """
         ...
 
@@ -29,15 +32,17 @@ class Worker(ABC, Generic[T]):
         """
         ...
 
+    @property
     @abstractmethod
-    def subscribe(self, callback: Callable[[WorkerEvent], None]) -> int:
-        """Notify worker events
+    def worker_events(self) -> EventStream[WorkerEvent, int]:
+        ...
 
-        Args:
-            callback (Callable[[WorkerEvent], None]): What to do with events
+    @property
+    @abstractmethod
+    def task_events(self) -> EventStream[TaskEvent, int]:
+        ...
 
-        Returns:
-            int: An identifier for the subscription
-        """
-
+    @property
+    @abstractmethod
+    def data_events(self) -> EventStream[DataEvent, int]:
         ...

@@ -1,11 +1,11 @@
 import logging
 from queue import Queue
-from typing import Callable, List, Optional
+from typing import Any, Mapping, Optional
 
-from bluesky import RunEngine
+from blueapi.core import BlueskyContext, DataEvent, EventPublisher, EventStream
 
-from .event import RawRunEngineState, RunnerState, WorkerEvent
-from .task import Task, TaskContext
+from .event import RawRunEngineState, RunnerState, TaskEvent, WorkerEvent
+from .task import ActiveTask, Task, TaskState
 from .worker import Worker
 
 LOGGER = logging.getLogger(__name__)
@@ -19,39 +19,59 @@ class RunEngineWorker(Worker[Task]):
     :param loop: The event loop of any services communicating with the worker.
     """
 
-    _run_engine: RunEngine
+    _ctx: BlueskyContext
     _task_queue: Queue  # type: ignore
-    _current_task: Optional[Task]
-    _subscribers: List[Callable[[WorkerEvent], None]]
+    _current: Optional[ActiveTask]
+
+    _worker_events: EventPublisher[WorkerEvent]
+    _task_events: EventPublisher[TaskEvent]
+    _data_events: EventPublisher[DataEvent]
 
     def __init__(
         self,
-        run_engine: RunEngine,
+        ctx: BlueskyContext,
     ) -> None:
-        self._run_engine = run_engine
+        self._ctx = ctx
         self._task_queue = Queue()
-        self._current_task = None
-        self._subscribers = []
+        self._current = None
+        self._worker_events = EventPublisher()
+        self._task_events = EventPublisher()
+        self._data_events = EventPublisher()
 
-    def submit_task(self, task: Task) -> None:
-        LOGGER.info(f"Submitting: {task}")
-        self._task_queue.put(task)
+    def submit_task(self, name: str, task: Task) -> None:
+        active_task = ActiveTask(name, task)
+        LOGGER.info(f"Submitting: {active_task}")
+        self._task_events.publish(TaskEvent(active_task))
+        self._task_queue.put(active_task)
 
     def run_forever(self) -> None:
-        self._run_engine.state_hook = self._on_state_change
+        LOGGER.info("Worker starting")
+        self._ctx.run_engine.state_hook = self._on_state_change
+        self._ctx.run_engine.subscribe(self._on_document)
 
         while True:
             self._cycle()
 
     def _cycle(self) -> None:
-        next_task: Task = self._task_queue.get()
-        self._current_task = next_task  # Informing mypy that the task is not None
-        ctx = TaskContext(self._run_engine)
-        self._current_task.do_task(ctx)
+        LOGGER.info("Awaiting task")
+        next_task: ActiveTask = self._task_queue.get()
+        LOGGER.info(f"Got new task: {next_task}")
+        self._current = next_task  # Informing mypy that the task is not None
+        self._set_task_state(TaskState.RUNNING)
+        self._current.task.do_task(self._ctx)
+        self._set_task_state(TaskState.COMPLETE)
 
-    def subscribe(self, callback: Callable[[WorkerEvent], None]) -> int:
-        self._subscribers.append(callback)
-        return len(self._subscribers) - 1
+    @property
+    def worker_events(self) -> EventStream[WorkerEvent, int]:
+        return self._worker_events
+
+    @property
+    def task_events(self) -> EventStream[TaskEvent, int]:
+        return self._task_events
+
+    @property
+    def data_events(self) -> EventStream[DataEvent, int]:
+        return self._data_events
 
     def _on_state_change(
         self,
@@ -64,8 +84,17 @@ class RunEngineWorker(Worker[Task]):
         else:
             old_state = RunnerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        self._notify(WorkerEvent(self._current_task, new_state))
+        if self._current is not None:
+            name = self._current.name
+        else:
+            name = None
+        self._worker_events.publish(WorkerEvent(new_state, name))
 
-    def _notify(self, event: WorkerEvent) -> None:
-        for callback in self._subscribers:
-            callback(event)
+    def _set_task_state(self, state: TaskState, error: Optional[str] = None) -> None:
+        if self._current is None:
+            raise ValueError("Cannot set task state when we are not running a task!")
+        self._current.state = state
+        self._task_events.publish(TaskEvent(self._current, error))
+
+    def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
+        self._data_events.publish(DataEvent(name, document))

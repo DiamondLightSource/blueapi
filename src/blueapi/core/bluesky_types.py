@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Generator, Type, Union
+from typing import Any, Callable, Generator, Mapping, Type, Union
 
 from bluesky.protocols import (
     Checkable,
@@ -40,3 +40,9 @@ class Plan:
 
     name: str
     model: Type[Any]
+
+
+@dataclass
+class DataEvent:
+    name: str
+    document: Mapping[str, Any]

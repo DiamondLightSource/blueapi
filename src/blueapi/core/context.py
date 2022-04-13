@@ -2,12 +2,11 @@ from dataclasses import dataclass, field
 from types import ModuleType
 from typing import Any, Dict, Iterable, Mapping, Optional
 
+from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
 
 from .bluesky_types import Ability, Plan, PlanGenerator
 from .schema import schema_for_func
-
-AbilityRegistry = Dict[str, Ability]
 
 
 @dataclass
@@ -16,8 +15,11 @@ class BlueskyContext:
     Context for building a Bluesky application
     """
 
+    run_engine: RunEngine = field(
+        default_factory=lambda: RunEngine(context_managers=[])
+    )
     plans: Dict[str, Plan] = field(default_factory=dict)
-    abilities: AbilityRegistry = field(default_factory=dict)
+    abilities: Dict[str, Ability] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
 
     def plan_module(self, module: ModuleType) -> None:

@@ -7,11 +7,11 @@ verify_ssl = true
 blueapi = {editable = true, extras = ["dev"], path = "."}
 
 [packages]
-blueapi = {editable = true, extras = ["example", "client", "plans"], path = "."}
+blueapi = {editable = true, extras = ["example", "plans"], path = "."}
 
 [scripts]
-example-server = "uvicorn blueapi.example.server:app"
-example-client = "python -m blueapi.example.client"
+example-worker = "python -m blueapi.example.worker"
+example-controller = "python -m blueapi.example.controller"
 lint = "pre-commit run --all-files --show-diff-on-failure --color=always -v"
 tests = "pytest"
 docs = "sphinx-build -EWT --keep-going docs build/html"

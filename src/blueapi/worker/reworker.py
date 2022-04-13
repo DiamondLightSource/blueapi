@@ -1,10 +1,10 @@
 import logging
 from queue import Queue
-from typing import Callable, List, Optional
+from typing import Optional
 
-from blueapi.core import BlueskyContext
+from blueapi.core import BlueskyContext, EventPublisher, EventStream
 
-from .event import RawRunEngineState, RunnerState, WorkerEvent
+from .event import RawRunEngineState, RunnerState, TaskEvent, WorkerEvent
 from .task import ActiveTask, Task, TaskState
 from .worker import Worker
 
@@ -22,7 +22,9 @@ class RunEngineWorker(Worker[Task]):
     _ctx: BlueskyContext
     _task_queue: Queue  # type: ignore
     _current: Optional[ActiveTask]
-    _subscribers: List[Callable[[WorkerEvent], None]]
+
+    _worker_events: EventPublisher[WorkerEvent]
+    _task_events: EventPublisher[TaskEvent]
 
     def __init__(
         self,
@@ -31,11 +33,13 @@ class RunEngineWorker(Worker[Task]):
         self._ctx = ctx
         self._task_queue = Queue()
         self._current = None
-        self._subscribers = []
+        self._worker_events = EventPublisher()
+        self._task_events = EventPublisher()
 
     def submit_task(self, name: str, task: Task) -> None:
         active_task = ActiveTask(name, task)
         LOGGER.info(f"Submitting: {active_task}")
+        self._task_events.publish(TaskEvent(active_task))
         self._task_queue.put(active_task)
 
     def run_forever(self) -> None:
@@ -50,13 +54,17 @@ class RunEngineWorker(Worker[Task]):
         next_task: ActiveTask = self._task_queue.get()
         LOGGER.info(f"Got new task: {next_task}")
         self._current = next_task  # Informing mypy that the task is not None
-        self._current.state = TaskState.RUNNING
+        self._set_task_state(TaskState.RUNNING)
         self._current.task.do_task(self._ctx)
-        self._current.state = TaskState.COMPLETE
+        self._set_task_state(TaskState.COMPLETE)
 
-    def subscribe(self, callback: Callable[[WorkerEvent], None]) -> int:
-        self._subscribers.append(callback)
-        return len(self._subscribers) - 1
+    @property
+    def worker_events(self) -> EventStream[WorkerEvent, int]:
+        return self._worker_events
+
+    @property
+    def task_events(self) -> EventStream[TaskEvent, int]:
+        return self._task_events
 
     def _on_state_change(
         self,
@@ -73,8 +81,10 @@ class RunEngineWorker(Worker[Task]):
             name = self._current.name
         else:
             name = None
-        self._notify(WorkerEvent(new_state, name))
+        self._worker_events.publish(WorkerEvent(new_state, name))
 
-    def _notify(self, event: WorkerEvent) -> None:
-        for callback in self._subscribers:
-            callback(event)
+    def _set_task_state(self, state: TaskState, error: Optional[str] = None) -> None:
+        if self._current is None:
+            raise ValueError("Cannot set task state when we are not running a task!")
+        self._current.state = state
+        self._task_events.publish(TaskEvent(self._current, error))

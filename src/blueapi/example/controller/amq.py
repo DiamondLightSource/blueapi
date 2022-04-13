@@ -1,7 +1,8 @@
+import threading
 from typing import Any, Callable, List, Mapping, Optional, TypeVar, Union
 
 from blueapi.messaging import MessageContext, MessagingApp
-from blueapi.worker import WorkerEvent
+from blueapi.worker import TaskEvent
 
 T = TypeVar("T")
 
@@ -18,18 +19,26 @@ class AmqClient:
         self,
         name: str,
         params: Mapping[str, Any],
-        on_event: Optional[Callable[[WorkerEvent], None]] = None,
+        on_event: Optional[Callable[[TaskEvent], None]] = None,
         timeout: Optional[float] = None,
     ) -> str:
-        def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
+        complete = threading.Event()
+
+        def on_event_wrapper(ctx: MessageContext, event: TaskEvent) -> None:
             if on_event is not None:
                 on_event(event)
+            if event.task.is_complete():
+                complete.set()
 
-        self.app.subscribe("worker.event", on_event_wrapper)
+        self.app.subscribe("worker.event.task", on_event_wrapper)
         # self.app.send("worker.run", {"name": name, "params": params})
         task_id = self.app.send_and_recieve(
             "worker.run", {"name": name, "params": params}
         ).result(timeout=5.0)
+
+        if timeout is not None:
+            complete.wait(timeout)
+
         return task_id
 
     def get_plans(self) -> _Json:

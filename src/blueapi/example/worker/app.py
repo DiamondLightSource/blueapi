@@ -9,7 +9,7 @@ from ophyd.sim import Syn2DGauss, SynAxis
 
 from blueapi.core import BLUESKY_PROTOCOLS, Ability, BlueskyContext, Plan
 from blueapi.messaging import MessageContext, MessagingApp, StompMessagingApp
-from blueapi.worker import RunEngineWorker, RunPlan, WorkerEvent
+from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, WorkerEvent
 
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
@@ -48,13 +48,17 @@ app.connect()
 
 
 def _on_worker_event(event: WorkerEvent) -> None:
-    print(event)
     app.send("worker.event", event)
+
+
+def _on_task_event(event: TaskEvent) -> None:
+    app.send("worker.event.task", event)
 
 
 worker = RunEngineWorker(ctx)
 
-worker.subscribe(_on_worker_event)
+worker.worker_events.subscribe(_on_worker_event)
+worker.task_events.subscribe(_on_task_event)
 
 
 @app.listener(destination="worker.run")

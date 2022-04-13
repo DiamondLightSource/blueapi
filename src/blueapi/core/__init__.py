@@ -1,4 +1,4 @@
-from .bluesky_types import BLUESKY_PROTOCOLS, Ability, Plan, PlanGenerator
+from .bluesky_types import BLUESKY_PROTOCOLS, Ability, DataEvent, Plan, PlanGenerator
 from .context import BlueskyContext
 from .device_lookup import create_bluesky_protocol_conversions
 from .event import EventPublisher, EventStream
@@ -16,4 +16,5 @@ __all__ = [
     "BlueskyContext",
     "EventPublisher",
     "EventStream",
+    "DataEvent",
 ]

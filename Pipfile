@@ -7,7 +7,7 @@ verify_ssl = true
 blueapi = {editable = true, extras = ["dev"], path = "."}
 
 [packages]
-blueapi = {editable = true, extras = ["example"], path = "."}
+blueapi = {editable = true, extras = ["example", "plans"], path = "."}
 
 [scripts]
 example-worker = "python -m blueapi.example.worker"

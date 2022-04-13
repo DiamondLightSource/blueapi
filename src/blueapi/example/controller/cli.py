@@ -65,3 +65,7 @@ def run_plan(ctx, name: str, parameters: str) -> None:
 
     uid = client.run_plan(name, json.loads(parameters), handle_event, timeout=120.0)
     print(uid)
+
+    import time
+
+    time.sleep(10.0)

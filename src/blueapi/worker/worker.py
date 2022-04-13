@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Generic, TypeVar
 
+from blueapi.core import EventStream
+
 from .event import WorkerEvent
 
 T = TypeVar("T")
@@ -30,15 +32,7 @@ class Worker(ABC, Generic[T]):
         """
         ...
 
+    @property
     @abstractmethod
-    def subscribe(self, __callback: Callable[[WorkerEvent], None]) -> int:
-        """Notify worker events
-
-        Args:
-            __callback (Callable[[WorkerEvent], None]): What to do with events
-
-        Returns:
-            int: An identifier for the subscription
-        """
-
+    def worker_events(self) -> EventStream[WorkerEvent, int]:
         ...

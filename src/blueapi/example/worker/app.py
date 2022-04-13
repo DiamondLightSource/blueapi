@@ -54,7 +54,7 @@ def _on_worker_event(event: WorkerEvent) -> None:
 
 worker = RunEngineWorker(ctx)
 
-worker.subscribe(_on_worker_event)
+worker.worker_events.subscribe(_on_worker_event)
 
 
 @app.listener(destination="worker.run")

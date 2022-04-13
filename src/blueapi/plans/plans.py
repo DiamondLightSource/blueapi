@@ -18,10 +18,19 @@ def scan(
     """
     Scan wrapping `bp.scan_nd`
 
-    :param detectors: List of readable devices, will take a reading at each point
-    :param spec: ScanSpec modelling the path of the scan
-    :param metadata: Key-value metadata to include in exported data, defaults to None
-    :return: A plan
+    Args:
+        detectors (List[Readable]): List of readable devices, will take a reading at
+                                    each point
+        spec (Spec[Movable]): ScanSpec modelling the path of the scan
+        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include
+                                                          in exported data, defaults to
+                                                          None.
+
+    Returns:
+        MsgGenerator: Plan
+
+    Yields:
+        Iterator[MsgGenerator]: Bluesky messages
     """
 
     metadata = {"detectors": detectors, "scanspec": spec, **(metadata or {})}
@@ -36,8 +45,11 @@ def scanspec_to_cycler(spec: Spec) -> Cycler:
     `bp.scan_nd`. Use the midpoints of the scanspec since cyclers are noramlly used
     for software triggered scans.
 
-    :param spec: A scanspec
-    :return: A cycler with the axes of the spec mapping to the midpoints.
+    Args:
+        spec (Spec): A scanspec
+
+    Returns:
+        Cycler: A new cycler
     """
 
     midpoints = spec.frames().midpoints
@@ -56,11 +68,20 @@ def count(
     """
     Take `n` readings from a device
 
-    :param detectors: Readable devices to read
-    :param num: Number of readings to take, defaults to 1
-    :param delay: Delay between readings, defaults to None
-    :param metadata: Key-value metadata to include in exported data, defaults to None
-    :return: A plan
+    Args:
+        detectors (List[Readable]): Readable devices to read
+        num (int, optional): Number of readings to take. Defaults to 1.
+        delay (Optional[Union[float, List[float]]], optional): Delay between readings.
+                                                               Defaults to None.
+        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include
+                                                          in exported data.
+                                                          Defaults to None.
+
+    Returns:
+        MsgGenerator: _description_
+
+    Yields:
+        Iterator[MsgGenerator]: _description_
     """
 
     yield from bp.count(detectors, num, delay=delay, md=metadata)

@@ -47,3 +47,4 @@ class WorkerEvent:
 @dataclass
 class TaskEvent:
     task: ActiveTask
+    error: Optional[str] = None

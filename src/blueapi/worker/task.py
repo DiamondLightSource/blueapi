@@ -23,6 +23,9 @@ class TaskState(Enum):
     COMPLETE = "COMPLETE"
 
 
+_COMPLETE_TASK_STATES = (TaskState.FAILED, TaskState.COMPLETE)
+
+
 class Task(ABC):
     """
     Object that can run with a TaskContext
@@ -90,3 +93,6 @@ class ActiveTask:
     name: str
     task: Task
     state: TaskState = field(default=TaskState.PENDING)
+
+    def is_complete(self) -> bool:
+        return self.state in _COMPLETE_TASK_STATES

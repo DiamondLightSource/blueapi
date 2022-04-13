@@ -3,7 +3,7 @@ from typing import Callable, Generic, TypeVar
 
 from blueapi.core import EventStream
 
-from .event import WorkerEvent
+from .event import TaskEvent, WorkerEvent
 
 T = TypeVar("T")
 
@@ -35,4 +35,9 @@ class Worker(ABC, Generic[T]):
     @property
     @abstractmethod
     def worker_events(self) -> EventStream[WorkerEvent, int]:
+        ...
+
+    @property
+    @abstractmethod
+    def task_events(self) -> EventStream[TaskEvent, int]:
         ...

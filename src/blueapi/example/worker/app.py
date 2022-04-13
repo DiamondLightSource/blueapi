@@ -7,7 +7,7 @@ import bluesky.plan_stubs as bps
 from bluesky.protocols import Flyable, Movable, Readable
 from ophyd.sim import Syn2DGauss, SynAxis
 
-from blueapi.core import BLUESKY_PROTOCOLS, Ability, BlueskyContext, Plan
+from blueapi.core import BLUESKY_PROTOCOLS, Ability, BlueskyContext, DataEvent, Plan
 from blueapi.messaging import MessageContext, MessagingApp, StompMessagingApp
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, WorkerEvent
 
@@ -55,10 +55,15 @@ def _on_task_event(event: TaskEvent) -> None:
     app.send("worker.event.task", event)
 
 
+def _on_data_event(event: DataEvent) -> None:
+    app.send("worker.event.data", event)
+
+
 worker = RunEngineWorker(ctx)
 
 worker.worker_events.subscribe(_on_worker_event)
 worker.task_events.subscribe(_on_task_event)
+worker.data_events.subscribe(_on_data_event)
 
 
 @app.listener(destination="worker.run")

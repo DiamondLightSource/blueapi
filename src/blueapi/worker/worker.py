@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
 from blueapi.core import EventStream
+from blueapi.core.bluesky_types import DataEvent
 
 from .event import TaskEvent, WorkerEvent
 
@@ -40,4 +41,9 @@ class Worker(ABC, Generic[T]):
     @property
     @abstractmethod
     def task_events(self) -> EventStream[TaskEvent, int]:
+        ...
+
+    @property
+    @abstractmethod
+    def data_events(self) -> EventStream[DataEvent, int]:
         ...

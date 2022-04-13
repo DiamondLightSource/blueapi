@@ -1,6 +1,6 @@
 import logging
 from queue import Queue
-from typing import Callable, List, Optional
+from typing import Optional
 
 from blueapi.core import BlueskyContext, EventPublisher, EventStream
 

@@ -2,9 +2,7 @@ import threading
 from typing import Any, Callable, List, Mapping, Optional, TypeVar, Union
 
 from blueapi.messaging import MessageContext, MessagingApp
-from blueapi.worker import WorkerEvent
-from blueapi.worker.event import TaskEvent
-from blueapi.worker.task import TaskState
+from blueapi.worker import TaskEvent
 
 T = TypeVar("T")
 

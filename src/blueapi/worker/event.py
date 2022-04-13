@@ -40,5 +40,10 @@ class WorkerEvent:
     Event emitted by a worker when the runner state changes
     """
 
-    current_task: Optional[ActiveTask]
     state: RunnerState
+    current_task_name: str
+
+
+@dataclass
+class TaskEvent:
+    task: ActiveTask

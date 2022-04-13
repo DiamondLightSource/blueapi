@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 from blueapi.core import BlueskyContext
 
 from .event import RawRunEngineState, RunnerState, WorkerEvent
-from .task import ActiveTask, Task
+from .task import ActiveTask, Task, TaskState
 from .worker import Worker
 
 LOGGER = logging.getLogger(__name__)
@@ -50,7 +50,9 @@ class RunEngineWorker(Worker[Task]):
         next_task: ActiveTask = self._task_queue.get()
         LOGGER.info(f"Got new task: {next_task}")
         self._current = next_task  # Informing mypy that the task is not None
-        next_task.task.do_task(self._ctx)
+        self._current.state = TaskState.RUNNING
+        self._current.task.do_task(self._ctx)
+        self._current.state = TaskState.COMPLETE
 
     def subscribe(self, callback: Callable[[WorkerEvent], None]) -> int:
         self._subscribers.append(callback)
@@ -67,7 +69,7 @@ class RunEngineWorker(Worker[Task]):
         else:
             old_state = RunnerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        self._notify(WorkerEvent(self._current, new_state))
+        self._notify(WorkerEvent(new_state, self._current.name))
 
     def _notify(self, event: WorkerEvent) -> None:
         for callback in self._subscribers:

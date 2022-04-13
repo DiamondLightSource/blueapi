@@ -4,6 +4,8 @@ import click
 
 from blueapi import __version__
 from blueapi.messaging import StompMessagingApp
+from blueapi.worker import WorkerEvent
+from blueapi.worker.event import RunnerState
 
 from .amq import AmqClient
 
@@ -58,4 +60,8 @@ def get_abilities(ctx) -> None:
 @click.pass_context
 def run_plan(ctx, name: str, parameters: str) -> None:
     client: AmqClient = ctx.obj["client"]
-    client.run_plan(name, json.loads(parameters))
+
+    def handle_event(event: WorkerEvent) -> None:
+        print(f"worker in state: {event.state}")
+
+    client.run_plan(name, json.loads(parameters), handle_event)

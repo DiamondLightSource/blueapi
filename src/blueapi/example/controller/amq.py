@@ -1,6 +1,8 @@
-from typing import Any, List, Mapping, TypeVar, Union
+import uuid
+from typing import Any, Callable, List, Mapping, Optional, TypeVar, Union
 
-from blueapi.messaging import MessagingApp
+from blueapi.messaging import MessageContext, MessagingApp
+from blueapi.worker import WorkerEvent
 
 T = TypeVar("T")
 
@@ -13,10 +15,17 @@ class AmqClient:
     def __init__(self, app: MessagingApp) -> None:
         self.app = app
 
-    # async def get_abilities(self) -> _Json:
-    #     return await self._get_json("/ability")
+    def run_plan(
+        self,
+        name: str,
+        params: Mapping[str, Any],
+        on_event: Optional[Callable[[WorkerEvent], None]] = None,
+    ) -> uuid.UUID:
+        def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
+            if on_event is not None:
+                on_event(event)
 
-    def run_plan(self, name: str, params: Mapping[str, Any]) -> None:
+        self.app.subscribe("worker.event", on_event_wrapper)
         self.app.send("worker.run", {"name": name, "params": params})
 
     def get_plans(self) -> _Json:

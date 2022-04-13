@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from types import ModuleType
-from typing import Any, Dict, Iterable, Mapping, Optional
+from typing import Any, Dict, Iterable, Optional
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable

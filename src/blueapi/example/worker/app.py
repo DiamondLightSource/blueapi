@@ -1,4 +1,3 @@
-import itertools
 import logging
 import uuid
 from typing import Any, Iterable, Mapping

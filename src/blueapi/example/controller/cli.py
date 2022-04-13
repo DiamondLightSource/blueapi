@@ -5,7 +5,6 @@ import click
 from blueapi import __version__
 from blueapi.messaging import StompMessagingApp
 from blueapi.worker import WorkerEvent
-from blueapi.worker.event import RunnerState
 
 from .amq import AmqClient
 

@@ -69,7 +69,11 @@ class RunEngineWorker(Worker[Task]):
         else:
             old_state = RunnerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        self._notify(WorkerEvent(new_state, self._current.name))
+        if self._current is not None:
+            name = self._current.name
+        else:
+            name = None
+        self._notify(WorkerEvent(new_state, name))
 
     def _notify(self, event: WorkerEvent) -> None:
         for callback in self._subscribers:

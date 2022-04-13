@@ -1,9 +1,7 @@
-import uuid
-from threading import Event
 from typing import Any, Callable, List, Mapping, Optional, TypeVar, Union
 
 from blueapi.messaging import MessageContext, MessagingApp
-from blueapi.worker import TaskState, WorkerEvent
+from blueapi.worker import WorkerEvent
 
 T = TypeVar("T")
 
@@ -23,9 +21,7 @@ class AmqClient:
         on_event: Optional[Callable[[WorkerEvent], None]] = None,
         timeout: Optional[float] = None,
     ) -> str:
-        complete = Event()
-
-        def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> str:
+        def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
             if on_event is not None:
                 on_event(event)
 

@@ -41,7 +41,7 @@ class WorkerEvent:
     """
 
     state: RunnerState
-    current_task_name: str
+    current_task_name: Optional[str]
 
 
 @dataclass

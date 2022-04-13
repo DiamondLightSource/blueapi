@@ -1,6 +1,8 @@
 import logging
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Mapping, Union
 
 from apischema import deserializer, identity, serializer
@@ -12,6 +14,14 @@ from blueapi.core import (
     create_bluesky_protocol_conversions,
     nested_deserialize_with_overrides,
 )
+
+
+class TaskState(Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    PAUSED = "PAUSED"
+    FAILED = "FAILED"
+    COMPLETE = "COMPLETE"
 
 
 class Task(ABC):
@@ -74,3 +84,10 @@ def lookup_params(
         create_bluesky_protocol_conversions(lambda name: ctx.abilities[name])
     )
     return nested_deserialize_with_overrides(plan.model, params, overrides).__dict__
+
+
+@dataclass
+class ActiveTask:
+    name: str
+    task: Task
+    state: TaskState = field(default=TaskState.PENDING)

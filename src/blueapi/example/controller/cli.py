@@ -64,4 +64,5 @@ def run_plan(ctx, name: str, parameters: str) -> None:
     def handle_event(event: WorkerEvent) -> None:
         print(f"worker in state: {event.state}")
 
-    client.run_plan(name, json.loads(parameters), handle_event)
+    uid = client.run_plan(name, json.loads(parameters), handle_event)
+    print(uid)

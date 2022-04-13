@@ -13,12 +13,13 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def submit_task(self, task: T) -> None:
+    def submit_task(self, __name: str, __task: T) -> None:
         """
         Submit a task to be run
 
         Args:
-            task (T): The task to run
+            __name (str): A unique name to identify this task
+            __task (T): The task to run
         """
         ...
 
@@ -30,11 +31,11 @@ class Worker(ABC, Generic[T]):
         ...
 
     @abstractmethod
-    def subscribe(self, callback: Callable[[WorkerEvent], None]) -> int:
+    def subscribe(self, __callback: Callable[[WorkerEvent], None]) -> int:
         """Notify worker events
 
         Args:
-            callback (Callable[[WorkerEvent], None]): What to do with events
+            __callback (Callable[[WorkerEvent], None]): What to do with events
 
         Returns:
             int: An identifier for the subscription

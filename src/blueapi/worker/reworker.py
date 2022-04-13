@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 from blueapi.core import BlueskyContext
 
 from .event import RawRunEngineState, RunnerState, WorkerEvent
-from .task import Task
+from .task import ActiveTask, Task
 from .worker import Worker
 
 LOGGER = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class RunEngineWorker(Worker[Task]):
 
     _ctx: BlueskyContext
     _task_queue: Queue  # type: ignore
-    _current_task: Optional[Task]
+    _current: Optional[ActiveTask]
     _subscribers: List[Callable[[WorkerEvent], None]]
 
     def __init__(
@@ -30,12 +30,13 @@ class RunEngineWorker(Worker[Task]):
     ) -> None:
         self._ctx = ctx
         self._task_queue = Queue()
-        self._current_task = None
+        self._current = None
         self._subscribers = []
 
-    def submit_task(self, task: Task) -> None:
-        LOGGER.info(f"Submitting: {task}")
-        self._task_queue.put(task)
+    def submit_task(self, name: str, task: Task) -> None:
+        active_task = ActiveTask(name, task)
+        LOGGER.info(f"Submitting: {active_task}")
+        self._task_queue.put(active_task)
 
     def run_forever(self) -> None:
         LOGGER.info("Worker starting")
@@ -46,10 +47,10 @@ class RunEngineWorker(Worker[Task]):
 
     def _cycle(self) -> None:
         LOGGER.info("Awaiting task")
-        next_task: Task = self._task_queue.get()
+        next_task: ActiveTask = self._task_queue.get()
         LOGGER.info(f"Got new task: {next_task}")
-        self._current_task = next_task  # Informing mypy that the task is not None
-        self._current_task.do_task(self._ctx)
+        self._current = next_task  # Informing mypy that the task is not None
+        next_task.task.do_task(self._ctx)
 
     def subscribe(self, callback: Callable[[WorkerEvent], None]) -> int:
         self._subscribers.append(callback)
@@ -66,7 +67,7 @@ class RunEngineWorker(Worker[Task]):
         else:
             old_state = RunnerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        self._notify(WorkerEvent(self._current_task, new_state))
+        self._notify(WorkerEvent(self._current, new_state))
 
     def _notify(self, event: WorkerEvent) -> None:
         for callback in self._subscribers:

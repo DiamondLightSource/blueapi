@@ -22,10 +22,10 @@
             },
         },
         {
-            "name": "Example Server",
+            "name": "Example Worker",
             "type": "python",
             "request": "launch",
-            "module": "blueapi.example.server",
+            "module": "blueapi.example.worker",
         }
     ]
 }

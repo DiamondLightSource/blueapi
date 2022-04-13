@@ -4,26 +4,34 @@ import click
 
 from blueapi import __version__
 from blueapi.messaging import StompMessagingApp
+from blueapi.worker import WorkerEvent
 
 from .amq import AmqClient
 
 
 @click.group(invoke_without_command=True)
 @click.option(
-    "-u",
-    "--url",
+    "-h",
+    "--host",
     type=str,
-    help="REST API URL",
-    default="http://localhost:8000",
+    help="Broker host",
+    default="127.0.0.1",
+)
+@click.option(
+    "-p",
+    "--port",
+    type=int,
+    help="Broker port",
+    default=61613,
 )
 @click.version_option(version=__version__)
 @click.pass_context
-def main(ctx, url: str) -> None:
+def main(ctx, host: str, port: int) -> None:
     # if no command is supplied, run with the options passed
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
     ctx.ensure_object(dict)
-    client = AmqClient(StompMessagingApp())
+    client = AmqClient(StompMessagingApp(host, port))
     ctx.obj["client"] = client
     client.app.connect()
 
@@ -51,4 +59,9 @@ def get_abilities(ctx) -> None:
 @click.pass_context
 def run_plan(ctx, name: str, parameters: str) -> None:
     client: AmqClient = ctx.obj["client"]
-    client.run_plan(name, json.loads(parameters))
+
+    def handle_event(event: WorkerEvent) -> None:
+        print(f"worker in state: {event.state}")
+
+    uid = client.run_plan(name, json.loads(parameters), handle_event, timeout=120.0)
+    print(uid)

@@ -1,10 +1,21 @@
 import logging
+import uuid
+from functools import partial
 from queue import Queue
-from typing import Any, Mapping, Optional
+from threading import RLock
+from typing import Any, Dict, Iterable, Mapping, Optional
 
-from blueapi.core import BlueskyContext, DataEvent, EventPublisher, EventStream
+from bluesky.protocols import Status
 
-from .event import RawRunEngineState, RunnerState, TaskEvent, WorkerEvent
+from blueapi.core import (
+    BlueskyContext,
+    DataEvent,
+    EventPublisher,
+    EventStream,
+    WatchableStatus,
+)
+
+from .event import RawRunEngineState, RunnerState, StatusView, TaskEvent, WorkerEvent
 from .task import ActiveTask, Task, TaskState
 from .worker import Worker
 
@@ -22,6 +33,8 @@ class RunEngineWorker(Worker[Task]):
     _ctx: BlueskyContext
     _task_queue: Queue  # type: ignore
     _current: Optional[ActiveTask]
+    _status_lock: RLock
+    _status_snapshot: Dict[str, StatusView]
 
     _worker_events: EventPublisher[WorkerEvent]
     _task_events: EventPublisher[TaskEvent]
@@ -37,6 +50,8 @@ class RunEngineWorker(Worker[Task]):
         self._worker_events = EventPublisher()
         self._task_events = EventPublisher()
         self._data_events = EventPublisher()
+        self._status_lock = RLock()
+        self._status_snapshot = {}
 
     def submit_task(self, name: str, task: Task) -> None:
         active_task = ActiveTask(name, task)
@@ -48,6 +63,7 @@ class RunEngineWorker(Worker[Task]):
         LOGGER.info("Worker starting")
         self._ctx.run_engine.state_hook = self._on_state_change
         self._ctx.run_engine.subscribe(self._on_document)
+        self._ctx.run_engine.waiting_hook = self._waiting_hook
 
         while True:
             self._cycle()
@@ -98,3 +114,67 @@ class RunEngineWorker(Worker[Task]):
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         self._data_events.publish(DataEvent(name, document))
+
+    def _waiting_hook(self, statuses: Optional[Iterable[Status]]) -> None:
+        if statuses is not None:
+            with self._status_lock:
+                for status in statuses:
+                    self._monitor_status(status)
+
+    def _monitor_status(self, status: Status) -> None:
+        status_name = str(uuid.uuid1())
+
+        if isinstance(status, WatchableStatus) and not status.done:
+            LOGGER.info(f"Watching new status: {status_name}")
+            self._status_snapshot[status_name] = StatusView()
+            status.watch(partial(self._on_status_event, status, status_name))
+
+            # TODO: Maybe introduce an initial event, in which case move
+            # all of this code out of the if statement
+            def on_complete(status: Status) -> None:
+                self._on_status_event(status, status_name)
+                del self._status_snapshot[status_name]
+
+            status.add_callback(on_complete)  # type: ignore
+
+    def _on_status_event(
+        self,
+        status: Status,
+        status_name: str,
+        *,
+        name: Optional[str] = None,
+        current: Optional[float] = None,
+        initial: Optional[float] = None,
+        target: Optional[float] = None,
+        unit: Optional[str] = None,
+        precision: Optional[int] = None,
+        fraction: Optional[float] = None,
+        time_elapsed: Optional[float] = None,
+        time_remaining: Optional[float] = None,
+    ) -> None:
+        if not status.done:
+            percentage = float(1.0 - fraction) if fraction is not None else None
+        else:
+            percentage = 1.0
+        view = StatusView(
+            name or "UNKNOWN",
+            current,
+            initial,
+            target,
+            unit or "units",
+            precision or 3,
+            status.done,
+            percentage,
+            time_elapsed,
+            time_remaining,
+        )
+        self._status_snapshot[status_name] = view
+        self._publish_status_snapshot()
+
+    def _publish_status_snapshot(self) -> None:
+        if self._current is None:
+            raise ValueError("Got a status update without an active task!")
+        else:
+            self._task_events.publish(
+                TaskEvent(self._current, statuses=self._status_snapshot)
+            )

@@ -1,10 +1,13 @@
+import itertools
 import json
+from typing import Dict, Mapping
 
 import click
+from tqdm import tqdm
 
 from blueapi import __version__
 from blueapi.messaging import StompMessagingApp
-from blueapi.worker import TaskEvent
+from blueapi.worker import StatusView, TaskEvent
 
 from .amq import AmqClient
 
@@ -60,7 +63,51 @@ def get_abilities(ctx) -> None:
 def run_plan(ctx, name: str, parameters: str) -> None:
     client: AmqClient = ctx.obj["client"]
 
+    renderer = ProgressBarRenderer()
+
     def handle_event(event: TaskEvent) -> None:
-        print(f"Task {event.task.name} in state {event.task.state}")
+        renderer.update(event.statuses)
+        if event.task.is_complete():
+            print("")
+            print("")
+            print("")
+            print("DONE")
 
     client.run_plan(name, json.loads(parameters), handle_event, timeout=120.0)
+
+
+_BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"
+
+
+class ProgressBarRenderer:
+    _bars: Dict[str, tqdm]
+    _count: itertools.count
+
+    def __init__(self) -> None:
+        self._bars = {}
+        self._count = itertools.count()
+
+    def update(self, status_view: Mapping[str, StatusView]) -> None:
+        for name, view in status_view.items():
+            if name not in self._bars:
+                pos = next(self._count)
+                self._bars[name] = tqdm(
+                    position=pos,
+                    total=1.0,
+                    initial=0.0,
+                    bar_format=_BAR_FMT,
+                )
+            self._update(name, view)
+
+    def _update(self, name: str, view: StatusView) -> None:
+        bar = self._bars[name]
+        if (
+            view.current is not None
+            and view.target is not None
+            and view.initial is not None
+            and view.percentage is not None
+            and view.time_elapsed is not None
+        ):
+            bar.desc = view.display_name
+            bar.update(view.percentage - bar.n)
+            bar.unit = view.unit

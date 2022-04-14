@@ -46,6 +46,10 @@ class WorkerEvent:
 
 @dataclass
 class StatusView:
+    """
+    A snapshot of a Status, optionally representing progress
+    """
+
     display_name: str = "UNKNOWN"
     current: Optional[float] = None
     initial: Optional[float] = None
@@ -60,6 +64,10 @@ class StatusView:
 
 @dataclass
 class TaskEvent:
+    """
+    An event representing a progress update on a Task
+    """
+
     task: ActiveTask
     error: Optional[str] = None
     statuses: Mapping[str, StatusView] = field(default_factory=dict)

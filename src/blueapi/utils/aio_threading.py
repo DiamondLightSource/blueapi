@@ -8,6 +8,7 @@ def concurrent_future_to_aio_future(
     concurrent_future: ConcurrentFuture,
     loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> AioFuture:
+
     aio_future: AioFuture = AioFuture(loop=loop)
 
     def transcribe(future: ConcurrentFuture) -> None:

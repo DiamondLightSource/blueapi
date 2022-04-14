@@ -17,9 +17,15 @@ def run_worker_in_own_thread(
     """
     Helper function, make a worker run in a new thread managed by a ThreadPoolExecutor
 
-    :param worker: The worker to run
-    :param executor: The executor to manage the thread, defaults to None in which
-                     case a new one is created
+    Args:
+        worker (Worker[T]): The worker to run
+        executor (Optional[ThreadPoolExecutor], optional): The executor to manage the
+                                                           thread, defaults to None in
+                                                           which case a new one is
+                                                           created
+
+    Returns:
+        Future: Future representing worker stopping
     """
 
     if executor is None:
@@ -33,7 +39,8 @@ def _run_worker_thread(worker: Worker[T]) -> None:
     Helper function, run a worker forever, includes support for
     printing exceptions to stdout from a non-main thread.
 
-    :param worker: The worker to run
+    Args:
+        worker (Worker[T]): The worker to run
     """
 
     LOGGER.info("Worker starting")

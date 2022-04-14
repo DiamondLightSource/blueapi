@@ -12,10 +12,15 @@ def handle_all_exceptions(
     happen by default in threads other than the main thread. This function can
     also be used as a decorator.
 
-    :param func: The function to wrap
-    :param callback: Error handling function, defaults to printing a stack trace to
-                     stderr
-    :return: Wrapped function that prints exception traceback
+    Args:
+        func (Callable[..., Any]): The function to wrap
+        callback (Optional[Callable[[Exception], None]], optional): Error handling
+                                                                    function, defaults
+                                                                    to printing a stack
+                                                                    trace to stderr.
+
+    Returns:
+        Callable: Wrapped function that prints exception traceback
     """
 
     callback = callback or print_exception_to_stderr

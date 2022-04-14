@@ -79,6 +79,9 @@ def run_plan(ctx, name: str, parameters: str) -> None:
     client.run_plan(name, json.loads(parameters), handle_event, timeout=120.0)
 
 
+_BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"
+
+
 class ProgressBarRenderer:
     _bars: Dict[str, tqdm]
     _count: itertools.count
@@ -91,12 +94,11 @@ class ProgressBarRenderer:
         for name, view in status_view.items():
             if name not in self._bars:
                 pos = next(self._count)
-                # print(f"New bar at {pos}")
                 self._bars[name] = tqdm(
                     position=pos,
                     total=1.0,
                     initial=0.0,
-                    bar_format="{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]",
+                    bar_format=_BAR_FMT,
                 )
             self._update(name, view)
 

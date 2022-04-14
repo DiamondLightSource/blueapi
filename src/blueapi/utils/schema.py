@@ -13,8 +13,30 @@ def schema_for_func(func: Callable[..., Any]) -> Type:
     Inspect the parameters, default values and type annotations of a function and
     generate the schema.
 
-    :param func: The source function, all parameters must have type annotations
-    :return: A runtime dataclass whose fields encapsulate the names, types and default
+    Example:
+
+    def foo(a: int, b: str, c: bool):
+        ...
+
+    schema = schema_for_func(foo)
+
+    Schema is the runtime equivalent of:
+
+    @dataclass
+    class fooo_params:
+        a: int
+        b: str
+        c: bool
+
+    Args:
+        func (Callable[..., Any]): The source function, all parameters must have type
+                                   annotations
+
+    Raises:
+        TypeError: If a type annotation is either `Any` or not supplied
+
+    Returns:
+        Type: A runtime dataclass whose fields encapsulate the names, types and default
              values of the function parameters
     """
 
@@ -54,6 +76,21 @@ T = TypeVar("T")
 def nested_deserialize_with_overrides(
     schema: Type[T], obj: Any, overrides: Optional[Iterable[Conversion]] = None
 ) -> T:
+    """
+    Deserialize a dictionary using apischema with custom overrides. Unlike apischema's
+    built-in override argument, this propagates the overrides to nested dictionaries.
+
+    Args:
+        schema (Type[T]): Type to deserialize to
+        obj (Any): Raw object to deserialize, usually a dictionary
+        overrides (Optional[Iterable[Conversion]], optional): apischema conversions to
+                                                              customize deserialization.
+                                                              Defaults to None.
+
+    Returns:
+        T: Deserialized object
+    """
+
     conversions = {conversion.target: conversion for conversion in overrides or []}
 
     def deserialize_with_converters(a_type: Type[Any]) -> Optional[AnyConversion]:

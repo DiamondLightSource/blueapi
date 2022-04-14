@@ -20,10 +20,14 @@ try:
 except ImportError:
     from typing_extensions import Protocol, runtime_checkable  # type: ignore
 
-
+#: A true "plan", usually the output of a generator function
 MsgGenerator = Generator[Msg, Any, None]
+
+#: A function that generates a plan
 PlanGenerator = Callable[..., MsgGenerator]
 
+#: An object that encapsulates the ability to do useful things to produce
+# data (e.g. move and read)
 Ability = Union[
     Checkable,
     Flyable,
@@ -36,6 +40,7 @@ Ability = Union[
     Subscribable,
 ]
 
+#: Protocols defining interface to hardware
 BLUESKY_PROTOCOLS = list(Ability.__args__)  # type: ignore
 
 
@@ -51,12 +56,21 @@ class Plan:
 
 @dataclass
 class DataEvent:
+    """
+    Event representing collection of some data. Conforms to the Bluesky event model:
+    https://github.com/bluesky/event-model
+    """
+
     name: str
     document: Mapping[str, Any]
 
 
 @runtime_checkable
 class WatchableStatus(Status, Protocol):
+    """
+    A Status that can provide progress updates to subscribers
+    """
+
     def watch(self, __func: Callable) -> None:
         """
         Subscribe to notifications about partial progress.
@@ -72,9 +86,8 @@ class WatchableStatus(Status, Protocol):
             * ``fraction``
             * ``time_elapsed``
             * ``time_remaining``
-
-        :param func: Callback function
-
+        Args:
+            __func (Callable): Callback function
         """
 
         ...

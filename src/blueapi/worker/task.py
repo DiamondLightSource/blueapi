@@ -22,6 +22,7 @@ class TaskState(Enum):
 _COMPLETE_TASK_STATES = (TaskState.FAILED, TaskState.COMPLETE)
 
 
+# TODO: Make a TaggedUnion
 class Task(ABC):
     """
     Object that can run with a TaskContext

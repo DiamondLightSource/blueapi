@@ -24,10 +24,10 @@ LOGGER = logging.getLogger(__name__)
 
 class RunEngineWorker(Worker[Task]):
     """
-    Worker wrapping RunEngine that can work in its own thread/process
+    Worker wrapping BlueskyContext that can work in its own thread/process
 
-    :param run_engine: The RunEngine to wrap
-    :param loop: The event loop of any services communicating with the worker.
+    Args:
+        ctx (BlueskyContext): Context to work with
     """
 
     _ctx: BlueskyContext

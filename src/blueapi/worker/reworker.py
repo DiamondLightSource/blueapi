@@ -14,7 +14,6 @@ from blueapi.core import (
     EventStream,
     WatchableStatus,
 )
-from blueapi.core.event import S
 
 from .event import RawRunEngineState, RunnerState, StatusView, TaskEvent, WorkerEvent
 from .task import ActiveTask, Task, TaskState

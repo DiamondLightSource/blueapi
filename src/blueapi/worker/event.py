@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from re import S
-from typing import List, Mapping, Optional, Union
+from typing import Mapping, Optional, Union
 
 from bluesky.run_engine import RunEngineStateMachine
 from super_state_machine.extras import PropertyMachine, ProxyString

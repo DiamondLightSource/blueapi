@@ -3,7 +3,7 @@ import uuid
 from typing import Any, Iterable, Mapping
 
 from bluesky.protocols import Flyable, Readable
-from ophyd.sim import Syn2DGauss, SynAxis
+from ophyd.sim import Syn2DGauss
 
 import blueapi.plans as default_plans
 from blueapi.core import BLUESKY_PROTOCOLS, Ability, BlueskyContext, DataEvent, Plan

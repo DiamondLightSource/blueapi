@@ -25,7 +25,8 @@ class BlueskyContext:
 
     def plan_module(self, module: ModuleType) -> None:
         """
-        Register all functions in the module supplied as plans. Module should take the form:
+        Register all functions in the module supplied as plans.
+        Module should take the form:
 
         def plan_1(...):
             ...
@@ -66,10 +67,11 @@ class BlueskyContext:
 
     def ability(self, ability: Ability, name: Optional[str] = None) -> None:
         """
-        Register an ability in the context. The ability needs to be registered with a name.
-        If the ability is Readable, Movable or Flyable it has a `name` attribbute which can be used.
-        The attribute can be overrideen with the `name` parameter here. If the ability conforms to a
-        different protocol then the parameter must be used to name it.
+        Register an ability in the context. The ability needs to be registered with a
+        name. If the ability is Readable, Movable or Flyable it has a `name`
+        attribbute which can be used. The attribute can be overrideen with the
+        `name` parameter here. If the ability conforms to a different protocol then
+        the parameter must be used to name it.
 
         Args:
             ability (Ability): The ability to register

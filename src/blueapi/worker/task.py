@@ -7,12 +7,8 @@ from typing import Any, Mapping, Union
 from apischema import deserializer, identity, serializer
 from apischema.conversions import Conversion
 
-from blueapi.core import (
-    BlueskyContext,
-    Plan,
-    create_bluesky_protocol_conversions,
-    nested_deserialize_with_overrides,
-)
+from blueapi.core import BlueskyContext, Plan, create_bluesky_protocol_conversions
+from blueapi.utils import nested_deserialize_with_overrides
 
 
 class TaskState(Enum):

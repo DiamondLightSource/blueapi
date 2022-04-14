@@ -5,8 +5,9 @@ from typing import Any, Dict, Iterable, Optional
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
 
+from blueapi.utils import schema_for_func
+
 from .bluesky_types import Ability, Plan, PlanGenerator
-from .schema import schema_for_func
 
 
 @dataclass

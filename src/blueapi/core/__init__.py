@@ -5,6 +5,7 @@ from .bluesky_types import (
     MsgGenerator,
     Plan,
     PlanGenerator,
+    WatchableStatus,
 )
 from .context import BlueskyContext
 from .device_lookup import create_bluesky_protocol_conversions
@@ -24,4 +25,5 @@ __all__ = [
     "EventPublisher",
     "EventStream",
     "DataEvent",
+    "WatchableStatus",
 ]

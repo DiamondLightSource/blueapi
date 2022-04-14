@@ -10,13 +10,14 @@ from blueapi.core import BLUESKY_PROTOCOLS, Ability, BlueskyContext, DataEvent, 
 from blueapi.messaging import MessageContext, MessagingApp, StompMessagingApp
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, WorkerEvent
 
+from .simmotor import SynAxisWithMotionEvents
+
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
 
 ctx.plan_module(default_plans)
-
-x = SynAxis(name="x", delay=0.1)
-y = SynAxis(name="y", delay=0.1)
+x = SynAxisWithMotionEvents(name="x", delay=1.0, events_per_move=8)
+y = SynAxisWithMotionEvents(name="y", delay=3.0, events_per_move=24)
 det = Syn2DGauss(
     name="det",
     motor0=x,

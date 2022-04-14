@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Union
+from re import S
+from typing import List, Mapping, Optional, Union
 
 from bluesky.run_engine import RunEngineStateMachine
 from super_state_machine.extras import PropertyMachine, ProxyString
@@ -45,6 +46,21 @@ class WorkerEvent:
 
 
 @dataclass
+class StatusView:
+    display_name: str = "UNKNOWN"
+    current: Optional[float] = None
+    initial: Optional[float] = None
+    target: Optional[float] = None
+    unit: str = "units"
+    precision: int = 3
+    done: bool = False
+    percentage: Optional[float] = None
+    time_elapsed: Optional[float] = None
+    time_remaining: Optional[float] = None
+
+
+@dataclass
 class TaskEvent:
     task: ActiveTask
     error: Optional[str] = None
+    statuses: Mapping[str, StatusView] = field(default_factory=dict)

@@ -3,8 +3,11 @@ from typing import Any, Callable, Generator, Mapping, Type, Union
 
 from bluesky.protocols import (
     Checkable,
+    Configurable,
     Flyable,
-    Hinted,
+    HasHints,
+    HasName,
+    HasParent,
     Movable,
     Pausable,
     Readable,
@@ -12,6 +15,8 @@ from bluesky.protocols import (
     Status,
     Stoppable,
     Subscribable,
+    Triggerable,
+    WritesExternalAssets,
 )
 from bluesky.utils import Msg
 
@@ -31,13 +36,18 @@ PlanGenerator = Callable[..., MsgGenerator]
 Ability = Union[
     Checkable,
     Flyable,
-    Hinted,
+    HasHints,
+    HasName,
+    HasParent,
     Movable,
     Pausable,
     Readable,
     Stageable,
     Stoppable,
     Subscribable,
+    WritesExternalAssets,
+    Configurable,
+    Triggerable,
 ]
 
 #: Protocols defining interface to hardware

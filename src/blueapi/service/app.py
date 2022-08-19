@@ -35,7 +35,6 @@ ctx.ability(det)
 
 
 app: MessagingApp = StompMessagingApp("127.0.0.1", 61613)
-app.connect()
 
 
 def _on_worker_event(event: WorkerEvent) -> None:
@@ -55,29 +54,6 @@ worker = RunEngineWorker(ctx)
 worker.worker_events.subscribe(_on_worker_event)
 worker.task_events.subscribe(_on_task_event)
 worker.data_events.subscribe(_on_data_event)
-
-
-@app.listener(destination="worker.run")
-def on_run_request(message_context: MessageContext, task: RunPlan) -> None:
-    name = str(uuid.uuid1())
-    worker.submit_task(name, task)
-
-    assert message_context.reply_destination is not None
-    app.send(message_context.reply_destination, name)
-
-
-@app.listener("worker.plans")
-def get_plans(message_context: MessageContext, message: str) -> None:
-    plans = list(map(_display_plan, ctx.plans.values()))
-    assert message_context.reply_destination is not None
-    app.send(message_context.reply_destination, plans)
-
-
-@app.listener("worker.abilities")
-def get_abilities(message_context: MessageContext, message: str) -> None:
-    abilities = list(map(_display_ability, ctx.abilities.values()))
-    assert message_context.reply_destination is not None
-    app.send(message_context.reply_destination, abilities)
 
 
 def _display_plan(plan: Plan) -> Mapping[str, Any]:
@@ -101,4 +77,27 @@ def _protocol_names(ability: Ability) -> Iterable[str]:
             yield protocol.__name__
 
 
-worker.run_forever()
+def main():
+    app.connect()
+
+    @app.listener(destination="worker.run")
+    def on_run_request(message_context: MessageContext, task: RunPlan) -> None:
+        name = str(uuid.uuid1())
+        worker.submit_task(name, task)
+
+        assert message_context.reply_destination is not None
+        app.send(message_context.reply_destination, name)
+
+    @app.listener("worker.plans")
+    def get_plans(message_context: MessageContext, message: str) -> None:
+        plans = list(map(_display_plan, ctx.plans.values()))
+        assert message_context.reply_destination is not None
+        app.send(message_context.reply_destination, plans)
+
+    @app.listener("worker.abilities")
+    def get_abilities(message_context: MessageContext, message: str) -> None:
+        abilities = list(map(_display_ability, ctx.abilities.values()))
+        assert message_context.reply_destination is not None
+        app.send(message_context.reply_destination, abilities)
+
+    worker.run_forever()

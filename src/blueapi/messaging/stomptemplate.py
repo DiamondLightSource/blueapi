@@ -10,11 +10,29 @@ from stomp.utils import Frame
 
 from blueapi.utils import handle_all_exceptions
 
-from .base import MessageListener, MessagingTemplate
+from .base import DestinationProvider, MessageListener, MessagingTemplate
 from .context import MessageContext
 from .utils import determine_deserialization_type
 
 LOGGER = logging.getLogger(__name__)
+
+
+class StompDestinationProvider(DestinationProvider):
+    """
+    Destination provider for stomp, stateless so just
+    uses naming conventions
+    """
+
+    def queue(self, name: str) -> str:
+        return f"/queue/{name}"
+
+    def topic(self, name: str) -> str:
+        return f"/topic/{name}"
+
+    def temporary_queue(self, name: str) -> str:
+        return f"/temp-queue/{name}"
+
+    default = queue
 
 
 class StompMessagingTemplate(MessagingTemplate):
@@ -27,6 +45,9 @@ class StompMessagingTemplate(MessagingTemplate):
     _sub_num: itertools.count
     _listener: stomp.ConnectionListener
     _subscriptions: Dict[str, Callable[[Frame], None]]
+
+    # Stateless implementation means attribute can be static
+    _destination_provider: DestinationProvider = StompDestinationProvider()
 
     def __init__(self, conn: stomp.Connection) -> None:
         self._conn = conn
@@ -44,6 +65,10 @@ class StompMessagingTemplate(MessagingTemplate):
     ) -> MessagingTemplate:
         return cls(stomp.Connection([(host, port)]))
 
+    @property
+    def destinations(self) -> DestinationProvider:
+        return self._destination_provider
+
     def send(
         self, destination: str, obj: Any, on_reply: Optional[MessageListener] = None
     ) -> None:
@@ -59,7 +84,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
         headers: Dict[str, Any] = {}
         if on_reply is not None:
-            reply_queue_name = f"/temp-queue/{uuid.uuid1()}"
+            reply_queue_name = self.destinations.temporary_queue(str(uuid.uuid1()))
             headers = {**headers, "reply-to": reply_queue_name}
             self.subscribe(reply_queue_name, on_reply)
         self._conn.send(headers=headers, body=message, destination=destination)

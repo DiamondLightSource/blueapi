@@ -8,12 +8,90 @@ from .context import MessageContext
 MessageListener = Callable[[MessageContext, Any], None]
 
 
+class DestinationProvider(ABC):
+    """
+    Class that provides destinations for specific types of message bus.
+    Implementation may be eager or lazy.
+    """
+
+    @abstractmethod
+    def default(self, name: str) -> str:
+        """
+        A default type of destination with a given name.
+        For example, the provider could default to using queues if no
+        preference is specified.
+
+        Args:
+            name (str): The name of the destination
+
+        Returns:
+            str: Identifier for the destination
+        """
+
+        ...
+
+    @abstractmethod
+    def queue(self, name: str) -> str:
+        """
+        A queue with the given name
+
+        Args:
+            name (str): Name of the queue
+
+        Returns:
+            str: Identifier for the queue
+        """
+
+        ...
+
+    @abstractmethod
+    def topic(self, name: str) -> str:
+        """
+        A topic with the given name
+
+        Args:
+            name (str): Name of the topic
+
+        Returns:
+            str: Identifier for the topic
+        """
+
+        ...
+
+    @abstractmethod
+    def temporary_queue(self, name: str) -> str:
+        """
+        A temporary queue with the given name
+
+        Args:
+            name (str): Name of the queue
+
+        Returns:
+            str: Identifier for the queue
+        """
+
+        ...
+
+
 class MessagingTemplate(ABC):
     """
     Class meant for quickly building message-based applications.
     Includes helpers for asyncronous production/consumption and
     synchronous send/recieve model
     """
+
+    @property
+    @abstractmethod
+    def destinations(self) -> DestinationProvider:
+        """
+        Get a destination provider that can create destination
+        identifiers for this particular template
+
+        Returns:
+            DestinationProvider: Destination provider
+        """
+
+        ...
 
     def send_and_recieve(
         self,

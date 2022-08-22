@@ -1,10 +1,12 @@
-from .base import MessageListener, MessagingTemplate
+from .base import DestinationProvider, MessageListener, MessagingTemplate
 from .context import MessageContext
-from .stomptemplate import StompMessagingTemplate
+from .stomptemplate import StompDestinationProvider, StompMessagingTemplate
 
 __all__ = [
     "MessageListener",
     "MessagingTemplate",
     "MessageContext",
     "StompMessagingTemplate",
+    "DestinationProvider",
+    "StompDestinationProvider",
 ]

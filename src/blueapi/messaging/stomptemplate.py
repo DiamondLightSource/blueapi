@@ -80,6 +80,9 @@ class StompMessagingTemplate(MessagingTemplate):
     def connect(self) -> None:
         self._conn.connect()
 
+    def disconnect(self) -> None:
+        self._conn.disconnect()
+
     @handle_all_exceptions
     def _on_message(self, frame: Frame) -> None:
         LOGGER.info(f"Recieved {frame}")

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
+from types import TracebackType
 from typing import Any, Callable, Optional, Type
 
 from .context import MessageContext
@@ -102,9 +103,28 @@ class MessagingTemplate(ABC):
 
         ...
 
+    def __enter__(self) -> "MessagingTemplate":
+        self.connect()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.disconnect()
+
     @abstractmethod
     def connect(self) -> None:
         """
         Connect the app to transport
+        """
+        ...
+
+    @abstractmethod
+    def disconnect(self) -> None:
+        """
+        Disconnect the app from transport
         """
         ...

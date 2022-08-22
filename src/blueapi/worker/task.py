@@ -80,7 +80,7 @@ def lookup_params(
     ctx: BlueskyContext, plan: Plan, params: Mapping[str, Any]
 ) -> Mapping[str, Any]:
     overrides = list(
-        create_bluesky_protocol_conversions(lambda name: ctx.abilities[name])
+        create_bluesky_protocol_conversions(lambda name: ctx.devices[name])
     )
     return nested_deserialize_with_overrides(plan.model, params, overrides).__dict__
 

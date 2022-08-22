@@ -7,7 +7,7 @@ from bluesky.protocols import Flyable, Readable
 
 from blueapi.utils import schema_for_func
 
-from .bluesky_types import Ability, Plan, PlanGenerator
+from .bluesky_types import Device, Plan, PlanGenerator
 
 
 @dataclass
@@ -20,7 +20,7 @@ class BlueskyContext:
         default_factory=lambda: RunEngine(context_managers=[])
     )
     plans: Dict[str, Plan] = field(default_factory=dict)
-    abilities: Dict[str, Ability] = field(default_factory=dict)
+    devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
 
     def plan_module(self, module: ModuleType) -> None:
@@ -65,29 +65,29 @@ class BlueskyContext:
         self.plan_functions[plan.__name__] = plan
         return plan
 
-    def ability(self, ability: Ability, name: Optional[str] = None) -> None:
+    def device(self, device: Device, name: Optional[str] = None) -> None:
         """
-        Register an ability in the context. The ability needs to be registered with a
-        name. If the ability is Readable, Movable or Flyable it has a `name`
+        Register an device in the context. The device needs to be registered with a
+        name. If the device is Readable, Movable or Flyable it has a `name`
         attribbute which can be used. The attribute can be overrideen with the
-        `name` parameter here. If the ability conforms to a different protocol then
+        `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
 
         Args:
-            ability (Ability): The ability to register
-            name (Optional[str], optional): A name for the ability. Defaults to None.
+            device (Device): The device to register
+            name (Optional[str], optional): A name for the device. Defaults to None.
 
         Raises:
             KeyError: If no name is found/supplied
         """
 
         if name is None:
-            if isinstance(ability, Readable) or isinstance(ability, Flyable):
-                name = ability.name
+            if isinstance(device, Readable) or isinstance(device, Flyable):
+                name = device.name
             else:
-                raise KeyError("Must supply a name for this ability")
+                raise KeyError("Must supply a name for this device")
 
-        self.abilities[name] = ability
+        self.devices[name] = device
 
 
 def load_module_all(mod: ModuleType) -> Iterable[Any]:

@@ -1,3 +1,4 @@
+import itertools
 import json
 import logging
 import uuid
@@ -9,33 +10,39 @@ from stomp.utils import Frame
 
 from blueapi.utils import handle_all_exceptions
 
-from .base import MessageListener, MessagingApp
+from .base import MessageListener, MessagingTemplate
 from .context import MessageContext
 from .utils import determine_deserialization_type
 
 LOGGER = logging.getLogger(__name__)
 
 
-class StompMessagingApp(MessagingApp):
+class StompMessagingTemplate(MessagingTemplate):
     """
-    MessagingApp that uses the stompp protocol, meant for use
+    MessagingTemplate that uses the stompp protocol, meant for use
     with ActiveMQ.
     """
 
     _conn: stomp.Connection
-    _sub_num: int
+    _sub_num: itertools.count
     _listener: stomp.ConnectionListener
     _subscriptions: Dict[str, Callable[[Frame], None]]
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 61613) -> None:
-        self._conn = stomp.Connection([(host, port)])
-        self._sub_num = 0
+    def __init__(self, conn: stomp.Connection) -> None:
+        self._conn = conn
+        self._sub_num = itertools.count()
         self._listener = stomp.ConnectionListener()
 
         self._listener.on_message = self._on_message
         self._conn.set_listener("", self._listener)
 
         self._subscriptions = {}
+
+    @classmethod
+    def autoconfigured(
+        cls, host: str = "127.0.0.1", port: int = 61613
+    ) -> MessagingTemplate:
+        return cls(stomp.Connection([(host, port)]))
 
     def send(
         self, destination: str, obj: Any, on_reply: Optional[MessageListener] = None
@@ -71,14 +78,16 @@ class StompMessagingApp(MessagingApp):
             )
             callback(context, value)
 
-        self._sub_num += 1
-        sub_id = str(self._sub_num)
+        sub_id = str(next(self._sub_num))
 
         self._subscriptions[sub_id] = wrapper
         self._conn.subscribe(destination=destination, id=sub_id, ack="auto")
 
     def connect(self) -> None:
         self._conn.connect()
+
+    def disconnect(self) -> None:
+        self._conn.disconnect()
 
     @handle_all_exceptions
     def _on_message(self, frame: Frame) -> None:

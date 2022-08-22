@@ -1,5 +1,10 @@
-from .base import MessageListener, MessagingApp
+from .base import MessageListener, MessagingTemplate
 from .context import MessageContext
-from .stompapp import StompMessagingApp
+from .stomptemplate import StompMessagingTemplate
 
-__all__ = ["MessageListener", "MessagingApp", "MessageContext", "StompMessagingApp"]
+__all__ = [
+    "MessageListener",
+    "MessagingTemplate",
+    "MessageContext",
+    "StompMessagingTemplate",
+]

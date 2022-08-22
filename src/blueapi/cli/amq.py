@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Callable, List, Mapping, Optional, TypeVar, Union
 
-from blueapi.messaging import MessageContext, MessagingApp
+from blueapi.messaging import MessageContext, MessagingTemplate
 from blueapi.worker import TaskEvent
 
 T = TypeVar("T")
@@ -10,9 +10,9 @@ _Json = Union[List[Any], Mapping[str, Any]]
 
 
 class AmqClient:
-    app: MessagingApp
+    app: MessagingTemplate
 
-    def __init__(self, app: MessagingApp) -> None:
+    def __init__(self, app: MessagingTemplate) -> None:
         self.app = app
 
     def run_plan(

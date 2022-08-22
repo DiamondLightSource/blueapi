@@ -6,14 +6,7 @@ from bluesky.protocols import Flyable, Readable
 from ophyd.sim import Syn2DGauss
 
 import blueapi.plans as default_plans
-from blueapi.core import (
-    BLUESKY_PROTOCOLS,
-    Ability,
-    BlueskyContext,
-    DataEvent,
-    Device,
-    Plan,
-)
+from blueapi.core import BLUESKY_PROTOCOLS, BlueskyContext, DataEvent, Device, Plan
 from blueapi.messaging import MessageContext, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, WorkerEvent
 
@@ -61,55 +54,22 @@ with StompMessagingTemplate.autoconfigured("127.0.0.1", 61613) as template:
     def _display_plan(plan: Plan) -> Mapping[str, Any]:
         return {"name": plan.name}
 
-    def _display_ability(ability: Ability) -> Mapping[str, Any]:
-        if isinstance(ability, Readable) or isinstance(ability, Flyable):
-            name = ability.name
+    def _display_device(device: Device) -> Mapping[str, Any]:
+        if isinstance(device, Readable) or isinstance(device, Flyable):
+            name = device.name
         else:
             name = "UNKNOWN"
         return {
             "name": name,
-            "protocols": list(_protocol_names(ability)),
+            "protocols": list(_protocol_names(device)),
         }
 
-    def _protocol_names(ability: Ability) -> Iterable[str]:
+    def _protocol_names(device: Device) -> Iterable[str]:
         for protocol in BLUESKY_PROTOCOLS:
-            if isinstance(ability, protocol):
+            if isinstance(device, protocol):
                 yield protocol.__name__
 
-<<<<<<< HEAD
-worker.worker_events.subscribe(_on_worker_event)
-worker.task_events.subscribe(_on_task_event)
-worker.data_events.subscribe(_on_data_event)
-
-
-def _display_plan(plan: Plan) -> Mapping[str, Any]:
-    return {"name": plan.name}
-
-
-def _display_device(device: Device) -> Mapping[str, Any]:
-    if isinstance(device, Readable) or isinstance(device, Flyable):
-        name = device.name
-    else:
-        name = "UNKNOWN"
-    return {
-        "name": name,
-        "protocols": list(_protocol_names(device)),
-    }
-
-
-def _protocol_names(device: Device) -> Iterable[str]:
-    for protocol in BLUESKY_PROTOCOLS:
-        if isinstance(device, protocol):
-            yield protocol.__name__
-
-
-def main():
-    app.connect()
-
-    @app.listener(destination="worker.run")
-=======
     @template.listener(destination="worker.run")
->>>>>>> 491966b (Fix minor errors)
     def on_run_request(message_context: MessageContext, task: RunPlan) -> None:
         name = str(uuid.uuid1())
         worker.submit_task(name, task)
@@ -123,19 +83,11 @@ def main():
         assert message_context.reply_destination is not None
         template.send(message_context.reply_destination, plans)
 
-<<<<<<< HEAD
-    @app.listener("worker.devices")
+    @template.listener("worker.devices")
     def get_devices(message_context: MessageContext, message: str) -> None:
         devices = list(map(_display_device, ctx.devices.values()))
         assert message_context.reply_destination is not None
-        app.send(message_context.reply_destination, devices)
-=======
-    @template.listener("worker.abilities")
-    def get_abilities(message_context: MessageContext, message: str) -> None:
-        abilities = list(map(_display_ability, ctx.abilities.values()))
-        assert message_context.reply_destination is not None
-        template.send(message_context.reply_destination, abilities)
->>>>>>> 491966b (Fix minor errors)
+        template.send(message_context.reply_destination, devices)
 
     def main():
         template.connect()

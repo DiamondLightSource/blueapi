@@ -27,8 +27,8 @@ class StompMessagingTemplate(MessagingTemplate):
     _listener: stomp.ConnectionListener
     _subscriptions: Dict[str, Callable[[Frame], None]]
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 61613) -> None:
-        self._conn = stomp.Connection([(host, port)])
+    def __init__(self, conn: stomp.Connection) -> None:
+        self._conn = conn
         self._sub_num = 0
         self._listener = stomp.ConnectionListener()
 
@@ -36,6 +36,12 @@ class StompMessagingTemplate(MessagingTemplate):
         self._conn.set_listener("", self._listener)
 
         self._subscriptions = {}
+
+    @classmethod
+    def autoconfigured(
+        cls, host: str = "127.0.0.1", port: int = 61613
+    ) -> MessagingTemplate:
+        return cls(stomp.Connection([(host, port)]))
 
     def send(
         self, destination: str, obj: Any, on_reply: Optional[MessageListener] = None

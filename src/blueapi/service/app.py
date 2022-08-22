@@ -34,7 +34,7 @@ ctx.device(y)
 ctx.device(det)
 
 
-app: MessagingTemplate = StompMessagingTemplate("127.0.0.1", 61613)
+app: MessagingTemplate = StompMessagingTemplate.autoconfigured("127.0.0.1", 61613)
 
 
 def _on_worker_event(event: WorkerEvent) -> None:

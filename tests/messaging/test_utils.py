@@ -16,7 +16,7 @@ def test_determine_deserialization_type() -> None:
     def on_message(headers: Mapping[str, Any], message: Foo) -> None:
         ...
 
-    deserialization_type = determine_deserialization_type(on_message)
+    deserialization_type = determine_deserialization_type(on_message)  # type: ignore
     assert deserialization_type is Foo
 
 
@@ -24,7 +24,7 @@ def test_determine_deserialization_type_with_no_type() -> None:
     def on_message(headers: Mapping[str, Any], message) -> None:
         ...
 
-    deserialization_type = determine_deserialization_type(on_message)
+    deserialization_type = determine_deserialization_type(on_message)  # type: ignore
     assert deserialization_type is str
 
 
@@ -33,4 +33,4 @@ def test_determine_deserialization_type_with_wrong_signature() -> None:
         ...
 
     with pytest.raises(ValueError):
-        determine_deserialization_type(on_message)
+        determine_deserialization_type(on_message)  # type: ignore

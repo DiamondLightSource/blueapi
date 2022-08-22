@@ -7,7 +7,7 @@ from ophyd.sim import Syn2DGauss
 
 import blueapi.plans as default_plans
 from blueapi.core import BLUESKY_PROTOCOLS, BlueskyContext, DataEvent, Device, Plan
-from blueapi.messaging import MessageContext, MessagingApp, StompMessagingApp
+from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, WorkerEvent
 
 from .simmotor import SynAxisWithMotionEvents
@@ -34,7 +34,7 @@ ctx.device(y)
 ctx.device(det)
 
 
-app: MessagingApp = StompMessagingApp("127.0.0.1", 61613)
+app: MessagingTemplate = StompMessagingTemplate("127.0.0.1", 61613)
 
 
 def _on_worker_event(event: WorkerEvent) -> None:

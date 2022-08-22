@@ -9,16 +9,16 @@ from stomp.utils import Frame
 
 from blueapi.utils import handle_all_exceptions
 
-from .base import MessageListener, MessagingApp
+from .base import MessageListener, MessagingTemplate
 from .context import MessageContext
 from .utils import determine_deserialization_type
 
 LOGGER = logging.getLogger(__name__)
 
 
-class StompMessagingApp(MessagingApp):
+class StompMessagingTemplate(MessagingTemplate):
     """
-    MessagingApp that uses the stompp protocol, meant for use
+    MessagingTemplate that uses the stompp protocol, meant for use
     with ActiveMQ.
     """
 

@@ -7,7 +7,7 @@ from .context import MessageContext
 MessageListener = Callable[[MessageContext, Any], None]
 
 
-class MessagingApp(ABC):
+class MessagingTemplate(ABC):
     """
     Class meant for quickly building message-based applications.
     Includes helpers for asyncronous production/consumption and

@@ -22,10 +22,46 @@
             },
         },
         {
-            "name": "Example Worker",
+            "name": "Worker Service",
             "type": "python",
             "request": "launch",
-            "module": "examples.worker",
+            "module": "blueapi.cli",
+            "args": [
+                "worker"
+            ]
+        },
+        {
+            "name": "Controller (get plans)",
+            "type": "python",
+            "request": "launch",
+            "module": "blueapi.cli",
+            "args": [
+                "controller",
+                "plans"
+            ]
+        },
+        {
+            "name": "Controller (get devices)",
+            "type": "python",
+            "request": "launch",
+            "module": "blueapi.cli",
+            "args": [
+                "controller",
+                "devices"
+            ]
+        },
+        {
+            "name": "Controller (sleep)",
+            "type": "python",
+            "request": "launch",
+            "module": "blueapi.cli",
+            "args": [
+                "controller",
+                "run",
+                "sleep",
+                "-p",
+                "{\"time\": 5}"
+            ]
         }
     ]
 }

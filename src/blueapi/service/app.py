@@ -6,8 +6,15 @@ from bluesky.protocols import Flyable, Readable
 from ophyd.sim import Syn2DGauss
 
 import blueapi.plans as default_plans
-from blueapi.core import BLUESKY_PROTOCOLS, BlueskyContext, DataEvent, Device, Plan
-from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
+from blueapi.core import (
+    BLUESKY_PROTOCOLS,
+    Ability,
+    BlueskyContext,
+    DataEvent,
+    Device,
+    Plan,
+)
+from blueapi.messaging import MessageContext, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, WorkerEvent
 
 from .simmotor import SynAxisWithMotionEvents
@@ -34,23 +41,42 @@ ctx.device(y)
 ctx.device(det)
 
 
-app: MessagingTemplate = StompMessagingTemplate.autoconfigured("127.0.0.1", 61613)
+with StompMessagingTemplate.autoconfigured("127.0.0.1", 61613) as template:
 
+    def _on_worker_event(event: WorkerEvent) -> None:
+        template.send("worker.event", event)
 
-def _on_worker_event(event: WorkerEvent) -> None:
-    app.send("worker.event", event)
+    def _on_task_event(event: TaskEvent) -> None:
+        template.send("worker.event.task", event)
 
+    def _on_data_event(event: DataEvent) -> None:
+        template.send("worker.event.data", event)
 
-def _on_task_event(event: TaskEvent) -> None:
-    app.send("worker.event.task", event)
+    worker = RunEngineWorker(ctx)
 
+    worker.worker_events.subscribe(_on_worker_event)
+    worker.task_events.subscribe(_on_task_event)
+    worker.data_events.subscribe(_on_data_event)
 
-def _on_data_event(event: DataEvent) -> None:
-    app.send("worker.event.data", event)
+    def _display_plan(plan: Plan) -> Mapping[str, Any]:
+        return {"name": plan.name}
 
+    def _display_ability(ability: Ability) -> Mapping[str, Any]:
+        if isinstance(ability, Readable) or isinstance(ability, Flyable):
+            name = ability.name
+        else:
+            name = "UNKNOWN"
+        return {
+            "name": name,
+            "protocols": list(_protocol_names(ability)),
+        }
 
-worker = RunEngineWorker(ctx)
+    def _protocol_names(ability: Ability) -> Iterable[str]:
+        for protocol in BLUESKY_PROTOCOLS:
+            if isinstance(ability, protocol):
+                yield protocol.__name__
 
+<<<<<<< HEAD
 worker.worker_events.subscribe(_on_worker_event)
 worker.task_events.subscribe(_on_task_event)
 worker.data_events.subscribe(_on_data_event)
@@ -81,23 +107,36 @@ def main():
     app.connect()
 
     @app.listener(destination="worker.run")
+=======
+    @template.listener(destination="worker.run")
+>>>>>>> 491966b (Fix minor errors)
     def on_run_request(message_context: MessageContext, task: RunPlan) -> None:
         name = str(uuid.uuid1())
         worker.submit_task(name, task)
 
         assert message_context.reply_destination is not None
-        app.send(message_context.reply_destination, name)
+        template.send(message_context.reply_destination, name)
 
-    @app.listener("worker.plans")
+    @template.listener("worker.plans")
     def get_plans(message_context: MessageContext, message: str) -> None:
         plans = list(map(_display_plan, ctx.plans.values()))
         assert message_context.reply_destination is not None
-        app.send(message_context.reply_destination, plans)
+        template.send(message_context.reply_destination, plans)
 
+<<<<<<< HEAD
     @app.listener("worker.devices")
     def get_devices(message_context: MessageContext, message: str) -> None:
         devices = list(map(_display_device, ctx.devices.values()))
         assert message_context.reply_destination is not None
         app.send(message_context.reply_destination, devices)
+=======
+    @template.listener("worker.abilities")
+    def get_abilities(message_context: MessageContext, message: str) -> None:
+        abilities = list(map(_display_ability, ctx.abilities.values()))
+        assert message_context.reply_destination is not None
+        template.send(message_context.reply_destination, abilities)
+>>>>>>> 491966b (Fix minor errors)
 
-    worker.run_forever()
+    def main():
+        template.connect()
+        worker.run_forever()

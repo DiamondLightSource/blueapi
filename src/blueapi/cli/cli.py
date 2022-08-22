@@ -49,7 +49,7 @@ def controller(ctx, host: str, port: int):
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
     ctx.ensure_object(dict)
-    client = AmqClient(StompMessagingTemplate(host, port))
+    client = AmqClient(StompMessagingTemplate.autoconfigured(host, port))
     ctx.obj["client"] = client
     client.app.connect()
 

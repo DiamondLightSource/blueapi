@@ -1,11 +1,8 @@
 import itertools
 import json
 import logging
-import re
 import uuid
-from email.policy import default
 from typing import Any, Callable, Dict, Optional
-from unittest.mock import call
 
 import stomp
 from apischema import deserialize, serialize

@@ -1,7 +1,7 @@
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
-    Device,
     DataEvent,
+    Device,
     MsgGenerator,
     Plan,
     PlanGenerator,

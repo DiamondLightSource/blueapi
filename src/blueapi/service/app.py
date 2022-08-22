@@ -6,7 +6,7 @@ from bluesky.protocols import Flyable, Readable
 from ophyd.sim import Syn2DGauss
 
 import blueapi.plans as default_plans
-from blueapi.core import BLUESKY_PROTOCOLS, Device, BlueskyContext, DataEvent, Plan
+from blueapi.core import BLUESKY_PROTOCOLS, BlueskyContext, DataEvent, Device, Plan
 from blueapi.messaging import MessageContext, MessagingApp, StompMessagingApp
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, WorkerEvent
 

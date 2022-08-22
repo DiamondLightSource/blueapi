@@ -1,3 +1,4 @@
+import itertools
 import json
 import logging
 import uuid
@@ -23,13 +24,13 @@ class StompMessagingTemplate(MessagingTemplate):
     """
 
     _conn: stomp.Connection
-    _sub_num: int
+    _sub_num: itertools.count
     _listener: stomp.ConnectionListener
     _subscriptions: Dict[str, Callable[[Frame], None]]
 
     def __init__(self, conn: stomp.Connection) -> None:
         self._conn = conn
-        self._sub_num = 0
+        self._sub_num = itertools.count()
         self._listener = stomp.ConnectionListener()
 
         self._listener.on_message = self._on_message
@@ -77,8 +78,7 @@ class StompMessagingTemplate(MessagingTemplate):
             )
             callback(context, value)
 
-        self._sub_num += 1
-        sub_id = str(self._sub_num)
+        sub_id = str(next(self._sub_num))
 
         self._subscriptions[sub_id] = wrapper
         self._conn.subscribe(destination=destination, id=sub_id, ack="auto")

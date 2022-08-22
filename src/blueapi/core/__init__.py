@@ -1,7 +1,7 @@
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
-    Ability,
     DataEvent,
+    Device,
     MsgGenerator,
     Plan,
     PlanGenerator,
@@ -15,7 +15,7 @@ __all__ = [
     "Plan",
     "PlanGenerator",
     "MsgGenerator",
-    "Ability",
+    "Device",
     "BLUESKY_PROTOCOLS",
     "create_bluesky_protocol_conversions",
     "BlueskyContext",

@@ -31,9 +31,9 @@ MsgGenerator = Generator[Msg, Any, None]
 #: A function that generates a plan
 PlanGenerator = Callable[..., MsgGenerator]
 
-#: An object that encapsulates the ability to do useful things to produce
+#: An object that encapsulates the device to do useful things to produce
 # data (e.g. move and read)
-Ability = Union[
+Device = Union[
     Checkable,
     Flyable,
     HasHints,
@@ -51,7 +51,7 @@ Ability = Union[
 ]
 
 #: Protocols defining interface to hardware
-BLUESKY_PROTOCOLS = list(Ability.__args__)  # type: ignore
+BLUESKY_PROTOCOLS = list(Device.__args__)  # type: ignore
 
 
 @dataclass

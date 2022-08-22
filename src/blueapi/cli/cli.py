@@ -64,11 +64,11 @@ def get_plans(ctx) -> None:
         print("\t" + plan["name"])  # type: ignore
 
 
-@controller.command(name="abilities")
+@controller.command(name="devices")
 @click.pass_context
-def get_abilities(ctx) -> None:
+def get_devices(ctx) -> None:
     client: AmqClient = ctx.obj["client"]
-    print(client.get_abilities())
+    print(client.get_devices())
 
 
 @controller.command(name="run")

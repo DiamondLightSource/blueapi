@@ -7,8 +7,8 @@ from ophyd.sim import Syn2DGauss
 
 import blueapi.plans as default_plans
 from blueapi.core import BLUESKY_PROTOCOLS, BlueskyContext, DataEvent, Device, Plan
-from blueapi.messaging import MessageContext, StompMessagingTemplate
-from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, WorkerEvent
+from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
+from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
 from .simmotor import SynAxisWithMotionEvents
 
@@ -34,61 +34,74 @@ ctx.device(y)
 ctx.device(det)
 
 
-with StompMessagingTemplate.autoconfigured("127.0.0.1", 61613) as template:
+class Service:
+    _worker: Worker
+    _template: MessagingTemplate
 
-    def _on_worker_event(event: WorkerEvent) -> None:
-        template.send("worker.event", event)
+    def __init__(self) -> None:
+        self._worker = RunEngineWorker(ctx)
+        self._template = StompMessagingTemplate.autoconfigured("127.0.0.1", 61613)
 
-    def _on_task_event(event: TaskEvent) -> None:
-        template.send("worker.event.task", event)
+    def run(self) -> None:
+        self._worker.worker_events.subscribe(self._on_worker_event)
+        self._worker.task_events.subscribe(self._on_task_event)
+        self._worker.data_events.subscribe(self._on_data_event)
 
-    def _on_data_event(event: DataEvent) -> None:
-        template.send("worker.event.data", event)
+        self._template.connect()
 
-    worker = RunEngineWorker(ctx)
+        self._template.subscribe("worker.run", self._on_run_request)
+        self._template.subscribe("worker.plans", self._get_plans)
+        self._template.subscribe("worker.devices", self._get_plans)
 
-    worker.worker_events.subscribe(_on_worker_event)
-    worker.task_events.subscribe(_on_task_event)
-    worker.data_events.subscribe(_on_data_event)
+        self._worker.run_forever()
 
-    def _display_plan(plan: Plan) -> Mapping[str, Any]:
-        return {"name": plan.name}
+    def _on_worker_event(self, event: WorkerEvent) -> None:
+        self._template.send("worker.event", event)
 
-    def _display_device(device: Device) -> Mapping[str, Any]:
-        if isinstance(device, Readable) or isinstance(device, Flyable):
-            name = device.name
-        else:
-            name = "UNKNOWN"
-        return {
-            "name": name,
-            "protocols": list(_protocol_names(device)),
-        }
+    def _on_task_event(self, event: TaskEvent) -> None:
+        self._template.send("worker.event.task", event)
 
-    def _protocol_names(device: Device) -> Iterable[str]:
-        for protocol in BLUESKY_PROTOCOLS:
-            if isinstance(device, protocol):
-                yield protocol.__name__
+    def _on_data_event(self, event: DataEvent) -> None:
+        self._template.send("worker.event.data", event)
 
-    @template.listener(destination="worker.run")
-    def on_run_request(message_context: MessageContext, task: RunPlan) -> None:
+    def _on_run_request(self, message_context: MessageContext, task: RunPlan) -> None:
         name = str(uuid.uuid1())
-        worker.submit_task(name, task)
+        self._worker.submit_task(name, task)
 
         assert message_context.reply_destination is not None
-        template.send(message_context.reply_destination, name)
+        self._template.send(message_context.reply_destination, name)
 
-    @template.listener("worker.plans")
-    def get_plans(message_context: MessageContext, message: str) -> None:
+    def _get_plans(self, message_context: MessageContext, message: str) -> None:
         plans = list(map(_display_plan, ctx.plans.values()))
         assert message_context.reply_destination is not None
-        template.send(message_context.reply_destination, plans)
+        self._template.send(message_context.reply_destination, plans)
 
-    @template.listener("worker.devices")
-    def get_devices(message_context: MessageContext, message: str) -> None:
+    def _get_devices(self, message_context: MessageContext, message: str) -> None:
         devices = list(map(_display_device, ctx.devices.values()))
         assert message_context.reply_destination is not None
-        template.send(message_context.reply_destination, devices)
+        self._template.send(message_context.reply_destination, devices)
 
-    def main():
-        template.connect()
-        worker.run_forever()
+
+def _display_plan(plan: Plan) -> Mapping[str, Any]:
+    return {"name": plan.name}
+
+
+def _display_device(device: Device) -> Mapping[str, Any]:
+    if isinstance(device, Readable) or isinstance(device, Flyable):
+        name = device.name
+    else:
+        name = "UNKNOWN"
+    return {
+        "name": name,
+        "protocols": list(_protocol_names(device)),
+    }
+
+
+def _protocol_names(device: Device) -> Iterable[str]:
+    for protocol in BLUESKY_PROTOCOLS:
+        if isinstance(device, protocol):
+            yield protocol.__name__
+
+
+def main():
+    Service().run()

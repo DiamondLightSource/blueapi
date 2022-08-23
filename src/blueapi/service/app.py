@@ -1,12 +1,10 @@
 import logging
 import uuid
-from typing import Any, Iterable, Mapping
 
-from bluesky.protocols import Flyable, Readable
 from ophyd.sim import Syn2DGauss
 
 import blueapi.plans as default_plans
-from blueapi.core import BLUESKY_PROTOCOLS, BlueskyContext, DataEvent, Device, Plan
+from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 

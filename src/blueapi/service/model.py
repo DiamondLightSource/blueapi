@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Iterable, List, Mapping
+from typing import Iterable, List
 
 from bluesky.protocols import HasName
 
@@ -11,6 +10,10 @@ _UNKNOWN_NAME = "UNKNOWN"
 
 @dataclass
 class DeviceModel:
+    """
+    Representation of a device
+    """
+
     name: str
     protocols: List[str]
 
@@ -28,6 +31,10 @@ def _protocol_names(device: Device) -> Iterable[str]:
 
 @dataclass
 class PlanModel:
+    """
+    Representation of a plan
+    """
+
     name: str
 
     @classmethod

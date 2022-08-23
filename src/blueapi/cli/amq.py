@@ -2,6 +2,8 @@ import threading
 from typing import Any, Callable, List, Mapping, Optional, TypeVar, Union
 
 from blueapi.messaging import MessageContext, MessagingTemplate
+from blueapi.service import PlanModel
+from blueapi.service.model import DeviceModel
 from blueapi.worker import TaskEvent
 
 T = TypeVar("T")
@@ -43,12 +45,12 @@ class AmqClient:
 
         return task_id
 
-    def get_plans(self) -> _Json:
-        return self.app.send_and_recieve(
-            "worker.plans", "", List[Mapping[str, Any]]
-        ).result(5.0)
+    def get_plans(self) -> List[PlanModel]:
+        return self.app.send_and_recieve("worker.plans", "", List[PlanModel]).result(
+            5.0
+        )
 
-    def get_devices(self) -> _Json:
+    def get_devices(self) -> List[DeviceModel]:
         return self.app.send_and_recieve(
-            "worker.devices", "", List[Mapping[str, Any]]
+            "worker.devices", "", List[DeviceModel]
         ).result(5.0)

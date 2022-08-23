@@ -1,15 +1,14 @@
 import logging
 import uuid
-from typing import Any, Iterable, Mapping
 
-from bluesky.protocols import Flyable, Readable
 from ophyd.sim import Syn2DGauss
 
 import blueapi.plans as default_plans
-from blueapi.core import BLUESKY_PROTOCOLS, BlueskyContext, DataEvent, Device, Plan
+from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
+from .model import DeviceModel, PlanModel
 from .simmotor import SynAxisWithMotionEvents
 
 ctx = BlueskyContext()
@@ -51,7 +50,7 @@ class Service:
 
         self._template.subscribe("worker.run", self._on_run_request)
         self._template.subscribe("worker.plans", self._get_plans)
-        self._template.subscribe("worker.devices", self._get_plans)
+        self._template.subscribe("worker.devices", self._get_devices)
 
         self._worker.run_forever()
 
@@ -76,35 +75,14 @@ class Service:
         self._template.send(message_context.reply_destination, name)
 
     def _get_plans(self, message_context: MessageContext, message: str) -> None:
-        plans = list(map(_display_plan, ctx.plans.values()))
+        plans = list(map(PlanModel.from_plan, ctx.plans.values()))
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, plans)
 
     def _get_devices(self, message_context: MessageContext, message: str) -> None:
-        devices = list(map(_display_device, ctx.devices.values()))
+        devices = list(map(DeviceModel.from_device, ctx.devices.values()))
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, devices)
-
-
-def _display_plan(plan: Plan) -> Mapping[str, Any]:
-    return {"name": plan.name}
-
-
-def _display_device(device: Device) -> Mapping[str, Any]:
-    if isinstance(device, Readable) or isinstance(device, Flyable):
-        name = device.name
-    else:
-        name = "UNKNOWN"
-    return {
-        "name": name,
-        "protocols": list(_protocol_names(device)),
-    }
-
-
-def _protocol_names(device: Device) -> Iterable[str]:
-    for protocol in BLUESKY_PROTOCOLS:
-        if isinstance(device, protocol):
-            yield protocol.__name__
 
 
 def main():

@@ -61,7 +61,7 @@ def get_plans(ctx) -> None:
     plans = client.get_plans()
     print("PLANS")
     for plan in plans:
-        print("\t" + plan["name"])  # type: ignore
+        print("\t" + plan.name)
 
 
 @controller.command(name="devices")

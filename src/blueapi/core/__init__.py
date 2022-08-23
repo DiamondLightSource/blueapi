@@ -6,6 +6,8 @@ from .bluesky_types import (
     Plan,
     PlanGenerator,
     WatchableStatus,
+    is_bluesky_compatible_device,
+    is_bluesky_plan_generator,
 )
 from .context import BlueskyContext
 from .device_lookup import create_bluesky_protocol_conversions
@@ -23,4 +25,6 @@ __all__ = [
     "EventStream",
     "DataEvent",
     "WatchableStatus",
+    "is_bluesky_compatible_device",
+    "is_bluesky_plan_generator",
 ]

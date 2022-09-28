@@ -75,7 +75,8 @@ class Service:
         self._template.send(message_context.reply_destination, name)
 
     def _get_plans(self, message_context: MessageContext, message: str) -> None:
-        plans = list(map(PlanModel.from_plan, ctx.plans.values()))
+        # plans = list(map(PlanModel.from_plan, ctx.plans.values()))
+        plans = list(ctx.plans.values())
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, plans)
 

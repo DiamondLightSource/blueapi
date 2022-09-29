@@ -1,7 +1,6 @@
 import logging
 import uuid
 
-import blueapi.service.example as startup_script
 from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
@@ -14,6 +13,9 @@ ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
 
 
+STARTUP_SCRIPT = "blueapi.service.example"
+
+
 class Service:
     _ctx: BlueskyContext
     _worker: Worker
@@ -21,7 +23,7 @@ class Service:
 
     def __init__(self) -> None:
         self._ctx = BlueskyContext()
-        self._ctx.with_module(startup_script)
+        self._ctx.with_startup_script(STARTUP_SCRIPT)
         self._worker = RunEngineWorker(self._ctx)
         self._template = StompMessagingTemplate.autoconfigured("127.0.0.1", 61613)
 

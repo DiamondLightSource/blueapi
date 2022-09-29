@@ -1,7 +1,9 @@
 import logging
 from dataclasses import dataclass, field
+from importlib import import_module
+from pathlib import Path
 from types import ModuleType
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
@@ -31,6 +33,10 @@ class BlueskyContext:
     plans: Dict[str, Plan] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
+
+    def with_startup_script(self, path: Union[Path, str]) -> None:
+        mod = import_module(str(path))
+        self.with_module(mod)
 
     def with_module(self, module: ModuleType) -> None:
         self.with_plan_module(module)

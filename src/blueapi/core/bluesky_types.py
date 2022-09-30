@@ -54,6 +54,17 @@ Device = Union[
 BLUESKY_PROTOCOLS = list(Device.__args__)  # type: ignore
 
 
+def is_bluesky_compatible_device(obj: Any) -> bool:
+    return any(map(lambda protocol: isinstance(obj, protocol), BLUESKY_PROTOCOLS))
+
+
+def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
+    return (
+        hasattr(func, "__annotations__")
+        and func.__annotations__.get("return") is MsgGenerator
+    )
+
+
 @dataclass
 class Plan:
     """

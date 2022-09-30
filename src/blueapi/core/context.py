@@ -1,13 +1,24 @@
+import logging
 from dataclasses import dataclass, field
+from importlib import import_module
+from pathlib import Path
 from types import ModuleType
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
 
 from blueapi.utils import load_module_all, schema_for_func
 
-from .bluesky_types import Device, Plan, PlanGenerator
+from .bluesky_types import (
+    Device,
+    Plan,
+    PlanGenerator,
+    is_bluesky_compatible_device,
+    is_bluesky_plan_generator,
+)
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -23,7 +34,15 @@ class BlueskyContext:
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
 
-    def plan_module(self, module: ModuleType) -> None:
+    def with_startup_script(self, path: Union[Path, str]) -> None:
+        mod = import_module(str(path))
+        self.with_module(mod)
+
+    def with_module(self, module: ModuleType) -> None:
+        self.with_plan_module(module)
+        self.with_device_module(module)
+
+    def with_plan_module(self, module: ModuleType) -> None:
         """
         Register all functions in the module supplied as plans.
         Module should take the form:
@@ -44,7 +63,13 @@ class BlueskyContext:
         """
 
         for obj in load_module_all(module):
-            self.plan(obj)
+            if is_bluesky_plan_generator(obj):
+                self.plan(obj)
+
+    def with_device_module(self, module: ModuleType) -> None:
+        for obj in load_module_all(module):
+            if is_bluesky_compatible_device(obj):
+                self.device(obj)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

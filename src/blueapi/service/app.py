@@ -1,44 +1,30 @@
 import logging
 import uuid
 
-from ophyd.sim import Syn2DGauss
-
-import blueapi.plans as default_plans
 from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
 from .model import DeviceModel, PlanModel
-from .simmotor import SynAxisWithMotionEvents
 
 ctx = BlueskyContext()
+
+
 logging.basicConfig(level=logging.INFO)
 
-ctx.plan_module(default_plans)
-x = SynAxisWithMotionEvents(name="x", delay=1.0, events_per_move=8)
-y = SynAxisWithMotionEvents(name="y", delay=3.0, events_per_move=24)
-det = Syn2DGauss(
-    name="det",
-    motor0=x,
-    motor_field0="x",
-    motor1=y,
-    motor_field1="y",
-    center=(0, 0),
-    Imax=1,
-    labels={"detectors"},
-)
 
-ctx.device(x)
-ctx.device(y)
-ctx.device(det)
+STARTUP_SCRIPT = "blueapi.service.example"
 
 
 class Service:
+    _ctx: BlueskyContext
     _worker: Worker
     _template: MessagingTemplate
 
     def __init__(self) -> None:
-        self._worker = RunEngineWorker(ctx)
+        self._ctx = BlueskyContext()
+        self._ctx.with_startup_script(STARTUP_SCRIPT)
+        self._worker = RunEngineWorker(self._ctx)
         self._template = StompMessagingTemplate.autoconfigured("127.0.0.1", 61613)
 
     def run(self) -> None:

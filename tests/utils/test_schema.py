@@ -31,7 +31,7 @@ def test_rejects_any() -> None:
         schema_for_func(func)
 
 
-def test_rejects_no_Param() -> None:
+def test_rejects_no_param() -> None:
     def func(foo: int, bar) -> None:
         ...
 

@@ -1,7 +1,5 @@
 from importlib import import_module
 
-import pytest
-
 from blueapi.utils import load_module_all
 
 

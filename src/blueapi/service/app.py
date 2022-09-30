@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from ophyd.sim import Syn2DGauss
+from ophyd.sim import Syn2DGauss, SynAxis
 
 import blueapi.plans as default_plans
 from blueapi.core import BlueskyContext, DataEvent
@@ -9,14 +9,13 @@ from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingT
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
 from .model import DeviceModel, PlanModel
-from .simmotor import SynAxisWithMotionEvents
 
 ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
 
 ctx.plan_module(default_plans)
-x = SynAxisWithMotionEvents(name="x", delay=1.0, events_per_move=8)
-y = SynAxisWithMotionEvents(name="y", delay=3.0, events_per_move=24)
+x = SynAxis(name="x", delay=1.0, events_per_move=8)
+y = SynAxis(name="y", delay=3.0, events_per_move=24)
 det = Syn2DGauss(
     name="det",
     motor0=x,

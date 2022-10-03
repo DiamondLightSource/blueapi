@@ -1,0 +1,2 @@
+env:
+  startup_script: blueapi.startup.adsim

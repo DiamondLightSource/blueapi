@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Union
+from typing import Any, Mapping, Union
+
+from apischema import deserialize
 
 
 @dataclass
@@ -19,7 +21,7 @@ class EnvironmentConfig:
     Config for the RunEngine environment
     """
 
-    startup_script: Union[Path, str] = "blueapi.service.example"
+    startup_script: Union[Path, str] = "blueapi.startup.example"
 
 
 @dataclass

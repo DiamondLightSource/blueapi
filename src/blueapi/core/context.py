@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Dict, Optional, Union
+from typing import Any, Dict, List, Optional, TypeVar, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
@@ -33,6 +33,15 @@ class BlueskyContext:
     plans: Dict[str, Plan] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
+
+    def find_device(
+        self, addr: Union[str, List[str]], delimiter: str = "."
+    ) -> Optional[Device]:
+        if isinstance(addr, str):
+            list_addr = list(addr.split(delimiter))
+            return self.find_device(list_addr)
+        else:
+            return _find_component(self.devices, addr)
 
     def with_startup_script(self, path: Union[Path, str]) -> None:
         mod = import_module(str(path))
@@ -113,3 +122,32 @@ class BlueskyContext:
                 raise KeyError("Must supply a name for this device")
 
         self.devices[name] = device
+
+
+D = TypeVar("D", bound=Device)
+
+
+def _find_component(obj: Any, addr: List[str]) -> Optional[D]:
+    # Split address into head and tail
+    head, tail = addr[0], addr[1:]
+
+    # Best effort of how to extract component, if obj is a dictionary,
+    # we assume the component is a key-value within. If obj is a
+    # device, we assume the component is an attribute.
+    # Otherwise, we error.
+    if isinstance(obj, dict):
+        component = obj[head]
+    elif is_bluesky_compatible_device(obj):
+        component = getattr(obj, head)
+    else:
+        raise TypeError(
+            f"Searching for {addr} in {obj}, but it is not a device or a dictionary"
+        )
+
+    # Traverse device tree recursively
+    if len(addr) == 1:
+        return component
+    elif len(addr) > 1:
+        return _find_component(component, tail)
+    else:
+        return obj

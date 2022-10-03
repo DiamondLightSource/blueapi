@@ -1,6 +1,7 @@
 import itertools
 import json
-from typing import Dict, Mapping
+from pathlib import Path
+from typing import Dict, Mapping, Optional
 
 import click
 from tqdm import tqdm
@@ -22,10 +23,11 @@ def main(ctx) -> None:
 
 
 @main.command(name="worker")
-def start_worker():
-    from blueapi.service import main
+@click.option("-c", "--config", type=Path, help="Path to configuration YAML file")
+def start_worker(config: Optional[Path]):
+    from blueapi.service import start
 
-    main()
+    start(config)
 
 
 @main.group()

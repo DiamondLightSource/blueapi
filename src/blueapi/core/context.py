@@ -17,6 +17,7 @@ from .bluesky_types import (
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )
+from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,11 +38,23 @@ class BlueskyContext:
     def find_device(
         self, addr: Union[str, List[str]], delimiter: str = "."
     ) -> Optional[Device]:
+        """
+        Find a device in this context, allows for recursive search.
+
+        Args:
+            addr (Union[str, List[str]]): Address of the device, examples:
+                                          "motors", "motors.x"
+            delimiter (str, optional): Delimiter of device address. Defaults to ".".
+
+        Returns:
+            Optional[Device]: _description_
+        """
+
         if isinstance(addr, str):
             list_addr = list(addr.split(delimiter))
             return self.find_device(list_addr)
         else:
-            return _find_component(self.devices, addr)
+            return find_component(self.devices, addr)
 
     def with_startup_script(self, path: Union[Path, str]) -> None:
         mod = import_module(str(path))
@@ -122,32 +135,3 @@ class BlueskyContext:
                 raise KeyError("Must supply a name for this device")
 
         self.devices[name] = device
-
-
-D = TypeVar("D", bound=Device)
-
-
-def _find_component(obj: Any, addr: List[str]) -> Optional[D]:
-    # Split address into head and tail
-    head, tail = addr[0], addr[1:]
-
-    # Best effort of how to extract component, if obj is a dictionary,
-    # we assume the component is a key-value within. If obj is a
-    # device, we assume the component is an attribute.
-    # Otherwise, we error.
-    if isinstance(obj, dict):
-        component = obj[head]
-    elif is_bluesky_compatible_device(obj):
-        component = getattr(obj, head)
-    else:
-        raise TypeError(
-            f"Searching for {addr} in {obj}, but it is not a device or a dictionary"
-        )
-
-    # Traverse device tree recursively
-    if len(addr) == 1:
-        return component
-    elif len(addr) > 1:
-        return _find_component(component, tail)
-    else:
-        return obj

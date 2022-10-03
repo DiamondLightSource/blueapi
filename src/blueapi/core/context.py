@@ -35,23 +35,20 @@ class BlueskyContext:
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
 
-    def find_device(
-        self, addr: Union[str, List[str]], delimiter: str = "."
-    ) -> Optional[Device]:
+    def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
         """
         Find a device in this context, allows for recursive search.
 
         Args:
             addr (Union[str, List[str]]): Address of the device, examples:
                                           "motors", "motors.x"
-            delimiter (str, optional): Delimiter of device address. Defaults to ".".
 
         Returns:
             Optional[Device]: _description_
         """
 
         if isinstance(addr, str):
-            list_addr = list(addr.split(delimiter))
+            list_addr = list(addr.split("."))
             return self.find_device(list_addr)
         else:
             return find_component(self.devices, addr)

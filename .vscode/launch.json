@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "justMyCode": false,
-            "module": "pytest",
+            "program": "pytest",
             "purpose": [
                 "debug-test"
             ],

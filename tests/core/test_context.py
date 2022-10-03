@@ -140,3 +140,16 @@ def test_lookup_device(
 ) -> None:
     device = devicey_context.find_device(addr)
     assert is_bluesky_compatible_device(device)
+
+
+def test_lookup_nonexistant_device(devicey_context: BlueskyContext) -> None:
+    assert devicey_context.find_device("foo") is None
+
+
+def test_lookup_nonexistant_device_child(devicey_context: BlueskyContext) -> None:
+    assert devicey_context.find_device("sim.foo") is None
+
+
+def test_lookup_non_device(devicey_context: BlueskyContext) -> None:
+    with pytest.raises(ValueError):
+        devicey_context.find_device("sim.SUB_READBACK")

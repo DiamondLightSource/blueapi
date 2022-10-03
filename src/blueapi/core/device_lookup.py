@@ -72,18 +72,20 @@ def find_component(obj: Any, addr: List[str]) -> Optional[D]:
     # device, we assume the component is an attribute.
     # Otherwise, we error.
     if isinstance(obj, dict):
-        component = obj[head]
+        component = obj.get(head)
     elif is_bluesky_compatible_device(obj):
-        component = getattr(obj, head)
+        component = getattr(obj, head, None)
     else:
         raise ValueError(
             f"Searching for {addr} in {obj}, but it is not a device or a dictionary"
         )
 
     # Traverse device tree recursively
-    if len(addr) == 1:
-        return component
-    elif len(addr) > 1:
+    if tail:
         return find_component(component, tail)
+    elif is_bluesky_compatible_device(component) or component is None:
+        return component
     else:
-        return obj
+        raise ValueError(
+            f"Found {component} in {obj} while searching for {addr} but it is not a device"
+        )

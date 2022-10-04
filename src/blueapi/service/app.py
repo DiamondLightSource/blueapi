@@ -1,10 +1,7 @@
 import logging
 import uuid
 from pathlib import Path
-from pkgutil import ImpImporter
-from typing import Any, Mapping, Optional
-
-import yaml
+from typing import Optional
 
 from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
@@ -76,11 +73,6 @@ class Service:
         devices = list(map(DeviceModel.from_device, ctx.devices.values()))
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, devices)
-
-
-def _load_yaml_config(path: Path) -> Mapping[str, Any]:
-    with path.open("r") as stream:
-        return yaml.load(stream, yaml.Loader)
 
 
 def start(config_path: Optional[Path] = None):

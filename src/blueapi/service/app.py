@@ -1,12 +1,15 @@
 import logging
 import uuid
 from pathlib import Path
+from pkgutil import ImpImporter
 from typing import Any, Mapping, Optional
 
 import yaml
 
 from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
+from blueapi.utils import ConfigLoader
+from blueapi.utils.config import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
 from .config import ApplicationConfig
@@ -81,10 +84,9 @@ def _load_yaml_config(path: Path) -> Mapping[str, Any]:
 
 
 def start(config_path: Optional[Path] = None):
+    loader = ConfigLoader(ApplicationConfig)
     if config_path is not None:
-        overrides = _load_yaml_config(config_path)
-    else:
-        overrides = {}
-    config = ApplicationConfig.load(overrides)
+        loader.use_yaml_or_json_file(config_path)
+    config = loader.load()
 
     Service(config).run()

@@ -1,8 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping, Union
-
-from apischema import deserialize
+from typing import Union
 
 
 @dataclass
@@ -20,7 +18,3 @@ class EnvironmentConfig:
 class ApplicationConfig:
     stomp: StompConfig = field(default_factory=StompConfig)
     env: EnvironmentConfig = field(default_factory=EnvironmentConfig)
-
-    @classmethod
-    def load(cls, overrides: Mapping[str, Any]) -> "ApplicationConfig":
-        return deserialize(ApplicationConfig, overrides)

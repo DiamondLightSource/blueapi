@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, List, Optional, TypeVar, Union
+from typing import Dict, List, Optional, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable

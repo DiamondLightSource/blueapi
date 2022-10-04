@@ -87,5 +87,6 @@ def find_component(obj: Any, addr: List[str]) -> Optional[D]:
         return component
     else:
         raise ValueError(
-            f"Found {component} in {obj} while searching for {addr} but it is not a device"
+            f"Found {component} in {obj} while searching for {addr} "
+            "but it is not a device"
         )

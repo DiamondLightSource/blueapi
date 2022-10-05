@@ -104,6 +104,9 @@ class BlueskyContext:
             PlanGenerator: The plan passed in for chaining/decorating
         """
 
+        if not is_bluesky_plan_generator(plan):
+            raise TypeError(f"{plan} is not a valid plan generator function")
+
         schema = schema_for_func(plan)
         self.plans[plan.__name__] = Plan(plan.__name__, schema)
         self.plan_functions[plan.__name__] = plan
@@ -124,6 +127,9 @@ class BlueskyContext:
         Raises:
             KeyError: If no name is found/supplied
         """
+
+        if not is_bluesky_compatible_device(device):
+            raise TypeError(f"{device} is not a Bluesky compatible device")
 
         if name is None:
             if isinstance(device, Readable) or isinstance(device, Flyable):

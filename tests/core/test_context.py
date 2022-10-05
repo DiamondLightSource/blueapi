@@ -153,3 +153,13 @@ def test_lookup_nonexistant_device_child(devicey_context: BlueskyContext) -> Non
 def test_lookup_non_device(devicey_context: BlueskyContext) -> None:
     with pytest.raises(ValueError):
         devicey_context.find_device("sim.SUB_READBACK")
+
+
+def test_add_non_plan(empty_context: BlueskyContext) -> None:
+    with pytest.raises(TypeError):
+        empty_context.plan("not a plan")  # type: ignore
+
+
+def test_add_non_device(empty_context: BlueskyContext) -> None:
+    with pytest.raises(TypeError):
+        empty_context.device("not a device")  # type: ignore

@@ -164,9 +164,9 @@ def test_override_device_name(
 
 def test_add_non_plan(empty_context: BlueskyContext) -> None:
     with pytest.raises(TypeError):
-        empty_context.plan("not a plan")
+        empty_context.plan("not a plan")  # type: ignore
 
 
 def test_add_non_device(empty_context: BlueskyContext) -> None:
     with pytest.raises(TypeError):
-        empty_context.device("not a device")
+        empty_context.device("not a device")  # type: ignore

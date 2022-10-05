@@ -1,4 +1,4 @@
-from .app import main
+from .app import start
 from .model import DeviceModel, PlanModel
 
-__all__ = ["main", "PlanModel", "DeviceModel"]
+__all__ = ["start", "PlanModel", "DeviceModel"]

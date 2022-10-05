@@ -1,10 +1,14 @@
 import logging
 import uuid
+from pathlib import Path
+from typing import Optional
 
 from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
+from blueapi.utils import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
+from .config import ApplicationConfig
 from .model import DeviceModel, PlanModel
 
 ctx = BlueskyContext()
@@ -13,17 +17,16 @@ ctx = BlueskyContext()
 logging.basicConfig(level=logging.INFO)
 
 
-STARTUP_SCRIPT = "blueapi.service.example"
-
-
 class Service:
+    _config: ApplicationConfig
     _ctx: BlueskyContext
     _worker: Worker
     _template: MessagingTemplate
 
-    def __init__(self) -> None:
+    def __init__(self, config: ApplicationConfig) -> None:
+        self._config = config
         self._ctx = BlueskyContext()
-        self._ctx.with_startup_script(STARTUP_SCRIPT)
+        self._ctx.with_startup_script(self._config.env.startup_script)
         self._worker = RunEngineWorker(self._ctx)
         self._template = StompMessagingTemplate.autoconfigured("127.0.0.1", 61613)
 
@@ -71,5 +74,10 @@ class Service:
         self._template.send(message_context.reply_destination, devices)
 
 
-def main():
-    Service().run()
+def start(config_path: Optional[Path] = None):
+    loader = ConfigLoader(ApplicationConfig)
+    if config_path is not None:
+        loader.use_yaml_or_json_file(config_path)
+    config = loader.load()
+
+    Service(config).run()

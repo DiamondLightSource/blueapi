@@ -5,16 +5,29 @@ from typing import Union
 
 @dataclass
 class StompConfig:
+    """
+    Config for connecting to stomp broker
+    """
+
     host: str = "localhost"
     port: int = 61616
 
 
 @dataclass
 class EnvironmentConfig:
+    """
+    Config for the RunEngine environment
+    """
+
     startup_script: Union[Path, str] = "blueapi.service.example"
 
 
 @dataclass
 class ApplicationConfig:
+    """
+    Config for the worker application as a whole. Root of
+    config tree.
+    """
+
     stomp: StompConfig = field(default_factory=StompConfig)
     env: EnvironmentConfig = field(default_factory=EnvironmentConfig)

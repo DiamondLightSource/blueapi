@@ -7,7 +7,12 @@ from typing import Any, Mapping, Union
 from apischema import deserializer, identity, serializer
 from apischema.conversions import Conversion
 
-from blueapi.core import BlueskyContext, Plan, create_bluesky_protocol_conversions
+from blueapi.core import (
+    BlueskyContext,
+    Device,
+    Plan,
+    create_bluesky_protocol_conversions,
+)
 from blueapi.utils import nested_deserialize_with_overrides
 
 
@@ -79,9 +84,14 @@ class RunPlan(Task):
 def lookup_params(
     ctx: BlueskyContext, plan: Plan, params: Mapping[str, Any]
 ) -> Mapping[str, Any]:
-    overrides = list(
-        create_bluesky_protocol_conversions(lambda name: ctx.devices[name])
-    )
+    def find_device(name: str) -> Device:
+        device = ctx.find_device(name)
+        if device is not None:
+            return device
+        else:
+            raise KeyError(f"Could not find device {name}")
+
+    overrides = list(create_bluesky_protocol_conversions(find_device))
     return nested_deserialize_with_overrides(plan.model, params, overrides).__dict__
 
 

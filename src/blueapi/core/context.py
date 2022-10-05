@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
@@ -17,6 +17,7 @@ from .bluesky_types import (
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )
+from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,6 +34,24 @@ class BlueskyContext:
     plans: Dict[str, Plan] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
+
+    def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
+        """
+        Find a device in this context, allows for recursive search.
+
+        Args:
+            addr (Union[str, List[str]]): Address of the device, examples:
+                                          "motors", "motors.x"
+
+        Returns:
+            Optional[Device]: _description_
+        """
+
+        if isinstance(addr, str):
+            list_addr = list(addr.split("."))
+            return self.find_device(list_addr)
+        else:
+            return find_component(self.devices, addr)
 
     def with_startup_script(self, path: Union[Path, str]) -> None:
         mod = import_module(str(path))

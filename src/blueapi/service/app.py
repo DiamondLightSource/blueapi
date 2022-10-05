@@ -11,9 +11,6 @@ from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEv
 from .config import ApplicationConfig
 from .model import DeviceModel, PlanModel
 
-ctx = BlueskyContext()
-
-
 logging.basicConfig(level=logging.INFO)
 
 
@@ -64,12 +61,12 @@ class Service:
         self._template.send(message_context.reply_destination, name)
 
     def _get_plans(self, message_context: MessageContext, message: str) -> None:
-        plans = list(map(PlanModel.from_plan, ctx.plans.values()))
+        plans = list(map(PlanModel.from_plan, self._ctx.plans.values()))
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, plans)
 
     def _get_devices(self, message_context: MessageContext, message: str) -> None:
-        devices = list(map(DeviceModel.from_device, ctx.devices.values()))
+        devices = list(map(DeviceModel.from_device, self._ctx.devices.values()))
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, devices)
 

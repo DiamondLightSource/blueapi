@@ -1,4 +1,3 @@
-import imp
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -6,10 +5,8 @@ from typing import Any, Type
 
 import pytest
 from apischema import ValidationError
-from matplotlib.pyplot import cla
 
 from blueapi.utils import ConfigLoader
-from blueapi.utils.config import C
 
 
 @dataclass

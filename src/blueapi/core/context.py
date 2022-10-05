@@ -135,6 +135,6 @@ class BlueskyContext:
             if isinstance(device, Readable) or isinstance(device, Flyable):
                 name = device.name
             else:
-                raise KeyError("Must supply a name for this device")
+                raise KeyError(f"Must supply a name for this device: {device}")
 
         self.devices[name] = device

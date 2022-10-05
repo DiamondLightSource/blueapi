@@ -27,7 +27,6 @@
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
-            "justMyCode": false,
             "args": [
                 "worker"
             ]
@@ -38,7 +37,6 @@
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
-            "justMyCode": false,
             "args": [
                 "controller",
                 "plans"
@@ -50,7 +48,6 @@
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
-            "justMyCode": false,
             "args": [
                 "controller",
                 "devices"
@@ -62,7 +59,6 @@
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
-            "justMyCode": false,
             "args": [
                 "controller",
                 "run",

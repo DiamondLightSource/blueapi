@@ -1,8 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping, Union
-
-from apischema import deserialize
+from typing import Union
 
 
 @dataclass

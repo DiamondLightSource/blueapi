@@ -155,13 +155,6 @@ def test_lookup_non_device(devicey_context: BlueskyContext) -> None:
         devicey_context.find_device("sim.SUB_READBACK")
 
 
-def test_override_device_name(
-    empty_context: BlueskyContext, sim_motor: SynAxis
-) -> None:
-    empty_context.device(sim_motor, "foo")
-    assert empty_context.devices["foo"] is sim_motor
-
-
 def test_add_non_plan(empty_context: BlueskyContext) -> None:
     with pytest.raises(TypeError):
         empty_context.plan("not a plan")  # type: ignore

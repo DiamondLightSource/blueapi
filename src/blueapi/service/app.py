@@ -6,7 +6,6 @@ from typing import Optional
 from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.utils import ConfigLoader
-from blueapi.utils.config import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
 from .config import ApplicationConfig

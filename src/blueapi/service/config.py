@@ -19,7 +19,7 @@ class EnvironmentConfig:
     Config for the RunEngine environment
     """
 
-    startup_script: Union[Path, str] = "blueapi.service.example"
+    startup_script: Union[Path, str] = "blueapi.startup.example"
 
 
 @dataclass

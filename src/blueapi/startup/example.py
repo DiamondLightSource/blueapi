@@ -1,6 +1,6 @@
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
 
-import blueapi.plans  # noqa: F401
+from blueapi.plans import *  # noqa: F403
 from blueapi.service.simmotor import SynAxisWithMotionEvents
 
 x = SynAxisWithMotionEvents(name="x", delay=1.0, events_per_move=8)

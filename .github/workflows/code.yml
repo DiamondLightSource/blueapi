@@ -28,11 +28,6 @@ jobs:
           pip install -r requirements.txt -r requirements_dev.txt -e .[dev]
           tox -e pre-commit,mypy
 
-      - name: Install wheel in a venv and check cli works
-        # ${GITHUB_REPOSITORY##*/} is the repo name without org
-        # Replace this with the cli command if different to the repo name
-        run: pipx run --spec dist/*.whl ${GITHUB_REPOSITORY##*/} --version
-
   test:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     strategy:
@@ -138,7 +133,7 @@ jobs:
       - name: Test cli works in sdist installed in local python
         # ${GITHUB_REPOSITORY##*/} is the repo name without org
         # Replace this with the cli command if different to the repo name
-        run: pip install dist/*.gz && ${GITHUB_REPOSITORY##*/} --version
+        run: pip install dist/*.gz && bluesky --version
 
       - name: Upload build files
         uses: actions/upload-artifact@v3

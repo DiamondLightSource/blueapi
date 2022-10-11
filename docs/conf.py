@@ -4,12 +4,9 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-<<<<<<< HEAD
-=======
 from pathlib import Path
 from subprocess import check_output
 
->>>>>>> skeleton-merge-branch
 import blueapi
 
 # -- General configuration ------------------------------------------------

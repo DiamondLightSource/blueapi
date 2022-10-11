@@ -11,7 +11,7 @@ ROOT = Path(__file__).parent.parent
 
 
 def skeleton_check(check: bool, text: str):
-    if ROOT.name == "dls-python3-skeleton":
+    if ROOT.name == "python3-pip-skeleton" or str(ROOT) == "/project":
         # In the skeleton module the check should fail
         check = not check
         text = f"Skeleton didn't raise: {text}"
@@ -24,11 +24,6 @@ def assert_not_contains_text(path: str, text: str, explanation: str):
     if full_path.exists():
         contents = full_path.read_text().replace("\n", " ")
         skeleton_check(text in contents, f"Please change ./{path} {explanation}")
-
-
-def assert_not_exists(path: str, explanation: str):
-    exists = (ROOT / path).exists()
-    skeleton_check(exists, f"Please delete ./{path} {explanation}")
 
 
 # setup.cfg
@@ -52,32 +47,17 @@ def test_changed_README_intro():
     )
 
 
+def test_removed_adopt_skeleton():
+    assert_not_contains_text(
+        "README.rst",
+        "This project contains template code only",
+        "remove the note at the start",
+    )
+
+
 def test_changed_README_body():
     assert_not_contains_text(
         "README.rst",
         "This is where you should put some images or code snippets",
         "to include some features and why people should use it",
-    )
-
-
-# Docs
-def test_docs_ref_api_changed():
-    assert_not_contains_text(
-        "docs/reference/api.rst",
-        "You can mix verbose text with docstring and signature",
-        "to introduce the API for your module",
-    )
-
-
-@pytest.mark.skip(reason="TODO")
-def test_how_tos_written():
-    assert_not_exists(
-        "docs/how-to/accomplish-a-task.rst", "and write some docs/how-tos"
-    )
-
-
-@pytest.mark.skip(reason="TODO")
-def test_explanations_written():
-    assert_not_exists(
-        "docs/explanations/why-is-something-so.rst", "and write some docs/explanations"
     )

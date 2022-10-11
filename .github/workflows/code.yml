@@ -56,11 +56,11 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"] # can add windows-latest, macos-latest
-        python: ["3.9", "3.10"]
+        python: ["3.8", "3.9", "3.10"]
         pipenv: ["skip-lock"]
 
         include:
-          # Add an extra Python3.10 runner to use the lockfile
+          # Add an extra Python 3.10 runner to use the lockfile
           - os: "ubuntu-latest"
             python: "3.10"
             pipenv: "deploy"

@@ -14,15 +14,15 @@ Releases       https://github.com/DiamondLightSource/blueapi/releases
 
 TODO: Talk about automagic plan endpoints
 
-.. |code_ci| image:: https://github.com/DiamondLightSource/blueapi/workflows/Code%20CI/badge.svg?branch=master
-    :target: https://github.com/DiamondLightSource/blueapi/actions?query=workflow%3A%22Code+CI%22
+.. |code_ci| image:: https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml/badge.svg?branch=main
+    :target: https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml
     :alt: Code CI
 
-.. |docs_ci| image:: https://github.com/DiamondLightSource/blueapi/workflows/Docs%20CI/badge.svg?branch=master
-    :target: https://github.com/DiamondLightSource/blueapi/actions?query=workflow%3A%22Docs+CI%22
+.. |docs_ci| image:: https://github.com/DiamondLightSource/blueapi/actions/workflows/docs.yml/badge.svg?branch=main
+    :target: https://github.com/DiamondLightSource/blueapi/actions/workflows/docs.yml
     :alt: Docs CI
 
-.. |coverage| image:: https://codecov.io/gh/DiamondLightSource/blueapi/branch/master/graph/badge.svg
+.. |coverage| image:: https://codecov.io/gh/DiamondLightSource/blueapi/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/DiamondLightSource/blueapi
     :alt: Test Coverage
 

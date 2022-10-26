@@ -8,6 +8,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/asyncapi/"
   },
   {
+    "name": "deserialization-errors",
+    "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
+  },
+  {
     "name": "fix-no-reply",
     "url": "https://DiamondLightSource.github.io/blueapi/fix-no-reply/"
   }

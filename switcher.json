@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "name": "asyncapi",
+    "url": "https://DiamondLightSource.github.io/blueapi/asyncapi/"
+  },
+  {
     "name": "fix-no-reply",
     "url": "https://DiamondLightSource.github.io/blueapi/fix-no-reply/"
   }

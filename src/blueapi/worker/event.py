@@ -1,12 +1,9 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from types import MappingProxyType
 from typing import Mapping, Optional, Union
 
 from bluesky.run_engine import RunEngineStateMachine
 from super_state_machine.extras import PropertyMachine, ProxyString
-
-from blueapi.worker.task import ActiveTask
 
 from .task import TaskState
 

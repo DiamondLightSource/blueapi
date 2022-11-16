@@ -12,6 +12,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
+    "name": "fix-mypy-strictness",
+    "url": "https://DiamondLightSource.github.io/blueapi/fix-mypy-strictness/"
+  },
+  {
     "name": "fix-no-reply",
     "url": "https://DiamondLightSource.github.io/blueapi/fix-no-reply/"
   },

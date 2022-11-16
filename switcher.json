@@ -20,6 +20,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-no-reply/"
   },
   {
+    "name": "reduce-coverage-requirements",
+    "url": "https://DiamondLightSource.github.io/blueapi/reduce-coverage-requirements/"
+  },
+  {
     "name": "scanspec-serialization-workaround",
     "url": "https://DiamondLightSource.github.io/blueapi/scanspec-serialization-workaround/"
   }

@@ -84,7 +84,7 @@ def run_plan(ctx, name: str, parameters: str) -> None:
 
     def handle_event(event: TaskEvent) -> None:
         renderer.update(event.statuses)
-        if event.task.is_complete():
+        if event.is_task_terminated():
             print("")
             print("")
             print("")

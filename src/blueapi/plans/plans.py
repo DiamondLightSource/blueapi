@@ -1,8 +1,11 @@
 import operator
 from functools import reduce
-from typing import Any, List, Mapping, Optional, Union
+from typing import Any, List, Mapping, Optional, Type, Union
 
 import bluesky.plans as bp
+from apischema import serialize
+from apischema.conversions.conversions import Conversion
+from apischema.conversions.converters import AnyConversion, default_serialization
 from bluesky.protocols import Movable, Readable
 from cycler import Cycler, cycler
 from scanspec.specs import Spec
@@ -33,13 +36,24 @@ def scan(
         Iterator[MsgGenerator]: Bluesky messages
     """
 
-    metadata = {"detectors": detectors, "scanspec": spec, **(metadata or {})}
+    metadata = {
+        "detectors": [detector.name for detector in detectors],
+        "scanspec": serialize(spec, default_conversion=_convert_devices),
+        **(metadata or {}),
+    }
 
-    cycler = scanspec_to_cycler(spec)
+    cycler = _scanspec_to_cycler(spec)
     yield from bp.scan_nd(detectors, cycler, md=metadata)
 
 
-def scanspec_to_cycler(spec: Spec) -> Cycler:
+def _convert_devices(a_type: Type[Any]) -> Optional[AnyConversion]:
+    if issubclass(a_type, Movable):
+        return Conversion(str, source=a_type)
+    else:
+        return default_serialization(a_type)
+
+
+def _scanspec_to_cycler(spec: Spec) -> Cycler:
     """
     Convert a scanspec to a cycler for compatibility with legacy Bluesky plans such as
     `bp.scan_nd`. Use the midpoints of the scanspec since cyclers are noramlly used

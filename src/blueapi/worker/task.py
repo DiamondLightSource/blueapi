@@ -100,6 +100,3 @@ class ActiveTask:
     name: str
     task: Task
     state: TaskState = field(default=TaskState.PENDING)
-
-    def is_complete(self) -> bool:
-        return self.state in _COMPLETE_TASK_STATES

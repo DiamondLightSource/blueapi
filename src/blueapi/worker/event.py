@@ -1,11 +1,14 @@
 from dataclasses import dataclass, field
 from enum import Enum
+from types import MappingProxyType
 from typing import Mapping, Optional, Union
 
 from bluesky.run_engine import RunEngineStateMachine
 from super_state_machine.extras import PropertyMachine, ProxyString
 
 from blueapi.worker.task import ActiveTask
+
+from .task import TaskState
 
 # The RunEngine can return any of these three types as its state
 RawRunEngineState = Union[PropertyMachine, ProxyString, str]
@@ -68,6 +71,10 @@ class TaskEvent:
     An event representing a progress update on a Task
     """
 
-    task: ActiveTask
+    name: str
+    state: TaskState
     error: Optional[str] = None
     statuses: Mapping[str, StatusView] = field(default_factory=dict)
+
+    def is_task_terminated(self) -> bool:
+        return self.state in (TaskState.COMPLETE, TaskState.FAILED)

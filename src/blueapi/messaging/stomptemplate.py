@@ -72,7 +72,11 @@ class StompMessagingTemplate(MessagingTemplate):
     def send(
         self, destination: str, obj: Any, on_reply: Optional[MessageListener] = None
     ) -> None:
-        self._send_str(destination, json.dumps(serialize(obj)), on_reply)
+        self._send_str(
+            destination,
+            json.dumps(serialize(obj)),
+            on_reply,
+        )
 
     def _send_str(
         self,

@@ -16,27 +16,27 @@ from blueapi.core import (
 #
 
 
-def has_no_params() -> MsgGenerator:
+def has_no_params() -> MsgGenerator:  # type: ignore
     ...
 
 
-def has_one_param(foo: int) -> MsgGenerator:
+def has_one_param(foo: int) -> MsgGenerator:  # type: ignore
     ...
 
 
-def has_some_params(foo: int, bar: str) -> MsgGenerator:
+def has_some_params(foo: int, bar: str) -> MsgGenerator:  # type: ignore
     ...
 
 
-def has_typeless_param(foo) -> MsgGenerator:
+def has_typeless_param(foo) -> MsgGenerator:  # type: ignore
     ...
 
 
-def has_typed_and_typeless_params(foo: int, bar) -> MsgGenerator:
+def has_typed_and_typeless_params(foo: int, bar) -> MsgGenerator:  # type: ignore
     ...
 
 
-def has_typeless_params(foo, bar) -> MsgGenerator:
+def has_typeless_params(foo, bar) -> MsgGenerator:  # type: ignore
     ...
 
 

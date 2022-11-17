@@ -79,10 +79,12 @@ def devicey_context(sim_motor: SynAxis, sim_detector: SynGauss) -> BlueskyContex
 
 
 class SomeConfigurable:
-    def read_configuration(self) -> SyncOrAsync[Dict[str, Reading]]:
+    def read_configuration(self) -> SyncOrAsync[Dict[str, Reading]]:  # type: ignore
         ...
 
-    def describe_configuration(self) -> SyncOrAsync[Dict[str, Descriptor]]:
+    def describe_configuration(  # type: ignore
+        self,
+    ) -> SyncOrAsync[Dict[str, Descriptor]]:
         ...
 
 

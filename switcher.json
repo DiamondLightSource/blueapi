@@ -14,9 +14,5 @@
   {
     "name": "fix-no-reply",
     "url": "https://DiamondLightSource.github.io/blueapi/fix-no-reply/"
-  },
-  {
-    "name": "scanspec-serialization-workaround",
-    "url": "https://DiamondLightSource.github.io/blueapi/scanspec-serialization-workaround/"
   }
 ]

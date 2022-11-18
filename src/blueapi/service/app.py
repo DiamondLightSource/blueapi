@@ -9,7 +9,7 @@ from blueapi.utils import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
 from .config import ApplicationConfig
-from .model import DeviceModel, PlanModel
+from .model import DeviceModel, PlanModel, TaskStarted
 
 logging.basicConfig(level=logging.INFO)
 

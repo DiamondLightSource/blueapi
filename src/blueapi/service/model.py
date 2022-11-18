@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from typing import Iterable, List
 
 from bluesky.protocols import HasName
@@ -40,3 +41,8 @@ class PlanModel:
     @classmethod
     def from_plan(cls, plan: Plan) -> "PlanModel":
         return cls(plan.name)
+
+
+@dataclass
+class TaskStarted:
+    task_id: str = field(default_factory=lambda: str(uuid.uuid1()))

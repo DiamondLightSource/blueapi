@@ -58,7 +58,7 @@ class Service:
         self._worker.submit_task(name, task)
 
         assert message_context.reply_destination is not None
-        self._template.send(message_context.reply_destination, name)
+        self._template.send(message_context.reply_destination, TaskStarted(name))
 
     def _get_plans(self, message_context: MessageContext, message: str) -> None:
         plans = list(map(PlanModel.from_plan, self._ctx.plans.values()))

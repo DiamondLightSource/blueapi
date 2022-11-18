@@ -45,4 +45,4 @@ class PlanModel:
 
 @dataclass
 class TaskStarted:
-    task_id: str = field(default_factory=lambda: str(uuid.uuid1()))
+    task_id: str

@@ -14,5 +14,9 @@
   {
     "name": "fix-no-reply",
     "url": "https://DiamondLightSource.github.io/blueapi/fix-no-reply/"
+  },
+  {
+    "name": "task-response-model",
+    "url": "https://DiamondLightSource.github.io/blueapi/task-response-model/"
   }
 ]

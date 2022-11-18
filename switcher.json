@@ -16,10 +16,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-no-reply/"
   },
   {
-    "name": "handle-plan-errors",
-    "url": "https://DiamondLightSource.github.io/blueapi/handle-plan-errors/"
-  },
-  {
     "name": "scanspec-serialization-workaround",
     "url": "https://DiamondLightSource.github.io/blueapi/scanspec-serialization-workaround/"
   }

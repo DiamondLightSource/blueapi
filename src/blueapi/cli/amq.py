@@ -29,7 +29,7 @@ class AmqClient:
         def on_event_wrapper(ctx: MessageContext, event: TaskEvent) -> None:
             if on_event is not None:
                 on_event(event)
-            if event.task.is_complete():
+            if event.is_task_terminated():
                 complete.set()
 
         self.app.subscribe(

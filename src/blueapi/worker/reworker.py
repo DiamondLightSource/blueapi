@@ -56,7 +56,7 @@ class RunEngineWorker(Worker[Task]):
     def submit_task(self, name: str, task: Task) -> None:
         active_task = ActiveTask(name, task)
         LOGGER.info(f"Submitting: {active_task}")
-        self._task_events.publish(TaskEvent(active_task))
+        self._task_events.publish(TaskEvent(active_task.name, active_task.state))
         self._task_queue.put(active_task)
 
     def run_forever(self) -> None:
@@ -116,7 +116,9 @@ class RunEngineWorker(Worker[Task]):
         if self._current is None:
             raise ValueError("Cannot set task state when we are not running a task!")
         self._current.state = state
-        self._task_events.publish(TaskEvent(self._current, error))
+        self._task_events.publish(
+            TaskEvent(self._current.name, self._current.state, error)
+        )
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         self._data_events.publish(DataEvent(name, document))
@@ -182,5 +184,9 @@ class RunEngineWorker(Worker[Task]):
             raise ValueError("Got a status update without an active task!")
         else:
             self._task_events.publish(
-                TaskEvent(self._current, statuses=self._status_snapshot)
+                TaskEvent(
+                    self._current.name,
+                    self._current.state,
+                    statuses=self._status_snapshot,
+                )
             )

@@ -66,7 +66,13 @@ class RunEngineWorker(Worker[Task]):
         self._ctx.run_engine.waiting_hook = self._waiting_hook
 
         while True:
+            self._cycle_with_error_handling()
+
+    def _cycle_with_error_handling(self) -> None:
+        try:
             self._cycle()
+        except Exception as ex:
+            LOGGER.error(ex, exc_info=True)
 
     def _cycle(self) -> None:
         LOGGER.info("Awaiting task")

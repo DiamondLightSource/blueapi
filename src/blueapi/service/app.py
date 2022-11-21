@@ -9,7 +9,7 @@ from blueapi.utils import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
 from .config import ApplicationConfig
-from .model import DeviceModel, PlanModel
+from .model import DeviceModel, PlanModel, TaskStarted
 
 logging.basicConfig(level=logging.INFO)
 
@@ -58,7 +58,7 @@ class Service:
         self._worker.submit_task(name, task)
 
         assert message_context.reply_destination is not None
-        self._template.send(message_context.reply_destination, name)
+        self._template.send(message_context.reply_destination, TaskStarted(name))
 
     def _get_plans(self, message_context: MessageContext, message: str) -> None:
         plans = list(map(PlanModel.from_plan, self._ctx.plans.values()))

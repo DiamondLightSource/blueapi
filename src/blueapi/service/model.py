@@ -40,3 +40,12 @@ class PlanModel:
     @classmethod
     def from_plan(cls, plan: Plan) -> "PlanModel":
         return cls(plan.name)
+
+
+@dataclass
+class TaskStarted:
+    """
+    Acknowledgement that a task has started, includes its ID
+    """
+
+    id: str

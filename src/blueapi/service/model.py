@@ -44,4 +44,8 @@ class PlanModel:
 
 @dataclass
 class TaskStarted:
-    task_id: str
+    """
+    Acknowledgement that a task has started, includes its ID
+    """
+
+    id: str

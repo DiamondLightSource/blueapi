@@ -1,11 +1,14 @@
 from dataclasses import dataclass
 from typing import Iterable, List
 
+from apischema import settings
 from bluesky.protocols import HasName
 
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 
 _UNKNOWN_NAME = "UNKNOWN"
+
+settings.camel_case = True
 
 
 @dataclass

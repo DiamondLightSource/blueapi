@@ -33,6 +33,24 @@ def _protocol_names(device: Device) -> Iterable[str]:
 
 
 @dataclass
+class DeviceRequest:
+    """
+    A query for devices
+    """
+
+    ...
+
+
+@dataclass
+class DeviceResponse:
+    """
+    Response to a query for devices
+    """
+
+    devices: List[DeviceModel]
+
+
+@dataclass
 class PlanModel:
     """
     Representation of a plan
@@ -46,9 +64,27 @@ class PlanModel:
 
 
 @dataclass
-class TaskStarted:
+class PlanRequest:
+    """
+    A query for plans
+    """
+
+    ...
+
+
+@dataclass
+class PlanResponse:
+    """
+    Response to a query for plans
+    """
+
+    plans: List[PlanModel]
+
+
+@dataclass
+class TaskResponse:
     """
     Acknowledgement that a task has started, includes its ID
     """
 
-    id: str
+    task_name: str

@@ -1,3 +1,4 @@
+import inspect
 from dataclasses import dataclass
 from typing import Any, Callable, Generator, Mapping, Type, Union
 
@@ -55,7 +56,13 @@ BLUESKY_PROTOCOLS = list(Device.__args__)  # type: ignore
 
 
 def is_bluesky_compatible_device(obj: Any) -> bool:
-    return any(map(lambda protocol: isinstance(obj, protocol), BLUESKY_PROTOCOLS))
+    is_object = not inspect.isclass(obj)
+    follows_protocols = any(
+        map(lambda protocol: isinstance(obj, protocol), BLUESKY_PROTOCOLS)
+    )
+    # We must separately check if Obj refers to an instance rather than a
+    # class, as both follow the protocols but only one is a "device".
+    return is_object and follows_protocols
 
 
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:

@@ -34,6 +34,10 @@ def _protocol_names(device: Device) -> Iterable[str]:
 
 @dataclass
 class DeviceRequest:
+    """
+    A query for devices
+    """
+
     ...
 
 
@@ -61,6 +65,10 @@ class PlanModel:
 
 @dataclass
 class PlanRequest:
+    """
+    A query for plans
+    """
+
     ...
 
 

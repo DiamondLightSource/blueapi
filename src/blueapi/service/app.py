@@ -9,7 +9,15 @@ from blueapi.utils import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
 from .config import ApplicationConfig
-from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse, TaskResponse
+from .model import (
+    DeviceModel,
+    DeviceRequest,
+    DeviceResponse,
+    PlanModel,
+    PlanRequest,
+    PlanResponse,
+    TaskResponse,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -60,14 +68,16 @@ class Service:
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, TaskResponse(name))
 
-    def _get_plans(self, message_context: MessageContext, message: str) -> None:
+    def _get_plans(self, message_context: MessageContext, message: PlanRequest) -> None:
         plans = list(map(PlanModel.from_plan, self._ctx.plans.values()))
         response = PlanResponse(plans)
 
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, response)
 
-    def _get_devices(self, message_context: MessageContext, message: str) -> None:
+    def _get_devices(
+        self, message_context: MessageContext, message: DeviceRequest
+    ) -> None:
         devices = list(map(DeviceModel.from_device, self._ctx.devices.values()))
         response = DeviceResponse(devices)
 

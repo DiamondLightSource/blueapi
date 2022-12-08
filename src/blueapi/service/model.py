@@ -33,6 +33,11 @@ def _protocol_names(device: Device) -> Iterable[str]:
 
 
 @dataclass
+class DeviceRequest:
+    ...
+
+
+@dataclass
 class DeviceResponse:
     """
     Response to a query for devices
@@ -52,6 +57,11 @@ class PlanModel:
     @classmethod
     def from_plan(cls, plan: Plan) -> "PlanModel":
         return cls(plan.name)
+
+
+@dataclass
+class PlanRequest:
+    ...
 
 
 @dataclass

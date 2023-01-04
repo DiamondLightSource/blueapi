@@ -1,18 +1,22 @@
 [
   {
-    "name": "main",
+    "version": "main",
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
-    "name": "asyncapi",
+    "version": "asyncapi",
     "url": "https://DiamondLightSource.github.io/blueapi/asyncapi/"
   },
   {
-    "name": "deserialization-errors",
+    "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
-    "name": "fix-no-reply",
+    "version": "fix-no-reply",
     "url": "https://DiamondLightSource.github.io/blueapi/fix-no-reply/"
+  },
+  {
+    "version": "update-skeleton",
+    "url": "https://DiamondLightSource.github.io/blueapi/update-skeleton/"
   }
 ]

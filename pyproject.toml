@@ -42,6 +42,7 @@ dev = [
     "sphinx-design",
     "tox-direct",
     "types-mock",
+    "types-PyYAML",
 ]
 
 [project.scripts]

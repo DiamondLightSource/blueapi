@@ -14,7 +14,7 @@ from .amq import AmqClient
 
 
 @click.group(invoke_without_command=True)
-@click.version_option(version=__version__)
+@click.version_option(version=__version__, prog_name="blueapi")
 @click.pass_context
 def main(ctx) -> None:
     # if no command is supplied, run with the options passed

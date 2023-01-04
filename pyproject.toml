@@ -49,7 +49,7 @@ dev = [
 bluesky = "blueapi.cli:main"
 
 [project.urls]
-GitHub = "https://github.com/DiamondLightSource/python3-pip-skeleton"
+GitHub = "https://github.com/DiamondLightSource/blueapi"
 
 [[project.authors]] # Further authors may be added by duplicating this section
 email = "callum.forrester@diamond.ac.uk"

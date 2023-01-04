@@ -8,8 +8,6 @@ import sys
 from pathlib import Path
 from subprocess import check_output
 
-import requests
-
 import blueapi
 
 # -- General configuration ------------------------------------------------

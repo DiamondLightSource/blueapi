@@ -131,7 +131,8 @@ github_repo = project
 github_user = "DiamondLightSource"
 switcher_json = f"https://{github_user}.github.io/{github_repo}/switcher.json"
 # Don't check switcher if it doesn't exist, but warn in a non-failing way
-check_switcher = requests.get(switcher_json).ok
+# TODO: Enable this again after all branches have published an updated switcher
+check_switcher = False
 if not check_switcher:
     print(
         "*** Can't read version switcher, is GitHub pages enabled? \n"

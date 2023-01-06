@@ -10,5 +10,9 @@
   {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
+  },
+  {
+    "version": "fix-no-reply",
+    "url": "https://DiamondLightSource.github.io/blueapi/fix-no-reply/"
   }
 ]

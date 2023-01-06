@@ -16,12 +16,9 @@ from .model import (
     PlanModel,
     PlanRequest,
     PlanResponse,
-    TaskResponse,
 )
 
 logging.basicConfig(level=logging.INFO)
-
-LOGGER = logging.getLogger(__name__)
 
 
 class Service:

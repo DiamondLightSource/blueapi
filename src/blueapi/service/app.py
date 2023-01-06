@@ -3,12 +3,12 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
+from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.utils import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
 
-from .config import ApplicationConfig
 from .model import (
     DeviceModel,
     DeviceRequest,
@@ -32,7 +32,7 @@ class Service:
         self._ctx = BlueskyContext()
         self._ctx.with_startup_script(self._config.env.startup_script)
         self._worker = RunEngineWorker(self._ctx)
-        self._template = StompMessagingTemplate.autoconfigured("127.0.0.1", 61613)
+        self._template = StompMessagingTemplate.autoconfigured(config.stomp)
 
     def run(self) -> None:
         self._worker.worker_events.subscribe(self._on_worker_event)

@@ -8,6 +8,7 @@ import stomp
 from apischema import deserialize, serialize
 from stomp.utils import Frame
 
+from blueapi.config import StompConfig
 from blueapi.utils import handle_all_exceptions
 
 from .base import DestinationProvider, MessageListener, MessagingTemplate
@@ -60,10 +61,8 @@ class StompMessagingTemplate(MessagingTemplate):
         self._subscriptions = {}
 
     @classmethod
-    def autoconfigured(
-        cls, host: str = "127.0.0.1", port: int = 61613
-    ) -> MessagingTemplate:
-        return cls(stomp.Connection([(host, port)]))
+    def autoconfigured(cls, config: StompConfig) -> MessagingTemplate:
+        return cls(stomp.Connection([(config.host, config.port)]))
 
     @property
     def destinations(self) -> DestinationProvider:

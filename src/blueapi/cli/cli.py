@@ -7,6 +7,7 @@ import click
 from tqdm import tqdm
 
 from blueapi import __version__
+from blueapi.config import StompConfig
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.worker import StatusView, TaskEvent
 
@@ -51,7 +52,7 @@ def controller(ctx, host: str, port: int):
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
     ctx.ensure_object(dict)
-    client = AmqClient(StompMessagingTemplate.autoconfigured(host, port))
+    client = AmqClient(StompMessagingTemplate.autoconfigured(StompConfig(host, port)))
     ctx.obj["client"] = client
     client.app.connect()
 

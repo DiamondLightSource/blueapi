@@ -10,7 +10,7 @@ class StompConfig:
     """
 
     host: str = "localhost"
-    port: int = 61616
+    port: int = 61613
 
 
 @dataclass

@@ -57,5 +57,10 @@ tolerations: []
 
 affinity: {}
 
-worker: {}
+worker:
+  env:
+    startupScript: blueapi.startup.example
+  stomp:
+    host: activemq-activemq-daq
+    port: 61616
 # Config for the worker goes here, will be mounted into a config file

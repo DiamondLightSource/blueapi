@@ -12,7 +12,7 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
-    "version": "fix-config",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-config/"
+    "version": "helm",
+    "url": "https://DiamondLightSource.github.io/blueapi/helm/"
   }
 ]

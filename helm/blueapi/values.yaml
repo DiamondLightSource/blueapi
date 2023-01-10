@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/diamondlightsource/blueapi
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
@@ -62,5 +62,5 @@ worker:
     startupScript: blueapi.startup.example
   stomp:
     host: activemq-activemq-daq
-    port: 61616
+    port: 61613
 # Config for the worker goes here, will be mounted into a config file

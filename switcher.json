@@ -18,5 +18,9 @@
   {
     "version": "push-container-branches",
     "url": "https://DiamondLightSource.github.io/blueapi/push-container-branches/"
+  },
+  {
+    "version": "revert-branch-pushing",
+    "url": "https://DiamondLightSource.github.io/blueapi/revert-branch-pushing/"
   }
 ]

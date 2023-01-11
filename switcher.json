@@ -14,5 +14,9 @@
   {
     "version": "helm",
     "url": "https://DiamondLightSource.github.io/blueapi/helm/"
+  },
+  {
+    "version": "push-container-branches",
+    "url": "https://DiamondLightSource.github.io/blueapi/push-container-branches/"
   }
 ]

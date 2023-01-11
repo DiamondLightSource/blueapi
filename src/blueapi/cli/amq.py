@@ -2,9 +2,7 @@ import threading
 from typing import Any, Callable, List, Mapping, Optional, TypeVar, Union
 
 from blueapi.messaging import MessageContext, MessagingTemplate
-from blueapi.service import PlanModel
 from blueapi.service.model import (
-    DeviceModel,
     DeviceRequest,
     DeviceResponse,
     PlanRequest,

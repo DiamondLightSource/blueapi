@@ -145,8 +145,8 @@ jobs:
         with:
           images: ${{ env.IMAGE_REPOSITORY }}
           tags: |
+            type=ref,event=branch
             type=ref,event=tag
-            type=raw,value=latest
 
       - name: Set up Docker Buildx
         id: buildx

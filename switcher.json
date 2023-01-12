@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.0.1-pre1",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre1/"
+  },
+  {
     "version": "0.0.1-pre",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
   },
@@ -14,10 +18,6 @@
   {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
-  },
-  {
-    "version": "fix-controller",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-controller/"
   },
   {
     "version": "helm",

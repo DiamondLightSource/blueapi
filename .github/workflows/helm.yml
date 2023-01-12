@@ -1,0 +1,42 @@
+name: Helm CI
+
+on:
+  push:
+    tags:
+      - "*"
+
+env:
+  GCR_IMAGE: ghcr.io/diamondlightsource/blueapi
+  HELM_VERSION: 3.10.3
+
+jobs:
+  build:
+    name: publish gcr
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+
+      - name: install helm
+        uses: Azure/setup-helm@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+        id: install
+
+      - name: login to acr using helm
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ${{ env.GCR_IMAGE }} --username ${{ github.repository_owner }} --password-stdin
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+      - name: package chart and push it
+        run: |
+          sed -i "$ a appVersion: ${GITHUB_REF##*/}" helm/blueapi/Chart.yaml
+          helm dependencies update helm/blueapi
+          helm package helm/blueapi --version ${GITHUB_REF##*/} -d /tmp/
+          helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/diamondlightsource/charts

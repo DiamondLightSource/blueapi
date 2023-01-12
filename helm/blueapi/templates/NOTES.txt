@@ -1,0 +1,2 @@
+1. Worker will be deployed with the following config:
+{{- .Values.worker }}

@@ -63,7 +63,7 @@ def get_plans(ctx) -> None:
     client: AmqClient = ctx.obj["client"]
     plans = client.get_plans()
     print("PLANS")
-    for plan in plans:
+    for plan in plans.plans:
         print("\t" + plan.name)
 
 
@@ -71,7 +71,7 @@ def get_plans(ctx) -> None:
 @click.pass_context
 def get_devices(ctx) -> None:
     client: AmqClient = ctx.obj["client"]
-    print(client.get_devices())
+    print(client.get_devices().devices)
 
 
 @controller.command(name="run")

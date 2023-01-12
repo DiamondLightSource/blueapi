@@ -4,6 +4,7 @@ repos:
     hooks:
       - id: check-added-large-files
       - id: check-yaml
+        exclude: ^helm\/.*\/templates\/.*
       - id: check-merge-conflict
 
   - repo: local

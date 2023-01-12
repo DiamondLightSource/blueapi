@@ -16,10 +16,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
-    "version": "fix-controller",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-controller/"
-  },
-  {
     "version": "helm",
     "url": "https://DiamondLightSource.github.io/blueapi/helm/"
   },

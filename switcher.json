@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.0.1-pre2",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre2/"
+  },
+  {
     "version": "0.0.1-pre1",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre1/"
   },
@@ -18,10 +22,6 @@
   {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
-  },
-  {
-    "version": "helm",
-    "url": "https://DiamondLightSource.github.io/blueapi/helm/"
   },
   {
     "version": "push-container-branches",

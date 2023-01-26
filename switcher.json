@@ -20,6 +20,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/asyncapi/"
   },
   {
+    "version": "change-data-event",
+    "url": "https://DiamondLightSource.github.io/blueapi/change-data-event/"
+  },
+  {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },

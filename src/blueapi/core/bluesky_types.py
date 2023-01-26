@@ -90,7 +90,7 @@ class DataEvent:
     """
 
     name: str
-    document: Mapping[str, Any]
+    doc: Mapping[str, Any]
 
 
 @runtime_checkable

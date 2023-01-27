@@ -4,24 +4,24 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
-    "version": "0.0.1-pre4",
-    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre4/"
-  },
-  {
-    "version": "0.0.1-pre3",
-    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre3/"
-  },
-  {
-    "version": "0.0.1-pre2",
-    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre2/"
+    "version": "0.0.1-pre",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
   },
   {
     "version": "0.0.1-pre1",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre1/"
   },
   {
-    "version": "0.0.1-pre",
-    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
+    "version": "0.0.1-pre2",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre2/"
+  },
+  {
+    "version": "0.0.1-pre3",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre3/"
+  },
+  {
+    "version": "0.0.1-pre4",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre4/"
   },
   {
     "version": "asyncapi",
@@ -34,9 +34,5 @@
   {
     "version": "push-container-branches",
     "url": "https://DiamondLightSource.github.io/blueapi/push-container-branches/"
-  },
-  {
-    "version": "stomp-text-messages",
-    "url": "https://DiamondLightSource.github.io/blueapi/stomp-text-messages/"
   }
 ]

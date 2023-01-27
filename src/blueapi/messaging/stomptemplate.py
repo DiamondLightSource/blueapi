@@ -62,7 +62,9 @@ class StompMessagingTemplate(MessagingTemplate):
 
     @classmethod
     def autoconfigured(cls, config: StompConfig) -> MessagingTemplate:
-        return cls(stomp.Connection([(config.host, config.port)]))
+        return cls(
+            stomp.Connection([(config.host, config.port)], auto_content_length=False)
+        )
 
     @property
     def destinations(self) -> DestinationProvider:

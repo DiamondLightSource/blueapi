@@ -28,6 +28,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
+    "version": "downgrade-scanspec",
+    "url": "https://DiamondLightSource.github.io/blueapi/downgrade-scanspec/"
+  },
+  {
     "version": "push-container-branches",
     "url": "https://DiamondLightSource.github.io/blueapi/push-container-branches/"
   }

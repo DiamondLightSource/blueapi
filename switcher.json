@@ -4,20 +4,20 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
-    "version": "0.0.1-pre3",
-    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre3/"
-  },
-  {
-    "version": "0.0.1-pre2",
-    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre2/"
+    "version": "0.0.1-pre",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
   },
   {
     "version": "0.0.1-pre1",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre1/"
   },
   {
-    "version": "0.0.1-pre",
-    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
+    "version": "0.0.1-pre2",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre2/"
+  },
+  {
+    "version": "0.0.1-pre3",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre3/"
   },
   {
     "version": "asyncapi",
@@ -26,10 +26,6 @@
   {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
-  },
-  {
-    "version": "downgrade-scanspec",
-    "url": "https://DiamondLightSource.github.io/blueapi/downgrade-scanspec/"
   },
   {
     "version": "push-container-branches",

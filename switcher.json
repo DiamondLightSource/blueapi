@@ -34,5 +34,9 @@
   {
     "version": "push-container-branches",
     "url": "https://DiamondLightSource.github.io/blueapi/push-container-branches/"
+  },
+  {
+    "version": "stomp-text-messages",
+    "url": "https://DiamondLightSource.github.io/blueapi/stomp-text-messages/"
   }
 ]

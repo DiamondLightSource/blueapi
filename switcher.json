@@ -36,6 +36,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
+    "version": "public-topics",
+    "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
+  },
+  {
     "version": "push-container-branches",
     "url": "https://DiamondLightSource.github.io/blueapi/push-container-branches/"
   }

@@ -37,7 +37,7 @@ class AmqClient:
                 complete.set()
 
         self.app.subscribe(
-            self.app.destinations.topic("worker.event.task"), on_event_wrapper
+            self.app.destinations.topic("public.worker.event.task"), on_event_wrapper
         )
         # self.app.send("worker.run", {"name": name, "params": params})
         task_id = self.app.send_and_recieve(

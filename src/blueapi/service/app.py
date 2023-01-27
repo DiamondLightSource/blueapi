@@ -48,16 +48,18 @@ class Service:
         self._worker.run_forever()
 
     def _on_worker_event(self, event: WorkerEvent) -> None:
-        self._template.send(self._template.destinations.topic("worker.event"), event)
+        self._template.send(
+            self._template.destinations.topic("public.worker.event"), event
+        )
 
     def _on_task_event(self, event: TaskEvent) -> None:
         self._template.send(
-            self._template.destinations.topic("worker.event.task"), event
+            self._template.destinations.topic("public.worker.event.task"), event
         )
 
     def _on_data_event(self, event: DataEvent) -> None:
         self._template.send(
-            self._template.destinations.topic("worker.event.data"), event
+            self._template.destinations.topic("public.worker.event.data"), event
         )
 
     def _on_run_request(self, message_context: MessageContext, task: RunPlan) -> None:

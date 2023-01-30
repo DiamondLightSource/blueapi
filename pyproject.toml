@@ -18,7 +18,7 @@ dependencies = [
     "ophyd",
     "apischema",
     "stomp.py",
-    "scanspec<=0.5.5",
+    "scanspec<0.6.1",
     "PyYAML",
     "click",
 ]

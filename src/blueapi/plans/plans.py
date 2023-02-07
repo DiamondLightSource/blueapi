@@ -1,6 +1,6 @@
 import operator
 from functools import reduce
-from typing import Any, List, Mapping, Optional, Type, Union
+from typing import Any, List, Mapping, Optional, Tuple, Type, Union
 
 import bluesky.plans as bp
 from apischema import serialize
@@ -39,11 +39,17 @@ def scan(
     metadata = {
         "detectors": [detector.name for detector in detectors],
         "scanspec": serialize(spec, default_conversion=_convert_devices),
+        "shape": _shape(spec),
         **(metadata or {}),
     }
 
     cycler = _scanspec_to_cycler(spec)
     yield from bp.scan_nd(detectors, cycler, md=metadata)
+
+
+# TODO: Use built-in scanspec utility method following completion of DAQ-4487
+def _shape(spec: Spec[Movable]) -> Tuple[int, ...]:
+    return tuple(len(dim) for dim in spec.calculate())
 
 
 def _convert_devices(a_type: Type[Any]) -> Optional[AnyConversion]:

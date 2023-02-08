@@ -52,6 +52,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/push-container-branches/"
   },
   {
+    "version": "pydantic",
+    "url": "https://DiamondLightSource.github.io/blueapi/pydantic/"
+  },
+  {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   }

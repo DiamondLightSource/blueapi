@@ -22,7 +22,7 @@ class SynAxisWithMotionEvents(SynAxis):
         parent=None,
         labels=None,
         kind=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             name=name,
@@ -33,7 +33,7 @@ class SynAxisWithMotionEvents(SynAxis):
             parent=parent,
             labels=labels,
             kind=kind,
-            **kwargs
+            **kwargs,
         )
         self._events_per_move = events_per_move
         self.egu = egu

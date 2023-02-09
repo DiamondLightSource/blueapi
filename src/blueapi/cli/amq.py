@@ -7,6 +7,7 @@ from blueapi.service.model import (
     DeviceResponse,
     PlanRequest,
     PlanResponse,
+    TaskResponse,
 )
 from blueapi.worker import TaskEvent
 
@@ -40,9 +41,10 @@ class AmqClient:
             self.app.destinations.topic("public.worker.event.task"), on_event_wrapper
         )
         # self.app.send("worker.run", {"name": name, "params": params})
-        task_id = self.app.send_and_recieve(
-            "worker.run", {"name": name, "params": params}
-        ).result(timeout=5.0)
+        task_response = self.app.send_and_recieve(
+            "worker.run", {"name": name, "params": params}, reply_type=TaskResponse
+        ).result(5.0)
+        task_id = task_response.task_name
 
         if timeout is not None:
             complete.wait(timeout)

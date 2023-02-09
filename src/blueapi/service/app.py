@@ -16,6 +16,7 @@ from .model import (
     PlanModel,
     PlanRequest,
     PlanResponse,
+    TaskResponse,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -68,7 +69,8 @@ class Service:
 
         reply_queue = message_context.reply_destination
         if reply_queue is not None:
-            self._template.send(reply_queue, name)
+            response = TaskResponse(name)
+            self._template.send(reply_queue, response)
 
     def _get_plans(self, message_context: MessageContext, message: PlanRequest) -> None:
         plans = list(map(PlanModel.from_plan, self._ctx.plans.values()))

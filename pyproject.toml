@@ -20,7 +20,7 @@ dependencies = [
     "pyepics",
     "apischema",
     "stomp.py",
-    "scanspec<=0.5.5",
+    "scanspec<0.6.2",
     "PyYAML",
     "click",
 ]

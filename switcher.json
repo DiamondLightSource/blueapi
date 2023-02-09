@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.0.3",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.3/"
+  },
+  {
     "version": "0.0.2",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.2/"
   },
@@ -42,10 +46,6 @@
   {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
-  },
-  {
-    "version": "nslsii-dependencies",
-    "url": "https://DiamondLightSource.github.io/blueapi/nslsii-dependencies/"
   },
   {
     "version": "public-topics",

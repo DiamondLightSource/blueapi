@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.0.2",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.2/"
+  },
+  {
     "version": "0.0.1-pre6",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre6/"
   },
@@ -38,10 +42,6 @@
   {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
-  },
-  {
-    "version": "p45-devices",
-    "url": "https://DiamondLightSource.github.io/blueapi/p45-devices/"
   },
   {
     "version": "public-topics",

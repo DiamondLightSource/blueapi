@@ -62,5 +62,9 @@
   {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
+  },
+  {
+    "version": "useTaskResponse",
+    "url": "https://DiamondLightSource.github.io/blueapi/useTaskResponse/"
   }
 ]

@@ -44,6 +44,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
+    "version": "nslsii-dependencies",
+    "url": "https://DiamondLightSource.github.io/blueapi/nslsii-dependencies/"
+  },
+  {
     "version": "public-topics",
     "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
   },

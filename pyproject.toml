@@ -16,6 +16,8 @@ description = "One line description of your module"
 dependencies = [
     "bluesky",
     "ophyd",
+    "nslsii",
+    "pyepics",
     "apischema",
     "stomp.py",
     "scanspec<=0.5.5",

@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.0.4",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.0.4/"
+  },
+  {
     "version": "0.0.3",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.3/"
   },
@@ -62,9 +66,5 @@
   {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
-  },
-  {
-    "version": "useTaskResponse",
-    "url": "https://DiamondLightSource.github.io/blueapi/useTaskResponse/"
   }
 ]

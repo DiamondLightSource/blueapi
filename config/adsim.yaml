@@ -1,2 +1,2 @@
 env:
-  startup_script: blueapi.startup.adsim
+  startupScript: blueapi.startup.adsim

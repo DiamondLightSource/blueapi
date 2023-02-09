@@ -8,6 +8,8 @@ from ophyd.areadetector.filestore_mixins import FileStoreHDF5, FileStoreIterativ
 from ophyd.areadetector.plugins import HDF5Plugin, PosPlugin, StatsPlugin
 from ophyd.signal import EpicsSignalRO
 
+from blueapi.plans import *  # noqa: F401, F403
+
 
 class SampleY(MotorBundle):
     top: EpicsMotor = Cpt(EpicsMotor, "Y:TOP")
@@ -19,14 +21,15 @@ class SampleTheta(MotorBundle):
     bottom: EpicsMotor = Cpt(EpicsMotor, "THETA:BOT")
 
 
-class SampleStage(Device):
-    """
-    ADSIM EPICS motors
-    """
-
+class SampleStage(MotorBundle):
     x: EpicsMotor = Cpt(EpicsMotor, "X")
     y: SampleY = Cpt(SampleY, "")
     theta: SampleTheta = Cpt(SampleTheta, "")
+
+
+class Choppers(MotorBundle):
+    x: EpicsMotor = Cpt(EpicsMotor, "ENDAT")
+    y: EpicsMotor = Cpt(EpicsMotor, "BISS")
 
 
 _ACQUIRE_BUFFER_PERIOD = 0.2
@@ -103,8 +106,9 @@ class GigeCamera(SingleTriggerV33, DetectorBase):
 
 
 sample = SampleStage(name="sample", prefix="BL45P-MO-STAGE-01:")
-chopper = EpicsMotor(name="chopper", prefix="BL45P-MO-CHOP-01:BISS")
+choppers = Choppers(name="chopper", prefix="BL45P-MO-CHOP-01:")
 det = GigeCamera(name="det", prefix="BL45P-EA-MAP-01:")
 diff = GigeCamera(name="diff", prefix="BL45P-EA-DIFF-01:")
 
-__all__ = ["sample", "chopper"]
+for device in sample, choppers, det, diff:
+    device.wait_for_connection()

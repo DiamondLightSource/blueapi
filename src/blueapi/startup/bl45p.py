@@ -1,12 +1,11 @@
 from nslsii.ad33 import CamV33Mixin, SingleTriggerV33
 from ophyd import Component as Cpt
-from ophyd import DetectorBase, Device, EpicsMotor, MotorBundle
+from ophyd import DetectorBase, EpicsMotor, MotorBundle
 from ophyd.areadetector.base import ADComponent as Cpt
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5, FileStoreIterativeWrite
-from ophyd.areadetector.plugins import HDF5Plugin, PosPlugin, StatsPlugin
-from ophyd.signal import EpicsSignalRO
+from ophyd.areadetector.plugins import HDF5Plugin
 
 from blueapi.plans import *  # noqa: F401, F403
 
@@ -111,4 +110,4 @@ det = GigeCamera(name="det", prefix="BL45P-EA-MAP-01:")
 diff = GigeCamera(name="diff", prefix="BL45P-EA-DIFF-01:")
 
 for device in sample, choppers, det, diff:
-    device.wait_for_connection()
+    device.wait_for_connection()  # type: ignore

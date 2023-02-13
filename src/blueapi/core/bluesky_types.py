@@ -1,6 +1,6 @@
 import inspect
 from dataclasses import dataclass
-from typing import Any, Callable, Generator, Mapping, Type, Union
+from typing import Any, Callable, Generator, Mapping, Optional, Type, Union
 
 from bluesky.protocols import (
     Checkable,
@@ -20,6 +20,7 @@ from bluesky.protocols import (
     WritesExternalAssets,
 )
 from bluesky.utils import Msg
+from pydantic import BaseModel, Field
 
 try:
     from typing import Protocol, runtime_checkable
@@ -72,14 +73,15 @@ def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
     )
 
 
-@dataclass
-class Plan:
+class Plan(BaseModel):
     """
     A plan that can be run
     """
 
-    name: str
-    model: Type[Any]
+    name: str = Field(description="Referenceable name of the plan")
+    model: Type[BaseModel] = Field(
+        description="Validation model of the parameters for the plan"
+    )
 
 
 @dataclass

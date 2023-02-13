@@ -5,32 +5,31 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, TypeVar
 from apischema import deserialize
 from apischema.conversions.conversions import Conversion
 from apischema.conversions.converters import AnyConversion, default_deserialization
+from pydantic import BaseModel
 
 
-def schema_for_func(func: Callable[..., Any]) -> Type:
+def schema_for_func(func: Callable[..., Any]) -> BaseModel:
     """
-    Generate a dataclass that acts as a schema for validation with apischema.
+    Generate a pydantic model of the set of parameters to a function.
     Inspect the parameters, default values and type annotations of a function and
     generate the schema.
 
     Example:
 
-    def foo(a: int, b: str, c: bool):
+    def foo(a: int, b: str, c: bool = False):
         ...
 
     schema = schema_for_func(foo)
 
     Schema is the runtime equivalent of:
 
-    @dataclass
-    class fooo_params:
+    class foo_params(BaseModel):
         a: int
         b: str
-        c: bool
+        c: bool = False
 
     Args:
-        func (Callable[..., Any]): The source function, all parameters must have type
-                                   annotations
+        func: The source function, all parameters must have type annotations
 
     Raises:
         TypeError: If a type annotation is either `Any` or not supplied

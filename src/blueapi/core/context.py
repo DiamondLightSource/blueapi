@@ -7,6 +7,8 @@ from typing import Dict, List, Optional, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
+from pydantic import BaseConfig, Extra, validate_arguments
+from pydantic.decorator import ValidatedFunction
 
 from blueapi.utils import load_module_all, schema_for_func
 
@@ -22,6 +24,10 @@ from .device_lookup import find_component
 LOGGER = logging.getLogger(__name__)
 
 
+class PlanConfig(BaseConfig):
+    extra = Extra.forbid
+
+
 @dataclass
 class BlueskyContext:
     """
@@ -31,9 +37,8 @@ class BlueskyContext:
     run_engine: RunEngine = field(
         default_factory=lambda: RunEngine(context_managers=[])
     )
-    plans: Dict[str, Plan] = field(default_factory=dict)
+    plans: Dict[str, ValidatedFunction] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
-    plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
 
     def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
         """
@@ -107,9 +112,8 @@ class BlueskyContext:
         if not is_bluesky_plan_generator(plan):
             raise TypeError(f"{plan} is not a valid plan generator function")
 
-        schema = schema_for_func(plan)
-        self.plans[plan.__name__] = Plan(plan.__name__, schema)
-        self.plan_functions[plan.__name__] = plan
+        schema = ValidatedFunction(plan, PlanConfig)
+        self.plans[plan.__name__] = schema
         return plan
 
     def device(self, device: Device, name: Optional[str] = None) -> None:

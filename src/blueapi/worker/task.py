@@ -1,39 +1,20 @@
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Any, Mapping, Union
+from dataclasses import dataclass
+from typing import Any, Mapping
 
-from apischema import deserializer, identity, serializer
-from apischema.conversions import Conversion
+from pydantic import BaseModel, Field, parse_obj_as
+from pydantic.decorator import ValidatedFunction
 
-from blueapi.core import (
-    BlueskyContext,
-    Device,
-    Plan,
-    create_bluesky_protocol_conversions,
-)
+from blueapi.core import BlueskyContext, Device, create_bluesky_protocol_conversions
 from blueapi.utils import nested_deserialize_with_overrides
 
 
 # TODO: Make a TaggedUnion
-class Task(ABC):
+class Task(ABC, BaseModel):
     """
     Object that can run with a TaskContext
     """
-
-    _union: Any = None
-
-    # You can use __init_subclass__ to register new subclass automatically
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        # Deserializers stack directly as a Union
-        deserializer(Conversion(identity, source=cls, target=Task))
-        # Only Base serializer must be registered (and updated for each subclass) as
-        # a Union, and not be inherited
-        Task._union = cls if Task._union is None else Union[Task._union, cls]
-        serializer(
-            Conversion(identity, source=Task, target=Task._union, inherited=False)
-        )
 
     @abstractmethod
     def do_task(self, __ctx: BlueskyContext) -> None:
@@ -48,29 +29,43 @@ class Task(ABC):
 LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
 class RunPlan(Task):
     """
     Task that will run a plan
     """
 
-    name: str
-    params: Mapping[str, Any] = field(default_factory=dict)
-    # plan: Generator[Msg, None, Any]
+    name: str = Field(description="Name of plan to run")
+    params: Mapping[str, Any] = Field(
+        description="Values for parameters to plan, if any", default_factory=dict
+    )
 
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(f"Asked to run plan {self.name} with {self.params}")
 
         plan = ctx.plans[self.name]
-        plan_function = ctx.plan_functions[self.name]
-        sanitized_params = lookup_params(ctx, plan, self.params)
-        plan_generator = plan_function(**sanitized_params)
+        sanitized_params = _lookup_params(ctx, plan, self.params)
+        plan_generator = plan.call(**sanitized_params)
         ctx.run_engine(plan_generator)
 
 
-def lookup_params(
-    ctx: BlueskyContext, plan: Plan, params: Mapping[str, Any]
-) -> Mapping[str, Any]:
+def _lookup_params(
+    ctx: BlueskyContext, plan: ValidatedFunction, params: Mapping[str, Any]
+) -> BaseModel:
+    """
+    Checks plan parameters against context
+
+    Args:
+        ctx: Context holding plans and devices
+        plan: Plan object including schema
+        params: Parameter values to be validated against schema
+
+    Returns:
+        Mapping[str, Any]: _description_
+    """
+
+    model = plan.model
+    return parse_obj_as(model, params)
+
     def find_device(name: str) -> Device:
         device = ctx.find_device(name)
         if device is not None:

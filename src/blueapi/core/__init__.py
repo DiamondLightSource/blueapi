@@ -7,6 +7,7 @@ from .bluesky_types import (
     PlanGenerator,
     WatchableStatus,
     is_bluesky_compatible_device,
+    is_bluesky_compatible_device_type,
     is_bluesky_plan_generator,
 )
 from .context import BlueskyContext
@@ -27,4 +28,5 @@ __all__ = [
     "WatchableStatus",
     "is_bluesky_compatible_device",
     "is_bluesky_plan_generator",
+    "is_bluesky_compatible_device_type",
 ]

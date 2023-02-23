@@ -58,12 +58,19 @@ BLUESKY_PROTOCOLS = list(Device.__args__)  # type: ignore
 
 def is_bluesky_compatible_device(obj: Any) -> bool:
     is_object = not inspect.isclass(obj)
-    follows_protocols = any(
-        map(lambda protocol: isinstance(obj, protocol), BLUESKY_PROTOCOLS)
-    )
     # We must separately check if Obj refers to an instance rather than a
     # class, as both follow the protocols but only one is a "device".
-    return is_object and follows_protocols
+    return is_object and _follows_bluesky_protocols(obj)
+
+
+def is_bluesky_compatible_device_type(cls: Type[Any]) -> bool:
+    # We must separately check if Obj refers to an class rather than an
+    # instance, as both follow the protocols but only one is a type.
+    return inspect.isclass(cls) and _follows_bluesky_protocols(cls)
+
+
+def _follows_bluesky_protocols(obj: Any) -> bool:
+    return any(map(lambda protocol: isinstance(obj, protocol), BLUESKY_PROTOCOLS))
 
 
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:

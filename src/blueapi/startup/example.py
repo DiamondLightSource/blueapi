@@ -1,4 +1,4 @@
-from ophyd.sim import Syn2DGauss, SynAxisNoPosition, SynGauss, SynSignal
+from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
 
 from blueapi.plans import *  # noqa: F401, F403
 

@@ -1,5 +1,6 @@
 import itertools
 import json
+import logging
 from pathlib import Path
 from typing import Dict, Mapping, Optional
 
@@ -46,11 +47,21 @@ def start_worker(config: Optional[Path]):
     help="Broker port",
     default=61613,
 )
+@click.option(
+    "-l",
+    "--log-level",
+    type=str,
+    help="Logger level: TRACE, DEBUG, INFO, WARNING, ERROR or CRITICAL, "
+    "defaults to WARNING",
+    default="WARNING",
+)
 @click.pass_context
-def controller(ctx, host: str, port: int):
+def controller(ctx, host: str, port: int, log_level: str):
     # if no command is supplied, run with the options passed
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
+        return
+    logging.basicConfig(level=log_level)
     ctx.ensure_object(dict)
     client = AmqClient(StompMessagingTemplate.autoconfigured(StompConfig(host, port)))
     ctx.obj["client"] = client

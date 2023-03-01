@@ -3,7 +3,7 @@ from typing import Generic, TypeVar
 
 from blueapi.core import DataEvent, EventStream
 
-from .event import TaskEvent, WorkerEvent
+from .event import WorkerEvent
 
 T = TypeVar("T")
 

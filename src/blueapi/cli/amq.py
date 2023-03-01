@@ -1,6 +1,5 @@
 import threading
-from concurrent.futures import Future
-from typing import Any, Callable, List, Mapping, Optional, TypeVar, Union
+from typing import Any, Callable, Mapping, Optional, TypeVar
 
 from blueapi.messaging import MessageContext, MessagingTemplate
 from blueapi.service.model import (
@@ -10,7 +9,7 @@ from blueapi.service.model import (
     PlanResponse,
     TaskResponse,
 )
-from blueapi.worker import ProgressEvent, TaskEvent, WorkerEvent, WorkerStatusEvent
+from blueapi.worker import TaskEvent, WorkerEvent, WorkerStatusEvent
 
 T = TypeVar("T")
 

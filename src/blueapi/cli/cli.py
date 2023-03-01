@@ -8,7 +8,6 @@ import click
 from blueapi import __version__
 from blueapi.config import StompConfig
 from blueapi.messaging import StompMessagingTemplate
-from blueapi.worker import TaskEvent
 
 from .amq import AmqClient
 from .updates import CliEventRenderer

@@ -7,7 +7,7 @@ from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.utils import ConfigLoader
-from blueapi.worker import RunEngineWorker, RunPlan, TaskEvent, Worker, WorkerEvent
+from blueapi.worker import RunEngineWorker, RunPlan, Worker, WorkerEvent
 
 from .model import (
     DeviceModel,

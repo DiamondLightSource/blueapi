@@ -14,7 +14,7 @@ from .task import TaskState
 RawRunEngineState = Union[PropertyMachine, ProxyString, str]
 
 
-class RunnerState(Enum):
+class WorkerState(Enum):
     """
     The state of the Runner.
     """
@@ -31,10 +31,10 @@ class RunnerState(Enum):
     UNKNOWN = "UNKNOWN"
 
     @classmethod
-    def from_bluesky_state(cls, bluesky_state: RawRunEngineState) -> "RunnerState":
+    def from_bluesky_state(cls, bluesky_state: RawRunEngineState) -> "WorkerState":
         if isinstance(bluesky_state, RunEngineStateMachine.States):
             return cls.from_bluesky_state(bluesky_state.value)
-        return RunnerState(str(bluesky_state).upper())
+        return WorkerState(str(bluesky_state).upper())
 
 
 @dataclass
@@ -89,17 +89,17 @@ class TaskEvent(WorkerEvent):
 
 
 @dataclass
-class StatusEvent(WorkerEvent):
+class ProgressEvent(WorkerEvent):
     task_name: str
     statuses: Mapping[str, StatusView] = field(default_factory=dict)
 
 
 @dataclass
 class WorkerStatusEvent(WorkerEvent):
-    worker_state: RunnerState
+    worker_state: WorkerState
     error_message: Optional[str] = None
 
     def is_error(self) -> bool:
         return self.error_message is not None or (
-            self.worker_state in (RunnerState.UNKNOWN, RunnerState.PANICKED)
+            self.worker_state in (WorkerState.UNKNOWN, WorkerState.PANICKED)
         )

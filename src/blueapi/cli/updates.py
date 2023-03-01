@@ -3,7 +3,7 @@ from typing import Dict, Mapping, Optional, Union
 
 from tqdm import tqdm
 
-from blueapi.worker import StatusEvent, StatusView, TaskEvent, WorkerEvent
+from blueapi.worker import ProgressEvent, StatusView, TaskEvent, WorkerEvent
 
 _BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"
 
@@ -55,11 +55,11 @@ class CliEventRenderer:
         self._pbar_renderer = pbar_renderer or ProgressBarRenderer()
 
     def render_event(self, event: WorkerEvent) -> None:
-        if isinstance(event, StatusEvent) and self._relates_to_task(event):
+        if isinstance(event, ProgressEvent) and self._relates_to_task(event):
             self._pbar_renderer.update(event.statuses)
         elif isinstance(event, TaskEvent) and self._relates_to_task(event):
             print("")
             print(str(event.state))
 
-    def _relates_to_task(self, event: Union[TaskEvent, StatusEvent]) -> bool:
+    def _relates_to_task(self, event: Union[TaskEvent, ProgressEvent]) -> bool:
         return self._task_name is None or self._task_name == event.task_name

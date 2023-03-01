@@ -16,12 +16,12 @@ from blueapi.core import (
 )
 
 from .event import (
+    ProgressEvent,
     RawRunEngineState,
-    RunnerState,
-    StatusEvent,
     StatusView,
     TaskEvent,
     WorkerEvent,
+    WorkerState,
     WorkerStatusEvent,
 )
 from .task import ActiveTask, Task, TaskState
@@ -103,11 +103,11 @@ class RunEngineWorker(Worker[Task]):
         raw_new_state: RawRunEngineState,
         raw_old_state: Optional[RawRunEngineState] = None,
     ) -> None:
-        new_state = RunnerState.from_bluesky_state(raw_new_state)
+        new_state = WorkerState.from_bluesky_state(raw_new_state)
         if raw_old_state:
-            old_state = RunnerState.from_bluesky_state(raw_old_state)
+            old_state = WorkerState.from_bluesky_state(raw_old_state)
         else:
-            old_state = RunnerState.UNKNOWN
+            old_state = WorkerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
         self._report_worker_state(new_state)
 
@@ -116,10 +116,10 @@ class RunEngineWorker(Worker[Task]):
         self._set_task_state(TaskState.FAILED, str(err))
 
     def _panic(self, error: Optional[str] = None) -> None:
-        self._report_worker_state(RunnerState.PANICKED, error)
+        self._report_worker_state(WorkerState.PANICKED, error)
 
     def _report_worker_state(
-        self, state: RunnerState, error: Optional[str] = None
+        self, state: WorkerState, error: Optional[str] = None
     ) -> None:
         self._worker_events.publish(WorkerStatusEvent(state, error))
 
@@ -200,7 +200,7 @@ class RunEngineWorker(Worker[Task]):
             raise ValueError("Got a status update without an active task!")
         else:
             self._worker_events.publish(
-                StatusEvent(
+                ProgressEvent(
                     self._current.name,
                     statuses=self._status_snapshot,
                 )

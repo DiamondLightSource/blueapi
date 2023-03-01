@@ -10,7 +10,7 @@ from blueapi.service.model import (
     PlanResponse,
     TaskResponse,
 )
-from blueapi.worker import StatusEvent, TaskEvent, WorkerEvent, WorkerStatusEvent
+from blueapi.worker import ProgressEvent, TaskEvent, WorkerEvent, WorkerStatusEvent
 
 T = TypeVar("T")
 

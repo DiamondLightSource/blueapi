@@ -1,9 +1,9 @@
 from .event import (
-    RunnerState,
-    StatusEvent,
+    ProgressEvent,
     StatusView,
     TaskEvent,
     WorkerEvent,
+    WorkerState,
     WorkerStatusEvent,
 )
 from .multithread import run_worker_in_own_thread
@@ -19,9 +19,9 @@ __all__ = [
     "Worker",
     "RunPlan",
     "WorkerEvent",
-    "RunnerState",
+    "WorkerState",
     "TaskEvent",
     "StatusView",
-    "StatusEvent",
+    "ProgressEvent",
     "WorkerStatusEvent",
 ]

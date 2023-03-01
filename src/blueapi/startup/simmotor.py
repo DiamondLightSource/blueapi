@@ -3,7 +3,7 @@ import time as ttime
 from typing import Callable, Optional
 
 from ophyd.sim import SynAxis
-from ophyd.status import MoveStatus
+from ophyd.status import MoveStatus, Status
 
 
 class SynAxisWithMotionEvents(SynAxis):
@@ -81,3 +81,14 @@ class SynAxisWithMotionEvents(SynAxis):
         threading.Thread(target=sleep_and_finish, daemon=True).start()
 
         return st
+
+
+class BrokenSynAxis(SynAxis):
+    _timeout: float
+
+    def __init__(self, *, timeout: float, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._timeout = timeout
+
+    def set(self, value: float) -> Status:
+        return Status(timeout=self._timeout)

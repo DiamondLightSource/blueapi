@@ -34,7 +34,7 @@ class Service:
         self._template = StompMessagingTemplate.autoconfigured(config.stomp)
 
     def run(self) -> None:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=self._config.logging.level)
         self._worker.worker_events.subscribe(self._on_worker_event)
         self._worker.task_events.subscribe(self._on_task_event)
         self._worker.data_events.subscribe(self._on_data_event)

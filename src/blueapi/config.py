@@ -23,6 +23,11 @@ class EnvironmentConfig:
 
 
 @dataclass
+class LoggingConfig:
+    level: str = "INFO"
+
+
+@dataclass
 class ApplicationConfig:
     """
     Config for the worker application as a whole. Root of
@@ -31,3 +36,4 @@ class ApplicationConfig:
 
     stomp: StompConfig = field(default_factory=StompConfig)
     env: EnvironmentConfig = field(default_factory=EnvironmentConfig)
+    logging: LoggingConfig = field(default_factory=LoggingConfig)

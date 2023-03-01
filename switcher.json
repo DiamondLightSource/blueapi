@@ -64,6 +64,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic/"
   },
   {
+    "version": "reply-error",
+    "url": "https://DiamondLightSource.github.io/blueapi/reply-error/"
+  },
+  {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   }

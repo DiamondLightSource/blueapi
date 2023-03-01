@@ -36,7 +36,6 @@ class Service:
     def run(self) -> None:
         logging.basicConfig(level=self._config.logging.level)
         self._worker.worker_events.subscribe(self._on_worker_event)
-        self._worker.task_events.subscribe(self._on_task_event)
         self._worker.data_events.subscribe(self._on_data_event)
 
         self._template.connect()
@@ -50,11 +49,6 @@ class Service:
     def _on_worker_event(self, event: WorkerEvent) -> None:
         self._template.send(
             self._template.destinations.topic("public.worker.event"), event
-        )
-
-    def _on_task_event(self, event: TaskEvent) -> None:
-        self._template.send(
-            self._template.destinations.topic("public.worker.event.task"), event
         )
 
     def _on_data_event(self, event: DataEvent) -> None:

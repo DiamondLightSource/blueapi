@@ -1,4 +1,11 @@
-from .event import RunnerState, StatusView, TaskEvent, WorkerEvent
+from .event import (
+    RunnerState,
+    StatusEvent,
+    StatusView,
+    TaskEvent,
+    WorkerEvent,
+    WorkerStatusEvent,
+)
 from .multithread import run_worker_in_own_thread
 from .reworker import RunEngineWorker
 from .task import RunPlan, Task, TaskState
@@ -15,4 +22,6 @@ __all__ = [
     "RunnerState",
     "TaskEvent",
     "StatusView",
+    "StatusEvent",
+    "WorkerStatusEvent",
 ]

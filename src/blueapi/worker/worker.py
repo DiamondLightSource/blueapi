@@ -46,18 +46,6 @@ class Worker(ABC, Generic[T]):
 
     @property
     @abstractmethod
-    def task_events(self) -> EventStream[TaskEvent, int]:
-        """
-        Events representing changes to individual taks
-
-        Returns:
-            EventStream[TaskEvent, int]: Subscribable stream of events
-        """
-
-        ...
-
-    @property
-    @abstractmethod
     def data_events(self) -> EventStream[DataEvent, int]:
         """
         Events representing collection of data

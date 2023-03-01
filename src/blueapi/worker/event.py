@@ -1,7 +1,10 @@
+from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Mapping, Optional, Union
+from typing import Any, Mapping, Optional, Union
 
+from apischema import deserializer, identity, serializer
+from apischema.conversions import Conversion
 from bluesky.run_engine import RunEngineStateMachine
 from super_state_machine.extras import PropertyMachine, ProxyString
 
@@ -35,16 +38,6 @@ class RunnerState(Enum):
 
 
 @dataclass
-class WorkerEvent:
-    """
-    Event emitted by a worker when the runner state changes
-    """
-
-    state: RunnerState
-    current_task_name: Optional[str]
-
-
-@dataclass
 class StatusView:
     """
     A snapshot of a Status, optionally representing progress
@@ -62,16 +55,51 @@ class StatusView:
     time_remaining: Optional[float] = None
 
 
+class WorkerEvent(ABC):
+    _union: Any = None
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        deserializer(Conversion(identity, source=cls, target=WorkerEvent))
+        WorkerEvent._union = (
+            cls if WorkerEvent._union is None else Union[WorkerEvent._union, cls]
+        )
+        serializer(
+            Conversion(
+                identity, source=WorkerEvent, target=WorkerEvent._union, inherited=False
+            )
+        )
+
+
 @dataclass
-class TaskEvent:
+class TaskEvent(WorkerEvent):
     """
     An event representing a progress update on a Task
     """
 
-    name: str
     state: TaskState
-    error: Optional[str] = None
-    statuses: Mapping[str, StatusView] = field(default_factory=dict)
+    task_name: str
+    error_message: Optional[str] = None
 
     def is_task_terminated(self) -> bool:
         return self.state in (TaskState.COMPLETE, TaskState.FAILED)
+
+    def is_error(self) -> bool:
+        return self.error_message is not None or self.state is TaskState.FAILED
+
+
+@dataclass
+class StatusEvent(WorkerEvent):
+    task_name: str
+    statuses: Mapping[str, StatusView] = field(default_factory=dict)
+
+
+@dataclass
+class WorkerStatusEvent(WorkerEvent):
+    worker_state: RunnerState
+    error_message: Optional[str] = None
+
+    def is_error(self) -> bool:
+        return self.error_message is not None or (
+            self.worker_state in (RunnerState.UNKNOWN, RunnerState.PANICKED)
+        )

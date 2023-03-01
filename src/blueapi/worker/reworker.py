@@ -15,7 +15,15 @@ from blueapi.core import (
     WatchableStatus,
 )
 
-from .event import RawRunEngineState, RunnerState, StatusView, TaskEvent, WorkerEvent
+from .event import (
+    RawRunEngineState,
+    RunnerState,
+    StatusEvent,
+    StatusView,
+    TaskEvent,
+    WorkerEvent,
+    WorkerStatusEvent,
+)
 from .task import ActiveTask, Task, TaskState
 from .worker import Worker
 
@@ -37,7 +45,6 @@ class RunEngineWorker(Worker[Task]):
     _status_snapshot: Dict[str, StatusView]
 
     _worker_events: EventPublisher[WorkerEvent]
-    _task_events: EventPublisher[TaskEvent]
     _data_events: EventPublisher[DataEvent]
 
     def __init__(
@@ -48,7 +55,6 @@ class RunEngineWorker(Worker[Task]):
         self._task_queue = Queue()
         self._current = None
         self._worker_events = EventPublisher()
-        self._task_events = EventPublisher()
         self._data_events = EventPublisher()
         self._status_lock = RLock()
         self._status_snapshot = {}
@@ -56,8 +62,8 @@ class RunEngineWorker(Worker[Task]):
     def submit_task(self, name: str, task: Task) -> None:
         active_task = ActiveTask(name, task)
         LOGGER.info(f"Submitting: {active_task}")
-        self._task_events.publish(TaskEvent(active_task.name, active_task.state))
         self._task_queue.put(active_task)
+        self._worker_events.publish(TaskEvent(active_task.state, active_task.name))
 
     def run_forever(self) -> None:
         LOGGER.info("Worker starting")
@@ -72,7 +78,7 @@ class RunEngineWorker(Worker[Task]):
         try:
             self._cycle()
         except Exception as ex:
-            LOGGER.error(ex, exc_info=True)
+            self._report_error(ex)
 
     def _cycle(self) -> None:
         LOGGER.info("Awaiting task")
@@ -82,14 +88,11 @@ class RunEngineWorker(Worker[Task]):
         self._set_task_state(TaskState.RUNNING)
         self._current.task.do_task(self._ctx)
         self._set_task_state(TaskState.COMPLETE)
+        self._current = None
 
     @property
     def worker_events(self) -> EventStream[WorkerEvent, int]:
         return self._worker_events
-
-    @property
-    def task_events(self) -> EventStream[TaskEvent, int]:
-        return self._task_events
 
     @property
     def data_events(self) -> EventStream[DataEvent, int]:
@@ -106,19 +109,32 @@ class RunEngineWorker(Worker[Task]):
         else:
             old_state = RunnerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        if self._current is not None:
-            name = self._current.name
-        else:
-            name = None
-        self._worker_events.publish(WorkerEvent(new_state, name))
+        self._report_worker_state(new_state)
+
+    def _report_error(self, err: Exception) -> None:
+        LOGGER.error(err, exc_info=True)
+        self._set_task_state(TaskState.FAILED, str(err))
+
+    def _panic(self, error: Optional[str] = None) -> None:
+        self._report_worker_state(RunnerState.PANICKED, error)
+
+    def _report_worker_state(
+        self, state: RunnerState, error: Optional[str] = None
+    ) -> None:
+        self._worker_events.publish(WorkerStatusEvent(state, error))
 
     def _set_task_state(self, state: TaskState, error: Optional[str] = None) -> None:
-        if self._current is None:
-            raise ValueError("Cannot set task state when we are not running a task!")
-        self._current.state = state
-        self._task_events.publish(
-            TaskEvent(self._current.name, self._current.state, error)
-        )
+        if self._current is not None:
+            self._current.state = state
+            event = TaskEvent(
+                self._current.state, self._current.name, error_message=error
+            )
+            self._worker_events.publish(event)
+        else:
+            error = error or "UNKNOWN ERROR"
+            self._panic(
+                f"An error occurred while the worker was not running a task: {error}"
+            )
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         self._data_events.publish(DataEvent(name, document))
@@ -183,10 +199,9 @@ class RunEngineWorker(Worker[Task]):
         if self._current is None:
             raise ValueError("Got a status update without an active task!")
         else:
-            self._task_events.publish(
-                TaskEvent(
+            self._worker_events.publish(
+                StatusEvent(
                     self._current.name,
-                    self._current.state,
                     statuses=self._status_snapshot,
                 )
             )

@@ -9,7 +9,7 @@ from blueapi.service.model import (
     PlanResponse,
     TaskResponse,
 )
-from blueapi.worker import TaskEvent, WorkerEvent, WorkerStatusEvent
+from blueapi.worker import WorkerEvent, WorkerStatusEvent
 
 T = TypeVar("T")
 
@@ -38,12 +38,10 @@ class AmqClient:
             if on_event is not None:
                 on_event(event)
 
-            if (isinstance(event, TaskEvent) and event.is_task_terminated()) or (
-                isinstance(event, WorkerStatusEvent) and event.is_error()
-            ):
+            if isinstance(event, WorkerStatusEvent) and event.is_complete():
                 complete.set()
                 if event.is_error():
-                    raise BlueskyRemoteError(event.error_message or "Unknown error")
+                    raise BlueskyRemoteError(str(event.errors) or "Unknown error")
 
         self.app.subscribe(
             self.app.destinations.topic("public.worker.event"), on_event_wrapper

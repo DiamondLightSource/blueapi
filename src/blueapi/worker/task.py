@@ -16,14 +16,6 @@ from blueapi.core import (
 from blueapi.utils import nested_deserialize_with_overrides
 
 
-class TaskState(Enum):
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
-    PAUSED = "PAUSED"
-    FAILED = "FAILED"
-    COMPLETE = "COMPLETE"
-
-
 # TODO: Make a TaggedUnion
 class Task(ABC):
     """
@@ -96,4 +88,5 @@ def lookup_params(
 class ActiveTask:
     name: str
     task: Task
-    state: TaskState = field(default=TaskState.PENDING)
+    is_complete: bool = False
+    is_error: bool = False

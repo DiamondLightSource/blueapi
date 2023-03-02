@@ -3,7 +3,7 @@ import uuid
 from functools import partial
 from queue import Queue
 from threading import RLock
-from typing import Any, Dict, Iterable, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 from bluesky.protocols import Status
 
@@ -19,12 +19,12 @@ from .event import (
     ProgressEvent,
     RawRunEngineState,
     StatusView,
-    TaskEvent,
+    TaskStatus,
     WorkerEvent,
     WorkerState,
     WorkerStatusEvent,
 )
-from .task import ActiveTask, Task, TaskState
+from .task import ActiveTask, Task
 from .worker import Worker
 
 LOGGER = logging.getLogger(__name__)
@@ -39,11 +39,13 @@ class RunEngineWorker(Worker[Task]):
     """
 
     _ctx: BlueskyContext
+    _state: WorkerState
+    _errors: List[str]
+    _warnings: List[str]
     _task_queue: Queue  # type: ignore
     _current: Optional[ActiveTask]
     _status_lock: RLock
     _status_snapshot: Dict[str, StatusView]
-
     _worker_events: EventPublisher[WorkerEvent]
     _data_events: EventPublisher[DataEvent]
 
@@ -52,6 +54,9 @@ class RunEngineWorker(Worker[Task]):
         ctx: BlueskyContext,
     ) -> None:
         self._ctx = ctx
+        self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
+        self._errors = []
+        self._warnings = []
         self._task_queue = Queue()
         self._current = None
         self._worker_events = EventPublisher()
@@ -63,7 +68,6 @@ class RunEngineWorker(Worker[Task]):
         active_task = ActiveTask(name, task)
         LOGGER.info(f"Submitting: {active_task}")
         self._task_queue.put(active_task)
-        self._worker_events.publish(TaskEvent(active_task.state, active_task.name))
 
     def run_forever(self) -> None:
         LOGGER.info("Worker starting")
@@ -81,14 +85,20 @@ class RunEngineWorker(Worker[Task]):
             self._report_error(ex)
 
     def _cycle(self) -> None:
-        LOGGER.info("Awaiting task")
-        next_task: ActiveTask = self._task_queue.get()
-        LOGGER.info(f"Got new task: {next_task}")
-        self._current = next_task  # Informing mypy that the task is not None
-        self._set_task_state(TaskState.RUNNING)
-        self._current.task.do_task(self._ctx)
-        self._set_task_state(TaskState.COMPLETE)
-        self._current = None
+        try:
+            LOGGER.info("Awaiting task")
+            next_task: ActiveTask = self._task_queue.get()
+            LOGGER.info(f"Got new task: {next_task}")
+            self._current = next_task  # Informing mypy that the task is not None
+            self._current.task.do_task(self._ctx)
+        except Exception as err:
+            self._report_error(err)
+
+        if self._current is not None:
+            self._current.is_complete = True
+        self._report_status()
+        self._errors.clear()
+        self._warnings.clear()
 
     @property
     def worker_events(self) -> EventStream[WorkerEvent, int]:
@@ -109,32 +119,32 @@ class RunEngineWorker(Worker[Task]):
         else:
             old_state = WorkerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        self._report_worker_state(new_state)
+        self._state = new_state
+        self._report_status()
 
     def _report_error(self, err: Exception) -> None:
         LOGGER.error(err, exc_info=True)
-        self._set_task_state(TaskState.FAILED, str(err))
-
-    def _panic(self, error: Optional[str] = None) -> None:
-        self._report_worker_state(WorkerState.PANICKED, error)
-
-    def _report_worker_state(
-        self, state: WorkerState, error: Optional[str] = None
-    ) -> None:
-        self._worker_events.publish(WorkerStatusEvent(state, error))
-
-    def _set_task_state(self, state: TaskState, error: Optional[str] = None) -> None:
         if self._current is not None:
-            self._current.state = state
-            event = TaskEvent(
-                self._current.state, self._current.name, error_message=error
+            self._current.is_error = True
+        self._errors.append(str(err))
+
+    def _report_status(
+        self,
+    ) -> None:
+        task_status: Optional[TaskStatus]
+        errors = self._errors
+        warnings = self._warnings
+        if self._current is not None:
+            task_status = TaskStatus(
+                self._current.name,
+                self._current.is_complete,
+                self._current.is_error or bool(errors),
             )
-            self._worker_events.publish(event)
         else:
-            error = error or "UNKNOWN ERROR"
-            self._panic(
-                f"An error occurred while the worker was not running a task: {error}"
-            )
+            task_status = None
+
+        event = WorkerStatusEvent(self._state, task_status, errors, warnings)
+        self._worker_events.publish(event)
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         self._data_events.publish(DataEvent(name, document))

@@ -11,7 +11,7 @@ RawRunEngineState = Union[PropertyMachine, ProxyString, str]
 
 class WorkerState(Enum):
     """
-    The state of the Runner.
+    The state of the Worker.
     """
 
     IDLE = "IDLE"
@@ -52,12 +52,21 @@ class StatusView:
 
 @dataclass
 class ProgressEvent:
+    """
+    Event describing the progress of processes within a running task,
+    such as moving motors and exposing detectors.
+    """
+
     task_name: str
     statuses: Mapping[str, StatusView] = field(default_factory=dict)
 
 
 @dataclass
 class TaskStatus:
+    """
+    Status of a task the worker is running.
+    """
+
     task_name: str
     task_complete: bool
     task_failed: bool
@@ -65,6 +74,11 @@ class TaskStatus:
 
 @dataclass
 class WorkerEvent:
+    """
+    Event describing the state of the worker and any tasks it's running.
+    Includes error and warning information.
+    """
+
     state: WorkerState
     task_status: Optional[TaskStatus] = None
     errors: List[str] = field(default_factory=list)

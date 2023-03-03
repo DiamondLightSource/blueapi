@@ -1,10 +1,7 @@
-from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, List, Literal, Mapping, Optional, Union
+from typing import List, Mapping, Optional, Union
 
-from apischema import deserializer, identity, serialized, serializer
-from apischema.conversions import Conversion
 from bluesky.run_engine import RunEngineStateMachine
 from super_state_machine.extras import PropertyMachine, ProxyString
 

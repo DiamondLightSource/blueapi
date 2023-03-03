@@ -1,18 +1,16 @@
-import itertools
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Mapping, Optional
+from typing import Optional
 
 import click
-from tqdm import tqdm
 
 from blueapi import __version__
 from blueapi.config import StompConfig
 from blueapi.messaging import StompMessagingTemplate
-from blueapi.worker import StatusView, TaskEvent
 
 from .amq import AmqClient
+from .updates import CliEventRenderer
 
 
 @click.group(invoke_without_command=True)
@@ -91,52 +89,11 @@ def get_devices(ctx) -> None:
 @click.pass_context
 def run_plan(ctx, name: str, parameters: str) -> None:
     client: AmqClient = ctx.obj["client"]
-
-    renderer = ProgressBarRenderer()
-
-    def handle_event(event: TaskEvent) -> None:
-        renderer.update(event.statuses)
-        if event.is_task_terminated():
-            print("")
-            print("")
-            print("")
-            print("DONE")
-
-    client.run_plan(name, json.loads(parameters), handle_event, timeout=120.0)
-
-
-_BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"
-
-
-class ProgressBarRenderer:
-    _bars: Dict[str, tqdm]
-    _count: itertools.count
-
-    def __init__(self) -> None:
-        self._bars = {}
-        self._count = itertools.count()
-
-    def update(self, status_view: Mapping[str, StatusView]) -> None:
-        for name, view in status_view.items():
-            if name not in self._bars:
-                pos = next(self._count)
-                self._bars[name] = tqdm(
-                    position=pos,
-                    total=1.0,
-                    initial=0.0,
-                    bar_format=_BAR_FMT,
-                )
-            self._update(name, view)
-
-    def _update(self, name: str, view: StatusView) -> None:
-        bar = self._bars[name]
-        if (
-            view.current is not None
-            and view.target is not None
-            and view.initial is not None
-            and view.percentage is not None
-            and view.time_elapsed is not None
-        ):
-            bar.desc = view.display_name
-            bar.update(view.percentage - bar.n)
-            bar.unit = view.unit
+    renderer = CliEventRenderer()
+    client.run_plan(
+        name,
+        json.loads(parameters),
+        renderer.on_worker_event,
+        renderer.on_progress_event,
+        timeout=120.0,
+    )

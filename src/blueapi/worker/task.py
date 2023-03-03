@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Mapping, Union
 
 from apischema import deserializer, identity, serializer
@@ -14,17 +13,6 @@ from blueapi.core import (
     create_bluesky_protocol_conversions,
 )
 from blueapi.utils import nested_deserialize_with_overrides
-
-
-class TaskState(Enum):
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
-    PAUSED = "PAUSED"
-    FAILED = "FAILED"
-    COMPLETE = "COMPLETE"
-
-
-_COMPLETE_TASK_STATES = (TaskState.FAILED, TaskState.COMPLETE)
 
 
 # TODO: Make a TaggedUnion
@@ -99,4 +87,5 @@ def lookup_params(
 class ActiveTask:
     name: str
     task: Task
-    state: TaskState = field(default=TaskState.PENDING)
+    is_complete: bool = False
+    is_error: bool = False

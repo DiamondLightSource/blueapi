@@ -1,7 +1,8 @@
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
 
 from blueapi.plans import *  # noqa: F401, F403
-from blueapi.service.simmotor import SynAxisWithMotionEvents
+
+from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
 
 x = SynAxisWithMotionEvents(name="x", delay=1.0, events_per_move=8)
 y = SynAxisWithMotionEvents(name="y", delay=3.0, events_per_move=24)
@@ -9,6 +10,7 @@ z = SynAxisWithMotionEvents(name="z", delay=2.0, events_per_move=16)
 theta = SynAxisWithMotionEvents(
     name="theta", delay=0.2, events_per_move=12, egu="degrees"
 )
+x_err = BrokenSynAxis(name="x_err", timeout=1.0)
 sample_pressure = SynAxisWithMotionEvents(
     name="sample_pressure", delay=30.0, events_per_move=128, egu="MPa", value=0.101
 )

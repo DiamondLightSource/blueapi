@@ -1,19 +1,17 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Mapping, Optional, Union
+from typing import List, Mapping, Optional, Union
 
 from bluesky.run_engine import RunEngineStateMachine
 from super_state_machine.extras import PropertyMachine, ProxyString
-
-from .task import TaskState
 
 # The RunEngine can return any of these three types as its state
 RawRunEngineState = Union[PropertyMachine, ProxyString, str]
 
 
-class RunnerState(Enum):
+class WorkerState(Enum):
     """
-    The state of the Runner.
+    The state of the Worker.
     """
 
     IDLE = "IDLE"
@@ -28,20 +26,10 @@ class RunnerState(Enum):
     UNKNOWN = "UNKNOWN"
 
     @classmethod
-    def from_bluesky_state(cls, bluesky_state: RawRunEngineState) -> "RunnerState":
+    def from_bluesky_state(cls, bluesky_state: RawRunEngineState) -> "WorkerState":
         if isinstance(bluesky_state, RunEngineStateMachine.States):
             return cls.from_bluesky_state(bluesky_state.value)
-        return RunnerState(str(bluesky_state).upper())
-
-
-@dataclass
-class WorkerEvent:
-    """
-    Event emitted by a worker when the runner state changes
-    """
-
-    state: RunnerState
-    current_task_name: Optional[str]
+        return WorkerState(str(bluesky_state).upper())
 
 
 @dataclass
@@ -63,15 +51,43 @@ class StatusView:
 
 
 @dataclass
-class TaskEvent:
+class ProgressEvent:
     """
-    An event representing a progress update on a Task
+    Event describing the progress of processes within a running task,
+    such as moving motors and exposing detectors.
     """
 
-    name: str
-    state: TaskState
-    error: Optional[str] = None
+    task_name: str
     statuses: Mapping[str, StatusView] = field(default_factory=dict)
 
-    def is_task_terminated(self) -> bool:
-        return self.state in (TaskState.COMPLETE, TaskState.FAILED)
+
+@dataclass
+class TaskStatus:
+    """
+    Status of a task the worker is running.
+    """
+
+    task_name: str
+    task_complete: bool
+    task_failed: bool
+
+
+@dataclass
+class WorkerEvent:
+    """
+    Event describing the state of the worker and any tasks it's running.
+    Includes error and warning information.
+    """
+
+    state: WorkerState
+    task_status: Optional[TaskStatus] = None
+    errors: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+
+    def is_error(self) -> bool:
+        return (self.task_status is not None and self.task_status.task_failed) or bool(
+            self.errors
+        )
+
+    def is_complete(self) -> bool:
+        return self.task_status is not None and self.task_status.task_complete

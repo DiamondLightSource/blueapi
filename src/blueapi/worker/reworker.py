@@ -3,7 +3,7 @@ import uuid
 from functools import partial
 from queue import Queue
 from threading import RLock
-from typing import Any, Dict, Iterable, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 from bluesky.protocols import Status
 
@@ -15,8 +15,15 @@ from blueapi.core import (
     WatchableStatus,
 )
 
-from .event import RawRunEngineState, RunnerState, StatusView, TaskEvent, WorkerEvent
-from .task import ActiveTask, Task, TaskState
+from .event import (
+    ProgressEvent,
+    RawRunEngineState,
+    StatusView,
+    TaskStatus,
+    WorkerEvent,
+    WorkerState,
+)
+from .task import ActiveTask, Task
 from .worker import Worker
 
 LOGGER = logging.getLogger(__name__)
@@ -31,13 +38,15 @@ class RunEngineWorker(Worker[Task]):
     """
 
     _ctx: BlueskyContext
+    _state: WorkerState
+    _errors: List[str]
+    _warnings: List[str]
     _task_queue: Queue  # type: ignore
     _current: Optional[ActiveTask]
     _status_lock: RLock
     _status_snapshot: Dict[str, StatusView]
-
     _worker_events: EventPublisher[WorkerEvent]
-    _task_events: EventPublisher[TaskEvent]
+    _progress_events: EventPublisher[ProgressEvent]
     _data_events: EventPublisher[DataEvent]
 
     def __init__(
@@ -45,10 +54,13 @@ class RunEngineWorker(Worker[Task]):
         ctx: BlueskyContext,
     ) -> None:
         self._ctx = ctx
+        self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
+        self._errors = []
+        self._warnings = []
         self._task_queue = Queue()
         self._current = None
         self._worker_events = EventPublisher()
-        self._task_events = EventPublisher()
+        self._progress_events = EventPublisher()
         self._data_events = EventPublisher()
         self._status_lock = RLock()
         self._status_snapshot = {}
@@ -56,7 +68,6 @@ class RunEngineWorker(Worker[Task]):
     def submit_task(self, name: str, task: Task) -> None:
         active_task = ActiveTask(name, task)
         LOGGER.info(f"Submitting: {active_task}")
-        self._task_events.publish(TaskEvent(active_task.name, active_task.state))
         self._task_queue.put(active_task)
 
     def run_forever(self) -> None:
@@ -72,24 +83,31 @@ class RunEngineWorker(Worker[Task]):
         try:
             self._cycle()
         except Exception as ex:
-            LOGGER.error(ex, exc_info=True)
+            self._report_error(ex)
 
     def _cycle(self) -> None:
-        LOGGER.info("Awaiting task")
-        next_task: ActiveTask = self._task_queue.get()
-        LOGGER.info(f"Got new task: {next_task}")
-        self._current = next_task  # Informing mypy that the task is not None
-        self._set_task_state(TaskState.RUNNING)
-        self._current.task.do_task(self._ctx)
-        self._set_task_state(TaskState.COMPLETE)
+        try:
+            LOGGER.info("Awaiting task")
+            next_task: ActiveTask = self._task_queue.get()
+            LOGGER.info(f"Got new task: {next_task}")
+            self._current = next_task  # Informing mypy that the task is not None
+            self._current.task.do_task(self._ctx)
+        except Exception as err:
+            self._report_error(err)
+
+        if self._current is not None:
+            self._current.is_complete = True
+        self._report_status()
+        self._errors.clear()
+        self._warnings.clear()
 
     @property
     def worker_events(self) -> EventStream[WorkerEvent, int]:
         return self._worker_events
 
     @property
-    def task_events(self) -> EventStream[TaskEvent, int]:
-        return self._task_events
+    def progress_events(self) -> EventStream[ProgressEvent, int]:
+        return self._progress_events
 
     @property
     def data_events(self) -> EventStream[DataEvent, int]:
@@ -100,25 +118,38 @@ class RunEngineWorker(Worker[Task]):
         raw_new_state: RawRunEngineState,
         raw_old_state: Optional[RawRunEngineState] = None,
     ) -> None:
-        new_state = RunnerState.from_bluesky_state(raw_new_state)
+        new_state = WorkerState.from_bluesky_state(raw_new_state)
         if raw_old_state:
-            old_state = RunnerState.from_bluesky_state(raw_old_state)
+            old_state = WorkerState.from_bluesky_state(raw_old_state)
         else:
-            old_state = RunnerState.UNKNOWN
+            old_state = WorkerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        if self._current is not None:
-            name = self._current.name
-        else:
-            name = None
-        self._worker_events.publish(WorkerEvent(new_state, name))
+        self._state = new_state
+        self._report_status()
 
-    def _set_task_state(self, state: TaskState, error: Optional[str] = None) -> None:
-        if self._current is None:
-            raise ValueError("Cannot set task state when we are not running a task!")
-        self._current.state = state
-        self._task_events.publish(
-            TaskEvent(self._current.name, self._current.state, error)
-        )
+    def _report_error(self, err: Exception) -> None:
+        LOGGER.error(err, exc_info=True)
+        if self._current is not None:
+            self._current.is_error = True
+        self._errors.append(str(err))
+
+    def _report_status(
+        self,
+    ) -> None:
+        task_status: Optional[TaskStatus]
+        errors = self._errors
+        warnings = self._warnings
+        if self._current is not None:
+            task_status = TaskStatus(
+                self._current.name,
+                self._current.is_complete,
+                self._current.is_error or bool(errors),
+            )
+        else:
+            task_status = None
+
+        event = WorkerEvent(self._state, task_status, errors, warnings)
+        self._worker_events.publish(event)
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         self._data_events.publish(DataEvent(name, document))
@@ -183,10 +214,9 @@ class RunEngineWorker(Worker[Task]):
         if self._current is None:
             raise ValueError("Got a status update without an active task!")
         else:
-            self._task_events.publish(
-                TaskEvent(
+            self._progress_events.publish(
+                ProgressEvent(
                     self._current.name,
-                    self._current.state,
                     statuses=self._status_snapshot,
                 )
             )

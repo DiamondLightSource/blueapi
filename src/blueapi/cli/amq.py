@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Callable, List, Mapping, Optional, TypeVar, Union
+from typing import Any, Callable, Mapping, Optional, TypeVar
 
 from blueapi.messaging import MessageContext, MessagingTemplate
 from blueapi.service.model import (
@@ -9,11 +9,14 @@ from blueapi.service.model import (
     PlanResponse,
     TaskResponse,
 )
-from blueapi.worker import TaskEvent
+from blueapi.worker import ProgressEvent, WorkerEvent
 
 T = TypeVar("T")
 
-_Json = Union[List[Any], Mapping[str, Any]]
+
+class BlueskyRemoteError(Exception):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
 class AmqClient:
@@ -26,19 +29,33 @@ class AmqClient:
         self,
         name: str,
         params: Mapping[str, Any],
-        on_event: Optional[Callable[[TaskEvent], None]] = None,
+        on_event: Optional[Callable[[WorkerEvent], None]] = None,
+        on_progress_event: Optional[Callable[[ProgressEvent], None]] = None,
         timeout: Optional[float] = None,
     ) -> str:
         complete = threading.Event()
 
-        def on_event_wrapper(ctx: MessageContext, event: TaskEvent) -> None:
+        def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
             if on_event is not None:
                 on_event(event)
-            if event.is_task_terminated():
+
+            if event.is_complete():
                 complete.set()
+                if event.is_error():
+                    raise BlueskyRemoteError(str(event.errors) or "Unknown error")
+
+        def on_progress_event_wrapper(
+            ctx: MessageContext, event: ProgressEvent
+        ) -> None:
+            if on_progress_event is not None:
+                on_progress_event(event)
 
         self.app.subscribe(
-            self.app.destinations.topic("public.worker.event.task"), on_event_wrapper
+            self.app.destinations.topic("public.worker.event"), on_event_wrapper
+        )
+        self.app.subscribe(
+            self.app.destinations.topic("public.worker.event.progress"),
+            on_progress_event_wrapper,
         )
         # self.app.send("worker.run", {"name": name, "params": params})
         task_response = self.app.send_and_recieve(

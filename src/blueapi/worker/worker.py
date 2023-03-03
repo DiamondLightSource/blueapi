@@ -3,7 +3,7 @@ from typing import Generic, TypeVar
 
 from blueapi.core import DataEvent, EventStream
 
-from .event import TaskEvent, WorkerEvent
+from .event import ProgressEvent, WorkerEvent
 
 T = TypeVar("T")
 
@@ -36,7 +36,7 @@ class Worker(ABC, Generic[T]):
     @abstractmethod
     def worker_events(self) -> EventStream[WorkerEvent, int]:
         """
-        Events representing task-agnostic changes to the worker
+        Events representing changes/errors in worker state
 
         Returns:
             EventStream[WorkerEvent, int]: Subscribable stream of events
@@ -46,12 +46,12 @@ class Worker(ABC, Generic[T]):
 
     @property
     @abstractmethod
-    def task_events(self) -> EventStream[TaskEvent, int]:
+    def progress_events(self) -> EventStream[ProgressEvent, int]:
         """
-        Events representing changes to individual taks
+        Events representing progress in running a task
 
         Returns:
-            EventStream[TaskEvent, int]: Subscribable stream of events
+            EventStream[ProgressEvent, int]: Subscribable stream of events
         """
 
         ...

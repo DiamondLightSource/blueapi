@@ -3,7 +3,7 @@ from typing import Dict, Mapping, Optional, Union
 
 from tqdm import tqdm
 
-from blueapi.worker import ProgressEvent, StatusView, WorkerEvent, WorkerStatusEvent
+from blueapi.worker import ProgressEvent, StatusView, WorkerEvent
 
 _BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"
 
@@ -52,19 +52,22 @@ class CliEventRenderer:
         pbar_renderer: Optional[ProgressBarRenderer] = None,
     ) -> None:
         self._task_name = task_name
-        self._pbar_renderer = pbar_renderer or ProgressBarRenderer()
+        if pbar_renderer is None:
+            pbar_renderer = ProgressBarRenderer()
+        self._pbar_renderer = pbar_renderer
 
-    def render_event(self, event: WorkerEvent) -> None:
-        if isinstance(event, ProgressEvent) and self._relates_to_task(event):
+    def on_progress_event(self, event: ProgressEvent) -> None:
+        if self._relates_to_task(event):
             self._pbar_renderer.update(event.statuses)
-        elif isinstance(event, WorkerStatusEvent) and self._relates_to_task(event):
-            print("")
+
+    def on_worker_event(self, event: WorkerEvent) -> None:
+        if self._relates_to_task(event):
             print(str(event.state))
 
-    def _relates_to_task(self, event: Union[WorkerStatusEvent, ProgressEvent]) -> bool:
+    def _relates_to_task(self, event: Union[WorkerEvent, ProgressEvent]) -> bool:
         if self._task_name is None:
             return True
-        elif isinstance(event, WorkerStatusEvent):
+        elif isinstance(event, WorkerEvent):
             return (
                 event.task_status is not None
                 and event.task_status.task_name == self._task_name

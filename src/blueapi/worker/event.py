@@ -53,29 +53,8 @@ class StatusView:
     time_remaining: Optional[float] = None
 
 
-class WorkerEvent:
-    _union: Any = None
-
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        deserializer(Conversion(identity, source=cls, target=WorkerEvent))
-        WorkerEvent._union = (
-            cls if WorkerEvent._union is None else Union[WorkerEvent._union, cls]
-        )
-        serializer(
-            Conversion(
-                identity, source=WorkerEvent, target=WorkerEvent._union, inherited=False
-            )
-        )
-
-    @serialized
-    @property
-    def type(self) -> str:
-        return type(self).__name__
-
-
 @dataclass
-class ProgressEvent(WorkerEvent):
+class ProgressEvent:
     task_name: str
     statuses: Mapping[str, StatusView] = field(default_factory=dict)
 
@@ -88,7 +67,7 @@ class TaskStatus:
 
 
 @dataclass
-class WorkerStatusEvent(WorkerEvent):
+class WorkerEvent:
     state: WorkerState
     task_status: Optional[TaskStatus] = None
     errors: List[str] = field(default_factory=list)

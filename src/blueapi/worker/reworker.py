@@ -22,7 +22,6 @@ from .event import (
     TaskStatus,
     WorkerEvent,
     WorkerState,
-    WorkerStatusEvent,
 )
 from .task import ActiveTask, Task
 from .worker import Worker
@@ -47,6 +46,7 @@ class RunEngineWorker(Worker[Task]):
     _status_lock: RLock
     _status_snapshot: Dict[str, StatusView]
     _worker_events: EventPublisher[WorkerEvent]
+    _progress_events: EventPublisher[ProgressEvent]
     _data_events: EventPublisher[DataEvent]
 
     def __init__(
@@ -60,6 +60,7 @@ class RunEngineWorker(Worker[Task]):
         self._task_queue = Queue()
         self._current = None
         self._worker_events = EventPublisher()
+        self._progress_events = EventPublisher()
         self._data_events = EventPublisher()
         self._status_lock = RLock()
         self._status_snapshot = {}
@@ -105,6 +106,10 @@ class RunEngineWorker(Worker[Task]):
         return self._worker_events
 
     @property
+    def progress_events(self) -> EventStream[ProgressEvent, int]:
+        return self._progress_events
+
+    @property
     def data_events(self) -> EventStream[DataEvent, int]:
         return self._data_events
 
@@ -143,7 +148,7 @@ class RunEngineWorker(Worker[Task]):
         else:
             task_status = None
 
-        event = WorkerStatusEvent(self._state, task_status, errors, warnings)
+        event = WorkerEvent(self._state, task_status, errors, warnings)
         self._worker_events.publish(event)
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
@@ -209,7 +214,7 @@ class RunEngineWorker(Worker[Task]):
         if self._current is None:
             raise ValueError("Got a status update without an active task!")
         else:
-            self._worker_events.publish(
+            self._progress_events.publish(
                 ProgressEvent(
                     self._current.name,
                     statuses=self._status_snapshot,

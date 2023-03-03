@@ -7,7 +7,7 @@ from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext, DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.utils import ConfigLoader
-from blueapi.worker import RunEngineWorker, RunPlan, Worker, WorkerEvent
+from blueapi.worker import ProgressEvent, RunEngineWorker, RunPlan, Worker, WorkerEvent
 
 from .model import (
     DeviceModel,
@@ -37,6 +37,7 @@ class Service:
         logging.basicConfig(level=self._config.logging.level)
         self._worker.worker_events.subscribe(self._on_worker_event)
         self._worker.data_events.subscribe(self._on_data_event)
+        self._worker.progress_events.subscribe(self._on_progress_event)
 
         self._template.connect()
 
@@ -49,6 +50,11 @@ class Service:
     def _on_worker_event(self, event: WorkerEvent) -> None:
         self._template.send(
             self._template.destinations.topic("public.worker.event"), event
+        )
+
+    def _on_progress_event(self, event: ProgressEvent) -> None:
+        self._template.send(
+            self._template.destinations.topic("public.worker.event.progress"), event
         )
 
     def _on_data_event(self, event: DataEvent) -> None:

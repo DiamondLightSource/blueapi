@@ -90,4 +90,10 @@ def get_devices(ctx) -> None:
 def run_plan(ctx, name: str, parameters: str) -> None:
     client: AmqClient = ctx.obj["client"]
     renderer = CliEventRenderer()
-    client.run_plan(name, json.loads(parameters), renderer.render_event, timeout=120.0)
+    client.run_plan(
+        name,
+        json.loads(parameters),
+        renderer.on_worker_event,
+        renderer.on_progress_event,
+        timeout=120.0,
+    )

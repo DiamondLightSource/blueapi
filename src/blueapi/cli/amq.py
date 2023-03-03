@@ -9,7 +9,7 @@ from blueapi.service.model import (
     PlanResponse,
     TaskResponse,
 )
-from blueapi.worker import WorkerEvent, WorkerStatusEvent
+from blueapi.worker import ProgressEvent, WorkerEvent
 
 T = TypeVar("T")
 
@@ -30,6 +30,7 @@ class AmqClient:
         name: str,
         params: Mapping[str, Any],
         on_event: Optional[Callable[[WorkerEvent], None]] = None,
+        on_progress_event: Optional[Callable[[ProgressEvent], None]] = None,
         timeout: Optional[float] = None,
     ) -> str:
         complete = threading.Event()
@@ -38,13 +39,23 @@ class AmqClient:
             if on_event is not None:
                 on_event(event)
 
-            if isinstance(event, WorkerStatusEvent) and event.is_complete():
+            if event.is_complete():
                 complete.set()
                 if event.is_error():
                     raise BlueskyRemoteError(str(event.errors) or "Unknown error")
 
+        def on_progress_event_wrapper(
+            ctx: MessageContext, event: ProgressEvent
+        ) -> None:
+            if on_progress_event is not None:
+                on_progress_event(event)
+
         self.app.subscribe(
             self.app.destinations.topic("public.worker.event"), on_event_wrapper
+        )
+        self.app.subscribe(
+            self.app.destinations.topic("public.worker.event.progress"),
+            on_progress_event_wrapper,
         )
         # self.app.send("worker.run", {"name": name, "params": params})
         task_response = self.app.send_and_recieve(

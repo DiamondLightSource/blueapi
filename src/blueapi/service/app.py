@@ -1,13 +1,13 @@
 import logging
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Mapping, Optional
 
 from blueapi.config import ApplicationConfig
-from blueapi.core import BlueskyContext, DataEvent
+from blueapi.core import BlueskyContext, EventStream
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.utils import ConfigLoader
-from blueapi.worker import ProgressEvent, RunEngineWorker, RunPlan, Worker, WorkerEvent
+from blueapi.worker import RunEngineWorker, RunPlan, Worker
 
 from .model import (
     DeviceModel,
@@ -35,9 +35,20 @@ class Service:
 
     def run(self) -> None:
         logging.basicConfig(level=self._config.logging.level)
-        self._worker.worker_events.subscribe(self._on_worker_event)
-        self._worker.data_events.subscribe(self._on_data_event)
-        self._worker.progress_events.subscribe(self._on_progress_event)
+
+        self._publish_event_streams(
+            {
+                self._worker.worker_events: self._template.destinations.topic(
+                    "public.worker.event"
+                ),
+                self._worker.progress_events: self._template.destinations.topic(
+                    "public.worker.event.progress"
+                ),
+                self._worker.data_events: self._template.destinations.topic(
+                    "public.worker.event.data"
+                ),
+            }
+        )
 
         self._template.connect()
 
@@ -47,20 +58,14 @@ class Service:
 
         self._worker.run_forever()
 
-    def _on_worker_event(self, event: WorkerEvent) -> None:
-        self._template.send(
-            self._template.destinations.topic("public.worker.event"), event
-        )
+    def _publish_event_streams(
+        self, streams_to_destinations: Mapping[EventStream, str]
+    ) -> None:
+        for stream, destination in streams_to_destinations.items():
+            self._publish_event_stream(stream, destination)
 
-    def _on_progress_event(self, event: ProgressEvent) -> None:
-        self._template.send(
-            self._template.destinations.topic("public.worker.event.progress"), event
-        )
-
-    def _on_data_event(self, event: DataEvent) -> None:
-        self._template.send(
-            self._template.destinations.topic("public.worker.event.data"), event
-        )
+    def _publish_event_stream(self, stream: EventStream, destination: str) -> None:
+        stream.subscribe(lambda event: self._template.send(destination, event))
 
     def _on_run_request(self, message_context: MessageContext, task: RunPlan) -> None:
         name = str(uuid.uuid1())

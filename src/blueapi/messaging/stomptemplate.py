@@ -1,11 +1,14 @@
 import itertools
 import json
 import logging
+import time
 import uuid
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional
 
 import stomp
 from apischema import deserialize, serialize
+from stomp.exception import ConnectFailedException
 from stomp.utils import Frame
 
 from blueapi.config import StompConfig
@@ -36,6 +39,18 @@ class StompDestinationProvider(DestinationProvider):
     default = queue
 
 
+@dataclass
+class StompReconnectPolicy:
+    initial_delay: float = 0.0
+    attempt_period: float = 10.0
+
+
+@dataclass
+class Subscription:
+    destination: str
+    callback: Callable[[Frame], None]
+
+
 class StompMessagingTemplate(MessagingTemplate):
     """
     MessagingTemplate that uses the stompp protocol, meant for use
@@ -43,15 +58,21 @@ class StompMessagingTemplate(MessagingTemplate):
     """
 
     _conn: stomp.Connection
+    _reconnect_policy: StompReconnectPolicy
     _sub_num: itertools.count
     _listener: stomp.ConnectionListener
-    _subscriptions: Dict[str, Callable[[Frame], None]]
+    _subscriptions: Dict[str, Subscription]
 
     # Stateless implementation means attribute can be static
     _destination_provider: DestinationProvider = StompDestinationProvider()
 
-    def __init__(self, conn: stomp.Connection) -> None:
+    def __init__(
+        self,
+        conn: stomp.Connection,
+        reconnect_policy: Optional[StompReconnectPolicy] = None,
+    ) -> None:
         self._conn = conn
+        self._reconnect_policy = reconnect_policy or StompReconnectPolicy()
         self._sub_num = itertools.count()
         self._listener = stomp.ConnectionListener()
 
@@ -95,8 +116,7 @@ class StompMessagingTemplate(MessagingTemplate):
         self._conn.send(headers=headers, body=message, destination=destination)
 
     def subscribe(self, destination: str, callback: MessageListener) -> None:
-        LOGGER.info(f"New subscription to {destination}")
-
+        LOGGER.debug(f"New subscription to {destination}")
         obj_type = determine_deserialization_type(callback, default=str)
 
         def wrapper(frame: Frame) -> None:
@@ -109,22 +129,44 @@ class StompMessagingTemplate(MessagingTemplate):
             callback(context, value)
 
         sub_id = str(next(self._sub_num))
-
-        self._subscriptions[sub_id] = wrapper
-        self._conn.subscribe(destination=destination, id=sub_id, ack="auto")
+        self._subscriptions[sub_id] = Subscription(destination, wrapper)
 
     def connect(self) -> None:
+        LOGGER.info("Connecting...")
         self._conn.connect()
+        self._listener.on_disconnected = self._on_disconnected
+        self._handle_deferred_subscriptions()
+
+    def _handle_deferred_subscriptions(self) -> None:
+        for sub_id, sub in self._subscriptions.items():
+            LOGGER.info(f"Subscribing to {sub.destination}")
+            self._conn.subscribe(destination=sub.destination, id=sub_id, ack="auto")
 
     def disconnect(self) -> None:
+        LOGGER.info("Disconnecting...")
+        self._listener.on_disconnected = None
         self._conn.disconnect()
+
+    @handle_all_exceptions
+    def _on_disconnected(self) -> None:
+        LOGGER.warn(
+            "Stomp connection lost, will attempt reconnection with "
+            f"policy {self._reconnect_policy}"
+        )
+        time.sleep(self._reconnect_policy.initial_delay)
+        while not self._conn.is_connected():
+            try:
+                self.connect()
+            except ConnectFailedException as ex:
+                LOGGER.error("Reconnect failed", ex)
+            time.sleep(self._reconnect_policy.attempt_period)
 
     @handle_all_exceptions
     def _on_message(self, frame: Frame) -> None:
         LOGGER.info(f"Recieved {frame}")
         sub_id = frame.headers.get("subscription")
-        callback = self._subscriptions.get(sub_id)
-        if callback is not None:
-            callback(frame)
+        sub = self._subscriptions.get(sub_id)
+        if sub is not None:
+            sub.callback(frame)
         else:
             LOGGER.warn(f"No subscription active for id: {sub_id}")

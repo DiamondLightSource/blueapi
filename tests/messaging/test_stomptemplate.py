@@ -1,4 +1,5 @@
 import itertools
+import os
 from concurrent.futures import Future
 from dataclasses import dataclass
 from typing import Any, Iterable, Type
@@ -13,8 +14,13 @@ _COUNT = itertools.count()
 
 
 @pytest.fixture
-def disconnected_template() -> MessagingTemplate:
-    return StompMessagingTemplate.autoconfigured(StompConfig())
+def stomp_config() -> StompConfig:
+    return StompConfig(host=os.environ.get("STOMP_HOST", "localhost"))
+
+
+@pytest.fixture
+def disconnected_template(stomp_config: StompConfig) -> MessagingTemplate:
+    return StompMessagingTemplate.autoconfigured(stomp_config)
 
 
 @pytest.fixture

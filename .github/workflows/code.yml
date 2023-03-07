@@ -43,10 +43,15 @@ jobs:
             python: "3.8"
             install: ".[dev]"
 
+    services:
+      activemq:
+        image: rmohr/activemq:5.14.5-alpine
+
     runs-on: ${{ matrix.os }}
     env:
       # https://github.com/pytest-dev/pytest/issues/2042
       PY_IGNORE_IMPORTMISMATCH: "1"
+      STOMP_HOST: activemq
 
     steps:
       - name: Checkout

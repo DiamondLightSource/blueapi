@@ -4,7 +4,8 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from queue import Queue
+from typing import Any, Callable, Dict, List, Optional, Set
 
 import stomp
 from apischema import deserialize, serialize
@@ -62,6 +63,7 @@ class StompMessagingTemplate(MessagingTemplate):
     _sub_num: itertools.count
     _listener: stomp.ConnectionListener
     _subscriptions: Dict[str, Subscription]
+    _pending_subscriptions: Set[str]
 
     # Stateless implementation means attribute can be static
     _destination_provider: DestinationProvider = StompDestinationProvider()
@@ -80,6 +82,7 @@ class StompMessagingTemplate(MessagingTemplate):
         self._conn.set_listener("", self._listener)
 
         self._subscriptions = {}
+        self._pending_subscriptions = set()
 
     @classmethod
     def autoconfigured(cls, config: StompConfig) -> MessagingTemplate:
@@ -130,17 +133,24 @@ class StompMessagingTemplate(MessagingTemplate):
 
         sub_id = str(next(self._sub_num))
         self._subscriptions[sub_id] = Subscription(destination, wrapper)
+        self._pending_subscriptions.add(sub_id)
+        self._handle_pending_subscriptions()
+        # if self._conn.is_connected():
+        #     self._conn.subscribe(destination=destination, id=sub_id, ack="auto")
 
     def connect(self) -> None:
         LOGGER.info("Connecting...")
-        self._conn.connect()
+        self._conn.connect(wait=True)
         self._listener.on_disconnected = self._on_disconnected
-        self._handle_deferred_subscriptions()
+        self._handle_pending_subscriptions()
 
-    def _handle_deferred_subscriptions(self) -> None:
-        for sub_id, sub in self._subscriptions.items():
-            LOGGER.info(f"Subscribing to {sub.destination}")
-            self._conn.subscribe(destination=sub.destination, id=sub_id, ack="auto")
+    def _handle_pending_subscriptions(self) -> None:
+        if self._conn.is_connected():
+            while self._pending_subscriptions:
+                sub_id = self._pending_subscriptions.pop()
+                sub = self._subscriptions[sub_id]
+                LOGGER.info(f"Subscribing to {sub.destination}")
+                self._conn.subscribe(destination=sub.destination, id=sub_id, ack="auto")
 
     def disconnect(self) -> None:
         LOGGER.info("Disconnecting...")

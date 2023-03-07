@@ -5,7 +5,10 @@ import pytest
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--stomp", action="store_true", default=False, help="run stomp tests"
+        "--skip-stomp",
+        action="store_true",
+        default=False,
+        help="skip stomp tests (e.g. because a server is unavailable)",
     )
 
 
@@ -14,10 +17,8 @@ def pytest_configure(config):
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--stomp"):
-        # --runslow given in cli: do not skip slow tests
-        return
-    skip_stomp = pytest.mark.skip(reason="need --stomp option to run")
-    for item in items:
-        if "stomp" in item.keywords:
-            item.add_marker(skip_stomp)
+    if config.getoption("--skip-stomp"):
+        skip_stomp = pytest.mark.skip(reason="skipping stomp tests at user request")
+        for item in items:
+            if "stomp" in item.keywords:
+                item.add_marker(skip_stomp)

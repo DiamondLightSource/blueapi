@@ -4,7 +4,7 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass
-from queue import Queue
+from threading import Event
 from typing import Any, Callable, Dict, List, Optional, Set
 
 import stomp
@@ -42,12 +42,21 @@ class StompDestinationProvider(DestinationProvider):
 
 @dataclass
 class StompReconnectPolicy:
+    """
+    Details of how often stomp will try to reconnect if connection is unexpectedly lost
+    """
+
     initial_delay: float = 0.0
     attempt_period: float = 10.0
 
 
 @dataclass
 class Subscription:
+    """
+    Details of a subscription, the template needs its own representation to
+    defer subscriptions until after connection
+    """
+
     destination: str
     callback: Callable[[Frame], None]
 
@@ -64,6 +73,7 @@ class StompMessagingTemplate(MessagingTemplate):
     _listener: stomp.ConnectionListener
     _subscriptions: Dict[str, Subscription]
     _pending_subscriptions: Set[str]
+    _disconnected: Event
 
     # Stateless implementation means attribute can be static
     _destination_provider: DestinationProvider = StompDestinationProvider()
@@ -132,6 +142,8 @@ class StompMessagingTemplate(MessagingTemplate):
 
         sub_id = str(next(self._sub_num))
         self._subscriptions[sub_id] = Subscription(destination, wrapper)
+        # If we're connected, subscribe immediately, otherwise the subscription is
+        # deferred until connection.
         self._ensure_subscribed([sub_id])
 
     def connect(self) -> None:
@@ -141,6 +153,9 @@ class StompMessagingTemplate(MessagingTemplate):
         self._ensure_subscribed()
 
     def _ensure_subscribed(self, sub_ids: Optional[List[str]] = None) -> None:
+        # We must defer subscription until after connection, because stomp literally
+        # sends a SUB to the broker. But it still nice to be able to call subscribe
+        # on template before it connects, then just run the subscribes after connection.
         if self._conn.is_connected():
             for sub_id in sub_ids or self._subscriptions.keys():
                 sub = self._subscriptions[sub_id]
@@ -149,8 +164,14 @@ class StompMessagingTemplate(MessagingTemplate):
 
     def disconnect(self) -> None:
         LOGGER.info("Disconnecting...")
-        self._listener.on_disconnected = None
+
+        # We need to synchronise the disconnect on an event because the stomp Connection
+        # object doesn't do it for us
+        disconnected = Event()
+        self._listener.on_disconnected = disconnected.set
         self._conn.disconnect()
+        disconnected.wait()
+        self._listener.on_disconnected = None
 
     @handle_all_exceptions
     def _on_disconnected(self) -> None:

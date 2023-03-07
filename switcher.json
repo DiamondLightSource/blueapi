@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.1.0",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.1.0/"
+  },
+  {
     "version": "0.0.4",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.4/"
   },
@@ -62,10 +66,6 @@
   {
     "version": "pydantic",
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic/"
-  },
-  {
-    "version": "reply-error",
-    "url": "https://DiamondLightSource.github.io/blueapi/reply-error/"
   },
   {
     "version": "shape-meta",

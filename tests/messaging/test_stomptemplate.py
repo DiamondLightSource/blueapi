@@ -25,13 +25,9 @@ def disconnected_template(stomp_config: StompConfig) -> MessagingTemplate:
 
 @pytest.fixture
 def template(disconnected_template: MessagingTemplate) -> Iterable[MessagingTemplate]:
-    try:
-        disconnected_template.connect()
-        yield disconnected_template
-    except Exception as ex:
-        raise ex
-    finally:
-        disconnected_template.disconnect()
+    disconnected_template.connect()
+    yield disconnected_template
+    disconnected_template.disconnect()
 
 
 @pytest.fixture

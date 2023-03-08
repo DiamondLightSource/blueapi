@@ -74,9 +74,5 @@
   {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
-  },
-  {
-    "version": "stomp-reconnect",
-    "url": "https://DiamondLightSource.github.io/blueapi/stomp-reconnect/"
   }
 ]

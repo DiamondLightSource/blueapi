@@ -26,8 +26,6 @@ class EventStream(ABC, Generic[E, S]):
             S: A unique token representing the subscription
         """
 
-        ...
-
     @abstractmethod
     def unsubscribe(self, __subscription: S) -> None:
         """
@@ -37,15 +35,11 @@ class EventStream(ABC, Generic[E, S]):
             __subscription (S): The token identifying the subscription
         """
 
-        ...
-
     @abstractmethod
     def unsubscribe_all(self) -> None:
         """
         Unsubscribe from all subscriptions
         """
-
-        ...
 
 
 class EventPublisher(EventStream[E, int]):

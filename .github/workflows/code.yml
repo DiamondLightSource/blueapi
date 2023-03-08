@@ -53,7 +53,7 @@ jobs:
     env:
       # https://github.com/pytest-dev/pytest/issues/2042
       PY_IGNORE_IMPORTMISMATCH: "1"
-      STOMP_HOST: activemq
+      # STOMP_HOST: activemq
 
     steps:
       - name: Checkout

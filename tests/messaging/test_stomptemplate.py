@@ -61,6 +61,19 @@ def test_send_and_recieve(template: MessagingTemplate, test_queue: str) -> None:
     assert reply == "ack"
 
 
+@pytest.mark.stomp
+def test_listener(template: MessagingTemplate, test_queue: str) -> None:
+    @template.listener(test_queue)
+    def server(ctx: MessageContext, message: str) -> None:
+        reply_queue = ctx.reply_destination
+        if reply_queue is None:
+            raise RuntimeError("reply queue is None")
+        template.send(reply_queue, "ack")
+
+    reply = template.send_and_recieve(test_queue, "test", str).result(timeout=_TIMEOUT)
+    assert reply == "ack"
+
+
 @dataclass
 class Foo:
     a: int

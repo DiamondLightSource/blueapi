@@ -43,7 +43,6 @@ class Task(ABC):
         Args:
             ctx (TaskContext): Context for the task
         """
-        ...
 
 
 LOGGER = logging.getLogger(__name__)

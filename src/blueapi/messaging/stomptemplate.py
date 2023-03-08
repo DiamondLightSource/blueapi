@@ -21,7 +21,7 @@ from .utils import determine_deserialization_type
 
 LOGGER = logging.getLogger(__name__)
 
-CORRELATION_ID_HEADER = "JMSCorrelationID"
+CORRELATION_ID_HEADER = "correlation-id"
 
 
 class StompDestinationProvider(DestinationProvider):

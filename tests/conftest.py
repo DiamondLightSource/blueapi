@@ -7,7 +7,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--skip-stomp",
         action="store_true",
-        default=True,
+        default=False,
         help="skip stomp tests (e.g. because a server is unavailable)",
     )
 

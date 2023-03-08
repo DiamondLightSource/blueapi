@@ -43,9 +43,9 @@ jobs:
             python: "3.8"
             install: ".[dev]"
 
-    services:
-      activemq:
-        image: rmohr/activemq:5.14.5-alpine
+    # services:
+    #   activemq:
+    #     image: rmohr/activemq:5.14.5-alpine
 
     runs-on: ${{ matrix.os }}
     env:

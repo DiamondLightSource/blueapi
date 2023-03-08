@@ -5,7 +5,7 @@ from typing import Iterable
 
 import pytest
 
-from blueapi.core import EventPublisher, EventStream
+from blueapi.core import EventPublisher
 
 _TIMEOUT: float = 10.0
 

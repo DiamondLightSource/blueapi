@@ -167,18 +167,6 @@ class MessagingTemplate(ABC):
             __callback (MessageListener): What to do with each message
         """
 
-    def __enter__(self) -> "MessagingTemplate":
-        self.connect()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> None:
-        self.disconnect()
-
     @abstractmethod
     def connect(self) -> None:
         """

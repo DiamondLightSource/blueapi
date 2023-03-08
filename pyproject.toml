@@ -92,11 +92,11 @@ testpaths = "docs src tests"
 
 [tool.coverage.run]
 data_file = "/tmp/blueapi.coverage"
+omit = ["src/blueapi/startup/**/*"]
 
 [tool.coverage.paths]
 # Tests are run from installed location, map back to the src directory
 source = ["src", "**/site-packages/"]
-omit = ["src/blueapi/startup"]
 
 # tox must currently be configured via an embedded ini string
 # See: https://github.com/tox-dev/tox/issues/999

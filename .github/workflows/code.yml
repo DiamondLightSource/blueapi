@@ -46,6 +46,8 @@ jobs:
     services:
       activemq:
         image: rmohr/activemq:5.14.5-alpine
+        ports:
+          - 61613:61613
 
     runs-on: ${{ matrix.os }}
     env:

@@ -52,12 +52,12 @@
     "url": "https://DiamondLightSource.github.io/blueapi/asyncapi/"
   },
   {
-    "version": "deserialization-errors",
-    "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
+    "version": "correlation-id",
+    "url": "https://DiamondLightSource.github.io/blueapi/correlation-id/"
   },
   {
-    "version": "fix-coverage",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-coverage/"
+    "version": "deserialization-errors",
+    "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
     "version": "public-topics",

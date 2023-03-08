@@ -87,6 +87,7 @@ class MessagingTemplate(ABC):
         destination: str,
         obj: Any,
         reply_type: Type = str,
+        correlation_id: Optional[str] = None,
     ) -> Future:
         """
         Send a message expecting a single reply.
@@ -107,7 +108,7 @@ class MessagingTemplate(ABC):
             future.set_result(reply)
 
         callback.__annotations__["reply"] = reply_type
-        self.send(destination, obj, callback)
+        self.send(destination, obj, callback, correlation_id)
         return future
 
     @abstractmethod
@@ -116,6 +117,7 @@ class MessagingTemplate(ABC):
         __destination: str,
         __obj: Any,
         __on_reply: Optional[MessageListener] = None,
+        __correlation_id: Optional[str] = None,
     ) -> None:
         """
         Send a message to a destination

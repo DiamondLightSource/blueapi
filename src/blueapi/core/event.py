@@ -1,6 +1,6 @@
 import itertools
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Generic, TypeVar
+from typing import Callable, Dict, Generic, Optional, TypeVar
 
 #: Event type
 E = TypeVar("E")
@@ -15,12 +15,12 @@ class EventStream(ABC, Generic[E, S]):
     """
 
     @abstractmethod
-    def subscribe(self, __callback: Callable[[E], None]) -> S:
+    def subscribe(self, __callback: Callable[[E, Optional[str]], None]) -> S:
         """
         Subscribe to new events with a callback
 
         Args:
-            __callback (Callable[[E], None]): What to do with each event
+            __callback: What to do with each event, optionally takes a correlation id
 
         Returns:
             S: A unique token representing the subscription
@@ -47,14 +47,14 @@ class EventPublisher(EventStream[E, int]):
     Simple Observable that can be fed values to publish
     """
 
-    _subscriptions: Dict[int, Callable[[E], None]]
+    _subscriptions: Dict[int, Callable[[E, Optional[str]], None]]
     _count: itertools.count
 
     def __init__(self) -> None:
         self._subscriptions = {}
         self._count = itertools.count()
 
-    def subscribe(self, callback: Callable[[E], None]) -> int:
+    def subscribe(self, callback: Callable[[E, Optional[str]], None]) -> int:
         sub_id = next(self._count)
         self._subscriptions[sub_id] = callback
         return sub_id
@@ -65,13 +65,15 @@ class EventPublisher(EventStream[E, int]):
     def unsubscribe_all(self) -> None:
         self._subscriptions = {}
 
-    def publish(self, event: E) -> None:
+    def publish(self, event: E, correlation_id: Optional[str] = None) -> None:
         """
         Publish a new event to all subscribers
 
         Args:
-            event (E): The event to publish
+            event: The event to publish
+            correlation_id: An optional ID that may be used to correlate this
+                event with other events
         """
 
         for callback in self._subscriptions.values():
-            callback(event)
+            callback(event, correlation_id)

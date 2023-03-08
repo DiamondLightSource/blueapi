@@ -145,14 +145,22 @@ class RunEngineWorker(Worker[Task]):
                 self._current.is_complete,
                 self._current.is_error or bool(errors),
             )
+            correlation_id = self._current.name
         else:
             task_status = None
+            correlation_id = None
 
         event = WorkerEvent(self._state, task_status, errors, warnings)
-        self._worker_events.publish(event)
+        self._worker_events.publish(event, correlation_id)
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
-        self._data_events.publish(DataEvent(name, document))
+        if self._current is not None:
+            correlation_id = self._current.name
+            self._data_events.publish(DataEvent(name, document), correlation_id)
+        else:
+            raise KeyError(
+                "Trying to emit a document despite the fact that the RunEngine is idle"
+            )
 
     def _waiting_hook(self, statuses: Optional[Iterable[Status]]) -> None:
         if statuses is not None:
@@ -218,5 +226,6 @@ class RunEngineWorker(Worker[Task]):
                 ProgressEvent(
                     self._current.name,
                     statuses=self._status_snapshot,
-                )
+                ),
+                self._current.name,
             )

@@ -50,11 +50,11 @@ class Service:
             }
         )
 
-        self._template.connect()
-
         self._template.subscribe("worker.run", self._on_run_request)
         self._template.subscribe("worker.plans", self._get_plans)
         self._template.subscribe("worker.devices", self._get_devices)
+
+        self._template.connect()
 
         self._worker.run_forever()
 

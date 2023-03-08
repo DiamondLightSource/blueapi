@@ -43,6 +43,12 @@ jobs:
             python: "3.8"
             install: ".[dev]"
 
+    services:
+      activemq:
+        image: rmohr/activemq:5.14.5-alpine
+        ports:
+          - 61613:61613
+
     runs-on: ${{ matrix.os }}
     env:
       # https://github.com/pytest-dev/pytest/issues/2042

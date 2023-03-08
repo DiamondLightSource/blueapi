@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
-from types import TracebackType
 from typing import Any, Callable, Optional, Type
 
 from .context import MessageContext

@@ -23,14 +23,12 @@ class Worker(ABC, Generic[T]):
             __name (str): A unique name to identify this task
             __task (T): The task to run
         """
-        ...
 
     @abstractmethod
     def run_forever(self) -> None:
         """
         Run all tasks as-submitted. Blocks thread.
         """
-        ...
 
     @property
     @abstractmethod
@@ -42,8 +40,6 @@ class Worker(ABC, Generic[T]):
             EventStream[WorkerEvent, int]: Subscribable stream of events
         """
 
-        ...
-
     @property
     @abstractmethod
     def progress_events(self) -> EventStream[ProgressEvent, int]:
@@ -54,8 +50,6 @@ class Worker(ABC, Generic[T]):
             EventStream[ProgressEvent, int]: Subscribable stream of events
         """
 
-        ...
-
     @property
     @abstractmethod
     def data_events(self) -> EventStream[DataEvent, int]:
@@ -65,5 +59,3 @@ class Worker(ABC, Generic[T]):
         Returns:
             EventStream[DataEvent, int]: Subscribable stream of events
         """
-
-        ...

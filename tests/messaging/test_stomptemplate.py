@@ -29,6 +29,11 @@ def test_queue(template: MessagingTemplate) -> str:
     return template.destinations.queue(f"test-{next(_COUNT)}")
 
 
+@pytest.fixture
+def test_topic(template: MessagingTemplate) -> str:
+    return template.destinations.topic(f"test-{next(_COUNT)}")
+
+
 @pytest.mark.stomp
 def test_send(template: MessagingTemplate, test_queue: str) -> None:
     f: Future = Future()
@@ -38,6 +43,18 @@ def test_send(template: MessagingTemplate, test_queue: str) -> None:
 
     template.subscribe(test_queue, callback)
     template.send(test_queue, "test_message")
+    assert f.result(timeout=_TIMEOUT)
+
+
+@pytest.mark.stomp
+def test_send_to_topic(template: MessagingTemplate, test_topic: str) -> None:
+    f: Future = Future()
+
+    def callback(ctx: MessageContext, message: str) -> None:
+        f.set_result(message)
+
+    template.subscribe(test_topic, callback)
+    template.send(test_topic, "test_message")
     assert f.result(timeout=_TIMEOUT)
 
 
@@ -57,6 +74,19 @@ def test_send_on_reply(template: MessagingTemplate, test_queue: str) -> None:
 @pytest.mark.stomp
 def test_send_and_recieve(template: MessagingTemplate, test_queue: str) -> None:
     acknowledge(template, test_queue)
+    reply = template.send_and_recieve(test_queue, "test", str).result(timeout=_TIMEOUT)
+    assert reply == "ack"
+
+
+@pytest.mark.stomp
+def test_listener(template: MessagingTemplate, test_queue: str) -> None:
+    @template.listener(test_queue)
+    def server(ctx: MessageContext, message: str) -> None:
+        reply_queue = ctx.reply_destination
+        if reply_queue is None:
+            raise RuntimeError("reply queue is None")
+        template.send(reply_queue, "ack")
+
     reply = template.send_and_recieve(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
 

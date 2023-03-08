@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
-from types import TracebackType
 from typing import Any, Callable, Optional, Type
 
 from .context import MessageContext
@@ -28,8 +27,6 @@ class DestinationProvider(ABC):
             str: Identifier for the destination
         """
 
-        ...
-
     @abstractmethod
     def queue(self, name: str) -> str:
         """
@@ -41,8 +38,6 @@ class DestinationProvider(ABC):
         Returns:
             str: Identifier for the queue
         """
-
-        ...
 
     @abstractmethod
     def topic(self, name: str) -> str:
@@ -56,8 +51,6 @@ class DestinationProvider(ABC):
             str: Identifier for the topic
         """
 
-        ...
-
     @abstractmethod
     def temporary_queue(self, name: str) -> str:
         """
@@ -69,8 +62,6 @@ class DestinationProvider(ABC):
         Returns:
             str: Identifier for the queue
         """
-
-        ...
 
 
 class MessagingTemplate(ABC):
@@ -90,8 +81,6 @@ class MessagingTemplate(ABC):
         Returns:
             DestinationProvider: Destination provider
         """
-
-        ...
 
     def send_and_recieve(
         self,
@@ -138,8 +127,6 @@ class MessagingTemplate(ABC):
                                                               a reply. Defaults to None.
         """
 
-        ...
-
     def listener(self, destination: str):
         """
         Decorator for subscribing to a topic:
@@ -179,30 +166,14 @@ class MessagingTemplate(ABC):
             __callback (MessageListener): What to do with each message
         """
 
-        ...
-
-    def __enter__(self) -> "MessagingTemplate":
-        self.connect()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> None:
-        self.disconnect()
-
     @abstractmethod
     def connect(self) -> None:
         """
         Connect the app to transport
         """
-        ...
 
     @abstractmethod
     def disconnect(self) -> None:
         """
         Disconnect the app from transport
         """
-        ...

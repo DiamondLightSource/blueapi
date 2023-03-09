@@ -36,12 +36,12 @@ class Task(ABC):
         )
 
     @abstractmethod
-    def do_task(self, ctx: BlueskyContext) -> None:
+    def do_task(self, __ctx: BlueskyContext) -> None:
         """
         Perform the task using the context
 
         Args:
-            ctx (TaskContext): Context for the task
+            ctx: Context for the task, holds plans/device/etc
         """
 
 

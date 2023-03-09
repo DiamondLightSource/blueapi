@@ -65,15 +65,19 @@ class Service:
             self._publish_event_stream(stream, destination)
 
     def _publish_event_stream(self, stream: EventStream, destination: str) -> None:
-        stream.subscribe(lambda event: self._template.send(destination, event))
+        stream.subscribe(
+            lambda event, correlation_id: self._template.send(
+                destination, event, None, correlation_id
+            )
+        )
 
     def _on_run_request(self, message_context: MessageContext, task: RunPlan) -> None:
-        name = str(uuid.uuid1())
-        self._worker.submit_task(name, task)
+        correlation_id = message_context.correlation_id or str(uuid.uuid1())
+        self._worker.submit_task(correlation_id, task)
 
         reply_queue = message_context.reply_destination
         if reply_queue is not None:
-            response = TaskResponse(name)
+            response = TaskResponse(correlation_id)
             self._template.send(reply_queue, response)
 
     def _get_plans(self, message_context: MessageContext, message: PlanRequest) -> None:

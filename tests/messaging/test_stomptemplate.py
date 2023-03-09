@@ -1,6 +1,7 @@
 import itertools
 from concurrent.futures import Future
 from dataclasses import dataclass
+from queue import Queue
 from typing import Any, Iterable, Type
 
 import pytest
@@ -26,6 +27,11 @@ def template(disconnected_template: MessagingTemplate) -> Iterable[MessagingTemp
 
 @pytest.fixture
 def test_queue(template: MessagingTemplate) -> str:
+    return template.destinations.queue(f"test-{next(_COUNT)}")
+
+
+@pytest.fixture
+def test_queue_2(template: MessagingTemplate) -> str:
     return template.destinations.queue(f"test-{next(_COUNT)}")
 
 
@@ -141,11 +147,35 @@ def test_reconnect(template: MessagingTemplate, test_queue: str) -> None:
     assert reply == "ack"
 
 
-def acknowledge(template: MessagingTemplate, test_queue: str) -> None:
+@pytest.mark.stomp
+def test_correlation_id(
+    template: MessagingTemplate, test_queue: str, test_queue_2: str
+) -> None:
+    correlation_id = "foobar"
+    q: Queue = Queue()
+
+    def server(ctx: MessageContext, msg: str) -> None:
+        q.put(ctx)
+        template.send(test_queue_2, msg, None, ctx.correlation_id)
+
+    def client(ctx: MessageContext, msg: str) -> None:
+        q.put(ctx)
+
+    template.subscribe(test_queue, server)
+    template.subscribe(test_queue_2, client)
+    template.send(test_queue, "test", None, correlation_id)
+
+    ctx_req: MessageContext = q.get(timeout=_TIMEOUT)
+    assert ctx_req.correlation_id == correlation_id
+    ctx_ack: MessageContext = q.get(timeout=_TIMEOUT)
+    assert ctx_ack.correlation_id == correlation_id
+
+
+def acknowledge(template: MessagingTemplate, destination: str) -> None:
     def server(ctx: MessageContext, message: str) -> None:
         reply_queue = ctx.reply_destination
         if reply_queue is None:
             raise RuntimeError("reply queue is None")
         template.send(reply_queue, "ack")
 
-    template.subscribe(test_queue, server)
+    template.subscribe(destination, server)

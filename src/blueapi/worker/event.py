@@ -41,17 +41,6 @@ class WorkerState(Enum):
         return WorkerState(str(bluesky_state).upper())
 
 
-class WorkerEvent(BaseModel):
-    """
-    Event emitted by a worker when the runner state changes
-    """
-
-    state: WorkerState = Field(description="Current state of the worker")
-    current_task_name: Optional[str] = Field(
-        description="Unique ID of the currently running task, if any", default=None
-    )
-
-
 class StatusView(BaseModel):
     """
     A snapshot of a Status of an operation, optionally representing progress

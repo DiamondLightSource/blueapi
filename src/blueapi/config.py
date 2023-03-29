@@ -13,6 +13,18 @@ class StompConfig:
     port: int = 61613
 
 
+@dataclass  # TODO: Defer immediately to pika.ConnectionProperties?
+class AMQPConfig:
+    """
+    Config for connecting to the AMQP broker
+    """
+    host: str = "localhost"
+    port: int = 5672
+    userid: str = "guest"  # TODO: Config reads from env, so can be injected as Secret?
+    password: str = "guest"  # Can only use guest/guest on loopback address
+    virtual_host: str = "/"
+
+
 @dataclass
 class EnvironmentConfig:
     """
@@ -34,6 +46,6 @@ class ApplicationConfig:
     config tree.
     """
 
-    stomp: StompConfig = field(default_factory=StompConfig)
+    stomp: StompConfig = field(default_factory=StompConfig) # TODO: Config for which message bus config to load?
     env: EnvironmentConfig = field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)

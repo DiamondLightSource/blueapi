@@ -2,6 +2,7 @@ from blueapi.config import StompConfig
 from blueapi.messaging import StompMessagingTemplate, MessagingTemplate
 from messaging.test_templates import *
 
+
 @pytest.fixture
 def disconnected_template() -> MessagingTemplate:
     return StompMessagingTemplate.autoconfigured(StompConfig())

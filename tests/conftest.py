@@ -20,13 +20,14 @@ def pytest_addoption(parser):
         "--skip-messaging",
         action="store_true",
         default=False,
-        help="skip message broker tests (i.e. stomp + amqp tests)"
+        help="skip message broker tests (i.e. stomp + amqp tests)",
     )
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "stomp: mark test as requiring stomp broker")
     config.addinivalue_line("markers", "amqp: mark test as requiring amqp broker")
+
 
 def pytest_collection_modifyitems(config, items):
     if config.getoption("--skip-stomp") or config.getoption("--skip-messaging"):

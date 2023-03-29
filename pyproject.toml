@@ -23,6 +23,7 @@ dependencies = [
     "scanspec<=0.5.5",
     "PyYAML",
     "click",
+    "pika"
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

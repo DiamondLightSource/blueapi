@@ -219,6 +219,7 @@ class AMQPMessagingTemplate(MessagingTemplate):
                                                  on_close_callback=close_connection)
 
         self._thread = Thread(target=self._connection.ioloop.start)
+        self._thread.setDaemon(True)
         self._thread.start()
         if not self._connection_ready.wait(timeout=5):
             LOGGER.warning(

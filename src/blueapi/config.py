@@ -18,11 +18,19 @@ class AMQPConfig:
     """
     Config for connecting to the AMQP broker
     """
+
     host: str = "localhost"
     port: int = 5672
     userid: str = "guest"  # TODO: Config reads from env, so can be injected as Secret?
     password: str = "guest"  # Can only use guest/guest on loopback address
     virtual_host: str = "/"
+
+
+@dataclass
+class MessagingConfig:
+    impl: str = "stomp"
+    stomp: StompConfig = field(default_factory=StompConfig)
+    amqp: AMQPConfig = field(default_factory=AMQPConfig)
 
 
 @dataclass
@@ -46,6 +54,6 @@ class ApplicationConfig:
     config tree.
     """
 
-    stomp: StompConfig = field(default_factory=StompConfig) # TODO: Config for which message bus config to load?
+    messaging: MessagingConfig = field(default_factory=MessagingConfig)
     env: EnvironmentConfig = field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)

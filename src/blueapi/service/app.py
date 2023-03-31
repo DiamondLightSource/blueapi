@@ -5,7 +5,12 @@ from typing import Mapping, Optional
 
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext, EventStream
-from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
+from blueapi.messaging import (
+    MessageContext,
+    MessagingTemplate,
+    StompMessagingTemplate,
+    AMQPMessagingTemplate,
+)
 from blueapi.utils import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, Worker
 
@@ -31,7 +36,11 @@ class Service:
         self._ctx = BlueskyContext()
         self._ctx.with_startup_script(self._config.env.startup_script)
         self._worker = RunEngineWorker(self._ctx)
-        self._template = StompMessagingTemplate.autoconfigured(config.stomp)
+        self._template = (
+            AMQPMessagingTemplate.autoconfigured(config.messaging.amqp)
+            if config.messaging.impl == "amqp"
+            else StompMessagingTemplate.autoconfigured(config.messaging.stomp)
+        )
 
     def run(self) -> None:
         logging.basicConfig(level=self._config.logging.level)

@@ -60,7 +60,15 @@ affinity: {}
 worker:
   env:
     startupScript: blueapi.startup.example
-  stomp:
-    host: activemq
-    port: 61613
+  messaging:
+    impl: stomp  # TODO: Support multiple concurrent messaging implementations?
+    stomp:
+      host: activemq
+      port: 61613
+    amqp:
+      host: rabbitmq
+      port: 5672
+      userid: guest  # N.B. user=guest, password=guest is only allowed on localhost on RabbitMQ
+      password: guest
+      virtual_host: /
 # Config for the worker goes here, will be mounted into a config file

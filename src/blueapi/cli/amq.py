@@ -19,7 +19,7 @@ class BlueskyRemoteError(Exception):
         super().__init__(message)
 
 
-class AmqClient:
+class MessagingClient:
     app: MessagingTemplate
 
     def __init__(self, app: MessagingTemplate) -> None:

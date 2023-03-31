@@ -26,6 +26,13 @@ class AMQPConfig:
 
 
 @dataclass
+class MessagingConfig:
+    impl: str = 'stomp'
+    stomp: StompConfig = field(default_factory=StompConfig)
+    amqp: AMQPConfig = field(default_factory=AMQPConfig)
+
+
+@dataclass
 class EnvironmentConfig:
     """
     Config for the RunEngine environment
@@ -46,6 +53,6 @@ class ApplicationConfig:
     config tree.
     """
 
-    stomp: StompConfig = field(default_factory=StompConfig) # TODO: Config for which message bus config to load?
+    messaging: MessagingConfig = field(default_factory=MessagingConfig)
     env: EnvironmentConfig = field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)

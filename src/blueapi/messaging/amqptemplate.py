@@ -33,10 +33,14 @@ class AMQPDestinationProvider(DestinationProvider):  # TODO: Return dict?
     def queue(self, name: str) -> str:  # May be empty, must not start with "amq."
         return name
 
-    def topic(self, name: str) -> str:  # Must be a series of words separated by dots for.example.this
+    def topic(
+        self, name: str
+    ) -> str:  # Must be a series of words separated by dots for.example.this
         return name
 
-    def temporary_queue(self, name: str) -> str:  # May pass "" to get a uniquely named queue, channel remembers name
+    def temporary_queue(
+        self, name: str
+    ) -> str:  # May pass "" to get a uniquely named queue, channel remembers name
         return name
 
     default = queue
@@ -61,10 +65,7 @@ class AMQPMessagingTemplate(MessagingTemplate):
     # Stateless implementation means attribute can be static
     _destination_provider: DestinationProvider = AMQPDestinationProvider()
 
-    def __init__(
-            self,
-            parameters: pika.ConnectionParameters
-    ) -> None:
+    def __init__(self, parameters: pika.ConnectionParameters) -> None:
         self._params = parameters
         self._callback_queue = str(uuid.uuid4())
         self._subscriptions = {}
@@ -75,13 +76,14 @@ class AMQPMessagingTemplate(MessagingTemplate):
     @classmethod
     def autoconfigured(cls, config: AMQPConfig) -> MessagingTemplate:
         return cls(
-            pika.ConnectionParameters(host=config.host,
-                                      port=config.port,
-                                      credentials=pika.credentials.PlainCredentials(
-                                          username=config.userid,
-                                          password=config.password
-                                      ),
-                                      virtual_host=config.virtual_host)
+            pika.ConnectionParameters(
+                host=config.host,
+                port=config.port,
+                credentials=pika.credentials.PlainCredentials(
+                    username=config.userid, password=config.password
+                ),
+                virtual_host=config.virtual_host,
+            )
         )
 
     @property
@@ -89,90 +91,107 @@ class AMQPMessagingTemplate(MessagingTemplate):
         return self._destination_provider
 
     def send(
-            self, destination: str, obj: Any, on_reply: Optional[MessageListener] = None,
-            correlation_id: Optional[str] = None,
+        self,
+        destination: str,
+        obj: Any,
+        on_reply: Optional[MessageListener] = None,
+        correlation_id: Optional[str] = None,
     ) -> None:
         self._send_str(
-            destination,
-            json.dumps(serialize(obj)),
-            on_reply,
-            correlation_id
+            destination, json.dumps(serialize(obj)), on_reply, correlation_id
         )
 
     def _send_str(
-            self,
-            destination: str,
-            message: str,
-            on_reply: Optional[MessageListener] = None,
-            correlation_id: Optional[str] = None,
+        self,
+        destination: str,
+        message: str,
+        on_reply: Optional[MessageListener] = None,
+        correlation_id: Optional[str] = None,
     ) -> None:
         LOGGER.info(f"SENDING {message} to {destination}")
 
         correlation_id = correlation_id or str(
-            uuid.uuid4())  # rabbitmq python tutorial recommends handling callbacks thusly on queue-per-consumer rather than queue-per-callback
+            uuid.uuid4()
+        )  # rabbitmq python tutorial recommends handling callbacks thusly on queue-per-consumer rather than queue-per-callback
 
         def send_message(_):
             self._channel.basic_publish(
                 properties=pika.BasicProperties(
                     reply_to=self._callback_queue,
                     correlation_id=correlation_id,
-                    content_type="application/json"
+                    content_type="application/json",
                 ),
-                exchange='',
+                exchange="",
                 routing_key=destination,
-                body=message.encode('utf-8'),
+                body=message.encode("utf-8"),
             )
 
         if on_reply:
             obj_type = determine_deserialization_type(on_reply, default=str)
 
-            def wrapper(channel: Channel, method: Basic.Deliver, properties: BasicProperties, body: bytes) -> None:
+            def wrapper(
+                channel: Channel,
+                method: Basic.Deliver,
+                properties: BasicProperties,
+                body: bytes,
+            ) -> None:
                 if properties.correlation_id == correlation_id:
-                    value = json.loads(body.decode('utf-8'))
+                    value = json.loads(body.decode("utf-8"))
                     if obj_type is not str:
                         value = deserialize(obj_type, value)
 
                     context = MessageContext(
                         destination=self._callback_queue,  # TODO: Allow for changing callback_queue name if exclusive?
                         reply_destination=properties.reply_to,
-                        correlation_id=properties.correlation_id
+                        correlation_id=properties.correlation_id,
                     )
                     on_reply(context, value)
 
-            self._channel.basic_consume(queue=self._callback_queue, on_message_callback=wrapper)
+            self._channel.basic_consume(
+                queue=self._callback_queue, on_message_callback=wrapper
+            )
 
         self._channel.queue_declare(queue=destination, callback=send_message)
 
     def subscribe(self, destination: str, callback: MessageListener) -> None:
-
         LOGGER.debug(f"New subscription to {destination}")
         subscription_id = str(uuid.uuid4())
         self._subscriptions[subscription_id] = Subscription(destination, callback)
-        if self._connection is not None and self._connection.is_open and self._channel is not None and self._channel.is_open:
+        if (
+            self._connection is not None
+            and self._connection.is_open
+            and self._channel is not None
+            and self._channel.is_open
+        ):
             self._subscribe(subscription_id)
 
     def _subscribe(self, subscription_id: str) -> None:
         subscription = self._subscriptions.get(subscription_id)
-        LOGGER.debug(f"Subscribing to {subscription.destination} with {subscription.callback}")
+        LOGGER.debug(
+            f"Subscribing to {subscription.destination} with {subscription.callback}"
+        )
 
         obj_type = determine_deserialization_type(subscription.callback, default=str)
 
-        def wrapper(_: Channel, __: Basic.Deliver, properties: BasicProperties, body: bytes) -> None:
-            value = json.loads(body.decode('utf-8'))
+        def wrapper(
+            _: Channel, __: Basic.Deliver, properties: BasicProperties, body: bytes
+        ) -> None:
+            value = json.loads(body.decode("utf-8"))
             if obj_type is not str:
                 value = deserialize(obj_type, value)
 
             context = MessageContext(
                 destination=subscription.destination,  # TODO: Get from headers?
                 reply_destination=properties.reply_to,
-                correlation_id=properties.correlation_id
+                correlation_id=properties.correlation_id,
             )
             subscription.callback(context, value)
 
         self._channel.queue_declare(queue=subscription.destination)
 
-        self._channel.basic_consume(queue=subscription.destination,
-                                    on_message_callback=wrapper)  # TODO: callback for ACK
+        self._channel.basic_consume(
+            queue=subscription.destination, on_message_callback=wrapper
+        )  # TODO: callback for ACK
 
     def disconnect(self) -> None:
         LOGGER.info(f"Disconnecting from {self._params._host}")
@@ -192,7 +211,6 @@ class AMQPMessagingTemplate(MessagingTemplate):
         LOGGER.info(f"Connecting to {self._params._host}")
 
         def declare_channel(_: pika.BaseConnection):
-
             def declare_callback_queue(channel: pika.channel.Channel):
                 LOGGER.info(f"Creating channel on {self._params._host}")
 
@@ -210,17 +228,22 @@ class AMQPMessagingTemplate(MessagingTemplate):
             self._connection.channel(on_open_callback=declare_callback_queue)
             LOGGER.info(f"Connected to {self._params._host}")
 
-        def close_connection(_: pika.BaseConnection, exception):  # TODO: Check for exception
+        def close_connection(
+            _: pika.BaseConnection, exception
+        ):  # TODO: Check for exception
             self._connection = self._thread = self._channel = None
             self._shutdown.set()
 
-        self._connection = pika.SelectConnection(parameters=self._params,
-                                                 on_open_callback=declare_channel,
-                                                 on_close_callback=close_connection)
+        self._connection = pika.SelectConnection(
+            parameters=self._params,
+            on_open_callback=declare_channel,
+            on_close_callback=close_connection,
+        )
 
         self._thread = Thread(target=self._connection.ioloop.start)
         self._thread.setDaemon(True)
         self._thread.start()
         if not self._connection_ready.wait(timeout=5):
             LOGGER.warning(
-                f"Not connected to {self._params._host} after 5 seconds!")  # TODO: loop twice then error then quit?
+                f"Not connected to {self._params._host} after 5 seconds!"
+            )  # TODO: loop twice then error then quit?

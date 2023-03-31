@@ -17,6 +17,7 @@ def template(disconnected_template: MessagingTemplate) -> Iterable[MessagingTemp
     disconnected_template.connect()
     yield disconnected_template
     disconnected_template.disconnect()
+    print("Disconnected")
 
 
 @pytest.fixture
@@ -94,7 +95,7 @@ class Foo:
 
 
 def deserialization(
-        template: MessagingTemplate, test_queue: str, message: Any, message_type: Type
+    template: MessagingTemplate, test_queue: str, message: Any, message_type: Type
 ) -> None:
     def server(ctx: MessageContext, message: message_type) -> None:  # type: ignore
         reply_queue = ctx.reply_destination
@@ -110,7 +111,7 @@ def deserialization(
 
 
 def subscribe_before_connect(
-        disconnected_template: MessagingTemplate, test_queue: str
+    disconnected_template: MessagingTemplate, test_queue: str
 ) -> None:
     acknowledge(disconnected_template, test_queue)
     disconnected_template.connect()

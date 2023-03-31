@@ -18,6 +18,7 @@ class AMQPConfig:
     """
     Config for connecting to the AMQP broker
     """
+
     host: str = "localhost"
     port: int = 5672
     userid: str = "guest"  # TODO: Config reads from env, so can be injected as Secret?
@@ -27,7 +28,7 @@ class AMQPConfig:
 
 @dataclass
 class MessagingConfig:
-    impl: str = 'stomp'
+    impl: str = "stomp"
     stomp: StompConfig = field(default_factory=StompConfig)
     amqp: AMQPConfig = field(default_factory=AMQPConfig)
 

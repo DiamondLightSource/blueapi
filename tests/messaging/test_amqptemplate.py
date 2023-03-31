@@ -39,14 +39,14 @@ def test_amqp_listener(template: MessagingTemplate, test_queue: str) -> None:
     [("test", str), (1, int), (Foo(1, "test"), Foo)],
 )
 def test_amqp_deserialization(
-        template: MessagingTemplate, test_queue: str, message: Any, message_type: Type
+    template: MessagingTemplate, test_queue: str, message: Any, message_type: Type
 ) -> None:
     deserialization(template, test_queue, message, message_type)
 
 
 @pytest.mark.amqp
 def test_amqp_subscribe_before_connect(
-        disconnected_template: MessagingTemplate, test_queue: str
+    disconnected_template: MessagingTemplate, test_queue: str
 ) -> None:
     subscribe_before_connect(disconnected_template, test_queue)
 

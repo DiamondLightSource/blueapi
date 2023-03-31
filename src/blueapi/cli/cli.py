@@ -56,51 +56,62 @@ def start_worker(config: Optional[Path]):
 @click.option(
     "-i",
     "--impl",
-    type=click.Choice(['amqp', 'stomp'], case_sensitive=False),
+    type=click.Choice(["amqp", "stomp"], case_sensitive=False),
     help="Broker implementation: 'stomp' or 'amqp', defaults to stomp",
-    default='stomp'
+    default="stomp",
 )
 @click.option(
     "-u",
     "--userid",
     type=str,
     help="Username [for AMQP client only], defaults to 'guest'",
-    default="guest"
+    default="guest",
 )
 @click.option(
     "-w",
     "--password",
     type=str,
     help="Password [for AMQP client only], defaults to 'guest'",
-    default="guest"
+    default="guest",
 )
 @click.option(
     "-P",
     "--prompt",
     is_flag=True,
-    help="Flag [for AMQP client only]. enable prompting the user for a password"
+    help="Flag [for AMQP client only]. enable prompting the user for a password",
 )
 @click.option(
     "-v",
     "--virtual_host",
     type=str,
     help="Virtual host [for AMQP client only], defaults to '/'",
-    default='/'
+    default="/",
 )
 @click.pass_context
-def controller(ctx, host: str, port: int, log_level: str, impl: str,
-               userid: str, password: str, prompt: bool, virtual_host: str):  # AMQP specific options  # TODO: Handle?
+def controller(
+    ctx,
+    host: str,
+    port: int,
+    log_level: str,
+    impl: str,
+    userid: str,
+    password: str,
+    prompt: bool,
+    virtual_host: str,
+):  # AMQP specific options  # TODO: Handle?
     # if no command is supplied, run with the options passed
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
     logging.basicConfig(level=log_level)
     ctx.ensure_object(dict)
-    if impl == 'amqp':
+    if impl == "amqp":
         if prompt:
             password = getpass.getpass(prompt=f"AMQP Password for user {user}:")
-        client = MessagingClient(AMQPMessagingTemplate.autoconfigured(
-            AMQPConfig(host, port, userid, password, virtual_host))
+        client = MessagingClient(
+            AMQPMessagingTemplate.autoconfigured(
+                AMQPConfig(host, port, userid, password, virtual_host)
+            )
         )
     else:
         client = StompMessagingTemplate.autoconfigured(StompConfig(host, port))

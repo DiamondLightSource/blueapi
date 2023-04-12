@@ -48,6 +48,10 @@ jobs:
         image: rmohr/activemq:5.14.5-alpine
         ports:
           - 61613:61613
+      rabbitmq:
+        image: rabbitmq:alpine
+        ports:
+          - 5672:5672
 
     runs-on: ${{ matrix.os }}
     env:

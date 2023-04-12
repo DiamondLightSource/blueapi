@@ -38,7 +38,6 @@ def send(template: MessagingTemplate, test_queue: str) -> None:
     f: Future = Future()
 
     def callback(ctx: MessageContext, message: str) -> None:
-        print(message)
         f.set_result(message)
 
     template.subscribe(test_queue, callback)
@@ -118,6 +117,7 @@ def subscribe_before_connect(
         timeout=_TIMEOUT
     )
     assert reply == "ack"
+    disconnected_template.disconnect()
 
 
 def reconnect(template: MessagingTemplate, test_queue: str) -> None:

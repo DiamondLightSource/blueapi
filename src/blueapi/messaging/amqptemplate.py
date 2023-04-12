@@ -3,12 +3,13 @@ import logging
 import uuid
 from dataclasses import dataclass
 from threading import Thread, Event
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Callable
 
 import pika
 from apischema import deserialize, serialize
 from blueapi.config import AMQPConfig
 from pika.channel import Channel
+from pika.frame import Method
 from pika.spec import BasicProperties, Basic
 
 from .base import DestinationProvider, MessageListener, MessagingTemplate
@@ -16,6 +17,18 @@ from .context import MessageContext
 from .utils import determine_deserialization_type
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _ready(ready: Event) -> Callable[[Method], None]:
+    def channel_ready(_: Method):
+        ready.set()
+    return channel_ready
+
+
+def _begin_consume(ch: Channel, destination: str, wrapper, ready: Event):
+    def queue_declared(_: Method):
+        ch.basic_consume(queue=destination, on_message_callback=wrapper, callback=_ready(ready))
+    return queue_declared
 
 
 @dataclass
@@ -54,8 +67,6 @@ class AMQPMessagingTemplate(MessagingTemplate):
 
     _params: pika.ConnectionParameters
     _connection: pika.BaseConnection
-    _channel: pika.channel.Channel
-    _callback_queue: str  # A queue, exclusively for this consumer, for callback messages
     _subscriptions: Dict[str, Subscription]
     _connection_ready: Event
     _shutting_down: Event
@@ -67,7 +78,6 @@ class AMQPMessagingTemplate(MessagingTemplate):
 
     def __init__(self, parameters: pika.ConnectionParameters) -> None:
         self._params = parameters
-        self._callback_queue = str(uuid.uuid4())
         self._subscriptions = {}
         self._connection_ready = Event()
         self._shutting_down = Event()
@@ -112,12 +122,18 @@ class AMQPMessagingTemplate(MessagingTemplate):
 
         correlation_id = correlation_id or str(
             uuid.uuid4()
-        )  # rabbitmq python tutorial recommends handling callbacks thusly on queue-per-consumer rather than queue-per-callback
+        )  # rabbitmq python tutorial recommends handling callbacks on queue-per-consumer rather than queue-per-callback
+        published: Event = Event()  # Do not return from method until message has been published
+        callback_queue: str = str(uuid.uuid4()) if on_reply is not None else None
 
-        def send_message(_):
-            self._channel.basic_publish(
+        ready: Event = Event()
+        ch: Channel = self._connection.channel(on_open_callback=_ready(ready))
+        ready.wait()
+
+        def send_message(_: Method):
+            ch.basic_publish(
                 properties=pika.BasicProperties(
-                    reply_to=self._callback_queue,
+                    reply_to=callback_queue,
                     correlation_id=correlation_id,
                     content_type="application/json",
                 ),
@@ -125,13 +141,19 @@ class AMQPMessagingTemplate(MessagingTemplate):
                 routing_key=destination,
                 body=message.encode("utf-8"),
             )
+            LOGGER.debug(f"Sent to queue {destination}")
+            published.set()
+            ch.close()
 
-        if on_reply:
+        if on_reply is not None:
             obj_type = determine_deserialization_type(on_reply, default=str)
+            cbready: Event = Event()
+            cb: Channel = self._connection.channel(on_open_callback=_ready(cbready))
+            cbready.wait()
 
             def wrapper(
                 channel: Channel,
-                method: Basic.Deliver,
+                deliver: Basic.Deliver,
                 properties: BasicProperties,
                 body: bytes,
             ) -> None:
@@ -141,17 +163,19 @@ class AMQPMessagingTemplate(MessagingTemplate):
                         value = deserialize(obj_type, value)
 
                     context = MessageContext(
-                        destination=self._callback_queue,  # TODO: Allow for changing callback_queue name if exclusive?
+                        destination=callback_queue,
                         reply_destination=properties.reply_to,
                         correlation_id=properties.correlation_id,
                     )
-                    on_reply(context, value)
+                    on_reply(context, value)  # TODO: Thread?
+                    channel.basic_ack(deliver.delivery_tag)
 
-            self._channel.basic_consume(
-                queue=self._callback_queue, on_message_callback=wrapper
-            )
+            subscribed: Event = Event()
+            cb.queue_declare(queue=callback_queue, callback=_begin_consume(cb, callback_queue, wrapper, subscribed), auto_delete=True)
+            subscribed.wait()
 
-        self._channel.queue_declare(queue=destination, callback=send_message)
+        ch.queue_declare(queue=destination, callback=send_message)
+        published.wait()
 
     def subscribe(self, destination: str, callback: MessageListener) -> None:
         LOGGER.debug(f"New subscription to {destination}")
@@ -160,8 +184,6 @@ class AMQPMessagingTemplate(MessagingTemplate):
         if (
             self._connection is not None
             and self._connection.is_open
-            and self._channel is not None
-            and self._channel.is_open
         ):
             self._subscribe(subscription_id)
 
@@ -172,9 +194,12 @@ class AMQPMessagingTemplate(MessagingTemplate):
         )
 
         obj_type = determine_deserialization_type(subscription.callback, default=str)
+        ready: Event = Event()
+        cb: Channel = self._connection.channel(on_open_callback=_ready(ready))
+        ready.wait()
 
         def wrapper(
-            _: Channel, __: Basic.Deliver, properties: BasicProperties, body: bytes
+            channel: Channel, deliver: Basic.Deliver, properties: BasicProperties, body: bytes
         ) -> None:
             value = json.loads(body.decode("utf-8"))
             if obj_type is not str:
@@ -185,13 +210,12 @@ class AMQPMessagingTemplate(MessagingTemplate):
                 reply_destination=properties.reply_to,
                 correlation_id=properties.correlation_id,
             )
-            subscription.callback(context, value)
+            subscription.callback(context, value)  # TODO: Thread?
+            channel.basic_ack(deliver.delivery_tag)
 
-        self._channel.queue_declare(queue=subscription.destination)
-
-        self._channel.basic_consume(
-            queue=subscription.destination, on_message_callback=wrapper
-        )  # TODO: callback for ACK
+        subscribed: Event = Event()
+        cb.queue_declare(queue=subscription.destination, callback=_begin_consume(cb, subscription.destination, wrapper, subscribed))
+        subscribed.wait()
 
     def disconnect(self) -> None:
         LOGGER.info(f"Disconnecting from {self._params._host}")
@@ -210,39 +234,26 @@ class AMQPMessagingTemplate(MessagingTemplate):
     def connect(self) -> None:
         LOGGER.info(f"Connecting to {self._params._host}")
 
-        def declare_channel(_: pika.BaseConnection):
-            def declare_callback_queue(channel: pika.channel.Channel):
-                LOGGER.info(f"Creating channel on {self._params._host}")
-
-                self._channel = channel
-                while not self._channel.is_open:
-                    ...
-                self._channel.queue_declare(queue=self._callback_queue)
-                for subscription in self._subscriptions:
-                    self._subscribe(subscription)
-                LOGGER.info(f"Channel created on {self._params._host}")
-                self._connection_ready.set()
-
-            while not self._connection.is_open:
-                ...
-            self._connection.channel(on_open_callback=declare_callback_queue)
-            LOGGER.info(f"Connected to {self._params._host}")
+        def begin_subscriptions(_: pika.BaseConnection):
+            for subscription in self._subscriptions:
+                self._subscribe(subscription)
+            self._connection_ready.set()
+            LOGGER.info(f"Subscriptions opened on {self._params._host}, Connection ready")
 
         def close_connection(
             _: pika.BaseConnection, exception
         ):  # TODO: Check for exception
-            self._connection = self._thread = self._channel = None
             self._shutdown.set()
 
         self._connection = pika.SelectConnection(
             parameters=self._params,
-            on_open_callback=declare_channel,
+            on_open_callback=begin_subscriptions,
             on_close_callback=close_connection,
         )
 
         self._thread = Thread(target=self._connection.ioloop.start, daemon=True)
         self._thread.start()
-        if not self._connection_ready.wait(timeout=5):
+        while not self._connection_ready.wait(timeout=5):
             LOGGER.warning(
                 f"Not connected to {self._params._host} after 5 seconds!"
             )  # TODO: loop twice then error then quit?

@@ -1,6 +1,6 @@
 import functools
 from dataclasses import dataclass
-from inspect import isclass
+from inspect import Parameter, isclass, signature
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -68,6 +68,16 @@ def create_model_with_type_validators(
 def create_model_with_type_validators(
     name: str,
     converters: Iterable[TypeConverter],
+    func: Callable[..., Any],
+    config: Optional[Type[BaseConfig]] = None,
+) -> Type[BaseModel]:
+    ...
+
+
+@overload
+def create_model_with_type_validators(
+    name: str,
+    converters: Iterable[TypeConverter],
     base: Type[BaseModel],
 ) -> Type[BaseModel]:
     ...
@@ -78,11 +88,14 @@ def create_model_with_type_validators(
     converters: Iterable[TypeConverter],
     fields: Optional[Fields] = None,
     base: Optional[Type[BaseModel]] = None,
+    func: Optional[Callable[..., Any]] = None,
     config: Optional[Type[BaseConfig]] = None,
 ) -> Type[BaseModel]:
     fields = fields or {}
     if base is not None:
-        fields = {**fields, **_extract_fields(base)}
+        fields = {**fields, **_extract_fields_from_model(base)}
+    if func is not None:
+        fields = {**fields, **_extract_fields_from_function(func)}
     for name, field in fields.items():
         annotation, val = field
         model_type = find_model_type(annotation)
@@ -97,11 +110,25 @@ def create_model_with_type_validators(
     )
 
 
-def _extract_fields(model: Type[BaseModel]) -> Fields:
+def _extract_fields_from_model(model: Type[BaseModel]) -> Fields:
     return {
         name: (field.type_, field.field_info)
         for name, field in model.__fields__.items()
     }
+
+
+def _extract_fields_from_function(func: Callable[..., Any]) -> Fields:
+    fields: Fields = {}
+    for name, param in signature(func).parameters.items():
+        type_annotation = param.annotation
+        default_value = param.default
+        if default_value is Parameter.empty:
+            default_value = Undefined
+
+        anno = (type_annotation, default_value)
+        fields[name] = anno
+
+    return fields
 
 
 def type_validators(

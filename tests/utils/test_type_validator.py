@@ -69,6 +69,18 @@ class DataclassMixed:
     c: str
 
 
+def foo(a: int, b: str) -> None:
+    ...
+
+
+def bar(obj: ComplexObject) -> None:
+    ...
+
+
+def baz(bar: Bar) -> None:
+    ...
+
+
 _DB: Mapping[str, ComplexObject] = {name: ComplexObject(name) for name in _REG.keys()}
 
 
@@ -368,6 +380,38 @@ def test_validates_scanspec_with_complex_axis() -> None:
     assert parse_spec(spec).spec.axes() == [ComplexObject("x")]
 
 
+def test_model_from_simple_function_signature() -> None:
+    model = create_model_with_type_validators(
+        "Foo", [TypeConverter(int, lookup)], func=foo
+    )
+    parsed = parse_obj_as(model, {"a": "g", "b": "hello"})
+    assert parsed.a == 6
+    assert parsed.b == "hello"
+
+
+def test_model_from_complex_function_signature() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        func=bar,
+        config=DefaultConfig,
+    )
+    parsed = parse_obj_as(model, {"obj": "f"})
+    assert parsed.obj == ComplexObject("f")
+
+
+def test_model_from_nested_function_signature() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        func=baz,
+        config=DefaultConfig,
+    )
+    parsed = parse_obj_as(model, {"bar": {"a": 4, "b": "k"}})
+    assert parsed.bar.a == 4
+    assert parsed.bar.b == ComplexObject("k")
+
+
 def parse_spec(spec: Spec) -> Any:
     model = create_model_with_type_validators(
         "Foo",
@@ -387,12 +431,15 @@ def assert_validates_single_type(
 
 
 def assert_validates_complex_object(
-    field_type: Type, input_value: Any, expected_output: Any
+    field_type: Type,
+    input_value: Any,
+    expected_output: Any,
+    default_value: Any = Undefined,
 ) -> None:
     model = create_model_with_type_validators(
         "Foo",
         [TypeConverter(ComplexObject, lookup_complex)],
-        fields={"obj": (field_type, Undefined)},
+        fields={"obj": (field_type, default_value)},
         config=DefaultConfig,
     )
     assert parse_obj_as(model, {"obj": input_value}).obj == expected_output

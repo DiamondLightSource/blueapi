@@ -111,13 +111,6 @@ def type_validators(
     all_validators = {}
 
     for converter in converters:
-        # def make_validator(name: str) -> Validator:
-        #     def validate_type(value: Any) -> Any:
-        #         return apply_to_scalars(converter.func, value)
-
-        #     validate_type.__name__ = str(converter)
-        #     return validator(name, allow_reuse=True, pre=True)(validate_type)
-
         field_names = determine_fields_of_type(fields, converter.field_type)
         for name in field_names:
             val = _make_type_validator(name, converter)
@@ -145,9 +138,6 @@ def determine_fields_of_type(fields: Fields, field_type: Type) -> Iterable[str]:
 
 def is_type_or_container_type(type_to_check: Type, field_type: Type) -> bool:
     return params_contains(type_to_check, field_type)
-    # or (
-    #     isclass(field_type) and issubclass(field_type, type_to_check)
-    # )
 
 
 def params_contains(type_to_check: Type, field_type: Type) -> bool:

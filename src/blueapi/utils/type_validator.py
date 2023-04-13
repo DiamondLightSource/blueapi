@@ -151,8 +151,18 @@ def is_type_or_container_type(type_to_check: Type, field_type: Type) -> bool:
 
 
 def params_contains(type_to_check: Type, field_type: Type) -> bool:
-    type_params = getattr(type_to_check, "__args__", []) + getattr(
-        type_to_check, "__parameters__", []
+    type_params = list(
+        getattr(
+            type_to_check,
+            "__args__",
+            [],
+        )
+    ) + list(
+        getattr(
+            type_to_check,
+            "__parameters__",
+            [],
+        )
     )
     return type_to_check is field_type or any(
         map(lambda v: params_contains(v, field_type), type_params)

@@ -4,6 +4,8 @@ import pytest
 from pydantic import BaseConfig, BaseModel, parse_obj_as
 from pydantic.dataclasses import dataclass
 from pydantic.fields import Undefined
+from scanspec.regions import Circle
+from scanspec.specs import Line, Product, Spec
 
 from blueapi.utils import TypeConverter, create_model_with_type_validators
 
@@ -346,6 +348,33 @@ def test_validates_mixed_dataclass() -> None:
     assert parsed.obj.obj.a == 2
     assert parsed.obj.obj.b == ComplexObject("g")
     assert parsed.obj.c == "hello"
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        Line("x", 0.0, 10.0, 10),
+        Line("x", 0.0, 10.0, 10) * Line("y", 0.0, 10.0, 10),
+        (Line("x", 0.0, 10.0, 10) * Line("y", 0.0, 10.0, 10))
+        & Circle("x", "y", 1.0, 2.8, radius=0.5),
+    ],
+)
+def test_validates_scanspec(spec: Spec) -> None:
+    assert parse_spec(spec).spec == spec
+
+
+def test_validates_scanspec_with_complex_axis() -> None:
+    spec = Line(ComplexObject("x"), 0.0, 10.0, 10)
+    assert parse_spec(spec).spec.axes() == [ComplexObject("x")]
+
+
+def parse_spec(spec: Spec) -> Any:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        fields={"spec": (Spec, Undefined)},
+    )
+    return parse_obj_as(model, {"spec": spec.serialize()})
 
 
 def assert_validates_single_type(

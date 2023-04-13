@@ -1,30 +1,24 @@
-import functools
 from dataclasses import dataclass
 from inspect import Parameter, isclass, signature
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Deque,
     Dict,
-    FrozenSet,
     Generic,
     Iterable,
     List,
     Mapping,
-    NamedTuple,
     Optional,
     Set,
     Tuple,
     Type,
     TypeVar,
-    Union,
     overload,
 )
 
-from pydantic import BaseConfig, BaseModel, Field, create_model, validator
-from pydantic.fields import ModelField, Undefined
+from pydantic import BaseConfig, BaseModel, create_model, validator
+from pydantic.fields import Undefined
 
 if TYPE_CHECKING:
     from pydantic.typing import AnyCallable, AnyClassMethod
@@ -43,7 +37,16 @@ Validator = Callable[[AnyCallable], AnyClassMethod]
 
 
 @dataclass
-class TypeConverter(Generic[T, U]):
+class TypeValidatorDefinition(Generic[T, U]):
+    """
+    Definition of a validator to be applied to all
+    types during validation.
+
+    Args:
+        field_type: Convert all fields of this type
+        func: Convert using this function
+    """
+
     field_type: Type[T]
     func: Callable[[T], U]
 
@@ -57,40 +60,102 @@ class TypeConverter(Generic[T, U]):
 @overload
 def create_model_with_type_validators(
     name: str,
-    converters: Iterable[TypeConverter],
+    definitions: Iterable[TypeValidatorDefinition],
     fields: Fields,
     config: Optional[Type[BaseConfig]] = None,
 ) -> Type[BaseModel]:
+    """
+    Create a model based on the fields supplied
+
+    Args:
+        name: Name of the new model
+        definitions: Definitions of how to validate which types of field
+        fields: Definitions of fields from which to make the model.
+        config: Pydantic config for the model. Defaults to None.
+
+    Returns:
+        Type[BaseModel]: A new pydantic model with the fields and
+            type validators supplied.
+    """
+
     ...
 
 
 @overload
 def create_model_with_type_validators(
     name: str,
-    converters: Iterable[TypeConverter],
+    definitions: Iterable[TypeValidatorDefinition],
     func: Callable[..., Any],
     config: Optional[Type[BaseConfig]] = None,
 ) -> Type[BaseModel]:
+    """
+    Create a model from a function's parameters with type
+    validators.
+
+    Args:
+        name: Name of the new model
+        definitions: Definitions of how to validate which types of field
+        func: The model is constructed from the function parameters,
+            which must be type-annotated.
+        config: Pydantic config for the model. Defaults to None.
+
+    Returns:
+        Type[BaseModel]: A new pydantic model based on the
+            function parameters.
+    """
+
     ...
 
 
 @overload
 def create_model_with_type_validators(
     name: str,
-    converters: Iterable[TypeConverter],
+    definitions: Iterable[TypeValidatorDefinition],
     base: Type[BaseModel],
 ) -> Type[BaseModel]:
+    """
+    Apply type validators to an existing model
+
+    Args:
+        name: Name of the new model
+        definitions: Definitions of how to validate which types of field
+        base (Type[BaseModel]): Base class for the model
+
+    Returns:
+        Type[BaseModel]: A new version of `base` with type validators
+    """
+
     ...
 
 
 def create_model_with_type_validators(
     name: str,
-    converters: Iterable[TypeConverter],
+    definitions: Iterable[TypeValidatorDefinition],
     fields: Optional[Fields] = None,
     base: Optional[Type[BaseModel]] = None,
     func: Optional[Callable[..., Any]] = None,
     config: Optional[Type[BaseConfig]] = None,
 ) -> Type[BaseModel]:
+    """
+    Create a pydantic model with type validators according to
+    definitions given. Validators are applied to all fields
+    of a particular type.
+
+    Args:
+        name: Name of the new model
+        definitions: Definitions of how to validate which types of field
+        fields: Definitions of fields from which to make the model.
+            Defaults to None.
+        base: Optional base class for the model. Defaults to None.
+        func: Function, if supplied, the model is constructed from the
+            function parameters, which must be type-annotated.
+            Defaults to None.
+        config: Pydantic config for the model. Defaults to None.
+
+    Returns:
+        Type[BaseModel]: A new pydantic model
+    """
+
     fields = fields or {}
     if base is not None:
         fields = {**fields, **_extract_fields_from_model(base)}
@@ -101,10 +166,10 @@ def create_model_with_type_validators(
         model_type = find_model_type(annotation)
         if model_type is not None:
             recursed = create_model_with_type_validators(
-                annotation.__name__, converters, base=model_type
+                annotation.__name__, definitions, base=model_type
             )
             fields[name] = recursed, val
-    validators = type_validators(fields, converters)
+    validators = _type_validators(fields, definitions)
     return create_model(
         name, **fields, __base__=base, __validators__=validators, __config__=config
     )
@@ -131,16 +196,31 @@ def _extract_fields_from_function(func: Callable[..., Any]) -> Fields:
     return fields
 
 
-def type_validators(
+def _type_validators(
     fields: Fields,
-    converters: Iterable[TypeConverter],
+    definitions: Iterable[TypeValidatorDefinition],
 ) -> Mapping[str, Validator]:
+    """
+    Generate type validators from fields and definitions.
+
+    Args:
+        fields: fields to validate.
+        definitions: Definitions of how to validate which types of field
+
+    Raises:
+        TypeError: If a validator can be applied to more than one field.
+
+    Returns:
+        Mapping[str, Validator]: Dict-like structure mapping validator
+            names to pydantic validators.
+    """
+
     all_validators = {}
 
-    for converter in converters:
-        field_names = determine_fields_of_type(fields, converter.field_type)
+    for definition in definitions:
+        field_names = _determine_fields_of_type(fields, definition.field_type)
         for name in field_names:
-            val = _make_type_validator(name, converter)
+            val = _make_type_validator(name, definition)
             val_method_name = f"validate_{name}"
             if val_method_name in all_validators:
                 raise TypeError(f"Ambiguous type validator for field: {name}")
@@ -149,14 +229,14 @@ def type_validators(
     return all_validators
 
 
-def _make_type_validator(name: str, converter: TypeConverter) -> Validator:
+def _make_type_validator(name: str, definition: TypeValidatorDefinition) -> Validator:
     def validate_type(value: Any) -> Any:
-        return apply_to_scalars(converter.func, value)
+        return apply_to_scalars(definition.func, value)
 
     return validator(name, allow_reuse=True, pre=True, always=True)(validate_type)
 
 
-def determine_fields_of_type(fields: Fields, field_type: Type) -> Iterable[str]:
+def _determine_fields_of_type(fields: Fields, field_type: Type) -> Iterable[str]:
     for name, field in fields.items():
         annotation, _ = field
         if is_type_or_container_type(annotation, field_type):

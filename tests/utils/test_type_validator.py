@@ -7,7 +7,7 @@ from pydantic.fields import Undefined
 from scanspec.regions import Circle
 from scanspec.specs import Line, Product, Spec
 
-from blueapi.utils import TypeConverter, create_model_with_type_validators
+from blueapi.utils import TypeValidatorDefinition, create_model_with_type_validators
 
 
 class DefaultConfig(BaseConfig):
@@ -106,7 +106,7 @@ def test_validates_single_type() -> None:
 def test_leaves_unvalidated_types_alone() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(int, lookup)],
+        [TypeValidatorDefinition(int, lookup)],
         fields={"a": (int, Undefined), "b": (str, Undefined)},
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello"})
@@ -117,7 +117,10 @@ def test_leaves_unvalidated_types_alone() -> None:
 def test_validates_multiple_types() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(int, lookup), TypeConverter(bool, has_even_length)],
+        [
+            TypeValidatorDefinition(int, lookup),
+            TypeValidatorDefinition(bool, has_even_length),
+        ],
         fields={"a": (int, Undefined), "b": (bool, Undefined)},
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello"})
@@ -128,7 +131,7 @@ def test_validates_multiple_types() -> None:
 def test_validates_multiple_fields() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(int, lookup)],
+        [TypeValidatorDefinition(int, lookup)],
         fields={"a": (int, Undefined), "b": (int, Undefined)},
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "d"})
@@ -139,7 +142,10 @@ def test_validates_multiple_fields() -> None:
 def test_validates_multiple_fields_and_types() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(int, lookup), TypeConverter(bool, has_even_length)],
+        [
+            TypeValidatorDefinition(int, lookup),
+            TypeValidatorDefinition(bool, has_even_length),
+        ],
         fields={
             "a": (int, Undefined),
             "b": (bool, Undefined),
@@ -158,7 +164,7 @@ def test_does_not_tolerate_multiple_converters_for_same_type() -> None:
     with pytest.raises(TypeError):
         create_model_with_type_validators(
             "Foo",
-            [TypeConverter(int, lookup), TypeConverter(int, int)],
+            [TypeValidatorDefinition(int, lookup), TypeValidatorDefinition(int, int)],
             fields={"a": (int, Undefined), "b": (int, Undefined)},
         )
 
@@ -235,7 +241,7 @@ def test_validates_complex_object_list() -> None:
 def test_applies_to_base() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         base=Bar,
     )
     parsed = parse_obj_as(model, {"a": 2, "b": "g"})
@@ -246,7 +252,7 @@ def test_applies_to_base() -> None:
 def test_applies_to_nested_base() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         base=Baz,
     )
     parsed = parse_obj_as(model, {"obj": {"a": 2, "b": "g"}, "c": "hello"})
@@ -258,7 +264,7 @@ def test_applies_to_nested_base() -> None:
 def test_validates_submodel() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         fields={"obj": (Bar, Undefined)},
     )
     parsed = parse_obj_as(
@@ -277,7 +283,7 @@ def test_validates_submodel() -> None:
 def test_validates_nested_submodel() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         fields={"obj": (Baz, Undefined)},
     )
     parsed = parse_obj_as(
@@ -300,7 +306,7 @@ def test_validates_nested_submodel() -> None:
 def test_validates_dataclass() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         fields={"obj": (DataclassBar, Undefined)},
     )
     parsed = parse_obj_as(
@@ -319,7 +325,7 @@ def test_validates_dataclass() -> None:
 def test_validates_nested_dataclass() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         fields={"obj": (DataclassBaz, Undefined)},
     )
     parsed = parse_obj_as(
@@ -342,7 +348,7 @@ def test_validates_nested_dataclass() -> None:
 def test_validates_mixed_dataclass() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         fields={"obj": (DataclassMixed, Undefined)},
     )
     parsed = parse_obj_as(
@@ -365,7 +371,7 @@ def test_validates_mixed_dataclass() -> None:
 def test_validates_default_value() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(int, lookup)],
+        [TypeValidatorDefinition(int, lookup)],
         fields={"a": (int, "e")},
         config=DefaultConfig,
     )
@@ -375,7 +381,7 @@ def test_validates_default_value() -> None:
 def test_validates_complex_value() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         fields={"obj": (ComplexObject, "t")},
         config=DefaultConfig,
     )
@@ -385,7 +391,7 @@ def test_validates_complex_value() -> None:
 def test_validates_field_info() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(int, lookup)],
+        [TypeValidatorDefinition(int, lookup)],
         fields={"a": (int, Field(default="f"))},
         config=DefaultConfig,
     )
@@ -412,7 +418,7 @@ def test_validates_scanspec_with_complex_axis() -> None:
 
 def test_model_from_simple_function_signature() -> None:
     model = create_model_with_type_validators(
-        "Foo", [TypeConverter(int, lookup)], func=foo
+        "Foo", [TypeValidatorDefinition(int, lookup)], func=foo
     )
     parsed = parse_obj_as(model, {"a": "g", "b": "hello"})
     assert parsed.a == 6
@@ -422,7 +428,7 @@ def test_model_from_simple_function_signature() -> None:
 def test_model_from_complex_function_signature() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         func=bar,
         config=DefaultConfig,
     )
@@ -433,7 +439,7 @@ def test_model_from_complex_function_signature() -> None:
 def test_model_from_nested_function_signature() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         func=baz,
         config=DefaultConfig,
     )
@@ -445,7 +451,7 @@ def test_model_from_nested_function_signature() -> None:
 def parse_spec(spec: Spec) -> Any:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         fields={"spec": (Spec, Undefined)},
     )
     return parse_obj_as(model, {"spec": spec.serialize()})
@@ -455,7 +461,9 @@ def assert_validates_single_type(
     field_type: Type, input_value: Any, expected_output: Any
 ) -> None:
     model = create_model_with_type_validators(
-        "Foo", [TypeConverter(int, lookup)], fields={"ch": (field_type, Undefined)}
+        "Foo",
+        [TypeValidatorDefinition(int, lookup)],
+        fields={"ch": (field_type, Undefined)},
     )
     assert parse_obj_as(model, {"ch": input_value}).ch == expected_output
 
@@ -468,7 +476,7 @@ def assert_validates_complex_object(
 ) -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeConverter(ComplexObject, lookup_complex)],
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
         fields={"obj": (field_type, default_value)},
         config=DefaultConfig,
     )

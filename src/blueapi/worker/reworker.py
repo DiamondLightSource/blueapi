@@ -141,16 +141,21 @@ class RunEngineWorker(Worker[Task]):
         warnings = self._warnings
         if self._current is not None:
             task_status = TaskStatus(
-                self._current.name,
-                self._current.is_complete,
-                self._current.is_error or bool(errors),
+                task_name=self._current.name,
+                task_complete=self._current.is_complete,
+                task_failed=self._current.is_error or bool(errors),
             )
             correlation_id = self._current.name
         else:
             task_status = None
             correlation_id = None
 
-        event = WorkerEvent(self._state, task_status, errors, warnings)
+        event = WorkerEvent(
+            state=self._state,
+            task_status=task_status,
+            errors=errors,
+            warnings=warnings,
+        )
         self._worker_events.publish(event, correlation_id)
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
@@ -204,16 +209,16 @@ class RunEngineWorker(Worker[Task]):
         else:
             percentage = 1.0
         view = StatusView(
-            name or "UNKNOWN",
-            current,
-            initial,
-            target,
-            unit or "units",
-            precision or 3,
-            status.done,
-            percentage,
-            time_elapsed,
-            time_remaining,
+            display_name=name or "UNKNOWN",
+            current=current,
+            initial=initial,
+            target=target,
+            unit=unit or "units",
+            precision=precision or 3,
+            done=status.done,
+            percentage=percentage,
+            time_elapsed=time_elapsed,
+            time_remaining=time_remaining,
         )
         self._status_snapshot[status_name] = view
         self._publish_status_snapshot()
@@ -224,7 +229,7 @@ class RunEngineWorker(Worker[Task]):
         else:
             self._progress_events.publish(
                 ProgressEvent(
-                    self._current.name,
+                    task_name=self._current.name,
                     statuses=self._status_snapshot,
                 ),
                 self._current.name,

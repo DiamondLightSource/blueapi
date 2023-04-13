@@ -9,7 +9,7 @@ from super_state_machine.extras import PropertyMachine, ProxyString
 RawRunEngineState = Union[PropertyMachine, ProxyString, str]
 
 
-class WorkerState(Enum):
+class WorkerState(str, Enum):
     """
     The state of the Worker.
     """

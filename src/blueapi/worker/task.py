@@ -6,7 +6,12 @@ from typing import Any, Mapping
 from pydantic import BaseModel, Field, parse_obj_as
 from pydantic.decorator import ValidatedFunction
 
-from blueapi.core import BlueskyContext, Device, create_bluesky_protocol_conversions
+from blueapi.core import (
+    BlueskyContext,
+    Device,
+    Plan,
+    create_bluesky_protocol_conversions,
+)
 from blueapi.utils import nested_deserialize_with_overrides
 
 
@@ -43,13 +48,14 @@ class RunPlan(Task):
         LOGGER.info(f"Asked to run plan {self.name} with {self.params}")
 
         plan = ctx.plans[self.name]
+        func = ctx.plan_functions[self.name]
         sanitized_params = _lookup_params(ctx, plan, self.params)
-        plan_generator = plan.call(**sanitized_params)
+        plan_generator = func(**sanitized_params.dict())
         ctx.run_engine(plan_generator)
 
 
 def _lookup_params(
-    ctx: BlueskyContext, plan: ValidatedFunction, params: Mapping[str, Any]
+    ctx: BlueskyContext, plan: Plan, params: Mapping[str, Any]
 ) -> BaseModel:
     """
     Checks plan parameters against context
@@ -65,16 +71,6 @@ def _lookup_params(
 
     model = plan.model
     return parse_obj_as(model, params)
-
-    def find_device(name: str) -> Device:
-        device = ctx.find_device(name)
-        if device is not None:
-            return device
-        else:
-            raise KeyError(f"Could not find device {name}")
-
-    overrides = list(create_bluesky_protocol_conversions(find_device))
-    return nested_deserialize_with_overrides(plan.model, params, overrides).__dict__
 
 
 @dataclass

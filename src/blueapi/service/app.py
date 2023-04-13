@@ -77,12 +77,12 @@ class Service:
 
         reply_queue = message_context.reply_destination
         if reply_queue is not None:
-            response = TaskResponse(correlation_id)
+            response = TaskResponse(task_name=correlation_id)
             self._template.send(reply_queue, response)
 
     def _get_plans(self, message_context: MessageContext, message: PlanRequest) -> None:
         plans = list(map(PlanModel.from_plan, self._ctx.plans.values()))
-        response = PlanResponse(plans)
+        response = PlanResponse(plans=plans)
 
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, response)
@@ -91,7 +91,7 @@ class Service:
         self, message_context: MessageContext, message: DeviceRequest
     ) -> None:
         devices = list(map(DeviceModel.from_device, self._ctx.devices.values()))
-        response = DeviceResponse(devices)
+        response = DeviceResponse(devices=devices)
 
         assert message_context.reply_destination is not None
         self._template.send(message_context.reply_destination, response)

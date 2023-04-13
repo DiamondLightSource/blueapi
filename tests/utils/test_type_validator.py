@@ -38,6 +38,14 @@ class ComplexObject:
         return f"ComplexObject({self._name})"
 
 
+class SpecWrapper(BaseModel):
+    spec: Spec
+
+
+def spec_wrapper(spec: Spec) -> None:
+    ...
+
+
 class Bar(BaseModel):
     a: int
     b: ComplexObject
@@ -398,22 +406,51 @@ def test_validates_field_info() -> None:
     assert parse_obj_as(model, {}).a == 5  # type: ignore
 
 
-@pytest.mark.parametrize(
-    "spec",
-    [
-        Line("x", 0.0, 10.0, 10),
-        Line("x", 0.0, 10.0, 10) * Line("y", 0.0, 10.0, 10),
-        (Line("x", 0.0, 10.0, 10) * Line("y", 0.0, 10.0, 10))
-        & Circle("x", "y", 1.0, 2.8, radius=0.5),
-    ],
-)
+SPECS = [
+    Line("x", 0.0, 10.0, 10),
+    Line("x", 0.0, 10.0, 10) * Line("y", 0.0, 10.0, 10),
+    (Line("x", 0.0, 10.0, 10) * Line("y", 0.0, 10.0, 10))
+    & Circle("x", "y", 1.0, 2.8, radius=0.5),
+]
+
+
+@pytest.mark.parametrize("spec", SPECS)
 def test_validates_scanspec(spec: Spec) -> None:
     assert parse_spec(spec).spec == spec  # type: ignore
 
 
+@pytest.mark.parametrize("spec", SPECS)
+def test_validates_scanspec_wrapper(spec: Spec) -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
+        fields={"wrapper": (SpecWrapper, Undefined)},
+    )
+    parsed = parse_obj_as(model, {"wrapper": {"spec": spec.serialize()}})
+    assert parsed.wrapper.spec == spec
+
+
+@pytest.mark.parametrize("spec", SPECS)
+def test_validates_scanspec_wrapping_function(spec: Spec) -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
+        func=spec_wrapper,
+    )
+    parsed = parse_obj_as(model, {"spec": spec.serialize()})
+    assert parsed.spec == spec
+
+
 def test_validates_scanspec_with_complex_axis() -> None:
-    spec = Line(ComplexObject("x"), 0.0, 10.0, 10)
-    assert parse_spec(spec).spec.axes() == [ComplexObject("x")]  # type: ignore
+    spec = Line("x", 0.0, 10.0, 10)
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
+        fields={"spec": (Spec[ComplexObject], Undefined)},
+        config=DefaultConfig,
+    )
+    parsed = parse_obj_as(model, {"spec": spec.serialize()})
+    assert parsed.spec.axes() == [ComplexObject("x")]  # type: ignore
 
 
 def test_model_from_simple_function_signature() -> None:

@@ -3,9 +3,6 @@ from functools import reduce
 from typing import Any, List, Mapping, Optional, Tuple, Type, Union
 
 import bluesky.plans as bp
-from apischema import serialize
-from apischema.conversions.conversions import Conversion
-from apischema.conversions.converters import AnyConversion, default_serialization
 from bluesky.protocols import Movable, Readable
 from cycler import Cycler, cycler
 from scanspec.specs import Spec
@@ -38,25 +35,13 @@ def scan(
 
     metadata = {
         "detectors": [detector.name for detector in detectors],
-        "scanspec": serialize(spec, default_conversion=_convert_devices),
-        "shape": _shape(spec),
+        # "scanspec": serialize(spec, default_conversion=_convert_devices),
+        "shape": spec.shape(),
         **(metadata or {}),
     }
 
     cycler = _scanspec_to_cycler(spec)
     yield from bp.scan_nd(detectors, cycler, md=metadata)
-
-
-# TODO: Use built-in scanspec utility method following completion of DAQ-4487
-def _shape(spec: Spec[Movable]) -> Tuple[int, ...]:
-    return tuple(len(dim) for dim in spec.calculate())
-
-
-def _convert_devices(a_type: Type[Any]) -> Optional[AnyConversion]:
-    if issubclass(a_type, Movable):
-        return Conversion(str, source=a_type)
-    else:
-        return default_serialization(a_type)
 
 
 def _scanspec_to_cycler(spec: Spec) -> Cycler:

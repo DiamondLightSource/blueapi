@@ -1,10 +1,10 @@
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Union
 
+from pydantic import BaseModel, Field
 
-@dataclass
-class StompConfig:
+
+class StompConfig(BaseModel):
     """
     Config for connecting to stomp broker
     """
@@ -13,8 +13,7 @@ class StompConfig:
     port: int = 61613
 
 
-@dataclass
-class EnvironmentConfig:
+class EnvironmentConfig(BaseModel):
     """
     Config for the RunEngine environment
     """
@@ -22,18 +21,16 @@ class EnvironmentConfig:
     startup_script: Union[Path, str] = "blueapi.startup.example"
 
 
-@dataclass
-class LoggingConfig:
+class LoggingConfig(BaseModel):
     level: str = "INFO"
 
 
-@dataclass
-class ApplicationConfig:
+class ApplicationConfig(BaseModel):
     """
     Config for the worker application as a whole. Root of
     config tree.
     """
 
-    stomp: StompConfig = field(default_factory=StompConfig)
-    env: EnvironmentConfig = field(default_factory=EnvironmentConfig)
-    logging: LoggingConfig = field(default_factory=LoggingConfig)
+    stomp: StompConfig = Field(default_factory=StompConfig)
+    env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
+    logging: LoggingConfig = Field(default_factory=LoggingConfig)

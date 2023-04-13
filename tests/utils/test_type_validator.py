@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Mapping, NamedTuple, Set, Tuple, Type
+from typing import Any, Dict, List, Mapping, Set, Tuple, Type
 
 import pytest
 from pydantic import BaseConfig, BaseModel, Field, parse_obj_as
 from pydantic.dataclasses import dataclass
 from pydantic.fields import Undefined
 from scanspec.regions import Circle
-from scanspec.specs import Line, Product, Spec
+from scanspec.specs import Line, Spec
 
 from blueapi.utils import TypeValidatorDefinition, create_model_with_type_validators
 
@@ -125,7 +125,7 @@ def test_validates_multiple_types() -> None:
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello"})
     assert parsed.a == 2
-    assert parsed.b == False
+    assert parsed.b is False
 
 
 def test_validates_multiple_fields() -> None:
@@ -155,9 +155,9 @@ def test_validates_multiple_fields_and_types() -> None:
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello", "c": "d", "d": "word"})
     assert parsed.a == 2
-    assert parsed.b == False
+    assert parsed.b is False
     assert parsed.c == 3
-    assert parsed.d == True
+    assert parsed.d is True
 
 
 def test_does_not_tolerate_multiple_converters_for_same_type() -> None:

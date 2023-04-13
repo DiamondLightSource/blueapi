@@ -13,7 +13,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Sequence,
     Set,
     Tuple,
     Type,
@@ -24,7 +23,7 @@ from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
 from pydantic import BaseModel, create_model, validator
 
-from blueapi.utils import load_module_all, schema_for_func
+from blueapi.utils import load_module_all
 
 from .bluesky_types import (
     Device,

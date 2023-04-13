@@ -1,6 +1,6 @@
 import inspect
 from dataclasses import dataclass
-from typing import Any, Callable, Generator, Mapping, Optional, Type, Union
+from typing import Any, Callable, Generator, Mapping, Type, Union
 
 from bluesky.protocols import (
     Checkable,

@@ -153,7 +153,7 @@ def _make_type_validator(name: str, converter: TypeConverter) -> Validator:
     def validate_type(value: Any) -> Any:
         return apply_to_scalars(converter.func, value)
 
-    return validator(name, allow_reuse=True, pre=True)(validate_type)
+    return validator(name, allow_reuse=True, pre=True, always=True)(validate_type)
 
 
 def determine_fields_of_type(fields: Fields, field_type: Type) -> Iterable[str]:

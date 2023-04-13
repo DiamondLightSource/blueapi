@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Mapping, NamedTuple, Set, Tuple, Type
 
 import pytest
-from pydantic import BaseConfig, BaseModel, parse_obj_as
+from pydantic import BaseConfig, BaseModel, Field, parse_obj_as
 from pydantic.dataclasses import dataclass
 from pydantic.fields import Undefined
 from scanspec.regions import Circle
@@ -360,6 +360,36 @@ def test_validates_mixed_dataclass() -> None:
     assert parsed.obj.obj.a == 2
     assert parsed.obj.obj.b == ComplexObject("g")
     assert parsed.obj.c == "hello"
+
+
+def test_validates_default_value() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(int, lookup)],
+        fields={"a": (int, "e")},
+        config=DefaultConfig,
+    )
+    assert parse_obj_as(model, {}).a == 4
+
+
+def test_validates_complex_value() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        fields={"obj": (ComplexObject, "t")},
+        config=DefaultConfig,
+    )
+    assert parse_obj_as(model, {}).obj == ComplexObject("t")
+
+
+def test_validates_field_info() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(int, lookup)],
+        fields={"a": (int, Field(default="f"))},
+        config=DefaultConfig,
+    )
+    assert parse_obj_as(model, {}).a == 5
 
 
 @pytest.mark.parametrize(

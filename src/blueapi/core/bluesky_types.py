@@ -91,8 +91,7 @@ class Plan(BaseModel):
     )
 
 
-@dataclass
-class DataEvent:
+class DataEvent(BaseModel):
     """
     Event representing collection of some data. Conforms to the Bluesky event model:
     https://github.com/bluesky/event-model

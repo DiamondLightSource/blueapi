@@ -161,7 +161,9 @@ class RunEngineWorker(Worker[Task]):
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
             correlation_id = self._current.name
-            self._data_events.publish(DataEvent(name, document), correlation_id)
+            self._data_events.publish(
+                DataEvent(name=name, doc=document), correlation_id
+            )
         else:
             raise KeyError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"

@@ -2,9 +2,15 @@ from typing import Any, Dict, List, Mapping, NamedTuple, Set, Tuple, Type
 
 import pytest
 from pydantic import BaseConfig, BaseModel, parse_obj_as
+from pydantic.dataclasses import dataclass
 from pydantic.fields import Undefined
 
 from blueapi.utils import TypeConverter, create_model_with_type_validators
+
+
+class DefaultConfig(BaseConfig):
+    arbitrary_types_allowed = True
+
 
 _REG: Mapping[str, int] = {
     letter: number for number, letter in enumerate("abcdefghijklmnopqrstuvwxyz")
@@ -28,6 +34,37 @@ class ComplexObject:
 
     def __repr__(self) -> str:
         return f"ComplexObject({self._name})"
+
+
+class Bar(BaseModel):
+    a: int
+    b: ComplexObject
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class Baz(BaseModel):
+    obj: Bar
+    c: str
+
+
+@dataclass(config=DefaultConfig)
+class DataclassBar:
+    a: int
+    b: ComplexObject
+
+
+@dataclass
+class DataclassBaz:
+    obj: DataclassBar
+    c: str
+
+
+@dataclass
+class DataclassMixed:
+    obj: Bar
+    c: str
 
 
 _DB: Mapping[str, ComplexObject] = {name: ComplexObject(name) for name in _REG.keys()}
@@ -55,8 +92,8 @@ def test_validates_single_type() -> None:
 def test_leaves_unvalidated_types_alone() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        {"a": (int, Undefined), "b": (str, Undefined)},
         [TypeConverter(int, lookup)],
+        fields={"a": (int, Undefined), "b": (str, Undefined)},
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello"})
     assert parsed.a == 2
@@ -66,8 +103,8 @@ def test_leaves_unvalidated_types_alone() -> None:
 def test_validates_multiple_types() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        {"a": (int, Undefined), "b": (bool, Undefined)},
         [TypeConverter(int, lookup), TypeConverter(bool, has_even_length)],
+        fields={"a": (int, Undefined), "b": (bool, Undefined)},
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello"})
     assert parsed.a == 2
@@ -77,8 +114,8 @@ def test_validates_multiple_types() -> None:
 def test_validates_multiple_fields() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        {"a": (int, Undefined), "b": (int, Undefined)},
         [TypeConverter(int, lookup)],
+        fields={"a": (int, Undefined), "b": (int, Undefined)},
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "d"})
     assert parsed.a == 2
@@ -88,13 +125,13 @@ def test_validates_multiple_fields() -> None:
 def test_validates_multiple_fields_and_types() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        {
+        [TypeConverter(int, lookup), TypeConverter(bool, has_even_length)],
+        fields={
             "a": (int, Undefined),
             "b": (bool, Undefined),
             "c": (int, Undefined),
             "d": (bool, Undefined),
         },
-        [TypeConverter(int, lookup), TypeConverter(bool, has_even_length)],
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello", "c": "d", "d": "word"})
     assert parsed.a == 2
@@ -107,8 +144,8 @@ def test_does_not_tolerate_multiple_converters_for_same_type() -> None:
     with pytest.raises(TypeError):
         create_model_with_type_validators(
             "Foo",
-            {"a": (int, Undefined), "b": (int, Undefined)},
             [TypeConverter(int, lookup), TypeConverter(int, int)],
+            fields={"a": (int, Undefined), "b": (int, Undefined)},
         )
 
 
@@ -181,11 +218,141 @@ def test_validates_complex_object_list() -> None:
     )
 
 
+def test_applies_to_base() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        base=Bar,
+    )
+    parsed = parse_obj_as(model, {"a": 2, "b": "g"})
+    assert parsed.a == 2
+    assert parsed.b == ComplexObject("g")
+
+
+def test_applies_to_nested_base() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        base=Baz,
+    )
+    parsed = parse_obj_as(model, {"obj": {"a": 2, "b": "g"}, "c": "hello"})
+    assert parsed.obj.a == 2
+    assert parsed.obj.b == ComplexObject("g")
+    assert parsed.c == "hello"
+
+
+def test_validates_submodel() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        fields={"obj": (Bar, Undefined)},
+    )
+    parsed = parse_obj_as(
+        model,
+        {
+            "obj": {
+                "a": 2,
+                "b": "g",
+            },
+        },
+    )
+    assert parsed.obj.a == 2
+    assert parsed.obj.b == ComplexObject("g")
+
+
+def test_validates_nested_submodel() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        fields={"obj": (Baz, Undefined)},
+    )
+    parsed = parse_obj_as(
+        model,
+        {
+            "obj": {
+                "obj": {
+                    "a": 2,
+                    "b": "g",
+                },
+                "c": "hello",
+            }
+        },
+    )
+    assert parsed.obj.obj.a == 2
+    assert parsed.obj.obj.b == ComplexObject("g")
+    assert parsed.obj.c == "hello"
+
+
+def test_validates_dataclass() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        fields={"obj": (DataclassBar, Undefined)},
+    )
+    parsed = parse_obj_as(
+        model,
+        {
+            "obj": {
+                "a": 2,
+                "b": "g",
+            },
+        },
+    )
+    assert parsed.obj.a == 2
+    assert parsed.obj.b == ComplexObject("g")
+
+
+def test_validates_nested_dataclass() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        fields={"obj": (DataclassBaz, Undefined)},
+    )
+    parsed = parse_obj_as(
+        model,
+        {
+            "obj": {
+                "obj": {
+                    "a": 2,
+                    "b": "g",
+                },
+                "c": "hello",
+            }
+        },
+    )
+    assert parsed.obj.obj.a == 2
+    assert parsed.obj.obj.b == ComplexObject("g")
+    assert parsed.obj.c == "hello"
+
+
+def test_validates_mixed_dataclass() -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeConverter(ComplexObject, lookup_complex)],
+        fields={"obj": (DataclassMixed, Undefined)},
+    )
+    parsed = parse_obj_as(
+        model,
+        {
+            "obj": {
+                "obj": {
+                    "a": 2,
+                    "b": "g",
+                },
+                "c": "hello",
+            }
+        },
+    )
+    assert parsed.obj.obj.a == 2
+    assert parsed.obj.obj.b == ComplexObject("g")
+    assert parsed.obj.c == "hello"
+
+
 def assert_validates_single_type(
     field_type: Type, input_value: Any, expected_output: Any
 ) -> None:
     model = create_model_with_type_validators(
-        "Foo", {"ch": (field_type, Undefined)}, [TypeConverter(int, lookup)]
+        "Foo", [TypeConverter(int, lookup)], fields={"ch": (field_type, Undefined)}
     )
     assert parse_obj_as(model, {"ch": input_value}).ch == expected_output
 
@@ -195,7 +362,8 @@ def assert_validates_complex_object(
 ) -> None:
     model = create_model_with_type_validators(
         "Foo",
-        {"obj": (field_type, Undefined)},
         [TypeConverter(ComplexObject, lookup_complex)],
+        fields={"obj": (field_type, Undefined)},
+        config=DefaultConfig,
     )
     assert parse_obj_as(model, {"obj": input_value}).obj == expected_output

@@ -20,10 +20,11 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    overload,
 )
 
 from pydantic import BaseConfig, BaseModel, Field, create_model, validator
-from pydantic.fields import ModelField
+from pydantic.fields import ModelField, Undefined
 
 if TYPE_CHECKING:
     from pydantic.typing import AnyCallable, AnyClassMethod
@@ -41,10 +42,6 @@ Fields = Mapping[str, FieldDefinition]
 Validator = Callable[[AnyCallable], AnyClassMethod]
 
 
-class DefaultConfig(BaseConfig):
-    arbitrary_types_allowed = True
-
-
 @dataclass
 class TypeConverter(Generic[T, U]):
     field_type: Type[T]
@@ -57,14 +54,54 @@ class TypeConverter(Generic[T, U]):
         return f"converter_{type_name}"
 
 
+@overload
 def create_model_with_type_validators(
     name: str,
-    fields: Fields,
     converters: Iterable[TypeConverter],
-    config: Type[BaseConfig] = DefaultConfig,
+    fields: Fields,
+    config: Optional[Type[BaseConfig]] = None,
 ) -> Type[BaseModel]:
+    ...
+
+
+@overload
+def create_model_with_type_validators(
+    name: str,
+    converters: Iterable[TypeConverter],
+    base: Type[BaseModel],
+) -> Type[BaseModel]:
+    ...
+
+
+def create_model_with_type_validators(
+    name: str,
+    converters: Iterable[TypeConverter],
+    fields: Optional[Fields] = None,
+    base: Optional[Type[BaseModel]] = None,
+    config: Optional[Type[BaseConfig]] = None,
+) -> Type[BaseModel]:
+    fields = fields or {}
+    if base is not None:
+        fields = {**fields, **_extract_fields(base)}
+    for name, field in fields.items():
+        annotation, val = field
+        model_type = find_model_type(annotation)
+        if model_type is not None:
+            recursed = create_model_with_type_validators(
+                annotation.__name__, converters, base=model_type
+            )
+            fields[name] = recursed, val
     validators = type_validators(fields, converters)
-    return create_model(name, **fields, __validators__=validators, __config__=config)
+    return create_model(
+        name, **fields, __base__=base, __validators__=validators, __config__=config
+    )
+
+
+def _extract_fields(model: Type[BaseModel]) -> Fields:
+    return {
+        name: (field.type_, field.field_info)
+        for name, field in model.__fields__.items()
+    }
 
 
 def type_validators(
@@ -137,3 +174,12 @@ def is_list_type(obj: Any) -> bool:
 
 def is_dict_type(obj: Any) -> bool:
     return any(map(lambda t: isinstance(obj, t), _PYDANTIC_DICT_TYPES))
+
+
+def find_model_type(anno: Type) -> Optional[Type[BaseModel]]:
+    if isclass(anno):
+        if issubclass(anno, BaseModel):
+            return anno
+        elif hasattr(anno, "__pydantic_model__"):
+            return getattr(anno, "__pydantic_model__")
+    return None

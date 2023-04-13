@@ -110,8 +110,8 @@ def test_leaves_unvalidated_types_alone() -> None:
         fields={"a": (int, Undefined), "b": (str, Undefined)},
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello"})
-    assert parsed.a == 2
-    assert parsed.b == "hello"
+    assert parsed.a == 2  # type: ignore
+    assert parsed.b == "hello"  # type: ignore
 
 
 def test_validates_multiple_types() -> None:
@@ -124,8 +124,8 @@ def test_validates_multiple_types() -> None:
         fields={"a": (int, Undefined), "b": (bool, Undefined)},
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello"})
-    assert parsed.a == 2
-    assert parsed.b is False
+    assert parsed.a == 2  # type: ignore
+    assert parsed.b is False  # type: ignore
 
 
 def test_validates_multiple_fields() -> None:
@@ -135,8 +135,8 @@ def test_validates_multiple_fields() -> None:
         fields={"a": (int, Undefined), "b": (int, Undefined)},
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "d"})
-    assert parsed.a == 2
-    assert parsed.b == 3
+    assert parsed.a == 2  # type: ignore
+    assert parsed.b == 3  # type: ignore
 
 
 def test_validates_multiple_fields_and_types() -> None:
@@ -154,10 +154,10 @@ def test_validates_multiple_fields_and_types() -> None:
         },
     )
     parsed = parse_obj_as(model, {"a": "c", "b": "hello", "c": "d", "d": "word"})
-    assert parsed.a == 2
-    assert parsed.b is False
-    assert parsed.c == 3
-    assert parsed.d is True
+    assert parsed.a == 2  # type: ignore
+    assert parsed.b is False  # type: ignore
+    assert parsed.c == 3  # type: ignore
+    assert parsed.d is True  # type: ignore
 
 
 def test_does_not_tolerate_multiple_converters_for_same_type() -> None:
@@ -245,8 +245,8 @@ def test_applies_to_base() -> None:
         base=Bar,
     )
     parsed = parse_obj_as(model, {"a": 2, "b": "g"})
-    assert parsed.a == 2
-    assert parsed.b == ComplexObject("g")
+    assert parsed.a == 2  # type: ignore
+    assert parsed.b == ComplexObject("g")  # type: ignore
 
 
 def test_applies_to_nested_base() -> None:
@@ -256,9 +256,9 @@ def test_applies_to_nested_base() -> None:
         base=Baz,
     )
     parsed = parse_obj_as(model, {"obj": {"a": 2, "b": "g"}, "c": "hello"})
-    assert parsed.obj.a == 2
-    assert parsed.obj.b == ComplexObject("g")
-    assert parsed.c == "hello"
+    assert parsed.obj.a == 2  # type: ignore
+    assert parsed.obj.b == ComplexObject("g")  # type: ignore
+    assert parsed.c == "hello"  # type: ignore
 
 
 def test_validates_submodel() -> None:
@@ -276,8 +276,8 @@ def test_validates_submodel() -> None:
             },
         },
     )
-    assert parsed.obj.a == 2
-    assert parsed.obj.b == ComplexObject("g")
+    assert parsed.obj.a == 2  # type: ignore
+    assert parsed.obj.b == ComplexObject("g")  # type: ignore
 
 
 def test_validates_nested_submodel() -> None:
@@ -298,9 +298,9 @@ def test_validates_nested_submodel() -> None:
             }
         },
     )
-    assert parsed.obj.obj.a == 2
-    assert parsed.obj.obj.b == ComplexObject("g")
-    assert parsed.obj.c == "hello"
+    assert parsed.obj.obj.a == 2  # type: ignore
+    assert parsed.obj.obj.b == ComplexObject("g")  # type: ignore
+    assert parsed.obj.c == "hello"  # type: ignore
 
 
 def test_validates_dataclass() -> None:
@@ -318,8 +318,8 @@ def test_validates_dataclass() -> None:
             },
         },
     )
-    assert parsed.obj.a == 2
-    assert parsed.obj.b == ComplexObject("g")
+    assert parsed.obj.a == 2  # type: ignore
+    assert parsed.obj.b == ComplexObject("g")  # type: ignore
 
 
 def test_validates_nested_dataclass() -> None:
@@ -340,9 +340,9 @@ def test_validates_nested_dataclass() -> None:
             }
         },
     )
-    assert parsed.obj.obj.a == 2
-    assert parsed.obj.obj.b == ComplexObject("g")
-    assert parsed.obj.c == "hello"
+    assert parsed.obj.obj.a == 2  # type: ignore
+    assert parsed.obj.obj.b == ComplexObject("g")  # type: ignore
+    assert parsed.obj.c == "hello"  # type: ignore
 
 
 def test_validates_mixed_dataclass() -> None:
@@ -363,9 +363,9 @@ def test_validates_mixed_dataclass() -> None:
             }
         },
     )
-    assert parsed.obj.obj.a == 2
-    assert parsed.obj.obj.b == ComplexObject("g")
-    assert parsed.obj.c == "hello"
+    assert parsed.obj.obj.a == 2  # type: ignore
+    assert parsed.obj.obj.b == ComplexObject("g")  # type: ignore
+    assert parsed.obj.c == "hello"  # type: ignore
 
 
 def test_validates_default_value() -> None:
@@ -375,7 +375,7 @@ def test_validates_default_value() -> None:
         fields={"a": (int, "e")},
         config=DefaultConfig,
     )
-    assert parse_obj_as(model, {}).a == 4
+    assert parse_obj_as(model, {}).a == 4  # type: ignore
 
 
 def test_validates_complex_value() -> None:
@@ -385,7 +385,7 @@ def test_validates_complex_value() -> None:
         fields={"obj": (ComplexObject, "t")},
         config=DefaultConfig,
     )
-    assert parse_obj_as(model, {}).obj == ComplexObject("t")
+    assert parse_obj_as(model, {}).obj == ComplexObject("t")  # type: ignore
 
 
 def test_validates_field_info() -> None:
@@ -395,7 +395,7 @@ def test_validates_field_info() -> None:
         fields={"a": (int, Field(default="f"))},
         config=DefaultConfig,
     )
-    assert parse_obj_as(model, {}).a == 5
+    assert parse_obj_as(model, {}).a == 5  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -408,12 +408,12 @@ def test_validates_field_info() -> None:
     ],
 )
 def test_validates_scanspec(spec: Spec) -> None:
-    assert parse_spec(spec).spec == spec
+    assert parse_spec(spec).spec == spec  # type: ignore
 
 
 def test_validates_scanspec_with_complex_axis() -> None:
     spec = Line(ComplexObject("x"), 0.0, 10.0, 10)
-    assert parse_spec(spec).spec.axes() == [ComplexObject("x")]
+    assert parse_spec(spec).spec.axes() == [ComplexObject("x")]  # type: ignore
 
 
 def test_model_from_simple_function_signature() -> None:
@@ -421,8 +421,8 @@ def test_model_from_simple_function_signature() -> None:
         "Foo", [TypeValidatorDefinition(int, lookup)], func=foo
     )
     parsed = parse_obj_as(model, {"a": "g", "b": "hello"})
-    assert parsed.a == 6
-    assert parsed.b == "hello"
+    assert parsed.a == 6  # type: ignore
+    assert parsed.b == "hello"  # type: ignore
 
 
 def test_model_from_complex_function_signature() -> None:
@@ -433,7 +433,7 @@ def test_model_from_complex_function_signature() -> None:
         config=DefaultConfig,
     )
     parsed = parse_obj_as(model, {"obj": "f"})
-    assert parsed.obj == ComplexObject("f")
+    assert parsed.obj == ComplexObject("f")  # type: ignore
 
 
 def test_model_from_nested_function_signature() -> None:
@@ -444,8 +444,8 @@ def test_model_from_nested_function_signature() -> None:
         config=DefaultConfig,
     )
     parsed = parse_obj_as(model, {"bar": {"a": 4, "b": "k"}})
-    assert parsed.bar.a == 4
-    assert parsed.bar.b == ComplexObject("k")
+    assert parsed.bar.a == 4  # type: ignore
+    assert parsed.bar.b == ComplexObject("k")  # type: ignore
 
 
 def parse_spec(spec: Spec) -> Any:
@@ -465,7 +465,8 @@ def assert_validates_single_type(
         [TypeValidatorDefinition(int, lookup)],
         fields={"ch": (field_type, Undefined)},
     )
-    assert parse_obj_as(model, {"ch": input_value}).ch == expected_output
+    parsed = parse_obj_as(model, {"ch": input_value})
+    assert parsed.ch == expected_output  # type: ignore
 
 
 def assert_validates_complex_object(
@@ -480,4 +481,5 @@ def assert_validates_complex_object(
         fields={"obj": (field_type, default_value)},
         config=DefaultConfig,
     )
-    assert parse_obj_as(model, {"obj": input_value}).obj == expected_output
+    parsed = parse_obj_as(model, {"obj": input_value})
+    assert parsed.obj == expected_output  # type: ignore

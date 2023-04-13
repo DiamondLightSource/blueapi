@@ -14,6 +14,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
     overload,
 )
 
@@ -26,14 +27,14 @@ else:
     AnyCallable, AnyClassMethod = Any, Any
 
 
-_PYDANTIC_LIST_TYPES = [List, Tuple, Set]
-_PYDANTIC_DICT_TYPES = [Dict, Mapping]
+_PYDANTIC_LIST_TYPES: List[Type] = [List, Tuple, Set]  # type: ignore
+_PYDANTIC_DICT_TYPES: List[Type] = [Dict, Mapping]
 
 T = TypeVar("T")
 U = TypeVar("U")
 FieldDefinition = Tuple[Type, Any]
 Fields = Mapping[str, FieldDefinition]
-Validator = Callable[[AnyCallable], AnyClassMethod]
+Validator = Union[Callable[[AnyCallable], AnyClassMethod], classmethod]
 
 
 @dataclass
@@ -48,7 +49,7 @@ class TypeValidatorDefinition(Generic[T, U]):
     """
 
     field_type: Type[T]
-    func: Callable[[T], U]
+    func: Callable[[U], T]
 
     def __str__(self) -> str:
         type_name = getattr(
@@ -61,6 +62,7 @@ class TypeValidatorDefinition(Generic[T, U]):
 def create_model_with_type_validators(
     name: str,
     definitions: Iterable[TypeValidatorDefinition],
+    *,
     fields: Fields,
     config: Optional[Type[BaseConfig]] = None,
 ) -> Type[BaseModel]:
@@ -85,6 +87,7 @@ def create_model_with_type_validators(
 def create_model_with_type_validators(
     name: str,
     definitions: Iterable[TypeValidatorDefinition],
+    *,
     func: Callable[..., Any],
     config: Optional[Type[BaseConfig]] = None,
 ) -> Type[BaseModel]:
@@ -111,6 +114,7 @@ def create_model_with_type_validators(
 def create_model_with_type_validators(
     name: str,
     definitions: Iterable[TypeValidatorDefinition],
+    *,
     base: Type[BaseModel],
 ) -> Type[BaseModel]:
     """
@@ -131,6 +135,7 @@ def create_model_with_type_validators(
 def create_model_with_type_validators(
     name: str,
     definitions: Iterable[TypeValidatorDefinition],
+    *,
     fields: Optional[Fields] = None,
     base: Optional[Type[BaseModel]] = None,
     func: Optional[Callable[..., Any]] = None,
@@ -156,22 +161,22 @@ def create_model_with_type_validators(
         Type[BaseModel]: A new pydantic model
     """
 
-    fields = fields or {}
+    all_fields = {**(fields or {})}
     if base is not None:
-        fields = {**fields, **_extract_fields_from_model(base)}
+        all_fields = {**all_fields, **_extract_fields_from_model(base)}
     if func is not None:
-        fields = {**fields, **_extract_fields_from_function(func)}
-    for name, field in fields.items():
+        all_fields = {**all_fields, **_extract_fields_from_function(func)}
+    for name, field in all_fields.items():
         annotation, val = field
         model_type = find_model_type(annotation)
         if model_type is not None:
             recursed = create_model_with_type_validators(
                 annotation.__name__, definitions, base=model_type
             )
-            fields[name] = recursed, val
-    validators = _type_validators(fields, definitions)
-    return create_model(
-        name, **fields, __base__=base, __validators__=validators, __config__=config
+            all_fields[name] = recursed, val
+    validators = _type_validators(all_fields, definitions)
+    return create_model(  # type: ignore
+        name, **all_fields, __base__=base, __validators__=validators, __config__=config
     )
 
 
@@ -183,7 +188,7 @@ def _extract_fields_from_model(model: Type[BaseModel]) -> Fields:
 
 
 def _extract_fields_from_function(func: Callable[..., Any]) -> Fields:
-    fields: Fields = {}
+    fields: Dict[str, FieldDefinition] = {}
     for name, param in signature(func).parameters.items():
         type_annotation = param.annotation
         default_value = param.default

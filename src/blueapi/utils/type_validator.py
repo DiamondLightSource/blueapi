@@ -1,3 +1,4 @@
+from collections.abc import Mapping as AbcMapping
 from dataclasses import dataclass
 from inspect import Parameter, isclass, signature
 from typing import (
@@ -15,6 +16,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    get_args,
     overload,
 )
 
@@ -61,7 +63,7 @@ class TypeValidatorDefinition(Generic[T, U]):
 @overload
 def create_model_with_type_validators(
     name: str,
-    definitions: Iterable[TypeValidatorDefinition],
+    definitions: List[TypeValidatorDefinition],
     *,
     fields: Fields,
     config: Optional[Type[BaseConfig]] = None,
@@ -86,7 +88,7 @@ def create_model_with_type_validators(
 @overload
 def create_model_with_type_validators(
     name: str,
-    definitions: Iterable[TypeValidatorDefinition],
+    definitions: List[TypeValidatorDefinition],
     *,
     func: Callable[..., Any],
     config: Optional[Type[BaseConfig]] = None,
@@ -113,7 +115,7 @@ def create_model_with_type_validators(
 @overload
 def create_model_with_type_validators(
     name: str,
-    definitions: Iterable[TypeValidatorDefinition],
+    definitions: List[TypeValidatorDefinition],
     *,
     base: Type[BaseModel],
 ) -> Type[BaseModel]:
@@ -134,12 +136,13 @@ def create_model_with_type_validators(
 
 def create_model_with_type_validators(
     name: str,
-    definitions: Iterable[TypeValidatorDefinition],
+    definitions: List[TypeValidatorDefinition],
     *,
     fields: Optional[Fields] = None,
     base: Optional[Type[BaseModel]] = None,
     func: Optional[Callable[..., Any]] = None,
     config: Optional[Type[BaseConfig]] = None,
+    cache: Optional[Dict[Type, Type]] = None,
 ) -> Type[BaseModel]:
     """
     Create a pydantic model with type validators according to
@@ -161,6 +164,7 @@ def create_model_with_type_validators(
         Type[BaseModel]: A new pydantic model
     """
 
+    cache = cache or {}
     all_fields = {**(fields or {})}
     if base is not None:
         all_fields = {**all_fields, **_extract_fields_from_model(base)}
@@ -168,16 +172,70 @@ def create_model_with_type_validators(
         all_fields = {**all_fields, **_extract_fields_from_function(func)}
     for name, field in all_fields.items():
         annotation, val = field
-        model_type = find_model_type(annotation)
-        if model_type is not None:
-            recursed = create_model_with_type_validators(
-                annotation.__name__, definitions, base=model_type
-            )
-            all_fields[name] = recursed, val
+        if annotation in cache:
+            all_fields[name] = cache[annotation], val
+        else:
+            all_fields[name] = apply_type_validators(annotation, definitions), val
+        # model_type = find_model_type(annotation)
+        # if model_type is not None:
+        #     recursed = create_model_with_type_validators(
+        #         annotation.__name__, definitions, base=model_type
+        #     )
+        #     all_fields[name] = recursed, val
     validators = _type_validators(all_fields, definitions)
     return create_model(  # type: ignore
         name, **all_fields, __base__=base, __validators__=validators, __config__=config
     )
+
+
+def apply_type_validators(
+    model_type: Type,
+    definitions: List[TypeValidatorDefinition],
+    cache: Optional[Dict[Type, Type]] = None,
+) -> Type:
+    cache = cache or {}
+    if model_type in cache:
+        return cache[model_type]
+
+    if isclass(model_type) and issubclass(model_type, BaseModel):
+        if "__root__" in model_type.__fields__:
+            # return create_model_with_type_validators(
+            #     model_type.__name__,
+            #     definitions,
+            #     fields=_extract_fields_from_model(model_type),
+            # )
+            return apply_type_validators(
+                model_type.__fields__["__root__"].type_, definitions, cache=cache
+            )
+        else:
+            return create_model_with_type_validators(
+                model_type.__name__,
+                definitions,
+                base=model_type,
+            )
+    elif isclass(model_type) and hasattr(model_type, "__pydantic_model__"):
+        model = getattr(model_type, "__pydantic_model__")
+        return apply_type_validators(model, definitions, cache=cache)
+    else:
+        params = [
+            apply_type_validators(param, definitions, cache=cache)
+            for param in get_args(model_type)
+        ]
+        if params and hasattr(model_type, "__origin__"):
+            origin = getattr(model_type, "__origin__")
+            origin = _sanitise_origin(origin)
+            return origin[tuple(params)]
+    return model_type
+
+
+def _sanitise_origin(origin: Type) -> Type:
+    return {
+        list: List,
+        set: Set,
+        tuple: Tuple,
+        AbcMapping: Mapping,
+        dict: Mapping,
+    }.get(origin, origin)
 
 
 def _extract_fields_from_model(model: Type[BaseModel]) -> Fields:
@@ -253,22 +311,26 @@ def is_type_or_container_type(type_to_check: Type, field_type: Type) -> bool:
 
 
 def params_contains(type_to_check: Type, field_type: Type) -> bool:
-    type_params = list(
-        getattr(
-            type_to_check,
-            "__args__",
-            [],
-        )
-    ) + list(
-        getattr(
-            type_to_check,
-            "__parameters__",
-            [],
-        )
-    )
+    type_params = get_args(type_to_check)
     return type_to_check is field_type or any(
         map(lambda v: params_contains(v, field_type), type_params)
     )
+
+
+# def params_of_type(type_to_check: Type) -> List[Type]:
+#     return list(
+#         getattr(
+#             type_to_check,
+#             "__args__",
+#             [],
+#         )
+#     ) + list(
+#         getattr(
+#             type_to_check,
+#             "__parameters__",
+#             [],
+#         )
+#     )
 
 
 def apply_to_scalars(func: Callable[[T], U], obj: Any) -> Any:

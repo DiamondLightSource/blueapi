@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Mapping, Set, Tuple, Type
+from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
 import pytest
 from pydantic import BaseConfig, BaseModel, Field, parse_obj_as
@@ -49,6 +49,7 @@ def spec_wrapper(spec: Spec) -> None:
 class Bar(BaseModel):
     a: int
     b: ComplexObject
+    type: Literal["Bar"] = Field(default="Bar")
 
     class Config:
         arbitrary_types_allowed = True
@@ -57,6 +58,15 @@ class Bar(BaseModel):
 class Baz(BaseModel):
     obj: Bar
     c: str
+    type: Literal["Baz"] = Field(default="Baz")
+
+
+class ComplexLinkedList(BaseModel):
+    obj: ComplexObject
+    child: Optional["ComplexLinkedList"] = None
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 @dataclass(config=DefaultConfig)
@@ -441,16 +451,34 @@ def test_validates_scanspec_wrapping_function(spec: Spec) -> None:
     assert parsed.spec == spec
 
 
-def test_validates_scanspec_with_complex_axis() -> None:
-    spec = Line("x", 0.0, 10.0, 10)
+def lookup_union(value: Union[int, str]) -> int:
+    if isinstance(value, str):
+        return lookup(value)
+    else:
+        return value
+
+
+@pytest.mark.parametrize("value,expected", [(4, 4), ("b", 1)])
+def test_validates_union(value: Union[int, str], expected: int) -> None:
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeValidatorDefinition(Union[int, str], lookup_union)],
+        fields={"un": (Union[int, str], Undefined)},
+        config=DefaultConfig,
+    )
+    parsed = parse_obj_as(model, {"un": value})
+    assert parsed.un == expected  # type: ignore
+
+
+def test_validates_model_union() -> None:
     model = create_model_with_type_validators(
         "Foo",
         [TypeValidatorDefinition(ComplexObject, lookup_complex)],
-        fields={"spec": (Spec[ComplexObject], Undefined)},
+        fields={"un": (Union[Bar, Baz], Field(..., discriminator="type"))},
         config=DefaultConfig,
     )
-    parsed = parse_obj_as(model, {"spec": spec.serialize()})
-    assert parsed.spec.axes() == [ComplexObject("x")]  # type: ignore
+    parsed = parse_obj_as(model, {"un": {"a": 5, "b": "g", "type": "Bar"}})
+    assert parsed.un == Bar(a=5, b=ComplexObject("g"))  # type: ignore
 
 
 def test_model_from_simple_function_signature() -> None:

@@ -196,7 +196,15 @@ def test_validates_set_type() -> None:
 
 
 def test_validates_tuple_type() -> None:
-    assert_validates_single_type(Tuple[int, ...], ["a", "b", "c"], (0, 1, 2))
+    assert_validates_single_type(
+        Tuple[int, ...],  # type: ignore
+        [
+            "a",
+            "b",
+            "c",
+        ],
+        (0, 1, 2),
+    )
 
 
 def test_validates_nested_container_type() -> None:
@@ -437,7 +445,7 @@ def test_validates_scanspec_wrapper(spec: Spec) -> None:
         fields={"wrapper": (SpecWrapper, Undefined)},
     )
     parsed = parse_obj_as(model, {"wrapper": {"spec": spec.serialize()}})
-    assert parsed.wrapper.spec == spec
+    assert parsed.wrapper.spec == spec  # type: ignore
 
 
 @pytest.mark.parametrize("spec", SPECS)
@@ -448,7 +456,7 @@ def test_validates_scanspec_wrapping_function(spec: Spec) -> None:
         func=spec_wrapper,
     )
     parsed = parse_obj_as(model, {"spec": spec.serialize()})
-    assert parsed.spec == spec
+    assert parsed.spec == spec  # type: ignore
 
 
 def lookup_union(value: Union[int, str]) -> int:
@@ -462,8 +470,8 @@ def lookup_union(value: Union[int, str]) -> int:
 def test_validates_union(value: Union[int, str], expected: int) -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeValidatorDefinition(Union[int, str], lookup_union)],
-        fields={"un": (Union[int, str], Undefined)},
+        [TypeValidatorDefinition(Union[int, str], lookup_union)],  # type: ignore
+        fields={"un": (Union[int, str], Undefined)},  # type: ignore
         config=DefaultConfig,
     )
     parsed = parse_obj_as(model, {"un": value})
@@ -473,8 +481,13 @@ def test_validates_union(value: Union[int, str], expected: int) -> None:
 def test_validates_model_union() -> None:
     model = create_model_with_type_validators(
         "Foo",
-        [TypeValidatorDefinition(ComplexObject, lookup_complex)],
-        fields={"un": (Union[Bar, Baz], Field(..., discriminator="type"))},
+        [TypeValidatorDefinition(ComplexObject, lookup_complex)],  # type: ignore
+        fields={
+            "un": (  # type: ignore
+                Union[Bar, Baz],
+                Field(..., discriminator="type"),
+            )
+        },
         config=DefaultConfig,
     )
     parsed = parse_obj_as(model, {"un": {"a": 5, "b": "g", "type": "Bar"}})

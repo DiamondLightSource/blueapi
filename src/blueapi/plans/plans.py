@@ -1,6 +1,6 @@
 import operator
 from functools import reduce
-from typing import Any, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, List, Mapping, Optional, Union
 
 import bluesky.plans as bp
 from bluesky.protocols import Movable, Readable

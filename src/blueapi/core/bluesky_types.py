@@ -1,5 +1,4 @@
 import inspect
-from dataclasses import dataclass
 from typing import Any, Callable, Generator, Mapping, Type, Union
 
 from bluesky.protocols import (

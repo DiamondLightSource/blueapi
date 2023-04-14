@@ -1,27 +1,13 @@
 import logging
 from dataclasses import dataclass, field
 from importlib import import_module
-from inspect import Parameter, signature
 from pathlib import Path
 from types import ModuleType
-from typing import (
-    Any,
-    Callable,
-    Deque,
-    Dict,
-    FrozenSet,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Dict, Iterable, List, Optional, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
-from pydantic import BaseConfig, BaseModel, create_model, validator
+from pydantic import BaseConfig
 
 from blueapi.utils import (
     TypeValidatorDefinition,
@@ -35,7 +21,6 @@ from .bluesky_types import (
     Plan,
     PlanGenerator,
     is_bluesky_compatible_device,
-    is_bluesky_compatible_device_type,
     is_bluesky_plan_generator,
 )
 from .device_lookup import find_component
@@ -132,7 +117,7 @@ class BlueskyContext:
         if not is_bluesky_plan_generator(plan):
             raise TypeError(f"{plan} is not a valid plan generator function")
 
-        validators = device_validators(self)
+        validators = list(device_validators(self))
         model = create_model_with_type_validators(
             plan.__name__,
             validators,
@@ -173,7 +158,10 @@ class BlueskyContext:
 
 def device_validators(ctx: BlueskyContext) -> Iterable[TypeValidatorDefinition]:
     def get_device(name: str) -> Device:
-        return ctx.find_device(name)
+        device = ctx.find_device(name)
+        if device is None:
+            raise KeyError(f"Could not find a device named {name}")
+        return device
 
     for proto in BLUESKY_PROTOCOLS:
         yield TypeValidatorDefinition(proto, get_device)

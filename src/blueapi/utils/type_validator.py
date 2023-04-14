@@ -40,7 +40,7 @@ Validator = Union[Callable[[AnyCallable], AnyClassMethod], classmethod]
 
 
 @dataclass
-class TypeValidatorDefinition(Generic[T, U]):
+class TypeValidatorDefinition(Generic[T]):
     """
     Definition of a validator to be applied to all
     types during validation.
@@ -51,7 +51,7 @@ class TypeValidatorDefinition(Generic[T, U]):
     """
 
     field_type: Type[T]
-    func: Callable[[U], T]
+    func: Callable[[Any], T]
 
     def __str__(self) -> str:
         type_name = getattr(
@@ -199,11 +199,6 @@ def apply_type_validators(
 
     if isclass(model_type) and issubclass(model_type, BaseModel):
         if "__root__" in model_type.__fields__:
-            # return create_model_with_type_validators(
-            #     model_type.__name__,
-            #     definitions,
-            #     fields=_extract_fields_from_model(model_type),
-            # )
             return apply_type_validators(
                 model_type.__fields__["__root__"].type_, definitions, cache=cache
             )
@@ -229,7 +224,7 @@ def apply_type_validators(
 
 
 def _sanitise_origin(origin: Type) -> Type:
-    return {
+    return {  # type: ignore
         list: List,
         set: Set,
         tuple: Tuple,
@@ -315,22 +310,6 @@ def params_contains(type_to_check: Type, field_type: Type) -> bool:
     return type_to_check is field_type or any(
         map(lambda v: params_contains(v, field_type), type_params)
     )
-
-
-# def params_of_type(type_to_check: Type) -> List[Type]:
-#     return list(
-#         getattr(
-#             type_to_check,
-#             "__args__",
-#             [],
-#         )
-#     ) + list(
-#         getattr(
-#             type_to_check,
-#             "__parameters__",
-#             [],
-#         )
-#     )
 
 
 def apply_to_scalars(func: Callable[[T], U], obj: Any) -> Any:

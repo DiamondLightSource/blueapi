@@ -61,7 +61,14 @@ def controller(ctx, host: str, port: int, log_level: str):
         return
     logging.basicConfig(level=log_level)
     ctx.ensure_object(dict)
-    client = AmqClient(StompMessagingTemplate.autoconfigured(StompConfig(host, port)))
+    client = AmqClient(
+        StompMessagingTemplate.autoconfigured(
+            StompConfig(
+                host=host,
+                port=port,
+            )
+        )
+    )
     ctx.obj["client"] = client
     client.app.connect()
 

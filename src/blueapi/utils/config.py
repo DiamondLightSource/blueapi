@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import Any, Generic, Mapping, Type, TypeVar
 
 import yaml
-from apischema import deserialize
+from pydantic import BaseModel, parse_obj_as
 
 #: Configuration schema dataclass
-C = TypeVar("C")
+C = TypeVar("C", bound=BaseModel)
 
 
 class ConfigLoader(Generic[C]):
@@ -59,4 +59,4 @@ class ConfigLoader(Generic[C]):
             C: Dataclass instance holding config
         """
 
-        return deserialize(self._schema, self._values)
+        return parse_obj_as(self._schema, self._values)

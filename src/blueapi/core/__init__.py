@@ -7,10 +7,10 @@ from .bluesky_types import (
     PlanGenerator,
     WatchableStatus,
     is_bluesky_compatible_device,
+    is_bluesky_compatible_device_type,
     is_bluesky_plan_generator,
 )
 from .context import BlueskyContext
-from .device_lookup import create_bluesky_protocol_conversions
 from .event import EventPublisher, EventStream
 
 __all__ = [
@@ -19,7 +19,6 @@ __all__ = [
     "MsgGenerator",
     "Device",
     "BLUESKY_PROTOCOLS",
-    "create_bluesky_protocol_conversions",
     "BlueskyContext",
     "EventPublisher",
     "EventStream",
@@ -27,4 +26,5 @@ __all__ = [
     "WatchableStatus",
     "is_bluesky_compatible_device",
     "is_bluesky_plan_generator",
+    "is_bluesky_compatible_device_type",
 ]

@@ -3,14 +3,20 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Dict, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
+from pydantic import BaseConfig
 
-from blueapi.utils import load_module_all, schema_for_func
+from blueapi.utils import (
+    TypeValidatorDefinition,
+    create_model_with_type_validators,
+    load_module_all,
+)
 
 from .bluesky_types import (
+    BLUESKY_PROTOCOLS,
     Device,
     Plan,
     PlanGenerator,
@@ -20,6 +26,10 @@ from .bluesky_types import (
 from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
+
+
+class PlanModelConfig(BaseConfig):
+    arbitrary_types_allowed = True
 
 
 @dataclass
@@ -107,8 +117,14 @@ class BlueskyContext:
         if not is_bluesky_plan_generator(plan):
             raise TypeError(f"{plan} is not a valid plan generator function")
 
-        schema = schema_for_func(plan)
-        self.plans[plan.__name__] = Plan(plan.__name__, schema)
+        validators = list(device_validators(self))
+        model = create_model_with_type_validators(
+            plan.__name__,
+            validators,
+            func=plan,
+            config=PlanModelConfig,
+        )
+        self.plans[plan.__name__] = Plan(name=plan.__name__, model=model)
         self.plan_functions[plan.__name__] = plan
         return plan
 
@@ -138,3 +154,14 @@ class BlueskyContext:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
         self.devices[name] = device
+
+
+def device_validators(ctx: BlueskyContext) -> Iterable[TypeValidatorDefinition]:
+    def get_device(name: str) -> Device:
+        device = ctx.find_device(name)
+        if device is None:
+            raise KeyError(f"Could not find a device named {name}")
+        return device
+
+    for proto in BLUESKY_PROTOCOLS:
+        yield TypeValidatorDefinition(proto, get_device)

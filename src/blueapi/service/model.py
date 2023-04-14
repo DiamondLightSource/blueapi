@@ -1,29 +1,27 @@
-from dataclasses import dataclass
 from typing import Iterable, List
 
-from apischema import settings
 from bluesky.protocols import HasName
+from pydantic import BaseModel, Field
 
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 
 _UNKNOWN_NAME = "UNKNOWN"
 
-settings.camel_case = True
 
-
-@dataclass
-class DeviceModel:
+class DeviceModel(BaseModel):
     """
     Representation of a device
     """
 
-    name: str
-    protocols: List[str]
+    name: str = Field(description="Name of the device")
+    protocols: List[str] = Field(
+        description="Protocols that a device conforms to, indicating its capabilities"
+    )
 
     @classmethod
     def from_device(cls, device: Device) -> "DeviceModel":
         name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
-        return cls(name, list(_protocol_names(device)))
+        return cls(name=name, protocols=list(_protocol_names(device)))
 
 
 def _protocol_names(device: Device) -> Iterable[str]:
@@ -32,8 +30,7 @@ def _protocol_names(device: Device) -> Iterable[str]:
             yield protocol.__name__
 
 
-@dataclass
-class DeviceRequest:
+class DeviceRequest(BaseModel):
     """
     A query for devices
     """
@@ -41,30 +38,27 @@ class DeviceRequest:
     ...
 
 
-@dataclass
-class DeviceResponse:
+class DeviceResponse(BaseModel):
     """
     Response to a query for devices
     """
 
-    devices: List[DeviceModel]
+    devices: List[DeviceModel] = Field(description="Devices available to use in plans")
 
 
-@dataclass
-class PlanModel:
+class PlanModel(BaseModel):
     """
     Representation of a plan
     """
 
-    name: str
+    name: str = Field(description="Name of the plan")
 
     @classmethod
     def from_plan(cls, plan: Plan) -> "PlanModel":
-        return cls(plan.name)
+        return cls(name=plan.name)
 
 
-@dataclass
-class PlanRequest:
+class PlanRequest(BaseModel):
     """
     A query for plans
     """
@@ -72,19 +66,17 @@ class PlanRequest:
     ...
 
 
-@dataclass
-class PlanResponse:
+class PlanResponse(BaseModel):
     """
     Response to a query for plans
     """
 
-    plans: List[PlanModel]
+    plans: List[PlanModel] = Field(description="Plans available to use by a worker")
 
 
-@dataclass
-class TaskResponse:
+class TaskResponse(BaseModel):
     """
     Acknowledgement that a task has started, includes its ID
     """
 
-    task_name: str
+    task_name: str = Field(description="Unique identifier for the task")

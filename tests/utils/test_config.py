@@ -1,35 +1,30 @@
 import os
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Type
 
 import pytest
-from apischema import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from blueapi.utils import ConfigLoader
 
 
-@dataclass
-class Config:
+class Config(BaseModel):
     foo: int
     bar: str
 
 
-@dataclass
-class ConfigWithDefaults:
+class ConfigWithDefaults(BaseModel):
     foo: int = 3
     bar: str = "hello world"
 
 
-@dataclass
-class NestedConfig:
+class NestedConfig(BaseModel):
     nested: Config
     baz: bool
 
 
-@dataclass
-class NestedConfigWithDefaults:
-    nested: ConfigWithDefaults = field(default_factory=ConfigWithDefaults)
+class NestedConfigWithDefaults(BaseModel):
+    nested: ConfigWithDefaults = Field(default_factory=ConfigWithDefaults)
     baz: bool = False
 
 

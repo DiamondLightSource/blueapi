@@ -18,9 +18,9 @@ dependencies = [
     "ophyd",
     "nslsii",
     "pyepics",
-    "apischema",
+    "pydantic",
     "stomp.py",
-    "scanspec<=0.5.5",
+    "scanspec",
     "PyYAML",
     "click",
 ]

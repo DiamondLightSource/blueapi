@@ -8,12 +8,12 @@ from threading import Event
 from typing import Any, Callable, Dict, List, Optional, Set
 
 import stomp
-from apischema import deserialize, serialize
+from pydantic import parse_obj_as
 from stomp.exception import ConnectFailedException
 from stomp.utils import Frame
 
 from blueapi.config import StompConfig
-from blueapi.utils import handle_all_exceptions
+from blueapi.utils import handle_all_exceptions, serialize
 
 from .base import DestinationProvider, MessageListener, MessagingTemplate
 from .context import MessageContext
@@ -140,7 +140,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
         def wrapper(frame: Frame) -> None:
             as_dict = json.loads(frame.body)
-            value = deserialize(obj_type, as_dict)
+            value = parse_obj_as(obj_type, as_dict)
 
             context = MessageContext(
                 frame.headers["destination"],

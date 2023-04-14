@@ -12,17 +12,20 @@ from blueapi.core import MsgGenerator
 
 def scan(
     detectors: List[Readable],
-    spec: Spec[Movable],
+    axes_to_move: Mapping[str, Movable],
+    spec: Spec[str],
     metadata: Optional[Mapping[str, Any]] = None,
 ) -> MsgGenerator:
     """
     Scan wrapping `bp.scan_nd`
 
     Args:
-        detectors (List[Readable]): List of readable devices, will take a reading at
+        detectors: List of readable devices, will take a reading at
                                     each point
-        spec (Spec[Movable]): ScanSpec modelling the path of the scan
-        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include
+        axes_to_move: All axes involved in this scan, names and
+            objects
+        spec: ScanSpec modelling the path of the scan
+        metadata: Key-value metadata to include
                                                           in exported data, defaults to
                                                           None.
 
@@ -40,24 +43,26 @@ def scan(
         **(metadata or {}),
     }
 
-    cycler = _scanspec_to_cycler(spec)
+    cycler = _scanspec_to_cycler(spec, axes_to_move)
     yield from bp.scan_nd(detectors, cycler, md=metadata)
 
 
-def _scanspec_to_cycler(spec: Spec) -> Cycler:
+def _scanspec_to_cycler(spec: Spec[str], axes: Mapping[str, Movable]) -> Cycler:
     """
     Convert a scanspec to a cycler for compatibility with legacy Bluesky plans such as
     `bp.scan_nd`. Use the midpoints of the scanspec since cyclers are noramlly used
     for software triggered scans.
 
     Args:
-        spec (Spec): A scanspec
+        spec: A scanspec
+        axes: Names and axes to move
 
     Returns:
         Cycler: A new cycler
     """
 
     midpoints = spec.frames().midpoints
+    midpoints = {axes[name]: points for name, points in midpoints.items()}
 
     # Need to "add" the cyclers for all the axes together. The code below is
     # effectively: cycler(motor1, [...]) + cycler(motor2, [...]) + ...

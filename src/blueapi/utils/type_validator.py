@@ -244,6 +244,8 @@ def _extract_fields_from_function(func: Callable[..., Any]) -> Fields:
     fields: Dict[str, FieldDefinition] = {}
     for name, param in signature(func).parameters.items():
         type_annotation = param.annotation
+        if type_annotation is Parameter.empty:
+            raise TypeError(f"Missing type annotation for parameter {name}")
         default_value = param.default
         if default_value is Parameter.empty:
             default_value = Undefined

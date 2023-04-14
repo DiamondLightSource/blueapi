@@ -1,10 +1,10 @@
 import itertools
 from concurrent.futures import Future
-from dataclasses import dataclass
 from queue import Queue
 from typing import Any, Iterable, Type
 
 import pytest
+from pydantic import BaseModel
 
 from blueapi.config import StompConfig
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
@@ -97,8 +97,7 @@ def test_listener(template: MessagingTemplate, test_queue: str) -> None:
     assert reply == "ack"
 
 
-@dataclass
-class Foo:
+class Foo(BaseModel):
     a: int
     b: str
 
@@ -106,7 +105,7 @@ class Foo:
 @pytest.mark.stomp
 @pytest.mark.parametrize(
     "message,message_type",
-    [("test", str), (1, int), (Foo(1, "test"), Foo)],
+    [("test", str), (1, int), (Foo(a=1, b="test"), Foo)],
 )
 def test_deserialization(
     template: MessagingTemplate, test_queue: str, message: Any, message_type: Type

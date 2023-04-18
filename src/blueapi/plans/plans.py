@@ -38,7 +38,7 @@ def scan(
 
     metadata = {
         "detectors": [detector.name for detector in detectors],
-        # "scanspec": serialize(spec, default_conversion=_convert_devices),
+        "scanspec": repr(spec),
         "shape": spec.shape(),
         **(metadata or {}),
     }

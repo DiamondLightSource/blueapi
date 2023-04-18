@@ -68,6 +68,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic/"
   },
   {
+    "version": "pydantic-docs",
+    "url": "https://DiamondLightSource.github.io/blueapi/pydantic-docs/"
+  },
+  {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   }

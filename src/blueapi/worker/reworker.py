@@ -210,6 +210,10 @@ class RunEngineWorker(Worker[Task]):
             percentage = float(1.0 - fraction) if fraction is not None else None
         else:
             percentage = 1.0
+
+        if precision is None or precision == 0:
+            precision = 3
+
         view = StatusView(
             display_name=name or "UNKNOWN",
             current=current,

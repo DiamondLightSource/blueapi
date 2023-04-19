@@ -56,6 +56,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
+    "version": "dev-docs",
+    "url": "https://DiamondLightSource.github.io/blueapi/dev-docs/"
+  },
+  {
     "version": "public-topics",
     "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
   },

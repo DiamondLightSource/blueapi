@@ -25,6 +25,7 @@ dependencies = [
     "fastapi[all]",
     "uvicorn",
     "requests",
+    "dodal @ git+https://git@github.com/DiamondLightSource/dodal",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

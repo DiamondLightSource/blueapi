@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from pydantic import BaseModel, Field, parse_obj_as
+from pydantic import BaseModel, Field
 
 from blueapi.core import BlueskyContext, Plan
 
@@ -62,8 +62,7 @@ def _lookup_params(
         Mapping[str, Any]: _description_
     """
 
-    model = plan.model
-    return parse_obj_as(model, params)
+    return plan.model.parse_obj(params)
 
 
 @dataclass

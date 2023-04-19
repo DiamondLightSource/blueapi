@@ -6,7 +6,7 @@ from types import ModuleType
 from typing import Dict, Iterable, List, Optional, Union
 
 from bluesky import RunEngine
-from bluesky.protocols import Flyable, Readable
+from bluesky.protocols import HasName
 from pydantic import BaseConfig
 
 from blueapi.utils import (
@@ -130,9 +130,9 @@ class BlueskyContext:
 
     def device(self, device: Device, name: Optional[str] = None) -> None:
         """
-        Register an device in the context. The device needs to be registered with a
+        Register a device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`
-        attribbute which can be used. The attribute can be overrideen with the
+        attribute which can be used. The attribute can be overriden with the
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
 
@@ -148,7 +148,7 @@ class BlueskyContext:
             raise TypeError(f"{device} is not a Bluesky compatible device")
 
         if name is None:
-            if isinstance(device, Readable) or isinstance(device, Flyable):
+            if isinstance(device, HasName):
                 name = device.name
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")

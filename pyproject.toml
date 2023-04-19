@@ -3,16 +3,6 @@ requires = ["setuptools>=64", "setuptools_scm[toml]>=6.2", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "blueapi"
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-]
-description = "One line description of your module"
 dependencies = [
     "bluesky",
     "ophyd",
@@ -24,28 +14,40 @@ dependencies = [
     "PyYAML",
     "click",
 ]
+
+[project.optional-dependencies]dev = [
+"black",
+"mypy",
+"flake8-isort",
+"Flake8-pyproject",
+"pipdeptree",
+"pre-commit",
+"pydata-sphinx-theme>=0.12",
+"pytest-cov",
+"sphinx-autobuild",
+"sphinx-copybutton",
+"sphinx-design",
+"tox-direct",
+"types-mock",
+"types-PyYAML",
+]name = "blueapi"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+description = "One line description of your module"
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.rst"
 requires-python = ">=3.8"
-
-[project.optional-dependencies]
-dev = [
-    "black",
-    "mypy",
-    "flake8-isort",
-    "Flake8-pyproject",
-    "pipdeptree",
-    "pre-commit",
-    "pydata-sphinx-theme>=0.12",
-    "pytest-cov",
-    "sphinx-autobuild",
-    "sphinx-copybutton",
-    "sphinx-design",
-    "tox-direct",
-    "types-mock",
-    "types-PyYAML",
-]
+dynamic = ["version"]
+license.file = "LICENSE"
+readme = "README.rst"
+requires-python = ">=3.7"
 
 [project.scripts]
 bluesky = "blueapi.cli:main"
@@ -79,14 +81,12 @@ exclude = [".tox", "venv"]
 
 
 [tool.pytest.ini_options]
-# Run pytest with all our checkers, and don't spam us with massive tracebacks on error
-addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
-    --cov=blueapi --cov-report term --cov-report xml:cov.xml
-    --ignore=src/blueapi/startup
+
+--cov=python3_pip_skeleton --cov-report term --cov-report xml:cov.xml
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
-filterwarnings = ["error", "ignore::DeprecationWarning"]
+filterwarnings = "error"
+>>>>>>> 64d2a03ba80d52b6d22ca541bb32eb6b455d83f9
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 
@@ -102,11 +102,18 @@ source = ["src", "**/site-packages/"]
 # See: https://github.com/tox-dev/tox/issues/999
 [tool.tox]
 legacy_tox_ini = """
+# Run pytest with all our checkers, and don't spam us with massive tracebacks on error
+addopts = """
+    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
+    --cov=blueapi --cov-report term --cov-report xml:cov.xml
+    --ignore=src/blueapi/startup
+    """
+# https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
+filterwarnings = ["error", "ignore::DeprecationWarning"]
 [tox]
 skipsdist=True
 
 [testenv:{pre-commit,mypy,pytest,docs}]
-# Don't create a virtualenv for the command, requires tox-direct plugin
 direct = True
 passenv = *
 allowlist_externals = 
@@ -117,7 +124,8 @@ allowlist_externals =
     sphinx-autobuild
 commands =
     pytest: pytest {posargs}
-    mypy: mypy src tests {posargs}
-    pre-commit: pre-commit run --all-files {posargs}
-    docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
+mypy: mypy src tests {posargs}
+pre-commit: pre-commit run --all-files {posargs}
+docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 """
+# Don't create a virtualenv for the command, requires tox-direct plugin

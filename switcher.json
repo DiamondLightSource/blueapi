@@ -56,6 +56,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/asyncapi/"
   },
   {
+    "version": "camel-case",
+    "url": "https://DiamondLightSource.github.io/blueapi/camel-case/"
+  },
+  {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },

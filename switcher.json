@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.2.0",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.2.0/"
+  },
+  {
     "version": "0.1.0",
     "url": "https://DiamondLightSource.github.io/blueapi/0.1.0/"
   },
@@ -54,10 +58,6 @@
   {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
-  },
-  {
-    "version": "fix-bullet-points",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-bullet-points/"
   },
   {
     "version": "public-topics",

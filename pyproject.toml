@@ -22,6 +22,8 @@ dependencies = [
     "scanspec",
     "PyYAML",
     "click",
+    "fastapi",
+    "uvicorn",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

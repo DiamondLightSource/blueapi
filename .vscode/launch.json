@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: FastAPI",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "src.blueapi.service.rest:app"
+            ],
+            "jinja": true,
+            "justMyCode": true
+        },
+        {
             "name": "Debug Unit Test",
             "type": "python",
             "request": "launch",

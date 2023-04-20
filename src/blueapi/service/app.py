@@ -2,10 +2,16 @@ import logging
 import uuid
 from typing import Mapping
 
+from fastapi import FastAPI
+
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, Worker
+from blueapi import context, worker
+from blueapi.worker.multithread import run_worker_in_own_thread
+
+from .routes import router
 
 from .model import (
     DeviceModel,
@@ -48,7 +54,7 @@ class Service:
             }
         )
 
-        self._template.subscribe("worker.run", self._on_run_request)
+        self._template.subscribe(" ", self._on_run_request)
         self._template.subscribe("worker.plans", self._get_plans)
         self._template.subscribe("worker.devices", self._get_devices)
 
@@ -95,5 +101,49 @@ class Service:
         self._template.send(message_context.reply_destination, response)
 
 
-def start(config: ApplicationConfig):
-    Service(config).run()
+##need to globally, start the worker and message bus.
+## message bus needs a config file,
+## worker needs a context,
+## context needs a config file.
+
+## so how about, we set up a context somewhere (in context module),
+## we start up the worker with the context,
+# THEN in this start we load config into the context and load the message bus from the config.
+
+## the rest api never needs to interact with the message bus anyways... it only interacts with context or worker.
+
+
+def start(config_path: Optional[Path] = None):
+    # 1. load config and setup logging
+    loader = ConfigLoader(ApplicationConfig)
+    if config_path is not None:
+        loader.use_yaml_or_json_file(config_path)
+    config = loader.load()
+    logging.basicConfig(level=config.logging.level)
+
+    # 2. set context with startup script
+    context.with_startup_script(config.env.startup_script)
+
+    # 3. run the worker in it's own thread
+    worker_future = run_worker_in_own_thread(worker)
+
+    # 4. create a message bus and subscribe all relevant worker docs to it
+    message_bus = StompMessagingTemplate.autoconfigured(config.stomp)
+    worker.data_events.subscribe(
+        lambda event, corr_id: message_bus.send(
+            "public.worker.event.data", event, None, corr_id
+        )
+    )
+    worker.progress_events.subscribe(
+        lambda event, corr_id: message_bus.send(
+            "public.worker.event.progress", event, None, corr_id
+        )
+    )
+
+    # 5. start the message bus
+    message_bus.connect()
+
+    # 7. run the worker forever
+    worker.run_forever()
+
+    # Service(config).run()

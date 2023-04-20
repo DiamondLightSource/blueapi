@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>1. Record architecture decisions &#8212; blueapi 0.1.1.dev10+gcf49f89 documentation</title>
+    <title>Architecture &#8212; blueapi 0.1.1.dev10+gcf49f89 documentation</title>
   
   
   
@@ -19,41 +19,41 @@
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
-<link href="../../../_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
 
   
-  <link href="../../../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+  <link href="../../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    <script src="../../../_static/sphinx_highlight.js"></script>
-    <script src="../../../_static/clipboard.min.js"></script>
-    <script src="../../../_static/copybutton.js"></script>
-    <script src="../../../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/explanations/decisions/0001-record-architecture-decisions';</script>
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <script src="../../_static/design-tabs.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/explanations/architecture';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev-docs';
         </script>
-    <link rel="icon" href="../../../_static/dls-favicon.ico"/>
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Architecture" href="../architecture.html" />
-    <link rel="prev" title="Architectural Decision Records" href="../decisions.html" />
+    <link rel="icon" href="../../_static/dls-favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Lifecycle of a Plan" href="lifecycle.html" />
+    <link rel="prev" title="1. Record architecture decisions" href="decisions/0001-record-architecture-decisions.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -81,7 +81,7 @@
     <div class="search-button__overlay"></div>
     <div class="search-button__search-container">
 <form class="bd-search d-flex align-items-center"
-      action="../../../search.html"
+      action="../../search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -109,7 +109,7 @@
       <div class="navbar-item">
   
 
-<a class="navbar-brand logo" href="../../../index.html">
+<a class="navbar-brand logo" href="../../index.html">
   
   
   
@@ -119,8 +119,8 @@
       
     
     
-    <img src="../../../_static/dls-logo.svg" class="logo__image only-light" alt="Logo image"/>
-    <script>document.write(`<img src="../../../_static/dls-logo.svg" class="logo__image only-dark" alt="Logo image"/>`);</script>
+    <img src="../../_static/dls-logo.svg" class="logo__image only-light" alt="Logo image"/>
+    <script>document.write(`<img src="../../_static/dls-logo.svg" class="logo__image only-dark" alt="Logo image"/>`);</script>
   
   
     <p class="title logo__title">blueapi</p>
@@ -144,14 +144,14 @@
   <ul class="bd-navbar-elements navbar-nav">
     
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../../user/index.html">
+                      <a class="nav-link nav-internal" href="../../user/index.html">
                         User Guide
                       </a>
                     </li>
                 
 
                     <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../../index.html">
+                      <a class="nav-link nav-internal" href="../index.html">
                         Developer Guide
                       </a>
                     </li>
@@ -284,14 +284,14 @@ document.write(`
   <ul class="bd-navbar-elements navbar-nav">
     
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../../user/index.html">
+                      <a class="nav-link nav-internal" href="../../user/index.html">
                         User Guide
                       </a>
                     </li>
                 
 
                     <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../../index.html">
+                      <a class="nav-link nav-internal" href="../index.html">
                         Developer Guide
                       </a>
                     </li>
@@ -376,31 +376,31 @@ document.write(`
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../tutorials/dev-install.html">Developer install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/dev-install.html">Developer install</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../how-to/contribute.html">Contributing to the project</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../how-to/build-docs.html">Build the docs using sphinx</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../how-to/run-tests.html">Run the tests using pytest</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../how-to/static-analysis.html">Run static analysis using mypy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../how-to/lint.html">Run linting using pre-commit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../how-to/update-tools.html">Update the tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../how-to/make-release.html">Make a release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/contribute.html">Contributing to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/build-docs.html">Build the docs using sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/run-tests.html">Run the tests using pytest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/static-analysis.html">Run static analysis using mypy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/lint.html">Run linting using pre-commit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/update-tools.html">Update the tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/make-release.html">Make a release</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="../decisions.html">Architectural Decision Records</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">1. Record architecture decisions</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="decisions.html">Architectural Decision Records</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../lifecycle.html">Lifecycle of a Plan</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../type_validators.html">Type Validators</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lifecycle.html">Lifecycle of a Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="type_validators.html">Type Validators</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../reference/standards.html">Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/standards.html">Standards</a></li>
 </ul>
 </div>
 </nav></div>
@@ -434,17 +434,14 @@ document.write(`
   <ul class="bd-breadcrumbs" role="navigation" aria-label="Breadcrumb">
     
     <li class="breadcrumb-item breadcrumb-home">
-      <a href="../../../index.html" class="nav-link" aria-label="Home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Developer Guide</a></li>
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Developer Guide</a></li>
     
-    
-    <li class="breadcrumb-item"><a href="../decisions.html" class="nav-link">Architectural Decision Records</a></li>
-    
-    <li class="breadcrumb-item active" aria-current="page">1. Record architecture decisions</li>
+    <li class="breadcrumb-item active" aria-current="page">Architecture</li>
   </ul>
 </nav>
 </div>
@@ -461,25 +458,38 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="record-architecture-decisions">
-<h1>1. Record architecture decisions<a class="headerlink" href="#record-architecture-decisions" title="Permalink to this heading">#</a></h1>
-<p>Date: 2022-02-18</p>
-<section id="status">
-<h2>Status<a class="headerlink" href="#status" title="Permalink to this heading">#</a></h2>
-<p>Accepted</p>
+  <section id="architecture">
+<h1>Architecture<a class="headerlink" href="#architecture" title="Permalink to this heading">#</a></h1>
+<p>Blueapi performs a number of tasks:
+* Managing the Bluesky <a class="reference external" href="https://nsls-ii.github.io/bluesky/run_engine_api.html">RunEngine</a>, giving it instructions and handling its errors. Traditionally this job has been done by a human with an <a class="reference external" href="https://ipython.org/">IPython</a> terminal, so it requires automating.
+* Maintaining a registry of plans and devices. In the aforementioned <a class="reference external" href="https://ipython.org/">IPython</a> case, these would have just been global variables.
+* Communicating with the outside world, accepting instructions to run plans, providing updates on plan progress etc.
+These responsibilities are kept separate in the codebase to ensure a clean, maintainable architecture.</p>
+<section id="key-components">
+<h2>Key Components<a class="headerlink" href="#key-components" title="Permalink to this heading">#</a></h2>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../../_images/blueapi-architecture.png"><img alt="../../_images/blueapi-architecture.png" src="../../_images/blueapi-architecture.png" style="width: 600px;" /></a>
+<figcaption>
+<p><span class="caption-text">main components</span><a class="headerlink" href="#id1" title="Permalink to this image">#</a></p>
+</figcaption>
+</figure>
+<section id="the-blueskycontext-object">
+<h3>The <code class="docutils literal notranslate"><span class="pre">BlueskyContext</span></code> Object<a class="headerlink" href="#the-blueskycontext-object" title="Permalink to this heading">#</a></h3>
+<p>Holds registries of plans and devices as well as a number of helper methods for
+registering en-masse from a normal Python module.</p>
 </section>
-<section id="context">
-<h2>Context<a class="headerlink" href="#context" title="Permalink to this heading">#</a></h2>
-<p>We need to record the architectural decisions made on this project.</p>
+<section id="the-worker-object">
+<h3>The Worker Object<a class="headerlink" href="#the-worker-object" title="Permalink to this heading">#</a></h3>
+<p>Wraps the Bluesky <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> and accepts requests to run plans. The requests include the name
+of the plan and a dictionary of parameters to pass. The worker validates the parameters against
+the known expectations of the plan, passes it to the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> and handles any errors.</p>
 </section>
-<section id="decision">
-<h2>Decision<a class="headerlink" href="#decision" title="Permalink to this heading">#</a></h2>
-<p>We will use Architecture Decision Records, as <a class="reference external" href="http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions">described by Michael Nygard</a>.</p>
+<section id="the-service-object">
+<h3>The Service Object<a class="headerlink" href="#the-service-object" title="Permalink to this heading">#</a></h3>
+<p>Handles communications and the API layer. This object holds a reference to the worker
+can interrogate it/give it instructions in response to messages it recieves from the message
+bus. It can also forward the various events generated by the worker to topics on the bus.</p>
 </section>
-<section id="consequences">
-<h2>Consequences<a class="headerlink" href="#consequences" title="Permalink to this heading">#</a></h2>
-<p>See Michael Nygard’s article, linked above. To create new ADRs we will copy and
-paste from existing ones.</p>
 </section>
 </section>
 
@@ -495,20 +505,20 @@ paste from existing ones.</p>
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../decisions.html"
+       href="decisions/0001-record-architecture-decisions.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Architectural Decision Records</p>
+        <p class="prev-next-title">1. Record architecture decisions</p>
       </div>
     </a>
     <a class="right-next"
-       href="../architecture.html"
+       href="lifecycle.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Architecture</p>
+        <p class="prev-next-title">Lifecycle of a Plan</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -530,17 +540,19 @@ paste from existing ones.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#status">Status</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#context">Context</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#decision">Decision</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#consequences">Consequences</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-components">Key Components</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-blueskycontext-object">The <code class="docutils literal notranslate"><span class="pre">BlueskyContext</span></code> Object</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-worker-object">The Worker Object</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-service-object">The Service Object</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/dev-docs/docs/developer/explanations/decisions/0001-record-architecture-decisions.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/dev-docs/docs/developer/explanations/architecture.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -554,7 +566,7 @@ paste from existing ones.</p>
 
   <div class="sidebar-secondary-item">
   <div class="tocsection sourcelink">
-    <a href="../../../_sources/developer/explanations/decisions/0001-record-architecture-decisions.rst.txt">
+    <a href="../../_sources/developer/explanations/architecture.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
@@ -573,8 +585,8 @@ paste from existing ones.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="../../../_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
-<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
+  <script src="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">

@@ -1,9 +1,11 @@
 import logging
 from dataclasses import dataclass, field
 from importlib import import_module
+from inspect import Signature
 from pathlib import Path
 from types import ModuleType
-from typing import Dict, Iterable, List, Optional, Union
+from typing import _GenericAlias  # type: ignore
+from typing import Dict, Iterable, List, Optional, Type, Union, get_args
 
 from bluesky import RunEngine
 from bluesky.protocols import HasName
@@ -16,11 +18,11 @@ from blueapi.utils import (
 )
 
 from .bluesky_types import (
-    BLUESKY_PROTOCOLS,
     Device,
     Plan,
     PlanGenerator,
     is_bluesky_compatible_device,
+    is_bluesky_compatible_device_type,
     is_bluesky_plan_generator,
 )
 from .device_lookup import find_component
@@ -117,7 +119,7 @@ class BlueskyContext:
         if not is_bluesky_plan_generator(plan):
             raise TypeError(f"{plan} is not a valid plan generator function")
 
-        validators = list(device_validators(self))
+        validators = list(plan_validators(self, plan))
         model = create_model_with_type_validators(
             plan.__name__,
             validators,
@@ -156,12 +158,37 @@ class BlueskyContext:
         self.devices[name] = device
 
 
-def device_validators(ctx: BlueskyContext) -> Iterable[TypeValidatorDefinition]:
-    def get_device(name: str) -> Device:
-        device = ctx.find_device(name)
-        if device is None:
-            raise KeyError(f"Could not find a device named {name}")
-        return device
+def plan_validators(
+    ctx: BlueskyContext, plan: PlanGenerator
+) -> Iterable[TypeValidatorDefinition]:
+    def get_validator(plan_arg: str, field_type: Type) -> TypeValidatorDefinition:
+        def get_device(name: str):
+            device = ctx.find_device(name)
+            if device is None:
+                raise KeyError(
+                    f"Could not find a device named {name} for plan argument {plan_arg}"
+                )
+            if not isinstance(device, field_type):
+                raise KeyError(
+                    f"Device named {name} did not comply with expected type"
+                    f" {field_type} of plan argument {plan_arg}"
+                )
+            return device
 
-    for proto in BLUESKY_PROTOCOLS:
-        yield TypeValidatorDefinition(proto, get_device)
+        return TypeValidatorDefinition(field_type, get_device)
+
+    def get_validators(
+        plan_arg: str, field_type: Type
+    ) -> Iterable[TypeValidatorDefinition]:
+        #  TODO: Allow only list as list-like plan param?
+        #  TODO: Only allow dict[str, ?] as dict-like plan param?
+        if isinstance(field_type, (_GenericAlias, dict, list, tuple, set)):
+            for arg in get_args(field_type):
+                yield from get_validators(plan_arg, arg)
+        elif is_bluesky_compatible_device_type(field_type):
+            yield get_validator(plan_arg, field_type)
+        else:
+            yield from {}
+
+    for k, v in Signature.from_callable(plan).parameters.items():
+        yield from get_validators(k, v.annotation)

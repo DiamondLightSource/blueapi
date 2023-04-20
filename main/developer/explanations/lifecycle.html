@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Lifecycle of a Plan &#8212; blueapi 0.1.1.dev8+gac09e55 documentation</title>
+    <title>Lifecycle of a Plan &#8212; blueapi 0.1.1.dev9+ga7c897f documentation</title>
   
   
   
@@ -560,11 +560,13 @@ with names <code class="docutils literal notranslate"><span class="pre">andor</s
 <section id="execution">
 <h2>Execution<a class="headerlink" href="#execution" title="Permalink to this heading">#</a></h2>
 <p>The validated parameter values are then passed to the plan function, which is passed to the RunEngine.
-The plan is executed. While it is running, the <code class="docutils literal notranslate"><span class="pre">Worker</span></code> will publish
-* Changes to the state of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>
-* Changes to any device statuses running within a plan (e.g. when a motor changes position)
-* Event model documents emitted by the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>
-* When a plan starts, finishes or fails.</p>
+The plan is executed. While it is running, the <code class="docutils literal notranslate"><span class="pre">Worker</span></code> will publish</p>
+<ul class="simple">
+<li><p>Changes to the state of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code></p></li>
+<li><p>Changes to any device statuses running within a plan (e.g. when a motor changes position)</p></li>
+<li><p>Event model documents emitted by the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code></p></li>
+<li><p>When a plan starts, finishes or fails.</p></li>
+</ul>
 <p>If an error occurs during any of the stages from “Request” onwards it is sent back to the user
 over the message bus.</p>
 </section>

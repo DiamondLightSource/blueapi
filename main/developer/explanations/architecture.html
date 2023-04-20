@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Architecture &#8212; blueapi 0.1.1.dev8+gac09e55 documentation</title>
+    <title>Architecture &#8212; blueapi 0.1.1.dev9+ga7c897f documentation</title>
   
   
   
@@ -460,11 +460,13 @@ document.write(`
                   
   <section id="architecture">
 <h1>Architecture<a class="headerlink" href="#architecture" title="Permalink to this heading">#</a></h1>
-<p>Blueapi performs a number of tasks:
-* Managing the Bluesky <a class="reference external" href="https://nsls-ii.github.io/bluesky/run_engine_api.html">RunEngine</a>, giving it instructions and handling its errors. Traditionally this job has been done by a human with an <a class="reference external" href="https://ipython.org/">IPython</a> terminal, so it requires automating.
-* Maintaining a registry of plans and devices. In the aforementioned <a class="reference external" href="https://ipython.org/">IPython</a> case, these would have just been global variables.
-* Communicating with the outside world, accepting instructions to run plans, providing updates on plan progress etc.
-These responsibilities are kept separate in the codebase to ensure a clean, maintainable architecture.</p>
+<p>Blueapi performs a number of tasks:</p>
+<ul class="simple">
+<li><p>Managing the Bluesky <a class="reference external" href="https://nsls-ii.github.io/bluesky/run_engine_api.html">RunEngine</a>, giving it instructions and handling its errors. Traditionally this job has been done by a human with an <a class="reference external" href="https://ipython.org/">IPython</a> terminal, so it requires automating.</p></li>
+<li><p>Maintaining a registry of plans and devices. In the aforementioned <a class="reference external" href="https://ipython.org/">IPython</a> case, these would have just been global variables.</p></li>
+<li><p>Communicating with the outside world, accepting instructions to run plans, providing updates on plan progress etc.</p></li>
+</ul>
+<p>These responsibilities are kept separate in the codebase to ensure a clean, maintainable architecture.</p>
 <section id="key-components">
 <h2>Key Components<a class="headerlink" href="#key-components" title="Permalink to this heading">#</a></h2>
 <figure class="align-center" id="id1">

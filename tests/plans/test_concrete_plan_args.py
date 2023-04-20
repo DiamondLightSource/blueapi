@@ -10,7 +10,7 @@ from bluesky.protocols import (
     Status,
     SyncOrAsync,
 )
-from ophyd.sim import SynAxis
+from ophyd.sim import SynAxis, SynGauss
 from scanspec.specs import Line, Spec
 
 from blueapi.core import BlueskyContext, Device, MsgGenerator, PlanGenerator
@@ -119,3 +119,98 @@ def test_scan(context, plan: PlanGenerator, x, det):
     )
     assert getattr(bm, "detectors") == [det]
     assert getattr(bm, "axes_to_move") == {"x": x}
+
+
+def test_incorrect_devices_refused(context):
+    wrong_motor = SynAxis(name="h")
+    wrong_detector = SynGauss(
+        name="gauss",
+        motor=wrong_motor,
+        motor_field=wrong_motor.name,
+        center=0.0,
+        Imax=1,
+        labels={"detectors"},
+    )
+    context.device(wrong_detector)
+    context.device(wrong_motor)
+    context.plan(tightly_bound_scan)
+    assert tightly_bound_scan.__name__ in context.plans
+    with pytest.raises(KeyError) as ke:
+        _lookup_params(
+            context,
+            context.plans[tightly_bound_scan.__name__],
+            {
+                "detectors": [wrong_detector.name],
+                "axes_to_move": {"x": wrong_motor.name},
+                "spec": Line(axis="x", start=1, stop=1, num=1).serialize(),
+            },
+        )
+    # TODO: Throw one exception with all incorrect devices?
+    # Validates in order of params
+    assert (
+        f"Device named {wrong_detector.name} did not comply with "
+        f"expected type {repr(FunctionalReadable)} of plan argument detectors"
+        in str(ke.value)
+    )
+
+
+def test_incorrect_device_refused(context):
+    wrong_motor = SynAxis(name="h")
+    context.device(wrong_motor)
+    context.plan(tightly_bound_scan)
+    assert tightly_bound_scan.__name__ in context.plans
+    with pytest.raises(KeyError) as ke:
+        _lookup_params(
+            context,
+            context.plans[tightly_bound_scan.__name__],
+            {
+                "detectors": ["det"],
+                "axes_to_move": {"x": wrong_motor.name},
+                "spec": Line(axis="x", start=1, stop=1, num=1).serialize(),
+            },
+        )
+    assert (
+        f"Device named {wrong_motor.name} did not comply with "
+        f"expected type {repr(DelegatingNamedMovable)} of plan argument axes_to_move"
+        in str(ke.value)
+    )
+
+
+def test_no_devices_found_refused(context):
+    context.plan(tightly_bound_scan)
+    assert tightly_bound_scan.__name__ in context.plans
+    with pytest.raises(KeyError) as ke:
+        _lookup_params(
+            context,
+            context.plans[tightly_bound_scan.__name__],
+            {
+                "detectors": ["specific_det"],
+                "axes_to_move": {"x": "missing"},
+                "spec": Line(axis="x", start=1, stop=1, num=1).serialize(),
+            },
+        )
+    # TODO: Throw one exception with all missing devices?
+    # Validates in order of params
+    assert (
+        "Could not find a device named specific_det for plan argument detectors"
+        in str(ke.value)
+    )
+
+
+def test_no_device_found_refused(context):
+    context.plan(tightly_bound_scan)
+    assert tightly_bound_scan.__name__ in context.plans
+    with pytest.raises(KeyError) as ke:
+        _lookup_params(
+            context,
+            context.plans[tightly_bound_scan.__name__],
+            {
+                "detectors": ["det"],
+                "axes_to_move": {"x": "missing"},
+                "spec": Line(axis="x", start=1, stop=1, num=1).serialize(),
+            },
+        )
+    assert (
+        "Could not find a device named missing for plan argument axes_to_move"
+        in str(ke.value)
+    )

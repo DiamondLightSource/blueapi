@@ -2,9 +2,11 @@ Architecture
 ============
 
 Blueapi performs a number of tasks:
+
 * Managing the Bluesky RunEngine_, giving it instructions and handling its errors. Traditionally this job has been done by a human with an IPython_ terminal, so it requires automating.
 * Maintaining a registry of plans and devices. In the aforementioned IPython_ case, these would have just been global variables.
 * Communicating with the outside world, accepting instructions to run plans, providing updates on plan progress etc.
+
 These responsibilities are kept separate in the codebase to ensure a clean, maintainable architecture.
 
 Key Components

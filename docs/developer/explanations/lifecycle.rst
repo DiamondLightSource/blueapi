@@ -118,6 +118,7 @@ Execution
 
 The validated parameter values are then passed to the plan function, which is passed to the RunEngine.
 The plan is executed. While it is running, the ``Worker`` will publish
+
 * Changes to the state of the ``RunEngine``
 * Changes to any device statuses running within a plan (e.g. when a motor changes position)
 * Event model documents emitted by the ``RunEngine``

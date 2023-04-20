@@ -4,7 +4,7 @@ Type Validators
 Requirement
 -----------
 
-Blueapi takes the parameters of a plan and internally creates a pydantic model for future validation e.g.
+Blueapi takes the parameters of a plan and internally creates a pydantic_ model for future validation e.g.
 
 .. code:: python
 
@@ -48,12 +48,12 @@ to be devices and look them up against the context. For example with the request
     }
 
 ``andor`` and ``pilatus`` should be looked up and replaced with Ophyd objects.
-Before pydantic, blueapi used apischema, which had an ideal feature for this called conversions.
 
 
 Solution
 --------
 
+Before pydantic, blueapi used apischema_, which had an ideal feature for this called conversions_.
 Currently in the utils module of a blueapi is a similar feature called type validators.
 
 They enable the ``BlueskyContext`` to dynamically generate pydantic models, like above, that look 
@@ -100,3 +100,7 @@ nested lists and/or dictionaries, as mentioned above.
 The field names are deteted by comparing the type annotation in the model to the type requested.
 The actual validator is a function supplied by the caller, but if a list or dictionary is passed,
 it will apply it to each item/value.
+
+.. _pydantic: https://docs.pydantic.dev/
+.. _apischema: https://wyfo.github.io/apischema/0.18/
+.. _conversions: https://wyfo.github.io/apischema/0.18/conversions/

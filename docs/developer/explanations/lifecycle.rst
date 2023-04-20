@@ -47,7 +47,7 @@ imports it. The ``BlueskyContext`` will go through all global variables in the m
 if it detects that they are plans.
 
 At the point of registration it will inspect the plan's parameters and their type hints, from which it
-will build a pydantic model of the parameters to validate against. In other words, it will build something
+will build a pydantic_ model of the parameters to validate against. In other words, it will build something
 like this:
 
 
@@ -111,6 +111,8 @@ The parameter values in the request are validated against the model, this includ
 with names ``andor`` and ``pilatus``.
 
 
+.. seealso:: `./type_validators`
+
 Execution
 ---------
 
@@ -123,3 +125,5 @@ The plan is executed. While it is running, the ``Worker`` will publish
 
 If an error occurs during any of the stages from "Request" onwards it is sent back to the user
 over the message bus.
+
+.. _pydantic: https://docs.pydantic.dev/

@@ -46,6 +46,7 @@ side-bar.
             explanations/decisions
             explanations/architecture
             explanations/lifecycle
+            explanations/type_validators
 
         +++
 

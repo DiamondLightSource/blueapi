@@ -1,3 +1,4 @@
+from .base_model import BlueapiBaseModel, BlueapiModelConfig, BlueapiPlanModelConfig
 from .config import ConfigLoader
 from .modules import load_module_all
 from .serialization import serialize
@@ -11,4 +12,7 @@ __all__ = [
     "create_model_with_type_validators",
     "TypeValidatorDefinition",
     "serialize",
+    "BlueapiBaseModel",
+    "BlueapiModelConfig",
+    "BlueapiPlanModelConfig",
 ]

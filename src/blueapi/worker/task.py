@@ -3,13 +3,14 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from pydantic import BaseModel, Field, parse_obj_as
+from pydantic import Field, parse_obj_as
 
 from blueapi.core import BlueskyContext, Plan
+from blueapi.utils import BlueapiBaseModel
 
 
 # TODO: Make a TaggedUnion
-class Task(ABC, BaseModel):
+class Task(ABC, BlueapiBaseModel):
     """
     Object that can run with a TaskContext
     """
@@ -49,7 +50,7 @@ class RunPlan(Task):
 
 def _lookup_params(
     ctx: BlueskyContext, plan: Plan, params: Mapping[str, Any]
-) -> BaseModel:
+) -> BlueapiBaseModel:
     """
     Checks plan parameters against context
 

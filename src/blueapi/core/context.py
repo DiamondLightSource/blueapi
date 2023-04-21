@@ -180,15 +180,11 @@ def plan_validators(
     def get_validators(
         plan_arg: str, field_type: Type
     ) -> Iterable[TypeValidatorDefinition]:
-        #  TODO: Allow only list as list-like plan param?
-        #  TODO: Only allow dict[str, ?] as dict-like plan param?
-        if isinstance(field_type, (_GenericAlias, dict, list, tuple, set)):
+        if isinstance(field_type, _GenericAlias):
             for arg in get_args(field_type):
                 yield from get_validators(plan_arg, arg)
         elif is_bluesky_compatible_device_type(field_type):
             yield get_validator(plan_arg, field_type)
-        else:
-            yield from {}
 
     for k, v in Signature.from_callable(plan).parameters.items():
         yield from get_validators(k, v.annotation)

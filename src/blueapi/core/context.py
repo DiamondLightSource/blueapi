@@ -7,7 +7,6 @@ from typing import Dict, Iterable, List, Optional, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
-from pydantic import BaseConfig
 
 from blueapi.utils import (
     BlueapiPlanModelConfig,

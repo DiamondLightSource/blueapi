@@ -21,6 +21,8 @@ from bluesky.protocols import (
 from bluesky.utils import Msg
 from pydantic import BaseModel, Field
 
+from blueapi.utils import BlueapiBaseModel
+
 try:
     from typing import Protocol, runtime_checkable
 except ImportError:
@@ -79,7 +81,7 @@ def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
     )
 
 
-class Plan(BaseModel):
+class Plan(BlueapiBaseModel):
     """
     A plan that can be run
     """
@@ -90,7 +92,7 @@ class Plan(BaseModel):
     )
 
 
-class DataEvent(BaseModel):
+class DataEvent(BlueapiBaseModel):
     """
     Event representing collection of some data. Conforms to the Bluesky event model:
     https://github.com/bluesky/event-model

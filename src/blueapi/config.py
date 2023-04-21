@@ -1,10 +1,12 @@
 from pathlib import Path
 from typing import Union
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from blueapi.utils import BlueapiBaseModel
 
 
-class StompConfig(BaseModel):
+class StompConfig(BlueapiBaseModel):
     """
     Config for connecting to stomp broker
     """
@@ -13,7 +15,7 @@ class StompConfig(BaseModel):
     port: int = 61613
 
 
-class EnvironmentConfig(BaseModel):
+class EnvironmentConfig(BlueapiBaseModel):
     """
     Config for the RunEngine environment
     """
@@ -21,11 +23,11 @@ class EnvironmentConfig(BaseModel):
     startup_script: Union[Path, str] = "blueapi.startup.example"
 
 
-class LoggingConfig(BaseModel):
+class LoggingConfig(BlueapiBaseModel):
     level: str = "INFO"
 
 
-class ApplicationConfig(BaseModel):
+class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
     config tree.

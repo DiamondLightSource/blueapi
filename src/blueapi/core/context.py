@@ -7,9 +7,9 @@ from typing import Dict, Iterable, List, Optional, Union
 
 from bluesky import RunEngine
 from bluesky.protocols import Flyable, Readable
-from pydantic import BaseConfig
 
 from blueapi.utils import (
+    BlueapiPlanModelConfig,
     TypeValidatorDefinition,
     create_model_with_type_validators,
     load_module_all,
@@ -26,10 +26,6 @@ from .bluesky_types import (
 from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
-
-
-class PlanModelConfig(BaseConfig):
-    arbitrary_types_allowed = True
 
 
 @dataclass
@@ -122,7 +118,7 @@ class BlueskyContext:
             plan.__name__,
             validators,
             func=plan,
-            config=PlanModelConfig,
+            config=BlueapiPlanModelConfig,
         )
         self.plans[plan.__name__] = Plan(name=plan.__name__, model=model)
         self.plan_functions[plan.__name__] = plan

@@ -30,6 +30,20 @@ class BlueapiBaseModel(BaseModel):
     """
     Base class for blueapi API models.
     Includes common config.
+
+    Previously, with apischema, the API models
+    were serialized with camel case aliasing.
+    For example, converting a Python field
+    called foo_bar to a JSON field called fooBar
+    and vice versa. This is to comply with the
+    Google JSON style guide.
+    https://google.github.io/styleguide/jsoncstyleguide.xml?showone=Property_Name_Format#Property_Name_Format
+
+    We have a custom base model with custom config
+    primarily to preserve this change and also
+    to prevent the ingestion of arbirtrary JSON
+    alongside a model's known fields, which
+    apischema also did not allow.
     """
 
     Config = BlueapiModelConfig

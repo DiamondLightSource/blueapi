@@ -68,6 +68,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
+    "version": "gda-compatibility",
+    "url": "https://DiamondLightSource.github.io/blueapi/gda-compatibility/"
+  },
+  {
     "version": "public-topics",
     "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
   },

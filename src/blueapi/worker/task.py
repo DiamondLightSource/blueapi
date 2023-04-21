@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from pydantic import Field, parse_obj_as
+from pydantic import BaseModel, Field, parse_obj_as
 
 from blueapi.core import BlueskyContext, Plan
 from blueapi.utils import BlueapiBaseModel
@@ -50,7 +50,7 @@ class RunPlan(Task):
 
 def _lookup_params(
     ctx: BlueskyContext, plan: Plan, params: Mapping[str, Any]
-) -> BlueapiBaseModel:
+) -> BaseModel:
     """
     Checks plan parameters against context
 

@@ -1,14 +1,15 @@
 from typing import Iterable, List
 
 from bluesky.protocols import HasName
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
+from blueapi.utils import BlueapiBaseModel
 
 _UNKNOWN_NAME = "UNKNOWN"
 
 
-class DeviceModel(BaseModel):
+class DeviceModel(BlueapiBaseModel):
     """
     Representation of a device
     """
@@ -30,7 +31,7 @@ def _protocol_names(device: Device) -> Iterable[str]:
             yield protocol.__name__
 
 
-class DeviceRequest(BaseModel):
+class DeviceRequest(BlueapiBaseModel):
     """
     A query for devices
     """
@@ -38,7 +39,7 @@ class DeviceRequest(BaseModel):
     ...
 
 
-class DeviceResponse(BaseModel):
+class DeviceResponse(BlueapiBaseModel):
     """
     Response to a query for devices
     """
@@ -46,7 +47,7 @@ class DeviceResponse(BaseModel):
     devices: List[DeviceModel] = Field(description="Devices available to use in plans")
 
 
-class PlanModel(BaseModel):
+class PlanModel(BlueapiBaseModel):
     """
     Representation of a plan
     """
@@ -58,7 +59,7 @@ class PlanModel(BaseModel):
         return cls(name=plan.name)
 
 
-class PlanRequest(BaseModel):
+class PlanRequest(BlueapiBaseModel):
     """
     A query for plans
     """
@@ -66,7 +67,7 @@ class PlanRequest(BaseModel):
     ...
 
 
-class PlanResponse(BaseModel):
+class PlanResponse(BlueapiBaseModel):
     """
     Response to a query for plans
     """
@@ -74,7 +75,7 @@ class PlanResponse(BaseModel):
     plans: List[PlanModel] = Field(description="Plans available to use by a worker")
 
 
-class TaskResponse(BaseModel):
+class TaskResponse(BlueapiBaseModel):
     """
     Acknowledgement that a task has started, includes its ID
     """

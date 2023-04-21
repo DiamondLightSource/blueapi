@@ -44,6 +44,9 @@ side-bar.
             :maxdepth: 1
 
             explanations/decisions
+            explanations/architecture
+            explanations/lifecycle
+            explanations/type_validators
 
         +++
 

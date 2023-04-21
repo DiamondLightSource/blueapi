@@ -6,10 +6,11 @@ from typing import Any, Mapping
 from pydantic import BaseModel, Field
 
 from blueapi.core import BlueskyContext, Plan
+from blueapi.utils import BlueapiBaseModel
 
 
 # TODO: Make a TaggedUnion
-class Task(ABC, BaseModel):
+class Task(ABC, BlueapiBaseModel):
     """
     Object that can run with a TaskContext
     """

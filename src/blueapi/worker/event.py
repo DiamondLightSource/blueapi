@@ -2,8 +2,10 @@ from enum import Enum
 from typing import List, Mapping, Optional, Union
 
 from bluesky.run_engine import RunEngineStateMachine
-from pydantic import BaseModel, Field
+from pydantic import Field
 from super_state_machine.extras import PropertyMachine, ProxyString
+
+from blueapi.utils import BlueapiBaseModel
 
 # The RunEngine can return any of these three types as its state
 RawRunEngineState = Union[PropertyMachine, ProxyString, str]
@@ -41,7 +43,7 @@ class WorkerState(str, Enum):
         return WorkerState(str(bluesky_state).upper())
 
 
-class StatusView(BaseModel):
+class StatusView(BlueapiBaseModel):
     """
     A snapshot of a Status of an operation, optionally representing progress
     """
@@ -80,7 +82,7 @@ class StatusView(BaseModel):
     )
 
 
-class ProgressEvent(BaseModel):
+class ProgressEvent(BlueapiBaseModel):
     """
     Event describing the progress of processes within a running task,
     such as moving motors and exposing detectors.
@@ -90,7 +92,7 @@ class ProgressEvent(BaseModel):
     statuses: Mapping[str, StatusView] = Field(default_factory=dict)
 
 
-class TaskStatus(BaseModel):
+class TaskStatus(BlueapiBaseModel):
     """
     Status of a task the worker is running.
     """
@@ -100,7 +102,7 @@ class TaskStatus(BaseModel):
     task_failed: bool
 
 
-class WorkerEvent(BaseModel):
+class WorkerEvent(BlueapiBaseModel):
     """
     Event describing the state of the worker and any tasks it's running.
     Includes error and warning information.

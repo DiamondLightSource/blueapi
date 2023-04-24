@@ -17,6 +17,7 @@ from typing import (
     TypeVar,
     Union,
     get_args,
+    get_type_hints,
     overload,
 )
 
@@ -175,9 +176,10 @@ def create_model_with_type_validators(
         all_fields[name] = apply_type_validators(annotation, definitions), val
 
     validators = _type_validators(all_fields, definitions)
-    return create_model(  # type: ignore
+    model = create_model(  # type: ignore
         name, **all_fields, __base__=base, __validators__=validators, __config__=config
     )
+    return model
 
 
 def apply_type_validators(
@@ -254,10 +256,14 @@ def _extract_fields_from_model(model: Type[BaseModel]) -> Fields:
 
 def _extract_fields_from_function(func: Callable[..., Any]) -> Fields:
     fields: Dict[str, FieldDefinition] = {}
+    # We must use get_type_hints to evaluate annotations due to
+    # PEP 563, see link:
+    # https://stackoverflow.com/questions/66734640/any-downsides-to-using-from-future-import-annotations-everywhere
+    type_hints = get_type_hints(func)
     for name, param in signature(func).parameters.items():
-        type_annotation = param.annotation
-        if type_annotation is Parameter.empty:
+        if name not in type_hints:
             raise TypeError(f"Missing type annotation for parameter {name}")
+        type_annotation = type_hints[name]
         default_value = param.default
         if default_value is Parameter.empty:
             default_value = Undefined

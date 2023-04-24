@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.2.3b1",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.2.3b1/"
+  },
+  {
     "version": "0.2.2",
     "url": "https://DiamondLightSource.github.io/blueapi/0.2.2/"
   },
@@ -58,10 +62,6 @@
   {
     "version": "0.0.1-pre",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
-  },
-  {
-    "version": "accept-named-devices",
-    "url": "https://DiamondLightSource.github.io/blueapi/accept-named-devices/"
   },
   {
     "version": "async-worker",

@@ -101,6 +101,10 @@ def baz(bar: Bar) -> None:
     ...
 
 
+def no_hints(a, b) -> None:
+    ...
+
+
 _DB: Mapping[str, ComplexObject] = {name: ComplexObject(name) for name in _REG.keys()}
 
 
@@ -503,6 +507,15 @@ def test_model_from_simple_function_signature() -> None:
     parsed = parse_obj_as(model, {"a": "g", "b": "hello"})
     assert parsed.a == 6  # type: ignore
     assert parsed.b == "hello"  # type: ignore
+
+
+def test_does_not_allow_parameters_without_type_hints() -> None:
+    with pytest.raises(TypeError):
+        create_model_with_type_validators(
+            "Foo",
+            [TypeValidatorDefinition(int, lookup)],
+            func=no_hints,
+        )
 
 
 def test_model_from_complex_function_signature() -> None:

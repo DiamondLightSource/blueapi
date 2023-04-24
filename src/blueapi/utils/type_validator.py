@@ -261,9 +261,9 @@ def _extract_fields_from_function(func: Callable[..., Any]) -> Fields:
     # https://stackoverflow.com/questions/66734640/any-downsides-to-using-from-future-import-annotations-everywhere
     type_hints = get_type_hints(func)
     for name, param in signature(func).parameters.items():
-        type_annotation = type_hints[name]
-        if type_annotation is Parameter.empty:
+        if name not in type_hints:
             raise TypeError(f"Missing type annotation for parameter {name}")
+        type_annotation = type_hints[name]
         default_value = param.default
         if default_value is Parameter.empty:
             default_value = Undefined

@@ -60,6 +60,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
   },
   {
+    "version": "anno-fix",
+    "url": "https://DiamondLightSource.github.io/blueapi/anno-fix/"
+  },
+  {
     "version": "async-worker",
     "url": "https://DiamondLightSource.github.io/blueapi/async-worker/"
   },

@@ -60,6 +60,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
   },
   {
+    "version": "accept-named-devices",
+    "url": "https://DiamondLightSource.github.io/blueapi/accept-named-devices/"
+  },
+  {
     "version": "anno-fix",
     "url": "https://DiamondLightSource.github.io/blueapi/anno-fix/"
   },

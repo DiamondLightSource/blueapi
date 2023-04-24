@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Callable, Generator, Mapping, Type, Union
+from typing import Any, Callable, Generator, Mapping, Type, Union, get_type_hints
 
 from bluesky.protocols import (
     Checkable,
@@ -75,10 +75,7 @@ def _follows_bluesky_protocols(obj: Any) -> bool:
 
 
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
-    return (
-        hasattr(func, "__annotations__")
-        and func.__annotations__.get("return") is MsgGenerator
-    )
+    return get_type_hints(func).get("return") is MsgGenerator
 
 
 class Plan(BlueapiBaseModel):

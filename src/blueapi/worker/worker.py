@@ -24,10 +24,28 @@ class Worker(ABC, Generic[T]):
             __task (T): The task to run
         """
 
+    # @abstractmethod
+    # def run_forever(self) -> None:
+    #     """
+    #     Run all tasks as-submitted. Blocks thread.
+    #     """
+
     @abstractmethod
-    def run_forever(self) -> None:
+    def start(self) -> None:
         """
-        Run all tasks as-submitted. Blocks thread.
+        Start worker
+        """
+
+    @abstractmethod
+    def stop(self) -> None:
+        """
+        Stop worker
+        """
+
+    @abstractmethod
+    def block(self) -> None:
+        """
+        Block while worker is running
         """
 
     @property

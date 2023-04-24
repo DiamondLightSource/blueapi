@@ -6,7 +6,6 @@ from types import ModuleType
 from typing import Dict, Iterable, List, Optional, Union
 
 from bluesky import RunEngine
-from bluesky.protocols import Flyable, Readable
 
 from blueapi.utils import (
     BlueapiPlanModelConfig,
@@ -18,6 +17,7 @@ from blueapi.utils import (
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     Device,
+    HasName,
     Plan,
     PlanGenerator,
     is_bluesky_compatible_device,
@@ -144,7 +144,7 @@ class BlueskyContext:
             raise TypeError(f"{device} is not a Bluesky compatible device")
 
         if name is None:
-            if isinstance(device, Readable) or isinstance(device, Flyable):
+            if isinstance(device, HasName):
                 name = device.name
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")

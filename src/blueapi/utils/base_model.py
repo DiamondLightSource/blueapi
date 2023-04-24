@@ -14,6 +14,7 @@ class BlueapiModelConfig(BaseConfig):
 
     alias_generator = _to_camel
     extra = Extra.forbid
+    allow_population_by_field_name = True
 
 
 class BlueapiPlanModelConfig(BlueapiModelConfig):

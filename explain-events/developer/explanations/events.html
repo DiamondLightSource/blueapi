@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Events Emitted by the Worker &#8212; blueapi 0.2.3b2.dev2+g53fa4b1 documentation</title>
+    <title>Events Emitted by the Worker &#8212; blueapi 0.2.3b2.dev4+g58ecb40 documentation</title>
   
   
   
@@ -461,6 +461,9 @@ document.write(`
                   
   <section id="events-emitted-by-the-worker">
 <h1>Events Emitted by the Worker<a class="headerlink" href="#events-emitted-by-the-worker" title="Permalink to this heading">#</a></h1>
+<p>Blueapi adds new events on top of the <a class="reference external" href="https://blueskyproject.io/event-model/main/index.html">bluesky event model</a>.</p>
+<section id="reasons">
+<h2>Reasons<a class="headerlink" href="#reasons" title="Permalink to this heading">#</a></h2>
 <p>Since the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> is traditionally used by a human in front of an IPython terminal, it
 sometimes assumes intuitive behavoir. The worker replaces the human and so must fill in the
 gaps.</p>
@@ -478,6 +481,7 @@ for the stop document vs end of the plan, thsse are typically used for setup and
 Also note that a plan can produce an arbitrary number of runs. This decoupling is fine in an IPython terminal
 because a human user can see when a plan has started, can see when it’s finished and can see which runs are
 associated with which plans.</p>
+</section>
 <section id="new-events">
 <h2>New Events<a class="headerlink" href="#new-events" title="Permalink to this heading">#</a></h2>
 <p>For the case of automation, we introduce a new set of events outside of the event model, specifically
@@ -513,7 +517,7 @@ messages containing documents.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p>JMS</p></td>
-<td><p>TODO</p></td>
+<td><p>jms_correlationID</p></td>
 </tr>
 <tr class="row-odd"><td><p>STOMP</p></td>
 <td><p>correlation-id</p></td>
@@ -570,6 +574,7 @@ messages containing documents.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reasons">Reasons</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#new-events">New Events</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correlation-id">Correlation ID</a></li>
 </ul>

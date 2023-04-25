@@ -53,7 +53,7 @@ ActiveMQ will give this header a different name depending on the protocol you us
    * - Protocol
      - Header name
    * - JMS
-     - TODO
+     - jms_correlationID
    * - STOMP
      - correlation-id
 

@@ -260,7 +260,7 @@ def _extract_fields_from_function(
 ) -> Fields:
     if isinstance(func, functools.partial):
         if func.args:
-            raise TypeError("Partials with non-leyword args not supported")
+            raise TypeError("Partials with non-keyword args not supported")
         all_fields = _extract_fields_from_function(func.func)
         return {
             name: field

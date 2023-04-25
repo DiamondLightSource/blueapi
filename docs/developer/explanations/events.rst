@@ -1,6 +1,11 @@
 Events Emitted by the Worker
 ============================
 
+Blueapi adds new events on top of the `bluesky event model`_.
+
+Reasons
+-------
+
 Since the ``RunEngine`` is traditionally used by a human in front of an IPython terminal, it
 sometimes assumes intuitive behavoir. The worker replaces the human and so must fill in the
 gaps.

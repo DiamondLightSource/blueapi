@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
 import pytest
@@ -527,6 +528,28 @@ def test_model_from_complex_function_signature() -> None:
     )
     parsed = parse_obj_as(model, {"obj": "f"})
     assert parsed.obj == ComplexObject("f")  # type: ignore
+
+
+def test_model_from_partial() -> None:
+    func = functools.partial(foo, a=3)
+    model = create_model_with_type_validators(
+        "Foo",
+        [TypeValidatorDefinition(int, lookup)],
+        func=func,
+    )
+    parsed = parse_obj_as(model, {"b": "hello"})
+    assert not hasattr(parsed, "a")
+    assert parsed.b == "hello"  # type: ignore
+
+
+def test_rejects_partial_with_non_keyword_args() -> None:
+    func = functools.partial(foo, 3)
+    with pytest.raises(TypeError):
+        create_model_with_type_validators(
+            "Foo",
+            [TypeValidatorDefinition(int, lookup)],
+            func=func,
+        )
 
 
 def test_model_from_nested_function_signature() -> None:

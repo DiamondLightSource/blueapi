@@ -50,6 +50,7 @@ side-bar.
             explanations/architecture
             explanations/lifecycle
             explanations/type_validators
+            explanations/events
 
         +++
 

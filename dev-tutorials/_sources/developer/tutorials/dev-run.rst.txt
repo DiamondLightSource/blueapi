@@ -53,7 +53,6 @@ Start the worker from the command line or vscode:
         3. Click the green "Run Button"
 
         .. figure:: ../../images/debug-vscode.png
-          :width: 600px
           :align: center
 
           debug in vscode

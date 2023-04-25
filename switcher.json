@@ -80,10 +80,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
-    "version": "fix-bluesky-type-check",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-bluesky-type-check/"
-  },
-  {
     "version": "public-topics",
     "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
   },
@@ -102,5 +98,9 @@
   {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
+  },
+  {
+    "version": "type-validator-partials",
+    "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
   }
 ]

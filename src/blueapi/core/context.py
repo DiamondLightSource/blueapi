@@ -17,6 +17,7 @@ from typing import (
     get_origin,
     get_type_hints,
 )
+from dodal.utils import make_all_devices
 
 from bluesky import RunEngine
 from pydantic import create_model
@@ -103,6 +104,10 @@ class BlueskyContext:
                 self.plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:
+        if module.__package__ == "dodal":
+            devices = make_all_devices(module)
+            self.devices.update(devices)
+
         for obj in load_module_all(module):
             if is_bluesky_compatible_device(obj):
                 self.device(obj)

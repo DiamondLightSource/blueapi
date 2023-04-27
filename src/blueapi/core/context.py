@@ -104,13 +104,7 @@ class BlueskyContext:
                 self.plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:
-        if module.__package__ == "dodal":
-            devices = make_all_devices(module)
-            self.devices.update(devices)
-
-        for obj in load_module_all(module):
-            if is_bluesky_compatible_device(obj):
-                self.device(obj)
+        self.devices.update(make_all_devices(module))
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

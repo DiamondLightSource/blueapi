@@ -1,114 +1,114 @@
 [
   {
-    "version": "main",
+    "name": "main",
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
-    "version": "0.2.3b1",
+    "name": "0.2.3b1",
     "url": "https://DiamondLightSource.github.io/blueapi/0.2.3b1/"
   },
   {
-    "version": "0.2.2",
+    "name": "0.2.2",
     "url": "https://DiamondLightSource.github.io/blueapi/0.2.2/"
   },
   {
-    "version": "0.2.1",
+    "name": "0.2.1",
     "url": "https://DiamondLightSource.github.io/blueapi/0.2.1/"
   },
   {
-    "version": "0.2.0",
+    "name": "0.2.0",
     "url": "https://DiamondLightSource.github.io/blueapi/0.2.0/"
   },
   {
-    "version": "0.1.0",
+    "name": "0.1.0",
     "url": "https://DiamondLightSource.github.io/blueapi/0.1.0/"
   },
   {
-    "version": "0.0.4",
+    "name": "0.0.4",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.4/"
   },
   {
-    "version": "0.0.3",
+    "name": "0.0.3",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.3/"
   },
   {
-    "version": "0.0.2",
+    "name": "0.0.2",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.2/"
   },
   {
-    "version": "0.0.1-pre6",
+    "name": "0.0.1-pre6",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre6/"
   },
   {
-    "version": "0.0.1-pre5",
+    "name": "0.0.1-pre5",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre5/"
   },
   {
-    "version": "0.0.1-pre4",
+    "name": "0.0.1-pre4",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre4/"
   },
   {
-    "version": "0.0.1-pre3",
+    "name": "0.0.1-pre3",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre3/"
   },
   {
-    "version": "0.0.1-pre2",
+    "name": "0.0.1-pre2",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre2/"
   },
   {
-    "version": "0.0.1-pre1",
+    "name": "0.0.1-pre1",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre1/"
   },
   {
-    "version": "0.0.1-pre",
+    "name": "0.0.1-pre",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
   },
   {
-    "version": "async-worker",
+    "name": "async-worker",
     "url": "https://DiamondLightSource.github.io/blueapi/async-worker/"
   },
   {
-    "version": "asyncapi",
+    "name": "asyncapi",
     "url": "https://DiamondLightSource.github.io/blueapi/asyncapi/"
   },
   {
-    "version": "camel-case",
+    "name": "camel-case",
     "url": "https://DiamondLightSource.github.io/blueapi/camel-case/"
   },
   {
-    "version": "deserialization-errors",
+    "name": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
-    "version": "dev-tutorials",
+    "name": "dev-tutorials",
     "url": "https://DiamondLightSource.github.io/blueapi/dev-tutorials/"
   },
   {
-    "version": "explain-events",
+    "name": "explain-events",
     "url": "https://DiamondLightSource.github.io/blueapi/explain-events/"
   },
   {
-    "version": "public-topics",
+    "name": "public-topics",
     "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
   },
   {
-    "version": "push-container-branches",
+    "name": "push-container-branches",
     "url": "https://DiamondLightSource.github.io/blueapi/push-container-branches/"
   },
   {
-    "version": "pydantic",
+    "name": "pydantic",
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic/"
   },
   {
-    "version": "pydantic-fix",
+    "name": "pydantic-fix",
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic-fix/"
   },
   {
-    "version": "shape-meta",
+    "name": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   },
   {
-    "version": "type-validator-partials",
+    "name": "type-validator-partials",
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
   }
 ]

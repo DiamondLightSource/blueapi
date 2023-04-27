@@ -1,0 +1,295 @@
+asyncapi: "2.6.0"
+id: https://github.com/DiamondLightSource/blueapi
+info:
+  title: Bluesky Worker Service Asynchronous API
+  version: 0.2.2
+  description: Service for controlling access to and running scans based on Bluesky Plans and Ophyd Devices
+  contact:
+    name: Callum Forrester
+    email: callum.forrester@diamond.ac.uk
+servers:
+  p45-development:
+    url: tcp://p45-activemq.diamond.ac.uk
+    description: Development Test Beamline (Located in Diamond House G13)
+    protocol: JMS
+defaultContentType: application/json
+channels:
+  public/worker/event:
+    description: Produces events about the state of the worker
+    subscribe:
+      operationId: stateEvent
+      summary: Updates on the state of the worker
+      description: Events describing the state of the worker and any tasks it's running. Includes error and warning information.
+      message:
+        messageId: stateEvent
+        headers:
+          $ref: "#/components/schemas/contextHeaders"
+        payload:
+          $ref: "#/components/schemas/workerStateEvent"
+  public/worker/event/progress:
+    description: Produces events about the progress of runs associated with a plan
+    subscribe:
+      operationId: progressEvent
+      summary: Updates on the progress of tasks
+      description: Events describing the progress of processes within a running task,such as moving motors and exposing detectors.
+      message:
+        messageId: progressEvent
+        headers:
+          $ref: "#/components/schemas/contextHeaders"
+        payload:
+          $ref: "#/components/schemas/workerProgressEvent"
+  public/worker/event/data:
+    description: Produces events supplying data produced by runs associated with a plan
+    subscribe:
+      operationId: dataEvent
+      summary: Events representing collection of data
+      description: Data documents produced by running plans
+      message:
+        messageId: blueskyDoc
+        payload:
+          oneOf:
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/run_start.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/run_start.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/run_stop.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_descriptor.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_page.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/resource.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum_page.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_resource.json"
+            - $ref: "#https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_datum.json"
+  worker/run:
+    description: Accepts and provides responses to requests to run a plan using the supplied parameters
+    publish:
+      operationId: runPlanRequest
+      summary: Submit a 'Run Plan' task with parameters
+      description: Consume a request to run a scan based on the specified Plan with the supplied parameters
+      message:
+        messageId: RunPlan
+        headers:
+          $ref: "#/components/schemas/contextHeaders"
+        payload:
+          $ref: "#/components/schemas/runPlan"
+    subscribe:
+      operationId: runPlanResponse
+      summary: Indicate acceptance of a 'Run Plan' task
+      description: Provides acknowledgement of a Run Plan requests
+      message:
+        messageId: runPlanResponse
+        headers:
+          $ref: "#/components/schemas/contextHeaders"
+        payload:
+          $ref: "#/components/schemas/taskResponse"
+  worker/plans:
+    description: >-
+      Accepts requests to return the names of all the Bluesky Plans known to the service. At the moment 
+      ny message on this channe will produce this response
+    publish:
+      operationId: plansRequest
+      summary: Get list of Plan names
+      description: Request a list of Plan names known to the system
+      message:
+        messageId: plansRequest
+        headers:
+          $ref: "#/components/schemas/contextHeaders"
+        payload:
+          $ref: "#/components/schemas/anyJson"
+    subscribe:
+      operationId: plansResponse
+      summary: The list of plan names
+      description: A List of the names of plans known to the system
+      message:
+        messageId: plansResponse
+        headers:
+          $ref: "#/components/schemas/contextHeaders"
+        payload:
+          $ref: "#/components/schemas/plansResponse"
+  worker/devices:
+    description: >-
+      Accepts requests to return the names of all the Ophyd Devices known to the service. At the moment 
+      any message on this channe will produce this response
+    publish:
+      operationId: devicesRequest
+      summary: Get list of Device names
+      description: Request a list of Device names known to the system
+      message:
+        messageId: devicesRequest
+        headers:
+          $ref: "#/components/schemas/contextHeaders"
+        payload:
+          $ref: "#/components/schemas/anyJson"
+    subscribe:
+      operationId: devicesResponse
+      summary: The list of device names
+      description: A List of the names of devices known to the system
+      message:
+        messageId: devicesResponse
+        headers:
+          $ref: "#/components/schemas/contextHeaders"
+        payload:
+          $ref: "#/components/schemas/devicesResponse"
+components:
+  schemas:
+    contextHeaders:
+      type: object
+      required:
+        - destination
+      properties:
+        destination:
+          type: string
+        reply_destination:
+          type: string
+        correlation_id:
+          type: string
+    runPlan:
+      type: object
+      required:
+        - name
+        - params
+      properties:
+        name:
+          description: Name of plan to run
+          type: string
+        params:
+          description: Values for parameters to plan, if any (Map of name to any)
+          type: object
+          additionalProperties: true
+    taskResponse:
+      type: object
+      properties:
+        task_name:
+          description: Unique identifier for the task
+          type: string
+    plansResponse:
+      type: object
+      properties:
+        plans:
+          description: Plans available to use by a worker
+          type: array
+          items:
+            type: string
+    devicesResponse:
+      type: object
+      properties:
+        devices:
+          description: Devices available to use in plans
+          type: array
+          items:
+            type: string
+    workerStateEvent:
+      type: object
+      required:
+        - state
+        - errors
+        - warnings
+      properties:
+        state:
+          $ref: "#/components/schemas/workerState"
+        task_status:
+          $ref: "#/components/schemas/taskStatus"
+        errors:
+          description: A list of any errors generated during the execution of a task
+          type: array
+          items:
+            type: string
+        warnings:
+          description: A list of any warnings generated during the execution of a task
+          type: array
+          items:
+            type: string
+    workerProgressEvent:
+      type: object
+      required:
+        - task_name
+        - statuses
+      properties:
+        task_name:
+          description: Unique id of the task, returned when it was originally submitted
+          type: string
+        statuses:
+          type: object
+          description: Status object providing various indicators for the task
+          additionalProperties:
+            $ref: "#/components/schemas/statusView"
+    workerState:
+      description: The state of the Worker.
+      enum:
+        - IDLE
+        - RUNNING
+        - PAUSING
+        - PAUSED
+        - HALTING
+        - STOPPING
+        - ABORTING
+        - SUSPENDING
+        - PANICKED
+        - UNKNOWN
+    taskStatus:
+      description: Current state of a task the worker is running.
+      type: object
+      required:
+        - task_name
+        - task_complete
+        - task_failed
+      properties:
+        task_name:
+          description: Unique id of the task, returned when it was originally submitted
+          type: string
+        task_complete:
+          description: Indication whether the task reaced the end of its execution
+          type: boolean
+        task_failed:
+          description: Indication whether the expected task outcome was achieved
+          type: boolean
+    statusView:
+      type: object
+      required:
+        - display_name
+        - unit
+        - precision
+        - done
+      properties:
+        display_name:
+          description: Human-readable name indicating what this status describes
+          type: string
+        current:
+          description: Current value of operation progress, if known
+          type: number
+          format: float
+        initial:
+          description: Initial value of operation progress, if known
+          type: number
+          format: float
+        target:
+          description: Target value of operation progress, if known
+          type: number
+          format: float
+        unit:
+          description: Units of progress
+          type: string
+          default: Units
+        precision:
+          description: Sensible precision of progress to display
+          type: integer
+          default: 3
+        done:
+          description: Whether the operation this status describes is complete
+          type: boolean
+          default: false
+        percentage:
+          description: Percentage of status completion, if known
+          type: number
+          format: float
+        time_elapsed:
+          description: Time elapsed since status operation beginning, if known
+          type: number
+          format: float
+        time_remaining:
+          description: Estimated time remaining until operation completion, if known
+          type: number
+          format: float
+    anyJson:
+      title: AnyJSON
+      type: string
+      format: json

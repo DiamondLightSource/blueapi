@@ -71,9 +71,10 @@ class BlueskyContext:
         else:
             return find_component(self.devices, addr)
 
-    def with_startup_script(self, path: Union[Path, str]) -> None:
-        mod = import_module(str(path))
-        self.with_module(mod)
+    def with_startup_script(self, paths: list[Union[Path, str]]) -> None:
+        for path in paths:
+            mod = import_module(str(path))
+            self.with_module(mod)
 
     def with_module(self, module: ModuleType) -> None:
         self.with_plan_module(module)

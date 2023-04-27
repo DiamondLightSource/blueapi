@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import Dict, List, Union
+from typing import Dict, List, Type, Union
 
 import pytest
-from bluesky.protocols import Descriptor, Reading, SyncOrAsync
+from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
 from ophyd.sim import SynAxis, SynGauss
 
 from blueapi.core import (
     BlueskyContext,
     MsgGenerator,
     PlanGenerator,
+    context,
     is_bluesky_compatible_device,
 )
 
@@ -26,7 +27,7 @@ def has_one_param(foo: int) -> MsgGenerator:  # type: ignore
     ...
 
 
-def has_some_params(foo: int, bar: str) -> MsgGenerator:  # type: ignore
+def has_some_params(foo: int = 42, bar: str = "bar") -> MsgGenerator:  # type: ignore
     ...
 
 
@@ -105,7 +106,7 @@ def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
     "plan", [has_typeless_param, has_typed_and_typeless_params, has_typeless_params]
 )
 def test_add_invalid_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         empty_context.plan(plan)
 
 
@@ -167,3 +168,27 @@ def test_add_non_plan(empty_context: BlueskyContext) -> None:
 def test_add_non_device(empty_context: BlueskyContext) -> None:
     with pytest.raises(TypeError):
         empty_context.device("not a device")  # type: ignore
+
+
+def test_function_spec(empty_context: BlueskyContext) -> None:
+    spec = context._type_spec_for_function(has_some_params, empty_context)
+    assert spec == {"foo": ("int", 42), "bar": ("str", "bar")}
+
+
+def test_basic_type_conversion(empty_context: BlueskyContext) -> None:
+    assert context._convert_type(int, empty_context) == int
+    assert context._convert_type(dict[str, int], empty_context) == dict[str, int]
+
+
+def test_device_reference_cache(empty_context: BlueskyContext) -> None:
+    assert empty_context._reference(Movable) is empty_context._reference(Movable)
+    assert empty_context._reference(Movable) is not empty_context._reference(Readable)
+
+
+def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
+    movable_ref: Type = empty_context._reference(Movable)
+    assert context._convert_type(Movable, empty_context) == movable_ref
+    assert (
+        context._convert_type(dict[Movable, list[tuple[int, Movable]]], empty_context)
+        == dict[movable_ref, list[tuple[int, movable_ref]]]  # type: ignore
+    )

@@ -75,7 +75,11 @@ def _follows_bluesky_protocols(obj: Any) -> bool:
 
 
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
-    return get_type_hints(func).get("return") is MsgGenerator
+    try:
+        return get_type_hints(func).get("return") is MsgGenerator
+    except TypeError:
+        # get_type_hints fails on some objects (such as Union or Optinoal)
+        return False
 
 
 class Plan(BlueapiBaseModel):

@@ -45,4 +45,4 @@ def _run_worker_thread(worker: Worker[T]) -> None:
 
     LOGGER.info("Worker starting")
     # TODO: Use API methods only!
-    worker._run_forever()
+    worker.run()

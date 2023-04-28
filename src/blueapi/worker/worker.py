@@ -37,15 +37,15 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def stop(self) -> None:
+    def run(self) -> None:
         """
-        Stop worker
+        Run worker, blocks
         """
 
     @abstractmethod
-    def block(self) -> None:
+    def stop(self) -> None:
         """
-        Block while worker is running
+        Stop worker
         """
 
     @property

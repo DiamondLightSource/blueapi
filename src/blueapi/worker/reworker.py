@@ -83,7 +83,7 @@ class RunEngineWorker(Worker[Task]):
         self._task_queue.put(KillSignal())
         self._stopped.wait(timeout=30.0)
 
-    def _run_forever(self) -> None:
+    def run(self) -> None:
         LOGGER.info("Worker starting")
         self._ctx.run_engine.state_hook = self._on_state_change
         self._ctx.run_engine.subscribe(self._on_document)

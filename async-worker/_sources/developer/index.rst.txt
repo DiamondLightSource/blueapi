@@ -14,6 +14,7 @@ side-bar.
             :maxdepth: 1
 
             tutorials/dev-install
+            tutorials/dev-run
 
         +++
 

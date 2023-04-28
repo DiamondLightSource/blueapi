@@ -27,7 +27,7 @@ def test_stop(worker: Worker) -> None:
 
 def test_submit(worker: Worker) -> None:
     worker.start()
-    started = Future()
+    started: Future[WorkerEvent] = Future()
 
     def process_event(event: WorkerEvent, task_id: str) -> None:
         started.set_result(event)
@@ -40,4 +40,6 @@ def test_submit(worker: Worker) -> None:
             params={"time": 0.1},
         ),
     )
-    assert started.result(timeout=5.0).status.state is WorkerState.RUNNING
+    result = started.result(timeout=5.0)
+    assert not result.errors
+    assert result.state is WorkerState.RUNNING

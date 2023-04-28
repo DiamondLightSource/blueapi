@@ -1,3 +1,4 @@
+from .bluesky_event_loop import configure_bluesky_event_loop
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     DataEvent,
@@ -27,4 +28,5 @@ __all__ = [
     "is_bluesky_compatible_device",
     "is_bluesky_plan_generator",
     "is_bluesky_compatible_device_type",
+    "configure_bluesky_event_loop",
 ]

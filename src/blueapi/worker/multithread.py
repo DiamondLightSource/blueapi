@@ -2,6 +2,7 @@ import logging
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Optional, TypeVar
 
+from blueapi.core import configure_bluesky_event_loop
 from blueapi.utils import handle_all_exceptions
 
 from .worker import Worker
@@ -43,6 +44,7 @@ def _run_worker_thread(worker: Worker[T]) -> None:
         worker (Worker[T]): The worker to run
     """
 
+    LOGGER.info("Setting up event loop")
+    configure_bluesky_event_loop()
     LOGGER.info("Worker starting")
-    # TODO: Use API methods only!
     worker.run()

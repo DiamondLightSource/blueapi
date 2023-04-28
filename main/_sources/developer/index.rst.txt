@@ -64,3 +64,14 @@ side-bar.
         +++
 
         Technical reference material on standards in use.
+
+    .. grid-item-card:: :material-regular:`menu_book;3em`
+
+        .. toctree::
+            :caption: APIs
+            :maxdepth: 1
+
+            ../../user/reference/api
+            ../../user/reference/asyncapi
+
+        +++    

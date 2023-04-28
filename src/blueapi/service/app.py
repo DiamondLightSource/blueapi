@@ -19,10 +19,6 @@ from .model import (
     TaskResponse,
 )
 
-logging.basicConfig(level=logging.INFO)
-
-logging.basicConfig(level=logging.INFO)
-
 
 class Service:
     _config: ApplicationConfig

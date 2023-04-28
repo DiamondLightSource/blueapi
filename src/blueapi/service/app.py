@@ -3,17 +3,12 @@ import uuid
 from pathlib import Path
 from typing import Mapping, Optional
 
-<<<<<<< HEAD
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext, EventStream
-=======
-from blueapi.core import BlueskyContext, DataEvent
->>>>>>> 3494232 (Revert "WIP playing around with asyncapi")
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.utils import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, Worker
 
-<<<<<<< HEAD
 from .model import (
     DeviceModel,
     DeviceRequest,
@@ -23,12 +18,8 @@ from .model import (
     PlanResponse,
     TaskResponse,
 )
-=======
-from .config import ApplicationConfig
-from .model import DeviceModel, PlanModel
 
 logging.basicConfig(level=logging.INFO)
->>>>>>> 3494232 (Revert "WIP playing around with asyncapi")
 
 logging.basicConfig(level=logging.INFO)
 

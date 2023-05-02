@@ -50,6 +50,7 @@ class RunEngineWorker(Worker[Task]):
     _worker_events: EventPublisher[WorkerEvent]
     _progress_events: EventPublisher[ProgressEvent]
     _data_events: EventPublisher[DataEvent]
+    _started: Event
     _stopping: Event
     _stopped: Event
 
@@ -68,6 +69,7 @@ class RunEngineWorker(Worker[Task]):
         self._data_events = EventPublisher()
         self._status_lock = RLock()
         self._status_snapshot = {}
+        self._started = Event()
         self._stopping = Event()
         self._stopped = Event()
 
@@ -80,11 +82,23 @@ class RunEngineWorker(Worker[Task]):
         self._task_queue.put(active_task)
 
     def start(self) -> None:
+        if self._started.is_set():
+            raise Exception("Worker is already running")
         run_worker_in_own_thread(self)
 
     def stop(self) -> None:
-        self._task_queue.put(KillSignal())
-        self._stopped.wait(timeout=30.0)
+        LOGGER.info("Attempting to stop worker")
+
+        # If the worker has not yet started there is nothing to do.
+        if self._started.is_set():
+            self._task_queue.put(KillSignal())
+            self._stopped.wait(timeout=30.0)
+            # Event timeouts do not actually raise errors
+            if not self._stopped.is_set():
+                raise TimeoutError("Did not recieve successful stop signal!")
+        else:
+            LOGGER.info("Stopping worker: nothing to do")
+        LOGGER.info("Stopped")
 
     def run(self) -> None:
         LOGGER.info("Worker starting")
@@ -92,9 +106,11 @@ class RunEngineWorker(Worker[Task]):
         self._ctx.run_engine.subscribe(self._on_document)
         self._ctx.run_engine.waiting_hook = self._waiting_hook
 
+        self._started.set()
         while not self._stopping.is_set():
             self._cycle_with_error_handling()
         self._stopped.set()
+        self._started.clear()
 
     def _cycle_with_error_handling(self) -> None:
         try:

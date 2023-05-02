@@ -6,10 +6,10 @@ from blueapi.core import BlueskyContext
 from blueapi.worker import (
     RunEngineWorker,
     RunPlan,
+    Task,
     Worker,
     WorkerEvent,
     WorkerState,
-    Task,
 )
 
 
@@ -27,8 +27,23 @@ def worker(context: BlueskyContext) -> Worker[Task]:
     worker.stop()
 
 
-def test_stop(worker: Worker) -> None:
+def test_stop_doesnt_hang(worker: Worker) -> None:
     worker.start()
+
+
+def test_stop_is_idempotent(worker: Worker) -> None:
+    ...
+
+
+def test_multi_stop(worker: Worker) -> None:
+    worker.start()
+    worker.stop()
+
+
+def test_multi_start(worker: Worker) -> None:
+    worker.start()
+    with pytest.raises(Exception):
+        worker.start()
 
 
 def test_submit(worker: Worker) -> None:

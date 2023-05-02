@@ -110,5 +110,9 @@
   {
     "version": "type-validator-partials",
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
+  },
+  {
+    "version": "uuid",
+    "url": "https://DiamondLightSource.github.io/blueapi/uuid/"
   }
 ]

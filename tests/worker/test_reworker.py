@@ -10,6 +10,7 @@ from blueapi.worker import (
     RunEngineWorker,
     RunPlan,
     Task,
+    TaskStatus,
     Worker,
     WorkerEvent,
     WorkerState,
@@ -49,25 +50,6 @@ def test_multi_start(worker: Worker) -> None:
         worker.start()
 
 
-def test_submit(worker: Worker) -> None:
-    worker.start()
-
-    events: "Future[List[WorkerEvent]]" = take_n_events(
-        worker.worker_events,
-        1,
-    )
-    worker.submit_task(
-        "test",
-        RunPlan(
-            name="sleep",
-            params={"time": 0.0},
-        ),
-    )
-    result = events.result(timeout=5.0)[0]
-    assert not result.errors
-    assert result.state is WorkerState.RUNNING
-
-
 def test_submit_invalid_task(worker: Worker[Task]) -> None:
     worker.start()
 
@@ -78,32 +60,53 @@ def test_submit_invalid_task(worker: Worker[Task]) -> None:
         )
 
 
-@pytest.mark.parametrize(
-    "test_name, plan",
-    [
-        ("test1", {"name": "sleep", "params": {"time": 0.1}}),
-        ("test2", {"name": "sleep", "params": {"time": 0.2}}),
-        ("test3", {"name": "sleep", "params": {"time": 0.3}}),
-        ("test4", {"name": "sleep", "params": {"time": 0.4}}),
-    ],
-)
-def test_submit_multiple_tasks_at_once(
-    test_name: str, plan: RunPlan, worker: Worker[Task]
-):
-    worker.start()
-    started: Future[WorkerEvent] = Future()
-
-    def process_event(event: WorkerEvent, task_id: str) -> None:
-        started.set_result(event)
-
-    worker.worker_events.subscribe(process_event)
-    worker.submit_task(
-        test_name,
-        RunPlan(**plan),
+def test_runs_plan(worker: Worker) -> None:
+    assert_run_produces_worker_events(
+        [
+            WorkerEvent(
+                state=WorkerState.RUNNING,
+                task_status=TaskStatus(
+                    task_name="test", task_complete=False, task_failed=False
+                ),
+                errors=[],
+                warnings=[],
+            ),
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_name="test", task_complete=False, task_failed=False
+                ),
+                errors=[],
+                warnings=[],
+            ),
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_name="test", task_complete=True, task_failed=False
+                ),
+                errors=[],
+                warnings=[],
+            ),
+        ],
+        worker,
     )
-    result = started.result(timeout=plan["params"]["time"])
-    assert not result.errors
-    assert result.state is WorkerState.RUNNING
+
+
+def assert_run_produces_worker_events(
+    expected_events: List[WorkerEvent],
+    worker: Worker,
+    task: Task = RunPlan(name="sleep", params={"time": 0.0}),
+    timeout: float = 5.0,
+) -> None:
+    worker.start()
+
+    events: "Future[List[WorkerEvent]]" = take_events(
+        worker.worker_events,
+        lambda event: event.is_complete(),
+    )
+    worker.submit_task("test", task)
+    result = events.result(timeout=timeout)
+    assert result == expected_events
 
 
 E = TypeVar("E")

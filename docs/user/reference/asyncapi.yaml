@@ -1,13 +1,16 @@
 asyncapi: "2.6.0"
 id: https://github.com/DiamondLightSource/blueapi
 info:
-  title: Bluesky Worker Service Asynchronous API
+  title: Bluesky Worker Service
   version: <main>
   description: Service for controlling access to and running scans based on Bluesky Plans and Ophyd Devices
   contact:
     name: Callum Forrester
     email: callum.forrester@diamond.ac.uk
-servers:
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:  # TODO: Reference from internal System definition
   development:
     url: p45
     description: Development Test Beamline
@@ -79,7 +82,7 @@ channels:
       operationId: plansResponse
       summary: The list of plan names - N.B. returned on a temporary channel
       description: >-
-        A List of the names of plans known to the system. Infact this response will be sent on a temporary 
+        A List of the names of plans known to the system. This response will be sent on a temporary 
         channel specified by replyDestination in the header of the corresponding runPlanRequest but is 
         documented here as the name of the channel will not be known until runtime.
       message:
@@ -98,13 +101,13 @@ channels:
       operationId: devicesResponse
       summary: The list of device names - N.B. returned on a temporary channel
       description: >-
-        A List of the names of devices known to the system. Infact this response will be sent on a temporary 
+        A List of the names of devices known to the system. This response will be sent on a temporary 
         channel specified by replyDestination in the header of the corresponding devicesRequest but is 
         documented here as the name of the channel will not be known until runtime.
       message:
         $ref: "#/components/messages/devicesResponse"
 components:
-  messages: # Defined as Components to allow referencing from other APIs.
+  messages: # Defined as Components to allow referencing from other APIs. # TODO: Define protocol specific correlationId bindings
     taggedStartDocument:
       messageId: runStart
       summary: Indicates the start of a Bluesky run based on a previously specified Plan; describes the initial position/metadata of a scan and its involved devices

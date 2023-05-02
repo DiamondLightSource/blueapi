@@ -21,11 +21,7 @@ channels:
       summary: Updates on the state of the worker
       description: Events describing the state of the worker and any tasks it's running. Includes error and warning information.
       message:
-        messageId: stateEvent
-        headers:
-          $ref: "#/components/schemas/contextHeaders"
-        payload:
-          $ref: "#/components/schemas/workerStateEvent"
+        $ref: "#/components/messages/workerStateEvent"
   public.worker.event.progress:
     description: Produces events about the progress of runs associated with a plan
     publish:
@@ -33,11 +29,7 @@ channels:
       summary: Updates on the progress of tasks
       description: Events describing the progress of processes within a running task,such as moving motors and exposing detectors.
       message:
-        messageId: progressEvent
-        headers:
-          $ref: "#/components/schemas/contextHeaders"
-        payload:
-          $ref: "#/components/schemas/workerProgressEvent"
+        $ref: "#/components/messages/workerProgressEvent"
   public.worker.event.data:
     description: Produces events supplying data produced by runs associated with a plan
     publish:
@@ -46,116 +38,16 @@ channels:
       description: Data documents produced by running plans
       message:
         oneOf:
-          - messageId: runStart
-            summary: Indicates the start of a Bluesky run based on a previously specified Plan; describes the initial position/metadata of a scan and its involved devices
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "#/components/schemas/StartDocument"
-          - messageId: runStop
-            summary: Indicates the completion of a Bluesky run based on a previously specified Plan; describes end conditions and metadata
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/run_stop.json"
-          - messageId: eventStreamDescriptor
-            summary: Describes the devices to be within a scientifically related stream of measurements
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_descriptor.json"
-          - messageId: dataEvent
-            summary: Describes a point measurement for a number of scientifically related devices
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event.json"
-          - messageId: eventPage
-            summary: jjkjkj
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_page.json"
-          - messageId: resource
-            summary: Describes an external resource (file, database entry etc.) that is to be referenced by later datum
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/resource.json"
-          - messageId: datum
-            summary: Describes how to access a point measurement within an external resource
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum.json"
-          - messageId: datumPage
-            summary: jjkjkj
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum_page.json"
-          - messageId: streamResource
-            summary: Describes an external resource (file, database entry etc.) that is to be referenced by later Stream Datum
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_resource.json"
-          - messageId: streamDatum
-            summary: Describes how to access a slice of an external resource
-            headers:
-              $ref: "#/components/schemas/contextHeaders"
-            payload:
-              type: object
-              properties:
-                name:
-                  type: string
-                doc:
-                  $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_datum.json"
+          - $ref: "#/components/messages/taggedStartDocument"
+          - $ref: "#/components/messages/taggedDescriptorDocument"
+          - $ref: "#/components/messages/taggedEventDocument"
+          - $ref: "#/components/messages/taggedStopDocument"
+          - $ref: "#/components/messages/taggedResourceDocument"
+          - $ref: "#/components/messages/taggedDatumDocument"
+          - $ref: "#/components/messages/taggedResourceStream"
+          - $ref: "#/components/messages/taggedDatumStream"
+          - $ref: "#/components/messages/taggedEventPage"
+          - $ref: "#/components/messages/taggedDatumPage"
   worker.run:
     description: Accepts and provides responses to requests to run a plan using the supplied parameters
     subscribe:
@@ -163,11 +55,7 @@ channels:
       summary: Submit a 'Run Plan' task with parameters
       description: Consume a request to run a scan based on the specified Plan with the supplied parameters
       message:
-        messageId: RunPlan
-        headers:
-          $ref: "#/components/schemas/contextHeaders"
-        payload:
-          $ref: "#/components/schemas/runPlan"
+        $ref: "#/components/messages/runPlan"
     publish:
       operationId: runPlanResponse
       summary: Indicate acceptance of a 'Run Plan' task - N.B. returned on a temporary channel
@@ -176,11 +64,7 @@ channels:
         specified by replyDestination in the header of the corresponding runPlanRequest but is documented here as 
         the name of the channel will not be known until runtime.
       message:
-        messageId: runPlanResponse
-        headers:
-          $ref: "#/components/schemas/contextHeaders"
-        payload:
-          $ref: "#/components/schemas/taskResponse"
+        $ref: "#/components/messages/taskResponse"
   worker.plans:
     description: >-
       Accepts requests to return the names of all the Bluesky Plans known to the service. At the moment 
@@ -190,11 +74,7 @@ channels:
       summary: Get list of Plan names
       description: Request a list of Plan names known to the system
       message:
-        messageId: plansRequest
-        headers:
-          $ref: "#/components/schemas/contextHeaders"
-        payload:
-          $ref: "#/components/schemas/anyJson"
+        $ref: "#/components/messages/anyJson"
     subscribe:
       operationId: plansResponse
       summary: The list of plan names - N.B. returned on a temporary channel
@@ -203,11 +83,7 @@ channels:
         channel specified by replyDestination in the header of the corresponding runPlanRequest but is 
         documented here as the name of the channel will not be known until runtime.
       message:
-        messageId: plansResponse
-        headers:
-          $ref: "#/components/schemas/contextHeaders"
-        payload:
-          $ref: "#/components/schemas/plansResponse"
+        $ref: "#/components/messages/plansResponse"
   worker.devices:
     description: >-
       Accepts requests to return the names of all the Ophyd Devices known to the service. At the moment 
@@ -217,11 +93,7 @@ channels:
       summary: Get list of Device names
       description: Request a list of Device names known to the system
       message:
-        messageId: devicesRequest
-        headers:
-          $ref: "#/components/schemas/contextHeaders"
-        payload:
-          $ref: "#/components/schemas/anyJson"
+        $ref: "#/components/messages/anyJson"
     subscribe:
       operationId: devicesResponse
       summary: The list of device names - N.B. returned on a temporary channel
@@ -230,12 +102,234 @@ channels:
         channel specified by replyDestination in the header of the corresponding devicesRequest but is 
         documented here as the name of the channel will not be known until runtime.
       message:
-        messageId: devicesResponse
-        headers:
-          $ref: "#/components/schemas/contextHeaders"
-        payload:
-          $ref: "#/components/schemas/devicesResponse"
+        $ref: "#/components/messages/devicesResponse"
 components:
+  messages: # Defined as Components to allow referencing from other APIs.
+    taggedStartDocument:
+      messageId: runStart
+      summary: Indicates the start of a Bluesky run based on a previously specified Plan; describes the initial position/metadata of a scan and its involved devices
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "#/components/schemas/StartDocument"
+    taggedStopDocument:
+      messageId: runStop
+      summary: Indicates the completion of a Bluesky run based on a previously specified Plan; describes end conditions and metadata
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/run_stop.json"
+    taggedDescriptorDocument:
+      messageId: eventStreamDescriptor
+      summary: Describes the devices to be within a scientifically related stream of measurements
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_descriptor.json"
+    taggedEventDocument:
+      messageId: dataEvent
+      summary: Describes a point measurement for a number of scientifically related devices
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event.json"
+    taggedEventPage:
+      messageId: eventPage
+      deprecated: true
+      summary: Page style collection of events
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_page.json"
+    taggedResourceDocument:
+      messageId: resource
+      summary: Describes an external resource (file, database entry etc.) that is to be referenced by later datum
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/resource.json"
+    taggedDatumDocument:
+      messageId: datum
+      summary: Describes how to access a point measurement within an external resource
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum.json"
+    taggedDatumPage:
+      messageId: datumPage
+      deprecated: true
+      summary: Page style collection of datum
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum_page.json"
+    taggedResourceStream:
+      messageId: streamResource
+      summary: Describes an external resource (file, database entry etc.) that is to be referenced by later Stream Datum
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_resource.json"
+    taggedDatumStream:
+      messageId: streamDatum
+      summary: Describes how to access a slice of an external resource
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          doc:
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_datum.json"
+    runPlan:
+      messageId: RunPlan
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        required:
+          - name
+          - params
+        properties:
+          name:
+            description: Name of plan to run
+            type: string
+          params:
+            description: Values for parameters to plan, if any (Map of name to any)
+            type: object
+            additionalProperties:
+              type: object
+    taskResponse:
+      messageId: runPlanResponse
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          taskName:
+            description: Unique identifier for the task
+            type: string
+        additionalProperties: false
+    plansResponse:
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          plans:
+            description: Plans available to use by a worker
+            type: array
+            items:
+              type: string
+        additionalProperties: false
+    devicesResponse:
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          devices:
+            description: Devices available to use in plans
+            type: array
+            items:
+              type: string
+        additionalProperties: false
+    workerStateEvent:
+      messageId: stateEvent
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        required:
+          - state
+          - errors
+          - warnings
+        properties:
+          state:
+            $ref: "#/components/schemas/workerState"
+          taskStatus:
+            $ref: "#/components/schemas/taskStatus"
+          errors:
+            description: A list of any errors generated during the execution of a task
+            type: array
+            items:
+              type: string
+          warnings:
+            description: A list of any warnings generated during the execution of a task
+            type: array
+            items:
+              type: string
+    workerProgressEvent:
+      messageId: progressEvent
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        required:
+          - taskName
+          - statuses
+        properties:
+          taskName:
+            description: Unique id of the task, returned when it was originally submitted
+            type: string
+          statuses:
+            type: object
+            description: Status object providing various indicators for the task
+            additionalProperties:
+              $ref: "#/components/schemas/statusView"
+    anyJson:
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        title: AnyJSON
+        type: string
+        format: json
   schemas:
     contextHeaders:
       type: object
@@ -243,7 +337,7 @@ components:
         - destination
       properties:
         destination:
-          description: Name of the channel on which the message is bein sent
+          description: Name of the channel on which the message is being sent
           type: string
         replyDestination:
           description: Name of the temporary queue, specified by the caller where they will listen for response messages to requests submitted on the worker.X channels
@@ -251,80 +345,6 @@ components:
         correlationId:
           description: Unique identifier of an exchange supplied by its originator
           type: string
-    runPlan:
-      type: object
-      required:
-        - name
-        - params
-      properties:
-        name:
-          description: Name of plan to run
-          type: string
-        params:
-          description: Values for parameters to plan, if any (Map of name to any)
-          type: object
-          additionalProperties:
-            type: object
-    taskResponse:
-      type: object
-      properties:
-        taskName:
-          description: Unique identifier for the task
-          type: string
-      additionalProperties: false
-    plansResponse:
-      type: object
-      properties:
-        plans:
-          description: Plans available to use by a worker
-          type: array
-          items:
-            type: string
-      additionalProperties: false
-    devicesResponse:
-      type: object
-      properties:
-        devices:
-          description: Devices available to use in plans
-          type: array
-          items:
-            type: string
-      additionalProperties: false
-    workerStateEvent:
-      type: object
-      required:
-        - state
-        - errors
-        - warnings
-      properties:
-        state:
-          $ref: "#/components/schemas/workerState"
-        taskStatus:
-          $ref: "#/components/schemas/taskStatus"
-        errors:
-          description: A list of any errors generated during the execution of a task
-          type: array
-          items:
-            type: string
-        warnings:
-          description: A list of any warnings generated during the execution of a task
-          type: array
-          items:
-            type: string
-    workerProgressEvent:
-      type: object
-      required:
-        - taskName
-        - statuses
-      properties:
-        taskName:
-          description: Unique id of the task, returned when it was originally submitted
-          type: string
-        statuses:
-          type: object
-          description: Status object providing various indicators for the task
-          additionalProperties:
-            $ref: "#/components/schemas/statusView"
     workerState:
       description: The state of the Worker.
       enum:
@@ -402,10 +422,6 @@ components:
           description: Estimated time remaining until operation completion, if known
           type: number
           format: float
-    anyJson:
-      title: AnyJSON
-      type: string
-      format: json
     data_type:
       title: data_type
       patternProperties:

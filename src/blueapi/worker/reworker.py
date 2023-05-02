@@ -71,7 +71,7 @@ class RunEngineWorker(Worker[Task]):
         self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
         self._errors = []
         self._warnings = []
-        self._task_queue = Queue()
+        self._task_queue = Queue(maxsize=1)
         self._current = None
         self._worker_events = EventPublisher()
         self._progress_events = EventPublisher()
@@ -85,6 +85,10 @@ class RunEngineWorker(Worker[Task]):
     def submit_task(self, name: str, task: Task) -> None:
         active_task = ActiveTask(name, task)
         LOGGER.info(f"Submitting: {active_task}")
+        if self._task_queue.qsize() != 0:
+            LOGGER.error("Cannot submit task while another is running")
+            raise Exception("Cannot submit task while another is running")
+
         self._task_queue.put(active_task)
 
     def start(self) -> None:

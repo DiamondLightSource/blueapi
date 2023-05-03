@@ -34,7 +34,7 @@ def test_stop_doesnt_hang(worker: Worker) -> None:
     worker.start()
 
 
-def test_stop_is_idempotent(worker: Worker) -> None:
+def test_stop_is_idempontent_if_worker_not_started(worker: Worker) -> None:
     ...
 
 

@@ -128,7 +128,7 @@ def take_events(
     return future
 
 
-def test_worker_only_accepts_one_task_on_queue(worker: Worker, timeout: float = 5.0):
+def test_worker_only_accepts_one_task_on_queue(worker: Worker):
     worker.start()
     task: Task = RunPlan(name="sleep", params={"time": 1.0})
 

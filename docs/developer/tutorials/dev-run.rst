@@ -44,7 +44,7 @@ Start the worker from the command line or vscode:
 
         .. code:: shell
 
-            bluesky worker
+            blueapi worker
 
     .. tab-item:: VSCode
 

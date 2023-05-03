@@ -47,7 +47,8 @@ dev = [
 ]
 
 [project.scripts]
-bluesky = "blueapi.cli:main"
+blueapi = "blueapi.cli:main"
+bluesky = "blueapi.cli._deprecated:main"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/blueapi"

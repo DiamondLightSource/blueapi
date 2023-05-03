@@ -1,7 +1,9 @@
+from pathlib import Path
+
+import pytest
+
 from blueapi.config import ConfigLoader
 from blueapi.utils import InvalidConfigError
-from pathlib import Path
-import pytest
 
 
 def test_default_config_options():

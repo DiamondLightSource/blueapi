@@ -30,16 +30,22 @@ from .worker import Worker
 
 LOGGER = logging.getLogger(__name__)
 
+DEFAULT_STOP_TIMEOUT: float = 30.0
+
 
 class RunEngineWorker(Worker[Task]):
     """
     Worker wrapping BlueskyContext that can work in its own thread/process
 
     Args:
-        ctx (BlueskyContext): Context to work with
+        ctx: Context to work with
+        stop_timeout: If the worker is told to stop, number of seconds to wait for
+            graceful shutdown before raising an exception. Defaults to 30.0.
     """
 
     _ctx: BlueskyContext
+    _stop_timeout: float
+
     _state: WorkerState
     _errors: List[str]
     _warnings: List[str]
@@ -57,8 +63,11 @@ class RunEngineWorker(Worker[Task]):
     def __init__(
         self,
         ctx: BlueskyContext,
+        stop_timeout: float = DEFAULT_STOP_TIMEOUT,
     ) -> None:
         self._ctx = ctx
+        self._stop_timeout = stop_timeout
+
         self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
         self._errors = []
         self._warnings = []
@@ -89,7 +98,7 @@ class RunEngineWorker(Worker[Task]):
         # If the worker has not yet started there is nothing to do.
         if self._started.is_set():
             self._task_queue.put(KillSignal())
-            self._stopped.wait(timeout=30.0)
+            self._stopped.wait(timeout=self._stop_timeout)
             # Event timeouts do not actually raise errors
             if not self._stopped.is_set():
                 raise TimeoutError("Did not recieve successful stop signal!")

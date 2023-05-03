@@ -68,10 +68,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/121_dodal_integration/"
   },
   {
-    "version": "async-worker",
-    "url": "https://DiamondLightSource.github.io/blueapi/async-worker/"
-  },
-  {
     "version": "asyncapi",
     "url": "https://DiamondLightSource.github.io/blueapi/asyncapi/"
   },
@@ -110,6 +106,10 @@
   {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
+  },
+  {
+    "version": "tidy-docs",
+    "url": "https://DiamondLightSource.github.io/blueapi/tidy-docs/"
   },
   {
     "version": "type-validator-partials",

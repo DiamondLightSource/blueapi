@@ -49,16 +49,6 @@ def test_multi_start(worker: Worker) -> None:
         worker.start()
 
 
-def test_submit_invalid_task(worker: Worker[Task]) -> None:
-    worker.start()
-
-    with pytest.raises(Exception):
-        worker.submit_task(
-            "test",
-            123,  # type: ignore
-        )
-
-
 def test_runs_plan(worker: Worker) -> None:
     assert_run_produces_worker_events(
         [

@@ -19,7 +19,7 @@ defaultContentType: application/json
 channels:
   public.worker.event:
     description: Produces events about the state of the worker
-    publish:
+    subscribe:
       operationId: stateEvent
       summary: Updates on the state of the worker
       description: Events describing the state of the worker and any tasks it's running. Includes error and warning information.
@@ -27,7 +27,7 @@ channels:
         $ref: "#/components/messages/workerStateEvent"
   public.worker.event.progress:
     description: Produces events about the progress of runs associated with a plan
-    publish:
+    subscribe:
       operationId: progressEvent
       summary: Updates on the progress of tasks
       description: Events describing the progress of processes within a running task,such as moving motors and exposing detectors.
@@ -35,7 +35,7 @@ channels:
         $ref: "#/components/messages/workerProgressEvent"
   public.worker.event.data:
     description: Produces events supplying data produced by runs associated with a plan
-    publish:
+    subscribe:
       operationId: dataEvent
       summary: Events representing collection of data
       description: Data documents produced by running plans
@@ -53,13 +53,13 @@ channels:
           - $ref: "#/components/messages/taggedDatumPage"
   worker.run:
     description: Accepts and provides responses to requests to run a plan using the supplied parameters
-    subscribe:
+    publish:
       operationId: runPlanRequest
       summary: Submit a 'Run Plan' task with parameters
       description: Consume a request to run a scan based on the specified Plan with the supplied parameters
       message:
         $ref: "#/components/messages/runPlan"
-    publish:
+    subscribe:
       operationId: runPlanResponse
       summary: Indicate acceptance of a 'Run Plan' task - N.B. returned on a temporary channel
       description: >-

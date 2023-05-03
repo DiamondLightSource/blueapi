@@ -15,7 +15,6 @@ from blueapi.core import (
     EventStream,
     WatchableStatus,
 )
-from blueapi.worker.worker_busy_error import WorkerBusyError
 
 from .event import (
     ProgressEvent,
@@ -28,6 +27,7 @@ from .event import (
 from .multithread import run_worker_in_own_thread
 from .task import ActiveTask, Task
 from .worker import Worker
+from .worker_busy_error import WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from functools import partial
-from queue import Queue
+from queue import Full, Queue
 from threading import Event, RLock
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Union
 
@@ -15,6 +15,7 @@ from blueapi.core import (
     EventStream,
     WatchableStatus,
 )
+from blueapi.worker.worker_busy_error import WorkerBusyError
 
 from .event import (
     ProgressEvent,
@@ -85,11 +86,11 @@ class RunEngineWorker(Worker[Task]):
     def submit_task(self, name: str, task: Task) -> None:
         active_task = ActiveTask(name, task)
         LOGGER.info(f"Submitting: {active_task}")
-        if self._task_queue.qsize() != 0:
+        try:
+            self._task_queue.put_nowait(active_task)
+        except Full:
             LOGGER.error("Cannot submit task while another is running")
-            raise Exception("Cannot submit task while another is running")
-
-        self._task_queue.put(active_task)
+            raise WorkerBusyError("Cannot submit task while another is running")
 
     def start(self) -> None:
         if self._started.is_set():

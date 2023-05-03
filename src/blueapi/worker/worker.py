@@ -25,9 +25,22 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def run_forever(self) -> None:
+    def start(self) -> None:
         """
-        Run all tasks as-submitted. Blocks thread.
+        Start worker in a new thread. Does not block, configures the bluesky
+        event loop in the new thread.
+        """
+
+    @abstractmethod
+    def run(self) -> None:
+        """
+        Run all tasks that are submitted to the worker. Blocks thread.
+        """
+
+    @abstractmethod
+    def stop(self) -> None:
+        """
+        Command the worker to gracefully stop. Blocks until it has shut down.
         """
 
     @property

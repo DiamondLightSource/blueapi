@@ -52,14 +52,14 @@ class ConfigLoader:
     def __init__(self, source: Optional[Union[str, Path]] = DEFAULT_YAML_PATH) -> None:
         if source:
             self.source = Path(source) if isinstance(source, str) else source
-            self.load_from_yaml()
         else:
             self.source = None
 
+        self.load_from_yaml()
+
     def load_from_yaml(self) -> None:
         """
-        Use all values provided in the YAML/JSON file in the
-        config, override any defaults.
+        Use all values provided in the YAML/JSON file in self.source.
         """
         if not self.source:
             return

@@ -74,6 +74,7 @@ def schema(output: Optional[Path] = None, update: bool = False) -> None:
 @main.command(name="serve")
 @click.pass_obj
 def start_application(obj: dict):
+    """Run a worker that accepts plans to run"""
     config: ApplicationConfig = obj["config"]
 
     start(config)
@@ -82,6 +83,8 @@ def start_application(obj: dict):
 @main.group()
 @click.pass_context
 def controller(ctx: click.Context) -> None:
+    """Client utility for controlling and introspecting the worker"""
+
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
@@ -106,6 +109,7 @@ def check_connection(func):
 @check_connection
 @click.pass_obj
 def get_plans(obj: dict) -> None:
+    """Get a list of plans available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.get_plans().dict())
 
@@ -114,6 +118,7 @@ def get_plans(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def get_devices(obj: dict) -> None:
+    """Get a list of devices available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.get_devices().dict())
 
@@ -133,6 +138,7 @@ def get_devices(obj: dict) -> None:
 def run_plan(
     obj: dict, name: str, parameters: Optional[str], timeout: Optional[float]
 ) -> None:
+    """Run a plan with parameters"""
     config: ApplicationConfig = obj["config"]
     client: BlueapiRestClient = obj["rest_client"]
 

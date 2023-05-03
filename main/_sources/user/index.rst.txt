@@ -50,19 +50,9 @@ side-bar.
             :maxdepth: 1
 
             reference/api
+            reference/asyncapi
             ../genindex
 
         +++
 
         Technical reference material including APIs and release notes.
-
-    .. grid-item-card:: :material-regular:`menu_book;3em`
-
-        .. toctree::
-            :caption: APIs
-            :maxdepth: 1
-
-            reference/api
-            reference/asyncapi
-
-        +++        

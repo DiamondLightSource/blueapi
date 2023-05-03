@@ -4,6 +4,8 @@ Developer Guide
 Documentation is split into four categories, also accessible from links in the
 side-bar.
 
+.. note:: Assumes you have read the `../user/index`
+
 .. grid:: 2
     :gutter: 4
 
@@ -64,14 +66,3 @@ side-bar.
         +++
 
         Technical reference material on standards in use.
-
-    .. grid-item-card:: :material-regular:`menu_book;3em`
-
-        .. toctree::
-            :caption: APIs
-            :maxdepth: 1
-
-            ../../user/reference/api
-            ../../user/reference/asyncapi
-
-        +++    

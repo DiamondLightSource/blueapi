@@ -27,19 +27,20 @@ class Worker(ABC, Generic[T]):
     @abstractmethod
     def start(self) -> None:
         """
-        Start worker
+        Start worker in a new thread. Does not block, configures the bluesky
+        event loop in the new thread.
         """
 
     @abstractmethod
     def run(self) -> None:
         """
-        Run worker, blocks
+        Run all tasks that are submitted to the worker. Blocks thread.
         """
 
     @abstractmethod
     def stop(self) -> None:
         """
-        Stop worker
+        Command the worker to gracefully stop. Blocks until it has shut down.
         """
 
     @property

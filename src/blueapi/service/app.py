@@ -56,7 +56,7 @@ class Service:
 
         self._template.connect()
 
-        self._worker.run_forever()
+        self._worker.run()
 
     def _publish_event_streams(
         self, streams_to_destinations: Mapping[EventStream, str]

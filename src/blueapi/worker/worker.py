@@ -24,12 +24,6 @@ class Worker(ABC, Generic[T]):
             __task (T): The task to run
         """
 
-    # @abstractmethod
-    # def run_forever(self) -> None:
-    #     """
-    #     Run all tasks as-submitted. Blocks thread.
-    #     """
-
     @abstractmethod
     def start(self) -> None:
         """

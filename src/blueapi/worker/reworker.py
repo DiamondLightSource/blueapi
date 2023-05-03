@@ -74,9 +74,6 @@ class RunEngineWorker(Worker[Task]):
         self._stopped = Event()
 
     def submit_task(self, name: str, task: Task) -> None:
-        if not isinstance(task, Task):
-            raise Exception("task needs to be of type Task")
-
         active_task = ActiveTask(name, task)
         LOGGER.info(f"Submitting: {active_task}")
         self._task_queue.put(active_task)

@@ -1,7 +1,6 @@
 import itertools
 from concurrent.futures import Future
-from threading import Event
-from typing import Callable, List, TypeVar
+from typing import Callable, Iterable, List, Optional, TypeVar
 
 import pytest
 
@@ -25,7 +24,7 @@ def context() -> BlueskyContext:
 
 
 @pytest.fixture
-def worker(context: BlueskyContext) -> Worker[Task]:
+def worker(context: BlueskyContext) -> Iterable[Worker[Task]]:
     worker = RunEngineWorker(context)
     yield worker
     worker.stop()
@@ -56,7 +55,7 @@ def test_submit_invalid_task(worker: Worker[Task]) -> None:
     with pytest.raises(Exception):
         worker.submit_task(
             "test",
-            123,
+            123,  # type: ignore
         )
 
 
@@ -128,7 +127,7 @@ def take_events(
     events: List[E] = []
     future: "Future[List[E]]" = Future()
 
-    def on_event(event: E, event_id: str) -> None:
+    def on_event(event: E, event_id: Optional[str]) -> None:
         events.append(event)
         if cutoff_predicate(event):
             future.set_result(events)

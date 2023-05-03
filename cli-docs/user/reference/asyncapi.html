@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>AsyncAPI Specification &#8212; blueapi 0.2.3b2.dev6+gee0b614 documentation</title>
+    <title>AsyncAPI Specification &#8212; blueapi 0.2.3b2.dev10+g2de197a documentation</title>
   
   
   
@@ -52,8 +52,8 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Developer Guide" href="../../developer/index.html" />
-    <link rel="prev" title="API Index" href="../../genindex.html" />
+    <link rel="next" title="Command-Line Interface" href="cli.html" />
+    <link rel="prev" title="API" href="api.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -388,15 +388,11 @@ document.write(`
 <li class="toctree-l1"><a class="reference internal" href="../explanations/docs-structure.html">About the documentation</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">Command-Line Interface</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../genindex.html">Index</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">APIs</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">AsyncAPI Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command-Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../genindex.html">Index</a></li>
 </ul>
 </div>
 </nav></div>
@@ -459,13 +455,16 @@ document.write(`
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">asyncapi</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2.6.0&quot;</span>
 <span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/blueapi</span>
 <span class="nt">info</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bluesky Worker Service Asynchronous API</span>
+<span class="w">  </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bluesky Worker Service</span>
 <span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;main&gt;</span>
 <span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service for controlling access to and running scans based on Bluesky Plans and Ophyd Devices</span>
 <span class="w">  </span><span class="nt">contact</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Callum Forrester</span>
 <span class="w">    </span><span class="nt">email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">callum.forrester@diamond.ac.uk</span>
-<span class="nt">servers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">license</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Apache 2.0</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://www.apache.org/licenses/LICENSE-2.0.html</span>
+<span class="nt">servers</span><span class="p">:</span><span class="w">  </span><span class="c1"># TODO: Reference from internal System definition</span>
 <span class="w">  </span><span class="nt">development</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p45</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Development Test Beamline</span>
@@ -479,11 +478,7 @@ document.write(`
 <span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Updates on the state of the worker</span>
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Events describing the state of the worker and any tasks it&#39;s running. Includes error and warning information.</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stateEvent</span>
-<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">        </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/workerStateEvent&quot;</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/workerStateEvent&quot;</span>
 <span class="w">  </span><span class="nt">public.worker.event.progress</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Produces events about the progress of runs associated with a plan</span>
 <span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
@@ -491,11 +486,7 @@ document.write(`
 <span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Updates on the progress of tasks</span>
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Events describing the progress of processes within a running task,such as moving motors and exposing detectors.</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">progressEvent</span>
-<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">        </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/workerProgressEvent&quot;</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/workerProgressEvent&quot;</span>
 <span class="w">  </span><span class="nt">public.worker.event.data</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Produces events supplying data produced by runs associated with a plan</span>
 <span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
@@ -504,116 +495,16 @@ document.write(`
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Data documents produced by running plans</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runStart</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Indicates the start of a Bluesky run based on a previously specified Plan; describes the initial position/metadata of a scan and its involved devices</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/StartDocument&quot;</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runStop</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Indicates the completion of a Bluesky run based on a previously specified Plan; describes end conditions and metadata</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/run_stop.json&quot;</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eventStreamDescriptor</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes the devices to be within a scientifically related stream of measurements</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_descriptor.json&quot;</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dataEvent</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes a point measurement for a number of scientifically related devices</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event.json&quot;</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eventPage</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jjkjkj</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_page.json&quot;</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">resource</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes an external resource (file, database entry etc.) that is to be referenced by later datum</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/resource.json&quot;</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">datum</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes how to access a point measurement within an external resource</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum.json&quot;</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">datumPage</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jjkjkj</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum_page.json&quot;</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">streamResource</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes an external resource (file, database entry etc.) that is to be referenced by later Stream Datum</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_resource.json&quot;</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">streamDatum</span>
-<span class="w">            </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes how to access a slice of an external resource</span>
-<span class="w">            </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">            </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">doc</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_datum.json&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedStartDocument&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedDescriptorDocument&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedEventDocument&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedStopDocument&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedResourceDocument&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedDatumDocument&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedResourceStream&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedDatumStream&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedEventPage&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedDatumPage&quot;</span>
 <span class="w">  </span><span class="nt">worker.run</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Accepts and provides responses to requests to run a plan using the supplied parameters</span>
 <span class="w">    </span><span class="nt">publish</span><span class="p">:</span>
@@ -621,11 +512,7 @@ document.write(`
 <span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Submit a &#39;Run Plan&#39; task with parameters</span>
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Consume a request to run a scan based on the specified Plan with the supplied parameters</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RunPlan</span>
-<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">        </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/runPlan&quot;</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/runPlan&quot;</span>
 <span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runPlanResponse</span>
 <span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Indicate acceptance of a &#39;Run Plan&#39; task - N.B. returned on a temporary channel</span>
@@ -634,11 +521,7 @@ document.write(`
 <span class="w">        </span><span class="no">specified by replyDestination in the header of the corresponding runPlanRequest but is documented here as </span>
 <span class="w">        </span><span class="no">the name of the channel will not be known until runtime.</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runPlanResponse</span>
-<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">        </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/taskResponse&quot;</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taskResponse&quot;</span>
 <span class="w">  </span><span class="nt">worker.plans</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
 <span class="w">      </span><span class="no">Accepts requests to return the names of all the Bluesky Plans known to the service. At the moment </span>
@@ -648,52 +531,262 @@ document.write(`
 <span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Get list of Plan names</span>
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Request a list of Plan names known to the system</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plansRequest</span>
-<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">        </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/anyJson&quot;</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/anyJson&quot;</span>
 <span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plansResponse</span>
 <span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The list of plan names - N.B. returned on a temporary channel</span>
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
-<span class="w">        </span><span class="no">A List of the names of plans known to the system. Infact this response will be sent on a temporary </span>
+<span class="w">        </span><span class="no">A List of the names of plans known to the system. This response will be sent on a temporary </span>
 <span class="w">        </span><span class="no">channel specified by replyDestination in the header of the corresponding runPlanRequest but is </span>
 <span class="w">        </span><span class="no">documented here as the name of the channel will not be known until runtime.</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plansResponse</span>
-<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">        </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/plansResponse&quot;</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/plansResponse&quot;</span>
 <span class="w">  </span><span class="nt">worker.devices</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
 <span class="w">      </span><span class="no">Accepts requests to return the names of all the Ophyd Devices known to the service. At the moment </span>
-<span class="w">      </span><span class="no">any message on this channe will produce this response.</span>
+<span class="w">      </span><span class="no">any message on this channel will produce this response.</span>
 <span class="w">    </span><span class="nt">publish</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">devicesRequest</span>
 <span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Get list of Device names</span>
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Request a list of Device names known to the system</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">devicesRequest</span>
-<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">        </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/anyJson&quot;</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/anyJson&quot;</span>
 <span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">devicesResponse</span>
 <span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The list of device names - N.B. returned on a temporary channel</span>
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
-<span class="w">        </span><span class="no">A List of the names of devices known to the system. Infact this response will be sent on a temporary </span>
+<span class="w">        </span><span class="no">A List of the names of devices known to the system. This response will be sent on a temporary </span>
 <span class="w">        </span><span class="no">channel specified by replyDestination in the header of the corresponding devicesRequest but is </span>
 <span class="w">        </span><span class="no">documented here as the name of the channel will not be known until runtime.</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">devicesResponse</span>
-<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">        </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/devicesResponse&quot;</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/devicesResponse&quot;</span>
 <span class="nt">components</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">messages</span><span class="p">:</span><span class="w"> </span><span class="c1"># Defined as Components to allow referencing from other APIs. # TODO: Define protocol specific correlationId bindings</span>
+<span class="w">    </span><span class="nt">taggedStartDocument</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runStart</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Indicates the start of a Bluesky run based on a previously specified Plan; describes the initial position/metadata of a scan and its involved devices</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/run_start.json&quot;</span>
+<span class="w">    </span><span class="nt">taggedStopDocument</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runStop</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Indicates the completion of a Bluesky run based on a previously specified Plan; describes end conditions and metadata</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/run_stop.json&quot;</span>
+<span class="w">    </span><span class="nt">taggedDescriptorDocument</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eventStreamDescriptor</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes the devices to be within a scientifically related stream of measurements</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_descriptor.json&quot;</span>
+<span class="w">    </span><span class="nt">taggedEventDocument</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dataEvent</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes a point measurement for a number of scientifically related devices</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event.json&quot;</span>
+<span class="w">    </span><span class="nt">taggedEventPage</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eventPage</span>
+<span class="w">      </span><span class="nt">deprecated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Page style collection of events</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/event_page.json&quot;</span>
+<span class="w">    </span><span class="nt">taggedResourceDocument</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">resource</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes an external resource (file, database entry etc.) that is to be referenced by later datum</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/resource.json&quot;</span>
+<span class="w">    </span><span class="nt">taggedDatumDocument</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">datum</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes how to access a point measurement within an external resource</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum.json&quot;</span>
+<span class="w">    </span><span class="nt">taggedDatumPage</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">datumPage</span>
+<span class="w">      </span><span class="nt">deprecated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Page style collection of datum</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/datum_page.json&quot;</span>
+<span class="w">    </span><span class="nt">taggedResourceStream</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">streamResource</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes an external resource (file, database entry etc.) that is to be referenced by later Stream Datum</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_resource.json&quot;</span>
+<span class="w">    </span><span class="nt">taggedDatumStream</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">streamDatum</span>
+<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describes how to access a slice of an external resource</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_datum.json&quot;</span>
+<span class="w">    </span><span class="nt">runPlan</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RunPlan</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">required</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">params</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of plan to run</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Values for parameters to plan, if any (Map of name to any)</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">            </span><span class="nt">additionalProperties</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">taskResponse</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runPlanResponse</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">taskName</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unique identifier for the task</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">plansResponse</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">plans</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Plans available to use by a worker</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">            </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">devicesResponse</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Devices available to use in plans</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">            </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">workerStateEvent</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stateEvent</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">required</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">state</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">errors</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warnings</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">state</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/workerState&quot;</span>
+<span class="w">          </span><span class="nt">taskStatus</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/taskStatus&quot;</span>
+<span class="w">          </span><span class="nt">errors</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A list of any errors generated during the execution of a task</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">            </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">warnings</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A list of any warnings generated during the execution of a task</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">            </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">workerProgressEvent</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">progressEvent</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">required</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">taskName</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">statuses</span>
+<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">taskName</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unique id of the task, returned when it was originally submitted</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">          </span><span class="nt">statuses</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Status object providing various indicators for the task</span>
+<span class="w">            </span><span class="nt">additionalProperties</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/statusView&quot;</span>
+<span class="w">    </span><span class="nt">anyJson</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
+<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AnyJSON</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
 <span class="w">  </span><span class="nt">schemas</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">contextHeaders</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
@@ -701,7 +794,7 @@ document.write(`
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">destination</span>
 <span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">destination</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of the channel on which the message is bein sent</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of the channel on which the message is being sent</span>
 <span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">        </span><span class="nt">replyDestination</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of the temporary queue, specified by the caller where they will listen for response messages to requests submitted on the worker.X channels</span>
@@ -709,80 +802,6 @@ document.write(`
 <span class="w">        </span><span class="nt">correlationId</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unique identifier of an exchange supplied by its originator</span>
 <span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">runPlan</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">      </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">params</span>
-<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of plan to run</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">params</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Values for parameters to plan, if any (Map of name to any)</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">          </span><span class="nt">additionalProperties</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">    </span><span class="nt">taskResponse</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">taskName</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unique identifier for the task</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">      </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">plansResponse</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">plans</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Plans available to use by a worker</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">          </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">      </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">devicesResponse</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">devices</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Devices available to use in plans</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">          </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">      </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">workerStateEvent</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">      </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">state</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">errors</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warnings</span>
-<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">state</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/workerState&quot;</span>
-<span class="w">        </span><span class="nt">taskStatus</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/taskStatus&quot;</span>
-<span class="w">        </span><span class="nt">errors</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A list of any errors generated during the execution of a task</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">          </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">warnings</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A list of any warnings generated during the execution of a task</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">          </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">workerProgressEvent</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">      </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">taskName</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">statuses</span>
-<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">taskName</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unique id of the task, returned when it was originally submitted</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">statuses</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Status object providing various indicators for the task</span>
-<span class="w">          </span><span class="nt">additionalProperties</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/statusView&quot;</span>
 <span class="w">    </span><span class="nt">workerState</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The state of the Worker.</span>
 <span class="w">      </span><span class="nt">enum</span><span class="p">:</span>
@@ -860,213 +879,6 @@ document.write(`
 <span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Estimated time remaining until operation completion, if known</span>
 <span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">number</span>
 <span class="w">          </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
-<span class="w">    </span><span class="nt">anyJson</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AnyJSON</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
-<span class="w">    </span><span class="nt">data_type</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data_type</span>
-<span class="w">      </span><span class="nt">patternProperties</span><span class="p">:</span>
-<span class="w">        </span><span class="s">&quot;^([^./]+)$&quot;</span><span class="p p-Indicator">:</span>
-<span class="w">          </span><span class="s">&quot;$ref&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/data_type&quot;</span>
-<span class="w">      </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">projection</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Where to get the data from</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">enum</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linked</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calculated</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">static</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span>
-<span class="w">            </span><span class="s">&quot;linked:</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">value</span><span class="nv"> </span><span class="s">linked</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">data</span><span class="nv"> </span><span class="s">set,</span><span class="nv"> </span><span class="s">calculated:</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">value</span>
-<span class="w">            </span><span class="s">that</span><span class="nv"> </span><span class="s">requires</span><span class="nv"> </span><span class="s">calculation,</span><span class="nv"> </span><span class="s">static:</span><span class="nv">  </span><span class="s">a</span><span class="nv"> </span><span class="s">value</span><span class="nv"> </span><span class="s">defined</span><span class="nv"> </span><span class="s">here</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">projection</span><span class="nv"> </span><span class="s">&quot;</span>
-<span class="w">        </span><span class="nt">stream</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">location</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">enum</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">start</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configuration</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">start comes from metadata fields in the start document, event</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">comes from event, configuration comes from configuration fields in the event_descriptor</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">document</span>
-<span class="w">        </span><span class="nt">field</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">config_index</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
-<span class="w">        </span><span class="nt">config_device</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">calculation</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calculation properties</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">required fields if type is calculated</span>
-<span class="w">          </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">callable</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">              </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">callable function to perform calculation</span>
-<span class="w">            </span><span class="nt">args</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">              </span><span class="nt">decription</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">args for calculation callable</span>
-<span class="w">            </span><span class="nt">kwargs</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">              </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kwargs for calcalation callable</span>
-<span class="w">          </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">callable</span>
-<span class="w">        </span><span class="nt">value</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value explicitely defined in the projection when type==static.</span>
-<span class="w">      </span><span class="nt">allOf</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">allOf</span><span class="p">:</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">location</span><span class="p">:</span>
-<span class="w">                    </span><span class="nt">const</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configuration</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span>
-<span class="w">                    </span><span class="nt">const</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linked</span>
-<span class="w">          </span><span class="nt">then</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">type</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">location</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config_index</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config_device</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">field</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stream</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">allOf</span><span class="p">:</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">location</span><span class="p">:</span>
-<span class="w">                    </span><span class="nt">const</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span>
-<span class="w">                    </span><span class="nt">const</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linked</span>
-<span class="w">          </span><span class="nt">then</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">type</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">location</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">field</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stream</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">allOf</span><span class="p">:</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">location</span><span class="p">:</span>
-<span class="w">                    </span><span class="nt">const</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">type</span><span class="p">:</span>
-<span class="w">                    </span><span class="nt">const</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calculated</span>
-<span class="w">          </span><span class="nt">then</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">type</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">field</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stream</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calculation</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">const</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">static</span>
-<span class="w">          </span><span class="nt">then</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">type</span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value</span>
-<span class="w">      </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">projections</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Describe how to interperet this run as the given projection</span>
-<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The name of the projection</span>
-<span class="w">        </span><span class="nt">version</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">The version of the projection spec. Can specify the version of</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">an external specification.</span>
-<span class="w">        </span><span class="nt">configuration</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Static information about projection</span>
-<span class="w">        </span><span class="nt">projection</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">          </span><span class="nt">patternProperties</span><span class="p">:</span>
-<span class="w">            </span><span class="s">&quot;.&quot;</span><span class="p p-Indicator">:</span>
-<span class="w">              </span><span class="s">&quot;$ref&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/projection&quot;</span>
-<span class="w">          </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">      </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">      </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">projection</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">version</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configuration</span>
-<span class="w">    </span><span class="nt">StartDocument</span><span class="p">:</span><span class="w"> </span><span class="c1"># TODO: When Python Json schema not failing to validate due to enum key in anyOf value, switch to importing from there</span>
-<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">data_session</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">An optional field for grouping runs. The meaning is not mandated,</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">but this is a data management grouping and not a scientific grouping. It is</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">intended to group runs in a visit or set of trials.</span>
-<span class="w">        </span><span class="nt">data_groups</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">          </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">An optional list of data access groups that have meaning to some</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">external system. Examples might include facility, beamline, end stations, proposal,</span>
-<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">safety form.</span>
-<span class="w">        </span><span class="nt">project</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of project that this run is part of</span>
-<span class="w">        </span><span class="nt">sample</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Information about the sample, may be a UID to another collection</span>
-<span class="w">        </span><span class="nt">scan_id</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Scan ID number, not globally unique</span>
-<span class="w">        </span><span class="nt">time</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">number</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Time the run started.  Unix epoch time</span>
-<span class="w">        </span><span class="nt">uid</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Globally unique ID for this run</span>
-<span class="w">        </span><span class="nt">group</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unix group to associate this data with</span>
-<span class="w">        </span><span class="nt">owner</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unix owner to associate this data with</span>
-<span class="w">        </span><span class="nt">projections</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">          </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">            </span><span class="s">&quot;$ref&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/projections&quot;</span>
-<span class="w">        </span><span class="nt">hints</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Start-level hints</span>
-<span class="w">          </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">dimensions</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">              </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The independent axes of the experiment.  Ordered slow to fast</span>
-<span class="w">              </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">                </span><span class="nt">description</span><span class="p">:</span>
-<span class="w">                  </span><span class="l l-Scalar l-Scalar-Plain">Each entry in this list is of the from ([&lt;FIELD&gt;, ...], &lt;STREAM&gt;).  A</span>
-<span class="w">                  </span><span class="l l-Scalar l-Scalar-Plain">1d scan will have 1 such entry, a scan with 3 independent entries would</span>
-<span class="w">                  </span><span class="l l-Scalar l-Scalar-Plain">have 3</span>
-<span class="w">                </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">                  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">                    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The data key(s) for the given dimension.</span>
-<span class="w">                    </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">                      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The stream to find the datakeys in.</span>
-<span class="w">                </span><span class="nt">additionalItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">                </span><span class="nt">minItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-<span class="w">          </span><span class="nt">patternProperties</span><span class="p">:</span>
-<span class="w">            </span><span class="s">&quot;^([^.]+)$&quot;</span><span class="p p-Indicator">:</span>
-<span class="w">              </span><span class="s">&quot;$ref&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/data_type&quot;</span>
-<span class="w">          </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">      </span><span class="nt">patternProperties</span><span class="p">:</span>
-<span class="w">        </span><span class="s">&quot;^([^./]+)$&quot;</span><span class="p p-Indicator">:</span>
-<span class="w">          </span><span class="s">&quot;$ref&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/data_type&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -1083,20 +895,20 @@ document.write(`
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../../genindex.html"
+       href="api.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">API Index</p>
+        <p class="prev-next-title">API</p>
       </div>
     </a>
     <a class="right-next"
-       href="../../developer/index.html"
+       href="cli.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Developer Guide</p>
+        <p class="prev-next-title">Command-Line Interface</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

@@ -1,0 +1,17 @@
+name: API CI
+
+on:
+  push:
+    paths:  # TODO: add catalog-info.yaml validation
+      - 'docs/user/reference/asyncapi.yaml'
+  pull_request:
+
+jobs:
+  validate-api:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: asyncapi-github-action
+      uses: WaleedAshraf/asyncapi-github-action@v0.0.9
+      with:
+        filepath: 'docs/user/reference/asyncapi.yaml'

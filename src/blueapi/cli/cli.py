@@ -1,12 +1,10 @@
 import json
 import logging
-from pathlib import Path
-from typing import Optional
 
 import click
 
 from blueapi import __version__
-from blueapi.config import StompConfig
+from blueapi.config import ConfigLoader
 from blueapi.messaging import StompMessagingTemplate
 
 from .amq import AmqClient
@@ -23,52 +21,23 @@ def main(ctx) -> None:
 
 
 @main.command(name="worker")
-@click.option("-c", "--config", type=Path, help="Path to configuration YAML file")
-def start_worker(config: Optional[Path]):
+def start_worker():
     from blueapi.service import start
 
-    start(config)
+    start()
 
 
 @main.group()
-@click.option(
-    "-h",
-    "--host",
-    type=str,
-    help="Broker host",
-    default="127.0.0.1",
-)
-@click.option(
-    "-p",
-    "--port",
-    type=int,
-    help="Broker port",
-    default=61613,
-)
-@click.option(
-    "-l",
-    "--log-level",
-    type=str,
-    help="Logger level: TRACE, DEBUG, INFO, WARNING, ERROR or CRITICAL, "
-    "defaults to WARNING",
-    default="WARNING",
-)
 @click.pass_context
-def controller(ctx, host: str, port: int, log_level: str):
-    # if no command is supplied, run with the options passed
+def controller(ctx):
+    loader = ConfigLoader()
+
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
-    logging.basicConfig(level=log_level)
+    logging.basicConfig(level=loader.config.logging.level)
     ctx.ensure_object(dict)
-    client = AmqClient(
-        StompMessagingTemplate.autoconfigured(
-            StompConfig(
-                host=host,
-                port=port,
-            )
-        )
-    )
+    client = AmqClient(StompMessagingTemplate.autoconfigured(loader.config.stomp))
     ctx.obj["client"] = client
     client.app.connect()
 

@@ -1,9 +1,9 @@
 from .base_model import BlueapiBaseModel, BlueapiModelConfig, BlueapiPlanModelConfig
-from .config import ConfigLoader
 from .modules import load_module_all
 from .serialization import serialize
 from .thread_exception import handle_all_exceptions
 from .type_validator import TypeValidatorDefinition, create_model_with_type_validators
+from .invalid_config_error import InvalidConfigError
 
 __all__ = [
     "handle_all_exceptions",
@@ -15,4 +15,5 @@ __all__ = [
     "BlueapiBaseModel",
     "BlueapiModelConfig",
     "BlueapiPlanModelConfig",
+    "InvalidConfigError",
 ]

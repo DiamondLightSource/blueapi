@@ -1,9 +1,12 @@
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
-from pydantic import Field
+import yaml
+from pydantic import Field, ValidationError
 
-from blueapi.utils import BlueapiBaseModel
+from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+
+DEFAULT_YAML_PATH = Path("blueapi_config.yaml")
 
 
 class StompConfig(BlueapiBaseModel):
@@ -36,3 +39,35 @@ class ApplicationConfig(BlueapiBaseModel):
     stomp: StompConfig = Field(default_factory=StompConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
+
+
+class ConfigLoader:
+    """
+    Small utility class for loading config from a yaml file.
+    """
+
+    source: Optional[Path]
+    config: ApplicationConfig = ApplicationConfig()
+
+    def __init__(self, source: Optional[Union[str, Path]] = DEFAULT_YAML_PATH) -> None:
+        if source:
+            self.source = Path(source) if isinstance(source, str) else source
+            self.load_from_yaml()
+        else:
+            self.source = None
+
+    def load_from_yaml(self) -> None:
+        """
+        Use all values provided in the YAML/JSON file in the
+        config, override any defaults.
+        """
+        if not self.source:
+            return
+
+        with self.source.open("r") as stream:
+            values = yaml.safe_load(stream)
+
+        try:
+            self.config = ApplicationConfig(**values)
+        except ValidationError as error:
+            raise InvalidConfigError from error

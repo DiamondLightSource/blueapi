@@ -1,12 +1,10 @@
 import logging
 import uuid
-from pathlib import Path
-from typing import Mapping, Optional
+from typing import Mapping
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
-from blueapi.utils import ConfigLoader
 from blueapi.worker import RunEngineWorker, RunPlan, Worker
 
 from .model import (
@@ -97,10 +95,7 @@ class Service:
         self._template.send(message_context.reply_destination, response)
 
 
-def start(config_path: Optional[Path] = None):
-    loader = ConfigLoader(ApplicationConfig)
-    if config_path is not None:
-        loader.use_yaml_or_json_file(config_path)
-    config = loader.load()
+def start():
+    loader = ConfigLoader()
 
-    Service(config).run()
+    Service(loader.config).run()

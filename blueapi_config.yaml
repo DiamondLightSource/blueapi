@@ -1,0 +1,7 @@
+env:
+  startupScript: blueapi.startup.example
+stomp:
+  host: localhost
+  port: 61613
+logging:
+  level: "WARNING"

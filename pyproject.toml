@@ -44,6 +44,7 @@ dev = [
     "tox-direct",
     "types-mock",
     "types-PyYAML",
+    "pytest-mock",
 ]
 
 [project.scripts]

@@ -80,6 +80,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/camel-case/"
   },
   {
+    "version": "cli-docs",
+    "url": "https://DiamondLightSource.github.io/blueapi/cli-docs/"
+  },
+  {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
@@ -102,10 +106,6 @@
   {
     "version": "pydantic-fix",
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic-fix/"
-  },
-  {
-    "version": "rename-cli",
-    "url": "https://DiamondLightSource.github.io/blueapi/rename-cli/"
   },
   {
     "version": "shape-meta",

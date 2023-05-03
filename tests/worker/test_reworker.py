@@ -14,6 +14,7 @@ from blueapi.worker import (
     WorkerEvent,
     WorkerState,
 )
+from blueapi.worker.worker_busy_error import WorkerBusyError
 
 
 @pytest.fixture
@@ -125,3 +126,12 @@ def take_events(
     sub = stream.subscribe(on_event)
     future.add_done_callback(lambda _: stream.unsubscribe(sub))
     return future
+
+
+def test_worker_only_accepts_one_task_on_queue(worker: Worker):
+    worker.start()
+    task: Task = RunPlan(name="sleep", params={"time": 1.0})
+
+    worker.submit_task("first_task", task)
+    with pytest.raises(WorkerBusyError):
+        worker.submit_task("second_task", task)

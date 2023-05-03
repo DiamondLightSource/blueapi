@@ -2,7 +2,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from functools import partial
-from queue import Queue
+from queue import Full, Queue
 from threading import Event, RLock
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Union
 
@@ -27,6 +27,7 @@ from .event import (
 from .multithread import run_worker_in_own_thread
 from .task import ActiveTask, Task
 from .worker import Worker
+from .worker_busy_error import WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class RunEngineWorker(Worker[Task]):
         self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
         self._errors = []
         self._warnings = []
-        self._task_queue = Queue()
+        self._task_queue = Queue(maxsize=1)
         self._current = None
         self._worker_events = EventPublisher()
         self._progress_events = EventPublisher()
@@ -85,7 +86,11 @@ class RunEngineWorker(Worker[Task]):
     def submit_task(self, name: str, task: Task) -> None:
         active_task = ActiveTask(name, task)
         LOGGER.info(f"Submitting: {active_task}")
-        self._task_queue.put(active_task)
+        try:
+            self._task_queue.put_nowait(active_task)
+        except Full:
+            LOGGER.error("Cannot submit task while another is running")
+            raise WorkerBusyError("Cannot submit task while another is running")
 
     def start(self) -> None:
         if self._started.is_set():

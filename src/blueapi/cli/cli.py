@@ -1,5 +1,6 @@
 import json
 import logging
+from pathlib import Path
 
 import click
 
@@ -13,17 +14,24 @@ from .updates import CliEventRenderer
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
+@click.option(
+    "-c",
+    "--config",
+    type=Path,
+    help="Path to configuration YAML file",
+    default=DEFAULT_YAML_PATH,
+)
 @click.pass_context
-def main(ctx) -> None:
+def main(ctx, config: Path) -> None:
     # if no command is supplied, run with the options passed
     if ctx.invoked_subcommand is None:
-        print("Please invoke subcommand!")
+        print(f"Using configuration file at: {config}. Please invoke subcommand!")
 
     config_loader = ConfigLoader(ApplicationConfig)
 
     ctx.ensure_object(dict)
     ctx.obj["config"] = (
-        config_loader.load_from_yaml(DEFAULT_YAML_PATH)
+        config_loader.load_from_yaml(config)
         if DEFAULT_YAML_PATH.exists()
         else config_loader.load()
     )

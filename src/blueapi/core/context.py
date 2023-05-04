@@ -105,7 +105,8 @@ class BlueskyContext:
                 self.plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:
-        self.devices.update(make_all_devices(module))
+        for device in make_all_devices(module).values():
+            self.device(device)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

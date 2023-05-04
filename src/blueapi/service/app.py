@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import Mapping
 
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import loaded_config, ApplicationConfig
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, Worker
@@ -24,12 +24,12 @@ class Service:
     _worker: Worker
     _template: MessagingTemplate
 
-    def __init__(self, config: ApplicationConfig) -> None:
-        self._config = config
+    def __init__(self) -> None:
+        self._config = loaded_config
         self._ctx = BlueskyContext()
         self._ctx.with_startup_script(self._config.env.startup_script)
         self._worker = RunEngineWorker(self._ctx)
-        self._template = StompMessagingTemplate.autoconfigured(config.stomp)
+        self._template = StompMessagingTemplate.autoconfigured(loaded_config.stomp)
 
     def run(self) -> None:
         logging.basicConfig(level=self._config.logging.level)
@@ -96,6 +96,4 @@ class Service:
 
 
 def start():
-    loader = ConfigLoader()
-
-    Service(loader.config).run()
+    Service().run()

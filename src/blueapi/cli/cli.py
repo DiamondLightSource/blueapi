@@ -4,7 +4,7 @@ import logging
 import click
 
 from blueapi import __version__
-from blueapi.config import ConfigLoader
+from blueapi.config import loaded_config
 from blueapi.messaging import StompMessagingTemplate
 
 from .amq import AmqClient
@@ -30,14 +30,12 @@ def start_worker():
 @main.group()
 @click.pass_context
 def controller(ctx):
-    loader = ConfigLoader()
-
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
-    logging.basicConfig(level=loader.config.logging.level)
+    logging.basicConfig(level=loaded_config.logging.level)
     ctx.ensure_object(dict)
-    client = AmqClient(StompMessagingTemplate.autoconfigured(loader.config.stomp))
+    client = AmqClient(StompMessagingTemplate.autoconfigured(loaded_config.stomp))
     ctx.obj["client"] = client
     client.app.connect()
 

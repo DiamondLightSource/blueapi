@@ -15,6 +15,7 @@ from typing import (
     Union,
     get_args,
     get_origin,
+    get_type_hints,
 )
 
 from bluesky import RunEngine
@@ -207,14 +208,16 @@ class BlueskyContext:
                     function arguments
         """
         args = signature(func).parameters
+        types = get_type_hints(func)
         new_args = {}
         for name, para in args.items():
             default = None if para.default is Parameter.empty else para.default
-            if para.annotation is Parameter.empty:
+            arg_type = types.get(name, Parameter.empty)
+            if arg_type is Parameter.empty:
                 raise ValueError(
                     f"Type annotation is required for '{name}' in '{func.__name__}'"
                 )
-            new_args[name] = (self._convert_type(para.annotation), default)
+            new_args[name] = (self._convert_type(arg_type), default)
         return new_args
 
     def _convert_type(self, typ: Type) -> Type:

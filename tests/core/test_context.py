@@ -171,7 +171,7 @@ def test_add_non_device(empty_context: BlueskyContext) -> None:
 
 def test_function_spec(empty_context: BlueskyContext) -> None:
     spec = empty_context._type_spec_for_function(has_some_params)
-    assert spec == {"foo": ("int", 42), "bar": ("str", "bar")}
+    assert spec == {"foo": (int, 42), "bar": (str, "bar")}
 
 
 def test_basic_type_conversion(empty_context: BlueskyContext) -> None:

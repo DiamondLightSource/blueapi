@@ -10,11 +10,6 @@ info:
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
-servers:  # TODO: Reference from internal System definition
-  development:
-    url: p45
-    description: Development Test Beamline
-    protocol: STOMP
 defaultContentType: application/json
 channels:
   public.worker.event:

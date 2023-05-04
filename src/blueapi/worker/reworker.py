@@ -228,7 +228,7 @@ class RunEngineWorker(Worker[Task]):
                     self._monitor_status(status)
 
     def _monitor_status(self, status: Status) -> None:
-        status_name = str(uuid.uuid1())
+        status_name = str(uuid.uuid4())
 
         if isinstance(status, WatchableStatus) and not status.done:
             LOGGER.info(f"Watching new status: {status_name}")

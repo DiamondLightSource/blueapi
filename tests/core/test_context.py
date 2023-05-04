@@ -191,3 +191,26 @@ def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
         empty_context._convert_type(dict[Movable, list[tuple[int, Movable]]])
         == dict[movable_ref, list[tuple[int, movable_ref]]]  # type: ignore
     )
+
+
+class Named:
+    """Concrete implementation of a Bluesky protocol (HasName)"""
+
+    @property
+    def name(self) -> str:
+        return "Concrete"
+
+
+def test_concrete_type_conversion(empty_context: BlueskyContext) -> None:
+    hasname_ref = empty_context._reference(Named)
+    assert empty_context._convert_type(Named) == hasname_ref
+
+
+def test_concrete_method_annotation(empty_context: BlueskyContext) -> None:
+    hasname_ref = empty_context._reference(Named)
+
+    def demo(named: Named) -> None:
+        ...
+
+    spec = empty_context._type_spec_for_function(demo)
+    assert spec == {"named": (hasname_ref, None)}

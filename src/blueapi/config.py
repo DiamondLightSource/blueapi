@@ -1,4 +1,5 @@
 from pathlib import Path
+from pprint import pformat
 from typing import Any, Generic, Mapping, Type, TypeVar, Union
 
 import yaml
@@ -89,7 +90,8 @@ class ConfigLoader(Generic[C]):
         try:
             return self.load()
         except ValidationError:
-            raise InvalidConfigError()
+            raise InvalidConfigError("File passed in does not match the specified"
+                                     + f" schema: \n {pformat(self._schema.schema())}")
 
     def load(self) -> C:
         """

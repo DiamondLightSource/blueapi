@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Type Validators &#8212; blueapi 0.2.3b2.dev11+g4c4df02 documentation</title>
+    <title>Type Validators &#8212; blueapi 0.2.3b2.dev12+g6557da5 documentation</title>
   
   
   
@@ -474,7 +474,7 @@ document.write(`
     <span class="n">b</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span>
 </pre></div>
 </div>
-<p>That way, when the plan parameters are send in JSON form, they can be parsed and validated by pydantic.
+<p>That way, when the plan parameters are sent in JSON form, they can be parsed and validated by pydantic.
 However, it must also cover the case where a plan doesn’t take a simple dictionary, list or primitive but
 instead a device, such as a detector.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
@@ -502,10 +502,22 @@ to be devices and look them up against the context. For example with the request
 </section>
 <section id="solution">
 <h2>Solution<a class="headerlink" href="#solution" title="Permalink to this heading">#</a></h2>
-<p>Before pydantic, blueapi used <a class="reference external" href="https://wyfo.github.io/apischema/0.18/">apischema</a>, which had an ideal feature for this called <a class="reference external" href="https://wyfo.github.io/apischema/0.18/conversions/">conversions</a>.
-Currently in the utils module of a blueapi is a similar feature called type validators.</p>
-<p>They enable the <code class="docutils literal notranslate"><span class="pre">BlueskyContext</span></code> to dynamically generate pydantic models, like above, that look
-roughly like this:</p>
+<p>When the context loads available plans, it iterates through the type signature
+and replaces any reference to a bluesky protocol (or instance of a protocol)
+with a new class that extends the original type. Defining a class validator on
+this new type allows it to check that the string being deserialised is the ID of
+a device of the correct type.</p>
+<p>These new intermediate types are used only in the deserialisation process. The
+object returned from validator method is not checked by pydantic so it can be
+the actual instance and the plan never sees the runtime generated reference
+type, only the type it was expecting.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This uses the fact that the new types generated at runtime have access to
+the context that required them via their closure. This circumvents the usual
+problem of pydantic validation not being able to access external state when
+validating or deserialising.</p>
+</div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
     <span class="o">...</span>
 
@@ -513,14 +525,10 @@ roughly like this:</p>
 
 <span class="k">class</span> <span class="nc">MyPlanModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">b</span><span class="p">:</span> <span class="n">Readable</span>
-
-    <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">valdiate_b</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Readable</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">ctx</span><span class="o">.</span><span class="n">find_device</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+    <span class="n">b</span><span class="p">:</span> <span class="n">Reference</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>It also handles the case of the <code class="docutils literal notranslate"><span class="pre">Readable</span></code> type being placed at various type levels? For example:</p>
+<p>This also allows <code class="docutils literal notranslate"><span class="pre">Readable</span></code> to be placed at various type levels. For example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_weird_plan</span><span class="p">(</span>
     <span class="n">a</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
     <span class="n">b</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
@@ -530,18 +538,6 @@ roughly like this:</p>
     <span class="o">...</span>
 </pre></div>
 </div>
-</section>
-<section id="implementation-details">
-<h2>Implementation Details<a class="headerlink" href="#implementation-details" title="Permalink to this heading">#</a></h2>
-<p>Pydantic models have validators: functions that are applied to specific fields by name. This is
-insufficient for the requirements here, it would be helpful if validators could be applied by type,
-rather than name.
-The type validation module is essentially a shim layer that works out the names of all fields of a
-particular type, then creates validators for all of those names. It also supports the type being in
-nested lists and/or dictionaries, as mentioned above.
-The field names are deteted by comparing the type annotation in the model to the type requested.
-The actual validator is a function supplied by the caller, but if a list or dictionary is passed,
-it will apply it to each item/value.</p>
 </section>
 </section>
 
@@ -594,7 +590,6 @@ it will apply it to each item/value.</p>
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirement">Requirement</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solution">Solution</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-details">Implementation Details</a></li>
 </ul>
   </nav></div>
 

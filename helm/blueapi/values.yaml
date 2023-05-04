@@ -59,7 +59,11 @@ affinity: {}
 
 worker:
   env:
-    startupScript: blueapi.startup.example
+    sources:
+      - type: deviceFunctions
+        module: blueapi.startup.example
+      - type: planFunctions
+        module: blueapi.plans
   stomp:
     host: activemq
     port: 61613

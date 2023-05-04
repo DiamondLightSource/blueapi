@@ -31,7 +31,7 @@ class NestedConfigWithDefaults(BaseModel):
 
 @pytest.fixture
 def package_root() -> Path:
-    return Path(os.path.dirname(os.path.realpath(__file__))) / "config_yaml_files"
+    return Path(os.path.dirname(os.path.realpath(__file__))) / "example_yaml"
 
 
 @pytest.fixture

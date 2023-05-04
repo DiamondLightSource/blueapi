@@ -24,9 +24,6 @@ from .updates import CliEventRenderer
 @click.pass_context
 def main(ctx, config: Path) -> None:
     # if no command is supplied, run with the options passed
-    if ctx.invoked_subcommand is None:
-        print(f"Using configuration file at: {config}. Please invoke subcommand!")
-
     config_loader = ConfigLoader(ApplicationConfig)
 
     ctx.ensure_object(dict)
@@ -35,6 +32,9 @@ def main(ctx, config: Path) -> None:
         if DEFAULT_YAML_PATH.exists()
         else config_loader.load()
     )
+
+    if ctx.invoked_subcommand is None:
+        print(f"Using configuration file at: {config}. Please invoke subcommand!")
 
 
 @main.command(name="worker")

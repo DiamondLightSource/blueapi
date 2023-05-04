@@ -27,7 +27,7 @@ class Service:
     def __init__(self, config: ApplicationConfig) -> None:
         self._config = config
         self._ctx = BlueskyContext()
-        self._ctx.with_startup_script(config.env.startup_script)
+        self._ctx.with_startup_script(self._config.env.startup_script)
         self._worker = RunEngineWorker(self._ctx)
         self._template = StompMessagingTemplate.autoconfigured(config.stomp)
 

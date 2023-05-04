@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import Mapping
 
-from blueapi.config import loaded_config
+from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, Worker
@@ -19,18 +19,20 @@ from .model import (
 
 
 class Service:
+    _config: ApplicationConfig
     _ctx: BlueskyContext
     _worker: Worker
     _template: MessagingTemplate
 
-    def __init__(self) -> None:
+    def __init__(self, config: ApplicationConfig) -> None:
+        self._config = config
         self._ctx = BlueskyContext()
-        self._ctx.with_startup_script(loaded_config.env.startup_script)
+        self._ctx.with_startup_script(config.env.startup_script)
         self._worker = RunEngineWorker(self._ctx)
-        self._template = StompMessagingTemplate.autoconfigured(loaded_config.stomp)
+        self._template = StompMessagingTemplate.autoconfigured(config.stomp)
 
     def run(self) -> None:
-        logging.basicConfig(level=loaded_config.logging.level)
+        logging.basicConfig(level=self._config.logging.level)
 
         self._publish_event_streams(
             {
@@ -93,5 +95,5 @@ class Service:
         self._template.send(message_context.reply_destination, response)
 
 
-def start():
-    Service().run()
+def start(config: ApplicationConfig):
+    Service(config).run()

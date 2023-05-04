@@ -105,6 +105,3 @@ class ConfigLoader(Generic[C]):
                 "File passed in does not match the specified"
                 + f" schema: \n {pformat(self._schema.schema())}"
             )
-
-
-loaded_config = ConfigLoader(ApplicationConfig).load_from_yaml(DEFAULT_YAML_PATH)

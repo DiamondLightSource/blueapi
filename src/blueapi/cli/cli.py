@@ -4,7 +4,7 @@ import logging
 import click
 
 from blueapi import __version__
-from blueapi.config import loaded_config
+from blueapi.config import DEFAULT_YAML_PATH, ApplicationConfig, ConfigLoader
 from blueapi.messaging import StompMessagingTemplate
 
 from .amq import AmqClient
@@ -19,24 +19,36 @@ def main(ctx) -> None:
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
 
+    config_loader = ConfigLoader(ApplicationConfig)
+
+    ctx.ensure_object(dict)
+    ctx.obj["config"] = (
+        config_loader.load_from_yaml(DEFAULT_YAML_PATH)
+        if DEFAULT_YAML_PATH.exists()
+        else config_loader.load()
+    )
+
 
 @main.command(name="worker")
-def start_worker():
+@click.pass_obj
+def start_worker(obj: dict) -> None:
     from blueapi.service import start
 
-    start()
-    loaded_config.load
+    config: ApplicationConfig = obj["config"]
+    start(config)
 
 
 @main.group()
 @click.pass_context
-def controller(ctx):
+def controller(ctx) -> None:
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
-    logging.basicConfig(level=loaded_config.logging.level)
+
     ctx.ensure_object(dict)
-    client = AmqClient(StompMessagingTemplate.autoconfigured(loaded_config.stomp))
+    config: ApplicationConfig = ctx.obj["config"]
+    logging.basicConfig(level=config.logging.level)
+    client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
     ctx.obj["client"] = client
     client.app.connect()
 

@@ -1,2 +1,6 @@
 env:
-  startupScript: blueapi.startup.adsim
+  sources:
+    - type: deviceFunctions
+      module: blueapi.startup.adsim
+    - type: planFunctions
+      module: blueapi.startup.adsim

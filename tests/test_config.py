@@ -75,7 +75,7 @@ def test_load_override_all_nested() -> None:
 
 def test_load_defaultless_schema() -> None:
     loader = ConfigLoader(Config)
-    with pytest.raises(ValidationError):
+    with pytest.raises(InvalidConfigError):
         loader.load()
 
 

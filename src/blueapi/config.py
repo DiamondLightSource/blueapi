@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from pprint import pformat
 from typing import Any, Generic, Mapping, Type, TypeVar, Union
@@ -59,6 +60,7 @@ class ConfigLoader(Generic[C]):
     def __init__(self, schema: Type[C]) -> None:
         self._schema = schema
         self._values = {}
+        logging.basicConfig(level="INFO")
 
     def use_values(self, values: Mapping[str, Any]) -> None:
         """
@@ -83,17 +85,15 @@ class ConfigLoader(Generic[C]):
             path (Path): Path to YAML/JSON file
         """
 
-        with path.open("r") as stream:
-            values = yaml.load(stream, yaml.Loader)
-        self.use_values(values)
-
         try:
-            return self.load()
-        except ValidationError:
-            raise InvalidConfigError(
-                "File passed in does not match the specified"
-                + f" schema: \n {pformat(self._schema.schema())}"
-            )
+            with path.open("r") as stream:
+                values = yaml.load(stream, yaml.Loader)
+            self.use_values(values)
+        except FileNotFoundError:
+            logging.info(f"File {DEFAULT_YAML_PATH} not found. Using defaults.")
+            pass
+
+        return self.load()
 
     def load(self) -> C:
         """
@@ -104,7 +104,13 @@ class ConfigLoader(Generic[C]):
             C: Dataclass instance holding config
         """
 
-        return parse_obj_as(self._schema, self._values)
+        try:
+            return parse_obj_as(self._schema, self._values)
+        except ValidationError:
+            raise InvalidConfigError(
+                "File passed in does not match the specified"
+                + f" schema: \n {pformat(self._schema.schema())}"
+            )
 
 
 loaded_config = ConfigLoader(ApplicationConfig).load_from_yaml(DEFAULT_YAML_PATH)

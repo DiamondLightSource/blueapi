@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import Mapping
 
-from blueapi.config import loaded_config, ApplicationConfig
+from blueapi.config import ApplicationConfig, loaded_config
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
 from blueapi.worker import RunEngineWorker, RunPlan, Worker

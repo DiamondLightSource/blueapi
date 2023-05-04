@@ -90,8 +90,10 @@ class ConfigLoader(Generic[C]):
         try:
             return self.load()
         except ValidationError:
-            raise InvalidConfigError("File passed in does not match the specified"
-                                     + f" schema: \n {pformat(self._schema.schema())}")
+            raise InvalidConfigError(
+                "File passed in does not match the specified"
+                + f" schema: \n {pformat(self._schema.schema())}"
+            )
 
     def load(self) -> C:
         """

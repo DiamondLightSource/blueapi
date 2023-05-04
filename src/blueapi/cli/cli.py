@@ -25,6 +25,7 @@ def start_worker():
     from blueapi.service import start
 
     start()
+    loaded_config.load
 
 
 @main.group()

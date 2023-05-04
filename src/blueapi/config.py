@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 from pprint import pformat
 from typing import Any, Generic, Mapping, Type, TypeVar, Union
@@ -8,7 +7,7 @@ from pydantic import BaseModel, Field, ValidationError, parse_obj_as
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
-DEFAULT_YAML_PATH = Path("blueapi_config.yaml")
+DEFAULT_YAML_PATH = Path("src/blueapi_config.yaml")
 
 
 class StompConfig(BlueapiBaseModel):
@@ -60,7 +59,6 @@ class ConfigLoader(Generic[C]):
     def __init__(self, schema: Type[C]) -> None:
         self._schema = schema
         self._values = {}
-        logging.basicConfig(level="INFO")
 
     def use_values(self, values: Mapping[str, Any]) -> None:
         """
@@ -85,13 +83,9 @@ class ConfigLoader(Generic[C]):
             path (Path): Path to YAML/JSON file
         """
 
-        try:
-            with path.open("r") as stream:
-                values = yaml.load(stream, yaml.Loader)
-            self.use_values(values)
-        except FileNotFoundError:
-            logging.info(f"File {DEFAULT_YAML_PATH} not found. Using defaults.")
-            pass
+        with path.open("r") as stream:
+            values = yaml.load(stream, yaml.Loader)
+        self.use_values(values)
 
         return self.load()
 

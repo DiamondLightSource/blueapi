@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Type
 
 import pytest
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 from blueapi.config import ConfigLoader
 from blueapi.utils import InvalidConfigError

@@ -10,7 +10,6 @@ from blueapi.core import (
     BlueskyContext,
     MsgGenerator,
     PlanGenerator,
-    context,
     is_bluesky_compatible_device,
 )
 
@@ -171,13 +170,13 @@ def test_add_non_device(empty_context: BlueskyContext) -> None:
 
 
 def test_function_spec(empty_context: BlueskyContext) -> None:
-    spec = context._type_spec_for_function(has_some_params, empty_context)
+    spec = empty_context._type_spec_for_function(has_some_params)
     assert spec == {"foo": ("int", 42), "bar": ("str", "bar")}
 
 
 def test_basic_type_conversion(empty_context: BlueskyContext) -> None:
-    assert context._convert_type(int, empty_context) == int
-    assert context._convert_type(dict[str, int], empty_context) == dict[str, int]
+    assert empty_context._convert_type(int) == int
+    assert empty_context._convert_type(dict[str, int]) == dict[str, int]
 
 
 def test_device_reference_cache(empty_context: BlueskyContext) -> None:
@@ -187,8 +186,8 @@ def test_device_reference_cache(empty_context: BlueskyContext) -> None:
 
 def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
     movable_ref: Type = empty_context._reference(Movable)
-    assert context._convert_type(Movable, empty_context) == movable_ref
+    assert empty_context._convert_type(Movable) == movable_ref
     assert (
-        context._convert_type(dict[Movable, list[tuple[int, Movable]]], empty_context)
+        empty_context._convert_type(dict[Movable, list[tuple[int, Movable]]])
         == dict[movable_ref, list[tuple[int, movable_ref]]]  # type: ignore
     )

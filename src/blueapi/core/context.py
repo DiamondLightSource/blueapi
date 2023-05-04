@@ -126,7 +126,7 @@ class BlueskyContext:
         model = create_model(  # type: ignore
             plan.__name__,
             __config__=BlueapiPlanModelConfig,
-            **_type_spec_for_function(plan, self),
+            **self._type_spec_for_function(plan),
         )
         self.plans[plan.__name__] = Plan(name=plan.__name__, model=model)
         self.plan_functions[plan.__name__] = plan
@@ -189,60 +189,57 @@ class BlueskyContext:
 
         return self._reference_cache[target]
 
+    def _type_spec_for_function(
+        self, func: Callable[..., Any]
+    ) -> dict[str, Tuple[Type, Any]]:
+        """
+        Parse a function signature and build map of field types and default
+        values that can be used to deserialise arguments from external sources.
+        Any references to any of the bluesky protocols are replaced with an
+        intermediate reference type that allows existing devices to be returned
+        for device ID strings.
 
-def _type_spec_for_function(
-    func: Callable[..., Any], ctx: BlueskyContext
-) -> dict[str, Tuple[Type, Any]]:
-    """
-    Parse a function signature and build map of field types and default values
-    that can be used to deserialise arguments from external sources. Any
-    references to any of the bluesky protocols are replaced with an
-    intermediate reference type that allows existing devices to be returned for
-    device ID strings.
+        Args:
+            func: The function whose signature is being parsed
 
-    Args:
-        func: The function whose signature is being parsed
-        ctx: The BlueskyContext that should be used to look up references to devices
+        Returns:
+            Mapping of {name: (type, default)} to be used by pydantic for deserialising
+                    function arguments
+        """
+        args = signature(func).parameters
+        new_args = {}
+        for name, para in args.items():
+            default = None if para.default is Parameter.empty else para.default
+            if para.annotation is Parameter.empty:
+                raise ValueError(
+                    f"Type annotation is required for '{name}' in '{func.__name__}'"
+                )
+            new_args[name] = (self._convert_type(para.annotation), default)
+        return new_args
 
-    Returns:
-        Mapping of {name: (type, default)} to be used by pydantic for deserialising
-                function arguments
-    """
-    args = signature(func).parameters
-    new_args = {}
-    for name, para in args.items():
-        default = None if para.default is Parameter.empty else para.default
-        if para.annotation is Parameter.empty:
-            raise ValueError(
-                f"Type annotation is required for '{name}' in '{func.__name__}'"
-            )
-        new_args[name] = (_convert_type(para.annotation, ctx), default)
-    return new_args
+    def _convert_type(self, typ: Type) -> Type:
+        """
+        Recursively convert a type to something that can be deserialsed by
+        pydantic. Bluesky protocols (and types that extend them) are replaced
+        with an intermediate reference types that allows the current context to
+        be used to look up an existing device when deserialising device ID
+        strings.
 
+        Other types are returned as passed in.
 
-def _convert_type(typ: Type, ctx: BlueskyContext) -> Type:
-    """
-    Recursively convert a type to something that can be deserialsed by pydantic. Bluesky
-    protocols (and types that extend them) are replaced with an intermediate
-    reference types that allows the given context to be used to look up an
-    existing device when deserialising device ID strings.
+        Args:
+            typ: The type that is required - potentially referencing Bluesky protocols
 
-    Other types are returned as passed in.
-
-    Args:
-        typ: The type that is required - potentially referencing Bluesky protocols
-        ctx: The context to be used to look up references to devices.
-
-    Returns:
-        A Type that can be deserialised by Pydantic
-    """
-    if typ in BLUESKY_PROTOCOLS or any(
-        isinstance(typ, dev) for dev in BLUESKY_PROTOCOLS
-    ):
-        return ctx._reference(typ)
-    args = get_args(typ)
-    if args:
-        new_types = tuple(_convert_type(i, ctx) for i in args)
-        root = get_origin(typ)
-        return root[new_types] if root else typ
-    return typ
+        Returns:
+            A Type that can be deserialised by Pydantic
+        """
+        if typ in BLUESKY_PROTOCOLS or any(
+            isinstance(typ, dev) for dev in BLUESKY_PROTOCOLS
+        ):
+            return self._reference(typ)
+        args = get_args(typ)
+        if args:
+            new_types = tuple(self._convert_type(i) for i in args)
+            root = get_origin(typ)
+            return root[new_types] if root else typ
+        return typ

@@ -41,15 +41,18 @@ class RunPlan(Task):
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(f"Asked to run plan {self.name} with {self.params}")
 
-        plan = ctx.plans[self.name]
-        func = ctx.plan_functions[self.name]
-        sanitized_params = _lookup_params(ctx, plan, self.params)
-        plan_generator = func(**sanitized_params.dict())
+        metadata = ctx.find_plan_metadata(self.name)
+        func = ctx.find_plan_function(self.name)
+        if metadata is None or func is None:
+            raise KeyError(f"No plan named {self.name}")
+        sanitized_params = _lookup_params(metadata, self.params).dict()
+        plan_generator = func(**sanitized_params)
         ctx.run_engine(plan_generator)
 
 
 def _lookup_params(
-    ctx: BlueskyContext, plan: Plan, params: Mapping[str, Any]
+    plan: Plan,
+    params: Mapping[str, Any],
 ) -> BaseModel:
     """
     Checks plan parameters against context

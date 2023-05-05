@@ -84,7 +84,7 @@ def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
 
 class Plan(BlueapiBaseModel):
     """
-    A plan that can be run
+    Metadata about a plan that can be run
     """
 
     name: str = Field(description="Referenceable name of the plan")

@@ -81,7 +81,7 @@ class Service:
             self._template.send(reply_queue, response)
 
     def _get_plans(self, message_context: MessageContext, message: PlanRequest) -> None:
-        plans = list(map(PlanModel.from_plan, self._ctx.plans.values()))
+        plans = list(map(PlanModel.from_plan, self._ctx.all_plan_metadata()))
         response = PlanResponse(plans=plans)
 
         assert message_context.reply_destination is not None
@@ -90,7 +90,7 @@ class Service:
     def _get_devices(
         self, message_context: MessageContext, message: DeviceRequest
     ) -> None:
-        devices = list(map(DeviceModel.from_device, self._ctx.devices.values()))
+        devices = list(map(DeviceModel.from_device, self._ctx.all_devices()))
         response = DeviceResponse(devices=devices)
 
         assert message_context.reply_destination is not None

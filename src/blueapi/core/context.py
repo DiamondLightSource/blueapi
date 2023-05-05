@@ -8,6 +8,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     List,
     Optional,
     Tuple,
@@ -37,20 +38,43 @@ from .device_lookup import find_component
 LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
 class BlueskyContext:
     """
     Context for building a Bluesky application
     """
 
-    run_engine: RunEngine = field(
-        default_factory=lambda: RunEngine(context_managers=[])
-    )
-    plans: Dict[str, Plan] = field(default_factory=dict)
-    devices: Dict[str, Device] = field(default_factory=dict)
-    plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
+    _run_engine: RunEngine
+    _plans: Dict[str, Plan]
+    _devices: Dict[str, Device]
+    _plan_functions: Dict[str, PlanGenerator]
 
     _reference_cache: Dict[Type, Type] = field(default_factory=dict)
+
+    def __init__(self, run_engine: Optional[RunEngine] = None) -> None:
+        if run_engine is None:
+            run_engine = RunEngine(context_managers=[])
+
+        self._run_engine = run_engine
+        self._devices = {}
+        self._plans = {}
+        self._plan_functions = {}
+        self._reference_cache = {}
+
+    @property
+    def run_engine(self) -> RunEngine:
+        return self._run_engine
+
+    def find_plan_function(self, name: str) -> Optional[PlanGenerator]:
+        return self._plan_functions.get(name)
+
+    def find_plan_metadata(self, name: str) -> Optional[Plan]:
+        return self._plans.get(name)
+
+    def all_devices(self) -> Iterable[Device]:
+        return self._devices.values()
+
+    def all_plan_metadata(self) -> Iterable[Plan]:
+        return self._plans.values()
 
     def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
         """
@@ -68,7 +92,7 @@ class BlueskyContext:
             list_addr = list(addr.split("."))
             return self.find_device(list_addr)
         else:
-            return find_component(self.devices, addr)
+            return find_component(self._devices, addr)
 
     def with_startup_script(self, path: Union[Path, str]) -> None:
         mod = import_module(str(path))
@@ -129,8 +153,8 @@ class BlueskyContext:
             __config__=BlueapiPlanModelConfig,
             **self._type_spec_for_function(plan),
         )
-        self.plans[plan.__name__] = Plan(name=plan.__name__, model=model)
-        self.plan_functions[plan.__name__] = plan
+        self._plans[plan.__name__] = Plan(name=plan.__name__, model=model)
+        self._plan_functions[plan.__name__] = plan
         return plan
 
     def device(self, device: Device, name: Optional[str] = None) -> None:
@@ -158,7 +182,7 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        self.devices[name] = device
+        self._devices[name] = device
 
     def _reference(self, target: Type) -> Type:
         """

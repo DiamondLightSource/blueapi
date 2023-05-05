@@ -1,11 +1,12 @@
 import json
 import logging
 from pathlib import Path
+from typing import Optional
 
 import click
 
 from blueapi import __version__
-from blueapi.config import DEFAULT_YAML_PATH, ApplicationConfig, ConfigLoader
+from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.messaging import StompMessagingTemplate
 
 from .amq import AmqClient
@@ -14,24 +15,16 @@ from .updates import CliEventRenderer
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
-@click.option(
-    "-c",
-    "--config",
-    type=Path,
-    help="Path to configuration YAML file",
-    default=DEFAULT_YAML_PATH,
-)
+@click.option("-c", "--config", type=Path, help="Path to configuration YAML file")
 @click.pass_context
-def main(ctx, config: Path) -> None:
+def main(ctx, config: Optional[Path]) -> None:
     # if no command is supplied, run with the options passed
     config_loader = ConfigLoader(ApplicationConfig)
+    if config is not None:
+        config_loader.use_values_from_yaml(config)
 
     ctx.ensure_object(dict)
-    ctx.obj["config"] = (
-        config_loader.load_from_yaml(config)
-        if DEFAULT_YAML_PATH.exists()
-        else config_loader.load()
-    )
+    ctx.obj["config"] = config_loader.load()
 
     if ctx.invoked_subcommand is None:
         print(f"Using configuration file at: {config}. Please invoke subcommand!")

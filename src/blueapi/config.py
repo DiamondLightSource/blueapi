@@ -1,13 +1,10 @@
 from pathlib import Path
-from pprint import pformat
 from typing import Any, Generic, Mapping, Type, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
-
-DEFAULT_YAML_PATH = Path("src/blueapi_config.yaml")
 
 
 class StompConfig(BlueapiBaseModel):
@@ -73,7 +70,7 @@ class ConfigLoader(Generic[C]):
 
         self._values = {**self._values, **values}
 
-    def load_from_yaml(self, path: Path) -> C:
+    def use_values_from_yaml(self, path: Path) -> None:
         """
         Use all values provided in a YAML/JSON file in the
         config, override any defaults and values set by
@@ -87,8 +84,6 @@ class ConfigLoader(Generic[C]):
             values = yaml.load(stream, yaml.Loader)
         self.use_values(values)
 
-        return self.load()
-
     def load(self) -> C:
         """
         Finalize and load the config as an instance of the `schema`
@@ -100,8 +95,7 @@ class ConfigLoader(Generic[C]):
 
         try:
             return parse_obj_as(self._schema, self._values)
-        except ValidationError:
+        except ValidationError as exc:
             raise InvalidConfigError(
-                "File passed in does not match the specified"
-                + f" schema: \n {pformat(self._schema.schema())}"
-            )
+                "Something is wrong with the configuration file: \n"
+            ) from exc

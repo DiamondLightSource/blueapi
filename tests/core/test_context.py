@@ -109,6 +109,13 @@ def test_add_invalid_plan(empty_context: BlueskyContext, plan: PlanGenerator) ->
         empty_context.plan(plan)
 
 
+def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
+    import tests.core.fake_plan_module as plan_module
+
+    empty_context.with_plan_module(plan_module)
+    assert {"scan"} == empty_context.plans.keys()
+
+
 def test_add_named_device(empty_context: BlueskyContext, sim_motor: SynAxis) -> None:
     empty_context.device(sim_motor)
     assert empty_context.devices[SIM_MOTOR_NAME] is sim_motor
@@ -134,6 +141,13 @@ def test_override_device_name(
 ) -> None:
     empty_context.device(sim_motor, "foo")
     assert empty_context.devices["foo"] is sim_motor
+
+
+def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
+    import tests.core.fake_device_module as device_module
+
+    empty_context.with_device_module(device_module)
+    assert {"motor"} == empty_context.devices.keys()
 
 
 @pytest.mark.parametrize(
@@ -167,6 +181,16 @@ def test_add_non_plan(empty_context: BlueskyContext) -> None:
 def test_add_non_device(empty_context: BlueskyContext) -> None:
     with pytest.raises(TypeError):
         empty_context.device("not a device")  # type: ignore
+
+
+def test_add_devices_and_plans_from_modules_with_startup_script(
+    empty_context: BlueskyContext,
+) -> None:
+    empty_context.with_startup_script(
+        ["tests.core.fake_device_module", "tests.core.fake_plan_module"]
+    )
+    assert {"motor"} == empty_context.devices.keys()
+    assert {"scan"} == empty_context.plans.keys()
 
 
 def test_function_spec(empty_context: BlueskyContext) -> None:

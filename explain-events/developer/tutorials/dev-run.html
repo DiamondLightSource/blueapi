@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Standards &#8212; blueapi 0.2.3b2.dev13+g6256cea documentation</title>
+    <title>Run in a Developer Environment &#8212; blueapi 0.2.3b2.dev13+g6256cea documentation</title>
   
   
   
@@ -44,7 +44,7 @@
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
     <script src="../../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/reference/standards';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/tutorials/dev-run';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'explain-events';
@@ -52,7 +52,8 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="prev" title="Events Emitted by the Worker" href="../explanations/events.html" />
+    <link rel="next" title="Contributing to the project" href="../how-to/contribute.html" />
+    <link rel="prev" title="Developer install" href="dev-install.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -374,9 +375,9 @@ document.write(`
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/dev-install.html">Developer install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/dev-run.html">Run in a Developer Environment</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="dev-install.html">Developer install</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run in a Developer Environment</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul class="nav bd-sidenav">
@@ -400,8 +401,8 @@ document.write(`
 <li class="toctree-l1"><a class="reference internal" href="../explanations/events.html">Events Emitted by the Worker</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Standards</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../reference/standards.html">Standards</a></li>
 </ul>
 </div>
 </nav></div>
@@ -442,7 +443,7 @@ document.write(`
     
     <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Developer Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Standards</li>
+    <li class="breadcrumb-item active" aria-current="page">Run in a Developer Environment</li>
   </ul>
 </nav>
 </div>
@@ -459,60 +460,65 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="standards">
-<h1>Standards<a class="headerlink" href="#standards" title="Permalink to this heading">#</a></h1>
-<p>This document defines the code and documentation standards used in this
-repository.</p>
-<section id="code-standards">
-<h2>Code Standards<a class="headerlink" href="#code-standards" title="Permalink to this heading">#</a></h2>
-<p>The code in this repository conforms to standards set by the following tools:</p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://github.com/psf/black">black</a> for code formatting</p></li>
-<li><p><a class="reference external" href="https://flake8.pycqa.org/en/latest/">flake8</a> for style checks</p></li>
-<li><p><a class="reference external" href="https://github.com/PyCQA/isort">isort</a> for import ordering</p></li>
-<li><p><a class="reference external" href="http://mypy-lang.org/">mypy</a> for static type checking</p></li>
-</ul>
+  <section id="run-in-a-developer-environment">
+<h1>Run in a Developer Environment<a class="headerlink" href="#run-in-a-developer-environment" title="Permalink to this heading">#</a></h1>
+<p>Assuming you have setup a developer environment, you can run
+a developement version of the bluesky worker.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p>How-to guides <a class="reference internal" href="../how-to/lint.html"><span class="doc">Run linting using pre-commit</span></a> and <a class="reference internal" href="../how-to/static-analysis.html"><span class="doc">Run static analysis using mypy</span></a></p>
+<p><a class="reference internal" href="dev-install.html"><span class="doc">Developer install</span></a></p>
+</div>
+<section id="start-activemq">
+<h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Permalink to this heading">#</a></h2>
+<p>The worker requires a running instance of ActiveMQ, the simplest
+way to start it is to run it via a container:</p>
+<div class="sd-tab-set docutils">
+<input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
+</input><label class="sd-tab-label" for="sd-tab-item-0">
+Docker</label><div class="sd-tab-content docutils">
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
+</pre></div>
+</div>
+</div>
+<input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
+</input><label class="sd-tab-label" for="sd-tab-item-1">
+Podman</label><div class="sd-tab-content docutils">
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>podman<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
+</pre></div>
+</div>
+</div>
 </div>
 </section>
-<section id="documentation-standards">
-<span id="id1"></span><h2>Documentation Standards<a class="headerlink" href="#documentation-standards" title="Permalink to this heading">#</a></h2>
-<p>Docstrings are pre-processed using the Sphinx Napoleon extension. As such,
-<a class="reference external" href="https://sphinxcontrib-napoleon.readthedocs.io/en/latest/index.html#google-vs-numpy">google-style</a> is considered as standard for this repository. Please use type
-hints in the function signature for types. For example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">arg1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arg2</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Summary line.</span>
-
-<span class="sd">    Extended description of function.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        arg1: Description of arg1</span>
-<span class="sd">        arg2: Description of arg2</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        Description of return value</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="kc">True</span>
+<section id="start-bluesky-worker">
+<h2>Start Bluesky Worker<a class="headerlink" href="#start-bluesky-worker" title="Permalink to this heading">#</a></h2>
+<p>Ensure you are inside your virtual environment:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>venv/bin/activate
 </pre></div>
 </div>
-<p>Documentation is contained in the <code class="docutils literal notranslate"><span class="pre">docs</span></code> directory and extracted from
-docstrings of the API.</p>
-<p>Docs follow the underlining convention:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Headling</span> <span class="mi">1</span> <span class="p">(</span><span class="n">page</span> <span class="n">title</span><span class="p">)</span>
-<span class="o">=======================</span>
-
-<span class="n">Heading</span> <span class="mi">2</span>
-<span class="o">---------</span>
-
-<span class="n">Heading</span> <span class="mi">3</span>
-<span class="o">~~~~~~~~~</span>
+<p>Start the worker from the command line or vscode:</p>
+<div class="sd-tab-set docutils">
+<input checked="checked" id="sd-tab-item-2" name="sd-tab-set-1" type="radio">
+</input><label class="sd-tab-label" for="sd-tab-item-2">
+Command line</label><div class="sd-tab-content docutils">
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>worker
 </pre></div>
 </div>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p>How-to guide <a class="reference internal" href="../how-to/build-docs.html"><span class="doc">Build the docs using sphinx</span></a></p>
+</div>
+<input id="sd-tab-item-3" name="sd-tab-set-1" type="radio">
+</input><label class="sd-tab-label" for="sd-tab-item-3">
+VSCode</label><div class="sd-tab-content docutils">
+<ol class="arabic simple">
+<li><p>Navigate to “Run and Debug” in the left hand menu.</p></li>
+<li><p>Select “Worker Service” from the debug configuration.</p></li>
+<li><p>Click the green “Run Button”</p></li>
+</ol>
+<figure class="align-center" id="id1">
+<img alt="../../_images/debug-vscode.png" src="../../_images/debug-vscode.png" />
+<figcaption>
+<p><span class="caption-text">debug in vscode</span><a class="headerlink" href="#id1" title="Permalink to this image">#</a></p>
+</figcaption>
+</figure>
+</div>
 </div>
 </section>
 </section>
@@ -529,13 +535,22 @@ docstrings of the API.</p>
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../explanations/events.html"
+       href="dev-install.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Events Emitted by the Worker</p>
+        <p class="prev-next-title">Developer install</p>
       </div>
+    </a>
+    <a class="right-next"
+       href="../how-to/contribute.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Contributing to the project</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div></div>
   
@@ -555,15 +570,15 @@ docstrings of the API.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#code-standards">Code Standards</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#documentation-standards">Documentation Standards</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-bluesky-worker">Start Bluesky Worker</a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/explain-events/docs/developer/reference/standards.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/explain-events/docs/developer/tutorials/dev-run.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -577,7 +592,7 @@ docstrings of the API.</p>
 
   <div class="sidebar-secondary-item">
   <div class="tocsection sourcelink">
-    <a href="../../_sources/developer/reference/standards.rst.txt">
+    <a href="../../_sources/developer/tutorials/dev-run.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

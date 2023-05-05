@@ -1,6 +1,6 @@
 from fastapi import Body, Depends, FastAPI, HTTPException
-from blueapi.config import ApplicationConfig, ConfigLoader
 
+from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.worker import RunPlan
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler

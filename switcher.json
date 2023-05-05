@@ -88,6 +88,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/cli-docs/"
   },
   {
+    "version": "context-methods",
+    "url": "https://DiamondLightSource.github.io/blueapi/context-methods/"
+  },
+  {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },

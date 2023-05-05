@@ -98,7 +98,7 @@ def some_configurable() -> SomeConfigurable:
 @pytest.mark.parametrize("plan", [has_no_params, has_one_param, has_some_params])
 def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
     empty_context.plan(plan)
-    assert plan.__name__ in empty_context.plans
+    assert empty_context.has_plan(plan.__name__)
 
 
 @pytest.mark.parametrize(
@@ -111,14 +111,14 @@ def test_add_invalid_plan(empty_context: BlueskyContext, plan: PlanGenerator) ->
 
 def test_add_named_device(empty_context: BlueskyContext, sim_motor: SynAxis) -> None:
     empty_context.device(sim_motor)
-    assert empty_context.devices[SIM_MOTOR_NAME] is sim_motor
+    assert empty_context.find_device(SIM_MOTOR_NAME) is sim_motor
 
 
 def test_add_nameless_device(
     empty_context: BlueskyContext, some_configurable: SomeConfigurable
 ) -> None:
     empty_context.device(some_configurable, "conf")
-    assert empty_context.devices["conf"] is some_configurable
+    assert empty_context.find_device("conf") is some_configurable
 
 
 def test_add_nameless_device_without_override(
@@ -133,7 +133,7 @@ def test_override_device_name(
     empty_context: BlueskyContext, sim_motor: SynAxis
 ) -> None:
     empty_context.device(sim_motor, "foo")
-    assert empty_context.devices["foo"] is sim_motor
+    assert empty_context.find_device("foo") is sim_motor
 
 
 @pytest.mark.parametrize(

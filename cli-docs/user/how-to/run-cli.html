@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Control the Worker via the CLI &#8212; blueapi 0.2.3b2.dev10+g2de197a documentation</title>
+    <title>Control the Worker via the CLI &#8212; blueapi 0.2.4.dev4+gfd71947 documentation</title>
   
   
   
@@ -53,7 +53,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="About the documentation" href="../explanations/docs-structure.html" />
-    <link rel="prev" title="Run in a container" href="run-container.html" />
+    <link rel="prev" title="Configure the application" href="configure-app.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -381,6 +381,7 @@ document.write(`
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the application</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Control the Worker via the CLI</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
@@ -459,6 +460,31 @@ a test/development/debugging tool and not meant for production!</p>
 <p>You must have access to the <code class="docutils literal notranslate"><span class="pre">blueapi</span></code> command either via the container or pip installing.
 <a class="reference internal" href="run-container.html"><span class="doc">Run in a container</span></a> and <a class="reference internal" href="../tutorials/installation.html"><span class="doc">Installation</span></a></p>
 </div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>In a developer environment, the worker can also be run from vscode: <a class="reference internal" href="../../developer/tutorials/dev-run.html"><span class="doc">Run/Debug in a Developer Environment</span></a>.</p>
+</div>
+<section id="start-activemq">
+<h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Permalink to this heading">#</a></h2>
+<p>The worker requires a running instance of ActiveMQ, the simplest
+way to start it is to run it via a container:</p>
+<div class="sd-tab-set docutils">
+<input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
+</input><label class="sd-tab-label" for="sd-tab-item-0">
+Docker</label><div class="sd-tab-content docutils">
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
+</pre></div>
+</div>
+</div>
+<input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
+</input><label class="sd-tab-label" for="sd-tab-item-1">
+Podman</label><div class="sd-tab-content docutils">
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>podman<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
+</pre></div>
+</div>
+</div>
+</div>
+</section>
 <section id="basic-introspection">
 <h2>Basic Introspection<a class="headerlink" href="#basic-introspection" title="Permalink to this heading">#</a></h2>
 <p>The worker can tell you which plans and devices are available via:</p>
@@ -503,12 +529,12 @@ from the server.</p>
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="run-container.html"
+       href="configure-app.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Run in a container</p>
+        <p class="prev-next-title">Configure the application</p>
       </div>
     </a>
     <a class="right-next"
@@ -538,6 +564,7 @@ from the server.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-introspection">Basic Introspection</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-plans">Running Plans</a></li>
 </ul>

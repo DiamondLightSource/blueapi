@@ -96,6 +96,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/explain-events/"
   },
   {
+    "version": "no-auto-camelcase-of-plan-parameters",
+    "url": "https://DiamondLightSource.github.io/blueapi/no-auto-camelcase-of-plan-parameters/"
+  },
+  {
     "version": "public-topics",
     "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
   },

@@ -49,10 +49,7 @@ class BlueskyContext:
     _reference_cache: Dict[Type, Type]
 
     def __init__(self, run_engine: Optional[RunEngine] = None) -> None:
-        if run_engine is None:
-            run_engine = RunEngine(context_managers=[])
-
-        self._run_engine = run_engine
+        self._run_engine = run_engine or RunEngine(context_managers=[])
         self._devices = {}
         self._plans = {}
         self._plan_functions = {}

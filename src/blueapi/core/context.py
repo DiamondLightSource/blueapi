@@ -62,21 +62,73 @@ class BlueskyContext:
 
     @property
     def run_engine(self) -> RunEngine:
+        """
+        RunEngine capable of running the plans in the context against the devices in the context.
+
+        Returns:
+            RunEngine: A Bluesky RunEngine
+        """
+
         return self._run_engine
 
     def find_plan_function(self, name: str) -> Optional[PlanGenerator]:
+        """
+        Return a plan function matching the given name
+
+        Args:
+            name: The name of the plan
+
+        Returns:
+            Optional[PlanGenerator]: The plan function, None if there is
+                no plan matching the name in the context.
+        """
         return self._plan_functions.get(name)
 
     def find_plan_metadata(self, name: str) -> Optional[Plan]:
+        """
+        Return a metadata object describing a plan in the context
+
+        Args:
+            name: The name of the plan
+
+        Returns:
+            Optional[Plan]: The plan metadata, None if there is
+                no plan matching the name in the context.
+        """
+
         return self._plans.get(name)
 
     def all_devices(self) -> Iterable[Device]:
+        """
+        Return iterable of all devices in the context.
+
+        Returns:
+            Iterable[Device]: Iterable of devices
+        """
+
         return self._devices.values()
 
     def all_plan_metadata(self) -> Iterable[Plan]:
+        """
+        Return iterable of all plan metadata in the context.
+
+        Returns:
+            Iterable[Device]: Iterable of plan metadata
+        """
+
         return self._plans.values()
 
     def has_plan(self, name: str) -> bool:
+        """
+        Check if a plan exists in the context.
+
+        Args:
+            name: The name of the plan
+
+        Returns:
+            bool: True if the plan is accessible from this context
+        """
+
         return name in self._plans
 
     def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
@@ -84,11 +136,11 @@ class BlueskyContext:
         Find a device in this context, allows for recursive search.
 
         Args:
-            addr (Union[str, List[str]]): Address of the device, examples:
-                                          "motors", "motors.x"
+            addr: Address of the device, examples: "motors", "motors.x"
 
         Returns:
-            Optional[Device]: _description_
+            Optional[Device]: A Bluesky compatible device, None if no device
+                matching addr exists in the context.
         """
 
         if isinstance(addr, str):
@@ -98,10 +150,27 @@ class BlueskyContext:
             return find_component(self._devices, addr)
 
     def with_startup_script(self, path: Union[Path, str]) -> None:
+        """
+        Register all plans and devices in the Python file at this path.
+
+        Args:
+            path: Path to the Python file. Can be a posix file path
+                or a module path if pointing to a valid Python
+                module in your environment.
+        """
+
         mod = import_module(str(path))
         self.with_module(mod)
 
     def with_module(self, module: ModuleType) -> None:
+        """
+        Register all plans and devices in this module
+
+        Args:
+            module: A module, usually retrieved from an
+                import statement
+        """
+
         self.with_plan_module(module)
         self.with_device_module(module)
 
@@ -122,7 +191,7 @@ class BlueskyContext:
         __all__ = ["plan_1", "plan_2"]
 
         Args:
-            module (ModuleType): Module to pass in
+            module: Module to check for plans
         """
 
         for obj in load_module_all(module):
@@ -130,6 +199,13 @@ class BlueskyContext:
                 self.plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:
+        """
+        Register all devices in the module supplied
+
+        Args:
+            module: Module to check for devices
+        """
+
         for obj in load_module_all(module):
             if is_bluesky_compatible_device(obj):
                 self.device(obj)
@@ -164,7 +240,7 @@ class BlueskyContext:
         """
         Register an device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`
-        attribbute which can be used. The attribute can be overrideen with the
+        attribute which can be used. The attribute can be overridden with the
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
 

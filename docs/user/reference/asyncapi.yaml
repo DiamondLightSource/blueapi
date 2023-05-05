@@ -2,7 +2,7 @@ asyncapi: "2.6.0"
 id: https://github.com/DiamondLightSource/blueapi
 info:
   title: Bluesky Worker Service
-  version: <main>
+  version: 0.0.1
   description: Service for controlling access to and running scans based on Bluesky Plans and Ophyd Devices
   contact:
     name: Callum Forrester

@@ -87,22 +87,27 @@ def test_inject_values_into_defaultless_schema() -> None:
 
 def test_load_yaml(config_yaml: Path) -> None:
     loader = ConfigLoader(Config)
-    assert loader.load_from_yaml(config_yaml) == Config(foo=5, bar="test string")
+    loader.use_values_from_yaml(config_yaml)
+    assert loader.load() == Config(foo=5, bar="test string")
 
 
 def test_load_yaml_nested(nested_config_yaml: Path) -> None:
     loader = ConfigLoader(NestedConfig)
-    assert loader.load_from_yaml(nested_config_yaml) == NestedConfig(
+    loader.use_values_from_yaml(nested_config_yaml)
+    assert loader.load() == NestedConfig(
         nested=Config(foo=6, bar="other test string"), baz=True
     )
 
 
 def test_load_yaml_override(override_config_yaml: Path) -> None:
     loader = ConfigLoader(ConfigWithDefaults)
-    assert loader.load_from_yaml(override_config_yaml) == ConfigWithDefaults(foo=7)
+    loader.use_values_from_yaml(override_config_yaml)
+
+    assert loader.load() == ConfigWithDefaults(foo=7)
 
 
 def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) -> None:
     loader = ConfigLoader(Config)
+    loader.use_values_from_yaml(nested_config_yaml)
     with pytest.raises(InvalidConfigError):
-        loader.load_from_yaml(nested_config_yaml)
+        loader.load()

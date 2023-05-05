@@ -27,7 +27,7 @@ def main(ctx, config: Optional[Path]) -> None:
     ctx.obj["config"] = config_loader.load()
 
     if ctx.invoked_subcommand is None:
-        print(f"Using configuration file at: {config}. Please invoke subcommand!")
+        print("Please invoke subcommand!")
 
 
 @main.command(name="worker")

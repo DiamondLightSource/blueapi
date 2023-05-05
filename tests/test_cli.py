@@ -25,3 +25,10 @@ def test_main_with_nonexistent_config_file():
 
     result.exit_code == 1
     type(result.exception) == FileNotFoundError
+
+
+def test_controller_plans():
+    runner = CliRunner()
+    result = runner.invoke(main, ["controller", "plans"])
+
+    assert result.stdout == "Failed to establish connection to FastAPI server.\n"

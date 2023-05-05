@@ -1,17 +1,13 @@
 import logging
 from functools import lru_cache
-from pathlib import Path
 from typing import Optional
 
-from blueapi.config import ApplicationConfig, AppSettings
+from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
-from blueapi.utils import ConfigLoader
 from blueapi.worker.reworker import RunEngineWorker
 from blueapi.worker.worker import Worker
-
-settings = AppSettings()
 
 
 class Handler:
@@ -20,13 +16,10 @@ class Handler:
     config: ApplicationConfig
     message_bus: MessagingTemplate
 
-    def __init__(self, config_path: Optional[Path]) -> None:
+    def __init__(self, config: Optional[ApplicationConfig] = None) -> None:
         self.context = BlueskyContext()
+        self.config = config if config is not None else ApplicationConfig()
 
-        loader = ConfigLoader(ApplicationConfig)
-        if config_path is not None:
-            loader.use_yaml_or_json_file(config_path)
-        self.config = loader.load()
         logging.basicConfig(level=self.config.logging.level)
 
         self.context.with_startup_script(self.config.env.startup_script)
@@ -55,16 +48,24 @@ class Handler:
         self.message_bus.disconnect()
 
 
-@lru_cache(maxsize=50)
+HANDLER: Optional[Handler] = None
+
+
+def setup_handler(
+    config_loader: Optional[ConfigLoader[ApplicationConfig]] = None,
+) -> None:
+    global HANDLER
+    handler = Handler(config_loader.load() if config_loader else None)
+    handler.start()
+
+    HANDLER = handler
+
+
 def get_handler() -> Handler:
     """Retrieve the handler which wraps the bluesky context, worker and message bus."""
-    config_path: Optional[Path] = (
-        Path(settings.app_config_path) if settings.app_config_path is not None else None
-    )
-
-    handler = Handler(config_path)
-    handler.start()
-    return handler
+    if HANDLER is None:
+        raise ValueError()
+    return HANDLER
 
 
 def teardown_handler() -> None:

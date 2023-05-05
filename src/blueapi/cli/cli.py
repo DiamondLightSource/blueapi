@@ -1,6 +1,8 @@
 import json
 import logging
+from pathlib import Path
 from pprint import pprint
+from typing import Optional
 
 import click
 import requests
@@ -8,11 +10,8 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.config import ApplicationConfig, ConfigLoader
-from blueapi.messaging import StompMessagingTemplate
+from blueapi.service.handler import setup_handler
 from blueapi.service.main import app
-
-from pathlib import Path
-from typing import Optional
 
 
 @click.group(invoke_without_command=True)
@@ -21,12 +20,13 @@ from typing import Optional
 @click.pass_context
 def main(ctx, config: Optional[Path]) -> None:
     # if no command is supplied, run with the options passed
+
     config_loader = ConfigLoader(ApplicationConfig)
     if config is not None:
         config_loader.use_values_from_yaml(config)
 
     ctx.ensure_object(dict)
-    ctx.obj["config"] = config_loader.load()
+    ctx.obj["config_loader"] = config_loader
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
@@ -38,8 +38,12 @@ def main(ctx, config: Optional[Path]) -> None:
 def start_application(obj: dict):
     import uvicorn
 
-    config: ApplicationConfig = obj["config"]
-    uvicorn.run(app, host=settings.host, port=int(settings.port))
+    config_loader: ConfigLoader[ApplicationConfig] = obj["config_loader"]
+    config = config_loader.load()
+
+    setup_handler(config_loader)
+
+    uvicorn.run(app, host=config.api.host, port=config.api.port)
 
 
 @main.group()
@@ -50,7 +54,8 @@ def controller(ctx) -> None:
         return
 
     ctx.ensure_object(dict)
-    config: ApplicationConfig = ctx.obj["config"]
+    config_loader: ConfigLoader[ApplicationConfig] = ctx.obj["config_loader"]
+    config: ApplicationConfig = config_loader.load()
     logging.basicConfig(level=config.logging.level)
 
 
@@ -59,23 +64,30 @@ def check_connection(func):
         try:
             func(*args, **kwargs)
         except ConnectionError:
-            print("Failed to establish connection.")
+            print("Failed to establish connection to FastAPI server.")
 
     return wrapper
 
 
 @controller.command(name="plans")
 @check_connection
-def get_plans() -> None:
-    resp = requests.get(f"{settings.url}/plans")
+@click.pass_obj
+def get_plans(obj: dict) -> None:
+    config_loader: ConfigLoader[ApplicationConfig] = obj["config_loader"]
+    config: ApplicationConfig = config_loader.load()
+
+    resp = requests.get(f"http://{config.api.host}:{config.api.port}/plans")
     print(f"Response returned with {resp.status_code}: ")
     pprint(resp.json())
 
 
 @controller.command(name="devices")
 @check_connection
-def get_devices() -> None:
-    resp = requests.get(f"{settings.url}/devices")
+@click.pass_obj
+def get_devices(obj: dict) -> None:
+    config_loader: ConfigLoader[ApplicationConfig] = obj["config_loader"]
+    config: ApplicationConfig = config_loader.load()
+    resp = requests.get(f"http://{config.api.host}:{config.api.port}/devices")
     print(f"Response returned with {resp.status_code}: ")
     pprint(resp.json())
 
@@ -84,7 +96,13 @@ def get_devices() -> None:
 @click.argument("name", type=str)
 @click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
 @check_connection
-def run_plan(name: str, parameters: str) -> None:
-    resp = requests.put(f"{settings.url}/task/{name}", json=json.loads(parameters))
+@click.pass_obj
+def run_plan(obj: dict, name: str, parameters: str) -> None:
+    config_loader: ConfigLoader[ApplicationConfig] = obj["config_loader"]
+    config: ApplicationConfig = config_loader.load()
+    resp = requests.put(
+        f"http://{config.api.host}:{config.api.port}/task/{name}",
+        json=json.loads(parameters),
+    )
     print(f"Response returned with {resp.status_code}: ")
     pprint(resp.json())

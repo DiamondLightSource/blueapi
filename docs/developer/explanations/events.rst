@@ -7,7 +7,7 @@ Reasons
 -------
 
 Since the ``RunEngine`` is traditionally used by a human in front of an IPython terminal, it
-sometimes assumes intuitive behavoir. The worker replaces the human and so must fill in the
+sometimes assumes intuitive behaviour. The worker replaces the human and so must fill in the
 gaps.
 
 The base engine programatically emits data events conforming to the `bluesky event model`_. These

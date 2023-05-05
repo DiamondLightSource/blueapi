@@ -9,6 +9,10 @@ a test/development/debugging tool and not meant for production!
     `./run-container` and `../tutorials/installation`
 
 
+.. seealso:: 
+    In a developer environment, the worker can also be run from vscode: `../../developer/tutorials/dev-run`.
+
+
 Start ActiveMQ
 --------------
 

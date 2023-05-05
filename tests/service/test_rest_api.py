@@ -114,26 +114,3 @@ def test_put_plan_on_queue() -> None:
     next_task: ActiveTask = handler.worker._task_queue.get(timeout=1.0)
 
     assert next_task
-
-
-"""
-def test_multiple_simultaneous_api_calls_effect_on_get_handler() -> None:
-    client = TestClient(app)
-
-    # start multiple processes that all do the same thing; get something from the
-    # client. this tests the lru_cache of get_handler
-
-    # want to check all the processes are successful...
-    a_thing = multiprocessing.Queue(maxsize=100)
-
-    def test_get_devices():
-        print("ah")
-        response = client.get("/devices")
-        # a_thing.put(response.status_code)
-
-    process = Process(target=test_get_devices)
-    process.start()
-    process.join()
-
-    print("ah")
-"""

@@ -1,8 +1,9 @@
 from fastapi import Body, Depends, FastAPI, HTTPException
+from blueapi.config import ApplicationConfig, ConfigLoader
 
 from blueapi.worker import RunPlan
 
-from .handler import Handler, get_handler, teardown_handler
+from .handler import Handler, get_handler, setup_handler, teardown_handler
 from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse
 
 app = FastAPI(
@@ -54,3 +55,12 @@ async def execute_task(
     # basically in here, do the same thing the service once did...
     handler.worker.submit_task(name, task)
     pass
+
+
+def start(config_loader: ConfigLoader[ApplicationConfig]):
+    import uvicorn
+
+    config = config_loader.load()
+    setup_handler(config_loader)
+
+    uvicorn.run(app, host=config.api.host, port=config.api.port)

@@ -10,8 +10,7 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.config import ApplicationConfig, ConfigLoader
-from blueapi.service.handler import setup_handler
-from blueapi.service.main import app
+from blueapi.service.main import start
 
 
 @click.group(invoke_without_command=True)
@@ -32,18 +31,17 @@ def main(ctx, config: Optional[Path]) -> None:
         print("Please invoke subcommand!")
 
 
-@click.version_option(version=__version__)
 @main.command(name="run")
 @click.pass_obj
 def start_application(obj: dict):
-    import uvicorn
+    start(obj["config_loader"])
 
-    config_loader: ConfigLoader[ApplicationConfig] = obj["config_loader"]
-    config = config_loader.load()
 
-    setup_handler(config_loader)
-
-    uvicorn.run(app, host=config.api.host, port=config.api.port)
+@main.command(name="worker", deprecated=True)
+@click.pass_obj
+def deprecated_start_application(obj: dict):
+    print("Please use run command instead.\n")
+    start(obj["config_loader"])
 
 
 @main.group()

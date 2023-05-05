@@ -76,6 +76,9 @@ class BlueskyContext:
     def all_plan_metadata(self) -> Iterable[Plan]:
         return self._plans.values()
 
+    def has_plan(self, name: str) -> bool:
+        return name in self._plans
+
     def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
         """
         Find a device in this context, allows for recursive search.

@@ -1,5 +1,4 @@
 import logging
-from functools import lru_cache
 from typing import Optional
 
 from blueapi.config import ApplicationConfig, ConfigLoader

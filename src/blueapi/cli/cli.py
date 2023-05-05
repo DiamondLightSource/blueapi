@@ -25,7 +25,7 @@ def main(ctx, config: Optional[Path]) -> None:
         config_loader.use_values_from_yaml(config)
 
     ctx.ensure_object(dict)
-    ctx.obj["config_loader"] = config_loader
+    ctx.obj["config"] = config_loader.load()
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
@@ -34,14 +34,14 @@ def main(ctx, config: Optional[Path]) -> None:
 @main.command(name="run")
 @click.pass_obj
 def start_application(obj: dict):
-    start(obj["config_loader"])
+    start(obj["config"])
 
 
 @main.command(name="worker", deprecated=True)
 @click.pass_obj
 def deprecated_start_application(obj: dict):
     print("Please use run command instead.\n")
-    start(obj["config_loader"])
+    start(obj["config"])
 
 
 @main.group()
@@ -52,8 +52,7 @@ def controller(ctx) -> None:
         return
 
     ctx.ensure_object(dict)
-    config_loader: ConfigLoader[ApplicationConfig] = ctx.obj["config_loader"]
-    config: ApplicationConfig = config_loader.load()
+    config: ApplicationConfig = ctx.obj["config"]
     logging.basicConfig(level=config.logging.level)
 
 
@@ -71,8 +70,7 @@ def check_connection(func):
 @check_connection
 @click.pass_obj
 def get_plans(obj: dict) -> None:
-    config_loader: ConfigLoader[ApplicationConfig] = obj["config_loader"]
-    config: ApplicationConfig = config_loader.load()
+    config: ApplicationConfig = obj["config"]
 
     resp = requests.get(f"http://{config.api.host}:{config.api.port}/plans")
     print(f"Response returned with {resp.status_code}: ")
@@ -83,8 +81,8 @@ def get_plans(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def get_devices(obj: dict) -> None:
-    config_loader: ConfigLoader[ApplicationConfig] = obj["config_loader"]
-    config: ApplicationConfig = config_loader.load()
+    config: ApplicationConfig = obj["config"]
+
     resp = requests.get(f"http://{config.api.host}:{config.api.port}/devices")
     print(f"Response returned with {resp.status_code}: ")
     pprint(resp.json())
@@ -96,8 +94,8 @@ def get_devices(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(obj: dict, name: str, parameters: str) -> None:
-    config_loader: ConfigLoader[ApplicationConfig] = obj["config_loader"]
-    config: ApplicationConfig = config_loader.load()
+    config: ApplicationConfig = obj["config"]
+
     resp = requests.put(
         f"http://{config.api.host}:{config.api.port}/task/{name}",
         json=json.loads(parameters),

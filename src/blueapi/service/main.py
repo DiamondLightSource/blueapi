@@ -1,14 +1,12 @@
 from fastapi import Body, Depends, FastAPI, HTTPException
 
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
 from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse
 
-app = FastAPI(
-    docs_url="/docs", on_shutdown=[teardown_handler], on_startup=[get_handler]
-)
+app = FastAPI(docs_url="/docs", on_shutdown=[teardown_handler])
 
 
 @app.get("/plans", response_model=PlanResponse)
@@ -57,10 +55,9 @@ async def execute_task(
     pass
 
 
-def start(config_loader: ConfigLoader[ApplicationConfig]):
+def start(config: ApplicationConfig):
     import uvicorn
 
-    config = config_loader.load()
-    setup_handler(config_loader)
+    setup_handler(config)
 
     uvicorn.run(app, host=config.api.host, port=config.api.port)

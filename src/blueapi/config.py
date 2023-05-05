@@ -35,7 +35,7 @@ class LoggingConfig(BlueapiBaseModel):
     level: LogLevel = "INFO"
 
 
-class FastApiConfig(BlueapiBaseModel):
+class RestConfig(BlueapiBaseModel):
     host: str = "localhost"
     port: int = 8000
 
@@ -49,7 +49,7 @@ class ApplicationConfig(BlueapiBaseModel):
     stomp: StompConfig = Field(default_factory=StompConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
-    api: FastApiConfig = Field(default_factory=FastApiConfig)
+    api: RestConfig = Field(default_factory=RestConfig)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

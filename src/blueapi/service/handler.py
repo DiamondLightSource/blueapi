@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
@@ -51,10 +51,10 @@ HANDLER: Optional[Handler] = None
 
 
 def setup_handler(
-    config_loader: Optional[ConfigLoader[ApplicationConfig]] = None,
+    config: Optional[ApplicationConfig] = None,
 ) -> None:
     global HANDLER
-    handler = Handler(config_loader.load() if config_loader else None)
+    handler = Handler(config)
     handler.start()
 
     HANDLER = handler

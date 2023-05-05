@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: FastAPI",
+            "name": "Debug Rest Service",
             "type": "python",
             "request": "launch",
             "module": "uvicorn",
@@ -34,13 +34,13 @@
             },
         },
         {
-            "name": "Worker Service",
+            "name": "Run Service",
             "type": "python",
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
             "args": [
-                "worker"
+                "run"
             ]
         },
         {

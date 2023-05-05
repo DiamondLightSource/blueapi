@@ -1,1 +1,1 @@
-from blueapi.plans import scan  # noqa: F403
+from blueapi.plans import scan  # noqa: F401

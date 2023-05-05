@@ -6,6 +6,7 @@ import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
 from ophyd.sim import SynAxis, SynGauss
 
+from blueapi.config import EnvironmentConfig, Source
 from blueapi.core import (
     BlueskyContext,
     MsgGenerator,
@@ -183,11 +184,16 @@ def test_add_non_device(empty_context: BlueskyContext) -> None:
         empty_context.device("not a device")  # type: ignore
 
 
-def test_add_devices_and_plans_from_modules_with_startup_script(
+def test_add_devices_and_plans_from_modules_with_config(
     empty_context: BlueskyContext,
 ) -> None:
-    empty_context.with_startup_script(
-        ["tests.core.fake_device_module", "tests.core.fake_plan_module"]
+    empty_context.with_config(
+        EnvironmentConfig(
+            sources=[
+                Source(type="deviceFunctions", module="tests.core.fake_device_module"),
+                Source(type="planFunctions", module="tests.core.fake_plan_module"),
+            ]
+        )
     )
     assert {"motor"} == empty_context.devices.keys()
     assert {"scan"} == empty_context.plans.keys()

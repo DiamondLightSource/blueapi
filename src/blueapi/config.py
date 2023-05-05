@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Generic, Literal, Mapping, Type, TypeVar, TypedDict, Union
+from typing import Any, Generic, Literal, Mapping, Type, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as
@@ -9,7 +9,7 @@ from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
-class Source(TypedDict):
+class Source(BaseModel):
     type: str
     module: Union[Path, str]
 
@@ -29,14 +29,8 @@ class EnvironmentConfig(BlueapiBaseModel):
     """
 
     sources: list[Source] = [
-        {
-            "type": "deviceFunctions",
-            "module": "blueapi.startup.example",
-        },
-        {
-            "type": "planFunctions",
-            "module": "blueapi.plans",
-        },
+        Source(type="deviceFunctions", module="blueapi.startup.example"),
+        Source(type="planFunctions", module="blueapi.plans"),
     ]
 
     def __eq__(self, other: object) -> bool:

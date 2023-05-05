@@ -21,7 +21,7 @@ class Handler:
 
         logging.basicConfig(level=self.config.logging.level)
 
-        self.context.with_startup_script(self.config.env.startup_script)
+        self.context.with_config(self.config.env)
 
         self.worker = RunEngineWorker(self.context)
         self.message_bus = StompMessagingTemplate.autoconfigured(self.config.stomp)

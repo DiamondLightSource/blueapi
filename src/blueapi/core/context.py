@@ -2,7 +2,6 @@ import logging
 from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
-from pathlib import Path
 from types import ModuleType
 from typing import (
     Any,
@@ -17,11 +16,12 @@ from typing import (
     get_origin,
     get_type_hints,
 )
-from dodal.utils import make_all_devices
 
 from bluesky import RunEngine
+from dodal.utils import make_all_devices
 from pydantic import create_model
 
+from blueapi.config import EnvironmentConfig
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
 from .bluesky_types import (
@@ -71,9 +71,9 @@ class BlueskyContext:
         else:
             return find_component(self.devices, addr)
 
-    def with_startup_script(self, paths: list[Union[Path, str]]) -> None:
-        for path in paths:
-            mod = import_module(str(path))
+    def with_config(self, config: EnvironmentConfig) -> None:
+        for source in config.sources:
+            mod = import_module(str(source.module))
             self.with_module(mod)
 
     def with_module(self, module: ModuleType) -> None:

@@ -148,7 +148,12 @@ def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
     import tests.core.fake_device_module as device_module
 
     empty_context.with_device_module(device_module)
-    assert {"motor"} == empty_context.devices.keys()
+    assert {
+        "motor_x",
+        "motor_y",
+        "motor_bundle_a",
+        "motor_bundle_b",
+    } == empty_context.devices.keys()
 
 
 @pytest.mark.parametrize(
@@ -195,7 +200,12 @@ def test_add_devices_and_plans_from_modules_with_config(
             ]
         )
     )
-    assert {"motor"} == empty_context.devices.keys()
+    assert {
+        "motor_x",
+        "motor_y",
+        "motor_bundle_a",
+        "motor_bundle_b",
+    } == empty_context.devices.keys()
     assert {"scan"} == empty_context.plans.keys()
 
 

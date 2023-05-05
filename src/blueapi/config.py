@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import Any, Generic, Mapping, Type, TypeVar, Union
+from typing import Any, Generic, Literal, Mapping, Type, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+
+LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 class StompConfig(BlueapiBaseModel):
@@ -23,9 +25,14 @@ class EnvironmentConfig(BlueapiBaseModel):
 
     startup_script: Union[Path, str] = "blueapi.startup.example"
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, EnvironmentConfig):
+            return str(self.startup_script) == str(other.startup_script)
+        return False
+
 
 class LoggingConfig(BlueapiBaseModel):
-    level: str = "INFO"
+    level: LogLevel = "INFO"
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -37,6 +44,15 @@ class ApplicationConfig(BlueapiBaseModel):
     stomp: StompConfig = Field(default_factory=StompConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ApplicationConfig):
+            return (
+                (self.stomp == other.stomp)
+                & (self.env == other.env)
+                & (self.logging == other.logging)
+            )
+        return False
 
 
 C = TypeVar("C", bound=BaseModel)

@@ -5,7 +5,7 @@ from typing import Any, Type
 import pytest
 from pydantic import BaseModel, Field
 
-from blueapi.config import ConfigLoader
+from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.utils import InvalidConfigError
 
 
@@ -47,6 +47,11 @@ def nested_config_yaml(package_root: Path) -> Path:
 @pytest.fixture
 def override_config_yaml(package_root: Path) -> Path:
     return package_root / "override_config.yaml"
+
+
+@pytest.fixture
+def default_yaml(package_root: Path) -> Path:
+    return package_root.parent.parent / "config" / "defaults.yaml"
 
 
 @pytest.mark.parametrize("schema", [ConfigWithDefaults, NestedConfigWithDefaults])
@@ -111,3 +116,13 @@ def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) ->
     loader.use_values_from_yaml(nested_config_yaml)
     with pytest.raises(InvalidConfigError):
         loader.load()
+
+
+def test_example_config_yaml_gives_same_config_as_model(default_yaml: Path):
+    loader = ConfigLoader(ApplicationConfig)
+    default_config = loader.load()
+
+    loader.use_values_from_yaml(default_yaml)
+    yaml_config = loader.load()
+
+    assert default_config == yaml_config

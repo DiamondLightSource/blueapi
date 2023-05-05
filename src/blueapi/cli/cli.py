@@ -1,16 +1,18 @@
 import json
 import logging
-from pathlib import Path
-from typing import Optional
+from pprint import pprint
 
 import click
+import requests
+from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.messaging import StompMessagingTemplate
+from blueapi.service.main import app
 
-from .amq import AmqClient
-from .updates import CliEventRenderer
+from pathlib import Path
+from typing import Optional
 
 
 @click.group(invoke_without_command=True)
@@ -30,13 +32,14 @@ def main(ctx, config: Optional[Path]) -> None:
         print("Please invoke subcommand!")
 
 
-@main.command(name="worker")
+@click.version_option(version=__version__)
+@main.command(name="run")
 @click.pass_obj
-def start_worker(obj: dict) -> None:
-    from blueapi.service import start
+def start_application(obj: dict):
+    import uvicorn
 
     config: ApplicationConfig = obj["config"]
-    start(config)
+    uvicorn.run(app, host=settings.host, port=int(settings.port))
 
 
 @main.group()
@@ -49,39 +52,39 @@ def controller(ctx) -> None:
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
     logging.basicConfig(level=config.logging.level)
-    client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
-    ctx.obj["client"] = client
-    client.app.connect()
+
+
+def check_connection(func):
+    def wrapper(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except ConnectionError:
+            print("Failed to establish connection.")
+
+    return wrapper
 
 
 @controller.command(name="plans")
-@click.pass_context
-def get_plans(ctx) -> None:
-    client: AmqClient = ctx.obj["client"]
-    plans = client.get_plans()
-    print("PLANS")
-    for plan in plans.plans:
-        print("\t" + plan.name)
+@check_connection
+def get_plans() -> None:
+    resp = requests.get(f"{settings.url}/plans")
+    print(f"Response returned with {resp.status_code}: ")
+    pprint(resp.json())
 
 
 @controller.command(name="devices")
-@click.pass_context
-def get_devices(ctx) -> None:
-    client: AmqClient = ctx.obj["client"]
-    print(client.get_devices().devices)
+@check_connection
+def get_devices() -> None:
+    resp = requests.get(f"{settings.url}/devices")
+    print(f"Response returned with {resp.status_code}: ")
+    pprint(resp.json())
 
 
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
-@click.pass_context
-def run_plan(ctx, name: str, parameters: str) -> None:
-    client: AmqClient = ctx.obj["client"]
-    renderer = CliEventRenderer()
-    client.run_plan(
-        name,
-        json.loads(parameters),
-        renderer.on_worker_event,
-        renderer.on_progress_event,
-        timeout=120.0,
-    )
+@check_connection
+def run_plan(name: str, parameters: str) -> None:
+    resp = requests.put(f"{settings.url}/task/{name}", json=json.loads(parameters))
+    print(f"Response returned with {resp.status_code}: ")
+    pprint(resp.json())

@@ -34,4 +34,4 @@ ENV PATH=/venv/bin:$PATH
 
 # change this entrypoint if it is not the same as the repo
 ENTRYPOINT ["blueapi"]
-CMD ["worker"]
+CMD ["run"]

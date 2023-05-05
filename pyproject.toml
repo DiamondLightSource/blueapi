@@ -24,6 +24,7 @@ dependencies = [
     "click",
     "fastapi",
     "uvicorn",
+    "httpx",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -46,6 +47,7 @@ dev = [
     "tox-direct",
     "types-mock",
     "types-PyYAML",
+    "types-requests",
 ]
 
 [project.scripts]

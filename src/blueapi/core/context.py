@@ -1,5 +1,5 @@
 import logging
-from dataclasses import dataclass, field
+from dataclasses import field
 from importlib import import_module
 from inspect import Parameter, signature
 from pathlib import Path
@@ -47,8 +47,7 @@ class BlueskyContext:
     _plans: Dict[str, Plan]
     _devices: Dict[str, Device]
     _plan_functions: Dict[str, PlanGenerator]
-
-    _reference_cache: Dict[Type, Type] = field(default_factory=dict)
+    _reference_cache: Dict[Type, Type]
 
     def __init__(self, run_engine: Optional[RunEngine] = None) -> None:
         if run_engine is None:
@@ -63,7 +62,8 @@ class BlueskyContext:
     @property
     def run_engine(self) -> RunEngine:
         """
-        RunEngine capable of running the plans in the context against the devices in the context.
+        RunEngine capable of running the plans in the context against the devices
+        in the context.
 
         Returns:
             RunEngine: A Bluesky RunEngine

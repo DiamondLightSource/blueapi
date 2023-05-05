@@ -6,7 +6,7 @@ from typing import Optional
 import click
 
 from blueapi import __version__
-from blueapi.config import StompConfig
+from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.messaging import StompMessagingTemplate
 
 from .amq import AmqClient
@@ -15,60 +15,41 @@ from .updates import CliEventRenderer
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
+@click.option("-c", "--config", type=Path, help="Path to configuration YAML file")
 @click.pass_context
-def main(ctx) -> None:
+def main(ctx, config: Optional[Path]) -> None:
     # if no command is supplied, run with the options passed
+    config_loader = ConfigLoader(ApplicationConfig)
+    if config is not None:
+        config_loader.use_values_from_yaml(config)
+
+    ctx.ensure_object(dict)
+    ctx.obj["config"] = config_loader.load()
+
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
 
 
 @main.command(name="worker")
-@click.option("-c", "--config", type=Path, help="Path to configuration YAML file")
-def start_worker(config: Optional[Path]):
+@click.pass_obj
+def start_worker(obj: dict) -> None:
     from blueapi.service import start
 
+    config: ApplicationConfig = obj["config"]
     start(config)
 
 
 @main.group()
-@click.option(
-    "-h",
-    "--host",
-    type=str,
-    help="Broker host",
-    default="127.0.0.1",
-)
-@click.option(
-    "-p",
-    "--port",
-    type=int,
-    help="Broker port",
-    default=61613,
-)
-@click.option(
-    "-l",
-    "--log-level",
-    type=str,
-    help="Logger level: TRACE, DEBUG, INFO, WARNING, ERROR or CRITICAL, "
-    "defaults to WARNING",
-    default="WARNING",
-)
 @click.pass_context
-def controller(ctx, host: str, port: int, log_level: str):
-    # if no command is supplied, run with the options passed
+def controller(ctx) -> None:
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
-    logging.basicConfig(level=log_level)
+
     ctx.ensure_object(dict)
-    client = AmqClient(
-        StompMessagingTemplate.autoconfigured(
-            StompConfig(
-                host=host,
-                port=port,
-            )
-        )
-    )
+    config: ApplicationConfig = ctx.obj["config"]
+    logging.basicConfig(level=config.logging.level)
+    client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
     ctx.obj["client"] = client
     client.app.connect()
 

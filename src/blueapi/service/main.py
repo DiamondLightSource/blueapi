@@ -50,7 +50,6 @@ async def execute_task(
     ),
     handler: Handler = Depends(get_handler),
 ):
-    # basically in here, do the same thing the service once did...
     handler.worker.submit_task(name, task)
     pass
 

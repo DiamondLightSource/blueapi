@@ -80,7 +80,7 @@ def test_put_plan_submits_task(handler: Handler, client: TestClient) -> None:
     def on_submit(name: str, task: Task):
         submitted_tasks[name] = task
 
-    handler.worker.submit_task.side_effect = on_submit
+    handler.worker.submit_task.side_effect = on_submit  # type: ignore
 
     client.put(f"/task/{task_name}", json=task_json)
     assert submitted_tasks == {task_name: RunPlan(name=task_name, params=task_json)}

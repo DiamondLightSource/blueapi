@@ -24,7 +24,7 @@ dependencies = [
     "click",
     "fastapi",
     "uvicorn",
-    "httpx",
+    "requests",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

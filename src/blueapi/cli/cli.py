@@ -106,4 +106,3 @@ def run_plan(obj: dict, name: str, parameters: str) -> None:
         json={"name": name, "params": json.loads(parameters)},
     )
     print(f"Response returned with {resp.status_code}: ")
-    pprint(resp.json())

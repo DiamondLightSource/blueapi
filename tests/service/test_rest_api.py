@@ -11,8 +11,6 @@ from blueapi.service.main import app
 from blueapi.worker import RunEngineWorker
 from blueapi.worker.task import ActiveTask
 
-# client = TestClient(app)
-
 
 class MockHandler:
     context: BlueskyContext

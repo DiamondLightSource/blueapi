@@ -1,51 +1,14 @@
 from dataclasses import dataclass
 
-import pytest
 from fastapi.testclient import TestClient
-from mock import Mock
 from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import Plan
-from blueapi.core.context import BlueskyContext
-from blueapi.service.handler import get_handler
-from blueapi.service.main import app
-from blueapi.worker import RunEngineWorker
+from blueapi.service.handler import Handler
 from blueapi.worker.task import RunPlan, Task
 
 
-class MockHandler:
-    context: BlueskyContext
-    worker: RunEngineWorker
-
-    def __init__(self) -> None:
-        self.context = Mock()
-        self.worker = Mock()
-
-
-class Client:
-    handler = None
-
-    def __init__(self, handler: MockHandler) -> None:
-        """Create tester object"""
-        self.handler = handler
-
-    @property
-    def client(self) -> TestClient:
-        app.dependency_overrides[get_handler] = lambda: self.handler
-        return TestClient(app)
-
-
-@pytest.fixture
-def handler() -> MockHandler:
-    return MockHandler()
-
-
-@pytest.fixture
-def client(handler: MockHandler) -> TestClient:
-    return Client(handler).client
-
-
-def test_get_plans(handler: MockHandler, client: TestClient) -> None:
+def test_get_plans(handler: Handler, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
 
@@ -58,7 +21,7 @@ def test_get_plans(handler: MockHandler, client: TestClient) -> None:
     assert response.json() == {"plans": [{"name": "my-plan"}]}
 
 
-def test_get_plan_by_name(handler: MockHandler, client: TestClient) -> None:
+def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
 
@@ -71,7 +34,7 @@ def test_get_plan_by_name(handler: MockHandler, client: TestClient) -> None:
     assert response.json() == {"name": "my-plan"}
 
 
-def test_get_devices(handler: MockHandler, client: TestClient) -> None:
+def test_get_devices(handler: Handler, client: TestClient) -> None:
     @dataclass
     class MyDevice:
         name: str
@@ -92,7 +55,7 @@ def test_get_devices(handler: MockHandler, client: TestClient) -> None:
     }
 
 
-def test_get_device_by_name(handler: MockHandler, client: TestClient) -> None:
+def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
     @dataclass
     class MyDevice:
         name: str
@@ -109,7 +72,7 @@ def test_get_device_by_name(handler: MockHandler, client: TestClient) -> None:
     }
 
 
-def test_put_plan_submits_task(handler: MockHandler, client: TestClient) -> None:
+def test_put_plan_submits_task(handler: Handler, client: TestClient) -> None:
     task_json = {"detectors": ["x"]}
     task_name = "count"
     submitted_tasks = {}

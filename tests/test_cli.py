@@ -9,10 +9,7 @@ from pydantic import BaseModel
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.core.bluesky_types import Plan
-from blueapi.core.context import BlueskyContext
-from blueapi.service.handler import get_handler
-from blueapi.service.main import app
-from blueapi.worker.reworker import RunEngineWorker
+from blueapi.service.handler import Handler
 
 
 @pytest.fixture
@@ -52,39 +49,6 @@ def test_controller_plans():
 # Some CLI commands require the rest api to be running...
 
 
-class MockHandler:
-    context: BlueskyContext
-    worker: RunEngineWorker
-
-    def __init__(self) -> None:
-        self.context = BlueskyContext()
-        self.worker = RunEngineWorker(self.context)
-
-    def start(self):
-        return None
-
-
-class Client:
-    def __init__(self, handler: MockHandler) -> None:
-        """Create tester object"""
-        self.handler = handler
-
-    @property
-    def client(self) -> TestClient:
-        app.dependency_overrides[get_handler] = lambda: self.handler
-        return TestClient(app)
-
-
-@pytest.fixture
-def handler() -> MockHandler:
-    return MockHandler()
-
-
-@pytest.fixture
-def client(handler: MockHandler) -> TestClient:
-    return Client(handler).client
-
-
 class MyModel(BaseModel):
     id: str
 
@@ -96,7 +60,7 @@ class MyDevice:
 
 @patch("blueapi.service.handler.Handler")
 def test_deprecated_worker_command(
-    mock_handler: Mock, handler: MockHandler, runner: CliRunner
+    mock_handler: Mock, handler: Handler, runner: CliRunner
 ):
     mock_handler.side_effect = Mock(return_value=handler)
 
@@ -114,7 +78,7 @@ def test_deprecated_worker_command(
 def test_get_plans_and_devices(
     mock_requests: Mock,
     mock_handler: Mock,
-    handler: MockHandler,
+    handler: Handler,
     client: TestClient,
     runner: CliRunner,
 ):
@@ -144,6 +108,7 @@ def test_get_plans_and_devices(
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output - expect nothing as no devices set.
+    handler.context.devices = {}
     mock_requests.return_value = client.get("/devices")
     unset_devices = runner.invoke(main, ["controller", "devices"])
     assert unset_devices.output == "Response returned with 200: \n{'devices': []}\n"
@@ -154,7 +119,7 @@ def test_get_plans_and_devices(
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output.
-    mock_requests.return_value = Client(handler).client.get("/devices")
+    mock_requests.return_value = client.get("/devices")
     devices = runner.invoke(main, ["controller", "devices"])
 
     assert devices.output == (
@@ -174,7 +139,7 @@ def test_invalid_config_path_handling(runner: CliRunner):
 def test_config_passed_down_to_command_children(
     mock_requests: Mock,
     mock_handler: Mock,
-    handler: MockHandler,
+    handler: Handler,
     runner: CliRunner,
 ):
     mock_handler.side_effect = Mock(return_value=handler)

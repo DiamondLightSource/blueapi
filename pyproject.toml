@@ -22,7 +22,7 @@ dependencies = [
     "scanspec",
     "PyYAML",
     "click",
-    "fastapi",
+    "fastapi[all]",
     "uvicorn",
     "requests",
 ]

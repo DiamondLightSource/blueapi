@@ -145,7 +145,7 @@ def test_get_plans_and_devices(mock_requests, mock_handler, runner: CliRunner):
     devices = runner.invoke(main, ["controller", "devices"])
 
     assert plans.output == (
-        "Response returned with 200: " + "\n{'plans': [{'name': 'my-plan'}]}\n"
+        "Response returned with 200: \n{'plans': [{'name': 'my-plan'}]}\n"
     )
     assert devices.output == (
         "Response returned with 200: "

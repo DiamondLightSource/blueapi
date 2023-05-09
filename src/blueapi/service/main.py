@@ -1,3 +1,5 @@
+from typing import Any, Mapping
+
 from fastapi import Body, Depends, FastAPI, HTTPException
 
 from blueapi.config import ApplicationConfig
@@ -45,13 +47,10 @@ async def get_device_by_name(name: str, handler: Handler = Depends(get_handler))
 @app.put("/task/{name}")
 async def execute_task(
     name: str,
-    task: RunPlan = Body(
-        ..., example={"name": "count", "params": {"detectors": ["x"]}}
-    ),
+    task: Mapping[str, Any] = Body(..., example={"detectors": ["x"]}),
     handler: Handler = Depends(get_handler),
 ):
-    handler.worker.submit_task(name, task)
-    pass
+    handler.worker.submit_task(name, RunPlan(name=name, params=task))
 
 
 def start(config: ApplicationConfig):

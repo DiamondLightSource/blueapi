@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
+import pytest
 from fastapi.testclient import TestClient
+from mock import Mock
 from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import Plan
@@ -8,7 +10,7 @@ from blueapi.core.context import BlueskyContext
 from blueapi.service.handler import get_handler
 from blueapi.service.main import app
 from blueapi.worker import RunEngineWorker
-from blueapi.worker.task import ActiveTask
+from blueapi.worker.task import RunPlan, Task
 
 
 class MockHandler:
@@ -16,11 +18,13 @@ class MockHandler:
     worker: RunEngineWorker
 
     def __init__(self) -> None:
-        self.context = BlueskyContext()
-        self.worker = RunEngineWorker(self.context)
+        self.context = Mock()
+        self.worker = Mock()
 
 
 class Client:
+    handler = None
+
     def __init__(self, handler: MockHandler) -> None:
         """Create tester object"""
         self.handler = handler
@@ -31,10 +35,17 @@ class Client:
         return TestClient(app)
 
 
-def test_get_plans() -> None:
-    handler = MockHandler()
-    client = Client(handler).client
+@pytest.fixture
+def handler() -> MockHandler:
+    return MockHandler()
 
+
+@pytest.fixture
+def client(handler: MockHandler) -> TestClient:
+    return Client(handler).client
+
+
+def test_get_plans(handler: MockHandler, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
 
@@ -47,10 +58,7 @@ def test_get_plans() -> None:
     assert response.json() == {"plans": [{"name": "my-plan"}]}
 
 
-def test_get_plan_by_name() -> None:
-    handler = MockHandler()
-    client = Client(handler).client
-
+def test_get_plan_by_name(handler: MockHandler, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
 
@@ -63,10 +71,7 @@ def test_get_plan_by_name() -> None:
     assert response.json() == {"name": "my-plan"}
 
 
-def test_get_devices() -> None:
-    handler = MockHandler()
-    client = Client(handler).client
-
+def test_get_devices(handler: MockHandler, client: TestClient) -> None:
     @dataclass
     class MyDevice:
         name: str
@@ -87,10 +92,7 @@ def test_get_devices() -> None:
     }
 
 
-def test_get_device_by_name() -> None:
-    handler = MockHandler()
-    client = Client(handler).client
-
+def test_get_device_by_name(handler: MockHandler, client: TestClient) -> None:
     @dataclass
     class MyDevice:
         name: str
@@ -107,11 +109,15 @@ def test_get_device_by_name() -> None:
     }
 
 
-def test_put_plan_on_queue() -> None:
-    handler = MockHandler()
-    client = Client(handler).client
+def test_put_plan_submits_task(handler: MockHandler, client: TestClient) -> None:
+    task_json = {"detectors": ["x"]}
+    task_name = "count"
+    submitted_tasks = {}
 
-    client.put("/task/my-task", json={"name": "count", "params": {"detectors": ["x"]}})
-    next_task: ActiveTask = handler.worker._task_queue.get(timeout=1.0)
+    def on_submit(name: str, task: Task):
+        submitted_tasks[name] = task
 
-    assert next_task
+    handler.worker.submit_task.side_effect = on_submit
+
+    client.put(f"/task/{task_name}", json=task_json)
+    assert submitted_tasks == {task_name: RunPlan(name=task_name, params=task_json)}

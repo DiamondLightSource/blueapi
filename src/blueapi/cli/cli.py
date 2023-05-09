@@ -18,12 +18,15 @@ from blueapi.service.main import start
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option("-c", "--config", type=Path, help="Path to configuration YAML file")
 @click.pass_context
-def main(ctx, config: Optional[Path]) -> None:
+def main(ctx: click.Context, config: Optional[Path]) -> None:
     # if no command is supplied, run with the options passed
 
     config_loader = ConfigLoader(ApplicationConfig)
     if config is not None:
-        config_loader.use_values_from_yaml(config)
+        if config.exists():
+            config_loader.use_values_from_yaml(config)
+        else:
+            raise FileNotFoundError(f"Cannot find file: {config}")
 
     ctx.ensure_object(dict)
     ctx.obj["config"] = config_loader.load()
@@ -47,7 +50,7 @@ def deprecated_start_application(obj: dict):
 
 @main.group()
 @click.pass_context
-def controller(ctx) -> None:
+def controller(ctx: click.Context) -> None:
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
@@ -90,7 +93,7 @@ def get_devices(obj: dict) -> None:
     pprint(resp.json())
 
 
-@controller.command(name="serve")
+@controller.command(name="run")
 @click.argument("name", type=str)
 @click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
 @check_connection
@@ -100,7 +103,7 @@ def run_plan(obj: dict, name: str, parameters: str) -> None:
 
     resp = requests.put(
         f"http://{config.api.host}:{config.api.port}/task/{name}",
-        json=json.loads(parameters),
+        json={"name": name, "params": json.loads(parameters)},
     )
     print(f"Response returned with {resp.status_code}: ")
     pprint(resp.json())

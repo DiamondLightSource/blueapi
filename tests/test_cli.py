@@ -135,6 +135,10 @@ def test_get_plans_and_devices(mock_requests, mock_handler, runner: CliRunner):
     mock_requests.return_value = Client(handler).client.get("/plans")
     plans = runner.invoke(main, ["controller", "plans"])
 
+    assert plans.output == (
+        "Response returned with 200: \n{'plans': [{'name': 'my-plan'}]}\n"
+    )
+
     mock_requests.return_value = Client(handler).client.get("/devices")
     unset_devices = runner.invoke(main, ["controller", "devices"])
     assert unset_devices.output == "Response returned with 200: \n{'devices': []}\n"
@@ -144,9 +148,6 @@ def test_get_plans_and_devices(mock_requests, mock_handler, runner: CliRunner):
     mock_requests.return_value = Client(handler).client.get("/devices")
     devices = runner.invoke(main, ["controller", "devices"])
 
-    assert plans.output == (
-        "Response returned with 200: \n{'plans': [{'name': 'my-plan'}]}\n"
-    )
     assert devices.output == (
         "Response returned with 200: "
         + "\n{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"

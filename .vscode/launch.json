@@ -40,7 +40,7 @@
             "justMyCode": false,
             "module": "blueapi.cli",
             "args": [
-                "run"
+                "serve"
             ]
         },
         {

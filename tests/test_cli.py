@@ -126,7 +126,7 @@ def test_get_plans_and_devices(mock_requests, mock_handler, runner: CliRunner):
     mock_handler.side_effect = [dummy]
 
     with patch("uvicorn.run", side_effect=[None]):
-        result = runner.invoke(main, ["run"])
+        result = runner.invoke(main, ["serve"])
 
     assert result.exit_code == 0
 
@@ -179,7 +179,7 @@ def test_run_plan_through_cli(mock_requests, mock_handler, runner: CliRunner):
     mock_handler.side_effect = [dummy]
 
     with patch("uvicorn.run", side_effect=[None]):
-        result = runner.invoke(main, ["run"])
+        result = runner.invoke(main, ["serve"])
 
     assert result.exit_code == 0
 

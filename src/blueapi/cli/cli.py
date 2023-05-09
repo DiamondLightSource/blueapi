@@ -31,7 +31,7 @@ def main(ctx, config: Optional[Path]) -> None:
         print("Please invoke subcommand!")
 
 
-@main.command(name="run")
+@main.command(name="serve")
 @click.pass_obj
 def start_application(obj: dict):
     start(obj["config"])
@@ -88,7 +88,7 @@ def get_devices(obj: dict) -> None:
     pprint(resp.json())
 
 
-@controller.command(name="run")
+@controller.command(name="serve")
 @click.argument("name", type=str)
 @click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
 @check_connection

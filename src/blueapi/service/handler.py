@@ -69,5 +69,7 @@ def get_handler() -> Handler:
 
 def teardown_handler() -> None:
     """Stop all handler tasks. Does nothing if setup_handler has not been called."""
+    if HANDLER is None:
+        return
     handler = get_handler()
     handler.stop()

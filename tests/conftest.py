@@ -1,13 +1,13 @@
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
 
-from mock import Mock
 import pytest
+from fastapi.testclient import TestClient
+from mock import Mock
 
 from blueapi.core.context import BlueskyContext
-from blueapi.worker.reworker import RunEngineWorker
 from blueapi.service.handler import Handler, get_handler
 from blueapi.service.main import app
-from fastapi.testclient import TestClient
+from blueapi.worker.reworker import RunEngineWorker
 
 
 def pytest_addoption(parser):

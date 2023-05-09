@@ -1,4 +1,3 @@
-from ast import literal_eval
 from dataclasses import dataclass
 
 from fastapi.testclient import TestClient
@@ -45,7 +44,7 @@ def test_get_plans() -> None:
     response = client.get("/plans")
 
     assert response.status_code == 200
-    assert literal_eval(response.content.decode())["plans"][0] == {"name": "my-plan"}
+    assert response.json() == {"plans": [{"name": "my-plan"}]}
 
 
 def test_get_plan_by_name() -> None:
@@ -61,7 +60,7 @@ def test_get_plan_by_name() -> None:
     response = client.get("/plan/my-plan")
 
     assert response.status_code == 200
-    assert literal_eval(response.content.decode()) == {"name": "my-plan"}
+    assert response.json() == {"name": "my-plan"}
 
 
 def test_get_devices() -> None:
@@ -78,9 +77,13 @@ def test_get_devices() -> None:
     response = client.get("/devices")
 
     assert response.status_code == 200
-    assert literal_eval(response.content.decode())["devices"][0] == {
-        "name": "my-device",
-        "protocols": ["HasName"],
+    assert response.json() == {
+        "devices": [
+            {
+                "name": "my-device",
+                "protocols": ["HasName"],
+            }
+        ]
     }
 
 
@@ -98,7 +101,7 @@ def test_get_device_by_name() -> None:
     response = client.get("/device/my-device")
 
     assert response.status_code == 200
-    assert literal_eval(response.content.decode()) == {
+    assert response.json() == {
         "name": "my-device",
         "protocols": ["HasName"],
     }

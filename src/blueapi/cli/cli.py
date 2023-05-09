@@ -1,5 +1,6 @@
 import json
 import logging
+from functools import wraps
 from pathlib import Path
 from pprint import pprint
 from typing import Optional
@@ -57,6 +58,7 @@ def controller(ctx) -> None:
 
 
 def check_connection(func):
+    @wraps(func)
     def wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)

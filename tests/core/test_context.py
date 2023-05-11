@@ -6,7 +6,7 @@ import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
 from ophyd.sim import SynAxis, SynGauss
 
-from blueapi.config import EnvironmentConfig, Source
+from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import (
     BlueskyContext,
     MsgGenerator,
@@ -195,8 +195,13 @@ def test_add_devices_and_plans_from_modules_with_config(
     empty_context.with_config(
         EnvironmentConfig(
             sources=[
-                Source(type="deviceFunctions", module="tests.core.fake_device_module"),
-                Source(type="planFunctions", module="tests.core.fake_plan_module"),
+                Source(
+                    kind=SourceKind.deviceFunctions,
+                    module="tests.core.fake_device_module",
+                ),
+                Source(
+                    kind=SourceKind.planFunctions, module="tests.core.fake_plan_module"
+                ),
             ]
         )
     )

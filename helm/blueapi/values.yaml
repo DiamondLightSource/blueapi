@@ -60,9 +60,9 @@ affinity: {}
 worker:
   env:
     sources:
-      - type: deviceFunctions
+      - kind: deviceFunctions
         module: blueapi.startup.example
-      - type: planFunctions
+      - kind: planFunctions
         module: blueapi.plans
   stomp:
     host: activemq

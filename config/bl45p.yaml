@@ -1,6 +1,6 @@
 env:
   sources:
-    - type: dodal
+    - kind: dodal
       module: dodal.p45
-    - type: planFunctions
+    - kind: planFunctions
       module: blueapi.plans

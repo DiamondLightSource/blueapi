@@ -6,13 +6,14 @@ from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
-from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse
+from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse, TaskResponse
 
 app = FastAPI(docs_url="/docs", on_shutdown=[teardown_handler])
 
 
 @app.get("/plans", response_model=PlanResponse)
 async def get_plans(handler: Handler = Depends(get_handler)):
+    """Retrieve information about all available plans."""
     return PlanResponse(
         plans=[PlanModel.from_plan(plan) for plan in handler.context.plans.values()]
     )
@@ -20,6 +21,7 @@ async def get_plans(handler: Handler = Depends(get_handler)):
 
 @app.get("/plan/{name}", response_model=PlanModel)
 async def get_plan_by_name(name: str, handler: Handler = Depends(get_handler)):
+    """Retrieve information about a plan by its (unique) name."""
     try:
         return PlanModel.from_plan(handler.context.plans[name])
     except KeyError:
@@ -28,6 +30,7 @@ async def get_plan_by_name(name: str, handler: Handler = Depends(get_handler)):
 
 @app.get("/devices", response_model=DeviceResponse)
 async def get_devices(handler: Handler = Depends(get_handler)):
+    """Retrieve information about all available devices."""
     return DeviceResponse(
         devices=[
             DeviceModel.from_device(device)
@@ -38,19 +41,22 @@ async def get_devices(handler: Handler = Depends(get_handler)):
 
 @app.get("/device/{name}", response_model=DeviceModel)
 async def get_device_by_name(name: str, handler: Handler = Depends(get_handler)):
+    """Retrieve information about a devices by its (unique) name."""
     try:
         return DeviceModel.from_device(handler.context.devices[name])
     except KeyError:
         raise HTTPException(status_code=404, detail="Item not found")
 
 
-@app.put("/task/{name}")
-async def execute_task(
+@app.put("/task/{name}", response_model=TaskResponse)
+async def submit_task(
     name: str,
     task: Mapping[str, Any] = Body(..., example={"detectors": ["x"]}),
     handler: Handler = Depends(get_handler),
 ):
+    """Submit a task onto the worker queue."""
     handler.worker.submit_task(name, RunPlan(name=name, params=task))
+    return TaskResponse(task_name=f"Task {name} submitted")
 
 
 def start(config: ApplicationConfig):

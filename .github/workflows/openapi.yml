@@ -1,4 +1,4 @@
-name: Code CI
+name: Openapi
 
 on:
   push:

@@ -56,7 +56,7 @@ async def submit_task(
 ):
     """Submit a task onto the worker queue."""
     handler.worker.submit_task(name, RunPlan(name=name, params=task))
-    return TaskResponse(task_name=f"Task {name} submitted")
+    return TaskResponse(task_name=name)
 
 
 def start(config: ApplicationConfig):

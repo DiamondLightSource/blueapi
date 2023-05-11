@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import Any, Generic, Literal, Mapping, Type, TypeVar, Union
 
@@ -9,8 +10,14 @@ from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
+class SourceKind(str, Enum):
+    planFunctions = "planFunctions"
+    deviceFunctions = "deviceFunctions"
+    dodal = "dodal"
+
+
 class Source(BaseModel):
-    type: str
+    kind: SourceKind
     module: Union[Path, str]
 
 
@@ -29,8 +36,8 @@ class EnvironmentConfig(BlueapiBaseModel):
     """
 
     sources: list[Source] = [
-        Source(type="deviceFunctions", module="blueapi.startup.example"),
-        Source(type="planFunctions", module="blueapi.plans"),
+        Source(kind=SourceKind.deviceFunctions, module="blueapi.startup.example"),
+        Source(kind=SourceKind.planFunctions, module="blueapi.plans"),
     ]
 
     def __eq__(self, other: object) -> bool:

@@ -1,0 +1,28 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: bluesky-worker
+  title: bluesky-worker
+  description: Lightweight wrapper around bluesky services
+spec:
+  type: service
+  lifecycle: production
+  owner: user:vid18871 # TODO: owner: DAQ-Core
+  #  system: Athena  # TODO: Define Athena system: presumably same location as DAQ-Core/DAQ?
+  providesApis:
+    - blueapi
+    - blueskydocument-to-scanmessage
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: blueapi
+  title: blueapi
+  description: REST API for getting plans/devices from the worker (and running tasks)
+spec:
+  type: openapi
+  lifecycle: production
+  owner: user:vid18871
+  definition:
+    $text: ./openapi.json

@@ -92,12 +92,12 @@
     "url": "https://DiamondLightSource.github.io/blueapi/context-methods/"
   },
   {
-    "version": "deserialization-errors",
-    "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
+    "version": "description",
+    "url": "https://DiamondLightSource.github.io/blueapi/description/"
   },
   {
-    "version": "explain-events",
-    "url": "https://DiamondLightSource.github.io/blueapi/explain-events/"
+    "version": "deserialization-errors",
+    "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
     "version": "no-auto-camelcase-of-plan-parameters",

@@ -3,7 +3,7 @@ blueapi
 
 |code_ci| |docs_ci| |coverage| |pypi_version| |license|
 
-Lightweight library for creating Bluesky-as-a-service applications. 
+Lightweight Bluesky-as-a-service wrapper application. Also usable as a library. 
 
 ============== ==============================================================
 PyPI           ``pip install blueapi``

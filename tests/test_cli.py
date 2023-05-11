@@ -69,7 +69,7 @@ def test_deprecated_worker_command(
 
     assert result.output == (
         "DeprecationWarning: The command 'worker' is deprecated.\n"
-        + "Please use run command instead.\n\n"
+        + "Please use serve command instead.\n\n"
     )
 
 

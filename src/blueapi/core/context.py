@@ -18,11 +18,11 @@ from typing import (
 )
 
 from bluesky import RunEngine
-from bluesky.protocols import Flyable, Readable
 from pydantic import create_model
 
 from blueapi.config import EnvironmentConfig, SourceKind
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
+
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     Device,

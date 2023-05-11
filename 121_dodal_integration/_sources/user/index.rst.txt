@@ -26,6 +26,7 @@ side-bar.
             :maxdepth: 1
 
             how-to/run-container
+            how-to/configure-app
 
         +++
 
@@ -50,6 +51,7 @@ side-bar.
             :maxdepth: 1
 
             reference/api
+            reference/asyncapi
             ../genindex
 
         +++

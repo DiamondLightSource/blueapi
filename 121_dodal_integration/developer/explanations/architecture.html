@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Run the tests using pytest &#8212; blueapi 0.2.4.dev24+gadac983 documentation</title>
+    <title>Architecture &#8212; blueapi 0.2.4.dev24+gadac983 documentation</title>
   
   
   
@@ -44,7 +44,7 @@
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
     <script src="../../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/how-to/run-tests';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/explanations/architecture';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = '121_dodal_integration';
@@ -52,8 +52,8 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Run static analysis using mypy" href="static-analysis.html" />
-    <link rel="prev" title="Build the docs using sphinx" href="build-docs.html" />
+    <link rel="next" title="Lifecycle of a Plan" href="lifecycle.html" />
+    <link rel="prev" title="1. Record architecture decisions" href="decisions/0001-record-architecture-decisions.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -380,24 +380,24 @@ document.write(`
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/dev-run.html">Run in a Developer Environment</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing to the project</a></li>
-<li class="toctree-l1"><a class="reference internal" href="build-docs.html">Build the docs using sphinx</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run the tests using pytest</a></li>
-<li class="toctree-l1"><a class="reference internal" href="static-analysis.html">Run static analysis using mypy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="lint.html">Run linting using pre-commit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="update-tools.html">Update the tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="make-release.html">Make a release</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../how-to/contribute.html">Contributing to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/build-docs.html">Build the docs using sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/run-tests.html">Run the tests using pytest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/static-analysis.html">Run static analysis using mypy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/lint.html">Run linting using pre-commit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/update-tools.html">Update the tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/make-release.html">Make a release</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../explanations/decisions.html">Architectural Decision Records</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="decisions.html">Architectural Decision Records</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/architecture.html">Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/lifecycle.html">Lifecycle of a Plan</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/type_validators.html">Type Validators</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lifecycle.html">Lifecycle of a Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="type_validators.html">Type Validators</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="nav bd-sidenav">
@@ -442,7 +442,7 @@ document.write(`
     
     <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Developer Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Run the tests using pytest</li>
+    <li class="breadcrumb-item active" aria-current="page">Architecture</li>
   </ul>
 </nav>
 </div>
@@ -459,24 +459,40 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="run-the-tests-using-pytest">
-<h1>Run the tests using pytest<a class="headerlink" href="#run-the-tests-using-pytest" title="Permalink to this heading">#</a></h1>
-<p>Testing is done with <a class="reference external" href="https://pytest.org/">pytest</a>. It will find functions in the project that <a class="reference external" href="https://docs.pytest.org/explanation/goodpractices.html#test-discovery">look
-like tests</a>, and run them to check for errors. You can run it with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tox -e pytest
-</pre></div>
-</div>
-<p>It will also report coverage to the commandline and to <code class="docutils literal notranslate"><span class="pre">cov.xml</span></code>.</p>
-<section id="skip-the-message-bus-tests">
-<h2>Skip the message bus tests<a class="headerlink" href="#skip-the-message-bus-tests" title="Permalink to this heading">#</a></h2>
-<p>The tests for stomp require connection to a live ActiveMQ broker and will fail
-if one is not present. This can be inconvenient if you wish to test changes
-that are unrelated to the broker, you can avoid this with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tox -e pytest -- --skip-stomp
-</pre></div>
-</div>
-<p>The stomp tests are still run against a live broker in CI to ensure nothing
-slips through the cracks.</p>
+  <section id="architecture">
+<h1>Architecture<a class="headerlink" href="#architecture" title="Permalink to this heading">#</a></h1>
+<p>Blueapi performs a number of tasks:</p>
+<ul class="simple">
+<li><p>Managing the Bluesky <a class="reference external" href="https://nsls-ii.github.io/bluesky/run_engine_api.html">RunEngine</a>, giving it instructions and handling its errors. Traditionally this job has been done by a human with an <a class="reference external" href="https://ipython.org/">IPython</a> terminal, so it requires automating.</p></li>
+<li><p>Maintaining a registry of plans and devices. In the aforementioned <a class="reference external" href="https://ipython.org/">IPython</a> case, these would have just been global variables.</p></li>
+<li><p>Communicating with the outside world, accepting instructions to run plans, providing updates on plan progress etc.</p></li>
+</ul>
+<p>These responsibilities are kept separate in the codebase to ensure a clean, maintainable architecture.</p>
+<section id="key-components">
+<h2>Key Components<a class="headerlink" href="#key-components" title="Permalink to this heading">#</a></h2>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../../_images/blueapi-architecture.png"><img alt="../../_images/blueapi-architecture.png" src="../../_images/blueapi-architecture.png" style="width: 600px;" /></a>
+<figcaption>
+<p><span class="caption-text">main components</span><a class="headerlink" href="#id1" title="Permalink to this image">#</a></p>
+</figcaption>
+</figure>
+<section id="the-blueskycontext-object">
+<h3>The <code class="docutils literal notranslate"><span class="pre">BlueskyContext</span></code> Object<a class="headerlink" href="#the-blueskycontext-object" title="Permalink to this heading">#</a></h3>
+<p>Holds registries of plans and devices as well as a number of helper methods for
+registering en-masse from a normal Python module.</p>
+</section>
+<section id="the-worker-object">
+<h3>The Worker Object<a class="headerlink" href="#the-worker-object" title="Permalink to this heading">#</a></h3>
+<p>Wraps the Bluesky <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> and accepts requests to run plans. The requests include the name
+of the plan and a dictionary of parameters to pass. The worker validates the parameters against
+the known expectations of the plan, passes it to the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> and handles any errors.</p>
+</section>
+<section id="the-service-object">
+<h3>The Service Object<a class="headerlink" href="#the-service-object" title="Permalink to this heading">#</a></h3>
+<p>Handles communications and the API layer. This object holds a reference to the worker
+can interrogate it/give it instructions in response to messages it recieves from the message
+bus. It can also forward the various events generated by the worker to topics on the bus.</p>
+</section>
 </section>
 </section>
 
@@ -492,20 +508,20 @@ slips through the cracks.</p>
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="build-docs.html"
+       href="decisions/0001-record-architecture-decisions.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Build the docs using sphinx</p>
+        <p class="prev-next-title">1. Record architecture decisions</p>
       </div>
     </a>
     <a class="right-next"
-       href="static-analysis.html"
+       href="lifecycle.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Run static analysis using mypy</p>
+        <p class="prev-next-title">Lifecycle of a Plan</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -527,14 +543,19 @@ slips through the cracks.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skip-the-message-bus-tests">Skip the message bus tests</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-components">Key Components</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-blueskycontext-object">The <code class="docutils literal notranslate"><span class="pre">BlueskyContext</span></code> Object</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-worker-object">The Worker Object</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-service-object">The Service Object</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/121_dodal_integration/docs/developer/how-to/run-tests.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/121_dodal_integration/docs/developer/explanations/architecture.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -548,7 +569,7 @@ slips through the cracks.</p>
 
   <div class="sidebar-secondary-item">
   <div class="tocsection sourcelink">
-    <a href="../../_sources/developer/how-to/run-tests.rst.txt">
+    <a href="../../_sources/developer/explanations/architecture.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Run the tests using pytest &#8212; blueapi 0.2.4.dev24+gadac983 documentation</title>
+    <title>Lifecycle of a Plan &#8212; blueapi 0.2.4.dev24+gadac983 documentation</title>
   
   
   
@@ -44,7 +44,7 @@
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
     <script src="../../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/how-to/run-tests';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/explanations/lifecycle';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = '121_dodal_integration';
@@ -52,8 +52,8 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Run static analysis using mypy" href="static-analysis.html" />
-    <link rel="prev" title="Build the docs using sphinx" href="build-docs.html" />
+    <link rel="next" title="Type Validators" href="type_validators.html" />
+    <link rel="prev" title="Architecture" href="architecture.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -380,24 +380,24 @@ document.write(`
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/dev-run.html">Run in a Developer Environment</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing to the project</a></li>
-<li class="toctree-l1"><a class="reference internal" href="build-docs.html">Build the docs using sphinx</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run the tests using pytest</a></li>
-<li class="toctree-l1"><a class="reference internal" href="static-analysis.html">Run static analysis using mypy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="lint.html">Run linting using pre-commit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="update-tools.html">Update the tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="make-release.html">Make a release</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../how-to/contribute.html">Contributing to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/build-docs.html">Build the docs using sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/run-tests.html">Run the tests using pytest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/static-analysis.html">Run static analysis using mypy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/lint.html">Run linting using pre-commit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/update-tools.html">Update the tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/make-release.html">Make a release</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../explanations/decisions.html">Architectural Decision Records</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="decisions.html">Architectural Decision Records</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/architecture.html">Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/lifecycle.html">Lifecycle of a Plan</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/type_validators.html">Type Validators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Lifecycle of a Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="type_validators.html">Type Validators</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="nav bd-sidenav">
@@ -442,7 +442,7 @@ document.write(`
     
     <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Developer Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Run the tests using pytest</li>
+    <li class="breadcrumb-item active" aria-current="page">Lifecycle of a Plan</li>
   </ul>
 </nav>
 </div>
@@ -459,24 +459,117 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="run-the-tests-using-pytest">
-<h1>Run the tests using pytest<a class="headerlink" href="#run-the-tests-using-pytest" title="Permalink to this heading">#</a></h1>
-<p>Testing is done with <a class="reference external" href="https://pytest.org/">pytest</a>. It will find functions in the project that <a class="reference external" href="https://docs.pytest.org/explanation/goodpractices.html#test-discovery">look
-like tests</a>, and run them to check for errors. You can run it with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tox -e pytest
+  <section id="lifecycle-of-a-plan">
+<h1>Lifecycle of a Plan<a class="headerlink" href="#lifecycle-of-a-plan" title="Permalink to this heading">#</a></h1>
+<p>The following demonstrates exactly what the code does with a plan through its lifecycle
+of being written, loaded and run. Take the following plan.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">Plan</span>
+<span class="kn">from</span> <span class="nn">bluesky.protocols</span> <span class="kn">import</span> <span class="n">Readable</span>
+
+<span class="k">def</span> <span class="nf">count</span><span class="p">(</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
+    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take `n` readings from a device</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        detectors (List[Readable]): Readable devices to read</span>
+<span class="sd">        num (int, optional): Number of readings to take. Defaults to 1.</span>
+<span class="sd">        delay (Optional[Union[float, List[float]]], optional): Delay between readings.</span>
+<span class="sd">                                                            Defaults to None.</span>
+<span class="sd">        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include</span>
+<span class="sd">                                                        in exported data.</span>
+<span class="sd">                                                        Defaults to None.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        MsgGenerator: _description_</span>
+
+<span class="sd">    Yields:</span>
+<span class="sd">        Iterator[MsgGenerator]: _description_</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="n">delay</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>It will also report coverage to the commandline and to <code class="docutils literal notranslate"><span class="pre">cov.xml</span></code>.</p>
-<section id="skip-the-message-bus-tests">
-<h2>Skip the message bus tests<a class="headerlink" href="#skip-the-message-bus-tests" title="Permalink to this heading">#</a></h2>
-<p>The tests for stomp require connection to a live ActiveMQ broker and will fail
-if one is not present. This can be inconvenient if you wish to test changes
-that are unrelated to the broker, you can avoid this with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tox -e pytest -- --skip-stomp
+<section id="loading-and-registration">
+<h2>Loading and Registration<a class="headerlink" href="#loading-and-registration" title="Permalink to this heading">#</a></h2>
+<p>Blueapi will load this plan into its context if configured to load either this module or a module that
+imports it. The <code class="docutils literal notranslate"><span class="pre">BlueskyContext</span></code> will go through all global variables in the module and register them
+if it detects that they are plans.</p>
+<p>At the point of registration it will inspect the plan’s parameters and their type hints, from which it
+will build a <a class="reference external" href="https://docs.pydantic.dev/">pydantic</a> model of the parameters to validate against. In other words, it will build something
+like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+
+<span class="k">class</span> <span class="nc">CountParameters</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span>
+    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+        <span class="n">arbitrary_types_allowed</span> <span class="o">=</span> <span class="kc">True</span>
 </pre></div>
 </div>
-<p>The stomp tests are still run against a live broker in CI to ensure nothing
-slips through the cracks.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is for illustrative purposes only, this code is not actually generated, but an object
+resembling this class is constructed in memeory.</p>
+</div>
+<p>The model is also stored in the context.</p>
+</section>
+<section id="startup">
+<h2>Startup<a class="headerlink" href="#startup" title="Permalink to this heading">#</a></h2>
+<p>On startup, the context is passed to the worker, which is passed to the service.
+The worker also holds a reference to the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> that can run the plan.</p>
+</section>
+<section id="request">
+<h2>Request<a class="headerlink" href="#request" title="Permalink to this heading">#</a></h2>
+<p>A user can send a request to run the plan to the service, which includes values for the parameters.
+It takes the form of JSON and may look something like this:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;count&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;detectors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;andor&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;pilatus&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;num&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;delay&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">Service</span></code> recieves the request and passes it to the worker, which holds it in an internal queue
+and executes it as soon as it can.</p>
+</section>
+<section id="validation">
+<h2>Validation<a class="headerlink" href="#validation" title="Permalink to this heading">#</a></h2>
+<p>The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry
+The parameter values in the request are validated against the model, this includes looking up devices
+with names <code class="docutils literal notranslate"><span class="pre">andor</span></code> and <code class="docutils literal notranslate"><span class="pre">pilatus</span></code>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="type_validators.html"><span class="doc">Type Validators</span></a></p>
+</div>
+</section>
+<section id="execution">
+<h2>Execution<a class="headerlink" href="#execution" title="Permalink to this heading">#</a></h2>
+<p>The validated parameter values are then passed to the plan function, which is passed to the RunEngine.
+The plan is executed. While it is running, the <code class="docutils literal notranslate"><span class="pre">Worker</span></code> will publish</p>
+<ul class="simple">
+<li><p>Changes to the state of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code></p></li>
+<li><p>Changes to any device statuses running within a plan (e.g. when a motor changes position)</p></li>
+<li><p>Event model documents emitted by the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code></p></li>
+<li><p>When a plan starts, finishes or fails.</p></li>
+</ul>
+<p>If an error occurs during any of the stages from “Request” onwards it is sent back to the user
+over the message bus.</p>
 </section>
 </section>
 
@@ -492,20 +585,20 @@ slips through the cracks.</p>
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="build-docs.html"
+       href="architecture.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Build the docs using sphinx</p>
+        <p class="prev-next-title">Architecture</p>
       </div>
     </a>
     <a class="right-next"
-       href="static-analysis.html"
+       href="type_validators.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Run static analysis using mypy</p>
+        <p class="prev-next-title">Type Validators</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -527,14 +620,18 @@ slips through the cracks.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skip-the-message-bus-tests">Skip the message bus tests</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#loading-and-registration">Loading and Registration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#startup">Startup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#request">Request</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validation">Validation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#execution">Execution</a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/121_dodal_integration/docs/developer/how-to/run-tests.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/121_dodal_integration/docs/developer/explanations/lifecycle.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -548,7 +645,7 @@ slips through the cracks.</p>
 
   <div class="sidebar-secondary-item">
   <div class="tocsection sourcelink">
-    <a href="../../_sources/developer/how-to/run-tests.rst.txt">
+    <a href="../../_sources/developer/explanations/lifecycle.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

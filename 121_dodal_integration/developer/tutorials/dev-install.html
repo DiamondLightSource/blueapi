@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Developer install &#8212; blueapi 0.1.1.dev27+g946e188 documentation</title>
+    <title>Developer install &#8212; blueapi 0.2.4.dev24+gadac983 documentation</title>
   
   
   
@@ -52,7 +52,7 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Contributing to the project" href="../how-to/contribute.html" />
+    <link rel="next" title="Run in a Developer Environment" href="dev-run.html" />
     <link rel="prev" title="Developer Guide" href="../index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -377,6 +377,7 @@ document.write(`
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Developer install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-run.html">Run in a Developer Environment</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul class="nav bd-sidenav">
@@ -394,6 +395,9 @@ document.write(`
 <li class="toctree-l2"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/lifecycle.html">Lifecycle of a Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/type_validators.html">Type Validators</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="nav bd-sidenav">
@@ -469,7 +473,7 @@ environment setup, so you can run the tests locally.</p>
 <section id="install-dependencies">
 <h2>Install dependencies<a class="headerlink" href="#install-dependencies" title="Permalink to this heading">#</a></h2>
 <p>You can choose to either develop on the host machine using a <a class="reference external" href="https://docs.python.org/3/library/venv.html#module-venv" title="(in Python v3.11)"><code class="xref any docutils literal notranslate"><span class="pre">venv</span></code></a> (which
-requires python 3.8 or later) or to run in a container under <a class="reference external" href="https://code.visualstudio.com/">VSCode</a></p>
+requires python 3.9 or later) or to run in a container under <a class="reference external" href="https://code.visualstudio.com/">VSCode</a></p>
 <div class="sd-tab-set docutils">
 <input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
 </input><label class="sd-tab-label" for="sd-tab-item-0">
@@ -484,10 +488,15 @@ $ pip install -e .[dev]
 <input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
 </input><label class="sd-tab-label" for="sd-tab-item-1">
 VSCode devcontainer</label><div class="sd-tab-content docutils">
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ vscode blueapi
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ code blueapi
 # Click on &#39;Reopen in Container&#39; when prompted
 # Open a new terminal
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>See the <a class="reference external" href="https://epics-containers.github.io/main/user/tutorials/devcontainer.html">epics-containers</a> documentation for more complex
+use cases, such as integration with podman.</p>
 </div>
 </div>
 </div>
@@ -536,11 +545,11 @@ VSCode devcontainer</label><div class="sd-tab-content docutils">
       </div>
     </a>
     <a class="right-next"
-       href="../how-to/contribute.html"
+       href="dev-run.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Contributing to the project</p>
+        <p class="prev-next-title">Run in a Developer Environment</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

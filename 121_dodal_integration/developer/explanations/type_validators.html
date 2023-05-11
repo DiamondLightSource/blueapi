@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Run the tests using pytest &#8212; blueapi 0.2.4.dev24+gadac983 documentation</title>
+    <title>Type Validators &#8212; blueapi 0.2.4.dev24+gadac983 documentation</title>
   
   
   
@@ -44,7 +44,7 @@
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
     <script src="../../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/how-to/run-tests';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/explanations/type_validators';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = '121_dodal_integration';
@@ -52,8 +52,8 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Run static analysis using mypy" href="static-analysis.html" />
-    <link rel="prev" title="Build the docs using sphinx" href="build-docs.html" />
+    <link rel="next" title="Standards" href="../reference/standards.html" />
+    <link rel="prev" title="Lifecycle of a Plan" href="lifecycle.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -380,24 +380,24 @@ document.write(`
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/dev-run.html">Run in a Developer Environment</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing to the project</a></li>
-<li class="toctree-l1"><a class="reference internal" href="build-docs.html">Build the docs using sphinx</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run the tests using pytest</a></li>
-<li class="toctree-l1"><a class="reference internal" href="static-analysis.html">Run static analysis using mypy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="lint.html">Run linting using pre-commit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="update-tools.html">Update the tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="make-release.html">Make a release</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../how-to/contribute.html">Contributing to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/build-docs.html">Build the docs using sphinx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/run-tests.html">Run the tests using pytest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/static-analysis.html">Run static analysis using mypy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/lint.html">Run linting using pre-commit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/update-tools.html">Update the tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/make-release.html">Make a release</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../explanations/decisions.html">Architectural Decision Records</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="decisions.html">Architectural Decision Records</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/architecture.html">Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/lifecycle.html">Lifecycle of a Plan</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/type_validators.html">Type Validators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lifecycle.html">Lifecycle of a Plan</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Type Validators</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="nav bd-sidenav">
@@ -442,7 +442,7 @@ document.write(`
     
     <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Developer Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Run the tests using pytest</li>
+    <li class="breadcrumb-item active" aria-current="page">Type Validators</li>
   </ul>
 </nav>
 </div>
@@ -459,24 +459,85 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="run-the-tests-using-pytest">
-<h1>Run the tests using pytest<a class="headerlink" href="#run-the-tests-using-pytest" title="Permalink to this heading">#</a></h1>
-<p>Testing is done with <a class="reference external" href="https://pytest.org/">pytest</a>. It will find functions in the project that <a class="reference external" href="https://docs.pytest.org/explanation/goodpractices.html#test-discovery">look
-like tests</a>, and run them to check for errors. You can run it with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tox -e pytest
+  <section id="type-validators">
+<h1>Type Validators<a class="headerlink" href="#type-validators" title="Permalink to this heading">#</a></h1>
+<section id="requirement">
+<h2>Requirement<a class="headerlink" href="#requirement" title="Permalink to this heading">#</a></h2>
+<p>Blueapi takes the parameters of a plan and internally creates a <a class="reference external" href="https://docs.pydantic.dev/">pydantic</a> model for future validation e.g.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span>
+    <span class="o">...</span>
+
+<span class="c1"># Internally becomes something like</span>
+
+<span class="k">class</span> <span class="nc">MyPlanModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">b</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span>
 </pre></div>
 </div>
-<p>It will also report coverage to the commandline and to <code class="docutils literal notranslate"><span class="pre">cov.xml</span></code>.</p>
-<section id="skip-the-message-bus-tests">
-<h2>Skip the message bus tests<a class="headerlink" href="#skip-the-message-bus-tests" title="Permalink to this heading">#</a></h2>
-<p>The tests for stomp require connection to a live ActiveMQ broker and will fail
-if one is not present. This can be inconvenient if you wish to test changes
-that are unrelated to the broker, you can avoid this with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tox -e pytest -- --skip-stomp
+<p>That way, when the plan parameters are sent in JSON form, they can be parsed and validated by pydantic.
+However, it must also cover the case where a plan doesn’t take a simple dictionary, list or primitive but
+instead a device, such as a detector.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
+    <span class="o">...</span>
 </pre></div>
 </div>
-<p>The stomp tests are still run against a live broker in CI to ensure nothing
-slips through the cracks.</p>
+<p>An Ophyd object cannot be passed over the network as JSON because it has state.
+Instead, a string is passed, representing an ID of the object known to the <code class="docutils literal notranslate"><span class="pre">BlueskyContext</span></code>.
+At the time a plan’s parameters are validated, blueapi must take all the strings that are supposed
+to be devices and look them up against the context. For example with the request:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;count&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;detectors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;andor&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;pilatus&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;num&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;delay&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">andor</span></code> and <code class="docutils literal notranslate"><span class="pre">pilatus</span></code> should be looked up and replaced with Ophyd objects.</p>
+</section>
+<section id="solution">
+<h2>Solution<a class="headerlink" href="#solution" title="Permalink to this heading">#</a></h2>
+<p>When the context loads available plans, it iterates through the type signature
+and replaces any reference to a bluesky protocol (or instance of a protocol)
+with a new class that extends the original type. Defining a class validator on
+this new type allows it to check that the string being deserialised is the ID of
+a device of the correct type.</p>
+<p>These new intermediate types are used only in the deserialisation process. The
+object returned from validator method is not checked by pydantic so it can be
+the actual instance and the plan never sees the runtime generated reference
+type, only the type it was expecting.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This uses the fact that the new types generated at runtime have access to
+the context that required them via their closure. This circumvents the usual
+problem of pydantic validation not being able to access external state when
+validating or deserialising.</p>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
+    <span class="o">...</span>
+
+<span class="c1"># Becomes</span>
+
+<span class="k">class</span> <span class="nc">MyPlanModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">b</span><span class="p">:</span> <span class="n">Reference</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This also allows <code class="docutils literal notranslate"><span class="pre">Readable</span></code> to be placed at various type levels. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_weird_plan</span><span class="p">(</span>
+    <span class="n">a</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
+    <span class="n">b</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
+    <span class="n">c</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Readable</span><span class="p">],</span>
+    <span class="n">d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]],</span>
+    <span class="n">e</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="n">Readable</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -492,20 +553,20 @@ slips through the cracks.</p>
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="build-docs.html"
+       href="lifecycle.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Build the docs using sphinx</p>
+        <p class="prev-next-title">Lifecycle of a Plan</p>
       </div>
     </a>
     <a class="right-next"
-       href="static-analysis.html"
+       href="../reference/standards.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Run static analysis using mypy</p>
+        <p class="prev-next-title">Standards</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -527,14 +588,15 @@ slips through the cracks.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skip-the-message-bus-tests">Skip the message bus tests</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirement">Requirement</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solution">Solution</a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/121_dodal_integration/docs/developer/how-to/run-tests.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/121_dodal_integration/docs/developer/explanations/type_validators.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -548,7 +610,7 @@ slips through the cracks.</p>
 
   <div class="sidebar-secondary-item">
   <div class="tocsection sourcelink">
-    <a href="../../_sources/developer/how-to/run-tests.rst.txt">
+    <a href="../../_sources/developer/explanations/type_validators.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

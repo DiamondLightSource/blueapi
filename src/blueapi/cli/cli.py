@@ -1,27 +1,32 @@
 import json
 import logging
+from functools import wraps
 from pathlib import Path
+from pprint import pprint
 from typing import Optional
 
 import click
+import requests
+from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.config import ApplicationConfig, ConfigLoader
-from blueapi.messaging import StompMessagingTemplate
-
-from .amq import AmqClient
-from .updates import CliEventRenderer
+from blueapi.service.main import start
 
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option("-c", "--config", type=Path, help="Path to configuration YAML file")
 @click.pass_context
-def main(ctx, config: Optional[Path]) -> None:
+def main(ctx: click.Context, config: Optional[Path]) -> None:
     # if no command is supplied, run with the options passed
+
     config_loader = ConfigLoader(ApplicationConfig)
     if config is not None:
-        config_loader.use_values_from_yaml(config)
+        if config.exists():
+            config_loader.use_values_from_yaml(config)
+        else:
+            raise FileNotFoundError(f"Cannot find file: {config}")
 
     ctx.ensure_object(dict)
     ctx.obj["config"] = config_loader.load()
@@ -30,18 +35,22 @@ def main(ctx, config: Optional[Path]) -> None:
         print("Please invoke subcommand!")
 
 
-@main.command(name="worker")
+@main.command(name="serve")
 @click.pass_obj
-def start_worker(obj: dict) -> None:
-    from blueapi.service import start
+def start_application(obj: dict):
+    start(obj["config"])
 
-    config: ApplicationConfig = obj["config"]
-    start(config)
+
+@main.command(name="worker", deprecated=True)
+@click.pass_obj
+def deprecated_start_application(obj: dict):
+    print("Please use serve command instead.\n")
+    start(obj["config"])
 
 
 @main.group()
 @click.pass_context
-def controller(ctx) -> None:
+def controller(ctx: click.Context) -> None:
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
@@ -49,39 +58,51 @@ def controller(ctx) -> None:
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
     logging.basicConfig(level=config.logging.level)
-    client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
-    ctx.obj["client"] = client
-    client.app.connect()
+
+
+def check_connection(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except ConnectionError:
+            print("Failed to establish connection to FastAPI server.")
+
+    return wrapper
 
 
 @controller.command(name="plans")
-@click.pass_context
-def get_plans(ctx) -> None:
-    client: AmqClient = ctx.obj["client"]
-    plans = client.get_plans()
-    print("PLANS")
-    for plan in plans.plans:
-        print("\t" + plan.name)
+@check_connection
+@click.pass_obj
+def get_plans(obj: dict) -> None:
+    config: ApplicationConfig = obj["config"]
+
+    resp = requests.get(f"http://{config.api.host}:{config.api.port}/plans")
+    print(f"Response returned with {resp.status_code}: ")
+    pprint(resp.json())
 
 
 @controller.command(name="devices")
-@click.pass_context
-def get_devices(ctx) -> None:
-    client: AmqClient = ctx.obj["client"]
-    print(client.get_devices().devices)
+@check_connection
+@click.pass_obj
+def get_devices(obj: dict) -> None:
+    config: ApplicationConfig = obj["config"]
+
+    resp = requests.get(f"http://{config.api.host}:{config.api.port}/devices")
+    print(f"Response returned with {resp.status_code}: ")
+    pprint(resp.json())
 
 
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
-@click.pass_context
-def run_plan(ctx, name: str, parameters: str) -> None:
-    client: AmqClient = ctx.obj["client"]
-    renderer = CliEventRenderer()
-    client.run_plan(
-        name,
-        json.loads(parameters),
-        renderer.on_worker_event,
-        renderer.on_progress_event,
-        timeout=120.0,
+@check_connection
+@click.pass_obj
+def run_plan(obj: dict, name: str, parameters: str) -> None:
+    config: ApplicationConfig = obj["config"]
+
+    resp = requests.put(
+        f"http://{config.api.host}:{config.api.port}/task/{name}",
+        json={"name": name, "params": json.loads(parameters)},
     )
+    print(f"Response returned with {resp.status_code}: ")

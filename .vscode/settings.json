@@ -13,5 +13,5 @@
         "source.organizeImports": true
     },
     "esbonio.server.enabled": true,
-    "esbonio.sphinx.confDir": ""
+    "esbonio.sphinx.confDir": "",
 }

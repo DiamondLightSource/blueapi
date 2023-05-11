@@ -22,6 +22,9 @@ dependencies = [
     "scanspec",
     "PyYAML",
     "click",
+    "fastapi[all]",
+    "uvicorn",
+    "requests",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -44,6 +47,9 @@ dev = [
     "tox-direct",
     "types-mock",
     "types-PyYAML",
+    "types-requests",
+    "types-urllib3",
+    "mock",
 ]
 
 [project.scripts]

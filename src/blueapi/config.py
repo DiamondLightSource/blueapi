@@ -35,6 +35,11 @@ class LoggingConfig(BlueapiBaseModel):
     level: LogLevel = "INFO"
 
 
+class RestConfig(BlueapiBaseModel):
+    host: str = "localhost"
+    port: int = 8000
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -44,6 +49,7 @@ class ApplicationConfig(BlueapiBaseModel):
     stomp: StompConfig = Field(default_factory=StompConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    api: RestConfig = Field(default_factory=RestConfig)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):
@@ -51,6 +57,7 @@ class ApplicationConfig(BlueapiBaseModel):
                 (self.stomp == other.stomp)
                 & (self.env == other.env)
                 & (self.logging == other.logging)
+                & (self.api == other.api)
             )
         return False
 

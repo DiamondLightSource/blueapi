@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug Rest Service",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "src.blueapi.rest.main:app",
+                "--reload"
+            ],
+            "jinja": true,
+            "justMyCode": true
+        },
+        {
             "name": "Debug Unit Test",
             "type": "python",
             "request": "launch",
@@ -22,13 +34,13 @@
             },
         },
         {
-            "name": "Worker Service",
+            "name": "Run Service",
             "type": "python",
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
             "args": [
-                "worker"
+                "serve"
             ]
         },
         {

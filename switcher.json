@@ -138,5 +138,9 @@
   {
     "version": "uuid",
     "url": "https://DiamondLightSource.github.io/blueapi/uuid/"
+  },
+  {
+    "version": "validate",
+    "url": "https://DiamondLightSource.github.io/blueapi/validate/"
   }
 ]

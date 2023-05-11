@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.handler import Handler
+from blueapi.service.handler import Handler, teardown_handler
 
 
 @pytest.fixture
@@ -127,6 +127,9 @@ def test_get_plans_and_devices(
         + "\n{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
     )
 
+    # manually teardown handler, as normally uvicorn does this.
+    teardown_handler()
+
 
 def test_invalid_config_path_handling(runner: CliRunner):
     # test what happens if you pass an invalid config file...
@@ -160,3 +163,6 @@ def test_config_passed_down_to_command_children(
     assert mock_requests.call_args[1] == {
         "json": {"name": "sleep", "params": {"time": 5}}
     }
+
+    # manually teardown handler, as normally uvicorn does this.
+    teardown_handler()

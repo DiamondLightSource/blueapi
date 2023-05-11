@@ -42,6 +42,9 @@ class MockHandler(Handler):
     def start(self):
         return None
 
+    def stop(self):
+        return None
+
 
 class Client:
     def __init__(self, handler: MockHandler) -> None:

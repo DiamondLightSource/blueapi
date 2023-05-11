@@ -20,6 +20,7 @@ from typing import (
 
 from bluesky import RunEngine
 from pydantic import create_model
+from pydantic.fields import FieldInfo
 
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
@@ -211,13 +212,18 @@ class BlueskyContext:
         types = get_type_hints(func)
         new_args = {}
         for name, para in args.items():
-            default = None if para.default is Parameter.empty else para.default
             arg_type = types.get(name, Parameter.empty)
             if arg_type is Parameter.empty:
                 raise ValueError(
                     f"Type annotation is required for '{name}' in '{func.__name__}'"
                 )
-            new_args[name] = (self._convert_type(arg_type), default)
+
+            no_default = para.default is Parameter.empty
+            factory = None if no_default else lambda d=para.default: d
+            new_args[name] = (
+                self._convert_type(arg_type),
+                FieldInfo(default_factory=factory),
+            )
         return new_args
 
     def _convert_type(self, typ: Type) -> Type:

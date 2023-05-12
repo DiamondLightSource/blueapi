@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import inspect
 from typing import Dict, List, Type, Union
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
+from ophyd import Component
 from ophyd.sim import SynAxis, SynGauss
+from pydantic import parse_obj_as
 
 from blueapi.core import (
     BlueskyContext,
@@ -13,6 +16,11 @@ from blueapi.core import (
     is_bluesky_compatible_device,
 )
 from blueapi.core.context import DefaultFactory
+
+SIM_MOTOR_NAME = "sim"
+ALT_MOTOR_NAME = "alt"
+SIM_DET_NAME = "sim_det"
+
 
 #
 # Dummy plans
@@ -43,12 +51,21 @@ def has_typeless_params(foo, bar) -> MsgGenerator:  # type: ignore
     ...
 
 
+def has_default_reference(
+        m: Movable = Component(Movable, SIM_MOTOR_NAME)
+) -> MsgGenerator:
+    yield from []
+
+
+def has_default_nested_reference(
+        m: list[Movable] = [Component(Movable, SIM_MOTOR_NAME)]
+) -> MsgGenerator:
+    yield from []
+
+
 #
 # Dummy devices
 #
-
-SIM_MOTOR_NAME = "sim"
-SIM_DET_NAME = "sim_det"
 
 
 @pytest.fixture
@@ -57,7 +74,12 @@ def sim_motor() -> SynAxis:
 
 
 @pytest.fixture
-def sim_detector(sim_motor: SynAxis) -> SynAxis:
+def alt_motor() -> SynAxis:
+    return SynAxis(name=ALT_MOTOR_NAME)
+
+
+@pytest.fixture
+def sim_detector(sim_motor: SynAxis) -> SynGauss:
     return SynGauss(
         name=SIM_DET_NAME,
         motor=sim_motor,
@@ -229,3 +251,43 @@ def test_concrete_method_annotation(empty_context: BlueskyContext) -> None:
     spec = empty_context._type_spec_for_function(demo)
     assert spec["named"][0] is hasname_ref
     assert spec["named"][1].default_factory is None
+
+
+def test_str_default(
+        empty_context: BlueskyContext,
+        sim_motor: SynAxis,
+        alt_motor: SynAxis
+):
+    movable_ref = empty_context._reference(Movable)
+    empty_context.device(sim_motor)
+    empty_context.device(alt_motor)
+    empty_context.plan(has_default_reference)
+    signature = inspect.signature(has_default_reference)
+
+    spec = empty_context._type_spec_for_function(has_default_reference)
+    assert spec["m"][0] is movable_ref
+    assert spec["m"][1].default_factory() is signature.parameters["m"].default
+
+    assert has_default_reference.__name__ in empty_context.plans
+    model = empty_context.plans[has_default_reference.__name__].model
+    assert parse_obj_as(model, {}).m is sim_motor
+    assert parse_obj_as(model, {"m": ALT_MOTOR_NAME}).m == alt_motor
+
+
+def test_nested_str_default(
+        empty_context: BlueskyContext,
+        sim_motor: SynAxis,
+        alt_motor: SynAxis
+):
+    empty_context.device(sim_motor)
+    empty_context.device(alt_motor)
+    empty_context.plan(has_default_nested_reference)
+    signature = inspect.signature(has_default_nested_reference)
+
+    spec = empty_context._type_spec_for_function(has_default_nested_reference)
+    assert spec["m"][1].default_factory() == signature.parameters["m"].default
+
+    assert has_default_nested_reference.__name__ in empty_context.plans
+    model = empty_context.plans[has_default_nested_reference.__name__].model
+    assert parse_obj_as(model, {}).m == [sim_motor]
+    assert parse_obj_as(model, {"m": [ALT_MOTOR_NAME]}).m == [alt_motor]

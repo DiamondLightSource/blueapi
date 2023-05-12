@@ -10,18 +10,21 @@ of being written, loaded and run. Take the following plan.
 
     from blueapi.core import Plan
     from bluesky.protocols import Readable
+    from ophyd import Component
 
     def count(
-        detectors: List[Readable],
+        detectors: List[Readable] = [Component(Readable, "det")],  # default valid for Blueapi only
         num: int = 1,
         delay: Optional[Union[float, List[float]]] = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> MsgGenerator:
         """
-        Take `n` readings from a device
+        Take `n` readings from a collection of detectors
 
         Args:
-            detectors (List[Readable]): Readable devices to read
+            detectors (List[Readable]): Readable devices to read: when being run in Blueapi
+                                        defaults to fetching a device named "det" from its
+                                        context, else will require to be overriden.
             num (int, optional): Number of readings to take. Defaults to 1.
             delay (Optional[Union[float, List[float]]], optional): Delay between readings.
                                                                 Defaults to None.
@@ -56,18 +59,26 @@ like this:
     from pydantic import BaseModel
 
     class CountParameters(BaseModel):
-        detectors: List[Readable]
+        detectors: List[Readable] = [Component(Readable, "det")]
         num: int = 1
         delay: Optional[Union[float, List[float]]] = None
         metadata: Optional[Mapping[str, Any]] = None
 
         class Config:
             arbitrary_types_allowed = True
+            validate_all = True
 
 .. note:: 
     
     This is for illustrative purposes only, this code is not actually generated, but an object 
-    resembling this class is constructed in memeory.
+    resembling this class is constructed in memory.
+    The context knows that the use of the Component type as a default argument means that an
+    object of the type should be available from its registry of devices when the plan is run.
+    `Component`s are otherwise used as fields of Device types, and as descriptor classes
+    use their __get__ dunder method to return an instantiated child component on access rather
+    than themselves. The type should therefore be safe to use as a marker interface while allowing
+    mypy linting of plans modules, and allowing plan modules to have no dependency on Blueapi
+    specific code.
 
 The model is also stored in the context.
 
@@ -99,7 +110,7 @@ It takes the form of JSON and may look something like this:
         }
     }
 
-The ``Service`` recieves the request and passes it to the worker, which holds it in an internal queue 
+The ``Service`` receives the request and passes it to the worker, which holds it in an internal queue
 and executes it as soon as it can. 
 
 
@@ -108,7 +119,7 @@ Validation
 
 The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry
 The parameter values in the request are validated against the model, this includes looking up devices
-with names ``andor`` and ``pilatus``.
+with names ``andor`` and ``pilatus`` or, if detectors was not passed ``det``.
 
 
 .. seealso:: `./type_validators`

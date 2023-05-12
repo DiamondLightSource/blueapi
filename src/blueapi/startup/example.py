@@ -1,7 +1,12 @@
+from typing import List
+
+from bluesky.protocols import Movable, Readable
+from ophyd import Component
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
 
 from blueapi.plans import *  # noqa: F401, F403
 
+from ..core import MsgGenerator
 from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
 
 x = SynAxisWithMotionEvents(name="x", delay=1.0, events_per_move=8)
@@ -36,3 +41,29 @@ current_det = SynGauss(
     Imax=1,
     labels={"detectors"},
 )
+
+
+def stp_snapshot(
+    detectors: List[Readable],
+    temperature: Movable = Component(Movable, "sample_temperature"),
+    pressure: Movable = Component(Movable, "sample_pressure"),
+) -> MsgGenerator:
+    """
+    Moves devices for pressure and temperature (defaults fetched from the context)
+    and captures a single frame from a collection of devices
+
+    Args:
+        detectors (List[Readable]): A list of devices to read while the sample is at STP
+        temperature (Optional[Movable]): A device controlling temperature of the sample,
+            defaults to fetching a device name "sample_temperature" from the context
+        pressure (Optional[Movable]): A device controlling pressure on the sample,
+            defaults to fetching a device name "sample_pressure" from the context
+
+    Returns:
+        MsgGenerator: Plan
+
+    Yields:
+        Iterator[MsgGenerator]: Bluesky messages
+    """
+    yield from move({temperature: 0, pressure: 10**5})  # noqa: F405
+    yield from count(detectors, 1)  # noqa: F405

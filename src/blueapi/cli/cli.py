@@ -103,6 +103,6 @@ def run_plan(obj: dict, name: str, parameters: str) -> None:
 
     resp = requests.put(
         f"http://{config.api.host}:{config.api.port}/task/{name}",
-        json={"name": name, "params": json.loads(parameters)},
+        json=json.loads(parameters),
     )
-    print(f"Response returned with {resp.status_code}: ")
+    print(f"Response returned with {resp.status_code}")

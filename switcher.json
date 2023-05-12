@@ -96,6 +96,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
+    "version": "exception-logging",
+    "url": "https://DiamondLightSource.github.io/blueapi/exception-logging/"
+  },
+  {
     "version": "no-auto-camelcase-of-plan-parameters",
     "url": "https://DiamondLightSource.github.io/blueapi/no-auto-camelcase-of-plan-parameters/"
   },

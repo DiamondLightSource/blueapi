@@ -18,13 +18,9 @@ dependencies = [
     "nslsii",
     "pyepics",
     "pydantic",
-    "stomp.py",
     "scanspec",
     "PyYAML",
     "click",
-    "fastapi[all]",
-    "uvicorn",
-    "requests",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -32,6 +28,9 @@ readme = "README.rst"
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
+rest = ["fastapi[all]", "uvicorn"]
+stomp = ["stomp.py"]
+client = ["requests"]
 dev = [
     "black",
     "mypy",

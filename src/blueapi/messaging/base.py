@@ -82,7 +82,7 @@ class MessagingTemplate(ABC):
             DestinationProvider: Destination provider
         """
 
-    def send_and_recieve(
+    def send_and_receive(
         self,
         destination: str,
         obj: Any,

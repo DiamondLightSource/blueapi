@@ -214,7 +214,9 @@ class BlueskyContext:
             default = None if para.default is Parameter.empty else para.default
             arg_type = types.get(name, Parameter.empty)
             if arg_type is Parameter.empty:
-                raise ValueError(f"Type annotation is required for '{name}' in '{func.__name__}'")
+                raise ValueError(
+                    f"Type annotation is required for '{name}' in '{func.__name__}'"
+                )
             new_args[name] = (self._convert_type(arg_type), default)
         return new_args
 

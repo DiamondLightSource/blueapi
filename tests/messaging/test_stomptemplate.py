@@ -78,9 +78,9 @@ def test_send_on_reply(template: MessagingTemplate, test_queue: str) -> None:
 
 
 @pytest.mark.stomp
-def test_send_and_recieve(template: MessagingTemplate, test_queue: str) -> None:
+def test_send_and_receive(template: MessagingTemplate, test_queue: str) -> None:
     acknowledge(template, test_queue)
-    reply = template.send_and_recieve(test_queue, "test", str).result(timeout=_TIMEOUT)
+    reply = template.send_and_receive(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
 
 
@@ -93,7 +93,7 @@ def test_listener(template: MessagingTemplate, test_queue: str) -> None:
             raise RuntimeError("reply queue is None")
         template.send(reply_queue, "ack")
 
-    reply = template.send_and_recieve(test_queue, "test", str).result(timeout=_TIMEOUT)
+    reply = template.send_and_receive(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
 
 
@@ -117,7 +117,7 @@ def test_deserialization(
         template.send(reply_queue, message)
 
     template.subscribe(test_queue, server)
-    reply = template.send_and_recieve(test_queue, message, message_type).result(
+    reply = template.send_and_receive(test_queue, message, message_type).result(
         timeout=_TIMEOUT
     )
     assert reply == message
@@ -129,7 +129,7 @@ def test_subscribe_before_connect(
 ) -> None:
     acknowledge(disconnected_template, test_queue)
     disconnected_template.connect()
-    reply = disconnected_template.send_and_recieve(test_queue, "test", str).result(
+    reply = disconnected_template.send_and_receive(test_queue, "test", str).result(
         timeout=_TIMEOUT
     )
     assert reply == "ack"
@@ -138,11 +138,11 @@ def test_subscribe_before_connect(
 @pytest.mark.stomp
 def test_reconnect(template: MessagingTemplate, test_queue: str) -> None:
     acknowledge(template, test_queue)
-    reply = template.send_and_recieve(test_queue, "test", str).result(timeout=_TIMEOUT)
+    reply = template.send_and_receive(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
     template.disconnect()
     template.connect()
-    reply = template.send_and_recieve(test_queue, "test", str).result(timeout=_TIMEOUT)
+    reply = template.send_and_receive(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
 
 

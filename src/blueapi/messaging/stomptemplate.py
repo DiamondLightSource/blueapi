@@ -192,8 +192,8 @@ class StompMessagingTemplate(MessagingTemplate):
         while not self._conn.is_connected():
             try:
                 self.connect()
-            except ConnectFailedException as ex:
-                LOGGER.error("Reconnect failed", ex)
+            except ConnectFailedException:
+                LOGGER.exception("Reconnect failed")
             time.sleep(self._reconnect_policy.attempt_period)
 
     @handle_all_exceptions

@@ -34,6 +34,16 @@ way to start it is to run it via a container:
             podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
 
 
+Start the Worker
+----------------
+
+To start the worker
+
+.. code:: shell
+
+    blueapi serve
+
+
 Basic Introspection
 -------------------
 

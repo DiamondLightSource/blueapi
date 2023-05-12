@@ -1,6 +1,6 @@
 """Generate openapi.json."""
 
-import json
+import yaml
 from pathlib import Path
 
 from fastapi.openapi.utils import get_openapi
@@ -10,7 +10,7 @@ from blueapi.service.main import app
 
 def write_openapi_file(location: Path):
     with open(location, "w") as f:
-        json.dump(
+        yaml.dump(
             get_openapi(
                 title=app.title,
                 version=app.version,
@@ -19,7 +19,6 @@ def write_openapi_file(location: Path):
                 routes=app.routes,
             ),
             f,
-            indent=4,
         )
 
 
@@ -28,5 +27,5 @@ def init(location: Path):
         write_openapi_file(location)
 
 
-location = Path(__file__).parents[3] / "docs" / "user" / "reference" / "openapi.json"
+location = Path(__file__).parents[3] / "docs" / "user" / "reference" / "openapi.yaml"
 init(location)

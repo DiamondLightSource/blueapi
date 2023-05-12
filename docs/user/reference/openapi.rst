@@ -1,5 +1,6 @@
-OpenAPI Specification
-======================
+REST API
+========
 
-.. literalinclude:: ./openapi.json
-   :language: json
+The endpoints of the REST service are documented below.
+
+.. openapi:: ./openapi.json

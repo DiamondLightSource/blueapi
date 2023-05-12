@@ -12,6 +12,7 @@ from blueapi.core import (
     PlanGenerator,
     is_bluesky_compatible_device,
 )
+from blueapi.core.context import DefaultFactory
 
 #
 # Dummy plans
@@ -171,7 +172,10 @@ def test_add_non_device(empty_context: BlueskyContext) -> None:
 
 def test_function_spec(empty_context: BlueskyContext) -> None:
     spec = empty_context._type_spec_for_function(has_some_params)
-    assert spec == {"foo": (int, 42), "bar": (str, "bar")}
+    assert spec["foo"][0] == int
+    assert spec["foo"][1].default_factory == DefaultFactory(42)
+    assert spec["bar"][0] == str
+    assert spec["bar"][1].default_factory == DefaultFactory("bar")
 
 
 def test_basic_type_conversion(empty_context: BlueskyContext) -> None:
@@ -191,6 +195,16 @@ def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
         empty_context._convert_type(dict[Movable, list[tuple[int, Movable]]])
         == dict[movable_ref, list[tuple[int, movable_ref]]]  # type: ignore
     )
+
+
+def test_default_device_reference(empty_context: BlueskyContext) -> None:
+    def default_movable(mov: Movable = "demo") -> MsgGenerator:  # type: ignore
+        ...
+
+    spec = empty_context._type_spec_for_function(default_movable)
+    movable_ref = empty_context._reference(Movable)
+    assert spec["mov"][0] == movable_ref
+    assert spec["mov"][1].default_factory == DefaultFactory("demo")
 
 
 class Named:
@@ -213,4 +227,5 @@ def test_concrete_method_annotation(empty_context: BlueskyContext) -> None:
         ...
 
     spec = empty_context._type_spec_for_function(demo)
-    assert spec == {"named": (hasname_ref, None)}
+    assert spec["named"][0] is hasname_ref
+    assert spec["named"][1].default_factory is None

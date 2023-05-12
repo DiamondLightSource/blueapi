@@ -8,10 +8,12 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generic,
     List,
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union,
     get_args,
     get_origin,
@@ -20,6 +22,7 @@ from typing import (
 
 from bluesky import RunEngine
 from pydantic import create_model
+from pydantic.fields import FieldInfo
 
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
@@ -211,13 +214,18 @@ class BlueskyContext:
         types = get_type_hints(func)
         new_args = {}
         for name, para in args.items():
-            default = None if para.default is Parameter.empty else para.default
             arg_type = types.get(name, Parameter.empty)
             if arg_type is Parameter.empty:
                 raise ValueError(
                     f"Type annotation is required for '{name}' in '{func.__name__}'"
                 )
-            new_args[name] = (self._convert_type(arg_type), default)
+
+            no_default = para.default is Parameter.empty
+            factory = None if no_default else DefaultFactory(para.default)
+            new_args[name] = (
+                self._convert_type(arg_type),
+                FieldInfo(default_factory=factory),
+            )
         return new_args
 
     def _convert_type(self, typ: Type) -> Type:
@@ -246,3 +254,19 @@ class BlueskyContext:
             root = get_origin(typ)
             return root[new_types] if root else typ
         return typ
+
+
+D = TypeVar("D")
+
+
+class DefaultFactory(Generic[D]):
+    _value: D
+
+    def __init__(self, value: D):
+        self._value = value
+
+    def __call__(self) -> D:
+        return self._value
+
+    def __eq__(self, other) -> bool:
+        return other.__class__ == self.__class__ and self._value == other._value

@@ -13,6 +13,13 @@ from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
 
 
+@pytest.fixture(autouse=True)
+def ensure_handler_teardown(request):
+    yield
+    if "handler" in request.keywords:
+        teardown_handler()
+
+
 @pytest.fixture
 def runner():
     return CliRunner()
@@ -76,6 +83,7 @@ def test_deprecated_worker_command(
     )
 
 
+@pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("requests.get")
 def test_get_plans_and_devices(
@@ -130,9 +138,6 @@ def test_get_plans_and_devices(
         + "\n{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
     )
 
-    # manually teardown handler, as normally uvicorn does this.
-    teardown_handler()
-
 
 def test_invalid_config_path_handling(runner: CliRunner):
     # test what happens if you pass an invalid config file...
@@ -140,6 +145,7 @@ def test_invalid_config_path_handling(runner: CliRunner):
     assert result.exit_code == 1
 
 
+@pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("requests.put")
 def test_config_passed_down_to_command_children(
@@ -164,6 +170,3 @@ def test_config_passed_down_to_command_children(
 
     assert mock_requests.call_args[0][0] == "http://a.fake.host:12345/task/sleep"
     assert mock_requests.call_args[1] == {"json": {"time": 5}}
-
-    # manually teardown handler, as normally uvicorn does this.
-    teardown_handler()

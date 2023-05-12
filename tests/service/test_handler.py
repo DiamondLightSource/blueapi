@@ -10,7 +10,7 @@ from blueapi.service.handler import (
 
 
 @patch("blueapi.service.handler.Handler")
-def test_get_handler_raises_before_setup_hadler_called(
+def test_get_handler_raises_before_setup_handler_called(
     mock_handler: Mock, handler: Handler
 ):
     mock_handler.side_effect = Mock(return_value=handler)
@@ -23,3 +23,7 @@ def test_get_handler_raises_before_setup_hadler_called(
     assert handler
 
     teardown_handler()
+
+
+def test_teardown_handler_does_nothing_if_setup_handler_not_called():
+    assert teardown_handler() is None

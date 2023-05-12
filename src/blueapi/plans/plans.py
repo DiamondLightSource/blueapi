@@ -50,7 +50,7 @@ def scan(
 def _scanspec_to_cycler(spec: Spec[str], axes: Mapping[str, Movable]) -> Cycler:
     """
     Convert a scanspec to a cycler for compatibility with legacy Bluesky plans such as
-    `bp.scan_nd`. Use the midpoints of the scanspec since cyclers are noramlly used
+    `bp.scan_nd`. Use the midpoints of the scanspec since cyclers are normally used
     for software triggered scans.
 
     Args:

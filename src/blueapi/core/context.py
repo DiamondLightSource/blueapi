@@ -140,7 +140,7 @@ class BlueskyContext:
         """
         Register an device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`
-        attribbute which can be used. The attribute can be overrideen with the
+        attribute which can be used. The attribute can be overridden with the
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
 
@@ -230,7 +230,7 @@ class BlueskyContext:
 
     def _convert_type(self, typ: Type) -> Type:
         """
-        Recursively convert a type to something that can be deserialsed by
+        Recursively convert a type to something that can be deserialised by
         pydantic. Bluesky protocols (and types that extend them) are replaced
         with an intermediate reference types that allows the current context to
         be used to look up an existing device when deserialising device ID

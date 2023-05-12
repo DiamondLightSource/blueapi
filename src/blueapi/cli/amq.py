@@ -58,7 +58,7 @@ class AmqClient:
             on_progress_event_wrapper,
         )
         # self.app.send("worker.run", {"name": name, "params": params})
-        task_response = self.app.send_and_recieve(
+        task_response = self.app.send_and_receive(
             "worker.run", {"name": name, "params": params}, reply_type=TaskResponse
         ).result(5.0)
         task_id = task_response.task_name
@@ -69,11 +69,11 @@ class AmqClient:
         return task_id
 
     def get_plans(self) -> PlanResponse:
-        return self.app.send_and_recieve(
+        return self.app.send_and_receive(
             "worker.plans", PlanRequest(), PlanResponse
         ).result(5.0)
 
     def get_devices(self) -> DeviceResponse:
-        return self.app.send_and_recieve(
+        return self.app.send_and_receive(
             "worker.devices", DeviceRequest(), DeviceResponse
         ).result(5.0)

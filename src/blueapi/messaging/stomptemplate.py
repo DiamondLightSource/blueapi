@@ -65,7 +65,7 @@ class Subscription:
 
 class StompMessagingTemplate(MessagingTemplate):
     """
-    MessagingTemplate that uses the stompp protocol, meant for use
+    MessagingTemplate that uses the stomp protocol, meant for use
     with ActiveMQ.
     """
 
@@ -198,7 +198,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
     @handle_all_exceptions
     def _on_message(self, frame: Frame) -> None:
-        LOGGER.info(f"Recieved {frame}")
+        LOGGER.info(f"Received {frame}")
         sub_id = frame.headers.get("subscription")
         sub = self._subscriptions.get(sub_id)
         if sub is not None:

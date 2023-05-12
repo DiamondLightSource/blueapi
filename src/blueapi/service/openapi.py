@@ -1,8 +1,8 @@
 """Generate openapi.json."""
 
-import yaml
 from pathlib import Path
 
+import yaml
 from fastapi.openapi.utils import get_openapi
 
 from blueapi.service.main import app

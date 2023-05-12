@@ -48,7 +48,7 @@ def test_main_with_nonexistent_config_file():
 
 
 @patch("requests.get")
-def test_controller_plans(mock_requests: Mock):
+def test_connection_error_caught_by_wrapper_func(mock_requests: Mock):
     mock_requests.side_effect = ConnectionError()
     runner = CliRunner()
     result = runner.invoke(main, ["controller", "plans"])

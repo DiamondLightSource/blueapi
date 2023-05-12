@@ -96,6 +96,9 @@ addopts = """
 filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
+markers = [
+    "handler: marks tests that interact with the global handler object in handler.py",
+]
 
 [tool.coverage.run]
 data_file = "/tmp/blueapi.coverage"

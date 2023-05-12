@@ -5,11 +5,19 @@ from click.testing import CliRunner
 from fastapi.testclient import TestClient
 from mock import Mock, patch
 from pydantic import BaseModel
+from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
+
+
+@pytest.fixture(autouse=True)
+def ensure_handler_teardown(request):
+    yield
+    if "handler" in request.keywords:
+        teardown_handler()
 
 
 @pytest.fixture
@@ -39,7 +47,9 @@ def test_main_with_nonexistent_config_file():
     type(result.exception) == FileNotFoundError
 
 
-def test_controller_plans():
+@patch("requests.get")
+def test_connection_error_caught_by_wrapper_func(mock_requests: Mock):
+    mock_requests.side_effect = ConnectionError()
     runner = CliRunner()
     result = runner.invoke(main, ["controller", "plans"])
 
@@ -73,6 +83,7 @@ def test_deprecated_worker_command(
     )
 
 
+@pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("requests.get")
 def test_get_plans_and_devices(
@@ -127,9 +138,6 @@ def test_get_plans_and_devices(
         + "\n{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
     )
 
-    # manually teardown handler, as normally uvicorn does this.
-    teardown_handler()
-
 
 def test_invalid_config_path_handling(runner: CliRunner):
     # test what happens if you pass an invalid config file...
@@ -137,6 +145,7 @@ def test_invalid_config_path_handling(runner: CliRunner):
     assert result.exit_code == 1
 
 
+@pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("requests.put")
 def test_config_passed_down_to_command_children(
@@ -161,6 +170,3 @@ def test_config_passed_down_to_command_children(
 
     assert mock_requests.call_args[0][0] == "http://a.fake.host:12345/task/sleep"
     assert mock_requests.call_args[1] == {"json": {"time": 5}}
-
-    # manually teardown handler, as normally uvicorn does this.
-    teardown_handler()

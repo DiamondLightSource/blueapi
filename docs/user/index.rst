@@ -14,6 +14,7 @@ side-bar.
             :maxdepth: 1
 
             tutorials/installation
+            tutorials/quickstart
 
         +++
 

@@ -18,7 +18,7 @@ Ensure you are inside your virtual environment:
 
 You will need to follow the instructions for setting up ActiveMQ as in `../../user/how-to/run-cli`. 
 
-The worker will be available from the command line, but can be started from vscode with additional 
+The worker will be available from the command line (``blueapi serve``), but can be started from vscode with additional 
 debugging capabilities.
 
 1. Navigate to "Run and Debug" in the left hand menu.

@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Control the Worker via the CLI &#8212; blueapi 0.2.4.dev7+gc74ff3b documentation</title>
+    <title>Control the Worker via the CLI &#8212; blueapi 0.2.4.dev8+g465ace4 documentation</title>
   
   
   
@@ -377,6 +377,7 @@ document.write(`
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/quickstart.html">Quickstart Guide</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul class="current nav bd-sidenav">
@@ -464,34 +465,6 @@ a test/development/debugging tool and not meant for production!</p>
 <p class="admonition-title">See also</p>
 <p>In a developer environment, the worker can also be run from vscode: <a class="reference internal" href="../../developer/tutorials/dev-run.html"><span class="doc">Run/Debug in a Developer Environment</span></a>.</p>
 </div>
-<section id="start-activemq">
-<h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Permalink to this heading">#</a></h2>
-<p>The worker requires a running instance of ActiveMQ, the simplest
-way to start it is to run it via a container:</p>
-<div class="sd-tab-set docutils">
-<input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-0">
-Docker</label><div class="sd-tab-content docutils">
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
-</pre></div>
-</div>
-</div>
-<input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-1">
-Podman</label><div class="sd-tab-content docutils">
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>podman<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="start-the-worker">
-<h2>Start the Worker<a class="headerlink" href="#start-the-worker" title="Permalink to this heading">#</a></h2>
-<p>To start the worker</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>serve
-</pre></div>
-</div>
-</section>
 <section id="basic-introspection">
 <h2>Basic Introspection<a class="headerlink" href="#basic-introspection" title="Permalink to this heading">#</a></h2>
 <p>The worker can tell you which plans and devices are available via:</p>
@@ -571,8 +544,6 @@ from the server.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-the-worker">Start the Worker</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-introspection">Basic Introspection</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-plans">Running Plans</a></li>
 </ul>

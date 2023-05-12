@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Run static analysis using mypy &#8212; blueapi 0.2.4.dev8+g465ace4 documentation</title>
+    <title>Quickstart Guide &#8212; blueapi 0.2.4.dev8+g465ace4 documentation</title>
   
   
   
@@ -44,7 +44,7 @@
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
     <script src="../../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/how-to/static-analysis';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user/tutorials/quickstart';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'cli-docs';
@@ -52,8 +52,8 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Run linting using pre-commit" href="lint.html" />
-    <link rel="prev" title="Run the tests using pytest" href="run-tests.html" />
+    <link rel="next" title="Run in a container" href="../how-to/run-container.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -143,15 +143,15 @@
   </p>
   <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../user/index.html">
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="../index.html">
                         User Guide
                       </a>
                     </li>
                 
 
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../index.html">
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../developer/index.html">
                         Developer Guide
                       </a>
                     </li>
@@ -283,15 +283,15 @@ document.write(`
   </p>
   <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../user/index.html">
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="../index.html">
                         User Guide
                       </a>
                     </li>
                 
 
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../index.html">
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../developer/index.html">
                         Developer Guide
                       </a>
                     </li>
@@ -375,34 +375,26 @@ document.write(`
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/dev-install.html">Developer install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/dev-run.html">Run/Debug in a Developer Environment</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Quickstart Guide</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing to the project</a></li>
-<li class="toctree-l1"><a class="reference internal" href="build-docs.html">Build the docs using sphinx</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-tests.html">Run the tests using pytest</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run static analysis using mypy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="lint.html">Run linting using pre-commit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="update-tools.html">Update the tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="make-release.html">Make a release</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../how-to/run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/configure-app.html">Configure the application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/run-cli.html">Control the Worker via the CLI</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../explanations/decisions.html">Architectural Decision Records</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/architecture.html">Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/lifecycle.html">Lifecycle of a Plan</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/type_validators.html">Type Validators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/events.html">Events Emitted by the Worker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/docs-structure.html">About the documentation</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../reference/standards.html">Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/asyncapi.html">AsyncAPI Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/cli.html">Command-Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../genindex.html">Index</a></li>
 </ul>
 </div>
 </nav></div>
@@ -441,9 +433,9 @@ document.write(`
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Developer Guide</a></li>
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">User Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Run static analysis using mypy</li>
+    <li class="breadcrumb-item active" aria-current="page">Quickstart Guide</li>
   </ul>
 </nav>
 </div>
@@ -460,14 +452,48 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="run-static-analysis-using-mypy">
-<h1>Run static analysis using mypy<a class="headerlink" href="#run-static-analysis-using-mypy" title="Permalink to this heading">#</a></h1>
-<p>Static type analysis is done with <a class="reference external" href="http://mypy-lang.org/">mypy</a>. It checks type definition in source
-files without running them, and highlights potential issues where types do not
-match. You can run it with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tox -e mypy
+  <section id="quickstart-guide">
+<h1>Quickstart Guide<a class="headerlink" href="#quickstart-guide" title="Permalink to this heading">#</a></h1>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Assumes you have completed <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a>.</p>
+</div>
+<section id="start-activemq">
+<h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Permalink to this heading">#</a></h2>
+<p>The worker requires a running instance of ActiveMQ, the simplest
+way to start it is to run it via a container:</p>
+<div class="sd-tab-set docutils">
+<input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
+</input><label class="sd-tab-label" for="sd-tab-item-0">
+Docker</label><div class="sd-tab-content docutils">
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
 </pre></div>
 </div>
+</div>
+<input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
+</input><label class="sd-tab-label" for="sd-tab-item-1">
+Podman</label><div class="sd-tab-content docutils">
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>podman<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="start-worker">
+<h2>Start Worker<a class="headerlink" href="#start-worker" title="Permalink to this heading">#</a></h2>
+<p>To start the worker:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>serve
+</pre></div>
+</div>
+<p>The worker can also be started using a custom config file:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>--config<span class="w"> </span>path/to/file<span class="w"> </span>serve
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Full CLI reference: <a class="reference internal" href="../reference/cli.html"><span class="doc">Command-Line Interface</span></a></p>
+</div>
+</section>
 </section>
 
 
@@ -482,20 +508,20 @@ match. You can run it with:</p>
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="run-tests.html"
+       href="installation.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Run the tests using pytest</p>
+        <p class="prev-next-title">Installation</p>
       </div>
     </a>
     <a class="right-next"
-       href="lint.html"
+       href="../how-to/run-container.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Run linting using pre-commit</p>
+        <p class="prev-next-title">Run in a container</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -512,9 +538,20 @@ match. You can run it with:</p>
                 <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
   <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-worker">Start Worker</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/cli-docs/docs/developer/how-to/static-analysis.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/cli-docs/docs/user/tutorials/quickstart.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -528,7 +565,7 @@ match. You can run it with:</p>
 
   <div class="sidebar-secondary-item">
   <div class="tocsection sourcelink">
-    <a href="../../_sources/developer/how-to/static-analysis.rst.txt">
+    <a href="../../_sources/user/tutorials/quickstart.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

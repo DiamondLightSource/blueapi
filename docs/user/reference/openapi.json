@@ -1,0 +1,328 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "FastAPI",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/plans": {
+            "get": {
+                "summary": "Get Plans",
+                "description": "Retrieve information about all available plans.",
+                "operationId": "get_plans_plans_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlanResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plan/{name}": {
+            "get": {
+                "summary": "Get Plan By Name",
+                "description": "Retrieve information about a plan by its (unique) name.",
+                "operationId": "get_plan_by_name_plan__name__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Name",
+                            "type": "string"
+                        },
+                        "name": "name",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlanModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/devices": {
+            "get": {
+                "summary": "Get Devices",
+                "description": "Retrieve information about all available devices.",
+                "operationId": "get_devices_devices_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeviceResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/device/{name}": {
+            "get": {
+                "summary": "Get Device By Name",
+                "description": "Retrieve information about a devices by its (unique) name.",
+                "operationId": "get_device_by_name_device__name__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Name",
+                            "type": "string"
+                        },
+                        "name": "name",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeviceModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/task/{name}": {
+            "put": {
+                "summary": "Submit Task",
+                "description": "Submit a task onto the worker queue.",
+                "operationId": "submit_task_task__name__put",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Name",
+                            "type": "string"
+                        },
+                        "name": "name",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "title": "Task",
+                                "type": "object"
+                            },
+                            "example": {
+                                "detectors": [
+                                    "x"
+                                ]
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "DeviceModel": {
+                "title": "DeviceModel",
+                "required": [
+                    "name",
+                    "protocols"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "title": "Name",
+                        "type": "string",
+                        "description": "Name of the device"
+                    },
+                    "protocols": {
+                        "title": "Protocols",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Protocols that a device conforms to, indicating its capabilities"
+                    }
+                },
+                "additionalProperties": false,
+                "description": "Representation of a device"
+            },
+            "DeviceResponse": {
+                "title": "DeviceResponse",
+                "required": [
+                    "devices"
+                ],
+                "type": "object",
+                "properties": {
+                    "devices": {
+                        "title": "Devices",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeviceModel"
+                        },
+                        "description": "Devices available to use in plans"
+                    }
+                },
+                "additionalProperties": false,
+                "description": "Response to a query for devices"
+            },
+            "HTTPValidationError": {
+                "title": "HTTPValidationError",
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "title": "Detail",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        }
+                    }
+                }
+            },
+            "PlanModel": {
+                "title": "PlanModel",
+                "required": [
+                    "name"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "title": "Name",
+                        "type": "string",
+                        "description": "Name of the plan"
+                    }
+                },
+                "additionalProperties": false,
+                "description": "Representation of a plan"
+            },
+            "PlanResponse": {
+                "title": "PlanResponse",
+                "required": [
+                    "plans"
+                ],
+                "type": "object",
+                "properties": {
+                    "plans": {
+                        "title": "Plans",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlanModel"
+                        },
+                        "description": "Plans available to use by a worker"
+                    }
+                },
+                "additionalProperties": false,
+                "description": "Response to a query for plans"
+            },
+            "TaskResponse": {
+                "title": "TaskResponse",
+                "required": [
+                    "taskName"
+                ],
+                "type": "object",
+                "properties": {
+                    "taskName": {
+                        "title": "Taskname",
+                        "type": "string",
+                        "description": "Unique identifier for the task"
+                    }
+                },
+                "additionalProperties": false,
+                "description": "Acknowledgement that a task has started, includes its ID"
+            },
+            "ValidationError": {
+                "title": "ValidationError",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "type": "object",
+                "properties": {
+                    "loc": {
+                        "title": "Location",
+                        "type": "array",
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        }
+                    },
+                    "msg": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "type": {
+                        "title": "Error Type",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

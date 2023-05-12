@@ -42,6 +42,8 @@ extensions = [
     "sphinx_copybutton",
     # For the card element
     "sphinx_design",
+    # OpenAPI directive
+    "sphinxcontrib.openapi",
 ]
 
 # If true, Sphinx will warn about all references where the target cannot

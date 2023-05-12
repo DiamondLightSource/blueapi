@@ -52,6 +52,7 @@ side-bar.
 
             reference/api
             reference/asyncapi
+            reference/openapi
             ../genindex
 
         +++

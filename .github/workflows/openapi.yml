@@ -1,0 +1,30 @@
+name: Openapi
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Run weekly to check latest versions of dependencies
+    - cron: "0 8 * * WED"
+env:
+  # The target python version, which must match the Dockerfile version
+  CONTAINER_PYTHON: "3.11"
+
+jobs:
+  publish:
+    # pull requests are a duplicate of a branch push if within the same repo.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install python packages
+        uses: ./.github/actions/install_requirements
+        with:
+          requirements_file: requirements-dev-3.x.txt
+          install_options: -e .[dev]
+
+      - name: generate openapi schema
+        run: python src/blueapi/service/openapi.py

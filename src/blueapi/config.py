@@ -87,7 +87,7 @@ class ConfigLoader(Generic[C]):
 
         Args:
             values (Mapping[str, Any]): Dictionary of override values,
-                                        does not need to be exaustive
+                                        does not need to be exhaustive
                                         if defaults provided.
         """
 

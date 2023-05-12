@@ -38,7 +38,7 @@ class AdSimDetector(SingleTrigger, DetectorBase):
 
         self.hdf.kind = "normal"
 
-        # These signals will be set to their consituent values
+        # These signals will be set to their constituent values
         # when stage() is called and returned to their original
         # values when unstage() is called
         self.stage_sigs = {

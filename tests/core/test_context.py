@@ -197,6 +197,16 @@ def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
     )
 
 
+def test_default_device_reference(empty_context: BlueskyContext) -> None:
+    def default_movable(mov: Movable = "demo") -> MsgGenerator:  # type: ignore
+        ...
+
+    spec = empty_context._type_spec_for_function(default_movable)
+    movable_ref = empty_context._reference(Movable)
+    assert spec["mov"][0] == movable_ref
+    assert spec["mov"][1].default_factory == DefaultFactory("demo")
+
+
 class Named:
     """Concrete implementation of a Bluesky protocol (HasName)"""
 

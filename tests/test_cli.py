@@ -160,9 +160,7 @@ def test_config_passed_down_to_command_children(
     )
 
     assert mock_requests.call_args[0][0] == "http://a.fake.host:12345/task/sleep"
-    assert mock_requests.call_args[1] == {
-        "json": {"name": "sleep", "params": {"time": 5}}
-    }
+    assert mock_requests.call_args[1] == {"json": {"time": 5}}
 
     # manually teardown handler, as normally uvicorn does this.
     teardown_handler()

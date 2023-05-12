@@ -100,6 +100,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/no-auto-camelcase-of-plan-parameters/"
   },
   {
+    "version": "optional-dependencies",
+    "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
+  },
+  {
     "version": "public-topics",
     "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
   },

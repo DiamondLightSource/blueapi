@@ -74,11 +74,11 @@ class BlueskyContext:
         for source in config.sources:
             mod = import_module(str(source.module))
 
-            if source.kind is SourceKind.planFunctions:
+            if source.kind is SourceKind.PLAN_FUNCTIONS:
                 self.with_plan_module(mod)
-            elif source.kind is SourceKind.deviceFunctions:
+            elif source.kind is SourceKind.DEVICE_FUNCTIONS:
                 self.with_device_module(mod)
-            elif source.kind is SourceKind.dodal:
+            elif source.kind is SourceKind.DODAL:
                 self.with_dodal_module(mod)
 
     def with_plan_module(self, module: ModuleType) -> None:

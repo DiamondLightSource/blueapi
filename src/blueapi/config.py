@@ -11,9 +11,9 @@ LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 class SourceKind(str, Enum):
-    planFunctions = "planFunctions"
-    deviceFunctions = "deviceFunctions"
-    dodal = "dodal"
+    PLAN_FUNCTIONS = "planFunctions"
+    DEVICE_FUNCTIONS = "deviceFunctions"
+    DODAL = "dodal"
 
 
 class Source(BaseModel):
@@ -36,8 +36,8 @@ class EnvironmentConfig(BlueapiBaseModel):
     """
 
     sources: list[Source] = [
-        Source(kind=SourceKind.deviceFunctions, module="blueapi.startup.example"),
-        Source(kind=SourceKind.planFunctions, module="blueapi.plans"),
+        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="blueapi.startup.example"),
+        Source(kind=SourceKind.PLAN_FUNCTIONS, module="blueapi.plans"),
     ]
 
     def __eq__(self, other: object) -> bool:

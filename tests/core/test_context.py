@@ -196,11 +196,11 @@ def test_add_devices_and_plans_from_modules_with_config(
         EnvironmentConfig(
             sources=[
                 Source(
-                    kind=SourceKind.deviceFunctions,
+                    kind=SourceKind.DEVICE_FUNCTIONS,
                     module="tests.core.fake_device_module",
                 ),
                 Source(
-                    kind=SourceKind.planFunctions, module="tests.core.fake_plan_module"
+                    kind=SourceKind.PLAN_FUNCTIONS, module="tests.core.fake_plan_module"
                 ),
             ]
         )

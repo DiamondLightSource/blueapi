@@ -5,6 +5,7 @@ from click.testing import CliRunner
 from fastapi.testclient import TestClient
 from mock import Mock, patch
 from pydantic import BaseModel
+from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.cli import main
@@ -39,7 +40,9 @@ def test_main_with_nonexistent_config_file():
     type(result.exception) == FileNotFoundError
 
 
-def test_controller_plans():
+@patch("requests.get")
+def test_controller_plans(mock_requests: Mock):
+    mock_requests.side_effect = ConnectionError()
     runner = CliRunner()
     result = runner.invoke(main, ["controller", "plans"])
 

@@ -1,6 +1,4 @@
-# Validates the AsyncAPI definition
-
-name: AsyncAPI Validate
+name: Backstage
 
 on:
   push:
@@ -13,7 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: asyncapi-validate
-        uses: WaleedAshraf/asyncapi-github-action@v0.0.10
+      - name: check catalog-info.yaml file
+        uses: RoadieHQ/backstage-entity-validator@v0.3.11
         with:
-          filepath: "./docs/user/reference/asyncapi.yaml"
+          path: "./catalog-info.yaml"

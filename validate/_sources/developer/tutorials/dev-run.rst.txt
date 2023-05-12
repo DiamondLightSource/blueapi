@@ -44,7 +44,7 @@ Start the worker from the command line or vscode:
 
         .. code:: shell
 
-            blueapi worker
+            blueapi serve
 
     .. tab-item:: VSCode
 

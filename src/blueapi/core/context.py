@@ -8,10 +8,12 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generic,
     List,
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union,
     get_args,
     get_origin,
@@ -219,7 +221,7 @@ class BlueskyContext:
                 )
 
             no_default = para.default is Parameter.empty
-            factory = None if no_default else lambda d=para.default: d
+            factory = None if no_default else DefaultFactory(para.default)
             new_args[name] = (
                 self._convert_type(arg_type),
                 FieldInfo(default_factory=factory),
@@ -252,3 +254,19 @@ class BlueskyContext:
             root = get_origin(typ)
             return root[new_types] if root else typ
         return typ
+
+
+D = TypeVar("D")
+
+
+class DefaultFactory(Generic[D]):
+    _value: D
+
+    def __init__(self, value: D):
+        self._value = value
+
+    def __call__(self) -> D:
+        return self._value
+
+    def __eq__(self, other) -> bool:
+        return other.__class__ == self.__class__ and self._value == other._value

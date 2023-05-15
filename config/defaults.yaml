@@ -1,5 +1,9 @@
 env:
-  startupScript: blueapi.startup.example
+  sources:
+    - kind: deviceFunctions
+      module: blueapi.startup.example
+    - kind: planFunctions
+      module: blueapi.plans
 stomp:
   host: localhost
   port: 61613

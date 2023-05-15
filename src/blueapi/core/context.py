@@ -2,7 +2,6 @@ import logging
 from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
-from pathlib import Path
 from types import ModuleType
 from typing import (
     Any,
@@ -24,6 +23,7 @@ from bluesky import RunEngine
 from pydantic import create_model
 from pydantic.fields import FieldInfo
 
+from blueapi.config import EnvironmentConfig, SourceKind
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
 from .bluesky_types import (
@@ -73,13 +73,16 @@ class BlueskyContext:
         else:
             return find_component(self.devices, addr)
 
-    def with_startup_script(self, path: Union[Path, str]) -> None:
-        mod = import_module(str(path))
-        self.with_module(mod)
+    def with_config(self, config: EnvironmentConfig) -> None:
+        for source in config.sources:
+            mod = import_module(str(source.module))
 
-    def with_module(self, module: ModuleType) -> None:
-        self.with_plan_module(module)
-        self.with_device_module(module)
+            if source.kind is SourceKind.PLAN_FUNCTIONS:
+                self.with_plan_module(mod)
+            elif source.kind is SourceKind.DEVICE_FUNCTIONS:
+                self.with_device_module(mod)
+            elif source.kind is SourceKind.DODAL:
+                self.with_dodal_module(mod)
 
     def with_plan_module(self, module: ModuleType) -> None:
         """
@@ -106,9 +109,13 @@ class BlueskyContext:
                 self.plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:
-        for obj in load_module_all(module):
-            if is_bluesky_compatible_device(obj):
-                self.device(obj)
+        self.with_dodal_module(module)
+
+    def with_dodal_module(self, module: ModuleType) -> None:
+        from dodal.utils import make_all_devices
+
+        for device in make_all_devices(module).values():
+            self.device(device)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

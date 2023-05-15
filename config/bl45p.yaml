@@ -1,2 +1,6 @@
 env:
-  startupScript: blueapi.startup.bl45p
+  sources:
+    - kind: dodal
+      module: dodal.p45
+    - kind: planFunctions
+      module: blueapi.plans

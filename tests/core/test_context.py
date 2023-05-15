@@ -6,6 +6,7 @@ import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
 from ophyd.sim import SynAxis, SynGauss
 
+from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import (
     BlueskyContext,
     MsgGenerator,
@@ -110,6 +111,13 @@ def test_add_invalid_plan(empty_context: BlueskyContext, plan: PlanGenerator) ->
         empty_context.plan(plan)
 
 
+def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
+    import tests.core.fake_plan_module as plan_module
+
+    empty_context.with_plan_module(plan_module)
+    assert {"scan"} == empty_context.plans.keys()
+
+
 def test_add_named_device(empty_context: BlueskyContext, sim_motor: SynAxis) -> None:
     empty_context.device(sim_motor)
     assert empty_context.devices[SIM_MOTOR_NAME] is sim_motor
@@ -135,6 +143,18 @@ def test_override_device_name(
 ) -> None:
     empty_context.device(sim_motor, "foo")
     assert empty_context.devices["foo"] is sim_motor
+
+
+def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
+    import tests.core.fake_device_module as device_module
+
+    empty_context.with_device_module(device_module)
+    assert {
+        "motor_x",
+        "motor_y",
+        "motor_bundle_a",
+        "motor_bundle_b",
+    } == empty_context.devices.keys()
 
 
 @pytest.mark.parametrize(
@@ -168,6 +188,31 @@ def test_add_non_plan(empty_context: BlueskyContext) -> None:
 def test_add_non_device(empty_context: BlueskyContext) -> None:
     with pytest.raises(TypeError):
         empty_context.device("not a device")  # type: ignore
+
+
+def test_add_devices_and_plans_from_modules_with_config(
+    empty_context: BlueskyContext,
+) -> None:
+    empty_context.with_config(
+        EnvironmentConfig(
+            sources=[
+                Source(
+                    kind=SourceKind.DEVICE_FUNCTIONS,
+                    module="tests.core.fake_device_module",
+                ),
+                Source(
+                    kind=SourceKind.PLAN_FUNCTIONS, module="tests.core.fake_plan_module"
+                ),
+            ]
+        )
+    )
+    assert {
+        "motor_x",
+        "motor_y",
+        "motor_bundle_a",
+        "motor_bundle_b",
+    } == empty_context.devices.keys()
+    assert {"scan"} == empty_context.plans.keys()
 
 
 def test_function_spec(empty_context: BlueskyContext) -> None:

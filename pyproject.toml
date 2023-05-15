@@ -25,6 +25,8 @@ dependencies = [
     "fastapi[all]",
     "uvicorn",
     "requests",
+    "dodal @ git+https://github.com/DiamondLightSource/dodal.git",
+
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -70,6 +72,7 @@ write_to = "src/blueapi/_version.py"
 
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules
+namespace_packages = false    # rely only on __init__ files to determine fully qualified module names.
 
 [tool.isort]
 float_to_top = true

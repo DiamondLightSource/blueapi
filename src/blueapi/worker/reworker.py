@@ -72,6 +72,9 @@ class RunEngineWorker(Worker[Task]):
         self._ctx = ctx
         self._stop_timeout = stop_timeout
 
+        self._transaction_lock = RLock()
+        self._pending_transaction = None
+
         self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
         self._errors = []
         self._warnings = []
@@ -94,15 +97,28 @@ class RunEngineWorker(Worker[Task]):
             self._pending_transaction = ActiveTask(task_id, task)
         return task_id
 
-    def clear_transaction(self) -> None:
+    def clear_transaction(self) -> str:
         with self._transaction_lock:
-            self._pending_transaction = None
+            if self._pending_transaction is None:
+                raise Exception("No transaction to clear")
 
-    def commit_transaction(self) -> None:
+            task_id = self._pending_transaction.name
+            self._pending_transaction = None
+            return task_id
+
+    def commit_transaction(self, task_id: str) -> None:
         with self._transaction_lock:
             if self._pending_transaction is None:
                 raise Exception("No transaction to commit")
-            self._submit_active_task(self._pending_transaction)
+
+            pending_id = self._pending_transaction.name
+            if pending_id == task_id:
+                self._submit_active_task(self._pending_transaction)
+            else:
+                raise KeyError(
+                    "Not committing the transaction requested, asked to commit"
+                    f"{task_id} when {pending_id} is in progress"
+                )
 
     def get_pending(self) -> Optional[Task]:
         with self._transaction_lock:

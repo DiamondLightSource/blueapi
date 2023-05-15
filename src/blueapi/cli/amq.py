@@ -1,4 +1,3 @@
-from collections import deque
 import threading
 import time
 from typing import Callable, Optional, TypeVar
@@ -17,7 +16,6 @@ class BlueskyRemoteError(Exception):
 class AmqClient:
     app: MessagingTemplate
     complete: threading.Event
-    events = deque()
 
     def __init__(self, app: MessagingTemplate) -> None:
         self.app = app
@@ -41,7 +39,6 @@ class AmqClient:
 
             if (event.is_complete()) and (ctx.correlation_id == corr_id):
                 self.complete.set()
-                self.events.append(event)
                 if event.is_error():
                     raise BlueskyRemoteError(str(event.errors) or "Unknown error")
 
@@ -66,9 +63,11 @@ class AmqClient:
             current_time = time.time()
             if (current_time - begin_time) > timeout:
                 break
-            time.sleep(0.1)
 
         self.complete.clear()
 
-    def clear_cache(self):
-        self.events.clear()
+    def __enter__(self) -> None:
+        self.app.connect()
+
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+        self.app.disconnect()

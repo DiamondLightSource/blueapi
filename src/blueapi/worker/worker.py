@@ -26,11 +26,11 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def clear_transaction(self) -> None:
+    def clear_transaction(self) -> str:
         """_summary_"""
 
     @abstractmethod
-    def commit_transaction(self) -> None:
+    def commit_transaction(self, __task_id: str) -> None:
         """_summary_"""
 
     @abstractmethod

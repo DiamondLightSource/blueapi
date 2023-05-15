@@ -1,8 +1,8 @@
 from typing import Any, Mapping, Optional
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Query
-from blueapi.cli.amq import AmqClient
 
+from blueapi.cli.amq import AmqClient
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan
 
@@ -49,26 +49,31 @@ async def get_device_by_name(name: str, handler: Handler = Depends(get_handler))
         raise HTTPException(status_code=404, detail="Item not found")
 
 
-@app.put("/task/{name}", response_model=TaskResponse)
-async def submit_task(
-    name: str,
-    task: Mapping[str, Any] = Body(..., example={"detectors": ["x"]}),
-    correlation_id: str = Query(...),
+@app.put("/task", response_model=TaskResponse)
+async def create_task(
+    task: RunPlan = Body(
+        ..., example=RunPlan(name="count", params={"detectors": ["x"]})
+    ),
     handler: Handler = Depends(get_handler),
-):
+) -> TaskResponse:
     """Submit a task onto the worker queue."""
-    handler.worker.submit_task(name, RunPlan(name=name, params=task), correlation_id)
-    return TaskResponse(task_id=correlation_id)
+    task_id = handler.worker.begin_transaction(task)
+    return TaskResponse(task_id=task_id)
 
 
-@app.get("/task/{correlation_id}")
-async def listen_to_task(
-    correlation_id: str,
+@app.delete("/task", response_model=TaskResponse)
+async def delete_task(handler: Handler = Depends(get_handler)) -> TaskResponse:
+    task_id = handler.worker.clear_transaction()
+    return TaskResponse(task_id=task_id)
+
+
+@app.put("/started/{task_id}")
+async def start(
+    task_id: str,
     handler: Handler = Depends(get_handler),
-):
-    """Listen on the queue for running tasks with the provided correlation ID."""
-    amq_client = handler.amq_client
-    amq_client.wait_for_complete()
+) -> TaskResponse:
+    handler.worker.commit_transaction(task_id)
+    return TaskResponse(task_id=task_id)
 
 
 def start(config: ApplicationConfig):

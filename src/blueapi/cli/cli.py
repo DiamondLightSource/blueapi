@@ -1,10 +1,10 @@
 import json
 import logging
+import uuid
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
 from typing import Optional
-import uuid
 
 import click
 import requests
@@ -14,8 +14,8 @@ from blueapi import __version__
 from blueapi.cli.amq import AmqClient
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
-from blueapi.service.main import start
 from blueapi.service.handler import get_handler
+from blueapi.service.main import start
 
 
 @click.group(invoke_without_command=True)
@@ -109,22 +109,20 @@ def run_plan(obj: dict, name: str, parameters: str, id: Optional[str] = None) ->
     config: ApplicationConfig = obj["config"]
 
     amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
-    # if id is given, set up a listener to activemq events with this id. Then submit the task...
-    corr_id = id or str(uuid.uuid4())
 
-    amq_client.app.connect()
-    amq_client.subscribe_to_topics(corr_id)
-    request_str = f"http://{config.api.host}:{config.api.port}/task/{name}"
+    with amq_client:
+        create_resp = requests.put(
+            f"http://{config.api.host}:{config.api.port}/task",
+            json={"name": name, "params": json.loads(parameters)},
+        )
+        task_id = create_resp.json()["taskId"]
 
-    generate_resp = requests.put(
-        request_str + f"?correlation_id={corr_id}",
-        json=json.loads(parameters),
-    )
+        amq_client.subscribe_to_topics(task_id)
 
-    amq_client.wait_for_complete()
+        started_resp = requests.put(
+            f"http://{config.api.host}:{config.api.port}/started/{task_id}"
+        )
 
-    print(f"Response returned with {generate_resp.status_code}")
+        print(f"Response returned with {started_resp.status_code}")
 
-    amq_client.clear_cache()
-    amq_client.app.disconnect()
-    # pprint(wait_resp.json())
+        amq_client.wait_for_complete()

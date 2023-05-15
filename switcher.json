@@ -104,6 +104,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
   },
   {
+    "version": "p45-debugging",
+    "url": "https://DiamondLightSource.github.io/blueapi/p45-debugging/"
+  },
+  {
     "version": "public-topics",
     "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
   },

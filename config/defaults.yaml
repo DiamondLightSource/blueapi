@@ -1,7 +1,9 @@
 env:
   sources:
     - kind: deviceFunctions
-      module: blueapi.startup.example
+      module: blueapi.startup.example_devices
+    - kind: planFunctions
+      module: blueapi.startup.example_plans
     - kind: planFunctions
       module: blueapi.plans
 stomp:

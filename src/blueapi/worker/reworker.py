@@ -102,7 +102,7 @@ class RunEngineWorker(Worker[Task]):
     def clear_transaction(self) -> str:
         with self._transaction_lock:
             if self._pending_transaction is None:
-                raise Exception("No transaction to clear")
+                raise KeyError("No transaction to clear")
 
             task_id = self._pending_transaction.task_id
             self._pending_transaction = None
@@ -111,7 +111,7 @@ class RunEngineWorker(Worker[Task]):
     def commit_transaction(self, task_id: str) -> None:
         with self._transaction_lock:
             if self._pending_transaction is None:
-                raise Exception("No transaction to commit")
+                raise KeyError("No transaction to commit")
 
             pending_id = self._pending_transaction.task_id
             if pending_id == task_id:

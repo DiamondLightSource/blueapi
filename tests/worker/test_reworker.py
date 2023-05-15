@@ -18,6 +18,33 @@ from blueapi.worker import (
 from blueapi.worker.event import ProgressEvent
 from blueapi.worker.worker_busy_error import WorkerBusyError
 
+_SIMPLE_TASK = RunPlan(name="sleep", params={"time": 0.0})
+_LONG_TASK = RunPlan(name="sleep", params={"time": 1.0})
+_SLEEP_EVENTS = [
+    WorkerEvent(
+        state=WorkerState.RUNNING,
+        task_status=TaskStatus(
+            task_name="test", task_complete=False, task_failed=False
+        ),
+        errors=[],
+        warnings=[],
+    ),
+    WorkerEvent(
+        state=WorkerState.IDLE,
+        task_status=TaskStatus(
+            task_name="test", task_complete=False, task_failed=False
+        ),
+        errors=[],
+        warnings=[],
+    ),
+    WorkerEvent(
+        state=WorkerState.IDLE,
+        task_status=TaskStatus(task_name="test", task_complete=True, task_failed=False),
+        errors=[],
+        warnings=[],
+    ),
+]
+
 
 @pytest.fixture
 def context() -> BlueskyContext:
@@ -56,34 +83,85 @@ def test_multi_start(worker: Worker) -> None:
         worker.start()
 
 
+def test_create_transaction(worker: Worker) -> None:
+    assert worker.get_pending() is None
+    worker.begin_transaction(_SIMPLE_TASK)
+    assert worker.get_pending() is _SIMPLE_TASK
+
+
+def test_cannot_create_multiple_transactions(worker: Worker) -> None:
+    worker.begin_transaction(_SIMPLE_TASK)
+    with pytest.raises(WorkerBusyError):
+        worker.begin_transaction(_SIMPLE_TASK)
+
+
+def test_clear_transaction(worker: Worker) -> None:
+    worker.begin_transaction(_SIMPLE_TASK)
+    assert worker.get_pending() is _SIMPLE_TASK
+    worker.clear_transaction()
+    worker.begin_transaction(_LONG_TASK)
+    assert worker.get_pending() is _LONG_TASK
+
+
+def test_clear_nonexistant_transaction(worker: Worker) -> None:
+    with pytest.raises(KeyError):
+        worker.clear_transaction()
+
+
+def test_commit_wrong_transaction(worker: Worker) -> None:
+    worker.begin_transaction(_SIMPLE_TASK)
+    with pytest.raises(KeyError):
+        worker.commit_transaction("wrong id")
+
+
+def test_commit_nonexistant_transaction(worker: Worker) -> None:
+    with pytest.raises(KeyError):
+        worker.commit_transaction("wrong id")
+
+
+def test_commit_transaction(worker: Worker) -> None:
+    worker.start()
+
+    task_id = worker.begin_transaction(_SIMPLE_TASK)
+    assert worker.get_pending() is _SIMPLE_TASK
+
+    events: "Future[List[WorkerEvent]]" = take_events(
+        worker.worker_events,
+        lambda event: event.is_complete(),
+    )
+    worker.commit_transaction(task_id)
+    result = events.result(timeout=5.0)
+    assert result == [
+        WorkerEvent(
+            state=WorkerState.RUNNING,
+            task_status=TaskStatus(
+                task_name=task_id, task_complete=False, task_failed=False
+            ),
+            errors=[],
+            warnings=[],
+        ),
+        WorkerEvent(
+            state=WorkerState.IDLE,
+            task_status=TaskStatus(
+                task_name=task_id, task_complete=False, task_failed=False
+            ),
+            errors=[],
+            warnings=[],
+        ),
+        WorkerEvent(
+            state=WorkerState.IDLE,
+            task_status=TaskStatus(
+                task_name=task_id, task_complete=True, task_failed=False
+            ),
+            errors=[],
+            warnings=[],
+        ),
+    ]
+
+
 def test_runs_plan(worker: Worker) -> None:
     assert_run_produces_worker_events(
-        [
-            WorkerEvent(
-                state=WorkerState.RUNNING,
-                task_status=TaskStatus(
-                    task_name="test", task_complete=False, task_failed=False
-                ),
-                errors=[],
-                warnings=[],
-            ),
-            WorkerEvent(
-                state=WorkerState.IDLE,
-                task_status=TaskStatus(
-                    task_name="test", task_complete=False, task_failed=False
-                ),
-                errors=[],
-                warnings=[],
-            ),
-            WorkerEvent(
-                state=WorkerState.IDLE,
-                task_status=TaskStatus(
-                    task_name="test", task_complete=True, task_failed=False
-                ),
-                errors=[],
-                warnings=[],
-            ),
-        ],
+        _SLEEP_EVENTS,
         worker,
     )
 

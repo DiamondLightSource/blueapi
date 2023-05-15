@@ -1,5 +1,6 @@
 import logging
 from typing import Mapping, Optional
+from blueapi.cli.amq import AmqClient
 
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
@@ -15,6 +16,7 @@ class Handler:
     worker: Worker
     config: ApplicationConfig
     message_bus: MessagingTemplate
+    amq_client: AmqClient
 
     def __init__(self, config: Optional[ApplicationConfig] = None) -> None:
         self.context = BlueskyContext()
@@ -26,6 +28,7 @@ class Handler:
 
         self.worker = RunEngineWorker(self.context)
         self.message_bus = StompMessagingTemplate.autoconfigured(self.config.stomp)
+        self.amq_client = AmqClient(self.message_bus)
 
     def start(self) -> None:
         self.worker.start()

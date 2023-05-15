@@ -1,3 +1,4 @@
+from collections import deque
 import threading
 import time
 from typing import Callable, Optional, TypeVar
@@ -16,6 +17,7 @@ class BlueskyRemoteError(Exception):
 class AmqClient:
     app: MessagingTemplate
     complete: threading.Event
+    events = deque()
 
     def __init__(self, app: MessagingTemplate) -> None:
         self.app = app
@@ -29,8 +31,6 @@ class AmqClient:
     ) -> None:
         """Run callbacks on events/progress events with a given correlation id."""
 
-        self.app.connect()
-
         def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
             print(
                 f"correlation_id: {ctx.correlation_id}, corr_id: {corr_id}, "
@@ -41,13 +41,14 @@ class AmqClient:
 
             if (event.is_complete()) and (ctx.correlation_id == corr_id):
                 self.complete.set()
+                self.events.append(event)
                 if event.is_error():
                     raise BlueskyRemoteError(str(event.errors) or "Unknown error")
 
         def on_progress_event_wrapper(
             ctx: MessageContext, event: ProgressEvent
         ) -> None:
-            if on_progress_event is not None:
+            if (on_progress_event is not None) and (ctx.correlation_id == corr_id):
                 on_progress_event(event)
 
         self.app.subscribe(
@@ -59,10 +60,15 @@ class AmqClient:
             on_progress_event_wrapper,
         )
 
-    def wait_for_complete(
-        self,
-    ) -> None:
+    def wait_for_complete(self, timeout: float = 5.0) -> None:
+        begin_time = time.time()
         while not self.complete.is_set():
+            current_time = time.time()
+            if (current_time - begin_time) > timeout:
+                break
             time.sleep(0.1)
 
         self.complete.clear()
+
+    def clear_cache(self):
+        self.events.clear()

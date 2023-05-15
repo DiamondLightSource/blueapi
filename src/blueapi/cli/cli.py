@@ -15,6 +15,7 @@ from blueapi.cli.amq import AmqClient
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
+from blueapi.service.handler import get_handler
 
 
 @click.group(invoke_without_command=True)
@@ -107,28 +108,23 @@ def get_devices(obj: dict) -> None:
 def run_plan(obj: dict, name: str, parameters: str, id: Optional[str] = None) -> None:
     config: ApplicationConfig = obj["config"]
 
+    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
     # if id is given, set up a listener to activemq events with this id. Then submit the task...
     corr_id = id or str(uuid.uuid4())
-    client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
-    client.subscribe_to_topics(corr_id)
 
+    amq_client.app.connect()
+    amq_client.subscribe_to_topics(corr_id)
     request_str = f"http://{config.api.host}:{config.api.port}/task/{name}"
 
     generate_resp = requests.put(
         request_str + f"?correlation_id={corr_id}",
         json=json.loads(parameters),
     )
-    client.wait_for_complete()
 
-    # resp should contain the task_id.
-    # setup listener to activemq for a topic with this task_id...
-
-    # NOTE: obviously stuff has to emit onto active mq with task_id first.
-    # then run the plan. wait for output. Report on success.
-
-    # submit_resp = requests.put(request_str, json=json.loads(generate_resp.json()))
-
-    # listen to activemq for things with the task_id...
+    amq_client.wait_for_complete()
 
     print(f"Response returned with {generate_resp.status_code}")
-    pprint(generate_resp.json())
+
+    amq_client.clear_cache()
+    amq_client.app.disconnect()
+    # pprint(wait_resp.json())

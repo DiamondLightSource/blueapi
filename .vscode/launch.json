@@ -10,7 +10,7 @@
             "request": "launch",
             "module": "uvicorn",
             "args": [
-                "src.blueapi.rest.main:app",
+                "src.blueapi.service.main:app",
                 "--reload"
             ],
             "jinja": true,

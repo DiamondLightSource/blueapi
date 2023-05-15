@@ -1,6 +1,7 @@
 from typing import Any, Mapping, Optional
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Query
+from blueapi.cli.amq import AmqClient
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan
@@ -58,6 +59,16 @@ async def submit_task(
     """Submit a task onto the worker queue."""
     handler.worker.submit_task(name, RunPlan(name=name, params=task), correlation_id)
     return TaskResponse(task_id=correlation_id)
+
+
+@app.get("/task/{correlation_id}")
+async def listen_to_task(
+    correlation_id: str,
+    handler: Handler = Depends(get_handler),
+):
+    """Listen on the queue for running tasks with the provided correlation ID."""
+    amq_client = handler.amq_client
+    amq_client.wait_for_complete()
 
 
 def start(config: ApplicationConfig):

@@ -53,13 +53,13 @@ def has_typeless_params(foo, bar) -> MsgGenerator:  # type: ignore
 
 
 def has_default_reference(
-        m: Movable = Component(Movable, SIM_MOTOR_NAME)
+    m: Movable = Component(Movable, SIM_MOTOR_NAME)
 ) -> MsgGenerator:
     yield from []
 
 
 def has_default_nested_reference(
-        m: list[Movable] = [Component(Movable, SIM_MOTOR_NAME)]
+    m: list[Movable] = [Component(Movable, SIM_MOTOR_NAME)]
 ) -> MsgGenerator:
     yield from []
 
@@ -299,9 +299,7 @@ def test_concrete_method_annotation(empty_context: BlueskyContext) -> None:
 
 
 def test_str_default(
-        empty_context: BlueskyContext,
-        sim_motor: SynAxis,
-        alt_motor: SynAxis
+    empty_context: BlueskyContext, sim_motor: SynAxis, alt_motor: SynAxis
 ):
     movable_ref = empty_context._reference(Movable)
     empty_context.device(sim_motor)
@@ -320,9 +318,7 @@ def test_str_default(
 
 
 def test_nested_str_default(
-        empty_context: BlueskyContext,
-        sim_motor: SynAxis,
-        alt_motor: SynAxis
+    empty_context: BlueskyContext, sim_motor: SynAxis, alt_motor: SynAxis
 ):
     empty_context.device(sim_motor)
     empty_context.device(alt_motor)

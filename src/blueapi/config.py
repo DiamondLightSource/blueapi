@@ -36,7 +36,9 @@ class EnvironmentConfig(BlueapiBaseModel):
     """
 
     sources: list[Source] = [
-        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="blueapi.startup.example"),
+        Source(
+            kind=SourceKind.DEVICE_FUNCTIONS, module="blueapi.startup.example_devices"
+        ),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="blueapi.plans"),
     ]
 

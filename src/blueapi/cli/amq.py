@@ -21,26 +21,30 @@ class BlueskyRemoteError(Exception):
 
 class AmqClient:
     app: MessagingTemplate
+    complete: threading.Event
 
     def __init__(self, app: MessagingTemplate) -> None:
         self.app = app
+        self.complete = threading.Event()
 
-    def run_plan(
+    def subscribe_to_topics(
         self,
-        name: str,
-        params: Mapping[str, Any],
+        corr_id: str,
         on_event: Optional[Callable[[WorkerEvent], None]] = None,
         on_progress_event: Optional[Callable[[ProgressEvent], None]] = None,
-        timeout: Optional[float] = None,
-    ) -> str:
-        complete = threading.Event()
+    ) -> None:
+        """Run callbacks on events/progress events with a given correlation id."""
+        self.complete.set()
 
         def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
-            if on_event is not None:
+            print(
+                f"correlation_id: {ctx.correlation_id}, corr_id: {corr_id}, event.is_complete: {event.is_complete()}"
+            )
+            if (on_event is not None) and (ctx.correlation_id == corr_id):
                 on_event(event)
 
-            if event.is_complete():
-                complete.set()
+            if (event.is_complete()) and (ctx.correlation_id == corr_id):
+                self.complete.set()
                 if event.is_error():
                     raise BlueskyRemoteError(str(event.errors) or "Unknown error")
 
@@ -51,29 +55,20 @@ class AmqClient:
                 on_progress_event(event)
 
         self.app.subscribe(
-            self.app.destinations.topic("public.worker.event"), on_event_wrapper
+            self.app.destinations.queue("public.worker.event"),
+            lambda ctx, event: print("ooga booga"),
         )
         self.app.subscribe(
-            self.app.destinations.topic("public.worker.event.progress"),
+            self.app.destinations.queue("public.worker.event.progress"),
             on_progress_event_wrapper,
         )
-        # self.app.send("worker.run", {"name": name, "params": params})
-        task_response = self.app.send_and_recieve(
-            "worker.run", {"name": name, "params": params}, reply_type=TaskResponse
-        ).result(5.0)
-        task_id = task_response.task_name
 
-        if timeout is not None:
-            complete.wait(timeout)
+    def wait_for_complete(
+        self,
+    ) -> None:
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        # wat = self.complete.wait()
+        # print(wat)
 
-        return task_id
-
-    def get_plans(self) -> PlanResponse:
-        return self.app.send_and_recieve(
-            "worker.plans", PlanRequest(), PlanResponse
-        ).result(5.0)
-
-    def get_devices(self) -> DeviceResponse:
-        return self.app.send_and_recieve(
-            "worker.devices", DeviceRequest(), DeviceResponse
-        ).result(5.0)
+        # self.complete = threading.Event()
+        return

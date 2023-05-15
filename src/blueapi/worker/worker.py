@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from blueapi.core import DataEvent, EventStream
 
@@ -15,13 +15,14 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def submit_task(self, __name: str, __task: T) -> None:
+    def submit_task(self, __name: str, __task: T, __correlation_id: str) -> None:
         """
         Submit a task to be run
 
         Args:
-            __name (str): A unique name to identify this task
+            __name (str): name of the plan to be run
             __task (T): The task to run
+            __correlation_id (str): unique identifier of the task
         """
 
     @abstractmethod

@@ -1,6 +1,6 @@
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
-from fastapi import Body, Depends, FastAPI, HTTPException
+from fastapi import Body, Depends, FastAPI, HTTPException, Query
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan
@@ -52,11 +52,12 @@ async def get_device_by_name(name: str, handler: Handler = Depends(get_handler))
 async def submit_task(
     name: str,
     task: Mapping[str, Any] = Body(..., example={"detectors": ["x"]}),
+    correlation_id: str = Query(...),
     handler: Handler = Depends(get_handler),
 ):
     """Submit a task onto the worker queue."""
-    handler.worker.submit_task(name, RunPlan(name=name, params=task))
-    return TaskResponse(task_name=name)
+    handler.worker.submit_task(name, RunPlan(name=name, params=task), correlation_id)
+    return TaskResponse(task_id=correlation_id)
 
 
 def start(config: ApplicationConfig):

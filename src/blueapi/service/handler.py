@@ -39,6 +39,11 @@ class Handler:
                 "public.worker.event.progress", event, None, corr_id
             )
         )
+        self.worker.worker_events.subscribe(
+            lambda event, corr_id: self.message_bus.send(
+                "public.worker.event", event, None, corr_id
+            )
+        )
 
         self.message_bus.connect()
 

@@ -69,6 +69,7 @@ def _lookup_params(
 
 @dataclass
 class ActiveTask:
+    correlation_id: str
     name: str
     task: Task
     is_complete: bool = False

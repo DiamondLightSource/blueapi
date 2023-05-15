@@ -83,8 +83,8 @@ class RunEngineWorker(Worker[Task]):
         self._stopping = Event()
         self._stopped = Event()
 
-    def submit_task(self, name: str, task: Task) -> None:
-        active_task = ActiveTask(name, task)
+    def submit_task(self, name: str, task: Task, correlation_id: str) -> None:
+        active_task = ActiveTask(correlation_id, name, task)
         LOGGER.info(f"Submitting: {active_task}")
         try:
             self._task_queue.put_nowait(active_task)
@@ -197,7 +197,7 @@ class RunEngineWorker(Worker[Task]):
                 task_complete=self._current.is_complete,
                 task_failed=self._current.is_error or bool(errors),
             )
-            correlation_id = self._current.name
+            correlation_id = self._current.correlation_id
         else:
             task_status = None
             correlation_id = None
@@ -212,7 +212,7 @@ class RunEngineWorker(Worker[Task]):
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
-            correlation_id = self._current.name
+            correlation_id = self._current.correlation_id
             self._data_events.publish(
                 DataEvent(name=name, doc=document), correlation_id
             )
@@ -286,7 +286,7 @@ class RunEngineWorker(Worker[Task]):
                     task_name=self._current.name,
                     statuses=self._status_snapshot,
                 ),
-                self._current.name,
+                self._current.correlation_id,
             )
 
 

@@ -4,13 +4,16 @@ from functools import wraps
 from pathlib import Path
 from pprint import pprint
 from typing import Optional
+import uuid
 
 import click
 import requests
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
+from blueapi.cli.amq import AmqClient
 from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
 
 
@@ -96,13 +99,36 @@ def get_devices(obj: dict) -> None:
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
+@click.option(
+    "-i", "--id", type=str, help="correlation id of the task to be run", default=None
+)
 @check_connection
 @click.pass_obj
-def run_plan(obj: dict, name: str, parameters: str) -> None:
+def run_plan(obj: dict, name: str, parameters: str, id: Optional[str] = None) -> None:
     config: ApplicationConfig = obj["config"]
 
-    resp = requests.put(
-        f"http://{config.api.host}:{config.api.port}/task/{name}",
+    # if id is given, set up a listener to activemq events with this id. Then submit the task...
+    corr_id = id or str(uuid.uuid4())
+    client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    client.subscribe_to_topics(corr_id)
+
+    request_str = f"http://{config.api.host}:{config.api.port}/task/{name}"
+
+    generate_resp = requests.put(
+        request_str + f"?correlation_id={corr_id}",
         json=json.loads(parameters),
     )
-    print(f"Response returned with {resp.status_code}")
+    # client.wait_for_complete()
+
+    # resp should contain the task_id.
+    # setup listener to activemq for a topic with this task_id...
+
+    # NOTE: obviously stuff has to emit onto active mq with task_id first.
+    # then run the plan. wait for output. Report on success.
+
+    # submit_resp = requests.put(request_str, json=json.loads(generate_resp.json()))
+
+    # listen to activemq for things with the task_id...
+
+    print(f"Response returned with {generate_resp.status_code}")
+    pprint(generate_resp.json())

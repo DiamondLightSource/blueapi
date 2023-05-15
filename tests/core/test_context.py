@@ -315,8 +315,8 @@ def test_str_default(
 
     assert has_default_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_reference.__name__].model
-    assert parse_obj_as(model, {}).m is sim_motor
-    assert parse_obj_as(model, {"m": ALT_MOTOR_NAME}).m == alt_motor
+    assert parse_obj_as(model, {}).m is sim_motor  # type: ignore
+    assert parse_obj_as(model, {"m": ALT_MOTOR_NAME}).m == alt_motor  # type: ignore
 
 
 def test_nested_str_default(
@@ -334,5 +334,5 @@ def test_nested_str_default(
 
     assert has_default_nested_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_nested_reference.__name__].model
-    assert parse_obj_as(model, {}).m == [sim_motor]
-    assert parse_obj_as(model, {"m": [ALT_MOTOR_NAME]}).m == [alt_motor]
+    assert parse_obj_as(model, {}).m == [sim_motor]  # type: ignore
+    assert parse_obj_as(model, {"m": [ALT_MOTOR_NAME]}).m == [alt_motor]  # type: ignore

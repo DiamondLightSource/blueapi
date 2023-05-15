@@ -136,6 +136,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/tidy-docs/"
   },
   {
+    "version": "transactions",
+    "url": "https://DiamondLightSource.github.io/blueapi/transactions/"
+  },
+  {
     "version": "type-validator-partials",
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
   },

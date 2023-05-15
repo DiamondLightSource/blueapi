@@ -67,8 +67,8 @@ class DestinationProvider(ABC):
 class MessagingTemplate(ABC):
     """
     Class meant for quickly building message-based applications.
-    Includes helpers for asyncronous production/consumption and
-    synchronous send/recieve model
+    Includes helpers for asynchronous production/consumption and
+    synchronous send/receive model
     """
 
     @property
@@ -82,7 +82,7 @@ class MessagingTemplate(ABC):
             DestinationProvider: Destination provider
         """
 
-    def send_and_recieve(
+    def send_and_receive(
         self,
         destination: str,
         obj: Any,

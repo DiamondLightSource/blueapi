@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import Any, Generic, Literal, Mapping, Type, TypeVar, Union
 
@@ -9,7 +10,18 @@ from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
-class StompConfig(BlueapiBaseModel):
+class SourceKind(str, Enum):
+    PLAN_FUNCTIONS = "planFunctions"
+    DEVICE_FUNCTIONS = "deviceFunctions"
+    DODAL = "dodal"
+
+
+class Source(BaseModel):
+    kind: SourceKind
+    module: Union[Path, str]
+
+
+class StompConfig(BaseModel):
     """
     Config for connecting to stomp broker
     """
@@ -23,11 +35,14 @@ class EnvironmentConfig(BlueapiBaseModel):
     Config for the RunEngine environment
     """
 
-    startup_script: Union[Path, str] = "blueapi.startup.example"
+    sources: list[Source] = [
+        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="blueapi.startup.example"),
+        Source(kind=SourceKind.PLAN_FUNCTIONS, module="blueapi.plans"),
+    ]
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, EnvironmentConfig):
-            return str(self.startup_script) == str(other.startup_script)
+            return str(self.sources) == str(other.sources)
         return False
 
 
@@ -87,7 +102,7 @@ class ConfigLoader(Generic[C]):
 
         Args:
             values (Mapping[str, Any]): Dictionary of override values,
-                                        does not need to be exaustive
+                                        does not need to be exhaustive
                                         if defaults provided.
         """
 

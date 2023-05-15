@@ -46,7 +46,7 @@ class BlueapiBaseModel(BaseModel):
 
     We have a custom base model with custom config
     primarily to preserve this change and also
-    to prevent the ingestion of arbirtrary JSON
+    to prevent the ingestion of arbitrary JSON
     alongside a model's known fields, which
     apischema also did not allow.
     """

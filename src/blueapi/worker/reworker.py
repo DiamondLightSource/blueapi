@@ -106,7 +106,7 @@ class RunEngineWorker(Worker[Task]):
             self._stopped.wait(timeout=self._stop_timeout)
             # Event timeouts do not actually raise errors
             if not self._stopped.is_set():
-                raise TimeoutError("Did not recieve successful stop signal!")
+                raise TimeoutError("Did not receive successful stop signal!")
         else:
             LOGGER.info("Stopping worker: nothing to do")
         LOGGER.info("Stopped")
@@ -138,7 +138,7 @@ class RunEngineWorker(Worker[Task]):
                 self._current = next_task  # Informing mypy that the task is not None
                 self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):
-                # If we recieve a kill signal we begin to shut the worker down.
+                # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't
                 # want it to be part of the worker's public API
                 self._stopping.set()

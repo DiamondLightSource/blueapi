@@ -78,7 +78,7 @@ def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
     try:
         return get_type_hints(func).get("return") is MsgGenerator
     except TypeError:
-        # get_type_hints fails on some objects (such as Union or Optinoal)
+        # get_type_hints fails on some objects (such as Union or Optional)
         return False
 
 
@@ -114,7 +114,7 @@ class WatchableStatus(Status, Protocol):
         Subscribe to notifications about partial progress.
         This is useful for progress bars.
 
-        The callback function is expected to accept the keyword aruments:
+        The callback function is expected to accept the keyword arguments:
             * ``name``
             * ``current``
             * ``initial``

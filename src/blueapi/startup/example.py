@@ -4,7 +4,7 @@ from bluesky.protocols import Movable, Readable
 from ophyd import Component
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
 
-from blueapi.plans import *  # noqa: F401, F403
+from blueapi.plans import count, move
 
 from ..core import MsgGenerator
 from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
@@ -103,5 +103,5 @@ def stp_snapshot(
     Yields:
         Iterator[MsgGenerator]: Bluesky messages
     """
-    yield from move({temperature: 0, pressure: 10**5})  # noqa: F405
-    yield from count(detectors, 1)  # noqa: F405
+    yield from move({temperature: 0, pressure: 10**5})
+    yield from count(detectors, 1)

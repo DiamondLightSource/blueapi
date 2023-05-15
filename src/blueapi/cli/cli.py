@@ -118,7 +118,7 @@ def run_plan(obj: dict, name: str, parameters: str, id: Optional[str] = None) ->
         request_str + f"?correlation_id={corr_id}",
         json=json.loads(parameters),
     )
-    # client.wait_for_complete()
+    client.wait_for_complete()
 
     # resp should contain the task_id.
     # setup listener to activemq for a topic with this task_id...

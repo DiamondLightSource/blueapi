@@ -1,14 +1,8 @@
 import threading
-from typing import Any, Callable, Mapping, Optional, TypeVar
+import time
+from typing import Callable, Optional, TypeVar
 
 from blueapi.messaging import MessageContext, MessagingTemplate
-from blueapi.service.model import (
-    DeviceRequest,
-    DeviceResponse,
-    PlanRequest,
-    PlanResponse,
-    TaskResponse,
-)
 from blueapi.worker import ProgressEvent, WorkerEvent
 
 T = TypeVar("T")
@@ -34,11 +28,13 @@ class AmqClient:
         on_progress_event: Optional[Callable[[ProgressEvent], None]] = None,
     ) -> None:
         """Run callbacks on events/progress events with a given correlation id."""
-        self.complete.set()
+
+        self.app.connect()
 
         def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
             print(
-                f"correlation_id: {ctx.correlation_id}, corr_id: {corr_id}, event.is_complete: {event.is_complete()}"
+                f"correlation_id: {ctx.correlation_id}, corr_id: {corr_id}, "
+                + f"event.is_complete: {event.is_complete()}"
             )
             if (on_event is not None) and (ctx.correlation_id == corr_id):
                 on_event(event)
@@ -55,20 +51,18 @@ class AmqClient:
                 on_progress_event(event)
 
         self.app.subscribe(
-            self.app.destinations.queue("public.worker.event"),
-            lambda ctx, event: print("ooga booga"),
+            self.app.destinations.topic("public.worker.event"),
+            on_event_wrapper,
         )
         self.app.subscribe(
-            self.app.destinations.queue("public.worker.event.progress"),
+            self.app.destinations.topic("public.worker.event.progress"),
             on_progress_event_wrapper,
         )
 
     def wait_for_complete(
         self,
     ) -> None:
-        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-        # wat = self.complete.wait()
-        # print(wat)
+        while not self.complete.is_set():
+            time.sleep(0.1)
 
-        # self.complete = threading.Event()
-        return
+        self.complete.clear()

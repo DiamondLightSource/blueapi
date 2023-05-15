@@ -47,6 +47,9 @@ class RunEngineWorker(Worker[Task]):
     _ctx: BlueskyContext
     _stop_timeout: float
 
+    _transaction_lock: RLock
+    _pending_transaction: Optional[ActiveTask]
+
     _state: WorkerState
     _errors: List[str]
     _warnings: List[str]
@@ -83,8 +86,36 @@ class RunEngineWorker(Worker[Task]):
         self._stopping = Event()
         self._stopped = Event()
 
-    def submit_task(self, name: str, task: Task, correlation_id: str) -> None:
-        active_task = ActiveTask(correlation_id, name, task)
+    def begin_transaction(self, task: Task) -> str:
+        task_id: str = str(uuid.uuid4())
+        with self._transaction_lock:
+            if self._pending_transaction is not None:
+                raise WorkerBusyError("There is already a transaction in progress")
+            self._pending_transaction = ActiveTask(task_id, task)
+        return task_id
+
+    def clear_transaction(self) -> None:
+        with self._transaction_lock:
+            self._pending_transaction = None
+
+    def commit_transaction(self) -> None:
+        with self._transaction_lock:
+            if self._pending_transaction is None:
+                raise Exception("No transaction to commit")
+            self._submit_active_task(self._pending_transaction)
+
+    def get_pending(self) -> Optional[Task]:
+        with self._transaction_lock:
+            if self._pending_transaction is None:
+                return None
+            else:
+                return self._pending_transaction.task
+
+    def submit_task(self, task_id: str, task: Task) -> None:
+        active_task = ActiveTask(task_id, task)
+        self._submit_active_task(active_task)
+
+    def _submit_active_task(self, active_task: ActiveTask) -> None:
         LOGGER.info(f"Submitting: {active_task}")
         try:
             self._task_queue.put_nowait(active_task)

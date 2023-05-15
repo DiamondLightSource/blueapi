@@ -15,7 +15,34 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def submit_task(self, __name: str, __task: T, __correlation_id: str) -> None:
+    def begin_transaction(self, __task: T) -> str:
+        """_summary_
+
+        Args:
+            __task (Task): _description_
+
+        Returns:
+            str: _description_
+        """
+
+    @abstractmethod
+    def clear_transaction(self) -> None:
+        """_summary_"""
+
+    @abstractmethod
+    def commit_transaction(self) -> None:
+        """_summary_"""
+
+    @abstractmethod
+    def get_pending(self) -> Optional[T]:
+        """_summary_
+
+        Returns:
+            Optional[Task]: _description_
+        """
+
+    @abstractmethod
+    def submit_task(self, __task_id: str, __task: T) -> None:
         """
         Submit a task to be run
 

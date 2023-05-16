@@ -136,6 +136,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   },
   {
+    "version": "startup_scripts",
+    "url": "https://DiamondLightSource.github.io/blueapi/startup_scripts/"
+  },
+  {
     "version": "tidy-docs",
     "url": "https://DiamondLightSource.github.io/blueapi/tidy-docs/"
   },

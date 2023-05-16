@@ -228,25 +228,25 @@ class RunEngineWorker(Worker[Task]):
                     self._monitor_status(status)
 
     def _monitor_status(self, status: Status) -> None:
-        status_name = str(uuid.uuid4())
+        status_uuid = str(uuid.uuid4())
 
         if isinstance(status, WatchableStatus) and not status.done:
-            LOGGER.info(f"Watching new status: {status_name}")
-            self._status_snapshot[status_name] = StatusView()
-            status.watch(partial(self._on_status_event, status, status_name))
+            LOGGER.info(f"Watching new status: {status_uuid}")
+            self._status_snapshot[status_uuid] = StatusView()
+            status.watch(partial(self._on_status_event, status, status_uuid))
 
             # TODO: Maybe introduce an initial event, in which case move
             # all of this code out of the if statement
             def on_complete(status: Status) -> None:
-                self._on_status_event(status, status_name)
-                del self._status_snapshot[status_name]
+                self._on_status_event(status, status_uuid)
+                del self._status_snapshot[status_uuid]
 
             status.add_callback(on_complete)  # type: ignore
 
     def _on_status_event(
         self,
         status: Status,
-        status_name: str,
+        status_uuid: str,
         *,
         name: Optional[str] = None,
         current: Optional[float] = None,
@@ -274,7 +274,7 @@ class RunEngineWorker(Worker[Task]):
             time_elapsed=time_elapsed,
             time_remaining=time_remaining,
         )
-        self._status_snapshot[status_name] = view
+        self._status_snapshot[status_uuid] = view
         self._publish_status_snapshot()
 
     def _publish_status_snapshot(self) -> None:

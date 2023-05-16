@@ -51,14 +51,12 @@ def has_typeless_params(foo, bar) -> MsgGenerator:  # type: ignore
     ...
 
 
-def has_default_reference(
-    m: Movable = inject(SIM_MOTOR_NAME)
-) -> MsgGenerator:
+def has_default_reference(m: Movable = inject(SIM_MOTOR_NAME)) -> MsgGenerator:
     yield from []
 
 
 def has_default_nested_reference(
-    m: list[Movable] = [inject(SIM_MOTOR_NAME)]
+    m: list[Movable] = [inject(SIM_MOTOR_NAME)],
 ) -> MsgGenerator:
     yield from []
 
@@ -323,7 +321,7 @@ def test_nested_str_default(
     empty_context.plan(has_default_nested_reference)
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
-    assert spec["m"][0] == list[movable_ref]
+    assert spec["m"][0] == list[movable_ref]  # type: ignore
     assert spec["m"][1].default_factory() == [SIM_MOTOR_NAME]
 
     assert has_default_nested_reference.__name__ in empty_context.plans

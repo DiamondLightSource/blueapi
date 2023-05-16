@@ -7,8 +7,6 @@ from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5, FileStoreIterativeWrite
 from ophyd.areadetector.plugins import HDF5Plugin, PosPlugin, StatsPlugin
 
-from blueapi.plans import *  # noqa: F403
-
 HOSTNAME = socket.gethostname().split(".")[0]
 DATA_ROOT: str = "/tmp"
 DATA_WRITE_PATH_TEMPLATE: str = "%Y"
@@ -82,17 +80,3 @@ def motors() -> SimBundle:
 
 def adsim() -> AdSimDetector:
     return AdSimDetector(name="adsim", prefix=f"{HOSTNAME}-AD-SIM-01:")
-
-
-__all__ = [  # noqa: F405
-    "motors",
-    "adsim",
-    "set_absolute",
-    "set_relative",
-    "move",
-    "move_relative",
-    "sleep",
-    "wait",
-    "scan",
-    "count",
-]

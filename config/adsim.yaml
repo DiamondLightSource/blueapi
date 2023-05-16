@@ -3,4 +3,4 @@ env:
     - kind: deviceFunctions
       module: blueapi.startup.adsim
     - kind: planFunctions
-      module: blueapi.startup.adsim
+      module: blueapi.plans

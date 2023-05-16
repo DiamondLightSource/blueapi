@@ -76,11 +76,11 @@ class SimBundle(MotorBundle):
     load: EpicsMotor = Cpt(EpicsMotor, "M5")
 
 
-def motors():
+def motors() -> SimBundle:
     return SimBundle(name="motors", prefix=f"{HOSTNAME}-MO-SIM-01:")
 
 
-def adsim():
+def adsim() -> AdSimDetector:
     return AdSimDetector(name="adsim", prefix=f"{HOSTNAME}-AD-SIM-01:")
 
 

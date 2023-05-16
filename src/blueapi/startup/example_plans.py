@@ -27,5 +27,5 @@ def stp_snapshot(
     Yields:
         Iterator[MsgGenerator]: Bluesky messages
     """
-    yield from move({temperature: 0, pressure: 10 ** 5})
+    yield from move({temperature: 0, pressure: 10**5})
     yield from count(detectors, 1)

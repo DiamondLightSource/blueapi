@@ -20,7 +20,6 @@ from typing import (
 )
 
 from bluesky import RunEngine
-from ophyd import Component
 from pydantic import create_model
 from pydantic.fields import FieldInfo
 
@@ -192,8 +191,6 @@ class BlueskyContext:
 
                 @classmethod
                 def valid(cls, value):
-                    if type(value) == Component:
-                        value = value.suffix
                     val = self.find_device(value)
                     if not isinstance(val, target):
                         raise ValueError(f"Device {value} is not of type {target}")

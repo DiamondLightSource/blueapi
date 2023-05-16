@@ -8,12 +8,12 @@ of being written, loaded and run. Take the following plan.
 
     from typing import List, Union, Mapping, Any
 
-    from blueapi.core import Plan
+    from blueapi.core import inject, Plan
     from bluesky.protocols import Readable
     from ophyd import Component
 
     def count(
-        detectors: List[Readable] = [Component(Readable, "det")],  # default valid for Blueapi only
+        detectors: List[Readable] = [inject("det")],  # default valid for Blueapi only
         num: int = 1,
         delay: Optional[Union[float, List[float]]] = None,
         metadata: Optional[Mapping[str, Any]] = None,
@@ -59,7 +59,7 @@ like this:
     from pydantic import BaseModel
 
     class CountParameters(BaseModel):
-        detectors: List[Readable] = [Component(Readable, "det")]
+        detectors: List[Readable] = ["det"]
         num: int = 1
         delay: Optional[Union[float, List[float]]] = None
         metadata: Optional[Mapping[str, Any]] = None
@@ -70,15 +70,10 @@ like this:
 
 .. note:: 
     
-    This is for illustrative purposes only, this code is not actually generated, but an object 
+    This is for illustrative purposes only, this code is not actually generated, but an object
     resembling this class is constructed in memory.
-    The context knows that the use of the Component type as a default argument means that an
-    object of the type should be available from its registry of devices when the plan is run.
-    `Component`s are otherwise used as fields of Device types, and as descriptor classes
-    use their __get__ dunder method to return an instantiated child component on access rather
-    than themselves. The type should therefore be safe to use as a marker interface while allowing
-    mypy linting of plans modules, and allowing plan modules to have no dependency on Blueapi
-    specific code.
+    The default arguments will be validated by the context to inject the "det" device when the
+    plan is run. The existence of the "det" default device is not checked until this time.
 
 The model is also stored in the context.
 

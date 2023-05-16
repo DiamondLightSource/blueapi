@@ -48,3 +48,7 @@ def find_component(obj: Any, addr: List[str]) -> Optional[D]:
             f"Found {component} in {obj} while searching for {addr} "
             "but it is not a device"
         )
+
+
+def inject(x):
+    return x

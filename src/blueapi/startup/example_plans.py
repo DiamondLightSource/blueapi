@@ -1,17 +1,16 @@
 from typing import List
 
 from bluesky.protocols import Movable, Readable
-from ophyd import Component
 
 from blueapi.plans import count, move
 
-from ..core import MsgGenerator
+from ..core import MsgGenerator, inject
 
 
 def stp_snapshot(
     detectors: List[Readable],
-    temperature: Movable = Component(Movable, "sample_temperature"),
-    pressure: Movable = Component(Movable, "sample_pressure"),
+    temperature: Movable = inject("sample_temperature"),
+    pressure: Movable = inject("sample_pressure"),
 ) -> MsgGenerator:
     """
     Moves devices for pressure and temperature (defaults fetched from the context)

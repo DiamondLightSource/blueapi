@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import inspect
 from typing import Dict, List, Type, Union
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
-from ophyd import Component
 from ophyd.sim import SynAxis, SynGauss
 from pydantic import parse_obj_as
 
@@ -14,6 +12,7 @@ from blueapi.core import (
     BlueskyContext,
     MsgGenerator,
     PlanGenerator,
+    inject,
     is_bluesky_compatible_device,
 )
 from blueapi.core.context import DefaultFactory
@@ -53,13 +52,13 @@ def has_typeless_params(foo, bar) -> MsgGenerator:  # type: ignore
 
 
 def has_default_reference(
-    m: Movable = Component(Movable, SIM_MOTOR_NAME)
+    m: Movable = inject(SIM_MOTOR_NAME)
 ) -> MsgGenerator:
     yield from []
 
 
 def has_default_nested_reference(
-    m: list[Movable] = [Component(Movable, SIM_MOTOR_NAME)]
+    m: list[Movable] = [inject(SIM_MOTOR_NAME)]
 ) -> MsgGenerator:
     yield from []
 
@@ -303,32 +302,32 @@ def test_str_default(
 ):
     movable_ref = empty_context._reference(Movable)
     empty_context.device(sim_motor)
-    empty_context.device(alt_motor)
     empty_context.plan(has_default_reference)
-    signature = inspect.signature(has_default_reference)
 
     spec = empty_context._type_spec_for_function(has_default_reference)
     assert spec["m"][0] is movable_ref
-    assert spec["m"][1].default_factory() is signature.parameters["m"].default
+    assert spec["m"][1].default_factory() is SIM_MOTOR_NAME
 
     assert has_default_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_reference.__name__].model
     assert parse_obj_as(model, {}).m is sim_motor  # type: ignore
-    assert parse_obj_as(model, {"m": ALT_MOTOR_NAME}).m == alt_motor  # type: ignore
+    empty_context.device(alt_motor)
+    assert parse_obj_as(model, {"m": ALT_MOTOR_NAME}).m is alt_motor  # type: ignore
 
 
 def test_nested_str_default(
     empty_context: BlueskyContext, sim_motor: SynAxis, alt_motor: SynAxis
 ):
+    movable_ref = empty_context._reference(Movable)
     empty_context.device(sim_motor)
-    empty_context.device(alt_motor)
     empty_context.plan(has_default_nested_reference)
-    signature = inspect.signature(has_default_nested_reference)
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
-    assert spec["m"][1].default_factory() == signature.parameters["m"].default
+    assert spec["m"][0] == list[movable_ref]
+    assert spec["m"][1].default_factory() == [SIM_MOTOR_NAME]
 
     assert has_default_nested_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_nested_reference.__name__].model
     assert parse_obj_as(model, {}).m == [sim_motor]  # type: ignore
+    empty_context.device(alt_motor)
     assert parse_obj_as(model, {"m": [ALT_MOTOR_NAME]}).m == [alt_motor]  # type: ignore

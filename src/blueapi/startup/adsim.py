@@ -76,14 +76,17 @@ class SimBundle(MotorBundle):
     load: EpicsMotor = Cpt(EpicsMotor, "M5")
 
 
-motors = SimBundle(name="motors", prefix=f"{HOSTNAME}-MO-SIM-01:")
-motors.wait_for_connection()
-det = AdSimDetector(name="adsim", prefix=f"{HOSTNAME}-AD-SIM-01:")
-det.wait_for_connection()
+def motors():
+    return SimBundle(name="motors", prefix=f"{HOSTNAME}-MO-SIM-01:")
+
+
+def adsim():
+    return AdSimDetector(name="adsim", prefix=f"{HOSTNAME}-AD-SIM-01:")
+
 
 __all__ = [  # noqa: F405
     "motors",
-    "det",
+    "adsim",
     "set_absolute",
     "set_relative",
     "move",

@@ -95,11 +95,12 @@ def get_devices(obj: dict) -> None:
 
 @controller.command(name="run")
 @click.argument("name", type=str)
-@click.option("-p", "--parameters", type=str, help="Parameters as valid JSON")
+@click.argument("parameters", type=str, required=False)
 @check_connection
 @click.pass_obj
-def run_plan(obj: dict, name: str, parameters: str) -> None:
+def run_plan(obj: dict, name: str, parameters: Optional[str]) -> None:
     config: ApplicationConfig = obj["config"]
+    parameters = parameters or "{}"
 
     resp = requests.put(
         f"http://{config.api.host}:{config.api.port}/task/{name}",

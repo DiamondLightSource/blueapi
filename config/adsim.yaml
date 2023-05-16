@@ -1,6 +1,6 @@
 env:
   sources:
-    - kind: deviceFunctions
-      module: blueapi.startup.adsim
+    - kind: dodal
+      module: dodal.adsim
     - kind: planFunctions
       module: blueapi.plans

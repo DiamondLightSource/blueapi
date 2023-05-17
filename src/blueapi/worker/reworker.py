@@ -47,8 +47,7 @@ class RunEngineWorker(Worker[Task]):
     _ctx: BlueskyContext
     _stop_timeout: float
 
-    _transaction_lock: RLock
-    _pending_transaction: Optional[ActiveTask]
+    _pending_tasks: Dict[str, ActiveTask]
 
     _state: WorkerState
     _errors: List[str]
@@ -73,8 +72,7 @@ class RunEngineWorker(Worker[Task]):
         self._ctx = ctx
         self._stop_timeout = stop_timeout
 
-        self._transaction_lock = RLock()
-        self._pending_transaction = None
+        self._pending_tasks = {}
 
         self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
         self._errors = []
@@ -91,47 +89,24 @@ class RunEngineWorker(Worker[Task]):
         self._stopping = Event()
         self._stopped = Event()
 
-    def begin_transaction(self, task: Task) -> str:
+    def clear_task(self, task_id: str) -> None:
+        del self._pending_tasks[task_id]
+
+    def get_pending_tasks(self) -> List[Task]:
+        return [active_task.task for active_task in self._pending_tasks.values()]
+
+    def begin_task(self, task_id: str) -> None:
+        task = self._pending_tasks.get(task_id)
+        if task is not None:
+            self._submit_active_task(task)
+        else:
+            raise KeyError(f"No pending task with ID {task_id}")
+
+    def submit_task(self, task: Task) -> str:
         task_id: str = str(uuid.uuid4())
-        with self._transaction_lock:
-            if self._pending_transaction is not None:
-                raise WorkerBusyError("There is already a transaction in progress")
-            self._pending_transaction = ActiveTask(task_id, task)
-        return task_id
-
-    def clear_transaction(self) -> str:
-        with self._transaction_lock:
-            if self._pending_transaction is None:
-                raise KeyError("No transaction to clear")
-
-            task_id = self._pending_transaction.task_id
-            self._pending_transaction = None
-            return task_id
-
-    def commit_transaction(self, task_id: str) -> None:
-        with self._transaction_lock:
-            if self._pending_transaction is None:
-                raise KeyError("No transaction to commit")
-
-            pending_id = self._pending_transaction.task_id
-            if pending_id == task_id:
-                self._submit_active_task(self._pending_transaction)
-            else:
-                raise KeyError(
-                    "Not committing the transaction requested, asked to commit"
-                    f"{task_id} when {pending_id} is in progress"
-                )
-
-    def get_pending(self) -> Optional[Task]:
-        with self._transaction_lock:
-            if self._pending_transaction is None:
-                return None
-            else:
-                return self._pending_transaction.task
-
-    def submit_task(self, task_id: str, task: Task) -> None:
         active_task = ActiveTask(task_id, task)
-        self._submit_active_task(active_task)
+        self._pending_tasks[task_id] = active_task
+        return task_id
 
     def _submit_active_task(self, active_task: ActiveTask) -> None:
         LOGGER.info(f"Submitting: {active_task}")

@@ -1,4 +1,5 @@
 import itertools
+import time
 from concurrent.futures import Future
 from typing import Callable, Iterable, List, Optional, TypeVar
 
@@ -20,30 +21,6 @@ from blueapi.worker.worker_busy_error import WorkerBusyError
 
 _SIMPLE_TASK = RunPlan(name="sleep", params={"time": 0.0})
 _LONG_TASK = RunPlan(name="sleep", params={"time": 1.0})
-_SLEEP_EVENTS = [
-    WorkerEvent(
-        state=WorkerState.RUNNING,
-        task_status=TaskStatus(
-            task_name="test", task_complete=False, task_failed=False
-        ),
-        errors=[],
-        warnings=[],
-    ),
-    WorkerEvent(
-        state=WorkerState.IDLE,
-        task_status=TaskStatus(
-            task_name="test", task_complete=False, task_failed=False
-        ),
-        errors=[],
-        warnings=[],
-    ),
-    WorkerEvent(
-        state=WorkerState.IDLE,
-        task_status=TaskStatus(task_name="test", task_complete=True, task_failed=False),
-        errors=[],
-        warnings=[],
-    ),
-]
 
 
 @pytest.fixture
@@ -58,80 +35,92 @@ def context() -> BlueskyContext:
 
 
 @pytest.fixture
-def worker(context: BlueskyContext) -> Iterable[Worker[Task]]:
-    worker = RunEngineWorker(context)
-    yield worker
-    worker.stop()
+def inert_worker(context: BlueskyContext) -> Worker[Task]:
+    return RunEngineWorker(context, stop_timeout=2.0)
 
 
-def test_stop_doesnt_hang(worker: Worker) -> None:
-    worker.start()
+@pytest.fixture
+def worker(inert_worker: Worker[Task]) -> Iterable[Worker[Task]]:
+    inert_worker.start()
+    yield inert_worker
+    inert_worker.stop()
 
 
-def test_stop_is_idempontent_if_worker_not_started(worker: Worker) -> None:
-    ...
+def test_stop_doesnt_hang(inert_worker: Worker) -> None:
+    inert_worker.start()
+    inert_worker.stop()
 
 
-def test_multi_stop(worker: Worker) -> None:
-    worker.start()
-    worker.stop()
+def test_stop_is_idempontent_if_worker_not_started(inert_worker: Worker) -> None:
+    inert_worker.stop()
 
 
-def test_multi_start(worker: Worker) -> None:
-    worker.start()
+def test_multi_stop(inert_worker: Worker) -> None:
+    inert_worker.start()
+    inert_worker.stop()
+    inert_worker.stop()
+
+
+def test_multi_start(inert_worker: Worker) -> None:
+    inert_worker.start()
     with pytest.raises(Exception):
-        worker.start()
+        inert_worker.start()
+    inert_worker.stop()
 
 
-def test_create_transaction(worker: Worker) -> None:
-    assert worker.get_pending() is None
-    worker.begin_transaction(_SIMPLE_TASK)
-    assert worker.get_pending() is _SIMPLE_TASK
+def test_submit_task(worker: Worker) -> None:
+    assert worker.get_pending_tasks() == []
+    worker.submit_task(_SIMPLE_TASK)
+    assert worker.get_pending_tasks() == [_SIMPLE_TASK]
 
 
-def test_cannot_create_multiple_transactions(worker: Worker) -> None:
-    worker.begin_transaction(_SIMPLE_TASK)
+def test_submit_multiple_tasks(worker: Worker) -> None:
+    assert worker.get_pending_tasks() == []
+    worker.submit_task(_SIMPLE_TASK)
+    assert worker.get_pending_tasks() == [_SIMPLE_TASK]
+    worker.submit_task(_LONG_TASK)
+    assert worker.get_pending_tasks() == [_SIMPLE_TASK, _LONG_TASK]
+
+
+def test_stop_with_task_pending(inert_worker: Worker) -> None:
+    inert_worker.start()
+    inert_worker.submit_task(_SIMPLE_TASK)
+    inert_worker.stop()
+
+
+def test_clear_task(worker: Worker) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    assert worker.get_pending_tasks() == [_SIMPLE_TASK]
+    worker.clear_task(task_id)
+    assert worker.get_pending_tasks() == []
+
+
+def test_clear_nonexistant_task(worker: Worker) -> None:
+    with pytest.raises(KeyError):
+        worker.clear_task("foo")
+
+
+@pytest.mark.parametrize("num_runs", [2, 3, 4])
+def test_does_not_allow_simultaneous_running_tasks(
+    worker: Worker, num_runs: int
+) -> None:
+    task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
     with pytest.raises(WorkerBusyError):
-        worker.begin_transaction(_SIMPLE_TASK)
+        for task_id in task_ids:
+            worker.begin_task(task_id)
 
 
-def test_clear_transaction(worker: Worker) -> None:
-    worker.begin_transaction(_SIMPLE_TASK)
-    assert worker.get_pending() is _SIMPLE_TASK
-    worker.clear_transaction()
-    worker.begin_transaction(_LONG_TASK)
-    assert worker.get_pending() is _LONG_TASK
+@pytest.mark.parametrize("num_runs", [0, 1, 2, 3])
+def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
+    task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
+    event_sequences = [_sleep_events(task_id) for task_id in task_ids]
+
+    for task_id, events in zip(task_ids, event_sequences):
+        assert_run_produces_worker_events(events, worker, task_id)
 
 
-def test_clear_nonexistant_transaction(worker: Worker) -> None:
-    with pytest.raises(KeyError):
-        worker.clear_transaction()
-
-
-def test_commit_wrong_transaction(worker: Worker) -> None:
-    worker.begin_transaction(_SIMPLE_TASK)
-    with pytest.raises(KeyError):
-        worker.commit_transaction("wrong id")
-
-
-def test_commit_nonexistant_transaction(worker: Worker) -> None:
-    with pytest.raises(KeyError):
-        worker.commit_transaction("wrong id")
-
-
-def test_commit_transaction(worker: Worker) -> None:
-    worker.start()
-
-    task_id = worker.begin_transaction(_SIMPLE_TASK)
-    assert worker.get_pending() is _SIMPLE_TASK
-
-    events: "Future[List[WorkerEvent]]" = take_events(
-        worker.worker_events,
-        lambda event: event.is_complete(),
-    )
-    worker.commit_transaction(task_id)
-    result = events.result(timeout=5.0)
-    assert result == [
+def _sleep_events(task_id: str) -> List[WorkerEvent]:
+    return [
         WorkerEvent(
             state=WorkerState.RUNNING,
             task_status=TaskStatus(
@@ -157,13 +146,6 @@ def test_commit_transaction(worker: Worker) -> None:
             warnings=[],
         ),
     ]
-
-
-def test_runs_plan(worker: Worker) -> None:
-    assert_run_produces_worker_events(
-        _SLEEP_EVENTS,
-        worker,
-    )
 
 
 def submit_task_and_wait_until_complete(

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, TypeVar
+from typing import Generic, List, Optional, TypeVar
 
 from blueapi.core import DataEvent, EventStream
 
@@ -15,49 +15,31 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def begin_transaction(self, __task: T) -> str:
-        """
-        Begin a new transaction, lock the worker with a pending task,
-        do not allow new transactions until this one is run or cleared.
-
-        Args:
-            __task: The task to run if this transaction is committed
-
-        Returns:
-            str: An ID for the task
-        """
-
-    @abstractmethod
-    def clear_transaction(self) -> str:
-        """
-        Clear any existing transaction. Raise an error if
-        unable.
-
-        Returns:
-            str: The ID of the task cleared
-        """
-
-    @abstractmethod
-    def commit_transaction(self, __task_id: str) -> None:
-        """
-        Commit the pending transaction and run the
-        embedded task
-
-        Args:
-            __task_id: The ID of the task to run, must match
-                the pending transaction
-        """
-
-    @abstractmethod
-    def get_pending(self) -> Optional[T]:
+    def get_pending_tasks(self) -> List[T]:
         """_summary_
 
         Returns:
-            Optional[Task]: _description_
+            List[T]: _description_
         """
 
     @abstractmethod
-    def submit_task(self, __task_id: str, __task: T) -> None:
+    def clear_task(self, task_id: str) -> None:
+        """_summary_
+
+        Args:
+            task_id (str): _description_
+        """
+
+    @abstractmethod
+    def begin_task(self, task_id: str) -> None:
+        """_summary_
+
+        Args:
+            task_id (str): _description_
+        """
+
+    @abstractmethod
+    def submit_task(self, task: T) -> str:
         """
         Submit a task to be run
 

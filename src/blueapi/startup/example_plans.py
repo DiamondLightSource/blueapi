@@ -4,7 +4,7 @@ from bluesky.protocols import Movable, Readable
 
 from blueapi.plans import count, move
 
-from ..core import MsgGenerator, inject
+from blueapi.core import MsgGenerator, inject
 
 
 def stp_snapshot(

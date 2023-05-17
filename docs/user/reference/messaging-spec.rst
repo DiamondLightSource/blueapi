@@ -1,5 +1,5 @@
 Messaging Specification
-======================
+=======================
 
 The Blueapi service publishes Bluesky documents and other events to the message 
 bus, allowing subscribers to keep track of the status of plans, as well as 

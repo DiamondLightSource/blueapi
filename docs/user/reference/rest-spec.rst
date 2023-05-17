@@ -1,4 +1,4 @@
-Rest Specification
+REST Specification
 ==================
 
 Blueapi runs a FastAPI server through which the blueapi worker can be

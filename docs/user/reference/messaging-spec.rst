@@ -1,10 +1,10 @@
-ActiveMQ Specification
+Messaging Specification
 ======================
 
-The blueapi worker publishes bluesky documents onto activemq, such that it can
-keep track of the status of plans and to provide an easy way for external
-services to listen to events. This page documents all the possible topics that
-can be listened to by a client.
+The Blueapi service publishes Bluesky documents and other events to the message 
+bus, allowing subscribers to keep track of the status of plans, as well as 
+other status changes. This page documents the channels to which clients can 
+subscribe to recieve these messages and their structure.
 
 .. literalinclude:: ./asyncapi.yaml
    :language: yaml

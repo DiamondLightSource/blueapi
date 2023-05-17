@@ -4,7 +4,7 @@ from typing import Callable, Iterable, List, Optional, TypeVar
 
 import pytest
 
-from blueapi.config import EnvironmentConfig
+from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.worker import (
     RunEngineWorker,
@@ -15,13 +15,18 @@ from blueapi.worker import (
     WorkerEvent,
     WorkerState,
 )
+from blueapi.worker.event import ProgressEvent
 from blueapi.worker.worker_busy_error import WorkerBusyError
 
 
 @pytest.fixture
 def context() -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx.with_config(EnvironmentConfig())
+    ctx_config = EnvironmentConfig()
+    ctx_config.sources.append(
+        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
+    )
+    ctx.with_config(ctx_config)
     return ctx
 
 

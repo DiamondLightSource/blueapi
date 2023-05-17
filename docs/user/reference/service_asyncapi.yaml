@@ -2,7 +2,7 @@ asyncapi: "2.6.0"
 id: https://github.com/DiamondLightSource/blueapi
 info:
   title: Bluesky Worker Service
-  version: 0.0.2
+  version: 0.0.1
   description: Service for controlling access to and running scans based on Bluesky Plans and Ophyd Devices
   contact:
     name: Callum Forrester
@@ -13,11 +13,11 @@ info:
 defaultContentType: application/json
 channels:
   public.worker.event:
-    description: Produces events supplying data produced by runs associated with a plan
+    description: Produces events about the state of the worker, the progress of runs and data produced
     subscribe:
-      operationId: dataEvent
-      summary: Events representing collection of data
-      description: Data documents produced by running plans
+      operationId: blueAPIEvent
+      summary: Updates on the state of the worker, the progress of runs and data produced
+      description: Events describing the state of the worker and any tasks it's running. Includes error and warning information.
       message:
         oneOf:
           - $ref: "#/components/messages/workerStateEvent"

@@ -1,9 +1,9 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: bluesky-worker
-  title: bluesky-worker
-  description: Lightweight wrapper around bluesky services
+  name: BlueAPI
+  title: BlueAPI
+  description: Lightweight wrapper service around Bluesky Run Engine
   annotations:
     github.com/project-slug: DiamondLightSouce/blueapi
 spec:
@@ -12,29 +12,28 @@ spec:
   owner: user:vid18871 # TODO: owner: DAQ-Core
   #  system: Athena  # TODO: Define Athena system: presumably same location as DAQ-Core/DAQ?
   providesApis:
-    - message-topics
-    - restapi
-    - blueskydocument-to-scanmessage
+    - BlueAPI Control
+    - BlueAPI Events
 ---
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: restapi
-  title: restapi
+  name: BlueAPI Control
+  title: BlueAPI Control
   description: REST API for getting plans/devices from the worker (and running tasks)
 spec:
   type: openapi
   lifecycle: production
   owner: user:vid18871
   definition:
-    $text: ./docs/user/reference/openapi.json
+    $text: ./docs/user/reference/openapi.yaml
 ---
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: message-topics
-  title: message-topics
-  description: Message topics which can be listened to over an activeMQ message bus
+  name: BlueAPI Events
+  title: BlueAPI Events
+  description: Event topics which can be listened to over a message bus
 spec:
   type: asyncapi
   lifecycle: production

@@ -2,7 +2,7 @@ asyncapi: "2.6.0"
 id: https://github.com/DiamondLightSource/blueapi
 info:
   title: Bluesky Worker Service
-  version: 0.0.2
+  version: 0.0.1
   description: Service for controlling access to and running scans based on Bluesky Plans and Ophyd Devices
   contact:
     name: Callum Forrester
@@ -13,6 +13,22 @@ info:
 defaultContentType: application/json
 channels:
   public.worker.event:
+    description: Produces events about the state of the worker
+    subscribe:
+      operationId: stateEvent
+      summary: Updates on the state of the worker
+      description: Events describing the state of the worker and any tasks it's running. Includes error and warning information.
+      message:
+        $ref: "#/components/messages/workerStateEvent"
+  public.worker.event.progress:
+    description: Produces events about the progress of runs associated with a plan
+    subscribe:
+      operationId: progressEvent
+      summary: Updates on the progress of tasks
+      description: Events describing the progress of processes within a running task,such as moving motors and exposing detectors.
+      message:
+        $ref: "#/components/messages/workerProgressEvent"
+  public.worker.event.data:
     description: Produces events supplying data produced by runs associated with a plan
     subscribe:
       operationId: dataEvent
@@ -20,8 +36,6 @@ channels:
       description: Data documents produced by running plans
       message:
         oneOf:
-          - $ref: "#/components/messages/workerStateEvent"
-          - $ref: "#/components/messages/workerProgressEvent"
           - $ref: "#/components/messages/taggedStartDocument"
           - $ref: "#/components/messages/taggedDescriptorDocument"
           - $ref: "#/components/messages/taggedEventDocument"
@@ -32,6 +46,61 @@ channels:
           - $ref: "#/components/messages/taggedDatumStream"
           - $ref: "#/components/messages/taggedEventPage"
           - $ref: "#/components/messages/taggedDatumPage"
+  worker.run:
+    description: Accepts and provides responses to requests to run a plan using the supplied parameters
+    publish:
+      operationId: runPlanRequest
+      summary: Submit a 'Run Plan' task with parameters
+      description: Consume a request to run a scan based on the specified Plan with the supplied parameters
+      message:
+        $ref: "#/components/messages/runPlan"
+    subscribe:
+      operationId: runPlanResponse
+      summary: Indicate acceptance of a 'Run Plan' task - N.B. returned on a temporary channel
+      description: >-
+        Provides acknowledgement of a Run Plan requests. Infact this response will be sent on a temporary channel 
+        specified by replyDestination in the header of the corresponding runPlanRequest but is documented here as 
+        the name of the channel will not be known until runtime.
+      message:
+        $ref: "#/components/messages/taskResponse"
+  worker.plans:
+    description: >-
+      Accepts requests to return the names of all the Bluesky Plans known to the service. At the moment 
+      any message on this channe will produce this response.
+    publish:
+      operationId: plansRequest
+      summary: Get list of Plan names
+      description: Request a list of Plan names known to the system
+      message:
+        $ref: "#/components/messages/anyJson"
+    subscribe:
+      operationId: plansResponse
+      summary: The list of plan names - N.B. returned on a temporary channel
+      description: >-
+        A List of the names of plans known to the system. This response will be sent on a temporary 
+        channel specified by replyDestination in the header of the corresponding runPlanRequest but is 
+        documented here as the name of the channel will not be known until runtime.
+      message:
+        $ref: "#/components/messages/plansResponse"
+  worker.devices:
+    description: >-
+      Accepts requests to return the names of all the Ophyd Devices known to the service. At the moment 
+      any message on this channel will produce this response.
+    publish:
+      operationId: devicesRequest
+      summary: Get list of Device names
+      description: Request a list of Device names known to the system
+      message:
+        $ref: "#/components/messages/anyJson"
+    subscribe:
+      operationId: devicesResponse
+      summary: The list of device names - N.B. returned on a temporary channel
+      description: >-
+        A List of the names of devices known to the system. This response will be sent on a temporary 
+        channel specified by replyDestination in the header of the corresponding devicesRequest but is 
+        documented here as the name of the channel will not be known until runtime.
+      message:
+        $ref: "#/components/messages/devicesResponse"
 components:
   messages: # Defined as Components to allow referencing from other APIs. # TODO: Define protocol specific correlationId bindings
     taggedStartDocument:
@@ -156,6 +225,59 @@ components:
             type: string
           doc:
             $ref: "https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_datum.json"
+    runPlan:
+      messageId: RunPlan
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        required:
+          - name
+          - params
+        properties:
+          name:
+            description: Name of plan to run
+            type: string
+          params:
+            description: Values for parameters to plan, if any (Map of name to any)
+            type: object
+            additionalProperties:
+              type: object
+    taskResponse:
+      messageId: runPlanResponse
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          taskName:
+            description: Unique identifier for the task
+            type: string
+        additionalProperties: false
+    plansResponse:
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          plans:
+            description: Plans available to use by a worker
+            type: array
+            items:
+              type: string
+        additionalProperties: false
+    devicesResponse:
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        type: object
+        properties:
+          devices:
+            description: Devices available to use in plans
+            type: array
+            items:
+              type: string
+        additionalProperties: false
     workerStateEvent:
       messageId: stateEvent
       headers:
@@ -199,6 +321,13 @@ components:
             description: Status object providing various indicators for the task
             additionalProperties:
               $ref: "#/components/schemas/statusView"
+    anyJson:
+      headers:
+        $ref: "#/components/schemas/contextHeaders"
+      payload:
+        title: AnyJSON
+        type: string
+        format: json
   schemas:
     contextHeaders:
       type: object

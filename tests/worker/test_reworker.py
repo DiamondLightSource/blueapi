@@ -88,21 +88,25 @@ def test_runs_plan(worker: Worker) -> None:
     )
 
 
-def assert_run_produces_worker_events(
-    expected_events: List[WorkerEvent],
-    worker: Worker,
-    task: Task = RunPlan(name="sleep", params={"time": 0.0}),
-    timeout: float = 5.0,
-) -> None:
-    worker.start()
-
+def submit_task_and_wait_until_complete(
+    worker: Worker, task: Task, timeout: float = 5.0
+) -> List[WorkerEvent]:
     events: "Future[List[WorkerEvent]]" = take_events(
         worker.worker_events,
         lambda event: event.is_complete(),
     )
+
     worker.submit_task("test", task)
-    result = events.result(timeout=timeout)
-    assert result == expected_events
+    return events.result(timeout=timeout)
+
+
+def assert_run_produces_worker_events(
+    expected_events: List[WorkerEvent],
+    worker: Worker,
+    task: Task = RunPlan(name="sleep", params={"time": 0.0}),
+) -> None:
+    worker.start()
+    assert submit_task_and_wait_until_complete(worker, task) == expected_events
 
 
 E = TypeVar("E")
@@ -141,3 +145,25 @@ def test_worker_only_accepts_one_task_on_queue(worker: Worker):
     worker.submit_task("first_task", task)
     with pytest.raises(WorkerBusyError):
         worker.submit_task("second_task", task)
+
+
+def test_no_additional_progress_events_after_complete(worker: Worker):
+    """
+    See https://github.com/bluesky/ophyd/issues/1115
+    """
+    worker.start()
+
+    progress_events: List[ProgressEvent] = []
+    worker.progress_events.subscribe(lambda event, id: progress_events.append(event))
+
+    task: Task = RunPlan(
+        name="move", params={"moves": {"additional_status_device": 5.0}}
+    )
+    submit_task_and_wait_until_complete(worker, task)
+
+    # Exctract all the display_name fields from the events
+    list_of_dict_keys = [pe.statuses.values() for pe in progress_events]
+    status_views = [item for sublist in list_of_dict_keys for item in sublist]
+    display_names = [view.display_name for view in status_views]
+
+    assert "STATUS_AFTER_FINISH" not in display_names

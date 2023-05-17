@@ -68,21 +68,6 @@ class MyDevice:
     name: str
 
 
-@patch("blueapi.service.handler.Handler")
-def test_deprecated_worker_command(
-    mock_handler: Mock, handler: Handler, runner: CliRunner
-):
-    mock_handler.side_effect = Mock(return_value=handler)
-
-    with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(main, ["worker"])
-
-    assert result.output == (
-        "DeprecationWarning: The command 'worker' is deprecated.\n"
-        + "Please use serve command instead.\n\n"
-    )
-
-
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("requests.get")

@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Messaging Specification &#8212; blueapi 0.2.4.dev18+gf9cc6ca documentation</title>
+    <title>Messaging Specification &#8212; blueapi 0.2.4.dev19+g4e0541d documentation</title>
   
   
   
@@ -460,7 +460,7 @@ subscribe to recieve these messages and their structure.</p>
 <span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/blueapi</span>
 <span class="nt">info</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bluesky Worker Service</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.1</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.2</span>
 <span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service for controlling access to and running scans based on Bluesky Plans and Ophyd Devices</span>
 <span class="w">  </span><span class="nt">contact</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Callum Forrester</span>
@@ -471,29 +471,15 @@ subscribe to recieve these messages and their structure.</p>
 <span class="nt">defaultContentType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">application/json</span>
 <span class="nt">channels</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">public.worker.event</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Produces events about the state of the worker</span>
-<span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stateEvent</span>
-<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Updates on the state of the worker</span>
-<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Events describing the state of the worker and any tasks it&#39;s running. Includes error and warning information.</span>
-<span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/workerStateEvent&quot;</span>
-<span class="w">  </span><span class="nt">public.worker.event.progress</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Produces events about the progress of runs associated with a plan</span>
-<span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">progressEvent</span>
-<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Updates on the progress of tasks</span>
-<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Events describing the progress of processes within a running task,such as moving motors and exposing detectors.</span>
-<span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/workerProgressEvent&quot;</span>
-<span class="w">  </span><span class="nt">public.worker.event.data</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Produces events supplying data produced by runs associated with a plan</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Produces events relating to worker operation and supplying data produced by runs associated with a plan</span>
 <span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dataEvent</span>
 <span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Events representing collection of data</span>
 <span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Data documents produced by running plans</span>
 <span class="w">      </span><span class="nt">message</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/workerStateEvent&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/workerProgressEvent&quot;</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedStartDocument&quot;</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedDescriptorDocument&quot;</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedEventDocument&quot;</span>
@@ -504,61 +490,6 @@ subscribe to recieve these messages and their structure.</p>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedDatumStream&quot;</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedEventPage&quot;</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taggedDatumPage&quot;</span>
-<span class="w">  </span><span class="nt">worker.run</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Accepts and provides responses to requests to run a plan using the supplied parameters</span>
-<span class="w">    </span><span class="nt">publish</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runPlanRequest</span>
-<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Submit a &#39;Run Plan&#39; task with parameters</span>
-<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Consume a request to run a scan based on the specified Plan with the supplied parameters</span>
-<span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/runPlan&quot;</span>
-<span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runPlanResponse</span>
-<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Indicate acceptance of a &#39;Run Plan&#39; task - N.B. returned on a temporary channel</span>
-<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
-<span class="w">        </span><span class="no">Provides acknowledgement of a Run Plan requests. Infact this response will be sent on a temporary channel </span>
-<span class="w">        </span><span class="no">specified by replyDestination in the header of the corresponding runPlanRequest but is documented here as </span>
-<span class="w">        </span><span class="no">the name of the channel will not be known until runtime.</span>
-<span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/taskResponse&quot;</span>
-<span class="w">  </span><span class="nt">worker.plans</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
-<span class="w">      </span><span class="no">Accepts requests to return the names of all the Bluesky Plans known to the service. At the moment </span>
-<span class="w">      </span><span class="no">any message on this channe will produce this response.</span>
-<span class="w">    </span><span class="nt">publish</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plansRequest</span>
-<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Get list of Plan names</span>
-<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Request a list of Plan names known to the system</span>
-<span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/anyJson&quot;</span>
-<span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plansResponse</span>
-<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The list of plan names - N.B. returned on a temporary channel</span>
-<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
-<span class="w">        </span><span class="no">A List of the names of plans known to the system. This response will be sent on a temporary </span>
-<span class="w">        </span><span class="no">channel specified by replyDestination in the header of the corresponding runPlanRequest but is </span>
-<span class="w">        </span><span class="no">documented here as the name of the channel will not be known until runtime.</span>
-<span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/plansResponse&quot;</span>
-<span class="w">  </span><span class="nt">worker.devices</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
-<span class="w">      </span><span class="no">Accepts requests to return the names of all the Ophyd Devices known to the service. At the moment </span>
-<span class="w">      </span><span class="no">any message on this channel will produce this response.</span>
-<span class="w">    </span><span class="nt">publish</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">devicesRequest</span>
-<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Get list of Device names</span>
-<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Request a list of Device names known to the system</span>
-<span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/anyJson&quot;</span>
-<span class="w">    </span><span class="nt">subscribe</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">devicesResponse</span>
-<span class="w">      </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The list of device names - N.B. returned on a temporary channel</span>
-<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
-<span class="w">        </span><span class="no">A List of the names of devices known to the system. This response will be sent on a temporary </span>
-<span class="w">        </span><span class="no">channel specified by replyDestination in the header of the corresponding devicesRequest but is </span>
-<span class="w">        </span><span class="no">documented here as the name of the channel will not be known until runtime.</span>
-<span class="w">      </span><span class="nt">message</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/messages/devicesResponse&quot;</span>
 <span class="nt">components</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">messages</span><span class="p">:</span><span class="w"> </span><span class="c1"># Defined as Components to allow referencing from other APIs. # TODO: Define protocol specific correlationId bindings</span>
 <span class="w">    </span><span class="nt">taggedStartDocument</span><span class="p">:</span>
@@ -683,59 +614,6 @@ subscribe to recieve these messages and their structure.</p>
 <span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">          </span><span class="nt">doc</span><span class="p">:</span>
 <span class="w">            </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://raw.githubusercontent.com/bluesky/event-model/master/event_model/schemas/stream_datum.json&quot;</span>
-<span class="w">    </span><span class="nt">runPlan</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RunPlan</span>
-<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">        </span><span class="nt">required</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">params</span>
-<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of plan to run</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="nt">params</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Values for parameters to plan, if any (Map of name to any)</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">            </span><span class="nt">additionalProperties</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">    </span><span class="nt">taskResponse</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runPlanResponse</span>
-<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">taskName</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unique identifier for the task</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">plansResponse</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">plans</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Plans available to use by a worker</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">            </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">devicesResponse</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Devices available to use in plans</span>
-<span class="w">            </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">            </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">    </span><span class="nt">workerStateEvent</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">messageId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stateEvent</span>
 <span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
@@ -779,13 +657,6 @@ subscribe to recieve these messages and their structure.</p>
 <span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Status object providing various indicators for the task</span>
 <span class="w">            </span><span class="nt">additionalProperties</span><span class="p">:</span>
 <span class="w">              </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/statusView&quot;</span>
-<span class="w">    </span><span class="nt">anyJson</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">$ref</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#/components/schemas/contextHeaders&quot;</span>
-<span class="w">      </span><span class="nt">payload</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AnyJSON</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
 <span class="w">  </span><span class="nt">schemas</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">contextHeaders</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>

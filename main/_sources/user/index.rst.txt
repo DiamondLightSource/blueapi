@@ -51,8 +51,8 @@ side-bar.
             :maxdepth: 1
 
             reference/api
-            reference/asyncapi
-            reference/openapi
+            reference/messaging-spec
+            reference/rest-spec
             ../genindex
 
         +++

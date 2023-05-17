@@ -45,10 +45,10 @@ class Handler:
                     "public.worker.event"
                 ),
                 self.worker.progress_events: self.messaging_template.destinations.topic(
-                    "public.worker.event.progress"
+                    "public.worker.event"
                 ),
                 self.worker.data_events: self.messaging_template.destinations.topic(
-                    "public.worker.event.data"
+                    "public.worker.event"
                 ),
             }
         )

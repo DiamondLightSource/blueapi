@@ -69,7 +69,7 @@ def _lookup_params(
 
 @dataclass
 class ActiveTask:
-    name: str
+    task_id: str
     task: Task
     is_complete: bool = False
     is_error: bool = False

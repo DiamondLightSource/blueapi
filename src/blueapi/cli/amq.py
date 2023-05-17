@@ -30,10 +30,6 @@ class AmqClient:
         """Run callbacks on events/progress events with a given correlation id."""
 
         def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
-            print(
-                f"correlation_id: {ctx.correlation_id}, corr_id: {corr_id}, "
-                + f"event.is_complete: {event.is_complete()}"
-            )
             if (on_event is not None) and (ctx.correlation_id == corr_id):
                 on_event(event)
 

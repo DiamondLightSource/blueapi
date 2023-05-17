@@ -102,7 +102,7 @@ class RunEngineWorker(Worker[Task]):
             if self._pending_transaction is None:
                 raise Exception("No transaction to clear")
 
-            task_id = self._pending_transaction.name
+            task_id = self._pending_transaction.task_id
             self._pending_transaction = None
             return task_id
 
@@ -111,7 +111,7 @@ class RunEngineWorker(Worker[Task]):
             if self._pending_transaction is None:
                 raise Exception("No transaction to commit")
 
-            pending_id = self._pending_transaction.name
+            pending_id = self._pending_transaction.task_id
             if pending_id == task_id:
                 self._submit_active_task(self._pending_transaction)
             else:
@@ -240,11 +240,11 @@ class RunEngineWorker(Worker[Task]):
         warnings = self._warnings
         if self._current is not None:
             task_status = TaskStatus(
-                task_name=self._current.name,
+                task_name=self._current.task_id,
                 task_complete=self._current.is_complete,
                 task_failed=self._current.is_error or bool(errors),
             )
-            correlation_id = self._current.correlation_id
+            correlation_id = self._current.task_id
         else:
             task_status = None
             correlation_id = None
@@ -259,7 +259,7 @@ class RunEngineWorker(Worker[Task]):
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
-            correlation_id = self._current.correlation_id
+            correlation_id = self._current.task_id
             self._data_events.publish(
                 DataEvent(name=name, doc=document), correlation_id
             )
@@ -330,10 +330,10 @@ class RunEngineWorker(Worker[Task]):
         else:
             self._progress_events.publish(
                 ProgressEvent(
-                    task_name=self._current.name,
+                    task_name=self._current.task_id,
                     statuses=self._status_snapshot,
                 ),
-                self._current.correlation_id,
+                self._current.task_id,
             )
 
 

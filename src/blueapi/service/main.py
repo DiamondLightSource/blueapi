@@ -8,7 +8,7 @@ from blueapi.worker import RunPlan
 from .handler import Handler, get_handler, setup_handler, teardown_handler
 from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse, TaskResponse
 
-app = FastAPI(docs_url="/docs", on_shutdown=[teardown_handler])
+app = FastAPI(docs_url="/docs", on_shutdown=[teardown_handler], title="BlueAPI Control")
 
 
 @app.get("/plans", response_model=PlanResponse)

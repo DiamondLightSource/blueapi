@@ -1,11 +1,10 @@
 # this should test if we change app, what openapi is generated.
 
-import json
-
 # i.e.checking that the openapi generation actually works.
 from pathlib import Path
 
 import mock
+import yaml
 from mock import Mock, PropertyMock
 
 
@@ -28,12 +27,12 @@ def test_init(mock_app: Mock):
     from blueapi.service import openapi
 
     with mock.patch.object(openapi, "__name__", "__main__"):
-        location = Path(__file__).parent / "test_file.json"
+        location = Path(__file__).parent / "test_file.yaml"
         openapi.init(location)
         print("ah")
 
         with open(location, "r") as f:
-            result = json.load(f)
+            result = yaml.load(f, yaml.Loader)
 
         assert result == {
             "openapi": openapi_version(),

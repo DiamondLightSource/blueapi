@@ -26,7 +26,7 @@ spec:
   lifecycle: production
   owner: user:vid18871
   definition:
-    $text: ./docs/user/reference/openapi.json
+    $text: ./docs/user/reference/openapi.yaml
 ---
 apiVersion: backstage.io/v1alpha1
 kind: API

@@ -56,13 +56,13 @@ def inject(name: str):
     that is stored in the Blueapi context.
     Bypasses mypy linting, returning x as Any and therefore valid as a default
     argument.
-    
+
     Args:
         name (str): Name of a device to be fetched from the Blueapi context
-    
+
     Returns:
         Any: name but without typing checking, valid as any default type
-       
+
     """
-    
+
     return name

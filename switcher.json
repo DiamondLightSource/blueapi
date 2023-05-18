@@ -84,10 +84,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/apiver/"
   },
   {
-    "version": "asyncapi",
-    "url": "https://DiamondLightSource.github.io/blueapi/asyncapi/"
-  },
-  {
     "version": "camel-case",
     "url": "https://DiamondLightSource.github.io/blueapi/camel-case/"
   },

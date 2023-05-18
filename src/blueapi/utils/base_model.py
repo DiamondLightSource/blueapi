@@ -22,9 +22,13 @@ class BlueapiPlanModelConfig(BlueapiModelConfig):
     Pydantic config for plan parameters.
     Includes arbitrary type config so that devices
     can be parameters.
+    Validates default arguments, to allow default
+    arguments to be names of devices that are fetched
+    from the context.
     """
 
     arbitrary_types_allowed = True
+    validate_all = True
 
 
 class BlueapiBaseModel(BaseModel):

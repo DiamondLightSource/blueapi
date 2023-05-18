@@ -193,7 +193,7 @@ class BlueskyContext:
                 def valid(cls, value):
                     val = self.find_device(value)
                     if not isinstance(val, target):
-                        raise ValueError(f"value is not {target}")
+                        raise ValueError(f"Device {value} is not of type {target}")
                     return val
 
             self._reference_cache[target] = Reference

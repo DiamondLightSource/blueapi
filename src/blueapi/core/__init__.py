@@ -12,6 +12,7 @@ from .bluesky_types import (
     is_bluesky_plan_generator,
 )
 from .context import BlueskyContext
+from .device_lookup import inject
 from .event import EventPublisher, EventStream
 
 __all__ = [
@@ -25,6 +26,7 @@ __all__ = [
     "EventStream",
     "DataEvent",
     "WatchableStatus",
+    "inject",
     "is_bluesky_compatible_device",
     "is_bluesky_plan_generator",
     "is_bluesky_compatible_device_type",

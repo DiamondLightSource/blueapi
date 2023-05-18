@@ -1,12 +1,14 @@
+import asyncio
 import itertools
 import time
 from concurrent.futures import Future
 from typing import Callable, Iterable, List, Optional, TypeVar
 
+import bluesky.plan_stubs as bps
 import pytest
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
-from blueapi.core import BlueskyContext, EventStream
+from blueapi.core import BlueskyContext, EventStream, MsgGenerator
 from blueapi.worker import (
     RunEngineWorker,
     RunPlan,
@@ -21,16 +23,26 @@ from blueapi.worker.worker_busy_error import WorkerBusyError
 
 _SIMPLE_TASK = RunPlan(name="sleep", params={"time": 0.0})
 _LONG_TASK = RunPlan(name="sleep", params={"time": 1.0})
+_INDEFINITE_TASK = RunPlan(name="hang_until_stop", params={})
 
 
 @pytest.fixture
-def context() -> BlueskyContext:
+def stop_plan() -> asyncio.Event:
+    return asyncio.Event()
+
+
+@pytest.fixture
+def context(stop_plan: asyncio.Event) -> BlueskyContext:
+    def hang_until_stop() -> MsgGenerator:
+        yield from bps.wait_for([stop_plan.wait])
+
     ctx = BlueskyContext()
     ctx_config = EnvironmentConfig()
     ctx_config.sources.append(
         Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
     )
     ctx.with_config(ctx_config)
+    ctx.plan(hang_until_stop)
     return ctx
 
 
@@ -102,12 +114,17 @@ def test_clear_nonexistant_task(worker: Worker) -> None:
 
 @pytest.mark.parametrize("num_runs", [2, 3, 4])
 def test_does_not_allow_simultaneous_running_tasks(
-    worker: Worker, num_runs: int
+    worker: Worker, stop_plan: asyncio.Event, num_runs: int
 ) -> None:
-    task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
+    task_ids = [worker.submit_task(_INDEFINITE_TASK) for _ in range(num_runs)]
     with pytest.raises(WorkerBusyError):
-        for task_id in task_ids:
-            worker.begin_task(task_id)
+        try:
+            for task_id in task_ids:
+                worker.begin_task(task_id)
+        except WorkerBusyError as e:
+            raise e
+        finally:
+            stop_plan.set()
 
 
 @pytest.mark.parametrize("num_runs", [0, 1, 2, 3])

@@ -2,9 +2,8 @@ from typing import List
 
 from bluesky.protocols import Movable, Readable
 
-from blueapi.plans import count, move
-
 from blueapi.core import MsgGenerator, inject
+from blueapi.plans import count, move
 
 
 def stp_snapshot(

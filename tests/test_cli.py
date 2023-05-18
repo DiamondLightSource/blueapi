@@ -165,7 +165,7 @@ def test_config_passed_down_to_command_children(
     mock_requests.return_value = Mock()
 
     runner.invoke(
-        main, ["-c", config_path, "controller", "run", "sleep", "-p", '{"time": 5}']
+        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
     )
 
     assert mock_requests.call_args[0][0] == "http://a.fake.host:12345/task/sleep"

@@ -329,3 +329,14 @@ def test_nested_str_default(
     assert parse_obj_as(model, {}).m == [sim_motor]  # type: ignore
     empty_context.device(alt_motor)
     assert parse_obj_as(model, {"m": [ALT_MOTOR_NAME]}).m == [alt_motor]  # type: ignore
+
+
+def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:
+    def a_plan(foo_bar: int, baz: str) -> MsgGenerator:
+        ...
+
+    empty_context.plan(a_plan)
+    assert list(empty_context.plans[a_plan.__name__].model.__fields__.keys()) == [
+        "foo_bar",
+        "baz",
+    ]

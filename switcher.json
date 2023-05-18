@@ -104,10 +104,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/context-methods/"
   },
   {
-    "version": "copy-subscriptions",
-    "url": "https://DiamondLightSource.github.io/blueapi/copy-subscriptions/"
-  },
-  {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },

@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Lifecycle of a Plan &#8212; blueapi 0.2.4.dev22+g8d760fb documentation</title>
+    <title>Lifecycle of a Plan &#8212; blueapi 0.2.4.dev27+g5bcea1d documentation</title>
   
   
   
@@ -466,20 +466,23 @@ document.write(`
 of being written, loaded and run. Take the following plan.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Any</span>
 
-<span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">Plan</span>
+<span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">inject</span><span class="p">,</span> <span class="n">Plan</span>
 <span class="kn">from</span> <span class="nn">bluesky.protocols</span> <span class="kn">import</span> <span class="n">Readable</span>
+<span class="kn">from</span> <span class="nn">ophyd</span> <span class="kn">import</span> <span class="n">Component</span>
 
 <span class="k">def</span> <span class="nf">count</span><span class="p">(</span>
-    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">inject</span><span class="p">(</span><span class="s2">&quot;det&quot;</span><span class="p">)],</span>  <span class="c1"># default valid for Blueapi only</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Take `n` readings from a device</span>
+<span class="sd">    Take `n` readings from a collection of detectors</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        detectors (List[Readable]): Readable devices to read</span>
+<span class="sd">        detectors (List[Readable]): Readable devices to read: when being run in Blueapi</span>
+<span class="sd">                                    defaults to fetching a device named &quot;det&quot; from its</span>
+<span class="sd">                                    context, else will require to be overriden.</span>
 <span class="sd">        num (int, optional): Number of readings to take. Defaults to 1.</span>
 <span class="sd">        delay (Optional[Union[float, List[float]]], optional): Delay between readings.</span>
 <span class="sd">                                                            Defaults to None.</span>
@@ -508,19 +511,22 @@ like this:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
 
 <span class="k">class</span> <span class="nc">CountParameters</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;det&quot;</span><span class="p">]</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
         <span class="n">arbitrary_types_allowed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">validate_all</span> <span class="o">=</span> <span class="kc">True</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This is for illustrative purposes only, this code is not actually generated, but an object
-resembling this class is constructed in memeory.</p>
+resembling this class is constructed in memory.
+The default arguments will be validated by the context to inject the “det” device when the
+plan is run. The existence of the “det” default device is not checked until this time.</p>
 </div>
 <p>The model is also stored in the context.</p>
 </section>
@@ -546,14 +552,14 @@ It takes the form of JSON and may look something like this:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>The <code class="docutils literal notranslate"><span class="pre">Service</span></code> recieves the request and passes it to the worker, which holds it in an internal queue
+<p>The <code class="docutils literal notranslate"><span class="pre">Service</span></code> receives the request and passes it to the worker, which holds it in an internal queue
 and executes it as soon as it can.</p>
 </section>
 <section id="validation">
 <h2>Validation<a class="headerlink" href="#validation" title="Permalink to this heading">#</a></h2>
 <p>The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry
 The parameter values in the request are validated against the model, this includes looking up devices
-with names <code class="docutils literal notranslate"><span class="pre">andor</span></code> and <code class="docutils literal notranslate"><span class="pre">pilatus</span></code>.</p>
+with names <code class="docutils literal notranslate"><span class="pre">andor</span></code> and <code class="docutils literal notranslate"><span class="pre">pilatus</span></code> or, if detectors was not passed <code class="docutils literal notranslate"><span class="pre">det</span></code>.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="type_validators.html"><span class="doc">Type Validators</span></a></p>

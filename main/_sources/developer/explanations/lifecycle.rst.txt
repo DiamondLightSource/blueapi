@@ -8,20 +8,23 @@ of being written, loaded and run. Take the following plan.
 
     from typing import List, Union, Mapping, Any
 
-    from blueapi.core import Plan
+    from blueapi.core import inject, Plan
     from bluesky.protocols import Readable
+    from ophyd import Component
 
     def count(
-        detectors: List[Readable],
+        detectors: List[Readable] = [inject("det")],  # default valid for Blueapi only
         num: int = 1,
         delay: Optional[Union[float, List[float]]] = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> MsgGenerator:
         """
-        Take `n` readings from a device
+        Take `n` readings from a collection of detectors
 
         Args:
-            detectors (List[Readable]): Readable devices to read
+            detectors (List[Readable]): Readable devices to read: when being run in Blueapi
+                                        defaults to fetching a device named "det" from its
+                                        context, else will require to be overriden.
             num (int, optional): Number of readings to take. Defaults to 1.
             delay (Optional[Union[float, List[float]]], optional): Delay between readings.
                                                                 Defaults to None.
@@ -56,18 +59,21 @@ like this:
     from pydantic import BaseModel
 
     class CountParameters(BaseModel):
-        detectors: List[Readable]
+        detectors: List[Readable] = ["det"]
         num: int = 1
         delay: Optional[Union[float, List[float]]] = None
         metadata: Optional[Mapping[str, Any]] = None
 
         class Config:
             arbitrary_types_allowed = True
+            validate_all = True
 
 .. note:: 
     
-    This is for illustrative purposes only, this code is not actually generated, but an object 
-    resembling this class is constructed in memeory.
+    This is for illustrative purposes only, this code is not actually generated, but an object
+    resembling this class is constructed in memory.
+    The default arguments will be validated by the context to inject the "det" device when the
+    plan is run. The existence of the "det" default device is not checked until this time.
 
 The model is also stored in the context.
 
@@ -99,7 +105,7 @@ It takes the form of JSON and may look something like this:
         }
     }
 
-The ``Service`` recieves the request and passes it to the worker, which holds it in an internal queue 
+The ``Service`` receives the request and passes it to the worker, which holds it in an internal queue
 and executes it as soon as it can. 
 
 
@@ -108,7 +114,7 @@ Validation
 
 The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry
 The parameter values in the request are validated against the model, this includes looking up devices
-with names ``andor`` and ``pilatus``.
+with names ``andor`` and ``pilatus`` or, if detectors was not passed ``det``.
 
 
 .. seealso:: `./type_validators`

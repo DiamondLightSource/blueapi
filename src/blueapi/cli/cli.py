@@ -41,13 +41,6 @@ def start_application(obj: dict):
     start(obj["config"])
 
 
-@main.command(name="worker", deprecated=True)
-@click.pass_obj
-def deprecated_start_application(obj: dict):
-    print("Please use serve command instead.\n")
-    start(obj["config"])
-
-
 @main.group()
 @click.pass_context
 def controller(ctx: click.Context) -> None:

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, List, Optional, TypeVar
+from typing import Generic, List, TypeVar
 
 from blueapi.core import DataEvent, EventStream
 

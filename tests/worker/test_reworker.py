@@ -1,6 +1,5 @@
 import asyncio
 import itertools
-import time
 from concurrent.futures import Future
 from typing import Callable, Iterable, List, Optional, TypeVar
 

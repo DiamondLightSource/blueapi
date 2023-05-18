@@ -333,7 +333,8 @@ def test_nested_str_default(
 
 def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:
     def a_plan(foo_bar: int, baz: str) -> MsgGenerator:
-        ...
+        if False:
+            yield
 
     empty_context.plan(a_plan)
     assert list(empty_context.plans[a_plan.__name__].model.__fields__.keys()) == [

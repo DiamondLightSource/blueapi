@@ -75,5 +75,5 @@ class EventPublisher(EventStream[E, int]):
                 event with other events
         """
 
-        for callback in self._subscriptions.values():
+        for callback in list(self._subscriptions.values()):
             callback(event, correlation_id)

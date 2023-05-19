@@ -92,6 +92,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/cli-docs/"
   },
   {
+    "version": "consume_failed_devices",
+    "url": "https://DiamondLightSource.github.io/blueapi/consume_failed_devices/"
+  },
+  {
     "version": "context-methods",
     "url": "https://DiamondLightSource.github.io/blueapi/context-methods/"
   },

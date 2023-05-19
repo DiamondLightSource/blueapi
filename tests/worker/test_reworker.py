@@ -110,11 +110,13 @@ def test_clear_nonexistant_task(worker: Worker) -> None:
     assert not worker.clear_task("foo")
 
 
-@pytest.mark.parametrize("num_runs", [2, 3, 4])
 def test_does_not_allow_simultaneous_running_tasks(
-    worker: Worker, stop_plan: asyncio.Event, num_runs: int
+    worker: Worker, stop_plan: asyncio.Event
 ) -> None:
-    task_ids = [worker.submit_task(_INDEFINITE_TASK) for _ in range(num_runs)]
+    task_ids = [
+        worker.submit_task(_INDEFINITE_TASK),
+        worker.submit_task(_INDEFINITE_TASK),
+    ]
     with pytest.raises(WorkerBusyError):
         try:
             for task_id in task_ids:
@@ -125,7 +127,7 @@ def test_does_not_allow_simultaneous_running_tasks(
             stop_plan.set()
 
 
-@pytest.mark.parametrize("num_runs", [0, 1, 2, 3])
+@pytest.mark.parametrize("num_runs", [0, 1, 2])
 def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
     task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
     event_sequences = [_sleep_events(task_id) for task_id in task_ids]

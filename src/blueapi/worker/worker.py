@@ -16,37 +16,46 @@ class Worker(ABC, Generic[T]):
 
     @abstractmethod
     def get_pending_tasks(self) -> List[T]:
-        """_summary_
+        """
+        Return a list of all tasks pending on the worker,
+        any one of which can be triggered with begin_task.
 
         Returns:
-            List[T]: _description_
+            List[T]: List of task objects
         """
 
     @abstractmethod
     def clear_task(self, task_id: str) -> bool:
-        """_summary_
+        """
+        Remove a pending task from the worker
 
         Args:
-            task_id (str): _description_
+            task_id: The ID of the task to be removed
+        Returns:
+            bool: True if the task existed in the first place
         """
 
     @abstractmethod
     def begin_task(self, task_id: str) -> None:
-        """_summary_
+        """
+        Trigger a pending task. Will fail if the worker is busy.
 
         Args:
-            task_id (str): _description_
+            task_id: The ID of the task to be triggered
+        Throws:
+            WorkerBusyError: If the worker is already running a task.
+            KeyError: If the task ID does not exist
         """
 
     @abstractmethod
     def submit_task(self, task: T) -> str:
         """
-        Submit a task to be run
+        Submit a task to be run on begin_task
 
         Args:
-            __name (str): name of the plan to be run
-            __task (T): The task to run
-            __correlation_id (str): unique identifier of the task
+            task: A description of the task
+        Returns:
+            str: A unique ID to refer to this task
         """
 
     @abstractmethod

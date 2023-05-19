@@ -43,15 +43,15 @@ class ProgressBarRenderer:
 
 
 class CliEventRenderer:
-    _task_name: Optional[str]
+    _task_id: Optional[str]
     _pbar_renderer: ProgressBarRenderer
 
     def __init__(
         self,
-        task_name: Optional[str] = None,
+        task_id: Optional[str] = None,
         pbar_renderer: Optional[ProgressBarRenderer] = None,
     ) -> None:
-        self._task_name = task_name
+        self._task_id = task_id
         if pbar_renderer is None:
             pbar_renderer = ProgressBarRenderer()
         self._pbar_renderer = pbar_renderer
@@ -65,14 +65,14 @@ class CliEventRenderer:
             print(str(event.state))
 
     def _relates_to_task(self, event: Union[WorkerEvent, ProgressEvent]) -> bool:
-        if self._task_name is None:
+        if self._task_id is None:
             return True
         elif isinstance(event, WorkerEvent):
             return (
                 event.task_status is not None
-                and event.task_status.task_name == self._task_name
+                and event.task_status.task_id == self._task_id
             )
         elif isinstance(event, ProgressEvent):
-            return event.task_name == self._task_name
+            return event.task_id == self._task_id
         else:
             return False

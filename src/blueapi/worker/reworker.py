@@ -226,7 +226,7 @@ class RunEngineWorker(Worker[Task]):
         warnings = self._warnings
         if self._current is not None:
             task_status = TaskStatus(
-                task_name=self._current.task_id,
+                task_id=self._current.task_id,
                 task_complete=self._current.is_complete,
                 task_failed=self._current.is_error or bool(errors),
             )
@@ -319,7 +319,7 @@ class RunEngineWorker(Worker[Task]):
         else:
             self._progress_events.publish(
                 ProgressEvent(
-                    task_name=self._current.task_id,
+                    task_id=self._current.task_id,
                     statuses=self._status_snapshot,
                 ),
                 self._current.task_id,

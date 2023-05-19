@@ -139,7 +139,7 @@ def _sleep_events(task_id: str) -> List[WorkerEvent]:
         WorkerEvent(
             state=WorkerState.RUNNING,
             task_status=TaskStatus(
-                task_name=task_id, task_complete=False, task_failed=False
+                task_id=task_id, task_complete=False, task_failed=False
             ),
             errors=[],
             warnings=[],
@@ -147,7 +147,7 @@ def _sleep_events(task_id: str) -> List[WorkerEvent]:
         WorkerEvent(
             state=WorkerState.IDLE,
             task_status=TaskStatus(
-                task_name=task_id, task_complete=False, task_failed=False
+                task_id=task_id, task_complete=False, task_failed=False
             ),
             errors=[],
             warnings=[],
@@ -155,7 +155,7 @@ def _sleep_events(task_id: str) -> List[WorkerEvent]:
         WorkerEvent(
             state=WorkerState.IDLE,
             task_status=TaskStatus(
-                task_name=task_id, task_complete=True, task_failed=False
+                task_id=task_id, task_complete=True, task_failed=False
             ),
             errors=[],
             warnings=[],

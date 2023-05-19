@@ -140,6 +140,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   },
   {
+    "version": "status",
+    "url": "https://DiamondLightSource.github.io/blueapi/status/"
+  },
+  {
     "version": "tidy-docs",
     "url": "https://DiamondLightSource.github.io/blueapi/tidy-docs/"
   },

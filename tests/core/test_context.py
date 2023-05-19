@@ -5,7 +5,7 @@ from typing import Dict, List, Type, Union
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
 from ophyd.sim import SynAxis, SynGauss
-from pydantic import parse_obj_as
+from pydantic import ValidationError, parse_obj_as
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import (
@@ -337,7 +337,5 @@ def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:
             yield
 
     empty_context.plan(a_plan)
-    assert list(empty_context.plans[a_plan.__name__].model.__fields__.keys()) == [
-        "foo_bar",
-        "baz",
-    ]
+    with pytest.raises(ValidationError):
+        empty_context.plans[a_plan.__name__].model(fooBar=1, baz="test")

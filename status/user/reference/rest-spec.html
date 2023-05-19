@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>REST Specification &#8212; blueapi 0.2.4.dev30+g70f7b9c0 documentation</title>
+    <title>REST Specification &#8212; blueapi 0.2.4.dev31+g28bb0fe6 documentation</title>
   
   
   
@@ -523,19 +523,6 @@ server.</p>
 </dl>
 </dd></dl>
 
-<dl class="http get">
-<dt class="sig sig-object http" id="get--status">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/status</span></span><a class="headerlink" href="#get--status" title="Permalink to this definition">#</a></dt>
-<dd><p><strong>Get Status</strong></p>
-<dl class="field-list simple">
-<dt class="field-odd">Status Codes<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – Successful Response</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="http put">
 <dt class="sig sig-object http" id="put--task-name">
 <span class="sig-name descname"><span class="pre">PUT</span> </span><span class="sig-name descname"><span class="pre">/task/{name}</span></span><a class="headerlink" href="#put--task-name" title="Permalink to this definition">#</a></dt>
@@ -551,6 +538,19 @@ server.</p>
 <dd class="field-even"><ul class="simple">
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – Successful Response</p></li>
 <li><p><span><a class="reference external" href="https://www.rfc-editor.org/rfc/rfc4918#section-11.2">422 Unprocessable Entity</a></span> – Validation Error</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="http get">
+<dt class="sig sig-object http" id="get--worker-state">
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/worker/state</span></span><a class="headerlink" href="#get--worker-state" title="Permalink to this definition">#</a></dt>
+<dd><p><strong>Get State</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">Status Codes<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – Successful Response</p></li>
 </ul>
 </dd>
 </dl>

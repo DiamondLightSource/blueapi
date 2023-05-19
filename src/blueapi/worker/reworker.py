@@ -25,7 +25,7 @@ from .event import (
     WorkerState,
 )
 from .multithread import run_worker_in_own_thread
-from .task import ActiveTask, Task
+from .task import Task, TrackableTask
 from .worker import Worker
 from .worker_busy_error import WorkerBusyError
 
@@ -47,13 +47,13 @@ class RunEngineWorker(Worker[Task]):
     _ctx: BlueskyContext
     _stop_timeout: float
 
-    _pending_tasks: Dict[str, ActiveTask]
+    _pending_tasks: Dict[str, TrackableTask]
 
     _state: WorkerState
     _errors: List[str]
     _warnings: List[str]
     _task_queue: Queue  # type: ignore
-    _current: Optional[ActiveTask]
+    _current: Optional[TrackableTask]
     _status_lock: RLock
     _status_snapshot: Dict[str, StatusView]
     _completed_statuses: Set[str]
@@ -108,11 +108,11 @@ class RunEngineWorker(Worker[Task]):
 
     def submit_task(self, task: Task) -> str:
         task_id: str = str(uuid.uuid4())
-        active_task = ActiveTask(task_id, task)
+        active_task = TrackableTask(task_id, task)
         self._pending_tasks[task_id] = active_task
         return task_id
 
-    def _submit_active_task(self, active_task: ActiveTask) -> None:
+    def _submit_active_task(self, active_task: TrackableTask) -> None:
         LOGGER.info(f"Submitting: {active_task}")
         try:
             self._task_queue.put_nowait(active_task)
@@ -164,8 +164,8 @@ class RunEngineWorker(Worker[Task]):
     def _cycle(self) -> None:
         try:
             LOGGER.info("Awaiting task")
-            next_task: Union[ActiveTask, KillSignal] = self._task_queue.get()
-            if isinstance(next_task, ActiveTask):
+            next_task: Union[TrackableTask, KillSignal] = self._task_queue.get()
+            if isinstance(next_task, TrackableTask):
                 LOGGER.info(f"Got new task: {next_task}")
                 self._current = next_task  # Informing mypy that the task is not None
                 self._current.task.do_task(self._ctx)

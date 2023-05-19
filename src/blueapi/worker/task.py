@@ -68,7 +68,12 @@ def _lookup_params(
 
 
 @dataclass
-class ActiveTask:
+class TrackableTask:
+    """
+    An internal representation for use by the worker, holding a
+    task with it's ID and current status
+    """
+
     task_id: str
     task: Task
     is_complete: bool = False

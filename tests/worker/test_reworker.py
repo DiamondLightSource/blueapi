@@ -176,7 +176,7 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
         name="move", params={"moves": {"additional_status_device": 5.0}}
     )
     task_id = worker.submit_task(task)
-    submit_task_and_wait_until_complete(worker, task_id)
+    begin_task_and_wait_until_complete(worker, task_id)
 
     # Extract all the display_name fields from the events
     list_of_dict_keys = [pe.statuses.values() for pe in progress_events]
@@ -191,10 +191,10 @@ def assert_run_produces_worker_events(
     worker: Worker,
     task_id: str,
 ) -> None:
-    assert submit_task_and_wait_until_complete(worker, task_id) == expected_events
+    assert begin_task_and_wait_until_complete(worker, task_id) == expected_events
 
 
-def submit_task_and_wait_until_complete(
+def begin_task_and_wait_until_complete(
     worker: Worker,
     task_id: str,
     timeout: float = 5.0,

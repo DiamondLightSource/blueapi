@@ -186,6 +186,11 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
     assert "STATUS_AFTER_FINISH" not in display_names
 
 
+#
+# Worker helpers
+#
+
+
 def assert_run_produces_worker_events(
     expected_events: List[WorkerEvent],
     worker: Worker,
@@ -206,6 +211,11 @@ def begin_task_and_wait_until_complete(
 
     worker.begin_task(task_id)
     return events.result(timeout=timeout)
+
+
+#
+# Event stream helpers
+#
 
 
 E = TypeVar("E")

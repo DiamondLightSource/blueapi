@@ -76,8 +76,11 @@ def submit_task(
 
 @app.get("/status")
 async def get_status(handler: Handler = Depends(get_handler)) -> WorkerState:
-    return handler.worker.state if isinstance(handler.worker, RunEngineWorker) \
+    return (
+        handler.worker.state
+        if isinstance(handler.worker, RunEngineWorker)
         else WorkerState.UNKNOWN
+    )
 
 
 def start(config: ApplicationConfig):

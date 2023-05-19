@@ -89,8 +89,12 @@ class RunEngineWorker(Worker[Task]):
         self._stopping = Event()
         self._stopped = Event()
 
-    def clear_task(self, task_id: str) -> None:
-        del self._pending_tasks[task_id]
+    def clear_task(self, task_id: str) -> bool:
+        if task_id in self._pending_tasks:
+            del self._pending_tasks[task_id]
+            return True
+        else:
+            return False
 
     def get_pending_tasks(self) -> List[Task]:
         return [active_task.task for active_task in self._pending_tasks.values()]

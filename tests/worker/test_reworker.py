@@ -102,13 +102,12 @@ def test_stop_with_task_pending(inert_worker: Worker) -> None:
 def test_clear_task(worker: Worker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_pending_tasks() == [_SIMPLE_TASK]
-    worker.clear_task(task_id)
+    assert worker.clear_task(task_id)
     assert worker.get_pending_tasks() == []
 
 
 def test_clear_nonexistant_task(worker: Worker) -> None:
-    with pytest.raises(KeyError):
-        worker.clear_task("foo")
+    assert not worker.clear_task("foo")
 
 
 @pytest.mark.parametrize("num_runs", [2, 3, 4])

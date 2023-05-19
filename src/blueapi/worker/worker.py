@@ -23,7 +23,7 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def clear_task(self, task_id: str) -> None:
+    def clear_task(self, task_id: str) -> bool:
         """_summary_
 
         Args:

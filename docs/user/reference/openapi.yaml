@@ -232,6 +232,7 @@ paths:
       summary: Submit Task
   /worker/state:
     get:
+      description: Get the State of the Worker
       operationId: get_state_worker_state_get
       responses:
         '200':

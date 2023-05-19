@@ -100,10 +100,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
-    "version": "fix-event-loop",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-event-loop/"
-  },
-  {
     "version": "hotfix-linting",
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
   },

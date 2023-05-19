@@ -4,7 +4,9 @@ from typing import Dict, List, Type, Union
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
+from ophyd import EpicsMotor
 from ophyd.sim import SynAxis, SynGauss
+from ophyd.utils import DisconnectedError
 from pydantic import parse_obj_as
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
@@ -175,6 +177,16 @@ def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
         "motor_bundle_b",
     } == empty_context.devices.keys()
 
+
+def test_failing_devices_not_imported_from_module(empty_context: BlueskyContext) -> None:
+    import tests.core.fake_device_module as device_module
+
+    empty_context.with_device_module(device_module)
+    assert "disconnected_motor" in empty_context.failed_devices
+    info = empty_context.failed_devices["disconnected_motor"]
+    assert info.device_type is EpicsMotor
+    assert isinstance(info.exception, DisconnectedError)
+    assert info.factory_name is "disconnected_motor"
 
 @pytest.mark.parametrize(
     "addr", ["sim", "sim_det", "sim.setpoint", ["sim"], ["sim", "setpoint"]]

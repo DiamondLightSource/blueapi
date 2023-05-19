@@ -7,7 +7,14 @@ from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
-from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse, TaskResponse
+from .model import (
+    DeviceModel,
+    DeviceResponse,
+    FailedDeviceInstantiation,
+    PlanModel,
+    PlanResponse,
+    TaskResponse,
+)
 
 
 @asynccontextmanager
@@ -50,7 +57,11 @@ def get_devices(handler: Handler = Depends(get_handler)):
         devices=[
             DeviceModel.from_device(device)
             for device in handler.context.devices.values()
-        ]
+        ],
+        failed_devices=[
+            FailedDeviceInstantiation.from_exception_informations(k, v)
+            for k, v in handler.context.failed_devices.items()
+        ],
     )
 
 

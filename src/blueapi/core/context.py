@@ -24,6 +24,7 @@ from pydantic import create_model
 from pydantic.fields import FieldInfo
 
 from blueapi.config import EnvironmentConfig, SourceKind
+from blueapi.service.model import FailedDeviceInstantiation
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
 from .bluesky_types import (
@@ -51,6 +52,7 @@ class BlueskyContext:
     )
     plans: Dict[str, Plan] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
+    failed_devices: Dict[str, FailedDeviceInstantiation] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
 
     _reference_cache: Dict[Type, Type] = field(default_factory=dict)
@@ -112,10 +114,20 @@ class BlueskyContext:
         self.with_dodal_module(module)
 
     def with_dodal_module(self, module: ModuleType) -> None:
-        from dodal.utils import make_all_devices
+        from dodal.utils import make_all_devices_without_throwing
 
-        for device in make_all_devices(module).values():
+        devices_and_exceptions = make_all_devices_without_throwing(module)
+        for device in devices_and_exceptions.devices.values():
             self.device(device)
+        for factory_name, exception_info in devices_and_exceptions.exceptions.items():
+            LOGGER.warning(
+                f"Unable to instantiate device from factory method {factory_name}"
+            )
+            self.failed_devices[
+                factory_name
+            ] = FailedDeviceInstantiation.from_exception_informations(
+                factory_name, exception_info
+            )
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

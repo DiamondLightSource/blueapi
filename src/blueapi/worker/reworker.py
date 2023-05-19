@@ -315,10 +315,10 @@ class RunEngineWorker(Worker[Task]):
         else:
             self._progress_events.publish(
                 ProgressEvent(
-                    task_name=self._current.name,
+                    task_name=self._current.task_id,
                     statuses=self._status_snapshot,
                 ),
-                self._current.name,
+                self._current.task_id,
             )
 
 

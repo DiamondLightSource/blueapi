@@ -1,3 +1,4 @@
+import itertools
 from dataclasses import dataclass
 
 from bluesky.run_engine import RunEngineStateMachine
@@ -6,8 +7,13 @@ from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
+<<<<<<< HEAD
 from blueapi.worker.task import RunPlan
 from src.blueapi.worker import WorkerState
+=======
+from blueapi.service.model import TaskResponse
+from blueapi.worker.task import RunPlan, Task
+>>>>>>> 715ace60 (Fix tests)
 
 
 def test_get_plans(handler: Handler, client: TestClient) -> None:

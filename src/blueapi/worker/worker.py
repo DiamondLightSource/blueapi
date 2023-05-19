@@ -3,7 +3,7 @@ from typing import Generic, TypeVar
 
 from blueapi.core import DataEvent, EventStream
 
-from .event import ProgressEvent, WorkerEvent
+from .event import ProgressEvent, WorkerEvent, WorkerState
 
 T = TypeVar("T")
 
@@ -13,6 +13,12 @@ class Worker(ABC, Generic[T]):
     Entity that takes and runs tasks. Intended to be a central,
     atomic worker rather than a load distributor
     """
+
+    @abstractmethod
+    def get_state(self) -> WorkerState:
+        """
+        :return: state of the worker
+        """
 
     @abstractmethod
     def submit_task(self, __name: str, __task: T) -> None:

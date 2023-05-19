@@ -4,7 +4,7 @@ from typing import Any, Mapping
 from fastapi import Body, Depends, FastAPI, HTTPException
 
 from blueapi.config import ApplicationConfig
-from blueapi.worker import RunEngineWorker, RunPlan, WorkerState
+from blueapi.worker import RunPlan, WorkerState
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
 from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse, TaskResponse
@@ -74,13 +74,9 @@ def submit_task(
     return TaskResponse(task_name=name)
 
 
-@app.get("/status")
-async def get_status(handler: Handler = Depends(get_handler)) -> WorkerState:
-    return (
-        handler.worker.state
-        if isinstance(handler.worker, RunEngineWorker)
-        else WorkerState.UNKNOWN
-    )
+@app.get("/worker/state")
+async def get_state(handler: Handler = Depends(get_handler)) -> WorkerState:
+    return handler.worker.get_state()
 
 
 def start(config: ApplicationConfig):

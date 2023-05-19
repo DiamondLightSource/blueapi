@@ -195,17 +195,6 @@ paths:
                 $ref: '#/components/schemas/PlanResponse'
           description: Successful Response
       summary: Get Plans
-  /status:
-    get:
-      operationId: get_status_status_get
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkerState'
-          description: Successful Response
-      summary: Get Status
   /task/{name}:
     put:
       description: Submit a task onto the worker queue.
@@ -241,3 +230,14 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Submit Task
+  /worker/state:
+    get:
+      operationId: get_state_worker_state_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerState'
+          description: Successful Response
+      summary: Get State

@@ -113,8 +113,7 @@ class RunEngineWorker(Worker[Task]):
             LOGGER.info("Stopping worker: nothing to do")
         LOGGER.info("Stopped")
 
-    @property
-    def state(self) -> WorkerState:
+    def get_state(self) -> WorkerState:
         return self._state
 
     def run(self) -> None:

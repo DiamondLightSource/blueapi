@@ -51,12 +51,13 @@ class AmqClient:
                 on_progress_event(event)
 
         self.app.subscribe(
-            self.app.destinations.topic("public.worker.event"), on_event_wrapper
+            self.app.destinations.topic("public.worker.events"), on_event_wrapper
         )
         self.app.subscribe(
-            self.app.destinations.topic("public.worker.event.progress"),
+            self.app.destinations.topic("public.worker.events"),
             on_progress_event_wrapper,
         )
+
         # self.app.send("worker.run", {"name": name, "params": params})
         task_response = self.app.send_and_receive(
             "worker.run", {"name": name, "params": params}, reply_type=TaskResponse

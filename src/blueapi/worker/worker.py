@@ -15,12 +15,6 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def get_state(self) -> WorkerState:
-        """
-        :return: state of the worker
-        """
-
-    @abstractmethod
     def submit_task(self, __name: str, __task: T) -> None:
         """
         Submit a task to be run
@@ -47,6 +41,13 @@ class Worker(ABC, Generic[T]):
     def stop(self) -> None:
         """
         Command the worker to gracefully stop. Blocks until it has shut down.
+        """
+
+    @property
+    @abstractmethod
+    def state(self) -> WorkerState:
+        """
+        :return: state of the worker
         """
 
     @property

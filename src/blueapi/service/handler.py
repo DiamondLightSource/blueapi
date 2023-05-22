@@ -16,12 +16,13 @@ class Handler:
     config: ApplicationConfig
     messaging_template: MessagingTemplate
 
-    def __init__(self,
-                 config: Optional[ApplicationConfig] = None,
-                 context: Optional[BlueskyContext] = None,
-                 messaging_template: Optional[MessagingTemplate] = None,
-                 worker: Optional[Worker] = None,
-                 ) -> None:
+    def __init__(
+        self,
+        config: Optional[ApplicationConfig] = None,
+        context: Optional[BlueskyContext] = None,
+        messaging_template: Optional[MessagingTemplate] = None,
+        worker: Optional[Worker] = None,
+    ) -> None:
         self.config = config or ApplicationConfig()
         self.context = context or BlueskyContext()
 
@@ -30,7 +31,10 @@ class Handler:
         self.context.with_config(self.config.env)
 
         self.worker = worker or RunEngineWorker(self.context)
-        self.messaging_template = messaging_template or StompMessagingTemplate.autoconfigured(self.config.stomp)
+        self.messaging_template = (
+            messaging_template
+            or StompMessagingTemplate.autoconfigured(self.config.stomp)
+        )
 
     def start(self) -> None:
         self.worker.start()
@@ -52,7 +56,7 @@ class Handler:
         self.messaging_template.connect()
 
     def _publish_event_streams(
-            self, streams_to_destinations: Mapping[EventStream, str]
+        self, streams_to_destinations: Mapping[EventStream, str]
     ) -> None:
         for stream, destination in streams_to_destinations.items():
             self._publish_event_stream(stream, destination)
@@ -73,7 +77,7 @@ HANDLER: Optional[Handler] = None
 
 
 def setup_handler(
-        config: Optional[ApplicationConfig] = None,
+    config: Optional[ApplicationConfig] = None,
 ) -> None:
     global HANDLER
     handler = Handler(config)

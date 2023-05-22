@@ -1,12 +1,12 @@
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
 
 import pytest
-from blueapi.service.handler import Handler, get_handler
-from blueapi.service.main import app
 from bluesky.run_engine import RunEngineStateMachine
 from fastapi.testclient import TestClient
 from mock import Mock
 
+from blueapi.service.handler import Handler, get_handler
+from blueapi.service.main import app
 from src.blueapi.core import BlueskyContext
 
 
@@ -51,7 +51,7 @@ def handler() -> Handler:
     def no_op():
         return
 
-    handler.start = handler.stop = no_op
+    handler.start = handler.stop = no_op  # type: ignore
     return handler
 
 

@@ -77,7 +77,7 @@ def submit_task(
 @app.get("/worker/state")
 async def get_state(handler: Handler = Depends(get_handler)) -> WorkerState:
     """Get the State of the Worker"""
-    return handler.worker.get_state()
+    return handler.worker.state
 
 
 def start(config: ApplicationConfig):

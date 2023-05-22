@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 
-from fastapi.testclient import TestClient
-from pydantic import BaseModel
-
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
 from blueapi.worker.task import RunPlan, Task
+from bluesky.run_engine import RunEngineStateMachine
+from fastapi.testclient import TestClient
+from pydantic import BaseModel
+
+from src.blueapi.worker import WorkerState
 
 
 def test_get_plans(handler: Handler, client: TestClient) -> None:
@@ -75,12 +77,15 @@ def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
 def test_put_plan_submits_task(handler: Handler, client: TestClient) -> None:
     task_json = {"detectors": ["x"]}
     task_name = "count"
-    submitted_tasks = {}
-
-    def on_submit(name: str, task: Task):
-        submitted_tasks[name] = task
-
-    handler.worker.submit_task.side_effect = on_submit  # type: ignore
 
     client.put(f"/task/{task_name}", json=task_json)
-    assert submitted_tasks == {task_name: RunPlan(name=task_name, params=task_json)}
+
+    task_queue = handler.worker._task_queue.queue
+    assert len(task_queue) == 1
+    assert task_queue[0].task == RunPlan(name=task_name, params=task_json)
+
+
+def test_get_state_updates(handler: Handler, client: TestClient) -> None:
+    assert client.get("/worker/state").text == f'"{WorkerState.IDLE.name}"'
+    handler.worker._on_state_change(RunEngineStateMachine.States.RUNNING)
+    assert client.get("/worker/state").text == f'"{WorkerState.RUNNING.name}"'

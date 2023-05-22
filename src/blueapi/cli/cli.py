@@ -108,6 +108,6 @@ def run_plan(obj: dict, name: str, parameters: Optional[str]) -> None:
 def get_status(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
 
-    resp = requests.get(f"http://{config.api.host}:{config.api.port}/worker/status")
+    resp = requests.get(f"http://{config.api.host}:{config.api.port}/worker/state")
     print(f"Response returned with {resp.status_code}: ")
     pprint(resp.json())

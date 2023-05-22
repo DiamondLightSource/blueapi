@@ -97,25 +97,25 @@ class RunEngineWorker(Worker[Task]):
             return False
 
     def get_pending_tasks(self) -> List[Task]:
-        return [active_task.task for active_task in self._pending_tasks.values()]
+        return [trackable_task.task for trackable_task in self._pending_tasks.values()]
 
     def begin_task(self, task_id: str) -> None:
         task = self._pending_tasks.get(task_id)
         if task is not None:
-            self._submit_active_task(task)
+            self._submit_trackable_task(task)
         else:
             raise KeyError(f"No pending task with ID {task_id}")
 
     def submit_task(self, task: Task) -> str:
         task_id: str = str(uuid.uuid4())
-        active_task = TrackableTask(task_id, task)
-        self._pending_tasks[task_id] = active_task
+        trackable_task = TrackableTask(task_id, task)
+        self._pending_tasks[task_id] = trackable_task
         return task_id
 
-    def _submit_active_task(self, active_task: TrackableTask) -> None:
-        LOGGER.info(f"Submitting: {active_task}")
+    def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
+        LOGGER.info(f"Submitting: {trackable_task}")
         try:
-            self._task_queue.put_nowait(active_task)
+            self._task_queue.put_nowait(trackable_task)
         except Full:
             LOGGER.error("Cannot submit task while another is running")
             raise WorkerBusyError("Cannot submit task while another is running")

@@ -25,8 +25,8 @@ from .event import (
     WorkerState,
 )
 from .multithread import run_worker_in_own_thread
-from .task import Task, TrackableTask
-from .worker import Worker
+from .task import Task
+from .worker import TrackableTask, Worker
 from .worker_busy_error import WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
@@ -96,8 +96,8 @@ class RunEngineWorker(Worker[Task]):
         else:
             return False
 
-    def get_pending_tasks(self) -> List[Task]:
-        return [trackable_task.task for trackable_task in self._pending_tasks.values()]
+    def get_pending_tasks(self) -> List[TrackableTask[Task]]:
+        return list(self._pending_tasks.values())
 
     def begin_task(self, task_id: str) -> None:
         task = self._pending_tasks.get(task_id)
@@ -108,7 +108,7 @@ class RunEngineWorker(Worker[Task]):
 
     def submit_task(self, task: Task) -> str:
         task_id: str = str(uuid.uuid4())
-        trackable_task = TrackableTask(task_id, task)
+        trackable_task = TrackableTask(task_id=task_id, task=task)
         self._pending_tasks[task_id] = trackable_task
         return task_id
 

@@ -2,10 +2,22 @@ from abc import ABC, abstractmethod
 from typing import Generic, List, TypeVar
 
 from blueapi.core import DataEvent, EventStream
+from blueapi.utils import BlueapiBaseModel
 
 from .event import ProgressEvent, WorkerEvent, WorkerState
 
 T = TypeVar("T")
+
+
+class TrackableTask(BlueapiBaseModel, Generic[T]):
+    """
+    A representation of a task that the worker recognizes
+    """
+
+    task_id: str
+    task: T
+    is_complete: bool = False
+    is_error: bool = False
 
 
 class Worker(ABC, Generic[T]):
@@ -15,13 +27,13 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def get_pending_tasks(self) -> List[T]:
+    def get_pending_tasks(self) -> List[TrackableTask[T]]:
         """
         Return a list of all tasks pending on the worker,
         any one of which can be triggered with begin_task.
 
         Returns:
-            List[T]: List of task objects
+            List[TrackableTask[T]]: List of task objects
         """
 
     @abstractmethod

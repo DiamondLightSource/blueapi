@@ -9,16 +9,17 @@ import pytest
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream, MsgGenerator
 from blueapi.worker import (
+    ProgressEvent,
     RunEngineWorker,
     RunPlan,
     Task,
     TaskStatus,
+    TrackableTask,
     Worker,
+    WorkerBusyError,
     WorkerEvent,
     WorkerState,
 )
-from blueapi.worker.event import ProgressEvent
-from blueapi.worker.worker_busy_error import WorkerBusyError
 
 _SIMPLE_TASK = RunPlan(name="sleep", params={"time": 0.0})
 _LONG_TASK = RunPlan(name="sleep", params={"time": 1.0})
@@ -81,16 +82,23 @@ def test_multi_start(inert_worker: Worker) -> None:
 
 def test_submit_task(worker: Worker) -> None:
     assert worker.get_pending_tasks() == []
-    worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_pending_tasks() == [_SIMPLE_TASK]
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    assert worker.get_pending_tasks() == [
+        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
+    ]
 
 
 def test_submit_multiple_tasks(worker: Worker) -> None:
     assert worker.get_pending_tasks() == []
-    worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_pending_tasks() == [_SIMPLE_TASK]
-    worker.submit_task(_LONG_TASK)
-    assert worker.get_pending_tasks() == [_SIMPLE_TASK, _LONG_TASK]
+    task_id_1 = worker.submit_task(_SIMPLE_TASK)
+    assert worker.get_pending_tasks() == [
+        TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK)
+    ]
+    task_id_2 = worker.submit_task(_LONG_TASK)
+    assert worker.get_pending_tasks() == [
+        TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK),
+        TrackableTask(task_id=task_id_2, task=_LONG_TASK),
+    ]
 
 
 def test_stop_with_task_pending(inert_worker: Worker) -> None:
@@ -101,7 +109,9 @@ def test_stop_with_task_pending(inert_worker: Worker) -> None:
 
 def test_clear_task(worker: Worker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_pending_tasks() == [_SIMPLE_TASK]
+    assert worker.get_pending_tasks() == [
+        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
+    ]
     assert worker.clear_task(task_id)
     assert worker.get_pending_tasks() == []
 

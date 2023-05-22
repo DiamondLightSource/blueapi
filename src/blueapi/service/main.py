@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     docs_url="/docs",
     on_shutdown=[teardown_handler],
-    title="BlueAPI Control",
+    title="BlueAPI Controls",
     lifespan=lifespan,
 )
 

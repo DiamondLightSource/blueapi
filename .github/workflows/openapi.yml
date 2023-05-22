@@ -3,7 +3,10 @@ name: OpenAPI
 on:
   push:
   pull_request:
-  
+
+permissions:
+  contents: write
+
 env:
   # The target python version, which must match the Dockerfile version
   CONTAINER_PYTHON: "3.11"
@@ -24,5 +27,12 @@ jobs:
           requirements_file: requirements-dev-3.x.txt
           install_options: -e .[dev]
 
-      - name: generate openapi schema
+      - name: Generate openapi schema
         run: python src/blueapi/service/openapi.py
+      
+      - name: Publish schema to repo
+        run: |
+          git config --global user.name 'Github CI'
+          git config --global user.email 'github-ci@users.noreply.github.com'
+          git commit -am "Updated openapi schema"
+          git push

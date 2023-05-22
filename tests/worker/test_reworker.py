@@ -265,7 +265,7 @@ def begin_task_and_wait_until_complete(
 #
 
 
-def test_events_produce_in_order(worker: Worker) -> None:
+def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [
             WorkerEvent(
@@ -309,17 +309,27 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
 ) -> None:
     worker.start()
 
+    event_streams: List[
+        Union[EventStream[WorkerEvent, int], EventStream[DataEvent, int]]
+    ] = [worker.data_events, worker.worker_events]
+
     count = itertools.count()
     events: "Future[List[Union[WorkerEvent, DataEvent]]]" = take_events_from_streams(
-        [worker.worker_events, worker.data_events],
+        event_streams,  # type: ignore
         lambda _: next(count) >= len(expected_events) - 1,
     )
 
     worker.submit_task("test_count", task)
     results = events.result(timeout=timeout)
 
+    data_events = (event for event in expected_events if isinstance(event, DataEvent))
+
     for i in range(len(expected_events)):
         assert isinstance(results[i], type(expected_events[i]))
+
+        if isinstance(results[i], type(DataEvent)):
+            data_event_name = next(data_events)
+            assert data_event_name == getattr(results[i], "name")
 
 
 E = TypeVar("E")
@@ -352,9 +362,27 @@ def take_events(
 
 
 def take_events_from_streams(
-    streams: List[EventStream[E, S]],
+    streams: List[EventStream[E, S]],  # This isn't quite the type.
     cutoff_predicate: Callable[[E], bool],
 ) -> "Future[List[E]]":
+    """Returns a collated list of futures for events in numerous event streams.
+
+    The support for generic and algebraic types doesn't appear to extend to taking an
+    arbirtarty list of concrete types with single but differing generic arguments while
+    also maintaining the generality of the argument types.
+
+    The type for streams will be any combination of event streams each of a given event
+    type, where the event type is generic:
+
+    List[
+        Union[
+            EventStream[WorkerEvent, int],
+            EventStream[DataEvent, int],
+            EventStream[ProgressEvent, int]
+        ]
+    ]
+
+    """
     events: List[E] = []
     future: "Future[List[E]]" = Future()
 

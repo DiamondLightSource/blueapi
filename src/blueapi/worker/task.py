@@ -1,6 +1,5 @@
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Any, Mapping
 
 from pydantic import BaseModel, Field, parse_obj_as

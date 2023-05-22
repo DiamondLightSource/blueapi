@@ -1,6 +1,5 @@
 import itertools
 from abc import ABC, abstractmethod
-from copy import copy
 from typing import Callable, Dict, Generic, Optional, TypeVar
 
 #: Event type

@@ -144,6 +144,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   },
   {
+    "version": "standardise_api",
+    "url": "https://DiamondLightSource.github.io/blueapi/standardise_api/"
+  },
+  {
     "version": "state",
     "url": "https://DiamondLightSource.github.io/blueapi/state/"
   },

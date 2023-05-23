@@ -1,18 +1,12 @@
 from pydantic import BaseConfig, BaseModel, Extra
 
 
-def _to_camel(string: str) -> str:
-    words = string.split("_")
-    return words[0] + "".join(word.capitalize() for word in words[1:])
-
-
 class BlueapiModelConfig(BaseConfig):
     """
     Pydantic config for blueapi API models with
     common config.
     """
 
-    alias_generator = _to_camel
     extra = Extra.forbid
     allow_population_by_field_name = True
 

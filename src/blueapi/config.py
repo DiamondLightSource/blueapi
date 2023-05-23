@@ -7,8 +7,6 @@ from pydantic import BaseModel, Field, ValidationError, parse_obj_as
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
-LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-
 
 class SourceKind(str, Enum):
     PLAN_FUNCTIONS = "planFunctions"
@@ -50,7 +48,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
 
 class LoggingConfig(BlueapiBaseModel):
-    level: LogLevel = "INFO"
+    level: str = "INFO"
 
 
 class RestConfig(BlueapiBaseModel):

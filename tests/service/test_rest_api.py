@@ -6,8 +6,7 @@ from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
-from blueapi.service.model import TaskResponse
-from blueapi.worker.task import RunPlan, Task
+from blueapi.worker.task import RunPlan
 from src.blueapi.worker import WorkerState
 
 

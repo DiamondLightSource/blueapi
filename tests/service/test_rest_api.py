@@ -76,12 +76,13 @@ def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
 
 def test_put_plan_submits_task(handler: Handler, client: TestClient) -> None:
     task_name = "count"
-    task_json = {"name": task_name, "params": {"detectors": ["x"]}}
+    task_params = {"detectors": ["x"]}
+    task_json = {"name": task_name, "params": task_params}
 
     client.post("/tasks", json=task_json)
 
     assert handler.worker.get_pending_tasks()[0].task == RunPlan(
-        name=task_name, params=task_json["params"]
+        name=task_name, params=task_params
     )
 
 

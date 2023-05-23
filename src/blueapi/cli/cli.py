@@ -105,7 +105,7 @@ def run_plan(obj: dict, name: str, parameters: Optional[str]) -> None:
 @controller.command(name="state")
 @check_connection
 @click.pass_obj
-def get_status(obj: dict) -> None:
+def get_state(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
 
     resp = requests.get(f"http://{config.api.host}:{config.api.port}/worker/state")

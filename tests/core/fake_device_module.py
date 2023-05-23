@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 from ophyd import EpicsMotor
+from ophyd.utils import DisconnectedError
 
 
 def fake_motor_bundle_b(
@@ -23,6 +24,10 @@ def fake_motor_bundle_a(
     fake_motor_y: EpicsMotor,
 ) -> EpicsMotor:
     return _mock_with_name("motor_bundle_a")
+
+
+def disconnected_motor() -> EpicsMotor:
+    raise DisconnectedError
 
 
 def _mock_with_name(name: str) -> MagicMock:

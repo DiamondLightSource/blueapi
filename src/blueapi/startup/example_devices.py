@@ -1,4 +1,5 @@
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
+from ophyd.utils import DisconnectedError
 
 from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
 
@@ -72,3 +73,7 @@ def current_det(
         Imax=1,
         labels={"detectors"},
     )
+
+
+def disconnected_device(name="disconnected_device") -> SynGauss:
+    raise DisconnectedError

@@ -52,7 +52,7 @@ class RunEngineWorker(Worker[Task]):
     _state: WorkerState
     _errors: List[str]
     _warnings: List[str]
-    _task_queue: Queue  # type: ignore
+    _task_channel: Queue  # type: ignore
     _current: Optional[TrackableTask]
     _status_lock: RLock
     _status_snapshot: Dict[str, StatusView]
@@ -77,7 +77,7 @@ class RunEngineWorker(Worker[Task]):
         self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
         self._errors = []
         self._warnings = []
-        self._task_queue = Queue(maxsize=1)
+        self._task_channel = Queue(maxsize=1)
         self._current = None
         self._worker_events = EventPublisher()
         self._progress_events = EventPublisher()
@@ -115,7 +115,7 @@ class RunEngineWorker(Worker[Task]):
     def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
         LOGGER.info(f"Submitting: {trackable_task}")
         try:
-            self._task_queue.put_nowait(trackable_task)
+            self._task_channel.put_nowait(trackable_task)
         except Full:
             LOGGER.error("Cannot submit task while another is running")
             raise WorkerBusyError("Cannot submit task while another is running")
@@ -130,7 +130,7 @@ class RunEngineWorker(Worker[Task]):
 
         # If the worker has not yet started there is nothing to do.
         if self._started.is_set():
-            self._task_queue.put(KillSignal())
+            self._task_channel.put(KillSignal())
             self._stopped.wait(timeout=self._stop_timeout)
             # Event timeouts do not actually raise errors
             if not self._stopped.is_set():
@@ -164,7 +164,7 @@ class RunEngineWorker(Worker[Task]):
     def _cycle(self) -> None:
         try:
             LOGGER.info("Awaiting task")
-            next_task: Union[TrackableTask, KillSignal] = self._task_queue.get()
+            next_task: Union[TrackableTask, KillSignal] = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
                 LOGGER.info(f"Got new task: {next_task}")
                 self._current = next_task  # Informing mypy that the task is not None

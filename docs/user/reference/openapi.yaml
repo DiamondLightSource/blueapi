@@ -68,6 +68,22 @@ components:
       - plans
       title: PlanResponse
       type: object
+    RunPlan:
+      additionalProperties: false
+      description: Task that will run a plan
+      properties:
+        name:
+          description: Name of plan to run
+          title: Name
+          type: string
+        params:
+          description: Values for parameters to plan, if any
+          title: Params
+          type: object
+      required:
+      - name
+      title: RunPlan
+      type: object
     TaskResponse:
       additionalProperties: false
       description: Acknowledgement that a task has started, includes its ID
@@ -118,13 +134,25 @@ components:
       type: string
 info:
   title: BlueAPI Control
-  version: 0.1.0
+  version: 0.2.2
 openapi: 3.0.2
 paths:
-  /device/{name}:
+  /devices:
+    get:
+      description: Retrieve information about all available devices.
+      operationId: get_devices_devices_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+          description: Successful Response
+      summary: Get Devices
+  /devices/{name}:
     get:
       description: Retrieve information about a devices by its (unique) name.
-      operationId: get_device_by_name_device__name__get
+      operationId: get_device_by_name_devices__name__get
       parameters:
       - in: path
         name: name
@@ -146,22 +174,22 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Device By Name
-  /devices:
+  /plans:
     get:
-      description: Retrieve information about all available devices.
-      operationId: get_devices_devices_get
+      description: Retrieve information about all available plans.
+      operationId: get_plans_plans_get
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeviceResponse'
+                $ref: '#/components/schemas/PlanResponse'
           description: Successful Response
-      summary: Get Devices
-  /plan/{name}:
+      summary: Get Plans
+  /plans/{name}:
     get:
       description: Retrieve information about a plan by its (unique) name.
-      operationId: get_plan_by_name_plan__name__get
+      operationId: get_plan_by_name_plans__name__get
       parameters:
       - in: path
         name: name
@@ -183,41 +211,23 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Plan By Name
-  /plans:
-    get:
-      description: Retrieve information about all available plans.
-      operationId: get_plans_plans_get
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlanResponse'
-          description: Successful Response
-      summary: Get Plans
-  /task/{name}:
-    put:
-      description: Submit a task onto the worker queue.
-      operationId: submit_task_task__name__put
-      parameters:
-      - in: path
-        name: name
-        required: true
-        schema:
-          title: Name
-          type: string
+  /tasks:
+    post:
+      description: Submit a task to the worker.
+      operationId: submit_task_tasks_post
       requestBody:
         content:
           application/json:
             example:
-              detectors:
-              - x
+              name: count
+              params:
+                detectors:
+                - x
             schema:
-              title: Task
-              type: object
+              $ref: '#/components/schemas/RunPlan'
         required: true
       responses:
-        '200':
+        '201':
           content:
             application/json:
               schema:

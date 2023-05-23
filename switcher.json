@@ -170,9 +170,5 @@
   {
     "version": "type-validator-partials",
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
-  },
-  {
-    "version": "worker-transactions",
-    "url": "https://DiamondLightSource.github.io/blueapi/worker-transactions/"
   }
 ]

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response
 
 from blueapi.config import ApplicationConfig
-from blueapi.worker import RunPlan, WorkerState
+from blueapi.worker import RunPlan, TrackableTask, WorkerState
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
 from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse, TaskResponse
@@ -79,6 +79,44 @@ def submit_task(
     response.headers["Location"] = f"{request.url}/{task_id}"
     handler.worker.begin_task(task_id)
     return TaskResponse(task_id=task_id)
+
+
+@app.put("/task/{task_id}", response_model=TrackableTask)
+def update_task(
+    task_id: str, task: TrackableTask, handler: Handler = Depends(get_handler)
+) -> TrackableTask:
+    if task.task_id == task_id:
+        raise HTTPException(status_code=422, detail="Incorrect task ID")
+    prev_state = handler.worker.get_pending_task(task_id)
+    if prev_state is not None:
+        if task.is_started and (not prev_state.is_started):
+            handler.worker.begin_task(task_id)
+        if task.is_complete and (not prev_state.is_complete):
+            if task.is_error and (not prev_state.is_error):
+                raise HTTPException(
+                    status_code=422, detail="Forceful abort not supported"
+                )
+            else:
+                raise HTTPException(
+                    status_code=422, detail="Graceful stop not supported"
+                )
+        return task
+    else:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+
+@app.get("/task/{task_id}", response_model=TrackableTask)
+def get_task(
+    task_id: str,
+    handler: Handler = Depends(get_handler),
+) -> TrackableTask:
+    """Retrieve a task"""
+
+    task = handler.worker.get_pending_task(task_id)
+    if task is not None:
+        return task
+    else:
+        raise HTTPException(status_code=404, detail="Item not found")
 
 
 @app.get("/worker/state")

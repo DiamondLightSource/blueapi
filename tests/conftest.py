@@ -9,6 +9,8 @@ from blueapi.service.handler import Handler, get_handler
 from blueapi.service.main import app
 from src.blueapi.core import BlueskyContext
 
+_TIMEOUT = 10.0
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -58,3 +60,8 @@ def handler() -> Handler:
 @pytest.fixture(scope="session")
 def client(handler: Handler) -> TestClient:
     return Client(handler).client
+
+
+@pytest.fixture(scope="session")
+def timeout() -> float:
+    return _TIMEOUT

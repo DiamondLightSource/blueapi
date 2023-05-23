@@ -1,9 +1,5 @@
 from abc import ABC, abstractmethod
-<<<<<<< HEAD
 from typing import Generic, List, TypeVar
-=======
-from typing import Generic, Optional, TypeVar
->>>>>>> 185ad3ba (Add transaction mode to worker class)
 
 from blueapi.core import DataEvent, EventStream
 from blueapi.utils import BlueapiBaseModel

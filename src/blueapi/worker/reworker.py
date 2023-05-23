@@ -226,11 +226,7 @@ class RunEngineWorker(Worker[Task]):
         warnings = self._warnings
         if self._current is not None:
             task_status = TaskStatus(
-<<<<<<< HEAD
                 task_id=self._current.task_id,
-=======
-                task_name=self._current.task_id,
->>>>>>> 185ad3ba (Add transaction mode to worker class)
                 task_complete=self._current.is_complete,
                 task_failed=self._current.is_error or bool(errors),
             )

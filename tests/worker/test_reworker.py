@@ -1,7 +1,7 @@
 import itertools
 import threading
 from concurrent.futures import Future
-from typing import Callable, Iterable, List, Optional, TypeVar
+from typing import Callable, Generator, Iterable, List, Optional, TypeVar
 
 import mock
 import pytest
@@ -56,7 +56,7 @@ def fake_device() -> FakeDevice:
 
 
 @pytest.fixture
-def context(fake_device: FakeDevice) -> BlueskyContext:
+def context(fake_device: FakeDevice) -> Generator[BlueskyContext, None, None]:
     with mock.patch("bluesky.run_engine.asyncio.sleep", new_callable=SleepMock):
         ctx = BlueskyContext()
 
@@ -86,22 +86,7 @@ def test_stop_doesnt_hang(inert_worker: Worker) -> None:
     inert_worker.stop()
 
 
-def test_stop_doesnt_hang(inert_worker: Worker) -> None:
-    inert_worker.start()
-    inert_worker.stop()
-
-
 def test_stop_is_idempontent_if_worker_not_started(inert_worker: Worker) -> None:
-    inert_worker.stop()
-
-
-def test_stop_is_idempontent_if_worker_not_started(inert_worker: Worker) -> None:
-    inert_worker.stop()
-
-
-def test_multi_stop(inert_worker: Worker) -> None:
-    inert_worker.start()
-    inert_worker.stop()
     inert_worker.stop()
 
 

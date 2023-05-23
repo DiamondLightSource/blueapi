@@ -1,13 +1,14 @@
 from contextlib import asynccontextmanager
-from typing import Any, Mapping
 
-from fastapi import Body, Depends, FastAPI, HTTPException
+from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan, WorkerState
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
 from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse, TaskResponse
+
+REST_API_VERSION = "0.0.2"
 
 
 @asynccontextmanager
@@ -23,6 +24,7 @@ app = FastAPI(
     on_shutdown=[teardown_handler],
     title="BlueAPI Control",
     lifespan=lifespan,
+    version=REST_API_VERSION,
 )
 
 
@@ -34,7 +36,7 @@ def get_plans(handler: Handler = Depends(get_handler)):
     )
 
 
-@app.get("/plan/{name}", response_model=PlanModel)
+@app.get("/plans/{name}", response_model=PlanModel)
 def get_plan_by_name(name: str, handler: Handler = Depends(get_handler)):
     """Retrieve information about a plan by its (unique) name."""
     try:
@@ -54,7 +56,7 @@ def get_devices(handler: Handler = Depends(get_handler)):
     )
 
 
-@app.get("/device/{name}", response_model=DeviceModel)
+@app.get("/devices/{name}", response_model=DeviceModel)
 def get_device_by_name(name: str, handler: Handler = Depends(get_handler)):
     """Retrieve information about a devices by its (unique) name."""
     try:
@@ -63,20 +65,24 @@ def get_device_by_name(name: str, handler: Handler = Depends(get_handler)):
         raise HTTPException(status_code=404, detail="Item not found")
 
 
-@app.put("/task/{name}", response_model=TaskResponse)
+@app.post("/tasks", response_model=TaskResponse, status_code=201)
 def submit_task(
-    name: str,
-    task: Mapping[str, Any] = Body(..., example={"detectors": ["x"]}),
+    request: Request,
+    response: Response,
+    task: RunPlan = Body(
+        ..., example=RunPlan(name="count", params={"detectors": ["x"]})
+    ),
     handler: Handler = Depends(get_handler),
 ):
-    """Submit a task onto the worker queue."""
-    task_id = handler.worker.submit_task(RunPlan(name=name, params=task))
+    """Submit a task to the worker."""
+    task_id: str = handler.worker.submit_task(task)
+    response.headers["Location"] = f"{request.url}/{task_id}"
     handler.worker.begin_task(task_id)
     return TaskResponse(task_id=task_id)
 
 
 @app.get("/worker/state")
-async def get_state(handler: Handler = Depends(get_handler)) -> WorkerState:
+def get_state(handler: Handler = Depends(get_handler)) -> WorkerState:
     """Get the State of the Worker"""
     return handler.worker.state
 
@@ -86,3 +92,10 @@ def start(config: ApplicationConfig):
 
     app.state.config = config
     uvicorn.run(app, host=config.api.host, port=config.api.port)
+
+
+@app.middleware("http")
+async def add_api_version_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-API-Version"] = REST_API_VERSION
+    return response

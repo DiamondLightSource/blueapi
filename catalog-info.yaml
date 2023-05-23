@@ -21,6 +21,8 @@ metadata:
   name: blueapiControl
   title: Athena BlueAPI Control
   description: REST API for getting plans/devices from the worker (and running tasks)
+  annotations:
+    diamond.ac.uk/viewdocs-url: https://diamondlightsource.github.io/blueapi
 spec:
   type: openapi
   lifecycle: production

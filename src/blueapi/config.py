@@ -56,6 +56,7 @@ class LoggingConfig(BlueapiBaseModel):
 class RestConfig(BlueapiBaseModel):
     host: str = "localhost"
     port: int = 8000
+    version: str = "0.0.2"
 
 
 class ApplicationConfig(BlueapiBaseModel):

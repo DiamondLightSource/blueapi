@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
-from typing import Any, Mapping
+from typing import Mapping
 
-from fastapi import Body, Depends, FastAPI, HTTPException
+from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan, WorkerState
@@ -27,25 +27,30 @@ app = FastAPI(
 
 
 @app.get("/plans", response_model=PlanResponse)
-def get_plans(handler: Handler = Depends(get_handler)):
+async def get_plans(response: Response, handler: Handler = Depends(get_handler)):
     """Retrieve information about all available plans."""
+    add_response_headers(response)
     return PlanResponse(
         plans=[PlanModel.from_plan(plan) for plan in handler.context.plans.values()]
     )
 
 
-@app.get("/plan/{name}", response_model=PlanModel)
-def get_plan_by_name(name: str, handler: Handler = Depends(get_handler)):
+@app.get("/plans/{name}", response_model=PlanModel)
+async def get_plan_by_name(
+    response: Response, name: str, handler: Handler = Depends(get_handler)
+):
     """Retrieve information about a plan by its (unique) name."""
     try:
+        add_response_headers(response)
         return PlanModel.from_plan(handler.context.plans[name])
     except KeyError:
         raise HTTPException(status_code=404, detail="Item not found")
 
 
 @app.get("/devices", response_model=DeviceResponse)
-def get_devices(handler: Handler = Depends(get_handler)):
+async def get_devices(response: Response, handler: Handler = Depends(get_handler)):
     """Retrieve information about all available devices."""
+    add_response_headers(response)
     return DeviceResponse(
         devices=[
             DeviceModel.from_device(device)
@@ -54,23 +59,30 @@ def get_devices(handler: Handler = Depends(get_handler)):
     )
 
 
-@app.get("/device/{name}", response_model=DeviceModel)
-def get_device_by_name(name: str, handler: Handler = Depends(get_handler)):
+@app.get("/devices/{name}", response_model=DeviceModel)
+async def get_device_by_name(
+    response: Response, name: str, handler: Handler = Depends(get_handler)
+):
     """Retrieve information about a devices by its (unique) name."""
     try:
+        add_response_headers(response)
         return DeviceModel.from_device(handler.context.devices[name])
     except KeyError:
         raise HTTPException(status_code=404, detail="Item not found")
 
 
-@app.put("/task/{name}", response_model=TaskResponse)
-def submit_task(
-    name: str,
-    task: Mapping[str, Any] = Body(..., example={"detectors": ["x"]}),
+@app.post("/tasks", response_model=TaskResponse, status_code=201)
+async def submit_task(
+    request: Request,
+    response: Response,
+    task: RunPlan = Body(
+        ..., example=RunPlan(name="count", params={"detectors": ["x"]})
+    ),
     handler: Handler = Depends(get_handler),
 ):
-    """Submit a task onto the worker queue."""
-    task_id = handler.worker.submit_task(RunPlan(name=name, params=task))
+    """Submit a task to the worker."""
+    task_id: str = handler.worker.submit_task(task)
+    add_response_headers(response, {"Location": f"{request.url}/{task_id}"})
     handler.worker.begin_task(task_id)
     return TaskResponse(task_id=task_id)
 
@@ -85,4 +97,12 @@ def start(config: ApplicationConfig):
     import uvicorn
 
     app.state.config = config
+    app.version = config.api.version
     uvicorn.run(app, host=config.api.host, port=config.api.port)
+
+
+def add_response_headers(
+    response: Response, extra_headers: Mapping[str, str] = {}
+) -> None:
+    response.headers.update({"X-API-Version": app.version})
+    response.headers.update(extra_headers)

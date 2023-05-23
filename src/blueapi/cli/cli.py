@@ -100,3 +100,14 @@ def run_plan(obj: dict, name: str, parameters: Optional[str]) -> None:
         json=json.loads(parameters),
     )
     print(f"Response returned with {resp.status_code}")
+
+
+@controller.command(name="state")
+@check_connection
+@click.pass_obj
+def get_state(obj: dict) -> None:
+    config: ApplicationConfig = obj["config"]
+
+    resp = requests.get(f"http://{config.api.host}:{config.api.port}/worker/state")
+    print(f"Response returned with {resp.status_code}: ")
+    pprint(resp.json())

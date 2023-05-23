@@ -101,6 +101,21 @@ components:
       - type
       title: ValidationError
       type: object
+    WorkerState:
+      description: The state of the Worker.
+      enum:
+      - IDLE
+      - RUNNING
+      - PAUSING
+      - PAUSED
+      - HALTING
+      - STOPPING
+      - ABORTING
+      - SUSPENDING
+      - PANICKED
+      - UNKNOWN
+      title: WorkerState
+      type: string
 info:
   title: BlueAPI Control
   version: 0.1.0
@@ -215,3 +230,15 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Submit Task
+  /worker/state:
+    get:
+      description: Get the State of the Worker
+      operationId: get_state_worker_state_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerState'
+          description: Successful Response
+      summary: Get State

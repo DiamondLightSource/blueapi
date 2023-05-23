@@ -14,37 +14,46 @@ class Handler:
     context: BlueskyContext
     worker: Worker
     config: ApplicationConfig
-    message_bus: MessagingTemplate
+    messaging_template: MessagingTemplate
 
-    def __init__(self, config: Optional[ApplicationConfig] = None) -> None:
-        self.context = BlueskyContext()
-        self.config = config if config is not None else ApplicationConfig()
+    def __init__(
+        self,
+        config: Optional[ApplicationConfig] = None,
+        context: Optional[BlueskyContext] = None,
+        messaging_template: Optional[MessagingTemplate] = None,
+        worker: Optional[Worker] = None,
+    ) -> None:
+        self.config = config or ApplicationConfig()
+        self.context = context or BlueskyContext()
 
         logging.basicConfig(level=self.config.logging.level)
 
         self.context.with_config(self.config.env)
 
-        self.worker = RunEngineWorker(self.context)
-        self.message_bus = StompMessagingTemplate.autoconfigured(self.config.stomp)
+        self.worker = worker or RunEngineWorker(self.context)
+        self.messaging_template = (
+            messaging_template
+            or StompMessagingTemplate.autoconfigured(self.config.stomp)
+        )
 
     def start(self) -> None:
         self.worker.start()
 
         self._publish_event_streams(
             {
-                self.worker.worker_events: self.message_bus.destinations.topic(
+                self.worker.worker_events: self.messaging_template.destinations.topic(
                     "public.worker.event"
                 ),
-                self.worker.progress_events: self.message_bus.destinations.topic(
+                self.worker.progress_events: self.messaging_template.destinations.topic(
                     "public.worker.event.progress"
                 ),
-                self.worker.data_events: self.message_bus.destinations.topic(
+                self.worker.data_events: self.messaging_template.destinations.topic(
                     "public.worker.event.data"
                 ),
             }
         )
 
-        self.message_bus.connect()
+        self.messaging_template.connect()
 
     def _publish_event_streams(
         self, streams_to_destinations: Mapping[EventStream, str]
@@ -54,14 +63,14 @@ class Handler:
 
     def _publish_event_stream(self, stream: EventStream, destination: str) -> None:
         stream.subscribe(
-            lambda event, correlation_id: self.message_bus.send(
+            lambda event, correlation_id: self.messaging_template.send(
                 destination, event, None, correlation_id
             )
         )
 
     def stop(self) -> None:
         self.worker.stop()
-        self.message_bus.disconnect()
+        self.messaging_template.disconnect()
 
 
 HANDLER: Optional[Handler] = None

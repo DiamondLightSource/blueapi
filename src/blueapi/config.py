@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Any, Generic, Literal, Mapping, Type, TypeVar, Union
+from typing import Any, Generic, Mapping, Type, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as

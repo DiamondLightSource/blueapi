@@ -9,7 +9,7 @@ from blueapi.worker import RunPlan, WorkerState
 from .handler import Handler, get_handler, setup_handler, teardown_handler
 from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse, TaskResponse
 
-REST_API_VERSION = "0.2.2"
+REST_API_VERSION = "0.0.2"
 
 
 @asynccontextmanager

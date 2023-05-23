@@ -134,7 +134,7 @@ components:
       type: string
 info:
   title: BlueAPI Control
-  version: 0.2.2
+  version: 0.0.2
 openapi: 3.0.2
 paths:
   /devices:

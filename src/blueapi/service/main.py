@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-from typing import Mapping
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response
 
@@ -83,13 +82,7 @@ def submit_task(
 
 
 @app.get("/worker/state")
-async def get_state(handler: Handler = Depends(get_handler)) -> WorkerState:
-    """Get the State of the Worker"""
-    return handler.worker.state
-
-
-@app.get("/worker/state")
-async def get_state(handler: Handler = Depends(get_handler)) -> WorkerState:
+def get_state(handler: Handler = Depends(get_handler)) -> WorkerState:
     """Get the State of the Worker"""
     return handler.worker.state
 

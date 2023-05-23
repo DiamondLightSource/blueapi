@@ -30,7 +30,7 @@ def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
     plan = Plan(name="my-plan", model=MyModel)
 
     handler.context.plans = {"my-plan": plan}
-    response = client.get("/plan/my-plan")
+    response = client.get("/plans/my-plan")
 
     assert response.status_code == 200
     assert response.json() == {"name": "my-plan"}
@@ -65,7 +65,7 @@ def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
     device = MyDevice("my-device")
 
     handler.context.devices = {"my-device": device}
-    response = client.get("/device/my-device")
+    response = client.get("/devices/my-device")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -75,13 +75,13 @@ def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
 
 
 def test_put_plan_submits_task(handler: Handler, client: TestClient) -> None:
-    task_json = {"detectors": ["x"]}
     task_name = "count"
+    task_json = {"name": task_name, "params": {"detectors": ["x"]}}
 
-    client.put(f"/task/{task_name}", json=task_json)
+    client.post("/tasks", json=task_json)
 
     assert handler.worker.get_pending_tasks()[0].task == RunPlan(
-        name=task_name, params=task_json
+        name=task_name, params=task_json["params"]
     )
 
 

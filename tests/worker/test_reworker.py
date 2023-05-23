@@ -115,7 +115,7 @@ def test_submit_multiple_tasks(worker: Worker) -> None:
     ]
 
 
-def test_stop_with_task_pending(inert_worker: Worker) -> None:
+def test_submit_before_start_pending(inert_worker: Worker) -> None:
     inert_worker.start()
     inert_worker.submit_task(_SIMPLE_TASK)
     inert_worker.stop()

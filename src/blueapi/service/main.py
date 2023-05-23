@@ -30,7 +30,7 @@ app = FastAPI(
 
 
 @app.get("/plans", response_model=PlanResponse)
-def get_plans(response: Response, handler: Handler = Depends(get_handler)):
+def get_plans(handler: Handler = Depends(get_handler)):
     """Retrieve information about all available plans."""
     return PlanResponse(
         plans=[PlanModel.from_plan(plan) for plan in handler.context.plans.values()]
@@ -38,9 +38,7 @@ def get_plans(response: Response, handler: Handler = Depends(get_handler)):
 
 
 @app.get("/plans/{name}", response_model=PlanModel)
-def get_plan_by_name(
-    response: Response, name: str, handler: Handler = Depends(get_handler)
-):
+def get_plan_by_name(name: str, handler: Handler = Depends(get_handler)):
     """Retrieve information about a plan by its (unique) name."""
     try:
         return PlanModel.from_plan(handler.context.plans[name])
@@ -49,7 +47,7 @@ def get_plan_by_name(
 
 
 @app.get("/devices", response_model=DeviceResponse)
-def get_devices(response: Response, handler: Handler = Depends(get_handler)):
+def get_devices(handler: Handler = Depends(get_handler)):
     """Retrieve information about all available devices."""
     return DeviceResponse(
         devices=[
@@ -60,9 +58,7 @@ def get_devices(response: Response, handler: Handler = Depends(get_handler)):
 
 
 @app.get("/devices/{name}", response_model=DeviceModel)
-def get_device_by_name(
-    response: Response, name: str, handler: Handler = Depends(get_handler)
-):
+def get_device_by_name(name: str, handler: Handler = Depends(get_handler)):
     """Retrieve information about a devices by its (unique) name."""
     try:
         return DeviceModel.from_device(handler.context.devices[name])

@@ -1,11 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Generic, List, TypeVar
 
 from blueapi.core import DataEvent, EventStream
+from blueapi.utils import BlueapiBaseModel
 
 from .event import ProgressEvent, WorkerEvent, WorkerState
 
 T = TypeVar("T")
+
+
+class TrackableTask(BlueapiBaseModel, Generic[T]):
+    """
+    A representation of a task that the worker recognizes
+    """
+
+    task_id: str
+    task: T
+    is_complete: bool = False
+    is_error: bool = False
 
 
 class Worker(ABC, Generic[T]):
@@ -15,13 +27,47 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def submit_task(self, __name: str, __task: T) -> None:
+    def get_pending_tasks(self) -> List[TrackableTask[T]]:
         """
-        Submit a task to be run
+        Return a list of all tasks pending on the worker,
+        any one of which can be triggered with begin_task.
+
+        Returns:
+            List[TrackableTask[T]]: List of task objects
+        """
+
+    @abstractmethod
+    def clear_task(self, task_id: str) -> bool:
+        """
+        Remove a pending task from the worker
 
         Args:
-            __name (str): A unique name to identify this task
-            __task (T): The task to run
+            task_id: The ID of the task to be removed
+        Returns:
+            bool: True if the task existed in the first place
+        """
+
+    @abstractmethod
+    def begin_task(self, task_id: str) -> None:
+        """
+        Trigger a pending task. Will fail if the worker is busy.
+
+        Args:
+            task_id: The ID of the task to be triggered
+        Throws:
+            WorkerBusyError: If the worker is already running a task.
+            KeyError: If the task ID does not exist
+        """
+
+    @abstractmethod
+    def submit_task(self, task: T) -> str:
+        """
+        Submit a task to be run on begin_task
+
+        Args:
+            task: A description of the task
+        Returns:
+            str: A unique ID to refer to this task
         """
 
     @abstractmethod

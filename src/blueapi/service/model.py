@@ -80,4 +80,4 @@ class TaskResponse(BlueapiBaseModel):
     Acknowledgement that a task has started, includes its ID
     """
 
-    task_name: str = Field(description="Unique identifier for the task")
+    task_id: str = Field(description="Unique identifier for the task")

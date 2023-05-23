@@ -70,8 +70,9 @@ def submit_task(
     handler: Handler = Depends(get_handler),
 ):
     """Submit a task onto the worker queue."""
-    handler.worker.submit_task(name, RunPlan(name=name, params=task))
-    return TaskResponse(task_name=name)
+    task_id = handler.worker.submit_task(RunPlan(name=name, params=task))
+    handler.worker.begin_task(task_id)
+    return TaskResponse(task_id=task_id)
 
 
 @app.get("/worker/state")

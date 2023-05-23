@@ -25,8 +25,8 @@ from .event import (
     WorkerState,
 )
 from .multithread import run_worker_in_own_thread
-from .task import ActiveTask, Task
-from .worker import Worker
+from .task import Task
+from .worker import TrackableTask, Worker
 from .worker_busy_error import WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
@@ -47,11 +47,13 @@ class RunEngineWorker(Worker[Task]):
     _ctx: BlueskyContext
     _stop_timeout: float
 
+    _pending_tasks: Dict[str, TrackableTask]
+
     _state: WorkerState
     _errors: List[str]
     _warnings: List[str]
-    _task_queue: Queue  # type: ignore
-    _current: Optional[ActiveTask]
+    _task_channel: Queue  # type: ignore
+    _current: Optional[TrackableTask]
     _status_lock: RLock
     _status_snapshot: Dict[str, StatusView]
     _completed_statuses: Set[str]
@@ -70,10 +72,12 @@ class RunEngineWorker(Worker[Task]):
         self._ctx = ctx
         self._stop_timeout = stop_timeout
 
+        self._pending_tasks = {}
+
         self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
         self._errors = []
         self._warnings = []
-        self._task_queue = Queue(maxsize=1)
+        self._task_channel = Queue(maxsize=1)
         self._current = None
         self._worker_events = EventPublisher()
         self._progress_events = EventPublisher()
@@ -85,11 +89,33 @@ class RunEngineWorker(Worker[Task]):
         self._stopping = Event()
         self._stopped = Event()
 
-    def submit_task(self, name: str, task: Task) -> None:
-        active_task = ActiveTask(name, task)
-        LOGGER.info(f"Submitting: {active_task}")
+    def clear_task(self, task_id: str) -> bool:
+        if task_id in self._pending_tasks:
+            del self._pending_tasks[task_id]
+            return True
+        else:
+            return False
+
+    def get_pending_tasks(self) -> List[TrackableTask[Task]]:
+        return list(self._pending_tasks.values())
+
+    def begin_task(self, task_id: str) -> None:
+        task = self._pending_tasks.get(task_id)
+        if task is not None:
+            self._submit_trackable_task(task)
+        else:
+            raise KeyError(f"No pending task with ID {task_id}")
+
+    def submit_task(self, task: Task) -> str:
+        task_id: str = str(uuid.uuid4())
+        trackable_task = TrackableTask(task_id=task_id, task=task)
+        self._pending_tasks[task_id] = trackable_task
+        return task_id
+
+    def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
+        LOGGER.info(f"Submitting: {trackable_task}")
         try:
-            self._task_queue.put_nowait(active_task)
+            self._task_channel.put_nowait(trackable_task)
         except Full:
             LOGGER.error("Cannot submit task while another is running")
             raise WorkerBusyError("Cannot submit task while another is running")
@@ -104,7 +130,7 @@ class RunEngineWorker(Worker[Task]):
 
         # If the worker has not yet started there is nothing to do.
         if self._started.is_set():
-            self._task_queue.put(KillSignal())
+            self._task_channel.put(KillSignal())
             self._stopped.wait(timeout=self._stop_timeout)
             # Event timeouts do not actually raise errors
             if not self._stopped.is_set():
@@ -138,8 +164,8 @@ class RunEngineWorker(Worker[Task]):
     def _cycle(self) -> None:
         try:
             LOGGER.info("Awaiting task")
-            next_task: Union[ActiveTask, KillSignal] = self._task_queue.get()
-            if isinstance(next_task, ActiveTask):
+            next_task: Union[TrackableTask, KillSignal] = self._task_channel.get()
+            if isinstance(next_task, TrackableTask):
                 LOGGER.info(f"Got new task: {next_task}")
                 self._current = next_task  # Informing mypy that the task is not None
                 self._current.task.do_task(self._ctx)
@@ -200,11 +226,11 @@ class RunEngineWorker(Worker[Task]):
         warnings = self._warnings
         if self._current is not None:
             task_status = TaskStatus(
-                task_name=self._current.name,
+                task_id=self._current.task_id,
                 task_complete=self._current.is_complete,
                 task_failed=self._current.is_error or bool(errors),
             )
-            correlation_id = self._current.name
+            correlation_id = self._current.task_id
         else:
             task_status = None
             correlation_id = None
@@ -219,7 +245,7 @@ class RunEngineWorker(Worker[Task]):
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
-            correlation_id = self._current.name
+            correlation_id = self._current.task_id
             self._data_events.publish(
                 DataEvent(name=name, doc=document), correlation_id
             )
@@ -293,10 +319,10 @@ class RunEngineWorker(Worker[Task]):
         else:
             self._progress_events.publish(
                 ProgressEvent(
-                    task_name=self._current.name,
+                    task_id=self._current.task_id,
                     statuses=self._status_snapshot,
                 ),
-                self._current.name,
+                self._current.task_id,
             )
 
 

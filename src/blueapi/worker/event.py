@@ -88,7 +88,7 @@ class ProgressEvent(BlueapiBaseModel):
     such as moving motors and exposing detectors.
     """
 
-    task_name: str
+    task_id: str
     statuses: Mapping[str, StatusView] = Field(default_factory=dict)
 
 
@@ -97,7 +97,7 @@ class TaskStatus(BlueapiBaseModel):
     Status of a task the worker is running.
     """
 
-    task_name: str
+    task_id: str
     task_complete: bool
     task_failed: bool
 

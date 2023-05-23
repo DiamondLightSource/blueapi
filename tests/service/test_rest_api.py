@@ -80,9 +80,9 @@ def test_put_plan_submits_task(handler: Handler, client: TestClient) -> None:
 
     client.put(f"/task/{task_name}", json=task_json)
 
-    task_queue = handler.worker._task_queue.queue  # type: ignore
-    assert len(task_queue) == 1
-    assert task_queue[0].task == RunPlan(name=task_name, params=task_json)
+    assert handler.worker.get_pending_tasks()[0].task == RunPlan(
+        name=task_name, params=task_json
+    )
 
 
 def test_get_state_updates(handler: Handler, client: TestClient) -> None:

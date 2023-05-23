@@ -61,7 +61,7 @@ class AmqClient:
         task_response = self.app.send_and_receive(
             "worker.run", {"name": name, "params": params}, reply_type=TaskResponse
         ).result(5.0)
-        task_id = task_response.task_name
+        task_id = task_response.task_id
 
         if timeout is not None:
             complete.wait(timeout)

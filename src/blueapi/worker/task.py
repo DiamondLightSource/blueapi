@@ -1,6 +1,5 @@
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Any, Mapping
 
 from pydantic import BaseModel, Field, parse_obj_as
@@ -65,11 +64,3 @@ def _lookup_params(
 
     model = plan.model
     return parse_obj_as(model, params)
-
-
-@dataclass
-class ActiveTask:
-    name: str
-    task: Task
-    is_complete: bool = False
-    is_error: bool = False

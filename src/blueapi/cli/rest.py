@@ -1,4 +1,4 @@
-from typing import Any, Mapping, Optional, Type, TypeVar
+from typing import Any, Callable, Literal, Mapping, Optional, Type, TypeVar
 
 import requests
 from pydantic import parse_obj_as
@@ -17,6 +17,10 @@ from blueapi.worker import RunPlan, TrackableTask, WorkerState
 from .amq import BlueskyRemoteError
 
 T = TypeVar("T")
+
+
+def _is_exception(response: requests.Response) -> bool:
+    return response.status_code >= 400
 
 
 class BlueapiRestClient:
@@ -39,6 +43,18 @@ class BlueapiRestClient:
 
     def get_state(self) -> WorkerState:
         return self._request_and_deserialize("/worker/state", WorkerState)
+
+    def set_state(
+        self,
+        state: Literal[WorkerState.RUNNING, WorkerState.PAUSED],
+        defer: Optional[bool] = False,
+    ):
+        return self._request_and_deserialize(
+            "/worker/state",
+            target_type=WorkerState,
+            method="PUT",
+            data={"new_state": state, "defer": defer},
+        )
 
     def get_task(self, task_id: str) -> TrackableTask[RunPlan]:
         return self._request_and_deserialize(
@@ -70,10 +86,11 @@ class BlueapiRestClient:
         target_type: Type[T],
         data: Optional[Mapping[str, Any]] = None,
         method="GET",
+        raise_if: Callable[[requests.Response], bool] = _is_exception,
     ) -> T:
         url = self._url(suffix)
         response = requests.request(method, url, json=data)
-        if response.status_code >= 400:
+        if raise_if(response):
             raise BlueskyRemoteError(str(response))
         deserialized = parse_obj_as(target_type, response.json())
         return deserialized

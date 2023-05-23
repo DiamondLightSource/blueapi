@@ -5,7 +5,7 @@ from pydantic import Field
 
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 from blueapi.utils import BlueapiBaseModel
-from blueapi.worker import Worker
+from blueapi.worker import Worker, WorkerState
 
 _UNKNOWN_NAME = "UNKNOWN"
 
@@ -100,3 +100,17 @@ class WorkerTask(BlueapiBaseModel):
             return WorkerTask(task_id=active.task_id)
         else:
             return WorkerTask(task_id=None)
+
+
+class StateChangeRequest(BlueapiBaseModel):
+    """
+    Request to change the state of the worker.
+    """
+
+    new_state: WorkerState = Field(
+        description="Requested state of worker, allowed values: PAUSED, RUNNING"
+    )
+    defer: Optional[bool] = Field(
+        description="Should worker defer Pausing until the next checkpoint",
+        default=False,
+    )

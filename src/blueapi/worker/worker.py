@@ -115,6 +115,18 @@ class Worker(ABC, Generic[T]):
         Command the worker to gracefully stop. Blocks until it has shut down.
         """
 
+    @abstractmethod
+    def pause(self, defer=False) -> None:
+        """
+        Command the worker to pause.
+        """
+
+    @abstractmethod
+    def resume(self) -> None:
+        """
+        Command the worker to resume
+        """
+
     @property
     @abstractmethod
     def state(self) -> WorkerState:

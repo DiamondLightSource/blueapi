@@ -21,7 +21,7 @@ from blueapi.service.openapi import (
     print_schema_as_yaml,
     write_schema_as_yaml,
 )
-from blueapi.worker import RunPlan, WorkerEvent
+from blueapi.worker import RunPlan, WorkerEvent, WorkerState
 
 from .rest import BlueapiRestClient
 
@@ -171,6 +171,23 @@ def run_plan(
 def get_state(obj: dict) -> None:
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.get_state())
+
+
+@controller.command(name="pause")
+@click.option("--defer", is_flag=True, help="Defer the pause until the next checkpoint")
+@check_connection
+@click.pass_obj
+def pause(obj: dict, defer: bool = False) -> None:
+    client: BlueapiRestClient = obj["rest_client"]
+    pprint(client.set_state(WorkerState.PAUSED, defer=defer))
+
+
+@controller.command(name="resume")
+@check_connection
+@click.pass_obj
+def resume(obj: dict) -> None:
+    client: BlueapiRestClient = obj["rest_client"]
+    pprint(client.set_state(WorkerState.RUNNING))
 
 
 # helper function

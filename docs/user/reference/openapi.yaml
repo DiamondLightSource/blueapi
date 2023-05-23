@@ -84,6 +84,23 @@ components:
       - name
       title: RunPlan
       type: object
+    StateChangeRequest:
+      additionalProperties: false
+      description: Request to change the state of the worker.
+      properties:
+        defer:
+          default: false
+          description: Should worker defer Pausing until the next checkpoint
+          title: Defer
+          type: boolean
+        newState:
+          allOf:
+          - $ref: '#/components/schemas/WorkerState'
+          description: 'Requested state of worker, allowed values: PAUSED, RUNNING'
+      required:
+      - newState
+      title: StateChangeRequest
+      type: object
     TaskResponse:
       additionalProperties: false
       description: Acknowledgement that a task has started, includes its ID
@@ -205,7 +222,7 @@ paths:
           description: Successful Response
         '404':
           description: Not Found
-          item: not found
+          detail: item not found
         '422':
           content:
             application/json:
@@ -245,7 +262,7 @@ paths:
           description: Successful Response
         '404':
           description: Not Found
-          item: not found
+          detail: item not found
         '422':
           content:
             application/json:
@@ -322,6 +339,43 @@ paths:
                 $ref: '#/components/schemas/WorkerState'
           description: Successful Response
       summary: Get State
+    put:
+      description: 'Request that the worker is put into a particular state.
+
+        Returns the state of the worker at the end of the call.
+
+        If the worker is PAUSED, new_state may be RUNNING to resume.
+
+        If the worker is RUNNING, new_state may be PAUSED to pause and
+
+        defer may be True to defer the pause until the new checkpoint.
+
+        All other values of new_state will result in 400 "Bad Request"'
+      operationId: set_state_worker_state_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StateChangeRequest'
+        required: true
+      responses:
+        '202':
+          description: Accepted
+          detail: Transition requested
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerState'
+          description: Successful Response
+          detail: Transition not allowed
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Set State
   /worker/task:
     get:
       operationId: get_active_task_worker_task_get

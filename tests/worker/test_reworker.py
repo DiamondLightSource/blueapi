@@ -1,13 +1,12 @@
-import asyncio
 import itertools
+import threading
 from concurrent.futures import Future
 from typing import Callable, Iterable, List, Optional, TypeVar
 
-import bluesky.plan_stubs as bps
 import pytest
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
-from blueapi.core import BlueskyContext, EventStream, MsgGenerator
+from blueapi.core import BlueskyContext, EventStream
 from blueapi.worker import (
     ProgressEvent,
     RunEngineWorker,
@@ -23,26 +22,41 @@ from blueapi.worker import (
 
 _SIMPLE_TASK = RunPlan(name="sleep", params={"time": 0.0})
 _LONG_TASK = RunPlan(name="sleep", params={"time": 1.0})
-_INDEFINITE_TASK = RunPlan(name="hang_until_stop", params={})
+_INDEFINITE_TASK = RunPlan(
+    name="set_absolute",
+    params={"movable": "fake_device", "value": 4.0},
+)
+
+
+class FakeDevice:
+    event: threading.Event
+
+    @property
+    def name(self) -> str:
+        return "fake_device"
+
+    def __init__(self) -> None:
+        self.event = threading.Event()
+
+    def set(self, pos: float) -> None:
+        self.event.wait()
+        self.event.clear()
 
 
 @pytest.fixture
-def stop_plan() -> asyncio.Event:
-    return asyncio.Event()
+def fake_device() -> FakeDevice:
+    return FakeDevice()
 
 
 @pytest.fixture
-def context(stop_plan: asyncio.Event) -> BlueskyContext:
-    def hang_until_stop() -> MsgGenerator:
-        yield from bps.wait_for([stop_plan.wait])
-
+def context(fake_device: FakeDevice) -> BlueskyContext:
     ctx = BlueskyContext()
     ctx_config = EnvironmentConfig()
     ctx_config.sources.append(
         Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
     )
+    ctx.device(fake_device)
     ctx.with_config(ctx_config)
-    ctx.plan(hang_until_stop)
     return ctx
 
 
@@ -121,20 +135,17 @@ def test_clear_nonexistant_task(worker: Worker) -> None:
 
 
 def test_does_not_allow_simultaneous_running_tasks(
-    worker: Worker, stop_plan: asyncio.Event
+    worker: Worker,
+    fake_device: FakeDevice,
 ) -> None:
     task_ids = [
         worker.submit_task(_INDEFINITE_TASK),
         worker.submit_task(_INDEFINITE_TASK),
     ]
     with pytest.raises(WorkerBusyError):
-        try:
-            for task_id in task_ids:
-                worker.begin_task(task_id)
-        except WorkerBusyError as e:
-            raise e
-        finally:
-            stop_plan.set()
+        for task_id in task_ids:
+            worker.begin_task(task_id)
+    fake_device.event.set()
 
 
 @pytest.mark.parametrize("num_runs", [0, 1, 2])

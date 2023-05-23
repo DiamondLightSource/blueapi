@@ -13,7 +13,7 @@ from blueapi.core import (
     DataEvent,
     EventPublisher,
     EventStream,
-    WatchableStatus,
+    Watchable,
 )
 
 from .event import (
@@ -233,7 +233,7 @@ class RunEngineWorker(Worker[Task]):
     def _monitor_status(self, status: Status) -> None:
         status_uuid = str(uuid.uuid4())
 
-        if isinstance(status, WatchableStatus) and not status.done:
+        if isinstance(status, Watchable) and not status.done:
             LOGGER.info(f"Watching new status: {status_uuid}")
             self._status_snapshot[status_uuid] = StatusView()
             status.watch(partial(self._on_status_event, status, status_uuid))

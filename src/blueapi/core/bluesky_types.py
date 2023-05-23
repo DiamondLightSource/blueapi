@@ -1,5 +1,15 @@
 import inspect
-from typing import Any, Callable, Generator, Mapping, Type, Union, get_type_hints
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Mapping,
+    Protocol,
+    Type,
+    Union,
+    get_type_hints,
+    runtime_checkable,
+)
 
 from bluesky.protocols import (
     Checkable,
@@ -12,7 +22,6 @@ from bluesky.protocols import (
     Pausable,
     Readable,
     Stageable,
-    Status,
     Stoppable,
     Subscribable,
     Triggerable,
@@ -22,11 +31,6 @@ from bluesky.utils import Msg
 from pydantic import BaseModel, Field
 
 from blueapi.utils import BlueapiBaseModel
-
-try:
-    from typing import Protocol, runtime_checkable
-except ImportError:
-    from typing_extensions import Protocol, runtime_checkable  # type: ignore
 
 #: A true "plan", usually the output of a generator function
 MsgGenerator = Generator[Msg, Any, None]
@@ -104,7 +108,7 @@ class DataEvent(BlueapiBaseModel):
 
 
 @runtime_checkable
-class WatchableStatus(Status, Protocol):
+class Watchable(Protocol):
     """
     A Status that can provide progress updates to subscribers
     """

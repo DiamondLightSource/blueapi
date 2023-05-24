@@ -156,6 +156,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/shutdown/"
   },
   {
+    "version": "test-cli",
+    "url": "https://DiamondLightSource.github.io/blueapi/test-cli/"
+  },
+  {
     "version": "tidy-docs",
     "url": "https://DiamondLightSource.github.io/blueapi/tidy-docs/"
   },

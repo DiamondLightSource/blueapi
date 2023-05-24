@@ -1,10 +1,11 @@
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 from bluesky.protocols import HasName
 from pydantic import Field
 
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 from blueapi.utils import BlueapiBaseModel
+from blueapi.worker import Worker
 
 _UNKNOWN_NAME = "UNKNOWN"
 
@@ -81,3 +82,21 @@ class TaskResponse(BlueapiBaseModel):
     """
 
     task_id: str = Field(description="Unique identifier for the task")
+
+
+class WorkerTask(BlueapiBaseModel):
+    """
+    Worker's active task ID, can be None
+    """
+
+    task_id: Optional[str] = Field(
+        description="The ID of the current task, None if the worker is idle"
+    )
+
+    @classmethod
+    def of_worker(self, worker: Worker) -> "WorkerTask":
+        active = worker.get_active_task()
+        if active is not None:
+            return WorkerTask(active.task_id)
+        else:
+            return WorkerTask(None)

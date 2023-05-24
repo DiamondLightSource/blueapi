@@ -18,7 +18,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
     task: T
     is_complete: bool = False
     is_error: bool = False
-    is_started: bool = False
+    is_pending: bool = True
 
 
 class Worker(ABC, Generic[T]):
@@ -49,6 +49,15 @@ class Worker(ABC, Generic[T]):
         Returns:
             Optional[TrackableTask[T]]: The task matching the ID,
                 None if the task ID is unknown to the worker.
+        """
+
+    def get_active_task(self) -> Optional[TrackableTask[T]]:
+        """
+        Returns the task the worker is currently running
+
+        Returns:
+            Optional[TrackableTask[T]]: The current task,
+                None if the worker is idle.
         """
 
     @abstractmethod

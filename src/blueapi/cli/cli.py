@@ -12,6 +12,10 @@ from requests.exceptions import ConnectionError
 from blueapi import __version__
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.service.main import start
+from blueapi.service.model import WorkerTask
+from blueapi.worker import RunPlan
+
+from .rest import BlueapiRestClient
 
 
 @click.group(invoke_without_command=True)
@@ -50,6 +54,7 @@ def controller(ctx: click.Context) -> None:
 
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
+    ctx.obj["rest_client"] = BlueapiRestClient(config.api)
     logging.basicConfig(level=config.logging.level)
 
 
@@ -68,22 +73,16 @@ def check_connection(func):
 @check_connection
 @click.pass_obj
 def get_plans(obj: dict) -> None:
-    config: ApplicationConfig = obj["config"]
-
-    resp = requests.get(f"http://{config.api.host}:{config.api.port}/plans")
-    print(f"Response returned with {resp.status_code}: ")
-    pprint(resp.json())
+    client: BlueapiRestClient = obj["rest_client"]
+    pprint(client.get_plans().dict())
 
 
 @controller.command(name="devices")
 @check_connection
 @click.pass_obj
 def get_devices(obj: dict) -> None:
-    config: ApplicationConfig = obj["config"]
-
-    resp = requests.get(f"http://{config.api.host}:{config.api.port}/devices")
-    print(f"Response returned with {resp.status_code}: ")
-    pprint(resp.json())
+    client: BlueapiRestClient = obj["rest_client"]
+    pprint(client.get_devices().dict())
 
 
 @controller.command(name="run")
@@ -92,22 +91,19 @@ def get_devices(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(obj: dict, name: str, parameters: Optional[str]) -> None:
-    config: ApplicationConfig = obj["config"]
+    client: BlueapiRestClient = obj["rest_client"]
     parameters = parameters or "{}"
+    task = RunPlan(name=name, params=json.loads(parameters))
 
-    resp = requests.put(
-        f"http://{config.api.host}:{config.api.port}/task/{name}",
-        json=json.loads(parameters),
-    )
-    print(f"Response returned with {resp.status_code}")
+    resp = client.create_task(task)
+    task_id = resp.task_id
+    updated = client.update_worker_task(WorkerTask(task_id=task_id))
+    pprint(updated.dict())
 
 
 @controller.command(name="state")
 @check_connection
 @click.pass_obj
 def get_state(obj: dict) -> None:
-    config: ApplicationConfig = obj["config"]
-
-    resp = requests.get(f"http://{config.api.host}:{config.api.port}/worker/state")
-    print(f"Response returned with {resp.status_code}: ")
-    pprint(resp.json())
+    client: BlueapiRestClient = obj["rest_client"]
+    pprint(client.get_state())

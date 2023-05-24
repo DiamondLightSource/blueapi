@@ -3,10 +3,17 @@ from contextlib import asynccontextmanager
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response
 
 from blueapi.config import ApplicationConfig
-from blueapi.worker import RunPlan, TrackableTask, WorkerState
+from blueapi.worker import RunPlan, TrackableTask, Worker, WorkerState
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
-from .model import DeviceModel, DeviceResponse, PlanModel, PlanResponse, TaskResponse
+from .model import (
+    DeviceModel,
+    DeviceResponse,
+    PlanModel,
+    PlanResponse,
+    TaskResponse,
+    WorkerTask,
+)
 
 REST_API_VERSION = "0.0.2"
 
@@ -77,35 +84,20 @@ def submit_task(
     """Submit a task to the worker."""
     task_id: str = handler.worker.submit_task(task)
     response.headers["Location"] = f"{request.url}/{task_id}"
-    handler.worker.begin_task(task_id)
     return TaskResponse(task_id=task_id)
 
 
-@app.put("/task/{task_id}", response_model=TrackableTask)
+@app.put("/worker/task", response_model=WorkerTask)
 def update_task(
-    task_id: str, task: TrackableTask, handler: Handler = Depends(get_handler)
-) -> TrackableTask:
-    if task.task_id == task_id:
-        raise HTTPException(status_code=422, detail="Incorrect task ID")
-    prev_state = handler.worker.get_pending_task(task_id)
-    if prev_state is not None:
-        if task.is_started and (not prev_state.is_started):
-            handler.worker.begin_task(task_id)
-        if task.is_complete and (not prev_state.is_complete):
-            if task.is_error and (not prev_state.is_error):
-                raise HTTPException(
-                    status_code=422, detail="Forceful abort not supported"
-                )
-            else:
-                raise HTTPException(
-                    status_code=422, detail="Graceful stop not supported"
-                )
-        return task
-    else:
-        raise HTTPException(status_code=404, detail="Item not found")
+    task: WorkerTask,
+    handler: Handler = Depends(get_handler),
+) -> WorkerTask:
+    if task.task_id is not None:
+        handler.worker.begin_task(task.task_id)
+    return task
 
 
-@app.get("/task/{task_id}", response_model=TrackableTask)
+@app.get("/tasks/{task_id}", response_model=TrackableTask)
 def get_task(
     task_id: str,
     handler: Handler = Depends(get_handler),
@@ -117,6 +109,11 @@ def get_task(
         return task
     else:
         raise HTTPException(status_code=404, detail="Item not found")
+
+
+@app.get("/worker/task")
+def get_active_task(handler: Handler = Depends(get_handler)) -> WorkerTask:
+    return WorkerTask.of_worker(handler.worker)
 
 
 @app.get("/worker/state")

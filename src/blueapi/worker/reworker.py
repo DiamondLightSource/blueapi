@@ -102,6 +102,9 @@ class RunEngineWorker(Worker[Task]):
     def get_pending_task(self, task_id: str) -> Optional[TrackableTask[Task]]:
         return self._pending_tasks.get(task_id)
 
+    def get_active_task(self) -> Optional[TrackableTask[Task]]:
+        return self._current
+
     def begin_task(self, task_id: str) -> None:
         task = self._pending_tasks.get(task_id)
         if task is not None:
@@ -171,7 +174,7 @@ class RunEngineWorker(Worker[Task]):
             if isinstance(next_task, TrackableTask):
                 LOGGER.info(f"Got new task: {next_task}")
                 self._current = next_task  # Informing mypy that the task is not None
-                self._current.is_started = True
+                self._current.is_pending = False
                 self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.

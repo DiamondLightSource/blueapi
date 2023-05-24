@@ -97,6 +97,6 @@ class WorkerTask(BlueapiBaseModel):
     def of_worker(self, worker: Worker) -> "WorkerTask":
         active = worker.get_active_task()
         if active is not None:
-            return WorkerTask(active.task_id)
+            return WorkerTask(task_id=active.task_id)
         else:
-            return WorkerTask(None)
+            return WorkerTask(task_id=None)

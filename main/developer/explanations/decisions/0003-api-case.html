@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>2. No Queues &#8212; blueapi 0.2.4.dev35+g51a4cf2c documentation</title>
+    <title>2. API Model Case &#8212; blueapi 0.2.4.dev35+g51a4cf2c documentation</title>
   
   
   
@@ -44,7 +44,7 @@
     <script src="../../../_static/clipboard.min.js"></script>
     <script src="../../../_static/copybutton.js"></script>
     <script src="../../../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/explanations/decisions/0002-no-queues';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/explanations/decisions/0003-api-case';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
@@ -52,8 +52,8 @@
     <link rel="icon" href="../../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="2. API Model Case" href="0003-api-case.html" />
-    <link rel="prev" title="1. Record architecture decisions" href="0001-record-architecture-decisions.html" />
+    <link rel="next" title="Architecture" href="../architecture.html" />
+    <link rel="prev" title="2. No Queues" href="0002-no-queues.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -393,8 +393,8 @@ document.write(`
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../decisions.html">Architectural Decision Records</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">2. No Queues</a></li>
-<li class="toctree-l2"><a class="reference internal" href="0003-api-case.html">2. API Model Case</a></li>
+<li class="toctree-l2"><a class="reference internal" href="0002-no-queues.html">2. No Queues</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">2. API Model Case</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
@@ -448,7 +448,7 @@ document.write(`
     
     <li class="breadcrumb-item"><a href="../decisions.html" class="nav-link">Architectural Decision Records</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">2. No Queues</li>
+    <li class="breadcrumb-item active" aria-current="page">2. API Model Case</li>
   </ul>
 </nav>
 </div>
@@ -465,27 +465,26 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="no-queues">
-<h1>2. No Queues<a class="headerlink" href="#no-queues" title="Permalink to this heading">#</a></h1>
-<p>Date: 2023-05-22</p>
+  <section id="api-model-case">
+<h1>2. API Model Case<a class="headerlink" href="#api-model-case" title="Permalink to this heading">#</a></h1>
+<p>Date: 2023-05-23</p>
 <section id="status">
 <h2>Status<a class="headerlink" href="#status" title="Permalink to this heading">#</a></h2>
 <p>Accepted</p>
 </section>
 <section id="context">
 <h2>Context<a class="headerlink" href="#context" title="Permalink to this heading">#</a></h2>
-<p>In asking whether this service should hold and execute a queue of tasks.</p>
+<p>Considering whether keys in JSON blobs from the API should be in snake_case or camelCase.
+This includes plan parameters which may be user-defined.</p>
 </section>
 <section id="decision">
 <h2>Decision<a class="headerlink" href="#decision" title="Permalink to this heading">#</a></h2>
-<p>We will not hold any queues. The worker can execute one task at a time and will return
-an error if asked to execute one task while another is running. Queueing should be the
-responsibility of a different service.</p>
+<p>The priority is not to confuse users, so we will not alias any field names defined in Python.</p>
 </section>
 <section id="consequences">
 <h2>Consequences<a class="headerlink" href="#consequences" title="Permalink to this heading">#</a></h2>
-<p>The API must be kept queue-free, although transactions are permitted where the server
-caches requests.</p>
+<p>Most code will be written with pep8 enforcers which means most field names will be snake_case.
+Some user defined ones may differ.</p>
 </section>
 </section>
 
@@ -501,20 +500,20 @@ caches requests.</p>
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="0001-record-architecture-decisions.html"
+       href="0002-no-queues.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">1. Record architecture decisions</p>
+        <p class="prev-next-title">2. No Queues</p>
       </div>
     </a>
     <a class="right-next"
-       href="0003-api-case.html"
+       href="../architecture.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">2. API Model Case</p>
+        <p class="prev-next-title">Architecture</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -546,7 +545,7 @@ caches requests.</p>
   <div class="sidebar-secondary-item">
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/developer/explanations/decisions/0002-no-queues.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/developer/explanations/decisions/0003-api-case.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -560,7 +559,7 @@ caches requests.</p>
 
   <div class="sidebar-secondary-item">
   <div class="tocsection sourcelink">
-    <a href="../../../_sources/developer/explanations/decisions/0002-no-queues.rst.txt">
+    <a href="../../../_sources/developer/explanations/decisions/0003-api-case.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

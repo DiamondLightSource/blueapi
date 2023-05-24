@@ -94,7 +94,7 @@ class WorkerTask(BlueapiBaseModel):
     )
 
     @classmethod
-    def of_worker(self, worker: Worker) -> "WorkerTask":
+    def of_worker(cls, worker: Worker) -> "WorkerTask":
         active = worker.get_active_task()
         if active is not None:
             return WorkerTask(task_id=active.task_id)
@@ -111,4 +111,8 @@ class StateChangeRequest(BlueapiBaseModel):
     defer: Optional[bool] = Field(
         description="Should worker defer Pausing until the next checkpoint",
         default=False,
+    )
+    reason: Optional[str] = Field(
+        description="The reason for the current run to be aborted",
+        default="",
     )

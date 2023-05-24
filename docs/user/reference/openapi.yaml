@@ -95,6 +95,11 @@ components:
           type: boolean
         new_state:
           $ref: '#/components/schemas/WorkerState'
+        reason:
+          default: ''
+          description: The reason for the current run to be aborted
+          title: Reason
+          type: string
       required:
       - new_state
       title: StateChangeRequest
@@ -292,6 +297,29 @@ paths:
           description: Validation Error
       summary: Submit Task
   /tasks/{task_id}:
+    delete:
+      operationId: delete_submitted_task_tasks__task_id__delete
+      parameters:
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          title: Task Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Delete Submitted Task
     get:
       description: Retrieve a task
       operationId: get_task_tasks__task_id__get
@@ -337,7 +365,15 @@ paths:
 
         If the worker is RUNNING, new_state may be PAUSED to pause and
 
-        defer may be True to defer the pause until the new checkpoint.
+        defer may be True to defer the pause until the new checkpoint;
+
+        STOPPING to stop execution of the current task, marking the
+
+        current run as a Success; ABORTING to stop execution of the
+
+        current task, marking the current run as Aborted, reason may be
+
+        a string reason for why the run is to be aborted.
 
         All other values of new_state will result in 400 "Bad Request"'
       operationId: set_state_worker_state_put

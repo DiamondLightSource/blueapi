@@ -72,12 +72,29 @@ class BlueapiRestClient:
             data=task.dict(),
         )
 
+    def delete_task(self, task_id: str) -> TaskResponse:
+        return self._request_and_deserialize(
+            f"/tasks/{task_id}", TaskResponse, method="DELETE"
+        )
+
     def update_worker_task(self, task: WorkerTask) -> WorkerTask:
         return self._request_and_deserialize(
             "/worker/task",
             WorkerTask,
             method="PUT",
             data=task.dict(),
+        )
+
+    def cancel_current_task(
+        self,
+        state: Literal[WorkerState.ABORTING, WorkerState.STOPPING],
+        reason: Optional[str] = "",
+    ):
+        return self._request_and_deserialize(
+            "/worker/state",
+            target_type=WorkerState,
+            method="PUT",
+            data={"new_state": state, "reason": reason},
         )
 
     def _request_and_deserialize(

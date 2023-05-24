@@ -63,14 +63,25 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def clear_task(self, task_id: str) -> bool:
+    def clear_task(self, task_id: str) -> str:
         """
         Remove a pending task from the worker
 
         Args:
             task_id: The ID of the task to be removed
         Returns:
-            bool: True if the task existed in the first place
+            task_id of the removed task
+        """
+
+    @abstractmethod
+    def cancel_active_task(
+        self,
+        cancel_type: WorkerState,
+        reason: Optional[str] = None,
+    ) -> str:
+        """
+        Remove the currently active task from the worker if there is one
+        Returns the task_id of the active task
         """
 
     @abstractmethod

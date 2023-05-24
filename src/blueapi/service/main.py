@@ -108,6 +108,14 @@ def submit_task(
         )
 
 
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+def delete_submitted_task(
+    task_id: str,
+    handler: Handler = Depends(get_handler),
+) -> TaskResponse:
+    return TaskResponse(task_id=handler.worker.clear_task(task_id))
+
+
 @app.put(
     "/worker/task",
     response_model=WorkerTask,
@@ -156,7 +164,11 @@ def get_state(handler: Handler = Depends(get_handler)) -> WorkerState:
 
 # Map of current_state: allowed new_states
 _ALLOWED_TRANSITIONS: Dict[WorkerState, Set[WorkerState]] = {
-    WorkerState.RUNNING: {WorkerState.PAUSED},
+    WorkerState.RUNNING: {
+        WorkerState.PAUSED,
+        WorkerState.ABORTING,
+        WorkerState.STOPPING,
+    },
     WorkerState.PAUSED: {WorkerState.RUNNING},
 }
 
@@ -179,7 +191,11 @@ def set_state(
     Returns the state of the worker at the end of the call.
     If the worker is PAUSED, new_state may be RUNNING to resume.
     If the worker is RUNNING, new_state may be PAUSED to pause and
-    defer may be True to defer the pause until the new checkpoint.
+    defer may be True to defer the pause until the new checkpoint;
+    STOPPING to stop execution of the current task, marking the
+    current run as a Success; ABORTING to stop execution of the
+    current task, marking the current run as Aborted, reason may be
+    a string reason for why the run is to be aborted.
     All other values of new_state will result in 400 "Bad Request"
     """
     current_state = handler.worker.state
@@ -193,6 +209,11 @@ def set_state(
             handler.worker.pause(defer=state_change_request.defer)
         elif new_state == WorkerState.RUNNING:
             handler.worker.resume()
+        elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
+            handler.worker.cancel_active_task(
+                state_change_request.new_state, state_change_request.reason
+            )
+
     return handler.worker.state
 
 

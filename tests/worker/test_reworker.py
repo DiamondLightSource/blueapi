@@ -169,7 +169,8 @@ def test_clear_task(worker: Worker) -> None:
 
 
 def test_clear_nonexistant_task(worker: Worker) -> None:
-    assert not worker.clear_task("foo")
+    with pytest.raises(KeyError):
+        worker.clear_task("foo")
 
 
 def test_does_not_allow_simultaneous_running_tasks(

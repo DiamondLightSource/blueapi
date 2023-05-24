@@ -90,12 +90,24 @@ class RunEngineWorker(Worker[Task]):
         self._stopped = Event()
         self._stopped.set()
 
-    def clear_task(self, task_id: str) -> bool:
-        if task_id in self._pending_tasks:
-            del self._pending_tasks[task_id]
-            return True
-        else:
-            return False
+    def clear_task(self, task_id: str) -> str:
+        task = self._pending_tasks.pop(task_id)
+        return task.task_id
+
+    def cancel_active_task(
+        self,
+        cancel_type: WorkerState,
+        reason: Optional[str] = None,
+    ) -> str:
+        if self._current is None:
+            raise KeyError("Worker has no active task")
+        if self._current.is_complete:
+            raise TypeError("Task already complete")
+        if cancel_type is WorkerState.STOPPING:
+            self._ctx.run_engine.stop()
+        if cancel_type is WorkerState.ABORTING:
+            self._ctx.run_engine.abort(reason)
+        return self._current.task_id
 
     def get_pending_tasks(self) -> List[TrackableTask[Task]]:
         return list(self._pending_tasks.values())

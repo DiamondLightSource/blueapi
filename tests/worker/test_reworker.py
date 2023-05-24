@@ -307,8 +307,6 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     task: Task = RunPlan(name="count", params={"detectors": ["image_det"], "num": 1}),
     timeout: float = 5.0,
 ) -> None:
-    worker.start()
-
     event_streams: List[EventStream[Any, int]] = [
         worker.data_events,
         worker.worker_events,
@@ -320,11 +318,14 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
         lambda _: next(count) >= len(expected_events) - 1,
     )
 
-    worker.submit_task("count", task)
+    task_id = worker.submit_task(task)
+    worker.begin_task(task_id)
     results = events.result(timeout=timeout)
 
     for actual, expected in itertools.zip_longest(results, expected_events):
         if isinstance(expected, WorkerEvent):
+            if expected.task_status:
+                expected.task_status.task_id = task_id
             assert actual == expected
         elif isinstance(expected, DataEvent):
             assert isinstance(actual, DataEvent)

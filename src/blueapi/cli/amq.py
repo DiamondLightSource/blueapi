@@ -51,10 +51,10 @@ class AmqClient:
                 on_progress_event(event)
 
         self.app.subscribe(
-            self.app.destinations.topic("public.worker.events"), on_event_wrapper
+            self.app.destinations.topic("public.worker.event"), on_event_wrapper
         )
         self.app.subscribe(
-            self.app.destinations.topic("public.worker.events"),
+            self.app.destinations.topic("public.worker.event"),
             on_progress_event_wrapper,
         )
 

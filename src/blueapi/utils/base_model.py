@@ -1,23 +1,17 @@
 from pydantic import BaseConfig, BaseModel, Extra
 
 
-def _to_camel(string: str) -> str:
-    words = string.split("_")
-    return words[0] + "".join(word.capitalize() for word in words[1:])
-
-
 class BlueapiModelConfig(BaseConfig):
     """
     Pydantic config for blueapi API models with
     common config.
     """
 
-    alias_generator = _to_camel
     extra = Extra.forbid
     allow_population_by_field_name = True
 
 
-class BlueapiPlanModelConfig(BlueapiModelConfig):
+class BlueapiPlanModelConfig(BaseConfig):
     """
     Pydantic config for plan parameters.
     Includes arbitrary type config so that devices
@@ -27,6 +21,7 @@ class BlueapiPlanModelConfig(BlueapiModelConfig):
     from the context.
     """
 
+    extra = Extra.forbid
     arbitrary_types_allowed = True
     validate_all = True
 

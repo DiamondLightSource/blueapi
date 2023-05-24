@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response
 
 from blueapi.config import ApplicationConfig
-from blueapi.worker import RunPlan, TrackableTask, Worker, WorkerState
+from blueapi.worker import RunPlan, TrackableTask, WorkerState
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
 from .model import (

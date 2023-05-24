@@ -58,7 +58,7 @@ class BlueapiRestClient:
 
     def update_worker_task(self, task: WorkerTask) -> WorkerTask:
         return self._request_and_deserialize(
-            f"/worker/task",
+            "/worker/task",
             WorkerTask,
             method="PUT",
             data=task.dict(),

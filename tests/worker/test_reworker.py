@@ -1,7 +1,7 @@
 import itertools
 import threading
 from concurrent.futures import Future
-from typing import Callable, Iterable, List, Optional, TypeVar, Union
+from typing import Any, Callable, Iterable, List, Optional, TypeVar, Union
 
 import pytest
 
@@ -309,13 +309,14 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
 ) -> None:
     worker.start()
 
-    event_streams: List[
-        Union[EventStream[WorkerEvent, int], EventStream[DataEvent, int]]
-    ] = [worker.data_events, worker.worker_events]
+    event_streams: List[EventStream[Any, int]] = [
+        worker.data_events,
+        worker.worker_events,
+    ]
 
     count = itertools.count()
-    events: "Future[List[Union[WorkerEvent, DataEvent]]]" = take_events_from_streams(
-        event_streams,  # type: ignore
+    events: "Future[List[Any]]" = take_events_from_streams(
+        event_streams,
         lambda _: next(count) >= len(expected_events) - 1,
     )
 
@@ -333,11 +334,10 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
 
 
 E = TypeVar("E")
-S = TypeVar("S")
 
 
 def take_n_events(
-    stream: EventStream[E, S],
+    stream: EventStream[E, Any],
     num: int,
 ) -> "Future[List[E]]":
     count = itertools.count()
@@ -345,7 +345,7 @@ def take_n_events(
 
 
 def take_events(
-    stream: EventStream[E, S],
+    stream: EventStream[E, Any],
     cutoff_predicate: Callable[[E], bool],
 ) -> "Future[List[E]]":
     events: List[E] = []
@@ -362,17 +362,18 @@ def take_events(
 
 
 def take_events_from_streams(
-    streams: List[EventStream[E, S]],  # This isn't quite the type.
-    cutoff_predicate: Callable[[E], bool],
-) -> "Future[List[E]]":
+    streams: List[EventStream[Any, int]],
+    cutoff_predicate: Callable[[Any], bool],
+) -> "Future[List[Any]]":
     """Returns a collated list of futures for events in numerous event streams.
 
-    The support for generic and algebraic types doesn't appear to extend to taking an
-    arbirtarty list of concrete types with single but differing generic arguments while
-    also maintaining the generality of the argument types.
+    The support for generic and algebraic types doesn't appear to extend to
+    taking an arbitrary list of concrete types with single but differing
+    generic arguments while also maintaining the generality of the argument
+    types.
 
-    The type for streams will be any combination of event streams each of a given event
-    type, where the event type is generic:
+    The type for streams will be any combination of event streams each of a
+    given event type, where the event type is generic:
 
     List[
         Union[
@@ -383,10 +384,10 @@ def take_events_from_streams(
     ]
 
     """
-    events: List[E] = []
-    future: "Future[List[E]]" = Future()
+    events: List[Any] = []
+    future: "Future[List[Any]]" = Future()
 
-    def on_event(event: E, event_id: Optional[str]) -> None:
+    def on_event(event: Any, event_id: Optional[str]) -> None:
         print(event)
         events.append(event)
         if cutoff_predicate(event):

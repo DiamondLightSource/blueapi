@@ -70,7 +70,7 @@ class MyDevice:
 
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
-@patch("requests.get")
+@patch("requests.request")
 def test_get_plans_and_devices(
     mock_requests: Mock,
     mock_handler: Mock,
@@ -98,16 +98,14 @@ def test_get_plans_and_devices(
     mock_requests.return_value = client.get("/plans")
     plans = runner.invoke(main, ["controller", "plans"])
 
-    assert plans.output == (
-        "Response returned with 200: \n{'plans': [{'name': 'my-plan'}]}\n"
-    )
+    assert plans.output == "{'plans': [{'name': 'my-plan'}]}\n"
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output - expect nothing as no devices set.
     handler.context.devices = {}
     mock_requests.return_value = client.get("/devices")
     unset_devices = runner.invoke(main, ["controller", "devices"])
-    assert unset_devices.output == "Response returned with 200: \n{'devices': []}\n"
+    assert unset_devices.output == "{'devices': []}\n"
 
     # Put a device in handler.context manually.
     device = MyDevice("my-device")
@@ -118,9 +116,9 @@ def test_get_plans_and_devices(
     mock_requests.return_value = client.get("/devices")
     devices = runner.invoke(main, ["controller", "devices"])
 
-    assert devices.output == (
-        "Response returned with 200: "
-        + "\n{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
+    assert (
+        devices.output
+        == "{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
     )
 
 
@@ -132,7 +130,7 @@ def test_invalid_config_path_handling(runner: CliRunner):
 
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
-@patch("requests.put")
+@patch("requests.request")
 def test_config_passed_down_to_command_children(
     mock_requests: Mock,
     mock_handler: Mock,
@@ -153,5 +151,13 @@ def test_config_passed_down_to_command_children(
         main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
     )
 
-    assert mock_requests.call_args[0][0] == "http://a.fake.host:12345/task/sleep"
-    assert mock_requests.call_args[1] == {"json": {"time": 5}}
+    assert mock_requests.call_args[0] == (
+        "POST",
+        "http://a.fake.host:12345/tasks",
+    )
+    assert mock_requests.call_args[1] == {
+        "json": {
+            "name": "sleep",
+            "params": {"time": 5},
+        }
+    }

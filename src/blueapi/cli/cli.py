@@ -10,6 +10,7 @@ import requests
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
+from blueapi.cli.amq import AmqClient
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.service.main import start
 from blueapi.service.model import WorkerTask

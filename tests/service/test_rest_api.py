@@ -1,4 +1,3 @@
-from concurrent.futures import Future
 from dataclasses import dataclass
 
 from bluesky.run_engine import RunEngineStateMachine
@@ -7,7 +6,6 @@ from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
-from blueapi.worker import WorkerEvent
 from blueapi.worker.task import RunPlan
 from src.blueapi.worker import WorkerState
 

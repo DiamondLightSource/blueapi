@@ -88,13 +88,38 @@ components:
       additionalProperties: false
       description: Acknowledgement that a task has started, includes its ID
       properties:
-        taskName:
+        taskId:
           description: Unique identifier for the task
-          title: Taskname
+          title: Taskid
           type: string
       required:
-      - taskName
+      - taskId
       title: TaskResponse
+      type: object
+    TrackableTask:
+      additionalProperties: false
+      description: A representation of a task that the worker recognizes
+      properties:
+        isComplete:
+          default: false
+          title: Iscomplete
+          type: boolean
+        isError:
+          default: false
+          title: Iserror
+          type: boolean
+        isPending:
+          default: true
+          title: Ispending
+          type: boolean
+        task:
+          title: Task
+        taskId:
+          title: Taskid
+          type: string
+      required:
+      - taskId
+      title: TrackableTask
       type: object
     ValidationError:
       properties:
@@ -132,6 +157,16 @@ components:
       - UNKNOWN
       title: WorkerState
       type: string
+    WorkerTask:
+      additionalProperties: false
+      description: Worker's active task ID, can be None
+      properties:
+        taskId:
+          description: The ID of the current task, None if the worker is idle
+          title: Taskid
+          type: string
+      title: WorkerTask
+      type: object
 info:
   title: BlueAPI Control
   version: 0.0.2
@@ -167,6 +202,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeviceModel'
           description: Successful Response
+        '404':
+          description: Not Found
+          item: not found
         '422':
           content:
             application/json:
@@ -204,6 +242,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlanModel'
           description: Successful Response
+        '404':
+          description: Not Found
+          item: not found
         '422':
           content:
             application/json:
@@ -240,6 +281,34 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Submit Task
+  /tasks/{task_id}:
+    get:
+      description: Retrieve a task
+      operationId: get_task_tasks__task_id__get
+      parameters:
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          title: Task Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackableTask'
+          description: Successful Response
+        '404':
+          description: Not Found
+          item: not found
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Task
   /worker/state:
     get:
       description: Get the State of the Worker
@@ -252,3 +321,39 @@ paths:
                 $ref: '#/components/schemas/WorkerState'
           description: Successful Response
       summary: Get State
+  /worker/task:
+    get:
+      operationId: get_active_task_worker_task_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerTask'
+          description: Successful Response
+      summary: Get Active Task
+    put:
+      operationId: update_task_worker_task_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkerTask'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerTask'
+          description: Successful Response
+        '409':
+          description: Conflict
+          worker: already active
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Update Task

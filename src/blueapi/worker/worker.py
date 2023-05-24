@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, List, TypeVar
+from typing import Generic, List, Optional, TypeVar
 
 from blueapi.core import DataEvent, EventStream
 from blueapi.utils import BlueapiBaseModel
@@ -18,6 +18,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
     task: T
     is_complete: bool = False
     is_error: bool = False
+    is_pending: bool = True
 
 
 class Worker(ABC, Generic[T]):
@@ -34,6 +35,29 @@ class Worker(ABC, Generic[T]):
 
         Returns:
             List[TrackableTask[T]]: List of task objects
+        """
+
+    @abstractmethod
+    def get_pending_task(self, task_id: str) -> Optional[TrackableTask[T]]:
+        """
+        Returns a task matching the task ID supplied,
+        if the worker knows of it.
+
+        Args:
+            task_id: The ID of the task
+
+        Returns:
+            Optional[TrackableTask[T]]: The task matching the ID,
+                None if the task ID is unknown to the worker.
+        """
+
+    def get_active_task(self) -> Optional[TrackableTask[T]]:
+        """
+        Returns the task the worker is currently running
+
+        Returns:
+            Optional[TrackableTask[T]]: The current task,
+                None if the worker is idle.
         """
 
     @abstractmethod

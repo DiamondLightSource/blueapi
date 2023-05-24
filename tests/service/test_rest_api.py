@@ -9,6 +9,8 @@ from blueapi.service.handler import Handler
 from blueapi.worker.task import RunPlan
 from src.blueapi.worker import WorkerState
 
+_TASK = RunPlan(name="count", params={"detectors": ["x"]})
+
 
 def test_get_plans(handler: Handler, client: TestClient) -> None:
     class MyModel(BaseModel):
@@ -74,16 +76,23 @@ def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
     }
 
 
-def test_put_plan_submits_task(handler: Handler, client: TestClient) -> None:
-    task_name = "count"
-    task_params = {"detectors": ["x"]}
-    task_json = {"name": task_name, "params": task_params}
+def test_create_task(handler: Handler, client: TestClient) -> None:
+    response = client.post("/tasks", json=_TASK.dict())
+    task_id = response.json()["taskId"]
 
-    client.post("/tasks", json=task_json)
+    pending = handler.worker.get_pending_task(task_id)
+    assert pending is not None
+    assert pending.task == _TASK
 
-    assert handler.worker.get_pending_tasks()[0].task == RunPlan(
-        name=task_name, params=task_params
-    )
+
+def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
+    response = client.post("/tasks", json=_TASK.dict())
+    task_id = response.json()["taskId"]
+
+    task_json = {"task_id": task_id}
+    client.put("/worker/task", json=task_json)
+
+    assert handler.worker._task_channel.get().task_id == task_id  # type: ignore
 
 
 def test_get_state_updates(handler: Handler, client: TestClient) -> None:

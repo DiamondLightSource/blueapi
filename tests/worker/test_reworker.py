@@ -1,12 +1,13 @@
 import itertools
 import threading
 from concurrent.futures import Future
-from typing import Callable, Iterable, List, Optional, TypeVar
+from typing import Any, Callable, Iterable, List, Optional, TypeVar, Union
 
 import pytest
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.worker import (
     ProgressEvent,
     RunEngineWorker,
@@ -264,12 +265,78 @@ def begin_task_and_wait_until_complete(
 #
 
 
+def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
+    assert_running_count_plan_produces_ordered_worker_and_data_events(
+        [
+            WorkerEvent(
+                state=WorkerState.RUNNING,
+                task_status=TaskStatus(
+                    task_id="count", task_complete=False, task_failed=False
+                ),
+                errors=[],
+                warnings=[],
+            ),
+            DataEvent(name="start", doc={}),
+            DataEvent(name="descriptor", doc={}),
+            DataEvent(name="event", doc={}),
+            DataEvent(name="stop", doc={}),
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id="count", task_complete=False, task_failed=False
+                ),
+                errors=[],
+                warnings=[],
+            ),
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id="count", task_complete=True, task_failed=False
+                ),
+                errors=[],
+                warnings=[],
+            ),
+        ],
+        worker,
+    )
+
+
+def assert_running_count_plan_produces_ordered_worker_and_data_events(
+    expected_events: List[Union[WorkerEvent, DataEvent]],
+    worker: Worker,
+    task: Task = RunPlan(name="count", params={"detectors": ["image_det"], "num": 1}),
+    timeout: float = 5.0,
+) -> None:
+    event_streams: List[EventStream[Any, int]] = [
+        worker.data_events,
+        worker.worker_events,
+    ]
+
+    count = itertools.count()
+    events: "Future[List[Any]]" = take_events_from_streams(
+        event_streams,
+        lambda _: next(count) >= len(expected_events) - 1,
+    )
+
+    task_id = worker.submit_task(task)
+    worker.begin_task(task_id)
+    results = events.result(timeout=timeout)
+
+    for actual, expected in itertools.zip_longest(results, expected_events):
+        if isinstance(expected, WorkerEvent):
+            if expected.task_status:
+                expected.task_status.task_id = task_id
+            assert actual == expected
+        elif isinstance(expected, DataEvent):
+            assert isinstance(actual, DataEvent)
+            assert actual.name == expected.name
+
+
 E = TypeVar("E")
-S = TypeVar("S")
 
 
 def take_n_events(
-    stream: EventStream[E, S],
+    stream: EventStream[E, Any],
     num: int,
 ) -> "Future[List[E]]":
     count = itertools.count()
@@ -277,7 +344,7 @@ def take_n_events(
 
 
 def take_events(
-    stream: EventStream[E, S],
+    stream: EventStream[E, Any],
     cutoff_predicate: Callable[[E], bool],
 ) -> "Future[List[E]]":
     events: List[E] = []
@@ -290,4 +357,42 @@ def take_events(
 
     sub = stream.subscribe(on_event)
     future.add_done_callback(lambda _: stream.unsubscribe(sub))
+    return future
+
+
+def take_events_from_streams(
+    streams: List[EventStream[Any, int]],
+    cutoff_predicate: Callable[[Any], bool],
+) -> "Future[List[Any]]":
+    """Returns a collated list of futures for events in numerous event streams.
+
+    The support for generic and algebraic types doesn't appear to extend to
+    taking an arbitrary list of concrete types with single but differing
+    generic arguments while also maintaining the generality of the argument
+    types.
+
+    The type for streams will be any combination of event streams each of a
+    given event type, where the event type is generic:
+
+    List[
+        Union[
+            EventStream[WorkerEvent, int],
+            EventStream[DataEvent, int],
+            EventStream[ProgressEvent, int]
+        ]
+    ]
+
+    """
+    events: List[Any] = []
+    future: "Future[List[Any]]" = Future()
+
+    def on_event(event: Any, event_id: Optional[str]) -> None:
+        print(event)
+        events.append(event)
+        if cutoff_predicate(event):
+            future.set_result(events)
+
+    for stream in streams:
+        sub = stream.subscribe(on_event)
+        future.add_done_callback(lambda _: stream.unsubscribe(sub))
     return future

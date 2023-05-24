@@ -334,6 +334,15 @@ paths:
       summary: Get Active Task
     put:
       operationId: update_task_worker_task_put
+      parameters:
+      - in: query
+        name: responses
+        required: false
+        schema:
+          default:
+            409:
+              worker: already active
+          title: Responses
       requestBody:
         content:
           application/json:

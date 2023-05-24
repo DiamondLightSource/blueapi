@@ -95,12 +95,18 @@ def submit_task(
     return TaskResponse(task_id=task_id)
 
 
-@app.put("/worker/task", response_model=WorkerTask)
+@app.put(
+    "/worker/task",
+    response_model=WorkerTask,
+)
 def update_task(
     task: WorkerTask,
     handler: Handler = Depends(get_handler),
+    responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
 ) -> WorkerTask:
-    if task.task_id is not None:
+    if handler.worker.get_active_task() is not None:
+        raise HTTPException(status_code=409, detail="Worker already active")
+    elif task.task_id is not None:
         handler.worker.begin_task(task.task_id)
     return task
 

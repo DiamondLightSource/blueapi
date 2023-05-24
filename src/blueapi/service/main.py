@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response, status
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan, TrackableTask, WorkerState
@@ -43,7 +43,11 @@ def get_plans(handler: Handler = Depends(get_handler)):
     )
 
 
-@app.get("/plans/{name}", response_model=PlanModel)
+@app.get(
+    "/plans/{name}",
+    response_model=PlanModel,
+    responses={status.HTTP_404_NOT_FOUND: {"item": "not found"}},
+)
 def get_plan_by_name(name: str, handler: Handler = Depends(get_handler)):
     """Retrieve information about a plan by its (unique) name."""
     try:
@@ -63,7 +67,11 @@ def get_devices(handler: Handler = Depends(get_handler)):
     )
 
 
-@app.get("/devices/{name}", response_model=DeviceModel)
+@app.get(
+    "/devices/{name}",
+    response_model=DeviceModel,
+    responses={status.HTTP_404_NOT_FOUND: {"item": "not found"}},
+)
 def get_device_by_name(name: str, handler: Handler = Depends(get_handler)):
     """Retrieve information about a devices by its (unique) name."""
     try:
@@ -97,7 +105,11 @@ def update_task(
     return task
 
 
-@app.get("/tasks/{task_id}", response_model=TrackableTask)
+@app.get(
+    "/tasks/{task_id}",
+    response_model=TrackableTask,
+    responses={status.HTTP_404_NOT_FOUND: {"item": "not found"}},
+)
 def get_task(
     task_id: str,
     handler: Handler = Depends(get_handler),

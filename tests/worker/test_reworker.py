@@ -320,17 +320,15 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
         lambda _: next(count) >= len(expected_events) - 1,
     )
 
-    worker.submit_task("test_count", task)
+    worker.submit_task("count", task)
     results = events.result(timeout=timeout)
 
-    data_events = (event for event in expected_events if isinstance(event, DataEvent))
-
-    for i in range(len(expected_events)):
-        assert isinstance(results[i], type(expected_events[i]))
-
-        if isinstance(results[i], type(DataEvent)):
-            data_event_name = next(data_events)
-            assert data_event_name == getattr(results[i], "name")
+    for actual, expected in itertools.zip_longest(results, expected_events):
+        if isinstance(expected, WorkerEvent):
+            assert actual == expected
+        elif isinstance(expected, DataEvent):
+            assert isinstance(actual, DataEvent)
+            assert actual.name == expected.name
 
 
 E = TypeVar("E")

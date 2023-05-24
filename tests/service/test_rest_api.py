@@ -78,7 +78,7 @@ def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
 
 def test_create_task(handler: Handler, client: TestClient) -> None:
     response = client.post("/tasks", json=_TASK.dict())
-    task_id = response.json()["taskId"]
+    task_id = response.json()["task_id"]
 
     pending = handler.worker.get_pending_task(task_id)
     assert pending is not None
@@ -87,7 +87,7 @@ def test_create_task(handler: Handler, client: TestClient) -> None:
 
 def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
     response = client.post("/tasks", json=_TASK.dict())
-    task_id = response.json()["taskId"]
+    task_id = response.json()["task_id"]
 
     task_json = {"task_id": task_id}
     client.put("/worker/task", json=task_json)

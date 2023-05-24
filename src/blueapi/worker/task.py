@@ -1,10 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
-from pydantic import BaseModel, Field, parse_obj_as
+from pydantic import BaseModel, Field
 
-from blueapi.core import BlueskyContext, Plan
+from blueapi.core import BlueskyContext
 from blueapi.utils import BlueapiBaseModel
 
 
@@ -36,20 +36,21 @@ class RunPlan(Task):
     params: Mapping[str, Any] = Field(
         description="Values for parameters to plan, if any", default_factory=dict
     )
+    _sanitized_params: Optional[BaseModel] = Field(default=None)
+
+    def set_clean_params(self, model: BaseModel):
+        self._sanitized_params = model
 
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(f"Asked to run plan {self.name} with {self.params}")
 
-        plan = ctx.plans[self.name]
         func = ctx.plan_functions[self.name]
-        sanitized_params = _lookup_params(ctx, plan, self.params)
+        sanitized_params = self._sanitized_params or _lookup_params(ctx, self)
         plan_generator = func(**sanitized_params.dict())
         ctx.run_engine(plan_generator)
 
 
-def _lookup_params(
-    ctx: BlueskyContext, plan: Plan, params: Mapping[str, Any]
-) -> BaseModel:
+def _lookup_params(ctx: BlueskyContext, task: RunPlan) -> BaseModel:
     """
     Checks plan parameters against context
 
@@ -62,5 +63,6 @@ def _lookup_params(
         Mapping[str, Any]: _description_
     """
 
+    plan = ctx.plans[task.name]
     model = plan.model
-    return parse_obj_as(model, params)
+    return model.parse_obj(task.params)

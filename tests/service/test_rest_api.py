@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from typing import Optional
 from unittest.mock import MagicMock
@@ -25,7 +26,7 @@ def test_get_plans(handler: Handler, client: TestClient) -> None:
     handler.context.plans = {"my-plan": plan}
     response = client.get("/plans")
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"plans": [{"name": "my-plan"}]}
 
 
@@ -38,8 +39,15 @@ def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
     handler.context.plans = {"my-plan": plan}
     response = client.get("/plans/my-plan")
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"name": "my-plan"}
+
+
+def test_get_non_existant_plan_by_name(handler: Handler, client: TestClient) -> None:
+    response = client.get("/plans/my-plan")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Item not found"}
 
 
 def test_get_devices(handler: Handler, client: TestClient) -> None:
@@ -52,7 +60,7 @@ def test_get_devices(handler: Handler, client: TestClient) -> None:
     handler.context.devices = {"my-device": device}
     response = client.get("/devices")
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "devices": [
             {
@@ -73,11 +81,18 @@ def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
     handler.context.devices = {"my-device": device}
     response = client.get("/devices/my-device")
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "name": "my-device",
         "protocols": ["HasName"],
     }
+
+
+def test_get_non_existant_device_by_name(handler: Handler, client: TestClient) -> None:
+    response = client.get("/devices/my-device")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Item not found"}
 
 
 def test_create_task(handler: Handler, client: TestClient) -> None:
@@ -101,6 +116,48 @@ def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
     assert active_task is not None
     assert active_task.task_id == task_id
     handler.worker.stop()
+
+
+def test_put_plan_with_unknown_plan_name_fails(
+    handler: Handler, client: TestClient
+) -> None:
+    task_name = "foo"
+    task_params = {"detectors": ["x"]}
+    task_json = {"name": task_name, "params": task_params}
+
+    response = client.post("/tasks", json=task_json)
+
+    assert not handler.worker.get_pending_tasks()
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_get_plan_returns_posted_plan(handler: Handler, client: TestClient) -> None:
+    handler.worker.start()
+    post_response = client.post("/tasks", json=_TASK.dict())
+    task_id = post_response.json()["task_id"]
+
+    str_map = json.load(client.get(f"/tasks/{task_id}"))  # type: ignore
+
+    assert str_map["task_id"] == task_id
+    assert str_map["task"] == _TASK.dict()
+
+
+def test_get_non_existant_plan_by_id(handler: Handler, client: TestClient) -> None:
+    response = client.get("/tasks/foo")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Item not found"}
+
+
+def test_put_plan_with_bad_params_fails(handler: Handler, client: TestClient) -> None:
+    task_name = "count"
+    task_params = {"motors": ["x"]}
+    task_json = {"name": task_name, "params": task_params}
+
+    response = client.post("/tasks", json=task_json)
+
+    assert not handler.worker.get_pending_tasks()
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_get_state_updates(handler: Handler, client: TestClient) -> None:

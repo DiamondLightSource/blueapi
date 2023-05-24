@@ -25,7 +25,7 @@ from .event import (
     WorkerState,
 )
 from .multithread import run_worker_in_own_thread
-from .task import Task
+from .task import RunPlan, Task, _lookup_params
 from .worker import TrackableTask, Worker
 from .worker_busy_error import WorkerBusyError
 
@@ -113,6 +113,8 @@ class RunEngineWorker(Worker[Task]):
             raise KeyError(f"No pending task with ID {task_id}")
 
     def submit_task(self, task: Task) -> str:
+        if isinstance(task, RunPlan):
+            task.set_clean_params(_lookup_params(self._ctx, task))
         task_id: str = str(uuid.uuid4())
         trackable_task = TrackableTask(task_id=task_id, task=task)
         self._pending_tasks[task_id] = trackable_task

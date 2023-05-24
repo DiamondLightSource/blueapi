@@ -220,9 +220,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeviceModel'
           description: Successful Response
-        '404':
-          description: Not Found
-          detail: item not found
         '422':
           content:
             application/json:
@@ -260,9 +257,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlanModel'
           description: Successful Response
-        '404':
-          description: Not Found
-          detail: item not found
         '422':
           content:
             application/json:
@@ -317,9 +311,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/TrackableTask'
           description: Successful Response
-        '404':
-          description: Not Found
-          item: not found
         '422':
           content:
             application/json:

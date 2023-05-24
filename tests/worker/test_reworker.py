@@ -1,8 +1,9 @@
 import itertools
 import threading
 from concurrent.futures import Future
-from typing import Callable, Iterable, List, Optional, TypeVar
+from typing import Callable, Generator, Iterable, List, Optional, TypeVar
 
+import mock
 import pytest
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
@@ -20,8 +21,14 @@ from blueapi.worker import (
     WorkerState,
 )
 
-_SIMPLE_TASK = RunPlan(name="sleep", params={"time": 0.0})
-_LONG_TASK = RunPlan(name="sleep", params={"time": 1.0})
+
+class SleepMock(mock.MagicMock):
+    async def __call__(self, *args, **kwargs):
+        return super(SleepMock, self).__call__(*args, **kwargs)
+
+
+_SIMPLE_TASK = RunPlan(name="sleep", params={"time": 10.0})
+_LONG_TASK = RunPlan(name="sleep", params={"time": 200.0})
 _INDEFINITE_TASK = RunPlan(
     name="set_absolute",
     params={"movable": "fake_device", "value": 4.0},
@@ -49,15 +56,17 @@ def fake_device() -> FakeDevice:
 
 
 @pytest.fixture
-def context(fake_device: FakeDevice) -> BlueskyContext:
-    ctx = BlueskyContext()
-    ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(
-        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
-    )
-    ctx.device(fake_device)
-    ctx.with_config(ctx_config)
-    return ctx
+def context(fake_device: FakeDevice) -> Generator[BlueskyContext, None, None]:
+    with mock.patch("bluesky.run_engine.asyncio.sleep", new_callable=SleepMock):
+        ctx = BlueskyContext()
+
+        ctx_config = EnvironmentConfig()
+        ctx_config.sources.append(
+            Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
+        )
+        ctx.device(fake_device)
+        ctx.with_config(ctx_config)
+        yield ctx
 
 
 @pytest.fixture
@@ -173,12 +182,12 @@ def test_does_not_allow_simultaneous_running_tasks(
 
 
 @pytest.mark.parametrize("num_runs", [0, 1, 2])
-def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
+def test_produces_worker_events(worker: Worker, timeout: float, num_runs: int) -> None:
     task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
     event_sequences = [_sleep_events(task_id) for task_id in task_ids]
 
     for task_id, events in zip(task_ids, event_sequences):
-        assert_run_produces_worker_events(events, worker, task_id)
+        assert_run_produces_worker_events(events, worker, task_id, timeout)
 
 
 def _sleep_events(task_id: str) -> List[WorkerEvent]:
@@ -210,7 +219,7 @@ def _sleep_events(task_id: str) -> List[WorkerEvent]:
     ]
 
 
-def test_no_additional_progress_events_after_complete(worker: Worker):
+def test_no_additional_progress_events_after_complete(worker: Worker, timeout: float):
     """
     See https://github.com/bluesky/ophyd/issues/1115
     """
@@ -222,7 +231,7 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
         name="move", params={"moves": {"additional_status_device": 5.0}}
     )
     task_id = worker.submit_task(task)
-    begin_task_and_wait_until_complete(worker, task_id)
+    begin_task_and_wait_until_complete(worker, task_id, timeout)
 
     # Extract all the display_name fields from the events
     list_of_dict_keys = [pe.statuses.values() for pe in progress_events]
@@ -238,23 +247,27 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
 
 
 def assert_run_produces_worker_events(
-    expected_events: List[WorkerEvent],
-    worker: Worker,
-    task_id: str,
+    expected_events: List[WorkerEvent], worker: Worker, task_id: str, timeout: float
 ) -> None:
-    assert begin_task_and_wait_until_complete(worker, task_id) == expected_events
+    assert (
+        begin_task_and_wait_until_complete(worker, task_id, timeout) == expected_events
+    )
+
+
+#
+# Worker helpers
+#
 
 
 def begin_task_and_wait_until_complete(
     worker: Worker,
     task_id: str,
-    timeout: float = 5.0,
+    timeout: float,
 ) -> List[WorkerEvent]:
     events: "Future[List[WorkerEvent]]" = take_events(
         worker.worker_events,
         lambda event: event.is_complete(),
     )
-
     worker.begin_task(task_id)
     return events.result(timeout=timeout)
 

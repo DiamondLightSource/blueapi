@@ -7,8 +7,6 @@ import pytest
 
 from blueapi.core import EventPublisher
 
-_TIMEOUT: float = 10.0
-
 
 @dataclass
 class MyEvent:
@@ -20,22 +18,22 @@ def publisher() -> EventPublisher[MyEvent]:
     return EventPublisher()
 
 
-def test_publishes_event(publisher: EventPublisher[MyEvent]) -> None:
+def test_publishes_event(timeout: float, publisher: EventPublisher[MyEvent]) -> None:
     event = MyEvent("a")
     f: Future = Future()
     publisher.subscribe(lambda r, _: f.set_result(r))
     publisher.publish(event)
-    assert f.result(timeout=_TIMEOUT) == event
+    assert f.result(timeout=timeout) == event
 
 
-def test_multi_subscriber(publisher: EventPublisher[MyEvent]) -> None:
+def test_multi_subscriber(timeout: float, publisher: EventPublisher[MyEvent]) -> None:
     event = MyEvent("a")
     f1: Future = Future()
     f2: Future = Future()
     publisher.subscribe(lambda r, _: f1.set_result(r))
     publisher.subscribe(lambda r, _: f2.set_result(r))
     publisher.publish(event)
-    assert f1.result(timeout=_TIMEOUT) == f2.result(timeout=_TIMEOUT) == event
+    assert f1.result(timeout=timeout) == f2.result(timeout=timeout) == event
 
 
 def test_can_unsubscribe(publisher: EventPublisher[MyEvent]) -> None:
@@ -67,13 +65,13 @@ def test_can_unsubscribe_all(publisher: EventPublisher[MyEvent]) -> None:
     assert list(_drain(q)) == [event_a, event_a, event_c]
 
 
-def test_correlation_id(publisher: EventPublisher[MyEvent]) -> None:
+def test_correlation_id(timeout: float, publisher: EventPublisher[MyEvent]) -> None:
     event = MyEvent("a")
     correlation_id = "foobar"
     f: Future = Future()
     publisher.subscribe(lambda _, c: f.set_result(c))
     publisher.publish(event, correlation_id)
-    assert f.result(timeout=_TIMEOUT) == correlation_id
+    assert f.result(timeout=timeout) == correlation_id
 
 
 def _drain(queue: Queue) -> Iterable:

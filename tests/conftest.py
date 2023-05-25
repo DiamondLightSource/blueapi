@@ -1,4 +1,5 @@
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
+from typing import Iterator
 
 import pytest
 from bluesky.run_engine import RunEngineStateMachine
@@ -42,8 +43,8 @@ class Client:
         return TestClient(app)
 
 
-@pytest.fixture(scope="session")
-def handler() -> Handler:
+@pytest.fixture
+def handler() -> Iterator[Handler]:
     context: BlueskyContext = Mock()
     context.run_engine.state = RunEngineStateMachine.States.IDLE
     handler = Handler(context=context)
@@ -52,9 +53,10 @@ def handler() -> Handler:
         return
 
     handler.start = handler.stop = no_op  # type: ignore
-    return handler
+    yield handler
+    handler.stop()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def client(handler: Handler) -> TestClient:
     return Client(handler).client

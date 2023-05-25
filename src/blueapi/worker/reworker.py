@@ -179,6 +179,14 @@ class RunEngineWorker(Worker[Task]):
         self._stopped.set()
         self._started.clear()
 
+    def pause(self, defer=False):
+        LOGGER.info("Requesting to pause the worker")
+        self._ctx.run_engine.request_pause(defer)
+
+    def resume(self):
+        LOGGER.info("Requesting to resume the worker")
+        self._ctx.run_engine.resume()
+
     def _cycle_with_error_handling(self) -> None:
         try:
             self._cycle()

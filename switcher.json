@@ -120,10 +120,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
   },
   {
-    "version": "no-auto-camelcase-of-plan-parameters",
-    "url": "https://DiamondLightSource.github.io/blueapi/no-auto-camelcase-of-plan-parameters/"
-  },
-  {
     "version": "optional-dependencies",
     "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
   },

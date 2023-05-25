@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.3.0",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.0/"
+  },
+  {
     "version": "0.2.3b1",
     "url": "https://DiamondLightSource.github.io/blueapi/0.2.3b1/"
   },
@@ -166,9 +170,5 @@
   {
     "version": "type-validator-partials",
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
-  },
-  {
-    "version": "update-api-version",
-    "url": "https://DiamondLightSource.github.io/blueapi/update-api-version/"
   }
 ]

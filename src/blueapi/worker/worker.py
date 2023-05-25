@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Generic, List, Optional, TypeVar
 
+from pydantic import Field
+
 from blueapi.core import DataEvent, EventStream
 from blueapi.utils import BlueapiBaseModel
 
@@ -17,8 +19,8 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
     task_id: str
     task: T
     is_complete: bool = False
-    is_error: bool = False
     is_pending: bool = True
+    errors: List[str] = Field(default_factory=list)
 
 
 class Worker(ABC, Generic[T]):

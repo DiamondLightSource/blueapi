@@ -6,7 +6,7 @@ from typing import Any, Callable, Iterable, List, Optional, TypeVar, Union
 import pytest
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
-from blueapi.core import BlueskyContext, EventStream
+from blueapi.core import BlueskyContext, EventStream, MsgGenerator
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.worker import (
     ProgressEvent,
@@ -27,6 +27,7 @@ _INDEFINITE_TASK = RunPlan(
     name="set_absolute",
     params={"movable": "fake_device", "value": 4.0},
 )
+_FAILING_TASK = RunPlan(name="failing_plan", params={})
 
 
 class FakeDevice:
@@ -44,6 +45,10 @@ class FakeDevice:
         self.event.clear()
 
 
+def failing_plan() -> MsgGenerator:
+    raise KeyError("I failed")
+
+
 @pytest.fixture
 def fake_device() -> FakeDevice:
     return FakeDevice()
@@ -56,6 +61,7 @@ def context(fake_device: FakeDevice) -> BlueskyContext:
     ctx_config.sources.append(
         Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
     )
+    ctx.plan(failing_plan)
     ctx.device(fake_device)
     ctx.with_config(ctx_config)
     return ctx
@@ -171,6 +177,32 @@ def test_does_not_allow_simultaneous_running_tasks(
         for task_id in task_ids:
             worker.begin_task(task_id)
     fake_device.event.set()
+
+
+def test_begin_task_blocks_until_current_task_set(worker: Worker) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    assert worker.get_active_task() is None
+    worker.begin_task(task_id)
+    active_task = worker.get_active_task()
+    assert active_task is not None
+    assert active_task.task == _SIMPLE_TASK
+
+
+def test_plan_failure_recorded_in_active_task(worker: Worker) -> None:
+    task_id = worker.submit_task(_FAILING_TASK)
+    events_future: Future[List[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda event: event.task_status is not None and event.task_status.task_failed,
+    )
+    worker.begin_task(task_id)
+    events = events_future.result(timeout=5.0)
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_failed
+    assert events[-1].errors == ["'I failed'"]
+
+    active_task = worker.get_active_task()
+    assert active_task is not None
+    assert active_task.errors == ["'I failed'"]
 
 
 @pytest.mark.parametrize("num_runs", [0, 1, 2])

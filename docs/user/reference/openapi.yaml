@@ -93,12 +93,12 @@ components:
           description: Should worker defer Pausing until the next checkpoint
           title: Defer
           type: boolean
-        newState:
+        new_state:
           allOf:
           - $ref: '#/components/schemas/WorkerState'
           description: 'Requested state of worker, allowed values: PAUSED, RUNNING'
       required:
-      - newState
+      - new_state
       title: StateChangeRequest
       type: object
     TaskResponse:

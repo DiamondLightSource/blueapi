@@ -1,8 +1,3 @@
-# this should test if we change app, what openapi is generated.
-
-# i.e.checking that the openapi generation actually works.
-from pathlib import Path
-
 import mock
 import yaml
 from mock import Mock, PropertyMock

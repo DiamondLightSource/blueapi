@@ -47,7 +47,7 @@ def test_main_with_nonexistent_config_file():
     type(result.exception) == FileNotFoundError
 
 
-@patch("requests.get")
+@patch("requests.request")
 def test_connection_error_caught_by_wrapper_func(mock_requests: Mock):
     mock_requests.side_effect = ConnectionError()
     runner = CliRunner()

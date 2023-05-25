@@ -10,4 +10,4 @@ class MessageContext:
 
     destination: str
     reply_destination: Optional[str]
-    task_id: Optional[str]
+    correlation_id: Optional[str]

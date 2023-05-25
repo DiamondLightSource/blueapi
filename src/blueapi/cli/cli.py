@@ -10,7 +10,7 @@ import click
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
-from blueapi.cli.amq import AmqClient, BlueskyRemoteError
+from blueapi.cli.amq import AmqClient
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
@@ -155,10 +155,10 @@ def run_plan(
         amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)
         updated = client.update_worker_task(WorkerTask(task_id=task_id))
 
-        try:
-            amq_client.wait_for_complete(timeout=timeout)
-        except BlueskyRemoteError as exc:
-            logger.error(exc)
+        amq_client.wait_for_complete(timeout=timeout)
+
+        if amq_client.timed_out:
+            logger.error(f"Plan did not complete within {timeout} seconds")
             return
 
     process_event_after_finished(finished_event.pop(), logger)

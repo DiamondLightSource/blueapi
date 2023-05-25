@@ -21,7 +21,7 @@ from .utils import determine_deserialization_type
 
 LOGGER = logging.getLogger(__name__)
 
-TASK_ID_HEADER = "task-id"
+CORRELATION_ID_HEADER = "correlation-id"
 
 
 class StompDestinationProvider(DestinationProvider):
@@ -110,16 +110,18 @@ class StompMessagingTemplate(MessagingTemplate):
         destination: str,
         obj: Any,
         on_reply: Optional[MessageListener] = None,
-        task_id: Optional[str] = None,
+        correlation_id: Optional[str] = None,
     ) -> None:
-        self._send_str(destination, json.dumps(serialize(obj)), on_reply, task_id)
+        self._send_str(
+            destination, json.dumps(serialize(obj)), on_reply, correlation_id
+        )
 
     def _send_str(
         self,
         destination: str,
         message: str,
         on_reply: Optional[MessageListener] = None,
-        task_id: Optional[str] = None,
+        correlation_id: Optional[str] = None,
     ) -> None:
         LOGGER.info(f"SENDING {message} to {destination}")
 
@@ -128,8 +130,8 @@ class StompMessagingTemplate(MessagingTemplate):
             reply_queue_name = self.destinations.temporary_queue(str(uuid.uuid1()))
             headers = {**headers, "reply-to": reply_queue_name}
             self.subscribe(reply_queue_name, on_reply)
-        if task_id:
-            headers = {**headers, TASK_ID_HEADER: task_id}
+        if correlation_id:
+            headers = {**headers, CORRELATION_ID_HEADER: correlation_id}
         self._conn.send(headers=headers, body=message, destination=destination)
 
     def subscribe(self, destination: str, callback: MessageListener) -> None:
@@ -143,7 +145,7 @@ class StompMessagingTemplate(MessagingTemplate):
             context = MessageContext(
                 frame.headers["destination"],
                 frame.headers.get("reply-to"),
-                frame.headers.get(TASK_ID_HEADER),
+                frame.headers.get(CORRELATION_ID_HEADER),
             )
             callback(context, value)
 

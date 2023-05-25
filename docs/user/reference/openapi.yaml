@@ -100,13 +100,14 @@ components:
       additionalProperties: false
       description: A representation of a task that the worker recognizes
       properties:
+        errors:
+          items:
+            type: string
+          title: Errors
+          type: array
         isComplete:
           default: false
           title: Iscomplete
-          type: boolean
-        isError:
-          default: false
-          title: Iserror
           type: boolean
         isPending:
           default: true

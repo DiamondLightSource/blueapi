@@ -119,12 +119,30 @@ class RunEngineWorker(Worker[Task]):
         return task_id
 
     def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
+        if self.state is not WorkerState.IDLE:
+            raise WorkerBusyError(f"Worker is in state {self.state}")
+
+        task_started = Event()
+
+        def mark_task_as_started(event: WorkerEvent, _: Optional[str]) -> None:
+            if (
+                event.task_status is not None
+                and event.task_status.task_id == trackable_task.task_id
+            ):
+                task_started.set()
+
         LOGGER.info(f"Submitting: {trackable_task}")
         try:
+            sub = self.worker_events.subscribe(mark_task_as_started)
             self._task_channel.put_nowait(trackable_task)
+            task_started.wait(timeout=5.0)
+            if not task_started.is_set():
+                raise TimeoutError("Failed to start plan within timeout")
         except Full:
             LOGGER.error("Cannot submit task while another is running")
             raise WorkerBusyError("Cannot submit task while another is running")
+        finally:
+            self.worker_events.unsubscribe(sub)
 
     def start(self) -> None:
         if self._started.is_set():
@@ -222,7 +240,7 @@ class RunEngineWorker(Worker[Task]):
     def _report_error(self, err: Exception) -> None:
         LOGGER.error(err, exc_info=True)
         if self._current is not None:
-            self._current.is_error = True
+            self._current.errors.append(str(err))
         self._errors.append(str(err))
 
     def _report_status(
@@ -235,7 +253,7 @@ class RunEngineWorker(Worker[Task]):
             task_status = TaskStatus(
                 task_id=self._current.task_id,
                 task_complete=self._current.is_complete,
-                task_failed=self._current.is_error or bool(errors),
+                task_failed=bool(self._current.errors),
             )
             correlation_id = self._current.task_id
         else:

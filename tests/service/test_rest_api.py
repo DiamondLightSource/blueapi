@@ -86,13 +86,17 @@ def test_create_task(handler: Handler, client: TestClient) -> None:
 
 
 def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
+    handler.worker.start()
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
 
     task_json = {"task_id": task_id}
     client.put("/worker/task", json=task_json)
 
-    assert handler.worker._task_channel.get().task_id == task_id  # type: ignore
+    active_task = handler.worker.get_active_task()
+    assert active_task is not None
+    assert active_task.task_id == task_id
+    handler.worker.stop()
 
 
 def test_get_state_updates(handler: Handler, client: TestClient) -> None:

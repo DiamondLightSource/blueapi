@@ -36,7 +36,7 @@ def test_generate_schema(mock_app: Mock) -> None:
 
 
 @pytest.mark.skipif(
-    DOCS_SCHEMA_LOCATION.exists(),
+    not DOCS_SCHEMA_LOCATION.exists(),
     reason="If the schema file does not exist, the test is being run"
     " with a non-editable install",
 )

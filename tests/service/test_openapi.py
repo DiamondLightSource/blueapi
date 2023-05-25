@@ -9,7 +9,7 @@ from mock import Mock, PropertyMock
 
 
 @mock.patch("blueapi.service.openapi.app")
-def test_init(mock_app: Mock):
+def test_generate_schema(mock_app: Mock) -> None:
     from blueapi.service.main import app
 
     title = PropertyMock(return_value="title")
@@ -24,24 +24,23 @@ def test_init(mock_app: Mock):
     type(mock_app).description = description
     type(mock_app).routes = routes
 
-    from blueapi.service import openapi
+    from blueapi.service.openapi import generate_schema
 
-    with mock.patch.object(openapi, "__name__", "__main__"):
-        location = Path(__file__).parent / "test_file.yaml"
-        openapi.init(location)
-        print("ah")
+    assert generate_schema() == {
+        "openapi": openapi_version(),
+        "info": {
+            "title": title(),
+            "description": description(),
+            "version": version(),
+        },
+        "paths": {},
+    }
 
-        with open(location, "r") as f:
-            result = yaml.load(f, yaml.Loader)
 
-        assert result == {
-            "openapi": openapi_version(),
-            "info": {
-                "title": title(),
-                "description": description(),
-                "version": version(),
-            },
-            "paths": {},
-        }
+def test_schema_updated() -> None:
+    from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
 
-    location.unlink()
+    with DOCS_SCHEMA_LOCATION.open("r") as stream:
+        docs_schema = yaml.safe_load(stream)
+
+    assert docs_schema == generate_schema()

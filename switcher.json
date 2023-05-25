@@ -170,5 +170,9 @@
   {
     "version": "type-validator-partials",
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
+  },
+  {
+    "version": "update-openapi",
+    "url": "https://DiamondLightSource.github.io/blueapi/update-openapi/"
   }
 ]

@@ -93,7 +93,9 @@ def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
     task_json = {"task_id": task_id}
     client.put("/worker/task", json=task_json)
 
-    assert handler.worker.get_active_task().task_id == task_id
+    active_task = handler.worker.get_active_task()
+    assert active_task is not None
+    assert active_task.task_id == task_id
     handler.worker.stop()
 
 

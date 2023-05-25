@@ -187,7 +187,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.2
+  version: 0.0.3
 openapi: 3.0.2
 paths:
   /devices:

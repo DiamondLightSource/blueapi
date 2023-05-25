@@ -1,15 +1,13 @@
-# this should test if we change app, what openapi is generated.
-
-# i.e.checking that the openapi generation actually works.
-from pathlib import Path
-
 import mock
+import pytest
 import yaml
 from mock import Mock, PropertyMock
 
+from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
+
 
 @mock.patch("blueapi.service.openapi.app")
-def test_init(mock_app: Mock):
+def test_generate_schema(mock_app: Mock) -> None:
     from blueapi.service.main import app
 
     title = PropertyMock(return_value="title")
@@ -24,24 +22,26 @@ def test_init(mock_app: Mock):
     type(mock_app).description = description
     type(mock_app).routes = routes
 
-    from blueapi.service import openapi
+    # from blueapi.service.openapi import generate_schema
 
-    with mock.patch.object(openapi, "__name__", "__main__"):
-        location = Path(__file__).parent / "test_file.yaml"
-        openapi.init(location)
-        print("ah")
+    assert generate_schema() == {
+        "openapi": openapi_version(),
+        "info": {
+            "title": title(),
+            "description": description(),
+            "version": version(),
+        },
+        "paths": {},
+    }
 
-        with open(location, "r") as f:
-            result = yaml.load(f, yaml.Loader)
 
-        assert result == {
-            "openapi": openapi_version(),
-            "info": {
-                "title": title(),
-                "description": description(),
-                "version": version(),
-            },
-            "paths": {},
-        }
+@pytest.mark.skipif(
+    not DOCS_SCHEMA_LOCATION.exists(),
+    reason="If the schema file does not exist, the test is being run"
+    " with a non-editable install",
+)
+def test_schema_updated() -> None:
+    with DOCS_SCHEMA_LOCATION.open("r") as stream:
+        docs_schema = yaml.safe_load(stream)
 
-    location.unlink()
+    assert docs_schema == generate_schema()

@@ -12,6 +12,12 @@ from blueapi import __version__
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.service.main import start
 from blueapi.service.model import WorkerTask
+from blueapi.service.openapi import (
+    DOCS_SCHEMA_LOCATION,
+    generate_schema,
+    print_schema_as_yaml,
+    write_schema_as_yaml,
+)
 from blueapi.worker import RunPlan
 
 from .rest import BlueapiRestClient
@@ -36,6 +42,27 @@ def main(ctx: click.Context, config: Optional[Path]) -> None:
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
+
+
+@main.command(name="schema")
+@click.option("-o", "--output", type=Path, help="Path to file to save the schema")
+@click.option(
+    "-u",
+    "--update",
+    type=bool,
+    is_flag=True,
+    help="[Development only] update the schema in the documentation",
+)
+def schema(output: Optional[Path] = None, update: bool = False) -> None:
+    """Generate the schema for the REST API"""
+    schema = generate_schema()
+
+    if update:
+        output = DOCS_SCHEMA_LOCATION
+    if output is not None:
+        write_schema_as_yaml(output, schema)
+    else:
+        print_schema_as_yaml(schema)
 
 
 @main.command(name="serve")

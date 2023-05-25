@@ -88,12 +88,12 @@ components:
       additionalProperties: false
       description: Acknowledgement that a task has started, includes its ID
       properties:
-        taskId:
+        task_id:
           description: Unique identifier for the task
-          title: Taskid
+          title: Task Id
           type: string
       required:
-      - taskId
+      - task_id
       title: TaskResponse
       type: object
     TrackableTask:
@@ -105,21 +105,21 @@ components:
             type: string
           title: Errors
           type: array
-        isComplete:
+        is_complete:
           default: false
-          title: Iscomplete
+          title: Is Complete
           type: boolean
-        isPending:
+        is_pending:
           default: true
-          title: Ispending
+          title: Is Pending
           type: boolean
         task:
           title: Task
-        taskId:
-          title: Taskid
+        task_id:
+          title: Task Id
           type: string
       required:
-      - taskId
+      - task_id
       title: TrackableTask
       type: object
     ValidationError:
@@ -162,9 +162,9 @@ components:
       additionalProperties: false
       description: Worker's active task ID, can be None
       properties:
-        taskId:
+        task_id:
           description: The ID of the current task, None if the worker is idle
-          title: Taskid
+          title: Task Id
           type: string
       title: WorkerTask
       type: object

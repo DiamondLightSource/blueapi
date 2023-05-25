@@ -41,10 +41,10 @@ def main(ctx: click.Context, config: Optional[Path]) -> None:
             raise FileNotFoundError(f"Cannot find file: {config}")
 
     ctx.ensure_object(dict)
-    config: ApplicationConfig = config_loader.load()
+    loaded_config: ApplicationConfig = config_loader.load()
 
-    ctx.obj["config"] = config
-    logging.basicConfig(level=config.logging.level)
+    ctx.obj["config"] = loaded_config
+    logging.basicConfig(level=loaded_config.logging.level)
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")

@@ -104,7 +104,8 @@ def update_task(
     task: WorkerTask,
     handler: Handler = Depends(get_handler),
 ) -> WorkerTask:
-    if handler.worker.get_active_task() is not None:
+    active_task = handler.worker.get_active_task()
+    if active_task is not None and not active_task.is_complete:
         raise HTTPException(status_code=409, detail="Worker already active")
     elif task.task_id is not None:
         handler.worker.begin_task(task.task_id)

@@ -152,10 +152,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   },
   {
-    "version": "shutdown",
-    "url": "https://DiamondLightSource.github.io/blueapi/shutdown/"
-  },
-  {
     "version": "test-cli",
     "url": "https://DiamondLightSource.github.io/blueapi/test-cli/"
   },
@@ -170,5 +166,9 @@
   {
     "version": "type-validator-partials",
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
+  },
+  {
+    "version": "update-api-version",
+    "url": "https://DiamondLightSource.github.io/blueapi/update-api-version/"
   }
 ]

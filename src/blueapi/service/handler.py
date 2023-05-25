@@ -9,6 +9,8 @@ from blueapi.messaging.base import MessagingTemplate
 from blueapi.worker.reworker import RunEngineWorker
 from blueapi.worker.worker import Worker
 
+LOGGER = logging.getLogger(__name__)
+
 
 class Handler:
     context: BlueskyContext
@@ -25,8 +27,6 @@ class Handler:
     ) -> None:
         self.config = config or ApplicationConfig()
         self.context = context or BlueskyContext()
-
-        logging.basicConfig(level=self.config.logging.level)
 
         self.context.with_config(self.config.env)
 

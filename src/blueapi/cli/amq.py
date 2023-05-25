@@ -1,17 +1,8 @@
 import threading
-from typing import Any, Callable, Mapping, Optional, TypeVar
+from typing import Callable, Optional
 
 from blueapi.messaging import MessageContext, MessagingTemplate
-from blueapi.service.model import (
-    DeviceRequest,
-    DeviceResponse,
-    PlanRequest,
-    PlanResponse,
-    TaskResponse,
-)
-from blueapi.worker import ProgressEvent, WorkerEvent
-
-T = TypeVar("T")
+from blueapi.worker import WorkerEvent
 
 
 class BlueskyRemoteError(Exception):
@@ -21,60 +12,40 @@ class BlueskyRemoteError(Exception):
 
 class AmqClient:
     app: MessagingTemplate
+    complete: threading.Event
+    timed_out: Optional[bool]
 
     def __init__(self, app: MessagingTemplate) -> None:
         self.app = app
+        self.complete = threading.Event()
+        self.timed_out = None
 
-    def run_plan(
+    def __enter__(self) -> None:
+        self.app.connect()
+
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+        self.app.disconnect()
+
+    def subscribe_to_topics(
         self,
-        name: str,
-        params: Mapping[str, Any],
+        correlation_id: str,
         on_event: Optional[Callable[[WorkerEvent], None]] = None,
-        on_progress_event: Optional[Callable[[ProgressEvent], None]] = None,
-        timeout: Optional[float] = None,
-    ) -> str:
-        complete = threading.Event()
+    ) -> None:
+        """Run callbacks on events/progress events with a given correlation id."""
 
         def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
-            if on_event is not None:
+            if (on_event is not None) and (ctx.correlation_id == correlation_id):
                 on_event(event)
 
-            if event.is_complete():
-                complete.set()
-                if event.is_error():
-                    raise BlueskyRemoteError(str(event.errors) or "Unknown error")
+            if (event.is_complete()) and (ctx.correlation_id == correlation_id):
+                self.complete.set()
 
-        def on_progress_event_wrapper(
-            ctx: MessageContext, event: ProgressEvent
-        ) -> None:
-            if on_progress_event is not None:
-                on_progress_event(event)
-
-        self.app.subscribe(
-            self.app.destinations.topic("public.worker.event"), on_event_wrapper
-        )
         self.app.subscribe(
             self.app.destinations.topic("public.worker.event"),
-            on_progress_event_wrapper,
+            on_event_wrapper,
         )
 
-        # self.app.send("worker.run", {"name": name, "params": params})
-        task_response = self.app.send_and_receive(
-            "worker.run", {"name": name, "params": params}, reply_type=TaskResponse
-        ).result(5.0)
-        task_id = task_response.task_id
+    def wait_for_complete(self, timeout: Optional[float] = None) -> None:
+        self.timed_out = not self.complete.wait(timeout=timeout)
 
-        if timeout is not None:
-            complete.wait(timeout)
-
-        return task_id
-
-    def get_plans(self) -> PlanResponse:
-        return self.app.send_and_receive(
-            "worker.plans", PlanRequest(), PlanResponse
-        ).result(5.0)
-
-    def get_devices(self) -> DeviceResponse:
-        return self.app.send_and_receive(
-            "worker.devices", DeviceRequest(), DeviceResponse
-        ).result(5.0)
+        self.complete.clear()

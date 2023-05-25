@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import deque
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
@@ -9,7 +10,9 @@ import click
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
+from blueapi.cli.amq import AmqClient
 from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
 from blueapi.service.model import WorkerTask
 from blueapi.service.openapi import (
@@ -18,7 +21,7 @@ from blueapi.service.openapi import (
     print_schema_as_yaml,
     write_schema_as_yaml,
 )
-from blueapi.worker import RunPlan
+from blueapi.worker import RunPlan, WorkerEvent
 
 from .rest import BlueapiRestClient
 
@@ -38,7 +41,10 @@ def main(ctx: click.Context, config: Optional[Path]) -> None:
             raise FileNotFoundError(f"Cannot find file: {config}")
 
     ctx.ensure_object(dict)
-    ctx.obj["config"] = config_loader.load()
+    loaded_config: ApplicationConfig = config_loader.load()
+
+    ctx.obj["config"] = loaded_config
+    logging.basicConfig(level=loaded_config.logging.level)
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
@@ -68,7 +74,9 @@ def schema(output: Optional[Path] = None, update: bool = False) -> None:
 @main.command(name="serve")
 @click.pass_obj
 def start_application(obj: dict):
-    start(obj["config"])
+    config: ApplicationConfig = obj["config"]
+
+    start(config)
 
 
 @main.group()
@@ -81,7 +89,6 @@ def controller(ctx: click.Context) -> None:
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
     ctx.obj["rest_client"] = BlueapiRestClient(config.api)
-    logging.basicConfig(level=config.logging.level)
 
 
 def check_connection(func):
@@ -114,16 +121,47 @@ def get_devices(obj: dict) -> None:
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.argument("parameters", type=str, required=False)
+@click.option(
+    "-t",
+    "--timeout",
+    type=float,
+    help="Timeout for the plan in seconds. None hangs forever",
+    default=None,
+)
 @check_connection
 @click.pass_obj
-def run_plan(obj: dict, name: str, parameters: Optional[str]) -> None:
+def run_plan(
+    obj: dict, name: str, parameters: Optional[str], timeout: Optional[float]
+) -> None:
+    config: ApplicationConfig = obj["config"]
     client: BlueapiRestClient = obj["rest_client"]
+
+    logger = logging.getLogger(__name__)
+
+    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    finished_event: deque[WorkerEvent] = deque()
+
+    def store_finished_event(event: WorkerEvent) -> None:
+        if event.is_complete():
+            finished_event.append(event)
+
     parameters = parameters or "{}"
     task = RunPlan(name=name, params=json.loads(parameters))
 
     resp = client.create_task(task)
     task_id = resp.task_id
-    updated = client.update_worker_task(WorkerTask(task_id=task_id))
+
+    with amq_client:
+        amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)
+        updated = client.update_worker_task(WorkerTask(task_id=task_id))
+
+        amq_client.wait_for_complete(timeout=timeout)
+
+        if amq_client.timed_out:
+            logger.error(f"Plan did not complete within {timeout} seconds")
+            return
+
+    process_event_after_finished(finished_event.pop(), logger)
     pprint(updated.dict())
 
 
@@ -133,3 +171,19 @@ def run_plan(obj: dict, name: str, parameters: Optional[str]) -> None:
 def get_state(obj: dict) -> None:
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.get_state())
+
+
+# helper function
+def process_event_after_finished(event: WorkerEvent, logger: logging.Logger):
+    if event.is_error():
+        logger.info("Failed with errors: \n")
+        for error in event.errors:
+            logger.error(error)
+        return
+    if len(event.warnings) != 0:
+        logger.info("Passed with warnings: \n")
+        for warning in event.warnings:
+            logger.warn(warning)
+        return
+
+    logger.info("Plan passed")

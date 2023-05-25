@@ -120,6 +120,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
   },
   {
+    "version": "openapi-checks",
+    "url": "https://DiamondLightSource.github.io/blueapi/openapi-checks/"
+  },
+  {
     "version": "optional-dependencies",
     "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
   },
@@ -170,9 +174,5 @@
   {
     "version": "type-validator-partials",
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
-  },
-  {
-    "version": "update-openapi",
-    "url": "https://DiamondLightSource.github.io/blueapi/update-openapi/"
   }
 ]

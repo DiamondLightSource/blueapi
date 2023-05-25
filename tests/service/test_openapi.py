@@ -1,6 +1,9 @@
 import mock
+import pytest
 import yaml
 from mock import Mock, PropertyMock
+
+from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
 
 
 @mock.patch("blueapi.service.openapi.app")
@@ -19,7 +22,7 @@ def test_generate_schema(mock_app: Mock) -> None:
     type(mock_app).description = description
     type(mock_app).routes = routes
 
-    from blueapi.service.openapi import generate_schema
+    # from blueapi.service.openapi import generate_schema
 
     assert generate_schema() == {
         "openapi": openapi_version(),
@@ -32,9 +35,12 @@ def test_generate_schema(mock_app: Mock) -> None:
     }
 
 
+@pytest.mark.skipif(
+    DOCS_SCHEMA_LOCATION.exists(),
+    reason="If the schema file does not exist, the test is being run"
+    " with a non-editable install",
+)
 def test_schema_updated() -> None:
-    from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
-
     with DOCS_SCHEMA_LOCATION.open("r") as stream:
         docs_schema = yaml.safe_load(stream)
 

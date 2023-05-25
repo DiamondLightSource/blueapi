@@ -119,6 +119,9 @@ class RunEngineWorker(Worker[Task]):
         return task_id
 
     def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
+        if self.state is not WorkerState.IDLE:
+            raise WorkerBusyError(f"Worker is in state {self.state}")
+
         task_started = Event()
 
         def mark_task_as_started(event: WorkerEvent, _: Optional[str]) -> None:

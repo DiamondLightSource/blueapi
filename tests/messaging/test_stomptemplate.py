@@ -155,7 +155,7 @@ def test_correlation_id(
 
     def server(ctx: MessageContext, msg: str) -> None:
         q.put(ctx)
-        template.send(test_queue_2, msg, None, ctx.correlation_id)
+        template.send(test_queue_2, msg, None, ctx.task_id)
 
     def client(ctx: MessageContext, msg: str) -> None:
         q.put(ctx)
@@ -165,9 +165,9 @@ def test_correlation_id(
     template.send(test_queue, "test", None, correlation_id)
 
     ctx_req: MessageContext = q.get(timeout=_TIMEOUT)
-    assert ctx_req.correlation_id == correlation_id
+    assert ctx_req.task_id == correlation_id
     ctx_ack: MessageContext = q.get(timeout=_TIMEOUT)
-    assert ctx_ack.correlation_id == correlation_id
+    assert ctx_ack.task_id == correlation_id
 
 
 def acknowledge(template: MessagingTemplate, destination: str) -> None:

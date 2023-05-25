@@ -21,10 +21,9 @@ from blueapi.service.openapi import (
     print_schema_as_yaml,
     write_schema_as_yaml,
 )
-from blueapi.worker import RunPlan
+from blueapi.worker import RunPlan, WorkerEvent
 
 from .rest import BlueapiRestClient
-from blueapi.worker import WorkerEvent
 
 
 @click.group(invoke_without_command=True)
@@ -122,7 +121,6 @@ def get_devices(obj: dict) -> None:
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.argument("parameters", type=str, required=False)
-@click.argument("id", type=str, required=True)
 @click.option(
     "-t",
     "--timeout",
@@ -133,7 +131,7 @@ def get_devices(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: Optional[str], id: str, timeout: Optional[float]
+    obj: dict, name: str, parameters: Optional[str], timeout: Optional[float]
 ) -> None:
     config: ApplicationConfig = obj["config"]
     client: BlueapiRestClient = obj["rest_client"]

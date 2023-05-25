@@ -1,11 +1,9 @@
 import threading
 import time
-from typing import Callable, Optional, TypeVar
+from typing import Callable, Optional
 
 from blueapi.messaging import MessageContext, MessagingTemplate
-from blueapi.worker import ProgressEvent, WorkerEvent
-
-T = TypeVar("T")
+from blueapi.worker import WorkerEvent
 
 
 class BlueskyRemoteError(Exception):
@@ -31,7 +29,6 @@ class AmqClient:
         self,
         task_id: str,
         on_event: Optional[Callable[[WorkerEvent], None]] = None,
-        on_progress_event: Optional[Callable[[ProgressEvent], None]] = None,
     ) -> None:
         """Run callbacks on events/progress events with a given correlation id."""
 
@@ -41,8 +38,6 @@ class AmqClient:
 
             if (event.is_complete()) and (ctx.task_id == task_id):
                 self.complete.set()
-                # if event.is_error():
-                #     raise BlueskyRemoteError(str(event.errors) or "Unknown error")
 
         self.app.subscribe(
             self.app.destinations.topic("public.worker.event"),

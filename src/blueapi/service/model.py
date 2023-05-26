@@ -107,9 +107,7 @@ class StateChangeRequest(BlueapiBaseModel):
     Request to change the state of the worker.
     """
 
-    new_state: WorkerState = Field(
-        description="Requested state of worker, allowed values: PAUSED, RUNNING"
-    )
+    new_state: WorkerState = Field()
     defer: Optional[bool] = Field(
         description="Should worker defer Pausing until the next checkpoint",
         default=False,

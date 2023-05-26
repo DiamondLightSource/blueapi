@@ -55,7 +55,6 @@ side-bar.
             reference/api
             reference/messaging-spec
             reference/rest-spec
-            reference/asyncapi
             reference/cli
             ../genindex
 

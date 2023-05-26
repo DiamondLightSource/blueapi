@@ -44,6 +44,8 @@ extensions = [
     "sphinx_design",
     # OpenAPI directive
     "sphinxcontrib.openapi",
+    # For documenting the CLI
+    "sphinx_click.ext",
 ]
 
 # If true, Sphinx will warn about all references where the target cannot

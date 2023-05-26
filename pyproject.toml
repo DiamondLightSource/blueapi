@@ -45,6 +45,7 @@ dev = [
     "pytest-cov",
     "sphinx-autobuild",
     "sphinx-copybutton",
+    "sphinx-click",
     "sphinx-design",
     "sphinxcontrib-openapi",
     "tox-direct",

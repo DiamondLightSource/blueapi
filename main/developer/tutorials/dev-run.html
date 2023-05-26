@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Run in a Developer Environment &#8212; blueapi 0.3.1.dev1+g54df783c documentation</title>
+    <title>Run/Debug in a Developer Environment &#8212; blueapi 0.3.1.dev2+g3d85b156 documentation</title>
   
   
   
@@ -377,7 +377,7 @@ document.write(`
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="dev-install.html">Developer install</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run in a Developer Environment</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run/Debug in a Developer Environment</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul class="nav bd-sidenav">
@@ -445,7 +445,7 @@ document.write(`
     
     <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Developer Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Run in a Developer Environment</li>
+    <li class="breadcrumb-item active" aria-current="page">Run/Debug in a Developer Environment</li>
   </ul>
 </nav>
 </div>
@@ -462,53 +462,22 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="run-in-a-developer-environment">
-<h1>Run in a Developer Environment<a class="headerlink" href="#run-in-a-developer-environment" title="Permalink to this heading">#</a></h1>
-<p>Assuming you have setup a developer environment, you can run
-a developement version of the bluesky worker.</p>
+  <section id="run-debug-in-a-developer-environment">
+<h1>Run/Debug in a Developer Environment<a class="headerlink" href="#run-debug-in-a-developer-environment" title="Permalink to this heading">#</a></h1>
+<p>Assuming you have setup a developer environment, you can run a development version of the bluesky worker.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="dev-install.html"><span class="doc">Developer install</span></a></p>
 </div>
-<section id="start-activemq">
-<h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Permalink to this heading">#</a></h2>
-<p>The worker requires a running instance of ActiveMQ, the simplest
-way to start it is to run it via a container:</p>
-<div class="sd-tab-set docutils">
-<input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-0">
-Docker</label><div class="sd-tab-content docutils">
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
-</pre></div>
-</div>
-</div>
-<input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-1">
-Podman</label><div class="sd-tab-content docutils">
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>podman<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
-</pre></div>
-</div>
-</div>
-</div>
-</section>
 <section id="start-bluesky-worker">
 <h2>Start Bluesky Worker<a class="headerlink" href="#start-bluesky-worker" title="Permalink to this heading">#</a></h2>
 <p>Ensure you are inside your virtual environment:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>venv/bin/activate
 </pre></div>
 </div>
-<p>Start the worker from the command line or vscode:</p>
-<div class="sd-tab-set docutils">
-<input checked="checked" id="sd-tab-item-2" name="sd-tab-set-1" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-2">
-Command line</label><div class="sd-tab-content docutils">
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>serve
-</pre></div>
-</div>
-</div>
-<input id="sd-tab-item-3" name="sd-tab-set-1" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-3">
-VSCode</label><div class="sd-tab-content docutils">
+<p>You will need to follow the instructions for setting up ActiveMQ as in <a class="reference internal" href="../../user/how-to/run-cli.html"><span class="doc">Control the Worker via the CLI</span></a>.</p>
+<p>The worker will be available from the command line (<code class="docutils literal notranslate"><span class="pre">blueapi</span> <span class="pre">serve</span></code>), but can be started from vscode with additional
+debugging capabilities.</p>
 <ol class="arabic simple">
 <li><p>Navigate to “Run and Debug” in the left hand menu.</p></li>
 <li><p>Select “Worker Service” from the debug configuration.</p></li>
@@ -520,8 +489,6 @@ VSCode</label><div class="sd-tab-content docutils">
 <p><span class="caption-text">debug in vscode</span><a class="headerlink" href="#id1" title="Permalink to this image">#</a></p>
 </figcaption>
 </figure>
-</div>
-</div>
 </section>
 </section>
 
@@ -572,7 +539,6 @@ VSCode</label><div class="sd-tab-content docutils">
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-bluesky-worker">Start Bluesky Worker</a></li>
 </ul>
   </nav></div>

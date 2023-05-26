@@ -34,6 +34,7 @@ side-bar.
             how-to/static-analysis
             how-to/lint
             how-to/update-tools
+            how-to/update-openapi
             how-to/make-release
 
         +++

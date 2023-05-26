@@ -15,5 +15,17 @@ and simply pass it to the CLI by typing::
     $ blueapi --config path/to/file.yaml
 
 where ``path/to/file.yaml`` is the relative path to the configuration file you
-wish to use. Then, any subsequent calls to child commands of blueapi will
-use this file.
+wish to use.
+
+Note: child commands
+--------------------
+Configuration options need to be passed down to child commands. For example,
+if you start the server with::
+    $ blueapi --config path/to/file.yaml
+
+And then use the CLI to discover the devices with::
+    $ blueapi controller devices
+
+The configuration for the second command will be different to the first. You
+must supply the correct configuration in this case::
+    $ blueapi --config path/to/file.yaml controller devices

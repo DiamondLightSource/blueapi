@@ -22,6 +22,8 @@ metadata:
   name: blueapiControl
   title: Athena BlueAPI Control
   description: REST API for getting plans/devices from the worker (and running tasks)
+  annotations:
+    github.com/project-slug: DiamondLightSouce/blueapi
 spec:
   type: openapi
   lifecycle: production
@@ -35,6 +37,8 @@ metadata:
   name: blueapiEvents
   title: Athena BlueAPI Events
   description: Event topics which can be listened to over a message bus
+  annotations:
+    github.com/project-slug: DiamondLightSouce/blueapi
 spec:
   type: asyncapi
   lifecycle: production

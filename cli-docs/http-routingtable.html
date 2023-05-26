@@ -7,9 +7,8 @@
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-
-    <title>blueapi &#8212; blueapi 0.3.1.dev6+g79fe6028 documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTTP Routing Table &#8212; blueapi 0.3.1.dev6+g79fe6028 documentation</title>
   
   
   
@@ -44,7 +43,7 @@
     <script src="_static/clipboard.min.js"></script>
     <script src="_static/copybutton.js"></script>
     <script src="_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'http-routingtable';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'cli-docs';
@@ -52,9 +51,15 @@
     <link rel="icon" href="_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="User Guide" href="user/index.html" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
+
+    <script>
+      DOCUMENTATION_OPTIONS.COLLAPSE_INDEX = true;
+    </script>
+
+
   </head>
   
   
@@ -108,7 +113,7 @@
       <div class="navbar-item">
   
 
-<a class="navbar-brand logo" href="#">
+<a class="navbar-brand logo" href="index.html">
   
   
   
@@ -388,56 +393,80 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="blueapi">
-<h1>blueapi<a class="headerlink" href="#blueapi" title="Permalink to this heading">#</a></h1>
-<p><a class="reference external" href="https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml"><img alt="Code CI" src="https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml/badge.svg?branch=main" /></a> <a class="reference external" href="https://github.com/DiamondLightSource/blueapi/actions/workflows/docs.yml"><img alt="Docs CI" src="https://github.com/DiamondLightSource/blueapi/actions/workflows/docs.yml/badge.svg?branch=main" /></a> <a class="reference external" href="https://codecov.io/gh/DiamondLightSource/blueapi"><img alt="Test Coverage" src="https://codecov.io/gh/DiamondLightSource/blueapi/branch/main/graph/badge.svg" /></a> <a class="reference external" href="https://pypi.org/project/blueapi"><img alt="Latest PyPI version" src="https://img.shields.io/pypi/v/blueapi.svg" /></a> <a class="reference external" href="https://opensource.org/licenses/Apache-2.0"><img alt="Apache License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a></p>
-<p>Lightweight Bluesky-as-a-service wrapper application. Also usable as a library.</p>
-<table class="table">
-<tbody>
-<tr class="row-odd"><td><p>PyPI</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">blueapi</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p>Source code</p></td>
-<td><p><a class="github reference external" href="https://github.com/DiamondLightSource/blueapi">DiamondLightSource/blueapi</a></p></td>
-</tr>
-<tr class="row-odd"><td><p>Documentation</p></td>
-<td><p><a class="reference external" href="https://DiamondLightSource.github.io/blueapi">https://DiamondLightSource.github.io/blueapi</a></p></td>
-</tr>
-<tr class="row-even"><td><p>Releases</p></td>
-<td><p><a class="github reference external" href="https://github.com/DiamondLightSource/blueapi/releases">DiamondLightSource/blueapi</a></p></td>
-</tr>
-</tbody>
-</table>
-<p>TODO: Talk about automagic plan endpoints</p>
-<section id="how-the-documentation-is-structured">
-<h2>How the documentation is structured<a class="headerlink" href="#how-the-documentation-is-structured" title="Permalink to this heading">#</a></h2>
-<p>The documentation is split into 2 sections:</p>
-<div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
-<div class="sd-row sd-row-cols-2 sd-row-cols-xs-2 sd-row-cols-sm-2 sd-row-cols-md-2 sd-row-cols-lg-2 docutils">
-<div class="sd-col sd-d-flex-row docutils">
-<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
-<div class="sd-card-body docutils">
-<div class="sd-card-title sd-font-weight-bold docutils">
-<svg version="4.0.0.63c5cb3" width="4.0em" height="4.0em" class="sd-material-icon sd-material-icon-person" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"></path><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg></div>
-<p class="sd-card-text">The User Guide contains documentation on how to install and use blueapi.</p>
-</div>
-<a class="sd-stretched-link reference internal" href="user/index.html"><span class="doc"></span></a></div>
-</div>
-<div class="sd-col sd-d-flex-row docutils">
-<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
-<div class="sd-card-body docutils">
-<div class="sd-card-title sd-font-weight-bold docutils">
-<svg version="4.0.0.63c5cb3" width="4.0em" height="4.0em" class="sd-material-icon sd-material-icon-code" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0V0z" fill="none"></path><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"></path></svg></div>
-<p class="sd-card-text">The Developer Guide contains documentation on how to develop and contribute changes back to blueapi.</p>
-</div>
-<a class="sd-stretched-link reference internal" href="developer/index.html"><span class="doc"></span></a></div>
-</div>
-</div>
-</div>
-<div class="toctree-wrapper compound">
-</div>
-</section>
-</section>
+
+   <h1>HTTP Routing Table</h1>
+
+   <div class="modindex-jumpbox">
+   <a href="#cap-/devices"><strong>/devices</strong></a> | 
+   <a href="#cap-/plans"><strong>/plans</strong></a> | 
+   <a href="#cap-/tasks"><strong>/tasks</strong></a> | 
+   <a href="#cap-/worker"><strong>/worker</strong></a>
+   </div>
+
+   <table class="indextable modindextable">
+     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
+     <tr class="cap" id="cap-/devices"><td></td><td>
+       <strong>/devices</strong></td><td></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#get--devices"><code class="xref">GET /devices</code></a></td><td>
+       <em>Get Devices</em></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#get--devices-name"><code class="xref">GET /devices/{name}</code></a></td><td>
+       <em>Get Device By Name</em></td></tr>
+     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
+     <tr class="cap" id="cap-/plans"><td></td><td>
+       <strong>/plans</strong></td><td></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#get--plans"><code class="xref">GET /plans</code></a></td><td>
+       <em>Get Plans</em></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#get--plans-name"><code class="xref">GET /plans/{name}</code></a></td><td>
+       <em>Get Plan By Name</em></td></tr>
+     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
+     <tr class="cap" id="cap-/tasks"><td></td><td>
+       <strong>/tasks</strong></td><td></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#get--tasks-task_id"><code class="xref">GET /tasks/{task_id}</code></a></td><td>
+       <em>Get Task</em></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#post--tasks"><code class="xref">POST /tasks</code></a></td><td>
+       <em>Submit Task</em></td></tr>
+     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
+     <tr class="cap" id="cap-/worker"><td></td><td>
+       <strong>/worker</strong></td><td></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#get--worker-state"><code class="xref">GET /worker/state</code></a></td><td>
+       <em>Get State</em></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#get--worker-task"><code class="xref">GET /worker/task</code></a></td><td>
+       <em>Get Active Task</em></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#put--worker-state"><code class="xref">PUT /worker/state</code></a></td><td>
+       <em>Set State</em></td></tr>
+     <tr>
+       <td></td>
+       <td>
+       <a href="user/reference/rest-spec.html#put--worker-task"><code class="xref">PUT /worker/task</code></a></td><td>
+       <em>Update Task</em></td></tr>
+   </table>
 
 
                 </article>
@@ -450,15 +479,6 @@ document.write(`
   
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
-    <a class="right-next"
-       href="user/index.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">User Guide</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
-    </a>
 </div></div>
   
 </div>

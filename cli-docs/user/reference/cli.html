@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Command-Line Interface &#8212; blueapi 0.2.4.dev8+g465ace4 documentation</title>
+    <title>Command-Line Interface &#8212; blueapi 0.3.1.dev6+g79fe6028 documentation</title>
   
   
   
@@ -53,7 +53,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="API Index" href="../../genindex.html" />
-    <link rel="prev" title="AsyncAPI Specification" href="asyncapi.html" />
+    <link rel="prev" title="REST Specification" href="rest-spec.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -392,7 +392,8 @@ document.write(`
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="asyncapi.html">AsyncAPI Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="messaging-spec.html">Messaging Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rest-spec.html">REST Specification</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Command-Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../genindex.html">Index</a></li>
 </ul>
@@ -486,6 +487,20 @@ document.write(`
 </pre></div>
 </div>
 </section>
+<section id="blueapi-controller-pause">
+<h4>pause<a class="headerlink" href="#blueapi-controller-pause" title="Permalink to this heading">#</a></h4>
+<p>Pause the execution of the current task</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>pause<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-pause-defer">
+<span class="sig-name descname"><span class="pre">--defer</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-controller-pause-defer" title="Permalink to this definition">#</a></dt>
+<dd><p>Defer the pause until the next checkpoint</p>
+</dd></dl>
+
+</section>
 <section id="blueapi-controller-plans">
 <h4>plans<a class="headerlink" href="#blueapi-controller-plans" title="Permalink to this heading">#</a></h4>
 <p>Get a list of plans available for the worker to use</p>
@@ -493,17 +508,24 @@ document.write(`
 </pre></div>
 </div>
 </section>
+<section id="blueapi-controller-resume">
+<h4>resume<a class="headerlink" href="#blueapi-controller-resume" title="Permalink to this heading">#</a></h4>
+<p>Resume the execution of the current task</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>resume<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
 <section id="blueapi-controller-run">
 <h4>run<a class="headerlink" href="#blueapi-controller-run" title="Permalink to this heading">#</a></h4>
 <p>Run a plan with parameters</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>run<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>NAME
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>run<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>NAME<span class="w"> </span><span class="o">[</span>PARAMETERS<span class="o">]</span>
 </pre></div>
 </div>
 <p class="rubric">Options</p>
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-blueapi-controller-run-p">
-<span id="cmdoption-blueapi-controller-run-parameters"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--parameters</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;parameters&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-controller-run-p" title="Permalink to this definition">#</a></dt>
-<dd><p>Parameters as valid JSON</p>
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-run-t">
+<span id="cmdoption-blueapi-controller-run-timeout"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--timeout</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;timeout&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-controller-run-t" title="Permalink to this definition">#</a></dt>
+<dd><p>Timeout for the plan in seconds. None hangs forever</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>
@@ -513,19 +535,45 @@ document.write(`
 <dd><p>Required argument</p>
 </dd></dl>
 
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-run-arg-PARAMETERS">
+<span id="cmdoption-blueapi-controller-run-arg-parameters"></span><span class="sig-name descname"><span class="pre">PARAMETERS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-controller-run-arg-PARAMETERS" title="Permalink to this definition">#</a></dt>
+<dd><p>Optional argument</p>
+</dd></dl>
+
 </section>
+<section id="blueapi-controller-state">
+<h4>state<a class="headerlink" href="#blueapi-controller-state" title="Permalink to this heading">#</a></h4>
+<p>Print the current state of the worker</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>state<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="blueapi-schema">
+<h3>schema<a class="headerlink" href="#blueapi-schema" title="Permalink to this heading">#</a></h3>
+<p>Generate the schema for the REST API</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>schema<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-schema-o">
+<span id="cmdoption-blueapi-schema-output"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--output</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;output&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-schema-o" title="Permalink to this definition">#</a></dt>
+<dd><p>Path to file to save the schema</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-schema-u">
+<span id="cmdoption-blueapi-schema-update"></span><span class="sig-name descname"><span class="pre">-u</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--update</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-schema-u" title="Permalink to this definition">#</a></dt>
+<dd><p>[Development only] update the schema in the documentation</p>
+</dd></dl>
+
 </section>
 <section id="blueapi-serve">
 <h3>serve<a class="headerlink" href="#blueapi-serve" title="Permalink to this heading">#</a></h3>
 <p>Run a worker that accepts plans to run</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>serve<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
-</pre></div>
-</div>
-</section>
-<section id="blueapi-worker">
-<h3>worker<a class="headerlink" href="#blueapi-worker" title="Permalink to this heading">#</a></h3>
-<p>Run a worker that accepts plans to run, please use serve command instead</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>worker<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
@@ -544,12 +592,12 @@ document.write(`
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="asyncapi.html"
+       href="rest-spec.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">AsyncAPI Specification</p>
+        <p class="prev-next-title">REST Specification</p>
       </div>
     </a>
     <a class="right-next"
@@ -582,12 +630,15 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi">blueapi</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller">controller</a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-devices">devices</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-pause">pause</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-plans">plans</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-resume">resume</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-run">run</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-state">state</a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-schema">schema</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-serve">serve</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-worker">worker</a></li>
 </ul>
 </li>
 </ul>

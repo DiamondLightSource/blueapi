@@ -8,7 +8,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Index &#8212; blueapi 0.2.4.dev8+g465ace4 documentation</title>
+    <title>Index &#8212; blueapi 0.3.1.dev6+g79fe6028 documentation</title>
   
   
   
@@ -385,7 +385,8 @@ document.write(`
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="user/reference/api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="user/reference/asyncapi.html">AsyncAPI Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/reference/messaging-spec.html">Messaging Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/reference/rest-spec.html">REST Specification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="user/reference/cli.html">Command-Line Interface</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Index</a></li>
 </ul>
@@ -424,6 +425,7 @@ document.write(`
  | <a href="#B"><strong>B</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
+ | <a href="#P"><strong>P</strong></a>
  
 </div>
 <h2 id="Symbols">Symbols</h2>
@@ -437,12 +439,35 @@ document.write(`
 </li>
       </ul></li>
       <li>
-    --parameters
+    --defer
 
       <ul>
-        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-p">blueapi-controller-run command line option</a>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-pause-defer">blueapi-controller-pause command line option</a>
 </li>
       </ul></li>
+      <li>
+    --output
+
+      <ul>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-schema-o">blueapi-schema command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --timeout
+
+      <ul>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-t">blueapi-controller-run command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --update
+
+      <ul>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-schema-u">blueapi-schema command line option</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --version
 
@@ -450,8 +475,6 @@ document.write(`
         <li><a href="user/reference/cli.html#cmdoption-blueapi-version">blueapi command line option</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     -c
 
@@ -460,10 +483,24 @@ document.write(`
 </li>
       </ul></li>
       <li>
-    -p
+    -o
 
       <ul>
-        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-p">blueapi-controller-run command line option</a>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-schema-o">blueapi-schema command line option</a>
+</li>
+      </ul></li>
+      <li>
+    -t
+
+      <ul>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-t">blueapi-controller-run command line option</a>
+</li>
+      </ul></li>
+      <li>
+    -u
+
+      <ul>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-schema-u">blueapi-schema command line option</a>
 </li>
       </ul></li>
   </ul></td>
@@ -490,17 +527,39 @@ document.write(`
         <li><a href="user/reference/cli.html#cmdoption-blueapi-c">-c</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    blueapi-controller-pause command line option
+
+      <ul>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-pause-defer">--defer</a>
+</li>
+      </ul></li>
       <li>
     blueapi-controller-run command line option
 
       <ul>
-        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-p">--parameters</a>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-t">--timeout</a>
 </li>
-        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-p">-p</a>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-t">-t</a>
 </li>
         <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-arg-NAME">NAME</a>
+</li>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-arg-PARAMETERS">PARAMETERS</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    blueapi-schema command line option
+
+      <ul>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-schema-o">--output</a>
+</li>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-schema-u">--update</a>
+</li>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-schema-o">-o</a>
+</li>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-schema-u">-u</a>
 </li>
       </ul></li>
       <li><a href="user/reference/api.html#blueapi.blueapi.__version__">blueapi.__version__ (in module blueapi)</a>
@@ -529,6 +588,19 @@ document.write(`
 
       <ul>
         <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-arg-NAME">blueapi-controller-run command line option</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    PARAMETERS
+
+      <ul>
+        <li><a href="user/reference/cli.html#cmdoption-blueapi-controller-run-arg-PARAMETERS">blueapi-controller-run command line option</a>
 </li>
       </ul></li>
   </ul></td>

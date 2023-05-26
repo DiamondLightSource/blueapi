@@ -120,6 +120,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-310/"
   },
   {
+    "version": "fix-description",
+    "url": "https://DiamondLightSource.github.io/blueapi/fix-description/"
+  },
+  {
     "version": "hotfix-linting",
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
   },

@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 from typing import Dict, Set
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response, status
+from pydantic import ValidationError
+from starlette.responses import JSONResponse
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan, TrackableTask, WorkerState
@@ -37,6 +39,14 @@ app = FastAPI(
 )
 
 
+@app.exception_handler(KeyError)
+async def on_key_error_404(_: Request, __: KeyError):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": "Item not found"},
+    )
+
+
 @app.get("/plans", response_model=PlanResponse)
 def get_plans(handler: Handler = Depends(get_handler)):
     """Retrieve information about all available plans."""
@@ -48,14 +58,10 @@ def get_plans(handler: Handler = Depends(get_handler)):
 @app.get(
     "/plans/{name}",
     response_model=PlanModel,
-    responses={status.HTTP_404_NOT_FOUND: {"detail": "item not found"}},
 )
 def get_plan_by_name(name: str, handler: Handler = Depends(get_handler)):
     """Retrieve information about a plan by its (unique) name."""
-    try:
-        return PlanModel.from_plan(handler.context.plans[name])
-    except KeyError:
-        raise HTTPException(status_code=404, detail="Item not found")
+    return PlanModel.from_plan(handler.context.plans[name])
 
 
 @app.get("/devices", response_model=DeviceResponse)
@@ -72,17 +78,17 @@ def get_devices(handler: Handler = Depends(get_handler)):
 @app.get(
     "/devices/{name}",
     response_model=DeviceModel,
-    responses={status.HTTP_404_NOT_FOUND: {"detail": "item not found"}},
 )
 def get_device_by_name(name: str, handler: Handler = Depends(get_handler)):
     """Retrieve information about a devices by its (unique) name."""
-    try:
-        return DeviceModel.from_device(handler.context.devices[name])
-    except KeyError:
-        raise HTTPException(status_code=404, detail="Item not found")
+    return DeviceModel.from_device(handler.context.devices[name])
 
 
-@app.post("/tasks", response_model=TaskResponse, status_code=201)
+@app.post(
+    "/tasks",
+    response_model=TaskResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def submit_task(
     request: Request,
     response: Response,
@@ -92,9 +98,14 @@ def submit_task(
     handler: Handler = Depends(get_handler),
 ):
     """Submit a task to the worker."""
-    task_id: str = handler.worker.submit_task(task)
-    response.headers["Location"] = f"{request.url}/{task_id}"
-    return TaskResponse(task_id=task_id)
+    try:
+        task_id: str = handler.worker.submit_task(task)
+        response.headers["Location"] = f"{request.url}/{task_id}"
+        return TaskResponse(task_id=task_id)
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.errors()
+        )
 
 
 @app.put(
@@ -108,7 +119,9 @@ def update_task(
 ) -> WorkerTask:
     active_task = handler.worker.get_active_task()
     if active_task is not None and not active_task.is_complete:
-        raise HTTPException(status_code=409, detail="Worker already active")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
+        )
     elif task.task_id is not None:
         handler.worker.begin_task(task.task_id)
     return task
@@ -117,7 +130,6 @@ def update_task(
 @app.get(
     "/tasks/{task_id}",
     response_model=TrackableTask,
-    responses={status.HTTP_404_NOT_FOUND: {"item": "not found"}},
 )
 def get_task(
     task_id: str,
@@ -126,10 +138,9 @@ def get_task(
     """Retrieve a task"""
 
     task = handler.worker.get_pending_task(task_id)
-    if task is not None:
-        return task
-    else:
-        raise HTTPException(status_code=404, detail="Item not found")
+    if task is None:
+        raise KeyError
+    return task
 
 
 @app.get("/worker/task")

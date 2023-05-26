@@ -1,10 +1,10 @@
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
 from typing import Iterator
+from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngineStateMachine
 from fastapi.testclient import TestClient
-from mock import Mock
 
 from blueapi.service.handler import Handler, get_handler
 from blueapi.service.main import app
@@ -45,14 +45,10 @@ class Client:
 
 @pytest.fixture
 def handler() -> Iterator[Handler]:
-    context: BlueskyContext = Mock()
+    context: BlueskyContext = BlueskyContext(run_engine=MagicMock())
     context.run_engine.state = RunEngineStateMachine.States.IDLE
-    handler = Handler(context=context)
+    handler = Handler(context=context, messaging_template=MagicMock())
 
-    def no_op():
-        return
-
-    handler.start = handler.stop = no_op  # type: ignore
     yield handler
     handler.stop()
 

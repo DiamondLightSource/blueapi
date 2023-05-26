@@ -160,6 +160,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   },
   {
+    "version": "stop_and_abort",
+    "url": "https://DiamondLightSource.github.io/blueapi/stop_and_abort/"
+  },
+  {
     "version": "test-cli",
     "url": "https://DiamondLightSource.github.io/blueapi/test-cli/"
   },

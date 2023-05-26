@@ -96,10 +96,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/camel-case/"
   },
   {
-    "version": "cli-docs",
-    "url": "https://DiamondLightSource.github.io/blueapi/cli-docs/"
-  },
-  {
     "version": "combine_events",
     "url": "https://DiamondLightSource.github.io/blueapi/combine_events/"
   },

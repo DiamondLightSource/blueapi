@@ -175,6 +175,8 @@ def run_plan(
 @check_connection
 @click.pass_obj
 def get_state(obj: dict) -> None:
+    """Print the current state of the worker"""
+
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.get_state())
 
@@ -184,6 +186,8 @@ def get_state(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def pause(obj: dict, defer: bool = False) -> None:
+    """Pause the execution of the current task"""
+
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.set_state(WorkerState.PAUSED, defer=defer))
 
@@ -192,6 +196,8 @@ def pause(obj: dict, defer: bool = False) -> None:
 @check_connection
 @click.pass_obj
 def resume(obj: dict) -> None:
+    """Resume the execution of the current task"""
+
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.set_state(WorkerState.RUNNING))
 

@@ -1,8 +1,10 @@
 import threading
 from typing import Callable, Optional
+from blueapi.core.bluesky_types import DataEvent
 
 from blueapi.messaging import MessageContext, MessagingTemplate
 from blueapi.worker import WorkerEvent
+from blueapi.worker.event import ProgressEvent
 
 
 class BlueskyRemoteError(Exception):
@@ -33,11 +35,11 @@ class AmqClient:
     ) -> None:
         """Run callbacks on events/progress events with a given correlation id."""
 
-        def on_event_wrapper(ctx: MessageContext, event: WorkerEvent) -> None:
+        def on_event_wrapper(ctx: MessageContext, event: DataEvent|ProgressEvent|WorkerEvent) -> None:
             if (on_event is not None) and (ctx.correlation_id == correlation_id):
                 on_event(event)
 
-            if (event.is_complete()) and (ctx.correlation_id == correlation_id):
+            if (isinstance(event, WorkerEvent) and event.is_complete()) and (ctx.correlation_id == correlation_id):
                 self.complete.set()
 
         self.app.subscribe(

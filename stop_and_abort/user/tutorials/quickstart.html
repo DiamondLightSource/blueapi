@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Developer install &#8212; blueapi 0.3.1.dev5+g9a7e6228 documentation</title>
+    <title>Quickstart Guide &#8212; blueapi 0.3.1.dev5+g9a7e6228 documentation</title>
   
   
   
@@ -44,7 +44,7 @@
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
     <script src="../../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/tutorials/dev-install';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user/tutorials/quickstart';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'stop_and_abort';
@@ -52,8 +52,8 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Run/Debug in a Developer Environment" href="dev-run.html" />
-    <link rel="prev" title="Developer Guide" href="../index.html" />
+    <link rel="next" title="Run in a container" href="../how-to/run-container.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -143,15 +143,15 @@
   </p>
   <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../user/index.html">
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="../index.html">
                         User Guide
                       </a>
                     </li>
                 
 
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../index.html">
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../developer/index.html">
                         Developer Guide
                       </a>
                     </li>
@@ -283,15 +283,15 @@ document.write(`
   </p>
   <ul class="bd-navbar-elements navbar-nav">
     
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../../user/index.html">
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="../index.html">
                         User Guide
                       </a>
                     </li>
                 
 
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="../index.html">
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../developer/index.html">
                         Developer Guide
                       </a>
                     </li>
@@ -376,35 +376,26 @@ document.write(`
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Developer install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev-run.html">Run/Debug in a Developer Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Quickstart Guide</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../how-to/contribute.html">Contributing to the project</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../how-to/build-docs.html">Build the docs using sphinx</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../how-to/run-tests.html">Run the tests using pytest</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../how-to/static-analysis.html">Run static analysis using mypy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../how-to/lint.html">Run linting using pre-commit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../how-to/update-tools.html">Update the tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../how-to/make-release.html">Make a release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/configure-app.html">Configure the application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/run-cli.html">Control the Worker via the CLI</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../explanations/decisions.html">Architectural Decision Records</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../explanations/decisions/0002-no-queues.html">2. No Queues</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../explanations/decisions/0003-api-case.html">2. API Model Case</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/architecture.html">Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/lifecycle.html">Lifecycle of a Plan</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/type_validators.html">Type Validators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../explanations/events.html">Events Emitted by the Worker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/docs-structure.html">About the documentation</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../reference/standards.html">Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/messaging-spec.html">Messaging Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/rest-spec.html">REST Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/cli.html">Command-Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../genindex.html">Index</a></li>
 </ul>
 </div>
 </nav></div>
@@ -443,9 +434,9 @@ document.write(`
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Developer Guide</a></li>
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">User Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Developer install</li>
+    <li class="breadcrumb-item active" aria-current="page">Quickstart Guide</li>
   </ul>
 </nav>
 </div>
@@ -462,68 +453,47 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="developer-install">
-<h1>Developer install<a class="headerlink" href="#developer-install" title="Permalink to this heading">#</a></h1>
-<p>These instructions will take you through the minimal steps required to get a dev
-environment setup, so you can run the tests locally.</p>
-<section id="clone-the-repository">
-<h2>Clone the repository<a class="headerlink" href="#clone-the-repository" title="Permalink to this heading">#</a></h2>
-<p>First clone the repository locally using <a class="reference external" href="https://git-scm.com/downloads">Git</a>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone git://github.com/DiamondLightSource/blueapi.git
-</pre></div>
+  <section id="quickstart-guide">
+<h1>Quickstart Guide<a class="headerlink" href="#quickstart-guide" title="Permalink to this heading">#</a></h1>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Assumes you have completed <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a>.</p>
 </div>
-</section>
-<section id="install-dependencies">
-<h2>Install dependencies<a class="headerlink" href="#install-dependencies" title="Permalink to this heading">#</a></h2>
-<p>You can choose to either develop on the host machine using a <a class="reference external" href="https://docs.python.org/3/library/venv.html#module-venv" title="(in Python v3.11)"><code class="xref any docutils literal notranslate"><span class="pre">venv</span></code></a> (which
-requires python 3.9 or later) or to run in a container under <a class="reference external" href="https://code.visualstudio.com/">VSCode</a></p>
+<section id="start-activemq">
+<h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Permalink to this heading">#</a></h2>
+<p>The worker requires a running instance of ActiveMQ, the simplest
+way to start it is to run it via a container:</p>
 <div class="sd-tab-set docutils">
 <input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
 </input><label class="sd-tab-label" for="sd-tab-item-0">
-Local virtualenv</label><div class="sd-tab-content docutils">
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd blueapi
-$ python3 -m venv venv
-$ source venv/bin/activate
-$ pip install -e .[dev]
+Docker</label><div class="sd-tab-content docutils">
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
 </pre></div>
 </div>
 </div>
 <input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
 </input><label class="sd-tab-label" for="sd-tab-item-1">
-VSCode devcontainer</label><div class="sd-tab-content docutils">
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ code blueapi
-# Click on &#39;Reopen in Container&#39; when prompted
-# Open a new terminal
+Podman</label><div class="sd-tab-content docutils">
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>podman<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>See the <a class="reference external" href="https://epics-containers.github.io/main/user/tutorials/devcontainer.html">epics-containers</a> documentation for more complex
-use cases, such as integration with podman.</p>
 </div>
 </div>
 </div>
 </section>
-<section id="see-what-was-installed">
-<h2>See what was installed<a class="headerlink" href="#see-what-was-installed" title="Permalink to this heading">#</a></h2>
-<p>To see a graph of the python package dependency tree type:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pipdeptree
+<section id="start-worker">
+<h2>Start Worker<a class="headerlink" href="#start-worker" title="Permalink to this heading">#</a></h2>
+<p>To start the worker:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>serve
 </pre></div>
 </div>
-</section>
-<section id="build-and-test">
-<h2>Build and test<a class="headerlink" href="#build-and-test" title="Permalink to this heading">#</a></h2>
-<p>Now you have a development environment you can run the tests in a terminal:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tox -p
+<p>The worker can also be started using a custom config file:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>--config<span class="w"> </span>path/to/file<span class="w"> </span>serve
 </pre></div>
 </div>
-<p>This will run in parallel the following checks:</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="../how-to/build-docs.html"><span class="doc">Build the docs using sphinx</span></a></p></li>
-<li><p><a class="reference internal" href="../how-to/run-tests.html"><span class="doc">Run the tests using pytest</span></a></p></li>
-<li><p><a class="reference internal" href="../how-to/static-analysis.html"><span class="doc">Run static analysis using mypy</span></a></p></li>
-<li><p><a class="reference internal" href="../how-to/lint.html"><span class="doc">Run linting using pre-commit</span></a></p></li>
-</ul>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Full CLI reference: <a class="reference internal" href="../reference/cli.html"><span class="doc">Command-Line Interface</span></a></p>
+</div>
 </section>
 </section>
 
@@ -539,20 +509,20 @@ use cases, such as integration with podman.</p>
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../index.html"
+       href="installation.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Developer Guide</p>
+        <p class="prev-next-title">Installation</p>
       </div>
     </a>
     <a class="right-next"
-       href="dev-run.html"
+       href="../how-to/run-container.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Run/Debug in a Developer Environment</p>
+        <p class="prev-next-title">Run in a container</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -574,17 +544,15 @@ use cases, such as integration with podman.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#clone-the-repository">Clone the repository</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#install-dependencies">Install dependencies</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#see-what-was-installed">See what was installed</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#build-and-test">Build and test</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-worker">Start Worker</a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/stop_and_abort/docs/developer/tutorials/dev-install.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/stop_and_abort/docs/user/tutorials/quickstart.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -598,7 +566,7 @@ use cases, such as integration with podman.</p>
 
   <div class="sidebar-secondary-item">
   <div class="tocsection sourcelink">
-    <a href="../../_sources/developer/tutorials/dev-install.rst.txt">
+    <a href="../../_sources/user/tutorials/quickstart.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

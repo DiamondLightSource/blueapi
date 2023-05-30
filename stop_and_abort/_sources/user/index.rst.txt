@@ -14,6 +14,7 @@ side-bar.
             :maxdepth: 1
 
             tutorials/installation
+            tutorials/quickstart
 
         +++
 
@@ -27,6 +28,7 @@ side-bar.
 
             how-to/run-container
             how-to/configure-app
+            how-to/run-cli
 
         +++
 
@@ -53,6 +55,7 @@ side-bar.
             reference/api
             reference/messaging-spec
             reference/rest-spec
+            reference/cli
             ../genindex
 
         +++

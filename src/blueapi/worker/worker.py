@@ -76,7 +76,7 @@ class Worker(ABC, Generic[T]):
     @abstractmethod
     def cancel_active_task(
         self,
-        cancel_type: WorkerState,
+        failure: bool = False,
         reason: Optional[str] = None,
     ) -> str:
         """

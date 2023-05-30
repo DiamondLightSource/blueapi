@@ -211,7 +211,8 @@ def set_state(
             handler.worker.resume()
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
             handler.worker.cancel_active_task(
-                state_change_request.new_state, state_change_request.reason
+                state_change_request.new_state is WorkerState.ABORTING,
+                state_change_request.reason,
             )
 
     return handler.worker.state

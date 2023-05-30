@@ -96,17 +96,17 @@ class RunEngineWorker(Worker[Task]):
 
     def cancel_active_task(
         self,
-        cancel_type: WorkerState,
+        failure: bool = False,
         reason: Optional[str] = None,
     ) -> str:
         if self._current is None:
             raise KeyError("Worker has no active task")
         if self._current.is_complete:
             raise TypeError("Task already complete")
-        if cancel_type is WorkerState.STOPPING:
-            self._ctx.run_engine.stop()
-        if cancel_type is WorkerState.ABORTING:
+        if failure:
             self._ctx.run_engine.abort(reason)
+        else:
+            self._ctx.run_engine.stop()
         return self._current.task_id
 
     def get_pending_tasks(self) -> List[TrackableTask[Task]]:

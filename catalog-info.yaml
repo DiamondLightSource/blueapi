@@ -5,7 +5,7 @@ metadata:
   title: Athena BlueAPI
   description: Lightweight wrapper service around Bluesky Run Engine
   annotations:
-    github.com/project-slug: DiamondLightSouce/blueapi
+    github.com/project-slug: DiamondLightSource/blueapi
     diamond.ac.uk/viewdocs-url: https://diamondlightsource.github.io/blueapi
 spec:
   type: service
@@ -23,7 +23,7 @@ metadata:
   title: Athena BlueAPI Control
   description: REST API for getting plans/devices from the worker (and running tasks)
   annotations:
-    github.com/project-slug: DiamondLightSouce/blueapi
+    github.com/project-slug: DiamondLightSource/blueapi
 spec:
   type: openapi
   lifecycle: production
@@ -38,7 +38,7 @@ metadata:
   title: Athena BlueAPI Events
   description: Event topics which can be listened to over a message bus
   annotations:
-    github.com/project-slug: DiamondLightSouce/blueapi
+    github.com/project-slug: DiamondLightSource/blueapi
 spec:
   type: asyncapi
   lifecycle: production

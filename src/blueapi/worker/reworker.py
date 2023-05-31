@@ -31,7 +31,7 @@ from .worker_busy_error import WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_STOP_TIMEOUT: float = 30.0
+DEFAULT_START_STOP_TIMEOUT: float = 30.0
 
 
 class RunEngineWorker(Worker[Task]):
@@ -45,7 +45,7 @@ class RunEngineWorker(Worker[Task]):
     """
 
     _ctx: BlueskyContext
-    _stop_timeout: float
+    _start_stop_timeout: float
 
     _pending_tasks: Dict[str, TrackableTask]
 
@@ -67,10 +67,10 @@ class RunEngineWorker(Worker[Task]):
     def __init__(
         self,
         ctx: BlueskyContext,
-        stop_timeout: float = DEFAULT_STOP_TIMEOUT,
+        start_stop_timeout: float = DEFAULT_START_STOP_TIMEOUT,
     ) -> None:
         self._ctx = ctx
-        self._stop_timeout = stop_timeout
+        self._start_stop_timeout = start_stop_timeout
 
         self._pending_tasks = {}
 
@@ -88,6 +88,7 @@ class RunEngineWorker(Worker[Task]):
         self._started = Event()
         self._stopping = Event()
         self._stopped = Event()
+        self._stopped.set()
 
     def clear_task(self, task_id: str) -> bool:
         if task_id in self._pending_tasks:
@@ -149,7 +150,9 @@ class RunEngineWorker(Worker[Task]):
     def start(self) -> None:
         if self._started.is_set():
             raise Exception("Worker is already running")
+        self._wait_until_stopped()
         run_worker_in_own_thread(self)
+        self._wait_until_started()
 
     def stop(self) -> None:
         LOGGER.info("Attempting to stop worker")
@@ -157,13 +160,22 @@ class RunEngineWorker(Worker[Task]):
         # If the worker has not yet started there is nothing to do.
         if self._started.is_set():
             self._task_channel.put(KillSignal())
-            self._stopped.wait(timeout=self._stop_timeout)
-            # Event timeouts do not actually raise errors
-            if not self._stopped.is_set():
-                raise TimeoutError("Did not receive successful stop signal!")
         else:
             LOGGER.info("Stopping worker: nothing to do")
         LOGGER.info("Stopped")
+        self._wait_until_stopped()
+
+    def _wait_until_started(self) -> None:
+        if not self._started.wait(timeout=self._start_stop_timeout):
+            raise TimeoutError(
+                f"Worker did not start within {self._start_stop_timeout} seconds"
+            )
+
+    def _wait_until_stopped(self) -> None:
+        if not self._stopped.wait(timeout=self._start_stop_timeout):
+            raise TimeoutError(
+                f"Worker did not stop within {self._start_stop_timeout} seconds"
+            )
 
     @property
     def state(self) -> WorkerState:
@@ -175,11 +187,13 @@ class RunEngineWorker(Worker[Task]):
         self._ctx.run_engine.subscribe(self._on_document)
         self._ctx.run_engine.waiting_hook = self._waiting_hook
 
+        self._stopped.clear()
         self._started.set()
         while not self._stopping.is_set():
             self._cycle_with_error_handling()
-        self._stopped.set()
         self._started.clear()
+        self._stopping.clear()
+        self._stopped.set()
 
     def pause(self, defer=False):
         LOGGER.info("Requesting to pause the worker")

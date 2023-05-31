@@ -69,7 +69,7 @@ def context(fake_device: FakeDevice) -> BlueskyContext:
 
 @pytest.fixture
 def inert_worker(context: BlueskyContext) -> Worker[Task]:
-    return RunEngineWorker(context, stop_timeout=2.0)
+    return RunEngineWorker(context, start_stop_timeout=2.0)
 
 
 @pytest.fixture
@@ -91,6 +91,13 @@ def test_stop_is_idempontent_if_worker_not_started(inert_worker: Worker) -> None
 def test_multi_stop(inert_worker: Worker) -> None:
     inert_worker.start()
     inert_worker.stop()
+    inert_worker.stop()
+
+
+def test_restart(inert_worker: Worker) -> None:
+    inert_worker.start()
+    inert_worker.stop()
+    inert_worker.start()
     inert_worker.stop()
 
 

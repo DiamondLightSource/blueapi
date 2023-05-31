@@ -69,7 +69,7 @@ def context(fake_device: FakeDevice) -> BlueskyContext:
 
 @pytest.fixture
 def inert_worker(context: BlueskyContext) -> Worker[Task]:
-    return RunEngineWorker(context, stop_timeout=2.0)
+    return RunEngineWorker(context, start_stop_timeout=2.0)
 
 
 @pytest.fixture

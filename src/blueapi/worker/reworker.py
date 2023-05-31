@@ -1,4 +1,5 @@
 import logging
+import time
 import uuid
 from dataclasses import dataclass
 from functools import partial
@@ -175,6 +176,9 @@ class RunEngineWorker(Worker[Task]):
             raise TimeoutError(
                 f"Worker did not stop within {self._start_stop_timeout} seconds"
             )
+
+        if not self._stopped.wait(timeout=self._stop_timeout):
+            raise TimeoutError("Did not receive successful stop signal!")
 
     @property
     def state(self) -> WorkerState:

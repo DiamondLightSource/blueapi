@@ -357,7 +357,7 @@ paths:
       summary: Get State
     put:
       description: "Request that the worker is put into a particular state.\nReturns\
-        \ the state of the worker at the end of the call.\n- **The following transitions\
+        \ the state of the worker at the end of the call.\n\n- **The following transitions\
         \ are allowed and return 202: Accepted**\n- If the worker is **PAUSED**, new_state\
         \ may be **RUNNING** to resume.\n- If the worker is **RUNNING**, new_state\
         \ may be **PAUSED** to pause:\n    - If defer is False (default): pauses and\

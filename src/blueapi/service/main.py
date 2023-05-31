@@ -194,6 +194,7 @@ def set_state(
     """
     Request that the worker is put into a particular state.
     Returns the state of the worker at the end of the call.
+
     - **The following transitions are allowed and return 202: Accepted**
     - If the worker is **PAUSED**, new_state may be **RUNNING** to resume.
     - If the worker is **RUNNING**, new_state may be **PAUSED** to pause:

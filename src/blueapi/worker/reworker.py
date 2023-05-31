@@ -31,7 +31,7 @@ from .worker_busy_error import WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_STOP_TIMEOUT: float = 30.0
+DEFAULT_START_STOP_TIMEOUT: float = 30.0
 
 
 class RunEngineWorker(Worker[Task]):
@@ -45,7 +45,7 @@ class RunEngineWorker(Worker[Task]):
     """
 
     _ctx: BlueskyContext
-    _stop_timeout: float
+    _start_stop_timeout: float
 
     _pending_tasks: Dict[str, TrackableTask]
 
@@ -67,10 +67,10 @@ class RunEngineWorker(Worker[Task]):
     def __init__(
         self,
         ctx: BlueskyContext,
-        stop_timeout: float = DEFAULT_STOP_TIMEOUT,
+        start_stop_timeout: float = DEFAULT_START_STOP_TIMEOUT,
     ) -> None:
         self._ctx = ctx
-        self._stop_timeout = stop_timeout
+        self._start_stop_timeout = start_stop_timeout
 
         self._pending_tasks = {}
 
@@ -150,16 +150,12 @@ class RunEngineWorker(Worker[Task]):
     def start(self) -> None:
         if self._started.is_set():
             raise Exception("Worker is already running")
-        elif not self._stopped.wait(timeout=self._stop_timeout):
-            raise TimeoutError("Worker was not stopped")
+        self._wait_until_stopped()
         assert self._stopped.is_set()
         assert not self._stopping.is_set()
         assert not self._started.is_set()
         run_worker_in_own_thread(self)
-        if not self._started.wait(timeout=self._stop_timeout):
-            raise TimeoutError(
-                f"Worker did not start within {self._stop_timeout} seconds"
-            )
+        self._wait_until_started()
 
     def stop(self) -> None:
         LOGGER.info("Attempting to stop worker")
@@ -170,10 +166,19 @@ class RunEngineWorker(Worker[Task]):
         else:
             LOGGER.info("Stopping worker: nothing to do")
         LOGGER.info("Stopped")
+        self._wait_until_stopped()
 
-        # Event timeouts do not actually raise errors
-        if not self._stopped.wait(timeout=self._stop_timeout):
-            raise TimeoutError("Did not receive successful stop signal!")
+    def _wait_until_started(self) -> None:
+        if not self._started.wait(timeout=self._start_stop_timeout):
+            raise TimeoutError(
+                f"Worker did not start within {self._start_stop_timeout} seconds"
+            )
+
+    def _wait_until_stopped(self) -> None:
+        if not self._stopped.wait(timeout=self._start_stop_timeout):
+            raise TimeoutError(
+                f"Worker did not stop within {self._start_stop_timeout} seconds"
+            )
 
     @property
     def state(self) -> WorkerState:

@@ -4,6 +4,7 @@ from typing import Dict, Set
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response, status
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
+from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan, TrackableTask, WorkerState
@@ -169,13 +170,17 @@ _ALLOWED_TRANSITIONS: Dict[WorkerState, Set[WorkerState]] = {
         WorkerState.ABORTING,
         WorkerState.STOPPING,
     },
-    WorkerState.PAUSED: {WorkerState.RUNNING},
+    WorkerState.PAUSED: {
+        WorkerState.RUNNING,
+        WorkerState.ABORTING,
+        WorkerState.STOPPING,
+    },
 }
 
 
 @app.put(
     "/worker/state",
-    status_code=status.HTTP_400_BAD_REQUEST,
+    status_code=status.HTTP_202_ACCEPTED,
     responses={
         status.HTTP_400_BAD_REQUEST: {"detail": "Transition not allowed"},
         status.HTTP_202_ACCEPTED: {"detail": "Transition requested"},
@@ -189,14 +194,18 @@ def set_state(
     """
     Request that the worker is put into a particular state.
     Returns the state of the worker at the end of the call.
-    If the worker is PAUSED, new_state may be RUNNING to resume.
-    If the worker is RUNNING, new_state may be PAUSED to pause and
-    defer may be True to defer the pause until the new checkpoint;
-    STOPPING to stop execution of the current task, marking the
-    current run as a Success; ABORTING to stop execution of the
-    current task, marking the current run as Aborted, reason may be
-    a string reason for why the run is to be aborted.
-    All other values of new_state will result in 400 "Bad Request"
+    - **The following transitions are allowed and return 202: Accepted**
+    - If the worker is **PAUSED**, new_state may be **RUNNING** to resume.
+    - If the worker is **RUNNING**, new_state may be **PAUSED** to pause:
+        - If defer is False (default): pauses and rewinds to the previous checkpoint
+        - If defer is True: waits until the next checkpoint to pause
+        - **If the task has no checkpoints, the task will instead be Aborted**
+    - If the worker is **RUNNING/PAUSED**, new_state may be **STOPPING** to stop.
+        Stop marks any currently open Runs in the Task as a success and ends the task.
+    - If the worker is **RUNNING/PAUSED**, new_state may be **STOPPING** to abort.
+        Abort marks any currently open Runs in the Task as a Failure and ends the task.
+        - If reason is set, the reason will be passed as the reason for the Run failure.
+    - **All other transitions return 400: Bad Request**
     """
     current_state = handler.worker.state
     new_state = state_change_request.new_state
@@ -204,16 +213,20 @@ def set_state(
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
-        response.status_code = status.HTTP_202_ACCEPTED
         if new_state == WorkerState.PAUSED:
             handler.worker.pause(defer=state_change_request.defer)
         elif new_state == WorkerState.RUNNING:
             handler.worker.resume()
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
-            handler.worker.cancel_active_task(
-                state_change_request.new_state is WorkerState.ABORTING,
-                state_change_request.reason,
-            )
+            try:
+                handler.worker.cancel_active_task(
+                    state_change_request.new_state is WorkerState.ABORTING,
+                    state_change_request.reason,
+                )
+            except TransitionError:
+                response.status_code = status.HTTP_400_BAD_REQUEST
+    else:
+        response.status_code = status.HTTP_400_BAD_REQUEST
 
     return handler.worker.state
 

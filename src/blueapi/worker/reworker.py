@@ -7,6 +7,7 @@ from threading import Event, RLock
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Union
 
 from bluesky.protocols import Status
+from super_state_machine.errors import TransitionError
 
 from blueapi.core import (
     BlueskyContext,
@@ -100,9 +101,9 @@ class RunEngineWorker(Worker[Task]):
         reason: Optional[str] = None,
     ) -> str:
         if self._current is None:
-            raise KeyError("Worker has no active task")
-        if self._current.is_complete:
-            raise TypeError("Task already complete")
+            # Persuades mypy that self._current is not None
+            # We only allow this method to be called if a Plan is active
+            raise TransitionError
         if failure:
             self._ctx.run_engine.abort(reason)
         else:

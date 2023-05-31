@@ -90,14 +90,11 @@ class BlueapiRestClient:
         state: Literal[WorkerState.ABORTING, WorkerState.STOPPING],
         reason: Optional[str] = None,
     ):
-        data = {"new_state": state}
-        if reason:
-            data = {**data, "reason": reason}
         return self._request_and_deserialize(
             "/worker/state",
             target_type=WorkerState,
             method="PUT",
-            data=data,
+            data={"new_state": state, "reason": reason},
         )
 
     def _request_and_deserialize(

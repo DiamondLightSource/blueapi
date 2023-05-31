@@ -124,6 +124,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-310/"
   },
   {
+    "version": "fix-race-condition",
+    "url": "https://DiamondLightSource.github.io/blueapi/fix-race-condition/"
+  },
+  {
     "version": "hotfix-linting",
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
   },

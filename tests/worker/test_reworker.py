@@ -94,6 +94,13 @@ def test_multi_stop(inert_worker: Worker) -> None:
     inert_worker.stop()
 
 
+def test_restart(inert_worker: Worker) -> None:
+    inert_worker.start()
+    inert_worker.stop()
+    inert_worker.start()
+    inert_worker.stop()
+
+
 def test_multi_start(inert_worker: Worker) -> None:
     inert_worker.start()
     with pytest.raises(Exception):

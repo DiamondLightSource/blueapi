@@ -88,6 +88,7 @@ class RunEngineWorker(Worker[Task]):
         self._started = Event()
         self._stopping = Event()
         self._stopped = Event()
+        self._stopped.set()
 
     def clear_task(self, task_id: str) -> bool:
         if task_id in self._pending_tasks:
@@ -149,7 +150,16 @@ class RunEngineWorker(Worker[Task]):
     def start(self) -> None:
         if self._started.is_set():
             raise Exception("Worker is already running")
+        elif not self._stopped.wait(timeout=self._stop_timeout):
+            raise TimeoutError("Worker was not stopped")
+        assert self._stopped.is_set()
+        assert not self._stopping.is_set()
+        assert not self._started.is_set()
         run_worker_in_own_thread(self)
+        if not self._started.wait(timeout=self._stop_timeout):
+            raise TimeoutError(
+                f"Worker did not start within {self._stop_timeout} seconds"
+            )
 
     def stop(self) -> None:
         LOGGER.info("Attempting to stop worker")
@@ -157,13 +167,13 @@ class RunEngineWorker(Worker[Task]):
         # If the worker has not yet started there is nothing to do.
         if self._started.is_set():
             self._task_channel.put(KillSignal())
-            self._stopped.wait(timeout=self._stop_timeout)
-            # Event timeouts do not actually raise errors
-            if not self._stopped.is_set():
-                raise TimeoutError("Did not receive successful stop signal!")
         else:
             LOGGER.info("Stopping worker: nothing to do")
         LOGGER.info("Stopped")
+
+        # Event timeouts do not actually raise errors
+        if not self._stopped.wait(timeout=self._stop_timeout):
+            raise TimeoutError("Did not receive successful stop signal!")
 
     @property
     def state(self) -> WorkerState:
@@ -175,11 +185,13 @@ class RunEngineWorker(Worker[Task]):
         self._ctx.run_engine.subscribe(self._on_document)
         self._ctx.run_engine.waiting_hook = self._waiting_hook
 
+        self._stopped.clear()
         self._started.set()
         while not self._stopping.is_set():
             self._cycle_with_error_handling()
-        self._stopped.set()
         self._started.clear()
+        self._stopping.clear()
+        self._stopped.set()
 
     def pause(self, defer=False):
         LOGGER.info("Requesting to pause the worker")

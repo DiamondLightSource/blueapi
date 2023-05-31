@@ -151,9 +151,6 @@ class RunEngineWorker(Worker[Task]):
         if self._started.is_set():
             raise Exception("Worker is already running")
         self._wait_until_stopped()
-        assert self._stopped.is_set()
-        assert not self._stopping.is_set()
-        assert not self._started.is_set()
         run_worker_in_own_thread(self)
         self._wait_until_started()
 

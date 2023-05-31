@@ -88,13 +88,16 @@ class BlueapiRestClient:
     def cancel_current_task(
         self,
         state: Literal[WorkerState.ABORTING, WorkerState.STOPPING],
-        reason: Optional[str] = "",
+        reason: Optional[str] = None,
     ):
+        data = {"new_state": state}
+        if reason:
+            data = {**data, "reason": reason}
         return self._request_and_deserialize(
             "/worker/state",
             target_type=WorkerState,
             method="PUT",
-            data={"new_state": state, "reason": reason},
+            data=data,
         )
 
     def _request_and_deserialize(

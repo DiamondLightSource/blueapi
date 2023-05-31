@@ -114,5 +114,5 @@ class StateChangeRequest(BlueapiBaseModel):
     )
     reason: Optional[str] = Field(
         description="The reason for the current run to be aborted",
-        default="",
+        default=None,
     )

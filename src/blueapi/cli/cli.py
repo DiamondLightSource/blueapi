@@ -204,9 +204,9 @@ def resume(obj: dict) -> None:
 
 @controller.command(name="abort")
 @check_connection
-@click.argument("reason", type=str, required=False, default="")
+@click.argument("reason", type=str, required=False)
 @click.pass_obj
-def abort(obj: dict, reason: Optional[str] = "") -> None:
+def abort(obj: dict, reason: Optional[str] = None) -> None:
     """
     Abort the execution of the current task, marking any ongoing runs as failed,
     with optional reason

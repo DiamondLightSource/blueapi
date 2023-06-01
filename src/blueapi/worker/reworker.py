@@ -25,7 +25,7 @@ from .event import (
     WorkerState,
 )
 from .multithread import run_worker_in_own_thread
-from .task import RunPlan, Task, _lookup_params
+from .task import Task
 from .worker import TrackableTask, Worker
 from .worker_busy_error import WorkerBusyError
 

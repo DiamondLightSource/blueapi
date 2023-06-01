@@ -152,10 +152,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic-fix/"
   },
   {
-    "version": "refactor-validation",
-    "url": "https://DiamondLightSource.github.io/blueapi/refactor-validation/"
-  },
-  {
     "version": "remove_servers",
     "url": "https://DiamondLightSource.github.io/blueapi/remove_servers/"
   },

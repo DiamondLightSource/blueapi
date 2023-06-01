@@ -37,10 +37,11 @@ class Task(BlueapiBaseModel):
         return self._prepared_params
 
 
+# Here for backward compatibility pending
+# https://github.com/DiamondLightSource/blueapi/issues/253
 class RunPlan(Task):
     """
-    Here for backward compatibility pending
-    https://github.com/DiamondLightSource/blueapi/issues/253
+    Task that will run a plan
     """
 
     ...

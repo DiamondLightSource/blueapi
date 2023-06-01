@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Command-Line Interface &#8212; blueapi 0.3.1.dev6+gc230f91e documentation</title>
+    <title>Command-Line Interface &#8212; blueapi 0.3.1.dev7+g0a4b85e7 documentation</title>
   
   
   
@@ -480,6 +480,21 @@ document.write(`
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
 </pre></div>
 </div>
+<section id="blueapi-controller-abort">
+<h4>abort<a class="headerlink" href="#blueapi-controller-abort" title="Permalink to this heading">#</a></h4>
+<p>Abort the execution of the current task, marking any ongoing runs as failed,
+with optional reason</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>abort<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>REASON<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-abort-arg-REASON">
+<span id="cmdoption-blueapi-controller-abort-arg-reason"></span><span class="sig-name descname"><span class="pre">REASON</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-controller-abort-arg-REASON" title="Permalink to this definition">#</a></dt>
+<dd><p>Optional argument</p>
+</dd></dl>
+
+</section>
 <section id="blueapi-controller-devices">
 <h4>devices<a class="headerlink" href="#blueapi-controller-devices" title="Permalink to this heading">#</a></h4>
 <p>Get a list of devices available for the worker to use</p>
@@ -546,6 +561,13 @@ document.write(`
 <h4>state<a class="headerlink" href="#blueapi-controller-state" title="Permalink to this heading">#</a></h4>
 <p>Print the current state of the worker</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>state<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="blueapi-controller-stop">
+<h4>stop<a class="headerlink" href="#blueapi-controller-stop" title="Permalink to this heading">#</a></h4>
+<p>Stop the execution of the current task, marking as ongoing runs as success</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>stop<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
@@ -629,12 +651,14 @@ document.write(`
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi">blueapi</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller">controller</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-abort">abort</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-devices">devices</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-pause">pause</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-plans">plans</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-resume">resume</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-run">run</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-state">state</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-stop">stop</a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-schema">schema</a></li>

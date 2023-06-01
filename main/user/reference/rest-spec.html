@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>REST Specification &#8212; blueapi 0.3.1.dev6+gc230f91e documentation</title>
+    <title>REST Specification &#8212; blueapi 0.3.1.dev7+g0a4b85e7 documentation</title>
   
   
   
@@ -541,6 +541,25 @@ server.</p>
 </dl>
 </dd></dl>
 
+<dl class="http delete">
+<dt class="sig sig-object http" id="delete--tasks-task_id">
+<span class="sig-name descname"><span class="pre">DELETE</span> </span><span class="sig-name descname"><span class="pre">/tasks/{task_id}</span></span><a class="headerlink" href="#delete--tasks-task_id" title="Permalink to this definition">#</a></dt>
+<dd><p><strong>Delete Submitted Task</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>task_id</strong> (<em>string</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Status Codes<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – Successful Response</p></li>
+<li><p><span><a class="reference external" href="https://www.rfc-editor.org/rfc/rfc4918#section-11.2">422 Unprocessable Entity</a></span> – Validation Error</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="http get">
 <dt class="sig sig-object http" id="get--tasks-task_id">
 <span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/tasks/{task_id}</span></span><a class="headerlink" href="#get--tasks-task_id" title="Permalink to this definition">#</a></dt>
@@ -580,16 +599,37 @@ server.</p>
 <span class="sig-name descname"><span class="pre">PUT</span> </span><span class="sig-name descname"><span class="pre">/worker/state</span></span><a class="headerlink" href="#put--worker-state" title="Permalink to this definition">#</a></dt>
 <dd><p><strong>Set State</strong></p>
 <p>Request that the worker is put into a particular state.
-Returns the state of the worker at the end of the call.
-If the worker is PAUSED, new_state may be RUNNING to resume.
-If the worker is RUNNING, new_state may be PAUSED to pause and
-defer may be True to defer the pause until the new checkpoint.
-All other values of new_state will result in 400 “Bad Request”</p>
+Returns the state of the worker at the end of the call.</p>
+<ul class="simple">
+<li><p><strong>The following transitions are allowed and return 202: Accepted</strong></p></li>
+<li><p>If the worker is <strong>PAUSED</strong>, new_state may be <strong>RUNNING</strong> to resume.</p></li>
+<li><dl class="simple">
+<dt>If the worker is <strong>RUNNING</strong>, new_state may be <strong>PAUSED</strong> to pause:</dt><dd><ul>
+<li><p>If defer is False (default): pauses and rewinds to the previous checkpoint</p></li>
+<li><p>If defer is True: waits until the next checkpoint to pause</p></li>
+<li><p><strong>If the task has no checkpoints, the task will instead be Aborted</strong></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>If the worker is <strong>RUNNING/PAUSED</strong>, new_state may be <strong>STOPPING</strong> to stop.</dt><dd><p>Stop marks any currently open Runs in the Task as a success and ends the task.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>If the worker is <strong>RUNNING/PAUSED</strong>, new_state may be <strong>ABORTING</strong> to abort.</dt><dd><p>Abort marks any currently open Runs in the Task as a Failure and ends the task.
+- If reason is set, the reason will be passed as the reason for the Run failure.</p>
+</dd>
+</dl>
+</li>
+<li><p><strong>All other transitions return 400: Bad Request</strong></p></li>
+</ul>
 <dl class="field-list simple">
 <dt class="field-odd">Status Codes<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.3">202 Accepted</a></span> – Accepted</p></li>
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Successful Response</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.3">202 Accepted</a></span> – Successful Response</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Bad Request</p></li>
 <li><p><span><a class="reference external" href="https://www.rfc-editor.org/rfc/rfc4918#section-11.2">422 Unprocessable Entity</a></span> – Validation Error</p></li>
 </ul>
 </dd>

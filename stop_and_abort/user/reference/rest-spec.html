@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>REST Specification &#8212; blueapi 0.3.1.dev9+g9d046f6f documentation</title>
+    <title>REST Specification &#8212; blueapi 0.3.1.dev10+gd4a592e5 documentation</title>
   
   
   
@@ -618,7 +618,7 @@ Returns the state of the worker at the end of the call.</p>
 </dl>
 </li>
 <li><dl class="simple">
-<dt>If the worker is <strong>RUNNING/PAUSED</strong>, new_state may be <strong>STOPPING</strong> to abort.</dt><dd><p>Abort marks any currently open Runs in the Task as a Failure and ends the task.
+<dt>If the worker is <strong>RUNNING/PAUSED</strong>, new_state may be <strong>ABORTING</strong> to abort.</dt><dd><p>Abort marks any currently open Runs in the Task as a Failure and ends the task.
 - If reason is set, the reason will be passed as the reason for the Run failure.</p>
 </dd>
 </dl>

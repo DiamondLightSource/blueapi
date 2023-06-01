@@ -7,6 +7,7 @@ from threading import Event, RLock
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Union
 
 from bluesky.protocols import Status
+from super_state_machine.errors import TransitionError
 
 from blueapi.core import (
     BlueskyContext,
@@ -90,12 +91,24 @@ class RunEngineWorker(Worker[Task]):
         self._stopped = Event()
         self._stopped.set()
 
-    def clear_task(self, task_id: str) -> bool:
-        if task_id in self._pending_tasks:
-            del self._pending_tasks[task_id]
-            return True
+    def clear_task(self, task_id: str) -> str:
+        task = self._pending_tasks.pop(task_id)
+        return task.task_id
+
+    def cancel_active_task(
+        self,
+        failure: bool = False,
+        reason: Optional[str] = None,
+    ) -> str:
+        if self._current is None:
+            # Persuades mypy that self._current is not None
+            # We only allow this method to be called if a Plan is active
+            raise TransitionError("Attempted to cancel while no active Task")
+        if failure:
+            self._ctx.run_engine.abort(reason)
         else:
-            return False
+            self._ctx.run_engine.stop()
+        return self._current.task_id
 
     def get_pending_tasks(self) -> List[TrackableTask[Task]]:
         return list(self._pending_tasks.values())

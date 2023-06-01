@@ -202,6 +202,32 @@ def resume(obj: dict) -> None:
     pprint(client.set_state(WorkerState.RUNNING))
 
 
+@controller.command(name="abort")
+@check_connection
+@click.argument("reason", type=str, required=False)
+@click.pass_obj
+def abort(obj: dict, reason: Optional[str] = None) -> None:
+    """
+    Abort the execution of the current task, marking any ongoing runs as failed,
+    with optional reason
+    """
+
+    client: BlueapiRestClient = obj["rest_client"]
+    pprint(client.cancel_current_task(state=WorkerState.ABORTING, reason=reason))
+
+
+@controller.command(name="stop")
+@check_connection
+@click.pass_obj
+def stop(obj: dict) -> None:
+    """
+    Stop the execution of the current task, marking as ongoing runs as success
+    """
+
+    client: BlueapiRestClient = obj["rest_client"]
+    pprint(client.cancel_current_task(state=WorkerState.STOPPING))
+
+
 # helper function
 def process_event_after_finished(event: WorkerEvent, logger: logging.Logger):
     if event.is_error():

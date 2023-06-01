@@ -95,6 +95,10 @@ components:
           type: boolean
         new_state:
           $ref: '#/components/schemas/WorkerState'
+        reason:
+          description: The reason for the current run to be aborted
+          title: Reason
+          type: string
       required:
       - new_state
       title: StateChangeRequest
@@ -292,6 +296,29 @@ paths:
           description: Validation Error
       summary: Submit Task
   /tasks/{task_id}:
+    delete:
+      operationId: delete_submitted_task_tasks__task_id__delete
+      parameters:
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          title: Task Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Delete Submitted Task
     get:
       description: Retrieve a task
       operationId: get_task_tasks__task_id__get
@@ -329,17 +356,20 @@ paths:
           description: Successful Response
       summary: Get State
     put:
-      description: 'Request that the worker is put into a particular state.
-
-        Returns the state of the worker at the end of the call.
-
-        If the worker is PAUSED, new_state may be RUNNING to resume.
-
-        If the worker is RUNNING, new_state may be PAUSED to pause and
-
-        defer may be True to defer the pause until the new checkpoint.
-
-        All other values of new_state will result in 400 "Bad Request"'
+      description: "Request that the worker is put into a particular state.\nReturns\
+        \ the state of the worker at the end of the call.\n\n- **The following transitions\
+        \ are allowed and return 202: Accepted**\n- If the worker is **PAUSED**, new_state\
+        \ may be **RUNNING** to resume.\n- If the worker is **RUNNING**, new_state\
+        \ may be **PAUSED** to pause:\n    - If defer is False (default): pauses and\
+        \ rewinds to the previous checkpoint\n    - If defer is True: waits until\
+        \ the next checkpoint to pause\n    - **If the task has no checkpoints, the\
+        \ task will instead be Aborted**\n- If the worker is **RUNNING/PAUSED**, new_state\
+        \ may be **STOPPING** to stop.\n    Stop marks any currently open Runs in\
+        \ the Task as a success and ends the task.\n- If the worker is **RUNNING/PAUSED**,\
+        \ new_state may be **ABORTING** to abort.\n    Abort marks any currently open\
+        \ Runs in the Task as a Failure and ends the task.\n    - If reason is set,\
+        \ the reason will be passed as the reason for the Run failure.\n- **All other\
+        \ transitions return 400: Bad Request**"
       operationId: set_state_worker_state_put
       requestBody:
         content:
@@ -349,14 +379,14 @@ paths:
         required: true
       responses:
         '202':
-          description: Accepted
-          detail: Transition requested
-        '400':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkerState'
           description: Successful Response
+          detail: Transition requested
+        '400':
+          description: Bad Request
           detail: Transition not allowed
         '422':
           content:

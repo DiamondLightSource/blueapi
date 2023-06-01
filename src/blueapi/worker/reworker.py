@@ -176,9 +176,6 @@ class RunEngineWorker(Worker[Task]):
                 f"Worker did not stop within {self._start_stop_timeout} seconds"
             )
 
-        if not self._stopped.wait(timeout=self._stop_timeout):
-            raise TimeoutError("Did not receive successful stop signal!")
-
     @property
     def state(self) -> WorkerState:
         return self._state

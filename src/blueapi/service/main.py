@@ -203,7 +203,7 @@ def set_state(
         - **If the task has no checkpoints, the task will instead be Aborted**
     - If the worker is **RUNNING/PAUSED**, new_state may be **STOPPING** to stop.
         Stop marks any currently open Runs in the Task as a success and ends the task.
-    - If the worker is **RUNNING/PAUSED**, new_state may be **STOPPING** to abort.
+    - If the worker is **RUNNING/PAUSED**, new_state may be **ABORTING** to abort.
         Abort marks any currently open Runs in the Task as a Failure and ends the task.
         - If reason is set, the reason will be passed as the reason for the Run failure.
     - **All other transitions return 400: Bad Request**

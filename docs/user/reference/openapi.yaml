@@ -366,7 +366,7 @@ paths:
         \ task will instead be Aborted**\n- If the worker is **RUNNING/PAUSED**, new_state\
         \ may be **STOPPING** to stop.\n    Stop marks any currently open Runs in\
         \ the Task as a success and ends the task.\n- If the worker is **RUNNING/PAUSED**,\
-        \ new_state may be **STOPPING** to abort.\n    Abort marks any currently open\
+        \ new_state may be **ABORTING** to abort.\n    Abort marks any currently open\
         \ Runs in the Task as a Failure and ends the task.\n    - If reason is set,\
         \ the reason will be passed as the reason for the Run failure.\n- **All other\
         \ transitions return 400: Bad Request**"

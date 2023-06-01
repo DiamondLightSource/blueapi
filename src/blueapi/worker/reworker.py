@@ -103,7 +103,7 @@ class RunEngineWorker(Worker[Task]):
         if self._current is None:
             # Persuades mypy that self._current is not None
             # We only allow this method to be called if a Plan is active
-            raise TransitionError
+            raise TransitionError("Attempted to cancel while no active Task")
         if failure:
             self._ctx.run_engine.abort(reason)
         else:

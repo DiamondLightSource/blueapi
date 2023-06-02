@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.3.1",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.1/"
+  },
+  {
     "version": "0.3.0",
     "url": "https://DiamondLightSource.github.io/blueapi/0.3.0/"
   },
@@ -158,10 +162,6 @@
   {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
-  },
-  {
-    "version": "stop_and_abort",
-    "url": "https://DiamondLightSource.github.io/blueapi/stop_and_abort/"
   },
   {
     "version": "test-cli",

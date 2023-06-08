@@ -12,7 +12,7 @@ from pydantic import parse_obj_as
 from stomp.exception import ConnectFailedException
 from stomp.utils import Frame
 
-from blueapi.config import StompConfig
+from blueapi.config import BasicAuthentication, StompConfig
 from blueapi.utils import handle_all_exceptions, serialize
 
 from .base import DestinationProvider, MessageListener, MessagingTemplate
@@ -71,6 +71,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
     _conn: stomp.Connection
     _reconnect_policy: StompReconnectPolicy
+    _authentication: BasicAuthentication
     _sub_num: itertools.count
     _listener: stomp.ConnectionListener
     _subscriptions: Dict[str, Subscription]
@@ -81,12 +82,15 @@ class StompMessagingTemplate(MessagingTemplate):
     _destination_provider: DestinationProvider = StompDestinationProvider()
 
     def __init__(
-        self,
-        conn: stomp.Connection,
-        reconnect_policy: Optional[StompReconnectPolicy] = None,
+            self,
+            conn: stomp.Connection,
+            reconnect_policy: Optional[StompReconnectPolicy] = None,
+            authentication: Optional[BasicAuthentication] = None
     ) -> None:
         self._conn = conn
         self._reconnect_policy = reconnect_policy or StompReconnectPolicy()
+        self._authentication = authentication or BasicAuthentication()
+
         self._sub_num = itertools.count()
         self._listener = stomp.ConnectionListener()
 
@@ -157,7 +161,11 @@ class StompMessagingTemplate(MessagingTemplate):
 
     def connect(self) -> None:
         LOGGER.info("Connecting...")
-        self._conn.connect(wait=True)
+        self._conn.connect(
+            username=self._authentication.username,
+            passcode=self._authentication.passcode,
+            wait=True
+        )
         self._listener.on_disconnected = self._on_disconnected
         self._ensure_subscribed()
 

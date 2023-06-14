@@ -117,7 +117,7 @@ class MessagingTemplate(ABC):
         __destination: str,
         __obj: Any,
         __on_reply: Optional[MessageListener] = None,
-        __correlation_id: Optional[str] = None,
+        correlation_id: Optional[str] = None,
     ) -> None:
         """
         Send a message to a destination

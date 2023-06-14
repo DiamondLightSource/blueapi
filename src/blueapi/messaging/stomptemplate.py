@@ -82,10 +82,10 @@ class StompMessagingTemplate(MessagingTemplate):
     _destination_provider: DestinationProvider = StompDestinationProvider()
 
     def __init__(
-            self,
-            conn: stomp.Connection,
-            reconnect_policy: Optional[StompReconnectPolicy] = None,
-            authentication: Optional[BasicAuthentication] = None
+        self,
+        conn: stomp.Connection,
+        reconnect_policy: Optional[StompReconnectPolicy] = None,
+        authentication: Optional[BasicAuthentication] = None,
     ) -> None:
         self._conn = conn
         self._reconnect_policy = reconnect_policy or StompReconnectPolicy()

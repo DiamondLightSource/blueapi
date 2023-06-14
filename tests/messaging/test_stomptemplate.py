@@ -91,7 +91,7 @@ def test_listener(template: MessagingTemplate, test_queue: str) -> None:
         reply_queue = ctx.reply_destination
         if reply_queue is None:
             raise RuntimeError("reply queue is None")
-        template.send(reply_queue, "ack")
+        template.send(reply_queue, "ack", correlation_id=ctx.correlation_id)
 
     reply = template.send_and_receive(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
@@ -114,7 +114,7 @@ def test_deserialization(
         reply_queue = ctx.reply_destination
         if reply_queue is None:
             raise RuntimeError("reply queue is None")
-        template.send(reply_queue, message)
+        template.send(reply_queue, message, correlation_id=ctx.correlation_id)
 
     template.subscribe(test_queue, server)
     reply = template.send_and_receive(test_queue, message, message_type).result(
@@ -155,7 +155,7 @@ def test_correlation_id(
 
     def server(ctx: MessageContext, msg: str) -> None:
         q.put(ctx)
-        template.send(test_queue_2, msg, None, ctx.correlation_id)
+        template.send(test_queue_2, msg, correlation_id=ctx.correlation_id)
 
     def client(ctx: MessageContext, msg: str) -> None:
         q.put(ctx)
@@ -175,6 +175,6 @@ def acknowledge(template: MessagingTemplate, destination: str) -> None:
         reply_queue = ctx.reply_destination
         if reply_queue is None:
             raise RuntimeError("reply queue is None")
-        template.send(reply_queue, "ack")
+        template.send(reply_queue, "ack", correlation_id=ctx.correlation_id)
 
     template.subscribe(destination, server)

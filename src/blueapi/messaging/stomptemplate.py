@@ -164,13 +164,24 @@ class StompMessagingTemplate(MessagingTemplate):
         self._ensure_subscribed([sub_id])
 
     def connect(self) -> None:
+        if self._conn.is_connected():
+            return
+
+        connected: Event = Event()
+
+        def finished_connecting(_: Frame):
+            connected.set()
+
+        self._listener.on_connected = finished_connecting
+        self._listener.on_disconnected = self._on_disconnected
+
         LOGGER.info("Connecting...")
         self._conn.connect(
             username=self._authentication.username,
             passcode=self._authentication.passcode,
             wait=True,
         )
-        self._listener.on_disconnected = self._on_disconnected
+        connected.wait()
         self._ensure_subscribed()
 
     def _ensure_subscribed(self, sub_ids: Optional[List[str]] = None) -> None:

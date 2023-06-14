@@ -153,7 +153,11 @@ class StompMessagingTemplate(MessagingTemplate):
             )
             callback(context, value)
 
-        sub_id = destination if destination.startswith("/temp-queue/") else str(next(self._sub_num))
+        sub_id = (
+            destination
+            if destination.startswith("/temp-queue/")
+            else str(next(self._sub_num))
+        )
         self._subscriptions[sub_id] = Subscription(destination, wrapper)
         # If we're connected, subscribe immediately, otherwise the subscription is
         # deferred until connection.
@@ -164,7 +168,7 @@ class StompMessagingTemplate(MessagingTemplate):
         self._conn.connect(
             username=self._authentication.username,
             passcode=self._authentication.passcode,
-            wait=True
+            wait=True,
         )
         self._listener.on_disconnected = self._on_disconnected
         self._ensure_subscribed()

@@ -1,10 +1,11 @@
 from enum import Enum
 from pathlib import Path
-from typing import Any, Generic, Literal, Mapping, Type, TypeVar, Union, Optional
+from typing import Any, Generic, Literal, Mapping, Optional, Type, TypeVar, Union
 
 import yaml
-from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as
+
+from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -24,6 +25,7 @@ class BasicAuthentication(BaseModel):
     """
     Log in details for stomp when the stomp server uses authentication
     """
+
     username: str = "guest"
     passcode: Optional[str] = "guest"
 

@@ -190,8 +190,6 @@ class StompMessagingTemplate(MessagingTemplate):
         # on template before it connects, then just run the subscribes after connection.
         if self._conn.is_connected():
             for sub_id in sub_ids or self._subscriptions.keys():
-                if sub_id.startswith("/temp-queue/"):
-                    continue
                 sub = self._subscriptions[sub_id]
                 LOGGER.info(f"Subscribing to {sub.destination}")
                 self._conn.subscribe(destination=sub.destination, id=sub_id, ack="auto")

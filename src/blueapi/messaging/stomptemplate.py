@@ -153,7 +153,7 @@ class StompMessagingTemplate(MessagingTemplate):
             )
             callback(context, value)
 
-        sub_id = str(next(self._sub_num))
+        sub_id = destination if destination.startswith("/temp-queue/") else str(next(self._sub_num))
         self._subscriptions[sub_id] = Subscription(destination, wrapper)
         # If we're connected, subscribe immediately, otherwise the subscription is
         # deferred until connection.
@@ -175,6 +175,8 @@ class StompMessagingTemplate(MessagingTemplate):
         # on template before it connects, then just run the subscribes after connection.
         if self._conn.is_connected():
             for sub_id in sub_ids or self._subscriptions.keys():
+                if sub_id.startswith("/temp-queue/"):
+                    continue
                 sub = self._subscriptions[sub_id]
                 LOGGER.info(f"Subscribing to {sub.destination}")
                 self._conn.subscribe(destination=sub.destination, id=sub_id, ack="auto")

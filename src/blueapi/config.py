@@ -27,7 +27,7 @@ class BasicAuthentication(BaseModel):
     """
 
     username: str = "guest"
-    passcode: Optional[str] = "guest"
+    passcode: str = "guest"
 
 
 class StompConfig(BaseModel):

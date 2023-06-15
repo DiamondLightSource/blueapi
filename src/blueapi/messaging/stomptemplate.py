@@ -102,7 +102,11 @@ class StompMessagingTemplate(MessagingTemplate):
     @classmethod
     def autoconfigured(cls, config: StompConfig) -> MessagingTemplate:
         return cls(
-            stomp.Connection([(config.host, config.port)], auto_content_length=False)
+            stomp.Connection(
+                [(config.host, config.port)],
+                auto_content_length=False,
+            ),
+            authentication=config.auth,
         )
 
     @property

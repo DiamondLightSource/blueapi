@@ -45,10 +45,8 @@ jobs:
           - 61613:61613
       rabbitmq: 
         image: pcloud/rabbitmq-stomp
-        volumes:
-          - ${{ github.workspace }}/.github/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
         ports:
-          - 61614:61614
+          - 61614:61613
 
     runs-on: ${{ matrix.os }}
     env:

@@ -43,12 +43,6 @@ jobs:
         image: rmohr/activemq:5.14.5-alpine
         ports:
           - 61613:61613
-      rabbitmq: 
-        image: pcloud/rabbitmq-stomp
-        volumes:
-          - ${{ github.workspace }}/.github/enabled_plugins:/etc/rabbitmq/enabled_plugins
-        ports:
-          - 61614:61613
 
     runs-on: ${{ matrix.os }}
     env:
@@ -58,6 +52,12 @@ jobs:
       
 
     steps:
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@v1
+        with:
+          ports: '61614:61613'
+          plugins: rabbitmq_stomp  
+
       - name: Checkout
         uses: actions/checkout@v3
         with:

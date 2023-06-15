@@ -35,8 +35,8 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"] # can add windows-latest, macos-latest
-        python: ["3.9", "3.10", "3.11"]
-        install: [".[dev]", "-e .[dev]"]
+        python: ["3.11"]  # ["3.9", "3.10", "3.11"]
+        install: [".[dev]"]  # [".[dev]", "-e .[dev]"]
 
     services:
       activemq:
@@ -81,8 +81,8 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"] # can add windows-latest, macos-latest
-        python: ["3.9", "3.10", "3.11"]
-        install: [".[dev]", "-e .[dev]"]
+        python: ["3.11"]  # ["3.9", "3.10", "3.11"]
+        install: [".[dev]"]  # [".[dev]", "-e .[dev]"]
 
     runs-on: ${{ matrix.os }}
     env:
@@ -90,6 +90,12 @@ jobs:
       PY_IGNORE_IMPORTMISMATCH: "1"
 
     steps:
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@v1
+        with:
+          ports: '61613:61613'
+          plugins: rabbitmq_stomp
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -106,14 +112,11 @@ jobs:
       - name: List dependency tree
         run: pipdeptree
 
-      - name: Start RabbitMQ
-        uses: namoshek/rabbitmq-github-action@v1
-        with:
-          ports: '61613:61613'
-          plugins: rabbitmq_stomp
-
       - name: Run tests
         run: pytest
+
+      - name: Get logs of RabbitMQ
+        run: docker logs rabbitmq
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

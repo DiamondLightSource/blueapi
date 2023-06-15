@@ -46,7 +46,7 @@ jobs:
       rabbitmq: 
         image: pcloud/rabbitmq-stomp
         volumes:
-          - .github/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+          - /source/blueapi/.github/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
         ports:
           - 61614:61614
 

@@ -45,6 +45,8 @@ jobs:
           - 61613:61613
       rabbitmq: 
         image: pcloud/rabbitmq-stomp
+        volumes:
+          - ${{ github.workspace }}/.github/enabled_plugins:/etc/rabbitmq/enabled_plugins
         ports:
           - 61614:61613
 

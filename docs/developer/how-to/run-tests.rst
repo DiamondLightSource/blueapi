@@ -11,8 +11,8 @@ It will also report coverage to the commandline and to ``cov.xml``.
 .. _pytest: https://pytest.org/
 .. _look like tests: https://docs.pytest.org/explanation/goodpractices.html#test-discovery
 
-Skipping the message bus tests
-------------------------------
+Skip the message bus tests
+--------------------------
 
 The tests for stomp require connection to a live broker and will fail
 if one is not present. This can be inconvenient if you wish to test changes
@@ -23,8 +23,8 @@ that are unrelated to the broker, you can avoid this with::
 The stomp tests are still run against a live broker in CI to ensure nothing
 slips through the cracks.
 
-Configuring message busses
---------------------------
+Configure message busses
+------------------------
 
 The tests for communicating with a message bus over stomp support either ActiveMQ or RabbitMQ
 with the ```rabbitmq_stomp``` plugin installed. The tests assume that such a broker is available

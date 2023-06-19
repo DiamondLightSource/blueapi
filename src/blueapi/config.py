@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Any, Generic, Literal, Mapping, Type, TypeVar, Union
+from typing import Any, Generic, Literal, Mapping, Optional, Type, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as
@@ -21,6 +21,15 @@ class Source(BaseModel):
     module: Union[Path, str]
 
 
+class BasicAuthentication(BaseModel):
+    """
+    Log in details for when a server uses authentication
+    """
+
+    username: str = "guest"
+    passcode: str = "guest"
+
+
 class StompConfig(BaseModel):
     """
     Config for connecting to stomp broker
@@ -28,6 +37,7 @@ class StompConfig(BaseModel):
 
     host: str = "localhost"
     port: int = 61613
+    auth: Optional[BasicAuthentication] = None
 
 
 class EnvironmentConfig(BlueapiBaseModel):

@@ -1,10 +1,10 @@
 import itertools
 from concurrent.futures import Future
 from queue import Queue
-from typing import Any, Iterable, Type
+from typing import Any, Iterable, List, Type
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, BaseSettings, Field
 
 from blueapi.config import StompConfig
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
@@ -13,16 +13,27 @@ _TIMEOUT: float = 10.0
 _COUNT = itertools.count()
 
 
-@pytest.fixture
-def disconnected_template() -> MessagingTemplate:
-    return StompMessagingTemplate.autoconfigured(StompConfig())
+class StompTestingSettings(BaseSettings):
+    blueapi_test_stomp_ports: List[int] = Field(default=[61613])
+
+    def test_stomp_configs(self) -> Iterable[StompConfig]:
+        for port in self.blueapi_test_stomp_ports:
+            yield StompConfig(port=port)
 
 
-@pytest.fixture
-def template(disconnected_template: MessagingTemplate) -> Iterable[MessagingTemplate]:
-    disconnected_template.connect()
-    yield disconnected_template
-    disconnected_template.disconnect()
+@pytest.fixture(params=StompTestingSettings().test_stomp_configs())
+def disconnected_template(request: pytest.FixtureRequest) -> MessagingTemplate:
+    stomp_config = request.param
+    return StompMessagingTemplate.autoconfigured(stomp_config)
+
+
+@pytest.fixture(params=StompTestingSettings().test_stomp_configs())
+def template(request: pytest.FixtureRequest) -> Iterable[MessagingTemplate]:
+    stomp_config = request.param
+    template = StompMessagingTemplate.autoconfigured(stomp_config)
+    template.connect()
+    yield template
+    template.disconnect()
 
 
 @pytest.fixture
@@ -91,7 +102,7 @@ def test_listener(template: MessagingTemplate, test_queue: str) -> None:
         reply_queue = ctx.reply_destination
         if reply_queue is None:
             raise RuntimeError("reply queue is None")
-        template.send(reply_queue, "ack")
+        template.send(reply_queue, "ack", correlation_id=ctx.correlation_id)
 
     reply = template.send_and_receive(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
@@ -114,7 +125,7 @@ def test_deserialization(
         reply_queue = ctx.reply_destination
         if reply_queue is None:
             raise RuntimeError("reply queue is None")
-        template.send(reply_queue, message)
+        template.send(reply_queue, message, correlation_id=ctx.correlation_id)
 
     template.subscribe(test_queue, server)
     reply = template.send_and_receive(test_queue, message, message_type).result(
@@ -155,7 +166,7 @@ def test_correlation_id(
 
     def server(ctx: MessageContext, msg: str) -> None:
         q.put(ctx)
-        template.send(test_queue_2, msg, None, ctx.correlation_id)
+        template.send(test_queue_2, msg, correlation_id=ctx.correlation_id)
 
     def client(ctx: MessageContext, msg: str) -> None:
         q.put(ctx)
@@ -175,6 +186,6 @@ def acknowledge(template: MessagingTemplate, destination: str) -> None:
         reply_queue = ctx.reply_destination
         if reply_queue is None:
             raise RuntimeError("reply queue is None")
-        template.send(reply_queue, "ack")
+        template.send(reply_queue, "ack", correlation_id=ctx.correlation_id)
 
     template.subscribe(destination, server)

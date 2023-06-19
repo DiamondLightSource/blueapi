@@ -12,7 +12,7 @@ from pydantic import parse_obj_as
 from stomp.exception import ConnectFailedException
 from stomp.utils import Frame
 
-from blueapi.config import StompConfig
+from blueapi.config import BasicAuthentication, StompConfig
 from blueapi.utils import handle_all_exceptions, serialize
 
 from .base import DestinationProvider, MessageListener, MessagingTemplate
@@ -71,6 +71,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
     _conn: stomp.Connection
     _reconnect_policy: StompReconnectPolicy
+    _authentication: BasicAuthentication
     _sub_num: itertools.count
     _listener: stomp.ConnectionListener
     _subscriptions: Dict[str, Subscription]
@@ -84,9 +85,12 @@ class StompMessagingTemplate(MessagingTemplate):
         self,
         conn: stomp.Connection,
         reconnect_policy: Optional[StompReconnectPolicy] = None,
+        authentication: Optional[BasicAuthentication] = None,
     ) -> None:
         self._conn = conn
         self._reconnect_policy = reconnect_policy or StompReconnectPolicy()
+        self._authentication = authentication or BasicAuthentication()
+
         self._sub_num = itertools.count()
         self._listener = stomp.ConnectionListener()
 
@@ -98,7 +102,11 @@ class StompMessagingTemplate(MessagingTemplate):
     @classmethod
     def autoconfigured(cls, config: StompConfig) -> MessagingTemplate:
         return cls(
-            stomp.Connection([(config.host, config.port)], auto_content_length=False)
+            stomp.Connection(
+                [(config.host, config.port)],
+                auto_content_length=False,
+            ),
+            authentication=config.auth,
         )
 
     @property
@@ -149,16 +157,35 @@ class StompMessagingTemplate(MessagingTemplate):
             )
             callback(context, value)
 
-        sub_id = str(next(self._sub_num))
+        sub_id = (
+            destination
+            if destination.startswith("/temp-queue/")
+            else str(next(self._sub_num))
+        )
         self._subscriptions[sub_id] = Subscription(destination, wrapper)
         # If we're connected, subscribe immediately, otherwise the subscription is
         # deferred until connection.
         self._ensure_subscribed([sub_id])
 
     def connect(self) -> None:
-        LOGGER.info("Connecting...")
-        self._conn.connect(wait=True)
+        if self._conn.is_connected():
+            return
+
+        connected: Event = Event()
+
+        def finished_connecting(_: Frame):
+            connected.set()
+
+        self._listener.on_connected = finished_connecting
         self._listener.on_disconnected = self._on_disconnected
+
+        LOGGER.info("Connecting...")
+        self._conn.connect(
+            username=self._authentication.username,
+            passcode=self._authentication.passcode,
+            wait=True,
+        )
+        connected.wait()
         self._ensure_subscribed()
 
     def _ensure_subscribed(self, sub_ids: Optional[List[str]] = None) -> None:

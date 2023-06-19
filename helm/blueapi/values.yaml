@@ -65,6 +65,9 @@ worker:
       - kind: planFunctions
         module: blueapi.plans
   stomp:
-    host: activemq
+    auth:
+      username: guest
+      passcode: guest
+    host: rabbitmq
     port: 61613
 # Config for the worker goes here, will be mounted into a config file

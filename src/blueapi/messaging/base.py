@@ -97,7 +97,9 @@ class MessagingTemplate(ABC):
             obj (Any): Message to send, must be serializable
             reply_type (Type, optional): Expected type of reply, used
                                          in deserialization. Defaults to str.
-
+            correlation_id (Optional[str]): An id which correlates this request with
+                                                requests it spawns or the request which
+                                                spawned it etc.
         Returns:
             Future: Future representing the reply
         """
@@ -114,9 +116,9 @@ class MessagingTemplate(ABC):
     @abstractmethod
     def send(
         self,
-        __destination: str,
-        __obj: Any,
-        __on_reply: Optional[MessageListener] = None,
+        destination: str,
+        obj: Any,
+        on_reply: Optional[MessageListener] = None,
         correlation_id: Optional[str] = None,
     ) -> None:
         """
@@ -125,8 +127,11 @@ class MessagingTemplate(ABC):
         Args:
             destination (str): Destination to send the message
             obj (Any): Message to send, must be serializable
-            __on_reply (Optional[MessageListener], optional): Callback function for
+            on_reply (Optional[MessageListener], optional): Callback function for
                                                               a reply. Defaults to None.
+            correlation_id (Optional[str]): An id which correlates this request with
+                                                requests it spawns or the request which
+                                                spawned it etc.
         """
 
     def listener(self, destination: str):
@@ -150,8 +155,8 @@ class MessagingTemplate(ABC):
     @abstractmethod
     def subscribe(
         self,
-        __destination: str,
-        __callback: MessageListener,
+        destination: str,
+        callback: MessageListener,
     ) -> None:
         """
         Subscribe to messages from a particular destination. Requires
@@ -161,11 +166,11 @@ class MessagingTemplate(ABC):
             ...
 
         The type annotation of the message will be inspected and used in
-        deserialilization.
+        deserialization.
 
         Args:
-            __destination (str): Destination to subscribe to
-            __callback (MessageListener): What to do with each message
+            destination (str): Destination to subscribe to
+            callback (MessageListener): What to do with each message
         """
 
     @abstractmethod

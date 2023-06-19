@@ -23,7 +23,7 @@ class Source(BaseModel):
 
 class BasicAuthentication(BaseModel):
     """
-    Log in details for stomp when the stomp server uses authentication
+    Log in details for when a server uses authentication
     """
 
     username: str = "guest"

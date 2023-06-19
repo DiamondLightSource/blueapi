@@ -11,6 +11,7 @@ It will also report coverage to the commandline and to ``cov.xml``.
 .. _pytest: https://pytest.org/
 .. _look like tests: https://docs.pytest.org/explanation/goodpractices.html#test-discovery
 
+
 Skip the message bus tests
 --------------------------
 
@@ -29,7 +30,7 @@ Configure message busses
 The tests for communicating with a message bus over stomp support either ActiveMQ or RabbitMQ
 with the ```rabbitmq_stomp``` plugin installed. The tests assume that such a broker is available
 on ```localhost:61613```: if you require a different host or port, edit StompConfig in config.py
-or set the `BLUEAPI_TEST_STOMP_PORTS` environment variable: this variable is a list of values
+or set the ```BLUEAPI_TEST_STOMP_PORTS``` environment variable: this variable is a list of values
 so the tests can be run against multiple brokers::
 
     # Default behaviour

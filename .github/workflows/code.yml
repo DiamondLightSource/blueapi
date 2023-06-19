@@ -36,7 +36,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest"] # can add windows-latest, macos-latest
         python: ["3.9", "3.10", "3.11"]
-        install: [".[dev]"]
+        install: [".[dev]", "-e .[dev]"]
 
     services:
       activemq:

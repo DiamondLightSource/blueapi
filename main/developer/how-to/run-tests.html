@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Run the tests using pytest &#8212; blueapi 0.3.1.dev7+g0a4b85e7 documentation</title>
+    <title>Run the tests using pytest &#8212; blueapi 0.3.2.dev1+gcd242b43 documentation</title>
   
   
   
@@ -472,7 +472,7 @@ like tests</a>, and run them to check for errors. You can run it with:</p>
 <p>It will also report coverage to the commandline and to <code class="docutils literal notranslate"><span class="pre">cov.xml</span></code>.</p>
 <section id="skip-the-message-bus-tests">
 <h2>Skip the message bus tests<a class="headerlink" href="#skip-the-message-bus-tests" title="Permalink to this heading">#</a></h2>
-<p>The tests for stomp require connection to a live ActiveMQ broker and will fail
+<p>The tests for stomp require connection to a live broker and will fail
 if one is not present. This can be inconvenient if you wish to test changes
 that are unrelated to the broker, you can avoid this with:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tox -e pytest -- --skip-stomp
@@ -480,6 +480,43 @@ that are unrelated to the broker, you can avoid this with:</p>
 </div>
 <p>The stomp tests are still run against a live broker in CI to ensure nothing
 slips through the cracks.</p>
+</section>
+<section id="configure-message-busses">
+<h2>Configure message busses<a class="headerlink" href="#configure-message-busses" title="Permalink to this heading">#</a></h2>
+<p>The tests for communicating with a message bus over stomp support either ActiveMQ or RabbitMQ
+with the <code class="docutils literal notranslate"><span class="pre">`rabbitmq_stomp`</span></code> plugin installed. The tests assume that such a broker is available
+on <code class="docutils literal notranslate"><span class="pre">`localhost:61613`</span></code>: if you require a different host or port, edit StompConfig in config.py
+or set the <code class="docutils literal notranslate"><span class="pre">`BLUEAPI_TEST_STOMP_PORTS`</span></code> environment variable: this variable is a list of values
+so the tests can be run against multiple brokers:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Default behaviour
+$ export BLUEAPI_TEST_STOMP_PORTS=&quot;[61613]&quot;
+
+# Broker is running on a different port
+$ export BLUEAPI_TEST_STOMP_PORTS=&quot;[61614]&quot;
+
+# Multiple brokers are running on multiple ports, the tests will be run once per broker
+$ export BLUEAPI_TEST_STOMP_PORTS=&quot;[61613, 61614]&quot;
+</pre></div>
+</div>
+<p>ActiveMQ:
+For testing and development purposes, the outdated and unmaintained ActiveMQ community image is sufficient
+if you do  not already have an ActiveMQ installation, but it is <strong>not recommended</strong> for deployment or long term use.</p>
+<p>Running the ActiveMQ container image with stomp port 61613 and management port 8161 forwarded to localhost:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker run -p 61613:61613 -p 8161:8161 rmohr/activemq
+</pre></div>
+</div>
+<p>RabbitMQ:
+As the RabbitMQ container image is actively maintained and packaged into a Helm chart, this is the recommended
+message bus for active deployments. For testing and deployment it does require that the <code class="docutils literal notranslate"><span class="pre">`rabbitmq_stomp`</span></code>
+plugin is enabled, and that StompConfig in config.py has Authentication enabled.</p>
+<p>Running the RabbitMQ container image with stomp port 61613 and management port 15672 forwarded:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker run -p 61613:61613 -p 15672:15672 --name rabbitmq rabbitmq/management
+</pre></div>
+</div>
+<p>Enabling the rabbitmq_stomp plugin:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker exec rabbitmq rabbitmq-plugins enable rabbitmq_stomp
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -531,6 +568,7 @@ slips through the cracks.</p>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skip-the-message-bus-tests">Skip the message bus tests</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configure-message-busses">Configure message busses</a></li>
 </ul>
   </nav></div>
 

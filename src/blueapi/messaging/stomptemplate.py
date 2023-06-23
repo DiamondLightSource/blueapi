@@ -133,7 +133,7 @@ class StompMessagingTemplate(MessagingTemplate):
     ) -> None:
         LOGGER.info(f"SENDING {message} to {destination}")
 
-        headers: Dict[str, Any] = {}
+        headers: Dict[str, Any] = {"JMSType": "TextMessage"}
         if on_reply is not None:
             reply_queue_name = self.destinations.temporary_queue(str(uuid.uuid1()))
             headers = {**headers, "reply-to": reply_queue_name}

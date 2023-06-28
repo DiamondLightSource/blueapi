@@ -66,6 +66,8 @@ tolerations: []
 
 affinity: {}
 
+#existingSecret: see templates/secret.yaml
+
 worker:
   env:
     sources:

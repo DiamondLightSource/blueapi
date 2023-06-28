@@ -7,7 +7,7 @@ spec:
   - name: http
     port: {{ .Values.service.port }}
     protocol: TCP
-    targetPort: 8000
+    targetPort: {{ .Values.worker.api.port }}
   selector:
     app: {{ include "blueapi.fullname" . }}
   type: {{ .Values.service.type }}

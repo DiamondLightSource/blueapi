@@ -65,7 +65,7 @@ class LoggingConfig(BlueapiBaseModel):
 
 class RestConfig(BlueapiBaseModel):
     host: str = "localhost"
-    port: int = 8000  # TODO: enable changing port of worker: remember k8s service
+    port: int = 8000
     protocol: str = "http"
 
 

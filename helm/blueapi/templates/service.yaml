@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "blueapi.fullname" . }}
+spec:
+  ports:
+  - name: http
+    port: {{ .Values.service.port }}
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: {{ include "blueapi.fullname" . }}
+  type: {{ .Values.service.type }}

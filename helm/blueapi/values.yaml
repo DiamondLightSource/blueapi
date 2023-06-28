@@ -38,6 +38,15 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
+# Recommended for production to change service.type to ClusterIP and set up an Ingress
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  create: false
+#  host: foo.diamond.ac.uk  (assumes port = service.port)
+
 resources:
   {}
   # We usually recommend not to specify default resources and to leave this as a conscious

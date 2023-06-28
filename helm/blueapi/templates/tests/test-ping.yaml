@@ -8,10 +8,38 @@ metadata:
     "helm.sh/hook": test
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
+  volumes:
+    - name: worker-config
+      configMap:
+        name: {{  include "blueapi.fullname" . }}-config
+    {{- with .Values.existingSecret }}
+    - name: worker-secret
+    secret:
+      secretName: {{ print . }}
+    {{- end }}
   containers:
     - name: ping
+      volumeMounts:
+        - name: worker-config
+          mountPath: "/config"
+          subPath: "config.yaml"
+          readOnly: true
+        {{- with .Values.existingSecret }}
+        - name: worker-secret
+          mountPath: "/config"
+          subPath: "secret.yaml"
+          readOnly: true
+        {{- end }}
       image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
       imagePullPolicy: {{ .Values.image.pullPolicy }}
-      command: ["bluesky"]
-      args: ["controller", "-h", "{{ .Values.worker.stomp.host }}", "-p", "{{ .Values.worker.stomp.port }}", "plans"]
+      command: ["blueapi"]
+          args:
+            - "-c"
+            - "config/config.yaml"
+            {{- with .Values.existingSecret }}
+            - "-c"
+            - "config/secret.yaml"
+            {{- end }}
+            - "controller"
+            - "plans"
   restartPolicy: Never

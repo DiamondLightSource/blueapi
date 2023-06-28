@@ -41,8 +41,8 @@ spec:
             - name: worker-config
               mountPath: "/config"
               readOnly: true
-          command: ["bluesky"]
-          args: ["worker", "-c", "/config/config.yaml"]
+          command: ["blueapi"]
+          args: ["-c", "/config/config.yaml", "serve"]
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

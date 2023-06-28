@@ -29,6 +29,11 @@ spec:
         - name: worker-config
           configMap:
             name: {{ include "blueapi.fullname" . }}-config
+        {{- with .Values.existingSecret }}
+        - name: worker-secret
+          secret:
+            secretName: {{ print . }}
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -40,9 +45,23 @@ spec:
           volumeMounts:
             - name: worker-config
               mountPath: "/config"
+              subPath: "config.yaml"
               readOnly: true
+            {{- with .Values.existingSecret }}
+            - name: worker-secret
+              mountPath: "/config"
+              subPath: "secret.yaml"
+              readOnly: true
+            {{- end }}
           command: ["blueapi"]
-          args: ["-c", "/config/config.yaml", "serve"]
+          args:
+            - "-c"
+            - "config/config.yaml"
+            {{- with .Values.existingSecret }}
+            - "-c"
+            - "config/secret.yaml"
+            {{- end }}
+            - "serve"
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -9,5 +9,5 @@ spec:
     protocol: TCP
     targetPort: {{ .Values.worker.api.port }}
   selector:
-    app: {{ include "blueapi.fullname" . }}
+    app: blueapi
   type: {{ .Values.service.type }}

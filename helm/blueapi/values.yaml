@@ -23,7 +23,8 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-podAnnotations: {}
+podAnnotations:
+  app: blueapi
 
 podSecurityContext:
   {}
@@ -70,6 +71,7 @@ affinity: {}
 
 worker:
   api:
+    host: 0.0.0.0 # Allow non-loopback traffic
     port: 8000
   env:
     sources:

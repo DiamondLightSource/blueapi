@@ -69,9 +69,9 @@ affinity: {}
 #existingSecret: see templates/secret.yaml
 
 worker:
+  api:
+    port: 8000
   env:
-    api:
-      port: 8000
     sources:
       - kind: deviceFunctions
         module: blueapi.startup.example

@@ -4,7 +4,7 @@ from collections import deque
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
 
 import click
 from requests.exceptions import ConnectionError
@@ -28,19 +28,21 @@ from .rest import BlueapiRestClient
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
-@click.option("-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True)
+@click.option(
+    "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
+)
 @click.pass_context
 def main(ctx: click.Context, config: Union[Optional[Path], Tuple[Path, ...]]) -> None:
     # if no command is supplied, run with the options passed
 
     config_loader = ConfigLoader(ApplicationConfig)
     if config is not None:
-        configs = list(config)
-        for config in configs:
-            if config.exists():
-                config_loader.use_values_from_yaml(config)
+        configs = (config,) if isinstance(config, Path) else config
+        for path in configs:
+            if path.exists():
+                config_loader.use_values_from_yaml(path)
             else:
-                raise FileNotFoundError(f"Cannot find file: {config}")
+                raise FileNotFoundError(f"Cannot find file: {path}")
 
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()

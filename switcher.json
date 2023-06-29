@@ -4,8 +4,8 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
-    "version": "0.3.3-alpha3",
-    "url": "https://DiamondLightSource.github.io/blueapi/0.3.3-alpha3/"
+    "version": "0.3.3-beta",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.3-beta/"
   },
   {
     "version": "0.3.2",
@@ -90,6 +90,10 @@
   {
     "version": "0.3.3-alpha2",
     "url": "https://DiamondLightSource.github.io/blueapi/0.3.3-alpha2/"
+  },
+  {
+    "version": "0.3.3-alpha3",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.3-alpha3/"
   },
   {
     "version": "121_dodal_integration",

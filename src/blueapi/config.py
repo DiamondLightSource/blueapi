@@ -120,7 +120,20 @@ class ConfigLoader(Generic[C]):
                                         if defaults provided.
         """
 
-        self._values = {**self._values, **values}
+        def recursively_update_map(
+            old: Mapping[str, Any], new: Mapping[str, Any]
+        ) -> None:
+            for key in new:
+                if (
+                    key in old
+                    and isinstance(old[key], dict)
+                    and isinstance(new[key], dict)
+                ):
+                    recursively_update_map(old[key], new[key])
+                else:
+                    old[key] = new[key]
+
+        recursively_update_map(self._values, values)
 
     def use_values_from_yaml(self, path: Path) -> None:
         """

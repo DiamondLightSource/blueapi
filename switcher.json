@@ -160,6 +160,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
   },
   {
+    "version": "minor-kubernetes-fixes",
+    "url": "https://DiamondLightSource.github.io/blueapi/minor-kubernetes-fixes/"
+  },
+  {
     "version": "optional-dependencies",
     "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
   },

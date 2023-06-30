@@ -50,10 +50,10 @@ spec:
           command: ["blueapi"]
           args:
             - "-c"
-            - "config/config.yaml"
+            - "/config/config.yaml"
             {{- with .Values.existingSecret }}
             - "-c"
-            - "config/secret.yaml"
+            - "/config/secret.yaml"
             {{- end }}
             - "serve"
       {{- with .Values.nodeSelector }}

@@ -23,7 +23,8 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-podAnnotations: {}
+podAnnotations:
+  app: blueapi
 
 podSecurityContext:
   {}
@@ -37,6 +38,15 @@ securityContext:
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
+
+# Recommended for production to change service.type to ClusterIP and set up an Ingress
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  create: false
+#  host: foo.diamond.ac.uk  (assumes port = service.port)
 
 resources:
   {}
@@ -57,7 +67,12 @@ tolerations: []
 
 affinity: {}
 
+#existingSecret: see templates/secret.yaml
+
 worker:
+  api:
+    host: 0.0.0.0 # Allow non-loopback traffic
+    port: 8000
   env:
     sources:
       - kind: deviceFunctions

@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.3.3",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.3/"
+  },
+  {
     "version": "0.3.2",
     "url": "https://DiamondLightSource.github.io/blueapi/0.3.2/"
   },
@@ -154,10 +158,6 @@
   {
     "version": "hotfix-linting",
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
-  },
-  {
-    "version": "kubernetes",
-    "url": "https://DiamondLightSource.github.io/blueapi/kubernetes/"
   },
   {
     "version": "optional-dependencies",

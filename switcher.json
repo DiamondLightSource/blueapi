@@ -188,6 +188,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic-fix/"
   },
   {
+    "version": "pydantic1",
+    "url": "https://DiamondLightSource.github.io/blueapi/pydantic1/"
+  },
+  {
     "version": "remove_servers",
     "url": "https://DiamondLightSource.github.io/blueapi/remove_servers/"
   },

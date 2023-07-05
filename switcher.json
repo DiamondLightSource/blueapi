@@ -160,6 +160,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
   },
   {
+    "version": "keithralphs-patch-1",
+    "url": "https://DiamondLightSource.github.io/blueapi/keithralphs-patch-1/"
+  },
+  {
     "version": "minor-kubernetes-fixes",
     "url": "https://DiamondLightSource.github.io/blueapi/minor-kubernetes-fixes/"
   },

@@ -9,5 +9,5 @@ spec:
     protocol: TCP
     targetPort: {{ .Values.worker.api.port }}
   selector:
-    app: blueapi
+    {{- include "blueapi.selectorLabels" . | nindent 4 }}
   type: {{ .Values.service.type }}

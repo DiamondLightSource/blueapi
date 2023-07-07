@@ -48,8 +48,16 @@ jobs:
     env:
       # https://github.com/pytest-dev/pytest/issues/2042
       PY_IGNORE_IMPORTMISMATCH: "1"
+      BLUEAPI_TEST_STOMP_PORTS: "[61613,61614]"
+      
 
     steps:
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@v1
+        with:
+          ports: '61614:61613'
+          plugins: rabbitmq_stomp  
+
       - name: Checkout
         uses: actions/checkout@v3
         with:

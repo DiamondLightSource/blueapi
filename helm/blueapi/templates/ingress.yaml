@@ -1,0 +1,22 @@
+{{- if .Values.ingress.create -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "blueapi.fullname" . }}
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - {{ required "A valid hostname must be provided" .Values.ingress.host }}
+  rules:
+  - host: {{ required "A valid hostname must be provided" .Values.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "blueapi.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}
+{{- end }}

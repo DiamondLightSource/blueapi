@@ -13,16 +13,16 @@ classifiers = [
 ]
 description = "Lightweight Bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky",
+    "bluesky<1.11",
     "ophyd",
     "nslsii",
     "pyepics",
     "pydantic<2.0",
     "stomp.py",
-    "scanspec",
+    "scanspec>=0.6.2",
     "PyYAML",
     "click",
-    "fastapi[all]",
+    "fastapi[all]<0.100",
     "uvicorn",
     "requests",
     "dodal @ git+https://github.com/DiamondLightSource/dodal.git@1.0.0",

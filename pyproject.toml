@@ -19,7 +19,7 @@ dependencies = [
     "pyepics",
     "pydantic<2.0",
     "stomp.py",
-    "scanspec>=0.6.2",
+    "scanspec>0.6.1",
     "PyYAML",
     "click",
     "fastapi[all]<0.100",

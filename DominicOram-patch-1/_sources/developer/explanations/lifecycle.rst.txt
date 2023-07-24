@@ -6,11 +6,13 @@ of being written, loaded and run. Take the following plan.
 
 .. code:: python
 
-    from typing import List, Union, Mapping, Any, Optional
-
-    from blueapi.core import inject, MsgGenerator
+    from typing import Any, List, Mapping, Optional, Union
+    
+    import bluesky.plans as bp
+    from blueapi.core import MsgGenerator, inject
     from bluesky.protocols import Readable
-
+    
+    
     def count(
         detectors: List[Readable] = [inject("det")],  # default valid for Blueapi only
         num: int = 1,
@@ -19,7 +21,7 @@ of being written, loaded and run. Take the following plan.
     ) -> MsgGenerator:
         """
         Take `n` readings from a collection of detectors
-
+    
         Args:
             detectors (List[Readable]): Readable devices to read: when being run in Blueapi
                                         defaults to fetching a device named "det" from its
@@ -30,15 +32,16 @@ of being written, loaded and run. Take the following plan.
             metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include
                                                             in exported data.
                                                             Defaults to None.
-
+    
         Returns:
             MsgGenerator: _description_
-
+    
         Yields:
             Iterator[MsgGenerator]: _description_
         """
-
+    
         yield from bp.count(detectors, num, delay=delay, md=metadata)
+
 
 
 Loading and Registration

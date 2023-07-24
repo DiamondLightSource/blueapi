@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Lifecycle of a Plan &#8212; blueapi 0.3.5.dev1+g3a94c6e3 documentation</title>
+    <title>Lifecycle of a Plan &#8212; blueapi 0.3.5.dev1+geca21f20 documentation</title>
   
   
   
@@ -466,10 +466,12 @@ document.write(`
 <h1>Lifecycle of a Plan<a class="headerlink" href="#lifecycle-of-a-plan" title="Permalink to this heading">#</a></h1>
 <p>The following demonstrates exactly what the code does with a plan through its lifecycle
 of being written, loaded and run. Take the following plan.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">inject</span><span class="p">,</span> <span class="n">MsgGenerator</span>
+<span class="kn">import</span> <span class="nn">bluesky.plans</span> <span class="k">as</span> <span class="nn">bp</span>
+<span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">MsgGenerator</span><span class="p">,</span> <span class="n">inject</span>
 <span class="kn">from</span> <span class="nn">bluesky.protocols</span> <span class="kn">import</span> <span class="n">Readable</span>
+
 
 <span class="k">def</span> <span class="nf">count</span><span class="p">(</span>
     <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">inject</span><span class="p">(</span><span class="s2">&quot;det&quot;</span><span class="p">)],</span>  <span class="c1"># default valid for Blueapi only</span>

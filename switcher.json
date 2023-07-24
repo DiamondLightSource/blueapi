@@ -112,10 +112,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/DAQ-4642/"
   },
   {
-    "version": "DominicOram-patch-1",
-    "url": "https://DiamondLightSource.github.io/blueapi/DominicOram-patch-1/"
-  },
-  {
     "version": "Iss164",
     "url": "https://DiamondLightSource.github.io/blueapi/Iss164/"
   },
@@ -166,6 +162,10 @@
   {
     "version": "hotfix-linting",
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
+  },
+  {
+    "version": "improved_docstrings",
+    "url": "https://DiamondLightSource.github.io/blueapi/improved_docstrings/"
   },
   {
     "version": "keithralphs-patch-1",

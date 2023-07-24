@@ -43,7 +43,9 @@ LOGGER = logging.getLogger(__name__)
 @dataclass
 class BlueskyContext:
     """
-    Context for building a Bluesky application
+    Context for building a Bluesky application.
+
+    The context holds the RunEngine and any plans/devices that you may want to use.
     """
 
     run_engine: RunEngine = field(
@@ -89,13 +91,13 @@ class BlueskyContext:
         Register all functions in the module supplied as plans.
         Module should take the form:
 
-        def plan_1(...):
+        def plan_1(...) -> MsgGenerator:
             ...
 
         def _helper(...):
             ...
 
-        def plan_2(...):
+        def plan_2(...) -> MsgGenerator:
             ...
 
         __all__ = ["plan_1", "plan_2"]

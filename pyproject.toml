@@ -25,7 +25,7 @@ dependencies = [
     "fastapi[all]<0.100",
     "uvicorn",
     "requests",
-    "dodal @ git+https://github.com/DiamondLightSource/dodal.git@1.0.0",
+    "dodal @ git+https://github.com/DiamondLightSource/dodal.git",
     "typing_extensions<4.6",
 ]
 dynamic = ["version"]

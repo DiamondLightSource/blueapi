@@ -152,7 +152,7 @@ def run_plan(
     finished_event: deque[WorkerEvent] = deque()
 
     def store_finished_event(event: WorkerEvent) -> None:
-        if event.is_complete():
+        if isinstance(event, WorkerEvent) and event.is_complete():
             finished_event.append(event)
 
     parameters = parameters or "{}"

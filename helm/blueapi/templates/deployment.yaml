@@ -17,6 +17,13 @@ spec:
       {{- end }}
       labels:
         {{- include "blueapi.selectorLabels" . | nindent 8 }}
+        {{- range $key, $value := .Values.authn.labels }}
+          {{- $key | nindent 8 }}: {{ $value | quote }} # N.B. ensures your labels are correctly String->String
+        {{- end }}
+        {{- range $key, $value := .Values.authz.labels }}
+          {{- $key | nindent 8 }}: {{ $value | quote }} # N.B. ensures your labels are correctly String->String
+        {{- end }}
+        sidecar.istio.io/inject: "true"
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -35,6 +42,9 @@ spec:
           - secret:
               name: {{ . }}
           {{- end }}
+      - name: opa-policy
+        configMap:
+          name: policy
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -56,6 +66,7 @@ spec:
             - "/config/secret.yaml"
             {{- end }}
             - "serve"
+        {{- include "authz-template.container.tpl" (dict "Decision" "envoy/authz/allow") | nindent 8 -}} 
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

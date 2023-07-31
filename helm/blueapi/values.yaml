@@ -8,7 +8,7 @@ image:
   repository: ghcr.io/diamondlightsource/blueapi
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -23,7 +23,9 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-podAnnotations: {}
+podAnnotations:
+  sidecar.istio.io/userVolumeMount: '[{"name":"client-secret", "mountPath":"/etc/istio/config", "readonly":true}]'
+  sidecar.istio.io/userVolume: '[{"name":"client-secret", "secret":{"secretName": "authn-secret"}}]'
 
 podSecurityContext:
   {}
@@ -40,7 +42,7 @@ securityContext:
 
 # Recommended for production to change service.type to ClusterIP and set up an Ingress
 service:
-  type: ClusterIP
+  type: LoadBalancer
   port: 80
 
 ingress:
@@ -75,13 +77,45 @@ worker:
   env:
     sources:
       - kind: deviceFunctions
-        module: blueapi.startup.example
+        module: blueapi.startup.example_devices
+      - kind: planFunctions
+        module: blueapi.startup.example_plans
       - kind: planFunctions
         module: blueapi.plans
   stomp:
     auth:
-      username: guest
-      passcode: guest
-    host: rabbitmq
+      username: foo
+      passcode: bar
+    host: test-blueapi-rabbitmq
     port: 61613
 # Config for the worker goes here, will be mounted into a config file
+
+authn:
+  labels:
+    enable-authn: "true"
+
+authz:
+  labels:
+    enable-authz: "true"
+
+rabbitmq:
+  persistence:
+    enabled: true # TODO: Best approach for storage
+  auth:
+    username: foo
+    password: bar
+  extraPlugins: rabbitmq_stomp
+  rbac:
+    create: false
+  serviceAccount:
+    name: default-full-access-mounted # TODO: use only required permissions
+    create: false
+  extraContainerPorts:
+    - name: stomp
+      containerPort: 61613
+  service:
+    extraPorts:
+      - name: stomp
+        port: 61613
+        targetPort: stomp
+        nodePort: null

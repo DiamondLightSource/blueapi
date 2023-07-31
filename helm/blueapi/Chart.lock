@@ -1,0 +1,12 @@
+dependencies:
+- name: authz-template
+  repository: https://sonatypenexus.diamond.ac.uk/repository/daq-helm/
+  version: 0.2.1
+- name: authn-template
+  repository: https://sonatypenexus.diamond.ac.uk/repository/daq-helm/
+  version: 0.4.0
+- name: rabbitmq
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 11.16.2
+digest: sha256:aac3cbf4b676b6e361b280ee5efac80f987819fd284cd0880d06545064f18d31
+generated: "2023-07-31T13:33:51.198407207+01:00"

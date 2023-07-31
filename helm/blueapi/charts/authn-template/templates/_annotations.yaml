@@ -1,0 +1,10 @@
+{{- /*
+  This template contains annotations for the Envoy sidecar to mount the secrets necessary for AuthN flow.
+  It takes 1 required argument:
+    Required Arguments:
+      SecretName: the name of a secret that defines the client secret and hmac string appropriate for Envoy consumption
+  */}}
+{{- define "authn-template.annotations.tpl" -}}
+sidecar.istio.io/userVolumeMount: '[{"name":"client-secret", "mountPath":"/etc/istio/config", "readonly":true}]'
+sidecar.istio.io/userVolume: '[{"name":"client-secret", "secret":{"secretName": {{ required "The secret name must be provided!" .SecretName | quote }}}}]'
+{{- end -}}

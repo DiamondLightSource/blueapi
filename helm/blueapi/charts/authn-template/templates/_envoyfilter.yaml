@@ -1,0 +1,108 @@
+{{- /*
+  This template defines the Envoy filter that causes Envoy to begin Oauth2 flow on non-authenticated traffic to pod(s)
+  in a namespace. It takes 2 required arguments and has 4 optional arguments:
+     Required Arguments:
+      Provider: the base URL of the Oauth2 provider. e.g. github.com/login/oauth/
+      Client: the client ID of the client that is registered with the Oauth2 provider
+    Optional Arguments:
+      Port: the port to communicate with the AuthN provider over
+        default: 443
+      Name: a unique (among EnvoyFilters in the namespace) String
+        default: authn-envoyfilter
+      Authorization: authorization endpoint of the AuthN provider
+        default: {{ .Provider }}/authorize
+      Token: token endpoint of the AuthN provider
+        default: {{ .Provider }}/token
+      Labels: a list of labels (mapping String -> String), which any pods that requires authn should match all of
+        default: {}
+  */}}
+{{- define "authn-template.envoyfilter.tpl" }}
+
+---
+
+############################################################
+# Envoy Authentication filter to auth against an external service.
+############################################################
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: {{ .Name | default "authn-envoyfilter" }}
+spec:
+  {{- with .Labels }}
+  workloadSelector: # EnvoyFilter is enabled for Pods with the following labels, that are in a matching namespace to this Filter.
+    labels:
+      {{- range $key, $value := . }}
+      {{ $key }}: {{ $value | quote -}}
+      {{ end -}}
+  {{ end }}
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+      patch: # Patches our Envoy filter chain with an AuthN filter
+        operation: INSERT_BEFORE
+#        filterClass: AUTHN # TODO: We want to use operation: ADD, filterClass: AUTHN, but it seems to have a problem with terminal filter. So we INSERT_BEFORE value: None, which puts this first of all filters.
+        value:
+          name: envoy.filters.http.oauth2
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.oauth2.v3.OAuth2
+            config:
+              auth_scopes:
+                - openid
+              token_endpoint:
+                cluster: oauth2
+                uri: {{ .Token | default (printf "%s/token" .Provider) }}
+                timeout: 3s
+              authorization_endpoint: {{ .Authorization | default (printf "%s/authorize" .Provider) }}
+              redirect_uri: "%REQ(:scheme)%://%REQ(:authority)%/callback"
+              redirect_path_matcher:
+                path:
+                  exact: /callback
+              signout_path:
+                path:
+                  exact: /signout
+              forward_bearer_token: true
+              credentials:
+                client_id: {{ required "The Client ID of your service with the AuthN provider is required" .Client }}
+                token_secret:
+                  name: token
+                  sds_config:
+                    path_config_source:
+                      path: "/etc/istio/config/secret.yaml"
+                hmac_secret:
+                  name: hmac
+                  sds_config:
+                    path_config_source:
+                      path: "/etc/istio/config/secret.yaml"
+    - applyTo: CLUSTER
+      match:
+        context: SIDECAR_INBOUND
+      patch:
+        operation: ADD
+        value:
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              common_tls_context:
+                tls_params:
+                  cipher_suites: # Required to talk to Diamond CAS Authbeta
+                    - ECDHE-RSA-AES256-SHA
+              sni: {{ required "The base URL of the Provider is required" .Provider }}
+          name: oauth2
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          dns_lookup_family: V4_ONLY
+          load_assignment:
+            cluster_name: oauth2
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: {{ required "The base URL of the Provider is required" .Provider }}
+                          port_value: {{ .Port | default 443 }}
+
+---
+
+{{ end -}}

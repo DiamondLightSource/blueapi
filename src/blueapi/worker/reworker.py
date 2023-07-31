@@ -86,7 +86,6 @@ class RunEngineWorker(Worker[Task]):
         self._status_lock = RLock()
         self._status_snapshot = {}
         self._completed_statuses = set()
-        self._task_start_hooks = []
         self._started = Event()
         self._stopping = Event()
         self._stopped = Event()

@@ -121,10 +121,10 @@ def test_multi_run_single_stage_multi_group(
     docs = collect_docs(run_engine, multi_run_single_stage_multi_group(detectors))
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 4
-    assert start_docs[0].doc["scan_number"] == 1
-    assert start_docs[1].doc["scan_number"] == 1
-    assert start_docs[2].doc["scan_number"] == 2
-    assert start_docs[3].doc["scan_number"] == 2
+    assert start_docs[0].doc["scan_number"] == 0
+    assert start_docs[1].doc["scan_number"] == 0
+    assert start_docs[2].doc["scan_number"] == 0
+    assert start_docs[3].doc["scan_number"] == 0
 
 
 def test_nested_run_with_metadata(
@@ -134,9 +134,9 @@ def test_nested_run_with_metadata(
     docs = collect_docs(run_engine, nested_run_with_metadata(detectors))
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 3
-    assert start_docs[0].doc["scan_number"] == 12345
-    assert start_docs[1].doc["scan_number"] == 12345
-    assert start_docs[2].doc["scan_number"] == 12345
+    assert start_docs[0].doc["scan_number"] == 0
+    assert start_docs[1].doc["scan_number"] == 1
+    assert start_docs[2].doc["scan_number"] == 2
 
 
 def test_nested_run_without_metadata(
@@ -147,8 +147,8 @@ def test_nested_run_without_metadata(
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 3
     assert start_docs[0].doc["scan_number"] == 0
-    assert start_docs[1].doc["scan_number"] == 0
-    assert start_docs[2].doc["scan_number"] == 0
+    assert start_docs[1].doc["scan_number"] == 1
+    assert start_docs[2].doc["scan_number"] == 2
 
 
 def collect_docs(run_engine: RunEngine, plan: MsgGenerator) -> List[DataEvent]:

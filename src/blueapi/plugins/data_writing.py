@@ -69,15 +69,14 @@ def data_writing_wrapper(
         provider = InMemoryDataCollectionProvider()
 
     scan_number = itertools.count()
-    # next_scan_number = None
+    next_scan_number = None
     stage_stack: Deque = deque()
-    scan_number_stack: Deque = deque()
+    # scan_number_stack: Deque = deque()
     for message in plan:
         if message.command == "stage":
             stage_stack.append(message.obj)
         elif stage_stack:
-            scan_number_stack.append(next(scan_number))
-            next_scan_number = scan_number_stack[-1]
+            next_scan_number = next(scan_number)
             root_devices = []
             while stage_stack:
                 root_devices.append(stage_stack.pop())
@@ -85,10 +84,9 @@ def data_writing_wrapper(
             collection = provider.get_next_data_collection(collection_group)
             configure_data_writing(all_devices, collection)
 
-        if message.command == "open_run" and "scan_number" not in message.kwargs:
-            if not scan_number_stack:
-                scan_number_stack.append(next(scan_number))
-            next_scan_number = scan_number_stack[-1]
+        if message.command == "open_run":
+            if next_scan_number is None:
+                next_scan_number = next(scan_number)
             message.kwargs["scan_number"] = next_scan_number
         yield message
 

@@ -3,6 +3,7 @@ from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     DataEvent,
     Device,
+    HasComponents,
     MsgGenerator,
     Plan,
     PlanGenerator,
@@ -13,6 +14,7 @@ from .bluesky_types import (
 )
 from .context import BlueskyContext
 from .device_lookup import inject
+from .device_walk import walk_devices
 from .event import EventPublisher, EventStream
 
 __all__ = [
@@ -20,6 +22,7 @@ __all__ = [
     "PlanGenerator",
     "MsgGenerator",
     "Device",
+    "HasComponents",
     "BLUESKY_PROTOCOLS",
     "BlueskyContext",
     "EventPublisher",
@@ -31,4 +34,5 @@ __all__ = [
     "is_bluesky_plan_generator",
     "is_bluesky_compatible_device_type",
     "configure_bluesky_event_loop",
+    "walk_devices",
 ]

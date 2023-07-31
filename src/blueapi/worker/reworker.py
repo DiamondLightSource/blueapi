@@ -27,7 +27,7 @@ from .event import (
 )
 from .multithread import run_worker_in_own_thread
 from .task import Task
-from .worker import TrackableTask, Worker
+from .worker import TaskStartHook, TrackableTask, Worker
 from .worker_busy_error import WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
@@ -61,6 +61,7 @@ class RunEngineWorker(Worker[Task]):
     _worker_events: EventPublisher[WorkerEvent]
     _progress_events: EventPublisher[ProgressEvent]
     _data_events: EventPublisher[DataEvent]
+    _task_start_hooks: List[TaskStartHook[Task]]
     _started: Event
     _stopping: Event
     _stopped: Event
@@ -86,10 +87,14 @@ class RunEngineWorker(Worker[Task]):
         self._status_lock = RLock()
         self._status_snapshot = {}
         self._completed_statuses = set()
+        self._task_start_hooks = []
         self._started = Event()
         self._stopping = Event()
         self._stopped = Event()
         self._stopped.set()
+
+    def add_task_hook(self, task_hook: TaskStartHook) -> None:
+        self._task_start_hooks.append(task_hook)
 
     def clear_task(self, task_id: str) -> str:
         task = self._pending_tasks.pop(task_id)
@@ -229,6 +234,8 @@ class RunEngineWorker(Worker[Task]):
                 LOGGER.info(f"Got new task: {next_task}")
                 self._current = next_task  # Informing mypy that the task is not None
                 self._current.is_pending = False
+                for hook in self._task_start_hooks:
+                    hook(self._current, self)
                 self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.

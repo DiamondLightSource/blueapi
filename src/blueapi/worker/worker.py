@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, List, Optional, Protocol, TypeVar, runtime_checkable
+from typing import Generic, List, Optional, TypeVar
 
 from pydantic import Field
 
@@ -23,21 +23,11 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
     errors: List[str] = Field(default_factory=list)
 
 
-@runtime_checkable
-class TaskStartHook(Protocol, Generic[T]):
-    def __call__(self, task: TrackableTask[T], worker: "Worker") -> None:
-        ...
-
-
 class Worker(ABC, Generic[T]):
     """
     Entity that takes and runs tasks. Intended to be a central,
     atomic worker rather than a load distributor
     """
-
-    @abstractmethod
-    def add_task_hook(self, task_hook: TaskStartHook) -> None:
-        ...
 
     @abstractmethod
     def get_pending_tasks(self) -> List[TrackableTask[T]]:

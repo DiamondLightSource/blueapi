@@ -136,6 +136,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/apiver/"
   },
   {
+    "version": "authn_authz",
+    "url": "https://DiamondLightSource.github.io/blueapi/authn_authz/"
+  },
+  {
     "version": "camel-case",
     "url": "https://DiamondLightSource.github.io/blueapi/camel-case/"
   },

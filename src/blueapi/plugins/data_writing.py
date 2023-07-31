@@ -1,12 +1,16 @@
 import itertools
 from abc import ABC, abstractmethod
+from collections import deque
 from pathlib import Path
 from typing import (
     Any,
     Callable,
+    Deque,
     Dict,
     Generic,
     Iterable,
+    List,
+    Optional,
     Protocol,
     TypeVar,
     runtime_checkable,
@@ -19,42 +23,77 @@ from bluesky.utils import Msg, make_decorator
 from ophyd.areadetector.filestore_mixins import FileStoreBase
 
 from blueapi.core import BlueskyContext, Device, MsgGenerator, walk_devices
+from blueapi.plugins.data_writing_server import DataCollection
 
 from .data_writing_server import DataCollection, DataCollectionSetupResult
 
 
-def data_writing_wrapper(plan: MsgGenerator, collection_group: str) -> MsgGenerator:
+class DataCollectionProvider(ABC):
+    @abstractmethod
+    def get_next_data_collection(self, collection_group: str) -> DataCollection:
+        ...
+
+
+class ServiceDataCollectionProvider(DataCollectionProvider):
+    def get_next_data_collection(self, collection_group: str) -> DataCollection:
+        reply = requests.post(f"http://localhost:8089/collection/{collection_group}")
+        result = DataCollectionSetupResult.parse_obj(reply.json())
+        if result.directories_created:
+            return result.collection
+        else:
+            raise Exception()
+
+
+class InMemoryDataCollectionProvider(DataCollectionProvider):
+    _scan_number: itertools.count
+
+    def __init__(self) -> None:
+        self._scan_number = itertools.count()
+
+    def get_next_data_collection(self, collection_group: str) -> DataCollection:
+        scan_number = next(self._scan_number)
+        return DataCollection(
+            collection_number=scan_number,
+            group=collection_group,
+            raw_data_files_root=Path(f"/tmp/{collection_group}"),
+            nexus_file_path=Path(f"/tmp{collection_group}.nxs"),
+        )
+
+
+def data_writing_wrapper(
+    plan: MsgGenerator,
+    collection_group: str,
+    provider: Optional[DataCollectionProvider] = None,
+) -> MsgGenerator:
+    if provider is None:
+        provider = InMemoryDataCollectionProvider()
+
     scan_number = itertools.count()
+    # next_scan_number = None
+    stage_stack: Deque = deque()
+    scan_number_stack: Deque = deque()
     for message in plan:
         if message.command == "stage":
-            next_scan_number = next(scan_number)
-            root_devices = relevant_devices(message)
+            stage_stack.append(message.obj)
+        elif stage_stack:
+            scan_number_stack.append(next(scan_number))
+            next_scan_number = scan_number_stack[-1]
+            root_devices = []
+            while stage_stack:
+                root_devices.append(stage_stack.pop())
             all_devices = walk_devices(root_devices)
-            collection = get_data_collection(collection_group)
+            collection = provider.get_next_data_collection(collection_group)
             configure_data_writing(all_devices, collection)
-        elif message.command == "open_run" and "scan_number" not in message.kwargs:
+
+        if message.command == "open_run" and "scan_number" not in message.kwargs:
+            if not scan_number_stack:
+                scan_number_stack.append(next(scan_number))
+            next_scan_number = scan_number_stack[-1]
             message.kwargs["scan_number"] = next_scan_number
         yield message
 
 
-def relevant_devices(message: Msg) -> Iterable[Device]:
-    if isinstance(message.obj, list):
-        obj = message.obj
-    else:
-        obj = [message.obj]
-    return obj
-
-
 data_writing_decorator = make_decorator(data_writing_wrapper)
-
-
-def get_data_collection(collection_group: str) -> DataCollection:
-    reply = requests.post(f"http://localhost:8089/collection/{collection_group}")
-    result = DataCollectionSetupResult.parse_obj(reply.json())
-    if result.directories_created:
-        return result.collection
-    else:
-        raise Exception()
 
 
 def configure_data_writing(

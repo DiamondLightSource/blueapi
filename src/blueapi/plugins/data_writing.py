@@ -97,23 +97,16 @@ def data_writing_wrapper(
     plan: MsgGenerator,
     provider: DataCollectionProvider,
 ) -> MsgGenerator:
-    stage_stack: Deque = deque()
-    # scan_number_stack: Deque = deque()
+    staging = False
     for message in plan:
         if message.command == "stage":
-            if not stage_stack:
+            if not staging:
                 yield from bps.wait_for([provider.update])
+                staging = True
             if provider.current_data_collection is None:
                 raise Exception("There is no active data collection")
-            stage_stack.append(message.obj)
-            all_devices = walk_devices([message.obj])
-            configure_data_writing(
-                all_devices,
-                provider.current_data_collection,
-            )
-        elif stage_stack:
-            while stage_stack:
-                stage_stack.pop()
+        elif staging:
+            staging = False
 
         if message.command == "open_run":
             if provider.current_data_collection is None:
@@ -127,17 +120,3 @@ def data_writing_wrapper(
 
 
 data_writing_decorator = make_decorator(data_writing_wrapper)
-
-
-def configure_data_writing(
-    devices: Iterable[Device],
-    collection: DataCollection,
-) -> None:
-    for device in devices:
-        if isinstance(device, FileStoreBase):
-            path_template = str(collection.raw_data_files_root)
-
-            # Configure Ophyd Device to setup HDF5 writer
-            device.reg_root = "/"
-            device.read_path_template = path_template
-            device.write_path_template = path_template

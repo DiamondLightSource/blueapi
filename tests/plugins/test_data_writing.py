@@ -16,7 +16,7 @@ from bluesky.protocols import Readable
 from ophyd.sim import SynAxis
 
 from blueapi.core import DataEvent, MsgGenerator
-from blueapi.plugins.data_writing import data_writing_wrapper
+from blueapi.plugins.data_writing import DATA_COLLECTION_NUMBER, data_writing_wrapper
 
 
 @pytest.fixture
@@ -60,15 +60,15 @@ def multi_run_single_stage_multi_group(detectors: List[Readable]) -> MsgGenerato
         return (yield from bps.one_shot(detectors))
 
     def inner_plan() -> MsgGenerator:
-        yield from run_wrapper(stageless_count(), md={"scan_number": 1})
-        yield from run_wrapper(stageless_count(), md={"scan_number": 1})
-        yield from run_wrapper(stageless_count(), md={"scan_number": 2})
-        yield from run_wrapper(stageless_count(), md={"scan_number": 2})
+        yield from run_wrapper(stageless_count(), md={DATA_COLLECTION_NUMBER: 1})
+        yield from run_wrapper(stageless_count(), md={DATA_COLLECTION_NUMBER: 1})
+        yield from run_wrapper(stageless_count(), md={DATA_COLLECTION_NUMBER: 2})
+        yield from run_wrapper(stageless_count(), md={DATA_COLLECTION_NUMBER: 2})
 
     yield from stage_wrapper(inner_plan(), detectors)
 
 
-@run_decorator(md={"scan_number": 12345})
+@run_decorator(md={DATA_COLLECTION_NUMBER: 12345})
 @set_run_key_decorator("outer")
 def nested_run_with_metadata(detectors: List[Readable]) -> MsgGenerator:
     yield from set_run_key_wrapper(bp.count(detectors), "inner")
@@ -87,7 +87,7 @@ def test_simple_run_gets_scan_number(
 ) -> None:
     docs = collect_docs(run_engine, simple_run(detectors))
     assert docs[0].name == "start"
-    assert docs[0].doc["scan_number"] == 0
+    assert docs[0].doc[DATA_COLLECTION_NUMBER] == 0
 
 
 @pytest.mark.parametrize("plan", [multi_run, multi_nested_plan])
@@ -99,8 +99,8 @@ def test_multi_run_gets_scan_numbers(
     docs = collect_docs(run_engine, plan(detectors))
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 2
-    assert start_docs[0].doc["scan_number"] == 0
-    assert start_docs[1].doc["scan_number"] == 1
+    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
+    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 1
 
 
 def test_multi_run_single_stage(
@@ -110,8 +110,8 @@ def test_multi_run_single_stage(
     docs = collect_docs(run_engine, multi_run_single_stage(detectors))
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 2
-    assert start_docs[0].doc["scan_number"] == 0
-    assert start_docs[1].doc["scan_number"] == 0
+    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
+    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 0
 
 
 def test_multi_run_single_stage_multi_group(
@@ -121,10 +121,10 @@ def test_multi_run_single_stage_multi_group(
     docs = collect_docs(run_engine, multi_run_single_stage_multi_group(detectors))
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 4
-    assert start_docs[0].doc["scan_number"] == 0
-    assert start_docs[1].doc["scan_number"] == 0
-    assert start_docs[2].doc["scan_number"] == 0
-    assert start_docs[3].doc["scan_number"] == 0
+    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
+    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 0
+    assert start_docs[2].doc[DATA_COLLECTION_NUMBER] == 0
+    assert start_docs[3].doc[DATA_COLLECTION_NUMBER] == 0
 
 
 def test_nested_run_with_metadata(
@@ -134,9 +134,9 @@ def test_nested_run_with_metadata(
     docs = collect_docs(run_engine, nested_run_with_metadata(detectors))
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 3
-    assert start_docs[0].doc["scan_number"] == 0
-    assert start_docs[1].doc["scan_number"] == 1
-    assert start_docs[2].doc["scan_number"] == 2
+    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
+    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 1
+    assert start_docs[2].doc[DATA_COLLECTION_NUMBER] == 2
 
 
 def test_nested_run_without_metadata(
@@ -146,9 +146,9 @@ def test_nested_run_without_metadata(
     docs = collect_docs(run_engine, nested_run_without_metadata(detectors))
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 3
-    assert start_docs[0].doc["scan_number"] == 0
-    assert start_docs[1].doc["scan_number"] == 1
-    assert start_docs[2].doc["scan_number"] == 2
+    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
+    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 1
+    assert start_docs[2].doc[DATA_COLLECTION_NUMBER] == 2
 
 
 def collect_docs(run_engine: RunEngine, plan: MsgGenerator) -> List[DataEvent]:

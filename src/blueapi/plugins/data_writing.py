@@ -27,6 +27,8 @@ from blueapi.plugins.data_writing_server import DataCollection
 
 from .data_writing_server import DataCollection, DataCollectionSetupResult
 
+DATA_COLLECTION_NUMBER = "data_collection_number"
+
 
 class DataCollectionProvider(ABC):
     @abstractmethod
@@ -87,7 +89,7 @@ def data_writing_wrapper(
         if message.command == "open_run":
             if next_scan_number is None:
                 next_scan_number = next(scan_number)
-            message.kwargs["scan_number"] = next_scan_number
+            message.kwargs[DATA_COLLECTION_NUMBER] = next_scan_number
         yield message
 
 

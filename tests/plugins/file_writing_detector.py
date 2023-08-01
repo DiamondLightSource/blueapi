@@ -1,12 +1,6 @@
-import itertools
-import uuid
-from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List
 
-import h5py as h5
-import numpy as np
-from ophyd import Component, Device, Signal, SignalRO
-from ophyd.sim import EnumSignal, SynGauss, SynSignal, SynSignalRO
+from ophyd import Component, Device, Signal
 
 from blueapi.plugins.data_writing import DataCollectionProvider
 
@@ -27,5 +21,7 @@ class FakeFileWritingDetector(Device):
 
     def stage(self) -> List[object]:
         collection = self._provider.current_data_collection
+        if collection is None:
+            raise Exception("No active collection")
         self.stage_sigs[self.collection_number] = collection.collection_number
         return super().stage()

@@ -9,11 +9,8 @@ from bluesky.preprocessors import (
     run_wrapper,
     set_run_key_decorator,
     set_run_key_wrapper,
-    stage_decorator,
     stage_wrapper,
 )
-from bluesky.protocols import Readable
-from ophyd.sim import SynAxis
 
 from blueapi.core import DataEvent, MsgGenerator
 from blueapi.plugins.data_writing import (

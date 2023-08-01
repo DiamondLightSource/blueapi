@@ -1,29 +1,13 @@
 import itertools
 from abc import ABC, abstractmethod, abstractproperty
-from collections import deque
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Deque,
-    Dict,
-    Generic,
-    Iterable,
-    List,
-    Optional,
-    Protocol,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import Optional
 
 import bluesky.plan_stubs as bps
-import requests
 from aiohttp import ClientSession
-from bluesky.protocols import Movable
-from bluesky.utils import Msg, make_decorator
-from ophyd.areadetector.filestore_mixins import FileStoreBase
+from bluesky.utils import make_decorator
 
-from blueapi.core import BlueskyContext, Device, MsgGenerator, walk_devices
+from blueapi.core import MsgGenerator
 from blueapi.plugins.data_writing_server import DataCollection
 
 from .data_writing_server import DataCollection, DataCollectionSetupResult

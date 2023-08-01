@@ -9,7 +9,6 @@ from typing import (
     Callable,
     Dict,
     Generic,
-    Iterable,
     List,
     Optional,
     Sequence,
@@ -63,7 +62,7 @@ class BlueskyContext:
 
     _reference_cache: Dict[Type, Type] = field(default_factory=dict)
 
-    def wrap(self, plan: MsgGenerator) -> Iterable[PlanWrapper]:
+    def wrap(self, plan: MsgGenerator) -> MsgGenerator:
         wrapped_plan = functools.reduce(
             lambda wrapped, next_wrapper: next_wrapper(wrapped),
             self.plan_wrappers,

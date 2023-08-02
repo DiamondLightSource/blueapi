@@ -1,5 +1,0 @@
-# Authentication EnvoyFilter
-{{- include "authn-template.envoyfilter.tpl" (dict "Provider" "https://authbeta.diamond.ac.uk/cas/oidc" "Client" "oidc_172_23" "Labels" .Values.authn.labels) }}
-
-# Authorization EnvoyFilter
-{{- include "authz-template.envoyfilter.tpl" (dict "Labels" .Values.authz.labels) }}

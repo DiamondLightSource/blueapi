@@ -51,6 +51,17 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Metadata labels
+*/}}
+{{- define "blueapi.metadataLabels" -}}
+{{ include "blueapi.selectorLabels" . }}
+sidecar.istio.io/inject: "true"
+{{- range $key, $value := .Values.extraLabels }}
+{{- $key }}: {{ $value | quote }} # N.B. ensures your labels are correctly String->String
+{{- end }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "blueapi.serviceAccountName" -}}

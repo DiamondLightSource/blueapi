@@ -90,13 +90,15 @@ worker:
     port: 61613
 # Config for the worker goes here, will be mounted into a config file
 
-authn:
-  labels:
-    enable-authn: "true"
+extraLabels:
+  sidecar.istio.io/inject: "true"
+  enable-authn: "true"
+  enable-authz: "true"
 
-authz:
-  labels:
-    enable-authz: "true"
+extraVolumes:
+  - name: opa-policy
+    configMap:
+      name: policy
 
 rabbitmq:
   persistence:

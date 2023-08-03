@@ -19,12 +19,6 @@ type: application
 version: 0.1.0
 
 dependencies:
-  - name: authz-template
-    repository: https://sonatypenexus.diamond.ac.uk/repository/daq-helm/
-    version: 0.2.1
-  - name: authn-template
-    repository: https://sonatypenexus.diamond.ac.uk/repository/daq-helm/
-    version: 0.4.0
   - name: rabbitmq
     version: 11.16.2
     repository: oci://registry-1.docker.io/bitnamicharts

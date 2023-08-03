@@ -59,7 +59,9 @@ spec:
             - "/config/secret.yaml"
             {{- end }}
             - "serve"
-        {{- include "authz-template.container.tpl" (dict "Decision" "envoy/authz/allow") | nindent 8 -}} 
+          {{- with .Values.extraContainers }}
+            {{- toYaml . | nindent 8 }}
+          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -23,9 +23,7 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-podAnnotations:
-  sidecar.istio.io/userVolumeMount: '[{"name":"client-secret", "mountPath":"/etc/istio/config", "readonly":true}]'
-  sidecar.istio.io/userVolume: '[{"name":"client-secret", "secret":{"secretName": "authn-secret"}}]'
+podAnnotations: {}
 
 podSecurityContext:
   {}
@@ -86,19 +84,13 @@ worker:
     auth:
       username: foo
       passcode: bar
-    host: test-blueapi-rabbitmq
+    host: localhost
     port: 61613
 # Config for the worker goes here, will be mounted into a config file
 
-extraLabels:
-  sidecar.istio.io/inject: "true"
-  enable-authn: "true"
-  enable-authz: "true"
-
-extraVolumes:
-  - name: opa-policy
-    configMap:
-      name: policy
+extraLabels: {}
+extraVolumes: {}
+extraContainers: {}
 
 rabbitmq:
   persistence:

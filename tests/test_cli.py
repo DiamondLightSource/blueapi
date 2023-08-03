@@ -44,7 +44,7 @@ def test_main_with_nonexistent_config_file():
     result = runner.invoke(main, ["-c", "tests/non_existent.yaml"])
 
     result.exit_code == 1
-    type(result.exception) == FileNotFoundError
+    type(result.exception) is FileNotFoundError
 
 
 @patch("requests.request")

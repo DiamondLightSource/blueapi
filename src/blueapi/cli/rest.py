@@ -3,6 +3,7 @@ from typing import Any, Callable, Literal, Mapping, Optional, Type, TypeVar
 import requests
 from pydantic import parse_obj_as
 
+from blueapi.cli.authentication import AccessToken
 from blueapi.config import RestConfig
 from blueapi.service.model import (
     DeviceModel,
@@ -25,9 +26,13 @@ def _is_exception(response: requests.Response) -> bool:
 
 class BlueapiRestClient:
     _config: RestConfig
+    token: Optional[AccessToken]
 
-    def __init__(self, config: Optional[RestConfig] = None) -> None:
+    def __init__(
+        self, config: Optional[RestConfig] = None, token: Optional[AccessToken] = None
+    ) -> None:
         self._config = config or RestConfig()
+        self.token = token
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -106,7 +111,14 @@ class BlueapiRestClient:
         raise_if: Callable[[requests.Response], bool] = _is_exception,
     ) -> T:
         url = self._url(suffix)
-        response = requests.request(method, url, json=data)
+        response = requests.request(
+            method,
+            url,
+            json=data,
+            headers={"access_token": f'"{self.token.access_token}"'}
+            if self.token
+            else None,
+        )
         if raise_if(response):
             raise BlueskyRemoteError(str(response))
         deserialized = parse_obj_as(target_type, response.json())

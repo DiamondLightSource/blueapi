@@ -27,6 +27,7 @@ dependencies = [
     "requests",
     "dodal @ git+https://github.com/DiamondLightSource/dodal.git@1.0.0",
     "typing_extensions<4.6",
+    "async-lru",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -93,7 +94,7 @@ exclude = [".tox", "venv"]
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst"
     --cov=blueapi --cov-report term --cov-report xml:cov.xml
-    --ignore=src/blueapi/startup
+    --ignore=src/blueapi/startup --log-cli-level=INFO
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = ["error", "ignore::DeprecationWarning"]

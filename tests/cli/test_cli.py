@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
-from blueapi.cli.cli import main
+from blueapi.cli.cli import main, save_token
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
 
@@ -23,6 +23,13 @@ def ensure_handler_teardown(request):
 @pytest.fixture
 def runner():
     return CliRunner()
+
+
+def test_auth_tokens_get_passed(runner: CliRunner):
+    runner.invoke(save_token)
+    runner.invoke(
+        main, ["-c", "tests/example_yaml/cli_config.yaml", "controller", "devices"]
+    )
 
 
 def test_cli_version(runner: CliRunner):

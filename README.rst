@@ -39,3 +39,22 @@ TODO: Talk about automagic plan endpoints
     when included in index.rst
 
 See https://DiamondLightSource.github.io/blueapi for more detailed documentation.
+
+
+How to make a secret
+====================
+
+You can't commit secrets. So you'll have to make sealed secrets. Here's how:
+
+for authn-template, look at the _secret.yaml, copy and paste the code and add in the secret string.
+Save this as secret.yaml. Then, use kubeseal:
+
+```
+kubeseal --fetch-cert > public-key-cert.pem
+```
+
+```
+kubeseal --format=yaml --cert=public-key-cert.pem < secret.yaml > sealed-secret.yaml
+```
+
+delete secret.yaml. You now have a sealed secret in your namespace.

@@ -1,3 +1,6 @@
+# Helm chart lock file
+helm/blueapi/Chart.lock
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

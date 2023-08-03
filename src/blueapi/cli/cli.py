@@ -1,6 +1,11 @@
+import asyncio
+import dataclasses
 import json
 import logging
+import os
+import stat
 from collections import deque
+from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
@@ -11,6 +16,8 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.amq import AmqClient
+from blueapi.cli.authentication import AccessToken, login
+from blueapi.cli.rest import BlueapiRestClient
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
@@ -22,8 +29,6 @@ from blueapi.service.openapi import (
     write_schema_as_yaml,
 )
 from blueapi.worker import RunPlan, WorkerEvent, WorkerState
-
-from .rest import BlueapiRestClient
 
 
 @click.group(invoke_without_command=True)
@@ -52,6 +57,63 @@ def main(ctx: click.Context, config: Union[Optional[Path], Tuple[Path, ...]]) ->
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
+
+
+def ensure_token_directory(make_dir: bool = True) -> Path:
+    home_dir = os.environ.get("HOME")
+    xdg_cache_dir = os.environ.get("XDG_CACHE_HOME")
+
+    if not home_dir:
+        raise Exception("No home directory environment variable.")
+
+    cache_dir: Path = (
+        Path(xdg_cache_dir) if xdg_cache_dir else Path(home_dir) / ".cache"
+    )
+    blueapi_cache = cache_dir / "blueapi"
+
+    cache_permissions = (
+        stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+    )
+    if not blueapi_cache.exists() and make_dir:
+        blueapi_cache.mkdir(mode=cache_permissions)
+
+    return blueapi_cache / "token"
+
+
+def get_token() -> Tuple[Path, Optional[AccessToken]]:
+    token_file = ensure_token_directory()
+
+    if token_file.exists() and token_file.is_file():
+        with open(str(token_file), "r") as file:
+            token = AccessToken(**json.load(file))
+        return token_file, token
+    return token_file, None
+
+@main.command(name="login")
+def save_token() -> None:
+    token_file, token = get_token()
+
+    if token:
+        if datetime.now().timestamp() < token.time_of_retrieval + token.expires_in:
+            print("Using existing token")
+            return
+
+    login_token = asyncio.run(login())
+    token_permissions = stat.S_IRUSR | stat.S_IWUSR
+
+    def opener(path, flags):
+        return os.open(path, flags, token_permissions)
+
+    with open(str(token_file), "w", opener=opener) as file:
+        json.dump(dataclasses.asdict(login_token), file)
+
+
+@main.command(name="logout")
+def delete_token() -> None:
+    token_file = ensure_token_directory(make_dir=False)
+
+    if token_file.exists() and token_file.is_file():
+        token_file.unlink()
 
 
 @main.command(name="schema")
@@ -88,6 +150,14 @@ def start_application(obj: dict):
 @click.pass_context
 def controller(ctx: click.Context) -> None:
     """Client utility for controlling and introspecting the worker"""
+    _, token = get_token()
+
+    if token:
+        if datetime.now().timestamp() > token.time_of_retrieval + token.expires_in:
+            raise Exception(
+                "Authentication token has expired. Please login again or remove"
+                + " the token to make requests to blueapi without authenticating."
+            )
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
@@ -95,7 +165,7 @@ def controller(ctx: click.Context) -> None:
 
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
-    ctx.obj["rest_client"] = BlueapiRestClient(config.api)
+    ctx.obj["rest_client"] = BlueapiRestClient(config.api, token)
 
 
 def check_connection(func):

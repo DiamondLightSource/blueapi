@@ -136,6 +136,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/apiver/"
   },
   {
+    "version": "authenticate_cli",
+    "url": "https://DiamondLightSource.github.io/blueapi/authenticate_cli/"
+  },
+  {
     "version": "authn_authz",
     "url": "https://DiamondLightSource.github.io/blueapi/authn_authz/"
   },

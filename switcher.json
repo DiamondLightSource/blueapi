@@ -228,6 +228,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/pinnedPydantic/"
   },
   {
+    "version": "plan-docs",
+    "url": "https://DiamondLightSource.github.io/blueapi/plan-docs/"
+  },
+  {
     "version": "public-topics",
     "url": "https://DiamondLightSource.github.io/blueapi/public-topics/"
   },

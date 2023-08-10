@@ -16,11 +16,7 @@ Wrap bluesky_ plans and devices inside a server and send commands/receive data.
 Useful for installation at labs where multiple people may control equipment, 
 possibly from remote locations.
 
-.. figure:: images/blueapi.png
-    :width: 600px
-    :align: center
-
-    blueapi concept diagram
+|concept|
 
 The main premise of blueapi is to minimize the boilerplate required to get plans
 and devices up and running by generating an API for your lab out of type-annotated 
@@ -62,5 +58,9 @@ can be invoked easily with a few REST calls.
 ..
     Anything below this line is used when viewing README.rst and will be replaced
     when included in index.rst
+
+
+.. |concept| image:: images/blueapi.png
+    :width: 400px
 
 See https://DiamondLightSource.github.io/blueapi for more detailed documentation.

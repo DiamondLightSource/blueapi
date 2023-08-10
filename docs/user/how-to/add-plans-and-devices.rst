@@ -14,6 +14,11 @@ The code can be in any pip-installable package, such as:
 
 The easiest place to put the code is a repository created with the Python skeleton. Which can then become any of the above.
 
+For development purposes this code should be installed into your environment with 
+
+.. code:: shell
+
+  pip install -e path/to/package
 
 Format
 ------

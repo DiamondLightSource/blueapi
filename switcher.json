@@ -286,5 +286,9 @@
   {
     "version": "visit-directory",
     "url": "https://DiamondLightSource.github.io/blueapi/visit-directory/"
+  },
+  {
+    "version": "welcome-page",
+    "url": "https://DiamondLightSource.github.io/blueapi/welcome-page/"
   }
 ]

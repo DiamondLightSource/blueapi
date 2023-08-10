@@ -61,6 +61,6 @@ can be invoked easily with a few REST calls.
 
 
 .. |concept| image:: docs/images/blueapi.png
-    :width: 400px
+    :width: 800px
 
 See https://DiamondLightSource.github.io/blueapi for more detailed documentation.

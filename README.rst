@@ -3,7 +3,7 @@ blueapi
 
 |code_ci| |docs_ci| |coverage| |pypi_version| |license|
 
-Lightweight Bluesky-as-a-service wrapper application. Also usable as a library. 
+Lightweight bluesky-as-a-service wrapper application. Also usable as a library. 
 
 ============== ==============================================================
 PyPI           ``pip install blueapi``
@@ -12,7 +12,32 @@ Documentation  https://DiamondLightSource.github.io/blueapi
 Releases       https://github.com/DiamondLightSource/blueapi/releases
 ============== ==============================================================
 
-TODO: Talk about automagic plan endpoints
+Wrap bluesky_ plans and devices inside a server and send commands/receive data.
+Useful for installation at labs where multiple people may control equipment, 
+possibly from remote locations.
+
+.. figure:: images/blueapi.png
+    :width: 600px
+    :align: center
+
+    blueapi concept diagram
+
+The main premise of blueapi is to minimize the boilerplate required to get plans
+and devices up and running by generating an API for your lab out of type-annotated 
+plans. For example, take the following plan:
+
+.. code:: python
+
+    import bluesky.plans as bp
+    from blueapi.core import MsgGenerator
+
+    def my_plan(foo: str, bar: int) -> MsgGenerator:
+        yield from bp.scan(...)
+
+Blueapi's job is to detect this plan and automatically add it to the lab's API so it
+can be invoked easily with a few REST calls. 
+
+.. _bluesky: https://blueskyproject.io/bluesky
 
 .. |code_ci| image:: https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml/badge.svg?branch=main
     :target: https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml

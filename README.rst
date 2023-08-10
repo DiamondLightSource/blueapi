@@ -60,7 +60,7 @@ can be invoked easily with a few REST calls.
     when included in index.rst
 
 
-.. |concept| image:: images/blueapi.png
+.. |concept| image:: docs/images/blueapi.png
     :width: 400px
 
 See https://DiamondLightSource.github.io/blueapi for more detailed documentation.

@@ -148,7 +148,6 @@ def run_plan(
 
     logger = logging.getLogger(__name__)
 
-    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
     finished_event: deque[WorkerEvent] = deque()
 
     def store_finished_event(event: WorkerEvent) -> None:
@@ -161,18 +160,24 @@ def run_plan(
     resp = client.create_task(task)
     task_id = resp.task_id
 
-    with amq_client:
-        amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)
-        updated = client.update_worker_task(WorkerTask(task_id=task_id))
+    if config.stomp is not None:
+        # If there is a message bus available, listen to it and give the user rich
+        # event information.
+        amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+        with amq_client:
+            amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)
+            updated = client.update_worker_task(WorkerTask(task_id=task_id))
 
-        amq_client.wait_for_complete(timeout=timeout)
+            amq_client.wait_for_complete(timeout=timeout)
 
-        if amq_client.timed_out:
-            logger.error(f"Plan did not complete within {timeout} seconds")
-            return
+            if amq_client.timed_out:
+                logger.error(f"Plan did not complete within {timeout} seconds")
+                return
 
-    process_event_after_finished(finished_event.pop(), logger)
-    pprint(updated.dict())
+        process_event_after_finished(finished_event.pop(), logger)
+        pprint(updated.dict())
+    else:
+        print(f"Task ID: {task_id}")
 
 
 @controller.command(name="state")

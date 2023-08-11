@@ -13,6 +13,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BlueskyController:
+    """
+    Holder object for all objects required to manage and communicate
+    with a run engine.
+    """
+
     context: BlueskyContext
     worker: Worker
     config: ApplicationConfig
@@ -24,6 +29,14 @@ class BlueskyController:
         worker: Worker,
         messaging_template: Optional[MessagingTemplate] = None,
     ) -> None:
+        """Constructor
+
+        Args:
+            context: Context referring to plans and devices
+            worker: Worker object that manages run engine
+            messaging_template: Message handling object that can publish events
+                from the worker. Defaults to None.
+        """
         self.context = context
         self.worker = worker
         self.messaging_template = messaging_template

@@ -29,6 +29,7 @@ side-bar.
             how-to/run-container
             how-to/configure-app
             how-to/run-cli
+            how-to/message-bus
 
         +++
 

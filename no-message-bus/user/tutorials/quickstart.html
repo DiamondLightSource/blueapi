@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Quickstart Guide &#8212; blueapi 0.3.5.dev7+g11eff511 documentation</title>
+    <title>Quickstart Guide &#8212; blueapi 0.3.5.dev8+g863a9aaf documentation</title>
   
   
   
@@ -37,7 +37,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=37cfb7af"></script>
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=95d24444"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -383,6 +383,7 @@ document.write(`
 <li class="toctree-l1"><a class="reference internal" href="../how-to/run-container.html">Run in a container</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../how-to/configure-app.html">Configure the application</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../how-to/run-cli.html">Control the Worker via the CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to/message-bus.html">Use a Message Bus to Access Event Data</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul class="nav bd-sidenav">
@@ -458,27 +459,6 @@ document.write(`
 <p class="admonition-title">See also</p>
 <p>Assumes you have completed <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a>.</p>
 </div>
-<section id="start-activemq">
-<h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Permalink to this heading">#</a></h2>
-<p>The worker requires a running instance of ActiveMQ, the simplest
-way to start it is to run it via a container:</p>
-<div class="sd-tab-set docutils">
-<input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-0">
-Docker</label><div class="sd-tab-content docutils">
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
-</pre></div>
-</div>
-</div>
-<input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-1">
-Podman</label><div class="sd-tab-content docutils">
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>podman<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
-</pre></div>
-</div>
-</div>
-</div>
-</section>
 <section id="start-worker">
 <h2>Start Worker<a class="headerlink" href="#start-worker" title="Permalink to this heading">#</a></h2>
 <p>To start the worker:</p>
@@ -543,7 +523,6 @@ Podman</label><div class="sd-tab-content docutils">
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-worker">Start Worker</a></li>
 </ul>
   </nav></div>

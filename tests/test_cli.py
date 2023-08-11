@@ -10,14 +10,14 @@ from requests.exceptions import ConnectionError
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.handler import Handler, teardown_handler
+from blueapi.service.controller import BlueskyController, teardown_controller
 
 
 @pytest.fixture(autouse=True)
-def ensure_handler_teardown(request):
+def ensure_controller_teardown(request):
     yield
-    if "handler" in request.keywords:
-        teardown_handler()
+    if "controller" in request.keywords:
+        teardown_controller()
 
 
 @pytest.fixture
@@ -69,29 +69,29 @@ class MyDevice:
 
 
 @pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
+@patch("blueapi.service.controller.BlueskyController")
 @patch("requests.request")
 def test_get_plans_and_devices(
     mock_requests: Mock,
-    mock_handler: Mock,
-    handler: Handler,
+    mock_controller: Mock,
+    controller: BlueskyController,
     client: TestClient,
     runner: CliRunner,
 ):
     """Integration test to test get_plans and get_devices."""
 
-    # needed so that the handler is instantiated as MockHandler() instead of Handler().
-    mock_handler.side_effect = Mock(return_value=handler)
+    # needed so that the controller is instantiated as MockBlueskyController() instead of BlueskyController().
+    mock_controller.side_effect = Mock(return_value=controller)
 
-    # Setup the (Mock)Handler.
+    # Setup the (Mock)BlueskyController.
     with patch("uvicorn.run", side_effect=None):
         result = runner.invoke(main, ["serve"])
 
     assert result.exit_code == 0
 
-    # Put a plan in handler.context manually.
+    # Put a plan in controller.context manually.
     plan = Plan(name="my-plan", model=MyModel)
-    handler.context.plans = {"my-plan": plan}
+    controller.context.plans = {"my-plan": plan}
 
     # Setup requests.get call to return the output of the FastAPI call for plans.
     # Call the CLI function and check the output.
@@ -102,14 +102,14 @@ def test_get_plans_and_devices(
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output - expect nothing as no devices set.
-    handler.context.devices = {}
+    controller.context.devices = {}
     mock_requests.return_value = client.get("/devices")
     unset_devices = runner.invoke(main, ["controller", "devices"])
     assert unset_devices.output == "{'devices': []}\n"
 
-    # Put a device in handler.context manually.
+    # Put a device in controller.context manually.
     device = MyDevice("my-device")
-    handler.context.devices = {"my-device": device}
+    controller.context.devices = {"my-device": device}
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output.
@@ -129,15 +129,15 @@ def test_invalid_config_path_handling(runner: CliRunner):
 
 
 @pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
+@patch("blueapi.service.controller.BlueskyController")
 @patch("requests.request")
 def test_config_passed_down_to_command_children(
     mock_requests: Mock,
-    mock_handler: Mock,
-    handler: Handler,
+    mock_controller: Mock,
+    controller: BlueskyController,
     runner: CliRunner,
 ):
-    mock_handler.side_effect = Mock(return_value=handler)
+    mock_controller.side_effect = Mock(return_value=controller)
     config_path = "tests/example_yaml/rest_config.yaml"
 
     with patch("uvicorn.run", side_effect=None):

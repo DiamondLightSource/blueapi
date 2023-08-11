@@ -75,10 +75,10 @@ class ApplicationConfig(BlueapiBaseModel):
     config tree.
     """
 
-    stomp: StompConfig = Field(default_factory=StompConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
+    stomp: Optional[StompConfig] = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

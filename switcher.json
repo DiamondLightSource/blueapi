@@ -216,6 +216,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/minor-kubernetes-fixes/"
   },
   {
+    "version": "no-message-bus",
+    "url": "https://DiamondLightSource.github.io/blueapi/no-message-bus/"
+  },
+  {
     "version": "optional-dependencies",
     "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
   },

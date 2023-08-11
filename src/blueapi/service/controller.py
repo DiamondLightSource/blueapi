@@ -1,5 +1,5 @@
 import logging
-from typing import Mapping, Optional
+from typing import Any, Mapping, Optional
 
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
@@ -56,17 +56,12 @@ class BlueskyController:
         self.worker.start()
 
         if self.messaging_template is not None:
+            topic = self.messaging_template.destinations.topic("public.worker.event")
             self._publish_event_streams(
                 {
-                    self.worker.worker_events: self.messaging_template.destinations.topic(
-                        "public.worker.event"
-                    ),
-                    self.worker.progress_events: self.messaging_template.destinations.topic(
-                        "public.worker.event"
-                    ),
-                    self.worker.data_events: self.messaging_template.destinations.topic(
-                        "public.worker.event"
-                    ),
+                    self.worker.worker_events: topic,
+                    self.worker.progress_events: topic,
+                    self.worker.data_events: topic,
                 }
             )
 
@@ -79,12 +74,16 @@ class BlueskyController:
             self._publish_event_stream(stream, destination)
 
     def _publish_event_stream(self, stream: EventStream, destination: str) -> None:
-        if self.messaging_template is not None:
-            stream.subscribe(
-                lambda event, correlation_id: self.messaging_template.send(
-                    destination, event, None, correlation_id
+        def on_event(event: Any, correlation_id: Optional[str]) -> None:
+            if self.messaging_template is not None:
+                self.messaging_template.send(
+                    destination,
+                    event,
+                    None,
+                    correlation_id,
                 )
-            )
+
+        stream.subscribe(on_event)
 
     def stop(self) -> None:
         self.worker.stop()

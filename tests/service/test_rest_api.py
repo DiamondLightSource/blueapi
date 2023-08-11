@@ -195,9 +195,10 @@ def mockable_state_machine(controller: BlueskyController):
     def run():
         set_state(RunEngineStateMachine.States.RUNNING)
 
-    mock_pause = controller.context.run_engine.request_pause = MagicMock()  # type: ignore
+    run_engine = controller.context.run_engine
+    mock_pause = run_engine.request_pause = MagicMock()  # type: ignore
     mock_pause.side_effect = pause
-    mock_resume = controller.context.run_engine.resume = MagicMock()  # type: ignore
+    mock_resume = run_engine.resume = MagicMock()  # type: ignore
     mock_resume.side_effect = run
     yield controller
 

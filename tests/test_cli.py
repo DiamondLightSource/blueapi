@@ -80,7 +80,8 @@ def test_get_plans_and_devices(
 ):
     """Integration test to test get_plans and get_devices."""
 
-    # needed so that the controller is instantiated as MockBlueskyController() instead of BlueskyController().
+    # needed so that the controller is instantiated as MockBlueskyController()
+    # instead of BlueskyController().
     mock_controller.side_effect = Mock(return_value=controller)
 
     # Setup the (Mock)BlueskyController.

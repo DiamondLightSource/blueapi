@@ -35,6 +35,9 @@ spec:
           - secret:
               name: {{ . }}
           {{- end }}
+      - name: plans
+        hostPath:
+          path: /home/plans
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -46,6 +49,9 @@ spec:
           volumeMounts:
             - name: worker-config
               mountPath: "/config"
+              readOnly: true
+            - name: plans
+              mountPath: "/dls_sw/p38/software/bluesky_plans"
               readOnly: true
           command: ["blueapi"]
           args:

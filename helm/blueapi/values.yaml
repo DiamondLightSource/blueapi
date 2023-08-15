@@ -78,6 +78,8 @@ worker:
         module: blueapi.startup.example
       - kind: planFunctions
         module: blueapi.plans
+      - kind: planFunctions
+        module: collectn
   stomp:
     auth:
       username: guest

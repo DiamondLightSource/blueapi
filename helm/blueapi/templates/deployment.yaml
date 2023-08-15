@@ -53,6 +53,9 @@ spec:
             - name: plans
               mountPath: "/plans"
               readOnly: true
+          env:
+            - name: PYTHONPATH
+              value: /plans          
           command: ["blueapi"]
           args:
             - "-c"

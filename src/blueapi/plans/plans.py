@@ -14,7 +14,7 @@ def scan(
     detectors: List[Readable],
     axes_to_move: Mapping[str, Movable],
     spec: Spec[str],
-    metadata: Optional[Mapping[str, Any]] = None,
+    md: Optional[Mapping[str, Any]] = None,
 ) -> MsgGenerator:
     """
     Scan wrapping `bp.scan_nd`
@@ -25,7 +25,7 @@ def scan(
         axes_to_move: All axes involved in this scan, names and
             objects
         spec: ScanSpec modelling the path of the scan
-        metadata: Key-value metadata to include
+        md: Key-value metadata to include
                                                           in exported data, defaults to
                                                           None.
 
@@ -37,10 +37,9 @@ def scan(
     """
 
     metadata = {
-        "detectors": [detector.name for detector in detectors],
         "scanspec": repr(spec),
         "shape": spec.shape(),
-        **(metadata or {}),
+        **(md or {}),
     }
 
     cycler = _scanspec_to_cycler(spec, axes_to_move)

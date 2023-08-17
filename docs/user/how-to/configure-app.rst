@@ -12,7 +12,7 @@ object.
 To set your own application configuration, edit this file (or write your own)
 and simply pass it to the CLI by typing::
 
-    $ blueapi --config path/to/file.yaml
+    $ blueapi worker --config path/to/file.yaml
 
 where ``path/to/file.yaml`` is the relative path to the configuration file you
 wish to use. Then, any subsequent calls to child commands of blueapi will

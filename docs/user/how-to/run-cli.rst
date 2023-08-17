@@ -38,10 +38,10 @@ You can run a plan and pass arbitrary JSON parameters.
 .. code:: shell
 
     # Run the sleep plan
-    blueapi controller run sleep -p '{"time": 5.0}'
+    blueapi controller run sleep '{"time": 5.0}'
 
     # Run the count plan
-    blueapi controller run count -p '{"detectors": ["current_det", "image_det"]}'
+    blueapi controller run count '{"detectors": ["current_det", "image_det"]}'
 
 The command will block until the plan is finished and will forward error/status messages 
 from the server.

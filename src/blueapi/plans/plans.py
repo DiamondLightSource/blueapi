@@ -14,7 +14,7 @@ def scan(
     detectors: List[Readable],
     axes_to_move: Mapping[str, Movable],
     spec: Spec[str],
-    md: Optional[Mapping[str, Any]] = None,
+    metadata: Optional[Mapping[str, Any]] = None,
 ) -> MsgGenerator:
     """
     Scan wrapping `bp.scan_nd`
@@ -25,7 +25,7 @@ def scan(
         axes_to_move: All axes involved in this scan, names and
             objects
         spec: ScanSpec modelling the path of the scan
-        md: Key-value metadata to include
+        metadata: Key-value metadata to include
                                                           in exported data, defaults to
                                                           None.
 
@@ -44,7 +44,7 @@ def scan(
         },
         "plan_name": "scan",
         "shape": spec.shape(),
-        **(md or {}),
+        **(metadata or {}),
     }
 
     cycler = _scanspec_to_cycler(spec, axes_to_move)
@@ -97,5 +97,16 @@ def count(
     Yields:
         Iterator[MsgGenerator]: _description_
     """
+    plan_args = {
+        "detectors": list(map(repr, detectors)),
+        "num": num,
+    }
+    if delay:  # If bp.count added delay to plan_args, we could remove all md handling
+        plan_args.update({"delay": delay})
 
-    yield from bp.count(detectors, num, delay=delay, md=metadata)
+    _md = {
+        "plan_args": plan_args,
+        **(metadata or {}),
+    }
+
+    yield from bp.count(detectors, num, delay=delay, md=_md)

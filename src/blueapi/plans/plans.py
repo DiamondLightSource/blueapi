@@ -97,12 +97,13 @@ def count(
     Yields:
         Iterator[MsgGenerator]: _description_
     """
-    plan_args = {
-        "detectors": list(map(repr, detectors)),
-        "num": num,
-    }
-    if delay:  # If bp.count added delay to plan_args, we could remove all md handling
-        plan_args.update({"delay": delay})
+    plan_args = (
+        {  # If bp.count added delay to plan_args, we could remove all md handling
+            "detectors": list(map(repr, detectors)),
+            "num": num,
+            "delay": delay,
+        }
+    )
 
     _md = {
         "plan_args": plan_args,

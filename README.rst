@@ -12,7 +12,7 @@ Documentation  https://DiamondLightSource.github.io/blueapi
 Releases       https://github.com/DiamondLightSource/blueapi/releases
 ============== ==============================================================
 
-Wrap bluesky_ plans and devices inside a server and send commands/receive data.
+This module wraps bluesky_ plans and devices inside a server and exposes endpoints to send commands/receive data.
 Useful for installation at labs where multiple people may control equipment, 
 possibly from remote locations.
 

@@ -36,15 +36,19 @@ def scan(
         Iterator[MsgGenerator]: Bluesky messages
     """
 
-    metadata = {
-        "detectors": [detector.name for detector in detectors],
-        "scanspec": repr(spec),
+    _md = {
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "axes_to_move": {k: repr(v) for k, v in axes_to_move.items()},
+            "spec": repr(spec),
+        },
+        "plan_name": "scan",
         "shape": spec.shape(),
         **(metadata or {}),
     }
 
     cycler = _scanspec_to_cycler(spec, axes_to_move)
-    yield from bp.scan_nd(detectors, cycler, md=metadata)
+    yield from bp.scan_nd(detectors, cycler, md=_md)
 
 
 def _scanspec_to_cycler(spec: Spec[str], axes: Mapping[str, Movable]) -> Cycler:
@@ -93,5 +97,17 @@ def count(
     Yields:
         Iterator[MsgGenerator]: _description_
     """
+    plan_args = (
+        {  # If bp.count added delay to plan_args, we could remove all md handling
+            "detectors": list(map(repr, detectors)),
+            "num": num,
+            "delay": delay,
+        }
+    )
 
-    yield from bp.count(detectors, num, delay=delay, md=metadata)
+    _md = {
+        "plan_args": plan_args,
+        **(metadata or {}),
+    }
+
+    yield from bp.count(detectors, num, delay=delay, md=_md)

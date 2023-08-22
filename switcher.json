@@ -164,6 +164,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/DiamondJoseph-patch-1/"
   },
   {
+    "version": "DominicOram-patch-2",
+    "url": "https://DiamondLightSource.github.io/blueapi/DominicOram-patch-2/"
+  },
+  {
     "version": "Iss164",
     "url": "https://DiamondLightSource.github.io/blueapi/Iss164/"
   },
@@ -314,9 +318,5 @@
   {
     "version": "visit-directory",
     "url": "https://DiamondLightSource.github.io/blueapi/visit-directory/"
-  },
-  {
-    "version": "welcome-page",
-    "url": "https://DiamondLightSource.github.io/blueapi/welcome-page/"
   }
 ]

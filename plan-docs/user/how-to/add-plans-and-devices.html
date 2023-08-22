@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Add Plans and Devices to your Blueapi Environment &#8212; blueapi 0.3.5.dev5+g9fd8f39c documentation</title>
+    <title>Add Plans and Devices to your Blueapi Environment &#8212; blueapi 0.3.5.dev7+g27865c28 documentation</title>
   
   
   
@@ -37,9 +37,9 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=984a4a18"></script>
+    <script src="../../_static/documentation_options.js?v=09318303"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../_static/design-tabs.js?v=36754332"></script>
@@ -454,24 +454,28 @@ document.write(`
                 <article class="bd-article" role="main">
                   
   <section id="add-plans-and-devices-to-your-blueapi-environment">
-<h1>Add Plans and Devices to your Blueapi Environment<a class="headerlink" href="#add-plans-and-devices-to-your-blueapi-environment" title="Permalink to this heading">#</a></h1>
+<h1>Add Plans and Devices to your Blueapi Environment<a class="headerlink" href="#add-plans-and-devices-to-your-blueapi-environment" title="Link to this heading">#</a></h1>
 <p>Custom plans and devices, tailored to individual experimental environments, can be added via configuration. In both cases the relevant code must be in your Python path, for example, part of a library installed in your Python environment. For editing and tweaking you can use an editable install, see below.</p>
 <section id="home-of-code">
-<h2>Home of Code<a class="headerlink" href="#home-of-code" title="Permalink to this heading">#</a></h2>
+<h2>Home of Code<a class="headerlink" href="#home-of-code" title="Link to this heading">#</a></h2>
 <p>The code can be in any pip-installable package, such as:</p>
 <ul class="simple">
 <li><p>A package on pypi</p></li>
 <li><p>A Github repository</p></li>
 <li><p>A local directory with a <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> file or similar.</p></li>
 </ul>
-<p>The easiest place to put the code is a repository created with the Python skeleton. Which can then become any of the above.</p>
+<p>The easiest place to put the code is a repository created with the <a class="reference external" href="https://diamondlightsource.github.io/python3-pip-skeleton/main/index.html">python skeleton</a>. Which can then become any of the above.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Guide to setting up a new Python project with an environment and a standard set of tools: <a class="reference external" href="https://diamondlightsource.github.io/python3-pip-skeleton-cli/main/user/tutorials/new.html">New Skeleton Project Tutorial</a></p>
+</div>
 <p>For development purposes this code should be installed into your environment with</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>path/to/package
 </pre></div>
 </div>
 </section>
 <section id="format">
-<h2>Format<a class="headerlink" href="#format" title="Permalink to this heading">#</a></h2>
+<h2>Format<a class="headerlink" href="#format" title="Link to this heading">#</a></h2>
 <p>Plans in Python files look like this:</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -512,7 +516,7 @@ document.write(`
 <p>An extra function to create the device is used to preserve side-effect-free imports. Each device must have its own factory function.</p>
 </section>
 <section id="configuration">
-<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h2>
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="configure-app.html"><span class="doc">Configure the application</span></a></p>
@@ -527,7 +531,8 @@ For example:</p>
 <span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dodal</span>
 <span class="w">      </span><span class="c1"># note, this code does not have to be inside dodal just because it uses</span>
-<span class="w">      </span><span class="c1"># the dodal kind</span>
+<span class="w">      </span><span class="c1"># the dodal kind. The module referenced contains a dodal-style function</span>
+<span class="w">      </span><span class="c1"># for initializing a particular device e.g. MyTypeOfDetector in my_lab.</span>
 <span class="w">      </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dodal.my_beamline</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planFunctions</span>
 <span class="w">      </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_plan_library.tomography.plans</span>

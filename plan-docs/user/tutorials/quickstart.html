@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Quickstart Guide &#8212; blueapi 0.3.5.dev7+g27865c28 documentation</title>
+    <title>Quickstart Guide &#8212; blueapi 0.3.5.dev9+g4993a51f documentation</title>
   
   
   
@@ -37,7 +37,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
-    <script src="../../_static/documentation_options.js?v=09318303"></script>
+    <script src="../../_static/documentation_options.js?v=df801f5f"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -459,6 +459,9 @@ document.write(`
 <p class="admonition-title">See also</p>
 <p>Assumes you have completed <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a>.</p>
 </div>
+<p>Blueapi acts as a worker that can run bluesky plans against devices for a specific
+laboratory setup. It can control devices to collect data and export events to tell
+downstream services about the data it has collected.</p>
 <section id="start-activemq">
 <h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Link to this heading">#</a></h2>
 <p>The worker requires a running instance of ActiveMQ, the simplest
@@ -490,6 +493,14 @@ Podman</label><div class="sd-tab-content docutils">
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>--config<span class="w"> </span>path/to/file<span class="w"> </span>serve
 </pre></div>
 </div>
+</section>
+<section id="test-that-the-worker-is-running">
+<h2>Test that the Worker is Running<a class="headerlink" href="#test-that-the-worker-is-running" title="Link to this heading">#</a></h2>
+<p>Blueapi comes with a CLI so that you can query and control the worker from the terminal.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>plans
+</pre></div>
+</div>
+<p>The above command should display all plans the worker is capable of running.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p>Full CLI reference: <a class="reference internal" href="../reference/cli.html"><span class="doc">Command-Line Interface</span></a></p>
@@ -546,6 +557,7 @@ Podman</label><div class="sd-tab-content docutils">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-worker">Start Worker</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-that-the-worker-is-running">Test that the Worker is Running</a></li>
 </ul>
   </nav></div>
 

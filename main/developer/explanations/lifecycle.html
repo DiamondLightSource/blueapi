@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Lifecycle of a Plan &#8212; blueapi 0.3.5.dev3+g1dd6b0ff documentation</title>
+    <title>Lifecycle of a Plan &#8212; blueapi 0.3.5.dev4+g645767ce documentation</title>
   
   
   
@@ -28,7 +28,7 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
@@ -37,9 +37,9 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=35f1c3a6"></script>
+    <script src="../../_static/documentation_options.js?v=860e76ed"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../_static/design-tabs.js?v=36754332"></script>
@@ -462,7 +462,7 @@ document.write(`
                 <article class="bd-article" role="main">
                   
   <section id="lifecycle-of-a-plan">
-<h1>Lifecycle of a Plan<a class="headerlink" href="#lifecycle-of-a-plan" title="Permalink to this heading">#</a></h1>
+<h1>Lifecycle of a Plan<a class="headerlink" href="#lifecycle-of-a-plan" title="Link to this heading">#</a></h1>
 <p>The following demonstrates exactly what the code does with a plan through its lifecycle
 of being written, loaded and run. Take the following plan.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
@@ -503,7 +503,7 @@ of being written, loaded and run. Take the following plan.</p>
 </pre></div>
 </div>
 <section id="loading-and-registration">
-<h2>Loading and Registration<a class="headerlink" href="#loading-and-registration" title="Permalink to this heading">#</a></h2>
+<h2>Loading and Registration<a class="headerlink" href="#loading-and-registration" title="Link to this heading">#</a></h2>
 <p>Blueapi will load this plan into its context if configured to load either this module or a module that
 imports it. The <code class="docutils literal notranslate"><span class="pre">BlueskyContext</span></code> will go through all global variables in the module and register them
 if it detects that they are plans.</p>
@@ -533,12 +533,12 @@ plan is run. The existence of the “det” default device is not checked until 
 <p>The model is also stored in the context.</p>
 </section>
 <section id="startup">
-<h2>Startup<a class="headerlink" href="#startup" title="Permalink to this heading">#</a></h2>
+<h2>Startup<a class="headerlink" href="#startup" title="Link to this heading">#</a></h2>
 <p>On startup, the context is passed to the worker, which is passed to the service.
 The worker also holds a reference to the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> that can run the plan.</p>
 </section>
 <section id="request">
-<h2>Request<a class="headerlink" href="#request" title="Permalink to this heading">#</a></h2>
+<h2>Request<a class="headerlink" href="#request" title="Link to this heading">#</a></h2>
 <p>A user can send a request to run the plan to the service, which includes values for the parameters.
 It takes the form of JSON and may look something like this:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
@@ -558,7 +558,7 @@ It takes the form of JSON and may look something like this:</p>
 and executes it as soon as it can.</p>
 </section>
 <section id="validation">
-<h2>Validation<a class="headerlink" href="#validation" title="Permalink to this heading">#</a></h2>
+<h2>Validation<a class="headerlink" href="#validation" title="Link to this heading">#</a></h2>
 <p>The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry
 The parameter values in the request are validated against the model, this includes looking up devices
 with names <code class="docutils literal notranslate"><span class="pre">andor</span></code> and <code class="docutils literal notranslate"><span class="pre">pilatus</span></code> or, if detectors was not passed <code class="docutils literal notranslate"><span class="pre">det</span></code>.</p>
@@ -568,7 +568,7 @@ with names <code class="docutils literal notranslate"><span class="pre">andor</s
 </div>
 </section>
 <section id="execution">
-<h2>Execution<a class="headerlink" href="#execution" title="Permalink to this heading">#</a></h2>
+<h2>Execution<a class="headerlink" href="#execution" title="Link to this heading">#</a></h2>
 <p>The validated parameter values are then passed to the plan function, which is passed to the RunEngine.
 The plan is executed. While it is running, the <code class="docutils literal notranslate"><span class="pre">Worker</span></code> will publish</p>
 <ul class="simple">

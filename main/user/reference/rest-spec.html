@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>REST Specification &#8212; blueapi 0.3.5.dev3+g1dd6b0ff documentation</title>
+    <title>REST Specification &#8212; blueapi 0.3.5.dev4+g645767ce documentation</title>
   
   
   
@@ -28,7 +28,7 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
@@ -37,9 +37,9 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=35f1c3a6"></script>
+    <script src="../../_static/documentation_options.js?v=860e76ed"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../_static/design-tabs.js?v=36754332"></script>
@@ -453,13 +453,13 @@ document.write(`
                 <article class="bd-article" role="main">
                   
   <section id="rest-specification">
-<h1>REST Specification<a class="headerlink" href="#rest-specification" title="Permalink to this heading">#</a></h1>
+<h1>REST Specification<a class="headerlink" href="#rest-specification" title="Link to this heading">#</a></h1>
 <p>Blueapi runs a FastAPI server through which the blueapi worker can be
 interacted with. This page documents all possible endpoints of this
 server.</p>
 <dl class="http get">
 <dt class="sig sig-object http" id="get--devices">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/devices</span></span><a class="headerlink" href="#get--devices" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/devices</span></span><a class="headerlink" href="#get--devices" title="Link to this definition">#</a></dt>
 <dd><p><strong>Get Devices</strong></p>
 <p>Retrieve information about all available devices.</p>
 <dl class="field-list simple">
@@ -473,7 +473,7 @@ server.</p>
 
 <dl class="http get">
 <dt class="sig sig-object http" id="get--devices-name">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/devices/{name}</span></span><a class="headerlink" href="#get--devices-name" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/devices/{name}</span></span><a class="headerlink" href="#get--devices-name" title="Link to this definition">#</a></dt>
 <dd><p><strong>Get Device By Name</strong></p>
 <p>Retrieve information about a devices by its (unique) name.</p>
 <dl class="field-list simple">
@@ -493,7 +493,7 @@ server.</p>
 
 <dl class="http get">
 <dt class="sig sig-object http" id="get--plans">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/plans</span></span><a class="headerlink" href="#get--plans" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/plans</span></span><a class="headerlink" href="#get--plans" title="Link to this definition">#</a></dt>
 <dd><p><strong>Get Plans</strong></p>
 <p>Retrieve information about all available plans.</p>
 <dl class="field-list simple">
@@ -507,7 +507,7 @@ server.</p>
 
 <dl class="http get">
 <dt class="sig sig-object http" id="get--plans-name">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/plans/{name}</span></span><a class="headerlink" href="#get--plans-name" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/plans/{name}</span></span><a class="headerlink" href="#get--plans-name" title="Link to this definition">#</a></dt>
 <dd><p><strong>Get Plan By Name</strong></p>
 <p>Retrieve information about a plan by its (unique) name.</p>
 <dl class="field-list simple">
@@ -527,7 +527,7 @@ server.</p>
 
 <dl class="http post">
 <dt class="sig sig-object http" id="post--tasks">
-<span class="sig-name descname"><span class="pre">POST</span> </span><span class="sig-name descname"><span class="pre">/tasks</span></span><a class="headerlink" href="#post--tasks" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">POST</span> </span><span class="sig-name descname"><span class="pre">/tasks</span></span><a class="headerlink" href="#post--tasks" title="Link to this definition">#</a></dt>
 <dd><p><strong>Submit Task</strong></p>
 <p>Submit a task to the worker.</p>
 <dl class="field-list simple">
@@ -542,7 +542,7 @@ server.</p>
 
 <dl class="http delete">
 <dt class="sig sig-object http" id="delete--tasks-task_id">
-<span class="sig-name descname"><span class="pre">DELETE</span> </span><span class="sig-name descname"><span class="pre">/tasks/{task_id}</span></span><a class="headerlink" href="#delete--tasks-task_id" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DELETE</span> </span><span class="sig-name descname"><span class="pre">/tasks/{task_id}</span></span><a class="headerlink" href="#delete--tasks-task_id" title="Link to this definition">#</a></dt>
 <dd><p><strong>Delete Submitted Task</strong></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -561,7 +561,7 @@ server.</p>
 
 <dl class="http get">
 <dt class="sig sig-object http" id="get--tasks-task_id">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/tasks/{task_id}</span></span><a class="headerlink" href="#get--tasks-task_id" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/tasks/{task_id}</span></span><a class="headerlink" href="#get--tasks-task_id" title="Link to this definition">#</a></dt>
 <dd><p><strong>Get Task</strong></p>
 <p>Retrieve a task</p>
 <dl class="field-list simple">
@@ -581,7 +581,7 @@ server.</p>
 
 <dl class="http get">
 <dt class="sig sig-object http" id="get--worker-state">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/worker/state</span></span><a class="headerlink" href="#get--worker-state" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/worker/state</span></span><a class="headerlink" href="#get--worker-state" title="Link to this definition">#</a></dt>
 <dd><p><strong>Get State</strong></p>
 <p>Get the State of the Worker</p>
 <dl class="field-list simple">
@@ -595,7 +595,7 @@ server.</p>
 
 <dl class="http put">
 <dt class="sig sig-object http" id="put--worker-state">
-<span class="sig-name descname"><span class="pre">PUT</span> </span><span class="sig-name descname"><span class="pre">/worker/state</span></span><a class="headerlink" href="#put--worker-state" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">PUT</span> </span><span class="sig-name descname"><span class="pre">/worker/state</span></span><a class="headerlink" href="#put--worker-state" title="Link to this definition">#</a></dt>
 <dd><p><strong>Set State</strong></p>
 <p>Request that the worker is put into a particular state.
 Returns the state of the worker at the end of the call.</p>
@@ -637,7 +637,7 @@ Returns the state of the worker at the end of the call.</p>
 
 <dl class="http get">
 <dt class="sig sig-object http" id="get--worker-task">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/worker/task</span></span><a class="headerlink" href="#get--worker-task" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/worker/task</span></span><a class="headerlink" href="#get--worker-task" title="Link to this definition">#</a></dt>
 <dd><p><strong>Get Active Task</strong></p>
 <dl class="field-list simple">
 <dt class="field-odd">Status Codes<span class="colon">:</span></dt>
@@ -650,7 +650,7 @@ Returns the state of the worker at the end of the call.</p>
 
 <dl class="http put">
 <dt class="sig sig-object http" id="put--worker-task">
-<span class="sig-name descname"><span class="pre">PUT</span> </span><span class="sig-name descname"><span class="pre">/worker/task</span></span><a class="headerlink" href="#put--worker-task" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">PUT</span> </span><span class="sig-name descname"><span class="pre">/worker/task</span></span><a class="headerlink" href="#put--worker-task" title="Link to this definition">#</a></dt>
 <dd><p><strong>Update Task</strong></p>
 <dl class="field-list simple">
 <dt class="field-odd">Status Codes<span class="colon">:</span></dt>

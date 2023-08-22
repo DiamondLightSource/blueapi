@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Type Validators &#8212; blueapi 0.3.5.dev4+ge1488404 documentation</title>
+    <title>Type Validators &#8212; blueapi 0.3.5.dev11+gf25ee552 documentation</title>
   
   
   
@@ -37,9 +37,9 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=8f5430a9"></script>
+    <script src="../../_static/documentation_options.js?v=bbbc359f"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../_static/design-tabs.js?v=36754332"></script>
@@ -462,9 +462,9 @@ document.write(`
                 <article class="bd-article" role="main">
                   
   <section id="type-validators">
-<h1>Type Validators<a class="headerlink" href="#type-validators" title="Permalink to this heading">#</a></h1>
+<h1>Type Validators<a class="headerlink" href="#type-validators" title="Link to this heading">#</a></h1>
 <section id="requirement">
-<h2>Requirement<a class="headerlink" href="#requirement" title="Permalink to this heading">#</a></h2>
+<h2>Requirement<a class="headerlink" href="#requirement" title="Link to this heading">#</a></h2>
 <p>Blueapi takes the parameters of a plan and internally creates a <a class="reference external" href="https://docs.pydantic.dev/">pydantic</a> model for future validation e.g.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span>
     <span class="o">...</span>
@@ -503,7 +503,7 @@ to be devices and look them up against the context. For example with the request
 <p><code class="docutils literal notranslate"><span class="pre">andor</span></code> and <code class="docutils literal notranslate"><span class="pre">pilatus</span></code> should be looked up and replaced with Ophyd objects.</p>
 </section>
 <section id="solution">
-<h2>Solution<a class="headerlink" href="#solution" title="Permalink to this heading">#</a></h2>
+<h2>Solution<a class="headerlink" href="#solution" title="Link to this heading">#</a></h2>
 <p>When the context loads available plans, it iterates through the type signature
 and replaces any reference to a bluesky protocol (or instance of a protocol)
 with a new class that extends the original type. Defining a class validator on

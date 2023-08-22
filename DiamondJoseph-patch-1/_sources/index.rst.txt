@@ -3,6 +3,9 @@
 .. include:: ../README.rst
     :end-before: when included in index.rst
 
+.. |concept| image:: images/blueapi.png
+    :width: 800px
+
 How the documentation is structured
 -----------------------------------
 

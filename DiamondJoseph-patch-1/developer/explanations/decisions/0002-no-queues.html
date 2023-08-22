@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>2. No Queues &#8212; blueapi 0.3.5.dev4+ge1488404 documentation</title>
+    <title>2. No Queues &#8212; blueapi 0.3.5.dev11+gf25ee552 documentation</title>
   
   
   
@@ -37,9 +37,9 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=8f5430a9"></script>
+    <script src="../../../_static/documentation_options.js?v=bbbc359f"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../../_static/design-tabs.js?v=36754332"></script>
@@ -465,24 +465,24 @@ document.write(`
                 <article class="bd-article" role="main">
                   
   <section id="no-queues">
-<h1>2. No Queues<a class="headerlink" href="#no-queues" title="Permalink to this heading">#</a></h1>
+<h1>2. No Queues<a class="headerlink" href="#no-queues" title="Link to this heading">#</a></h1>
 <p>Date: 2023-05-22</p>
 <section id="status">
-<h2>Status<a class="headerlink" href="#status" title="Permalink to this heading">#</a></h2>
+<h2>Status<a class="headerlink" href="#status" title="Link to this heading">#</a></h2>
 <p>Accepted</p>
 </section>
 <section id="context">
-<h2>Context<a class="headerlink" href="#context" title="Permalink to this heading">#</a></h2>
+<h2>Context<a class="headerlink" href="#context" title="Link to this heading">#</a></h2>
 <p>In asking whether this service should hold and execute a queue of tasks.</p>
 </section>
 <section id="decision">
-<h2>Decision<a class="headerlink" href="#decision" title="Permalink to this heading">#</a></h2>
+<h2>Decision<a class="headerlink" href="#decision" title="Link to this heading">#</a></h2>
 <p>We will not hold any queues. The worker can execute one task at a time and will return
 an error if asked to execute one task while another is running. Queueing should be the
 responsibility of a different service.</p>
 </section>
 <section id="consequences">
-<h2>Consequences<a class="headerlink" href="#consequences" title="Permalink to this heading">#</a></h2>
+<h2>Consequences<a class="headerlink" href="#consequences" title="Link to this heading">#</a></h2>
 <p>The API must be kept queue-free, although transactions are permitted where the server
 caches requests.</p>
 </section>

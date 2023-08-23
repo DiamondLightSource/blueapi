@@ -4,17 +4,12 @@ from typing import Dict, List, Type, Union
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
+from dls_bluesky_core.core import MsgGenerator, PlanGenerator
 from ophyd.sim import SynAxis, SynGauss
 from pydantic import ValidationError, parse_obj_as
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
-from blueapi.core import (
-    BlueskyContext,
-    MsgGenerator,
-    PlanGenerator,
-    inject,
-    is_bluesky_compatible_device,
-)
+from blueapi.core import BlueskyContext, inject, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory
 
 SIM_MOTOR_NAME = "sim"

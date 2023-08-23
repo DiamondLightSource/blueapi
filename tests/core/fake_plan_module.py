@@ -1,1 +1,1 @@
-from blueapi.plans import scan  # noqa: F401
+from dls_bluesky_core.plans import scan  # noqa: F401

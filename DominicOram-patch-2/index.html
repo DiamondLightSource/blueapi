@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>blueapi &#8212; blueapi 0.3.5.dev4+gd88063b2 documentation</title>
+    <title>blueapi &#8212; blueapi 0.3.5.dev9+g50b49c30 documentation</title>
   
   
   
@@ -37,7 +37,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
-    <script src="_static/documentation_options.js?v=69aab5e8"></script>
+    <script src="_static/documentation_options.js?v=657c831e"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -390,7 +390,7 @@ document.write(`
   <section id="blueapi">
 <h1>blueapi<a class="headerlink" href="#blueapi" title="Link to this heading">#</a></h1>
 <p><a class="reference external" href="https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml"><img alt="Code CI" src="https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml/badge.svg?branch=main" /></a> <a class="reference external" href="https://github.com/DiamondLightSource/blueapi/actions/workflows/docs.yml"><img alt="Docs CI" src="https://github.com/DiamondLightSource/blueapi/actions/workflows/docs.yml/badge.svg?branch=main" /></a> <a class="reference external" href="https://codecov.io/gh/DiamondLightSource/blueapi"><img alt="Test Coverage" src="https://codecov.io/gh/DiamondLightSource/blueapi/branch/main/graph/badge.svg" /></a> <a class="reference external" href="https://pypi.org/project/blueapi"><img alt="Latest PyPI version" src="https://img.shields.io/pypi/v/blueapi.svg" /></a> <a class="reference external" href="https://opensource.org/licenses/Apache-2.0"><img alt="Apache License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a></p>
-<p>Lightweight Bluesky-as-a-service wrapper application. Also usable as a library.</p>
+<p>Lightweight bluesky-as-a-service wrapper application. Also usable as a library.</p>
 <table class="table">
 <tbody>
 <tr class="row-odd"><td><p>PyPI</p></td>
@@ -407,7 +407,22 @@ document.write(`
 </tr>
 </tbody>
 </table>
-<p>TODO: Talk about automagic plan endpoints</p>
+<p>This module wraps <a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a> plans and devices inside a server and exposes endpoints to send commands/receive data.
+Useful for installation at labs where multiple people may control equipment,
+possibly from remote locations.</p>
+<p><a class="reference internal" href="_images/blueapi.png"><img alt="concept" src="_images/blueapi.png" style="width: 800px;" /></a></p>
+<p>The main premise of blueapi is to minimize the boilerplate required to get plans
+and devices up and running by generating an API for your lab out of type-annotated
+plans. For example, take the following plan:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">bluesky.plans</span> <span class="k">as</span> <span class="nn">bp</span>
+<span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">MsgGenerator</span>
+
+<span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">foo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bar</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+    <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Blueapi’s job is to detect this plan and automatically add it to the lab’s API so it
+can be invoked easily with a few REST calls.</p>
 <section id="how-the-documentation-is-structured">
 <h2>How the documentation is structured<a class="headerlink" href="#how-the-documentation-is-structured" title="Link to this heading">#</a></h2>
 <p>The documentation is split into 2 sections:</p>

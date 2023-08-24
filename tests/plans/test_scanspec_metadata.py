@@ -40,8 +40,6 @@ def test_metadata_of_simple_spec(run_engine, x):
         labels={"detectors"},
     )
     spec = Line(axis=x.name, start=1, stop=2, num=3)
-    x_points = [1.0, 1.5, 2.0]
-    spec_repr = "Line(axis='x', start=1.0, stop=2.0, num=3)"
 
     start_future = Future()
     tok = capture_document_return_token(start_future, run_engine, "start")
@@ -50,11 +48,16 @@ def test_metadata_of_simple_spec(run_engine, x):
 
     start_document = start_future.result()
     plan_args = start_document["plan_args"]
+
+    assert len(plan_args) == 3
     assert plan_args["detectors"] == [repr(det)]
-    assert plan_args["cycler"] == f"cycler({repr(x)}, {x_points})"
+    assert plan_args["spec"] == repr(spec)
+    assert plan_args["axes_to_move"] == {
+        x.name: repr(x),
+    }
+
     assert start_document["motors"] == [x.name]
     assert start_document["detectors"] == [det.name]
-    assert start_document["scanspec"] == spec_repr
 
 
 def test_metadata_of_spiral_spec(run_engine, x, y):
@@ -78,14 +81,13 @@ def test_metadata_of_spiral_spec(run_engine, x, y):
     start_document = start_future.result()
     plan_args = start_document["plan_args"]
 
+    assert len(plan_args) == 3
     assert plan_args["detectors"] == [repr(det)]
-    midpoints = spec.midpoints()
-    x_cycler = f"cycler({repr(x)}, {[a[x.name] for a in midpoints]})"
-    y_cycler = f"cycler({repr(y)}, {[a[y.name] for a in midpoints]})"
-    assert plan_args["cycler"] == f"({y_cycler} + {x_cycler})"
+    assert plan_args["spec"] == repr(spec)
+    assert plan_args["axes_to_move"] == {x.name: repr(x), y.name: repr(y)}
+
     assert set(start_document["motors"]) == {
         x.name,
         y.name,
     }  # Order of motors in scan_nd not guaranteed
     assert start_document["detectors"] == [det.name]
-    assert start_document["scanspec"] == repr(spec)

@@ -21,7 +21,7 @@ from typing import (
 
 from bluesky import RunEngine
 from pydantic import create_model
-from pydantic.fields import FieldInfo
+from pydantic.fields import FieldInfo, ModelField
 
 from blueapi.config import EnvironmentConfig, SourceKind
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
@@ -197,6 +197,13 @@ class BlueskyContext:
                     if not isinstance(val, target):
                         raise ValueError(f"Device {value} is not of type {target}")
                     return val
+
+                @classmethod
+                def __modify_schema__(
+                    cls, field_schema: dict[str, Any], field: Optional[ModelField]
+                ):
+                    if field:
+                        field_schema.update({field.name: repr(target)})
 
             self._reference_cache[target] = Reference
 

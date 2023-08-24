@@ -50,8 +50,20 @@ components:
           description: Name of the plan
           title: Name
           type: string
+        properties:
+          description: Plan arguments description
+          title: Properties
+          type: object
+        required:
+          description: Names of required arguments
+          items:
+            type: string
+          title: Required
+          type: array
       required:
       - name
+      - properties
+      - required
       title: PlanModel
       type: object
     PlanResponse:

@@ -27,7 +27,15 @@ def test_get_plans(handler: Handler, client: TestClient) -> None:
     response = client.get("/plans")
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"plans": [{"name": "my-plan"}]}
+    assert response.json() == {
+        "plans": [
+            {
+                "name": "my-plan",
+                "properties": {"id": {"title": "Id", "type": "string"}},
+                "required": ["id"],
+            }
+        ]
+    }
 
 
 def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
@@ -40,7 +48,37 @@ def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
     response = client.get("/plans/my-plan")
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"name": "my-plan"}
+    assert response.json() == {
+        "name": "my-plan",
+        "properties": {"id": {"title": "Id", "type": "string"}},
+        "required": ["id"],
+    }
+
+
+def test_get_plan_with_device_reference(handler: Handler, client: TestClient) -> None:
+    response = client.get("/plans/count")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {
+        "name": "count",
+        "properties": {
+            "delay": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"items": {"type": "number"}, "type": "array"},
+                ],
+                "title": "Delay",
+            },
+            "detectors": {
+                "items": {"_detectors": "<class " "'bluesky.protocols.Readable'>"},
+                "title": "Detectors",
+                "type": "array",
+            },
+            "metadata": {"title": "Metadata", "type": "object"},
+            "num": {"title": "Num", "type": "integer"},
+        },
+        "required": ["detectors"],
+    }
 
 
 def test_get_non_existant_plan_by_name(handler: Handler, client: TestClient) -> None:

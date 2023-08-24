@@ -160,10 +160,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/DAQ-4642/"
   },
   {
-    "version": "DiamondJoseph-patch-1",
-    "url": "https://DiamondLightSource.github.io/blueapi/DiamondJoseph-patch-1/"
-  },
-  {
     "version": "DominicOram-patch-2",
     "url": "https://DiamondLightSource.github.io/blueapi/DominicOram-patch-2/"
   },
@@ -210,6 +206,10 @@
   {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
+  },
+  {
+    "version": "dockerfile-default",
+    "url": "https://DiamondLightSource.github.io/blueapi/dockerfile-default/"
   },
   {
     "version": "docref",

@@ -172,6 +172,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/Issue164/"
   },
   {
+    "version": "PlanArgs",
+    "url": "https://DiamondLightSource.github.io/blueapi/PlanArgs/"
+  },
+  {
     "version": "RJMS-Interoperability",
     "url": "https://DiamondLightSource.github.io/blueapi/RJMS-Interoperability/"
   },
@@ -206,10 +210,6 @@
   {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
-  },
-  {
-    "version": "dockerfile-default",
-    "url": "https://DiamondLightSource.github.io/blueapi/dockerfile-default/"
   },
   {
     "version": "docref",

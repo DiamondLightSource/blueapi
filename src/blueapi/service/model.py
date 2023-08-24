@@ -60,12 +60,8 @@ class PlanModel(BlueapiBaseModel):
     @classmethod
     def from_plan(cls, plan: Plan) -> "PlanModel":
         schema = plan.model.schema()
-        properties = schema.get("properties")
-        if properties is None:
-            properties = {}
-        required = schema.get("required")
-        if required is None:
-            required = []
+        properties = schema.get("properties") or {}
+        required = schema.get("required") or []
         return cls(name=plan.name, properties=properties, required=required)
 
 

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Quickstart Guide &#8212; blueapi 0.3.5.dev8+gbc55d8ec documentation</title>
+    <title>Add Plans and Devices to your Blueapi Environment &#8212; blueapi 0.3.5.dev8+gbc55d8ec documentation</title>
   
   
   
@@ -43,7 +43,7 @@
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../_static/design-tabs.js?v=36754332"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'user/tutorials/quickstart';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user/how-to/add-plans-and-devices';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dockerfile-default';
@@ -51,8 +51,8 @@
     <link rel="icon" href="../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Run in a container" href="../how-to/run-container.html" />
-    <link rel="prev" title="Installation" href="installation.html" />
+    <link rel="next" title="Control the Worker via the CLI" href="run-cli.html" />
+    <link rel="prev" title="Configure the application" href="configure-app.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -374,16 +374,16 @@ document.write(`
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Quickstart Guide</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/quickstart.html">Quickstart Guide</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../how-to/run-container.html">Run in a container</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../how-to/configure-app.html">Configure the application</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../how-to/add-plans-and-devices.html">Add Plans and Devices to your Blueapi Environment</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../how-to/run-cli.html">Control the Worker via the CLI</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the application</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Add Plans and Devices to your Blueapi Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-cli.html">Control the Worker via the CLI</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul class="nav bd-sidenav">
@@ -436,7 +436,7 @@ document.write(`
     
     <li class="breadcrumb-item"><a href="../index.html" class="nav-link">User Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Quickstart Guide</li>
+    <li class="breadcrumb-item active" aria-current="page">Add Plans and Devices to your Blueapi Environment</li>
   </ul>
 </nav>
 </div>
@@ -453,58 +453,92 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="quickstart-guide">
-<h1>Quickstart Guide<a class="headerlink" href="#quickstart-guide" title="Link to this heading">#</a></h1>
+  <section id="add-plans-and-devices-to-your-blueapi-environment">
+<h1>Add Plans and Devices to your Blueapi Environment<a class="headerlink" href="#add-plans-and-devices-to-your-blueapi-environment" title="Link to this heading">#</a></h1>
+<p>Custom plans and devices, tailored to individual experimental environments, can be added via configuration. In both cases the relevant code must be in your Python path, for example, part of a library installed in your Python environment. For editing and tweaking you can use an editable install, see below.</p>
+<section id="home-of-code">
+<h2>Home of Code<a class="headerlink" href="#home-of-code" title="Link to this heading">#</a></h2>
+<p>The code can be in any pip-installable package, such as:</p>
+<ul class="simple">
+<li><p>A package on pypi</p></li>
+<li><p>A Github repository</p></li>
+<li><p>A local directory with a <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> file or similar.</p></li>
+</ul>
+<p>The easiest place to put the code is a repository created with the <a class="reference external" href="https://diamondlightsource.github.io/python3-pip-skeleton/main/index.html">python skeleton</a>. Which can then become any of the above.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p>Assumes you have completed <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a>.</p>
+<p>Guide to setting up a new Python project with an environment and a standard set of tools: <a class="reference external" href="https://diamondlightsource.github.io/python3-pip-skeleton-cli/main/user/tutorials/new.html">New Skeleton Project Tutorial</a></p>
 </div>
-<p>Blueapi acts as a worker that can run bluesky plans against devices for a specific
-laboratory setup. It can control devices to collect data and export events to tell
-downstream services about the data it has collected.</p>
-<section id="start-activemq">
-<h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Link to this heading">#</a></h2>
-<p>The worker requires a running instance of ActiveMQ, the simplest
-way to start it is to run it via a container:</p>
-<div class="sd-tab-set docutils">
-<input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-0">
-Docker</label><div class="sd-tab-content docutils">
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
-</pre></div>
-</div>
-</div>
-<input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
-</input><label class="sd-tab-label" for="sd-tab-item-1">
-Podman</label><div class="sd-tab-content docutils">
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>podman<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--net<span class="w"> </span>host<span class="w"> </span>rmohr/activemq:5.15.9-alpine
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="start-worker">
-<h2>Start Worker<a class="headerlink" href="#start-worker" title="Link to this heading">#</a></h2>
-<p>To start the worker:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>serve
-</pre></div>
-</div>
-<p>The worker can also be started using a custom config file:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>--config<span class="w"> </span>path/to/file<span class="w"> </span>serve
+<p>For development purposes this code should be installed into your environment with</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>path/to/package
 </pre></div>
 </div>
 </section>
-<section id="test-that-the-worker-is-running">
-<h2>Test that the Worker is Running<a class="headerlink" href="#test-that-the-worker-is-running" title="Link to this heading">#</a></h2>
-<p>Blueapi comes with a CLI so that you can query and control the worker from the terminal.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>plans
+<section id="format">
+<h2>Format<a class="headerlink" href="#format" title="Link to this heading">#</a></h2>
+<p>Plans in Python files look like this:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The type annotations (e.g. <code class="docutils literal notranslate"><span class="pre">:</span> <span class="pre">str</span></code>, <code class="docutils literal notranslate"><span class="pre">:</span> <span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">-&gt;</span> <span class="pre">MsgGenerator</span></code>) are required as blueapi uses them to generate an API!</p>
+</div>
+<p>You can define as many plans as you like in a single Python file or spread them over multiple files.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.protocols</span> <span class="kn">import</span> <span class="n">Readable</span><span class="p">,</span> <span class="n">Movable</span>
+<span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">MsgGenerator</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span>
+    <span class="n">detector</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
+    <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
+    <span class="n">steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">sample_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">extra_metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+
+    <span class="c1"># logic goes here</span>
+    <span class="o">...</span>
 </pre></div>
 </div>
-<p>The above command should display all plans the worker is capable of running.</p>
+<p>Devices are made using the <a class="reference external" href="https://github.com/DiamondLightSource/dodal">dodal</a> style available through factory functions like this:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The return type annotation <code class="docutils literal notranslate"><span class="pre">-&gt;</span> <span class="pre">MyTypeOfDetector</span></code> is required as blueapi uses it to determine that this function creates a device. Meaning you can have a Python file where only some functions create devices and they will be automatically picked up.</p>
+</div>
+<p>Similarly, these functions can be organized per-preference into files.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">my_facility_devices</span> <span class="kn">import</span> <span class="n">MyTypeOfDetector</span>
+
+<span class="k">def</span> <span class="nf">my_detector</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MyTypeOfDetector</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">MyTypeOfDetector</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;other_config&quot;</span><span class="p">:</span> <span class="s2">&quot;foo&quot;</span><span class="p">})</span>
+</pre></div>
+</div>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p>Full CLI reference: <a class="reference internal" href="../reference/cli.html"><span class="doc">Command-Line Interface</span></a></p>
+<p><a class="reference external" href="https://github.com/DiamondLightSource/dodal">dodal</a> for many more examples</p>
 </div>
+<p>An extra function to create the device is used to preserve side-effect-free imports. Each device must have its own factory function.</p>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="configure-app.html"><span class="doc">Configure the application</span></a></p>
+</div>
+<p>First determine the import path of your code. If you were going to import it in a Python file, what would you put?
+For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">my_plan_library.tomography.plans</span>
+</pre></div>
+</div>
+<p>You would add the following into your configuration file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">env</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dodal</span>
+<span class="w">      </span><span class="c1"># note, this code does not have to be inside dodal just because it uses</span>
+<span class="w">      </span><span class="c1"># the dodal kind. The module referenced contains a dodal-style function</span>
+<span class="w">      </span><span class="c1"># for initializing a particular device e.g. MyTypeOfDetector in my_lab.</span>
+<span class="w">      </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dodal.my_beamline</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planFunctions</span>
+<span class="w">      </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_plan_library.tomography.plans</span>
+</pre></div>
+</div>
+<p>You can have as many sources for plans and devices as are needed.</p>
 </section>
 </section>
 
@@ -520,20 +554,20 @@ Podman</label><div class="sd-tab-content docutils">
     <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="installation.html"
+       href="configure-app.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Installation</p>
+        <p class="prev-next-title">Configure the application</p>
       </div>
     </a>
     <a class="right-next"
-       href="../how-to/run-container.html"
+       href="run-cli.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Run in a container</p>
+        <p class="prev-next-title">Control the Worker via the CLI</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -555,16 +589,16 @@ Podman</label><div class="sd-tab-content docutils">
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-worker">Start Worker</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-that-the-worker-is-running">Test that the Worker is Running</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#home-of-code">Home of Code</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#format">Format</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/dockerfile-default/docs/user/tutorials/quickstart.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/dockerfile-default/docs/user/how-to/add-plans-and-devices.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -578,7 +612,7 @@ Podman</label><div class="sd-tab-content docutils">
 
   <div class="sidebar-secondary-item">
   <div class="tocsection sourcelink">
-    <a href="../../_sources/user/tutorials/quickstart.rst.txt">
+    <a href="../../_sources/user/how-to/add-plans-and-devices.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

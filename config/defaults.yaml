@@ -6,8 +6,5 @@ env:
       module: blueapi.startup.example_plans
     - kind: planFunctions
       module: blueapi.plans
-stomp:
-  host: localhost
-  port: 61613
 logging:
   level: "INFO"

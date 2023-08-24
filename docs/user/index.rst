@@ -30,6 +30,7 @@ side-bar.
             how-to/configure-app
             how-to/add-plans-and-devices
             how-to/run-cli
+            how-to/message-bus
 
         +++
 

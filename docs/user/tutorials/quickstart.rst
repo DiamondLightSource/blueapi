@@ -8,27 +8,6 @@ laboratory setup. It can control devices to collect data and export events to te
 downstream services about the data it has collected.
 
 
-Start ActiveMQ
---------------
-
-The worker requires a running instance of ActiveMQ, the simplest
-way to start it is to run it via a container:
-
-.. tab-set::
-
-    .. tab-item:: Docker
-
-        .. code:: shell
-
-            docker run -it --rm --net host rmohr/activemq:5.15.9-alpine
-
-    .. tab-item:: Podman
-
-        .. code:: shell
-
-            podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
-
-
 Start Worker
 ------------
 

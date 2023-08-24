@@ -6,8 +6,10 @@ import pytest
 from bluesky.run_engine import RunEngineStateMachine
 from fastapi.testclient import TestClient
 
-from blueapi.service.handler import Handler, get_handler
+from blueapi.config import EnvironmentConfig
+from blueapi.service.controller import BlueskyController, get_controller
 from blueapi.service.main import app
+from blueapi.worker import RunEngineWorker
 from src.blueapi.core import BlueskyContext
 
 
@@ -33,26 +35,31 @@ def pytest_collection_modifyitems(config, items):
 
 
 class Client:
-    def __init__(self, handler: Handler) -> None:
+    def __init__(self, controller: BlueskyController) -> None:
         """Create tester object"""
-        self.handler = handler
+        self.controller = controller
 
     @property
     def client(self) -> TestClient:
-        app.dependency_overrides[get_handler] = lambda: self.handler
+        app.dependency_overrides[get_controller] = lambda: self.controller
         return TestClient(app)
 
 
 @pytest.fixture
-def handler() -> Iterator[Handler]:
+def controller() -> Iterator[BlueskyController]:
     context: BlueskyContext = BlueskyContext(run_engine=MagicMock())
     context.run_engine.state = RunEngineStateMachine.States.IDLE
-    handler = Handler(context=context, messaging_template=MagicMock())
+    context.with_config(EnvironmentConfig())
+    controller = BlueskyController(
+        context=context,
+        worker=RunEngineWorker(context),
+        messaging_template=MagicMock(),
+    )
 
-    yield handler
-    handler.stop()
+    yield controller
+    controller.stop()
 
 
 @pytest.fixture
-def client(handler: Handler) -> TestClient:
-    return Client(handler).client
+def client(controller: BlueskyController) -> TestClient:
+    return Client(controller).client

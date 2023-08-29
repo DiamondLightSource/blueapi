@@ -1,0 +1,6 @@
+env:
+  sources:
+    - kind: dodal
+      module: dodal.beamlines.p38
+    - kind: planFunctions
+      module: blueapi.plans

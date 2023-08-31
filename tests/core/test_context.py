@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import Dict, List, Type, Union
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
 from ophyd.sim import SynAxis, SynGauss
 from pydantic import ValidationError, parse_obj_as

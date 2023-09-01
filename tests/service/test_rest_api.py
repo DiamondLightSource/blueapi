@@ -30,9 +30,14 @@ def test_get_plans(handler: Handler, client: TestClient) -> None:
     assert response.json() == {
         "plans": [
             {
+                "description": "Docstring description of the plan",
                 "name": "my-plan",
-                "properties": {"id": {"title": "Id", "type": "string"}},
-                "required": ["id"],
+                "schema": {
+                    "properties": {"id": {"title": "Id", "type": "string"}},
+                    "required": ["id"],
+                    "title": "MyModel",
+                    "type": "object",
+                },
             }
         ]
     }
@@ -49,9 +54,14 @@ def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
+        "description": "Docstring description of the plan",
         "name": "my-plan",
-        "properties": {"id": {"title": "Id", "type": "string"}},
-        "required": ["id"],
+        "schema": {
+            "properties": {"id": {"title": "Id", "type": "string"}},
+            "required": ["id"],
+            "title": "MyModel",
+            "type": "object",
+        },
     }
 
 
@@ -59,26 +69,80 @@ def test_get_plan_with_device_reference(handler: Handler, client: TestClient) ->
     response = client.get("/plans/count")
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {
-        "name": "count",
-        "properties": {
-            "delay": {
-                "anyOf": [
-                    {"type": "number"},
-                    {"items": {"type": "number"}, "type": "array"},
-                ],
-                "title": "Delay",
+    assert (
+        response.json()
+        == {
+            "description": "\n"
+            "    Take `n` readings from a device\n"
+            "\n"
+            "    Args:\n"
+            "        detectors (List[Readable]): Readable devices to read\n"
+            "        num (int, optional): Number of readings to take. "
+            "Defaults to 1.\n"
+            "        delay (Optional[Union[float, List[float]]], "
+            "optional): Delay between readings.\n"
+            "                                                               "
+            "Defaults to None.\n"
+            "        metadata (Optional[Mapping[str, Any]], optional): "
+            "Key-value metadata to include\n"
+            "                                                          in "
+            "exported data.\n"
+            "                                                          "
+            "Defaults to None.\n"
+            "\n"
+            "    Returns:\n"
+            "        MsgGenerator: _description_\n"
+            "\n"
+            "    Yields:\n"
+            "        Iterator[MsgGenerator]: _description_\n"
+            "    ",
+            "name": "count",
+            "schema": {
+                "additionalProperties": False,
+                "properties": {
+                    "delay": {
+                        "anyOf": [
+                            {"type": "number"},
+                            {"items": {"type": "number"}, "type": "array"},
+                        ],
+                        "title": "Delay",
+                    },
+                    "detectors": {
+                        "items": {
+                            "_detectors": "<class " "'bluesky.protocols.Readable'>"
+                        },
+                        "title": "Detectors",
+                        "type": "array",
+                    },
+                    "metadata": {"title": "Metadata", "type": "object"},
+                    "num": {"title": "Num", "type": "integer"},
+                },
+                "required": ["detectors"],
+                "title": "count",
+                "type": "object",
             },
-            "detectors": {
-                "items": {"_detectors": "<class " "'bluesky.protocols.Readable'>"},
-                "title": "Detectors",
-                "type": "array",
+        }
+        != {
+            "name": "count",
+            "properties": {
+                "delay": {
+                    "anyOf": [
+                        {"type": "number"},
+                        {"items": {"type": "number"}, "type": "array"},
+                    ],
+                    "title": "Delay",
+                },
+                "detectors": {
+                    "items": {"_detectors": "<class " "'bluesky.protocols.Readable'>"},
+                    "title": "Detectors",
+                    "type": "array",
+                },
+                "metadata": {"title": "Metadata", "type": "object"},
+                "num": {"title": "Num", "type": "integer"},
             },
-            "metadata": {"title": "Metadata", "type": "object"},
-            "num": {"title": "Num", "type": "integer"},
-        },
-        "required": ["detectors"],
-    }
+            "required": ["detectors"],
+        }
+    )
 
 
 def test_get_non_existant_plan_by_name(handler: Handler, client: TestClient) -> None:

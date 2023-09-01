@@ -46,24 +46,21 @@ components:
       additionalProperties: false
       description: Representation of a plan
       properties:
+        description:
+          description: Docstring of the plan
+          title: Description
+          type: string
         name:
           description: Name of the plan
           title: Name
           type: string
-        properties:
-          description: Plan arguments description
-          title: Properties
+        schema:
+          description: Schema of the plan's input arguments
+          title: Schema
           type: object
-        required:
-          description: Names of required arguments
-          items:
-            type: string
-          title: Required
-          type: array
       required:
       - name
-      - properties
-      - required
+      - schema
       title: PlanModel
       type: object
     PlanResponse:

@@ -141,7 +141,9 @@ class BlueskyContext:
             __config__=BlueapiPlanModelConfig,
             **self._type_spec_for_function(plan),
         )
-        self.plans[plan.__name__] = Plan(name=plan.__name__, model=model, description=plan.__doc__)
+        self.plans[plan.__name__] = Plan(
+            name=plan.__name__, model=model, description=plan.__doc__
+        )
         self.plan_functions[plan.__name__] = plan
         return plan
 

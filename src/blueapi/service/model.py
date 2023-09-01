@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 
 from bluesky.protocols import HasName
 from pydantic import Field
@@ -55,11 +55,17 @@ class PlanModel(BlueapiBaseModel):
 
     name: str = Field(description="Name of the plan")
     description: Optional[str] = Field(description="Docstring of the plan")
-    argument_schema: dict[str, Any] = Field(description="Schema of the plan's input arguments", alias="schema")
+    argument_schema: dict[str, Any] = Field(
+        description="Schema of the plan's input arguments", alias="schema"
+    )
 
     @classmethod
     def from_plan(cls, plan: Plan) -> "PlanModel":
-        return cls(name=plan.name, argument_schema=plan.model.schema(), description=plan.description)
+        return cls(
+            name=plan.name,
+            argument_schema=plan.model.schema(),
+            description=plan.description,
+        )
 
 
 class PlanRequest(BlueapiBaseModel):

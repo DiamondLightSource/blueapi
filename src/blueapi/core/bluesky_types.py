@@ -1,5 +1,14 @@
 import inspect
-from typing import Any, Callable, Generator, Mapping, Type, Union, get_type_hints, Optional
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Mapping,
+    Optional,
+    Type,
+    Union,
+    get_type_hints,
+)
 
 from bluesky.protocols import (
     Checkable,

@@ -97,7 +97,9 @@ class Plan(BlueapiBaseModel):
     """
 
     name: str = Field(description="Referenceable name of the plan")
-    description: Optional[str] = Field("Docstring description of the plan")
+    description: Optional[str] = Field(
+        description="Description/docstring of the plan", default=None
+    )
     model: Type[BaseModel] = Field(
         description="Validation model of the parameters for the plan"
     )

@@ -55,7 +55,7 @@ components:
           title: Name
           type: string
         schema:
-          description: Schema of the plan's input arguments
+          description: Schema of the plan's parameters
           title: Schema
           type: object
       required:

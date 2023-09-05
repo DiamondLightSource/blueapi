@@ -99,14 +99,13 @@ def test_get_plans_and_devices(
     plans = runner.invoke(main, ["controller", "plans"])
 
     assert (
-        plans.output
-        == "{'plans': [{'argument_schema': {'properties': {'id': {'title': 'Id',\n"
-        "                                                      'type': 'string'}},\n"
-        "                                'required': ['id'],\n"
-        "                                'title': 'MyModel',\n"
-        "                                'type': 'object'},\n"
-        "            'description': None,\n"
-        "            'name': 'my-plan'}]}\n"
+        plans.output == "{'plans': [{'description': None,\n"
+        "            'name': 'my-plan',\n"
+        "            'parameter_schema': {'properties': {'id': {'title': 'Id',\n"
+        "                                                       'type': 'string'}},\n"
+        "                                 'required': ['id'],\n"
+        "                                 'title': 'MyModel',\n"
+        "                                 'type': 'object'}}]}\n"
     )
 
     # Setup requests.get call to return the output of the FastAPI call for devices.

@@ -55,15 +55,15 @@ class PlanModel(BlueapiBaseModel):
 
     name: str = Field(description="Name of the plan")
     description: Optional[str] = Field(description="Docstring of the plan")
-    argument_schema: dict[str, Any] = Field(
-        description="Schema of the plan's input arguments", alias="schema"
+    parameter_schema: dict[str, Any] = Field(
+        description="Schema of the plan's parameters", alias="schema"
     )
 
     @classmethod
     def from_plan(cls, plan: Plan) -> "PlanModel":
         return cls(
             name=plan.name,
-            argument_schema=plan.model.schema(),
+            schema=plan.model.schema(),
             description=plan.description,
         )
 

@@ -30,7 +30,7 @@ def test_get_plans(handler: Handler, client: TestClient) -> None:
     assert response.json() == {
         "plans": [
             {
-                "description": "Docstring description of the plan",
+                "description": None,
                 "name": "my-plan",
                 "schema": {
                     "properties": {"id": {"title": "Id", "type": "string"}},
@@ -54,7 +54,7 @@ def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
-        "description": "Docstring description of the plan",
+        "description": None,
         "name": "my-plan",
         "schema": {
             "properties": {"id": {"title": "Id", "type": "string"}},

@@ -105,7 +105,7 @@ def test_get_plans_and_devices(
         "                                'required': ['id'],\n"
         "                                'title': 'MyModel',\n"
         "                                'type': 'object'},\n"
-        "            'description': 'Docstring description of the plan',\n"
+        "            'description': None,\n"
         "            'name': 'my-plan'}]}\n"
     )
 

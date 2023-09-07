@@ -5,6 +5,30 @@
     "version": "0.2.0",
     "configurations": [
         {
+            // Config to Build, Deploy and Run/Debug a new version of the BluAPI container
+            // via the gcr.io/diamond-privreg/athena-dev bucket.
+            "name": "Kubernetes: Run/Debug",
+            "type": "cloudcode.kubernetes",
+            "request": "launch",
+            "skaffoldConfig": "${workspaceFolder}/skaffold.yaml",
+            "watch": true,
+            "cleanUp": false,
+            "portForward": true,
+            "imageRegistry": "gcr.io/diamond-privreg/athena-dev/blueapi",
+            "debug": [
+                {
+                    "image": "gcr.io/diamond-privreg/athena-dev/blueapi",
+                    "containerName": "blueapi",
+                    "justMyCode": false,
+                    "sourceFileMap": {
+                        // Maps local files to in-container ones. For Python this should be
+                        // < Path to src folder > : < Path to site-packages folder > 
+                        "${workspaceFolder}/src": "/venv/lib/python3.11/site-packages"
+                    }
+                }
+            ]
+        },
+        {
             "name": "Debug Rest Service",
             "type": "python",
             "request": "launch",
@@ -27,11 +51,8 @@
             ],
             "console": "integratedTerminal",
             "env": {
-                // The default config in setup.cfg's "[tool:pytest]" adds coverage.
-                // Cannot have coverage and debugging at the same time.
-                // https://github.com/microsoft/vscode-python/issues/693
                 "PYTEST_ADDOPTS": "--no-cov"
-            },
+            }
         },
         {
             "name": "Run Service",

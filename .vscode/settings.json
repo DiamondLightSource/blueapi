@@ -14,4 +14,22 @@
     },
     "esbonio.server.enabled": true,
     "esbonio.sphinx.confDir": "",
+    "cloudcode.kubeconfigs": [
+        {
+            "name": "/home/fri44821/.kube/config_k8s-p38",
+            "configPath": "/home/fri44821/.kube/config_k8s-p38"
+        },
+    ],
+    "cloudcode.active-kubeconfig": "/home/fri44821/.kube/config_k8s-p38",
+    "cloudcode.apigee.dockerOptions": {
+        "environmentVariables": {
+            "XTERM": "xterm-256color"
+        },
+        "dns": "8.8.8.8",
+        "detached": true,
+        "privileged": true,
+        "labels": {},
+        "volumes": {},
+        "additionalArguments": ""
+    },
 }

@@ -1,0 +1,29 @@
+# Configuration file for the Skaffold Continuous deployment app used by Google Cloud code 
+# (see https://skaffold.dev/docs/ and https://cloud.google.com/code/docs/vscode/features)
+
+apiVersion: skaffold/v3         # There are later releases than this; I don't know if Cloud Code works with them
+metadata:
+  name: blueapi-dev
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - image:  gcr.io/diamond-privreg/athena-dev/blueapi
+    custom:
+      buildCommand: skaffold/build.sh
+      dependencies:
+        dockerfile:
+          path: .devcontainer/Dockerfile
+  #local:
+    #push: false                                        # Don't push debug enabled container to repo
+manifests:
+  rawYaml:
+  - skaffold/deployment.yaml
+deploy:
+  kubectl: {}
+
+
+
+
+

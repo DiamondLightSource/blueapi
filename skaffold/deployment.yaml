@@ -1,0 +1,84 @@
+# Replacement deployment definition to reference the substitute image built by skaffold
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/instance: daq-deployments
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: blueapi
+    helm.sh/chart: blueapi-0.1.0
+  name: daq-deployments-blueapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: daq-deployments
+      app.kubernetes.io/name: blueapi
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        debug.cloud.google.com/config: '{"blueapi":{"artifact":"gcr.io/diamond-privreg/athena-dev/blueapi","runtime":"python","ports":{"dap":5678}}}'
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/instance: daq-deployments
+        app.kubernetes.io/name: blueapi
+    spec:
+      containers:
+      - args:
+        - -c
+        - /config/config.yaml
+        - -c
+        - /config/secret.yaml
+        - serve
+        command:
+        - /dbg/python/launcher
+        - --mode
+        - debugpy
+        - --port
+        - "5678"
+        - --
+        - blueapi
+        env:
+        - name: PYTHONPATH
+          value: /plans
+        image: gcr.io/diamond-privreg/athena-dev/blueapi:latest
+        imagePullPolicy: Always
+        name: blueapi
+        ports:
+        - containerPort: 5678
+          name: dap
+        resources: {}
+        securityContext: {}
+        volumeMounts:
+        - mountPath: /config
+          name: worker-config
+          readOnly: true
+        - mountPath: /plans
+          name: plans
+          readOnly: true
+        - mountPath: /dbg
+          name: debugging-support-files
+      initContainers:
+      - image: gcr.io/k8s-skaffold/skaffold-debug-support/python
+        name: install-python-debug-support
+        resources: {}
+        volumeMounts:
+        - mountPath: /dbg
+          name: debugging-support-files
+      securityContext: {}
+      serviceAccountName: default
+      volumes:
+      - name: worker-config
+        projected:
+          sources:
+          - configMap:
+              name: daq-deployments-blueapi-config
+          - secret:
+              name: blueapi-password
+      - hostPath:
+          path: /dls_sw/p38/software/bluesky_plans
+        name: plans
+      - emptyDir: {}
+        name: debugging-support-files

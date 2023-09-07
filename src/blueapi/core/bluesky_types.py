@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Callable, Mapping, Type, Union, get_type_hints
+from typing import Any, Callable, Mapping, Optional, Type, Union, get_type_hints
 
 from bluesky.protocols import (
     Checkable,
@@ -82,6 +82,9 @@ class Plan(BlueapiBaseModel):
     """
 
     name: str = Field(description="Referenceable name of the plan")
+    description: Optional[str] = Field(
+        description="Description/docstring of the plan", default=None
+    )
     model: Type[BaseModel] = Field(
         description="Validation model of the parameters for the plan"
     )

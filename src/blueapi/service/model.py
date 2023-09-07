@@ -54,9 +54,13 @@ class PlanModel(BlueapiBaseModel):
     """
 
     name: str = Field(description="Name of the plan")
-    description: Optional[str] = Field(description="Docstring of the plan")
-    parameter_schema: dict[str, Any] = Field(
-        description="Schema of the plan's parameters", alias="schema"
+    description: Optional[str] = Field(
+        description="Docstring of the plan", default=None
+    )
+    parameter_schema: Optional[dict[str, Any]] = Field(
+        description="Schema of the plan's parameters",
+        alias="schema",
+        default_factory=dict,
     )
 
     @classmethod

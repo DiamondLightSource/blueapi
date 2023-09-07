@@ -60,7 +60,6 @@ components:
           type: object
       required:
       - name
-      - schema
       title: PlanModel
       type: object
     PlanResponse:

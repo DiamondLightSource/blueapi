@@ -172,10 +172,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/Issue164/"
   },
   {
-    "version": "PlanArgs",
-    "url": "https://DiamondLightSource.github.io/blueapi/PlanArgs/"
-  },
-  {
     "version": "RJMS-Interoperability",
     "url": "https://DiamondLightSource.github.io/blueapi/RJMS-Interoperability/"
   },
@@ -240,10 +236,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/keithralphs-patch-1/"
   },
   {
-    "version": "minor-kubernetes-fixes",
-    "url": "https://DiamondLightSource.github.io/blueapi/minor-kubernetes-fixes/"
-  },
-  {
     "version": "no-message-bus",
     "url": "https://DiamondLightSource.github.io/blueapi/no-message-bus/"
   },
@@ -262,6 +254,10 @@
   {
     "version": "pinnedPydantic",
     "url": "https://DiamondLightSource.github.io/blueapi/pinnedPydantic/"
+  },
+  {
+    "version": "preventIncompatibility",
+    "url": "https://DiamondLightSource.github.io/blueapi/preventIncompatibility/"
   },
   {
     "version": "public-topics",

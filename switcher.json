@@ -208,6 +208,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/context-methods/"
   },
   {
+    "version": "debug-p38alpha",
+    "url": "https://DiamondLightSource.github.io/blueapi/debug-p38alpha/"
+  },
+  {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },

@@ -3,4 +3,6 @@ env:
     - kind: dodal
       module: dodal.adsim
     - kind: planFunctions
-      module: blueapi.plans
+      module: dls_bluesky_core.plans
+    - kind: planFunctions
+      module: dls_bluesky_core.stubs

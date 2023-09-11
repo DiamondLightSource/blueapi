@@ -1,10 +1,11 @@
 from types import ModuleType
-from typing import Any, Iterable
+from typing import Any, Iterable, List
 
 
 def load_module_all(mod: ModuleType) -> Iterable[Any]:
     """
-    Load the global variables exported via the `__all__` magic variable in a module.
+    If __export__ is defined for the module, try importing those functions as plans,
+    else load the global variables exported via the `__all__` magic variable.
     Dynamic equivalent to `from my_module import *`. Use everything that doesn't start
     with `_` if the module doesn't have an `__all__`.
 
@@ -20,10 +21,14 @@ def load_module_all(mod: ModuleType) -> Iterable[Any]:
         Iterator[Iterable[Any]]: Each successive variable in globals
     """
 
-    if "__all__" in mod.__dict__:
-        names = mod.__dict__["__all__"]
+    def get_named_subset(names: List[str]):
         for name in names:
             yield getattr(mod, name)
+
+    if "__export__" in mod.__dict__:
+        yield from get_named_subset(mod.__dict__["__export__"])
+    elif "__all__" in mod.__dict__:
+        yield from get_named_subset(mod.__dict__["__all__"])
     else:
         for name, value in mod.__dict__.items():
             if not name.startswith("_"):

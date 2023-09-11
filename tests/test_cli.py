@@ -98,7 +98,15 @@ def test_get_plans_and_devices(
     mock_requests.return_value = client.get("/plans")
     plans = runner.invoke(main, ["controller", "plans"])
 
-    assert plans.output == "{'plans': [{'name': 'my-plan'}]}\n"
+    assert (
+        plans.output == "{'plans': [{'description': None,\n"
+        "            'name': 'my-plan',\n"
+        "            'parameter_schema': {'properties': {'id': {'title': 'Id',\n"
+        "                                                       'type': 'string'}},\n"
+        "                                 'required': ['id'],\n"
+        "                                 'title': 'MyModel',\n"
+        "                                 'type': 'object'}}]}\n"
+    )
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output - expect nothing as no devices set.

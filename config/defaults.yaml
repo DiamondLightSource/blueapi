@@ -5,7 +5,9 @@ env:
     - kind: planFunctions
       module: blueapi.startup.example_plans
     - kind: planFunctions
-      module: blueapi.plans
+      module: dls_bluesky_core.plans
+    - kind: planFunctions
+      module: dls_bluesky_core.stubs
 stomp:
   host: localhost
   port: 61613

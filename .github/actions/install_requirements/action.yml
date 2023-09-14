@@ -30,7 +30,7 @@ runs:
     - name: Create lockfile
       run: |
         mkdir -p lockfiles
-        pip freeze --exclude-editable --exclude dodal --exclude ophyd --exclude ophyd-epics-devices --exclude nslsii > lockfiles/${{ inputs.requirements_file }}
+        pip freeze --exclude-editable --exclude dodal --exclude ophyd --exclude ophyd-epics-devices --exclude nslsii --exclude bluesky-kafka > lockfiles/${{ inputs.requirements_file }}
         # delete the self referencing line and make sure it isn't blank
         sed -i '/file:/d' lockfiles/${{ inputs.requirements_file }}
       shell: bash

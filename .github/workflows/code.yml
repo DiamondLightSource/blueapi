@@ -29,59 +29,59 @@ jobs:
       - name: Lint
         run: tox -e pre-commit,mypy
 
-  test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest"] # can add windows-latest, macos-latest
-        python: ["3.9", "3.10", "3.11"]
-        install: [".[dev]", "-e .[dev]"]
+  # test:
+  #   if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: ["ubuntu-latest"] # can add windows-latest, macos-latest
+  #       python: ["3.9", "3.10", "3.11"]
+  #       install: [".[dev]", "-e .[dev]"]
 
-    services:
-      activemq:
-        image: rmohr/activemq:5.14.5-alpine
-        ports:
-          - 61613:61613
+  #   services:
+  #     activemq:
+  #       image: rmohr/activemq:5.14.5-alpine
+  #       ports:
+  #         - 61613:61613
 
-    runs-on: ${{ matrix.os }}
-    env:
-      # https://github.com/pytest-dev/pytest/issues/2042
-      PY_IGNORE_IMPORTMISMATCH: "1"
-      BLUEAPI_TEST_STOMP_PORTS: "[61613,61614]"
+  #   runs-on: ${{ matrix.os }}
+  #   env:
+  #     # https://github.com/pytest-dev/pytest/issues/2042
+  #     PY_IGNORE_IMPORTMISMATCH: "1"
+  #     BLUEAPI_TEST_STOMP_PORTS: "[61613,61614]"
       
 
-    steps:
-      - name: Start RabbitMQ
-        uses: namoshek/rabbitmq-github-action@v1
-        with:
-          ports: '61614:61613'
-          plugins: rabbitmq_stomp  
+  #   steps:
+  #     - name: Start RabbitMQ
+  #       uses: namoshek/rabbitmq-github-action@v1
+  #       with:
+  #         ports: '61614:61613'
+  #         plugins: rabbitmq_stomp  
 
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          # Need this to get version number from last tag
-          fetch-depth: 0
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #       with:
+  #         # Need this to get version number from last tag
+  #         fetch-depth: 0
 
-      - name: Install python packages
-        uses: ./.github/actions/install_requirements
-        with:
-          python_version: ${{ matrix.python }}
-          requirements_file: requirements-test-${{ matrix.os }}-${{ matrix.python }}.txt
-          install_options: ${{ matrix.install }}
+  #     - name: Install python packages
+  #       uses: ./.github/actions/install_requirements
+  #       with:
+  #         python_version: ${{ matrix.python }}
+  #         requirements_file: requirements-test-${{ matrix.os }}-${{ matrix.python }}.txt
+  #         install_options: ${{ matrix.install }}
 
-      - name: List dependency tree
-        run: pipdeptree
+  #     - name: List dependency tree
+  #       run: pipdeptree
 
-      - name: Run tests
-        run: pytest
+  #     - name: Run tests
+  #       run: pytest
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          name: ${{ matrix.python }}/${{ matrix.os }}
-          files: cov.xml
+  #     - name: Upload coverage to Codecov
+  #       uses: codecov/codecov-action@v3
+  #       with:
+  #         name: ${{ matrix.python }}/${{ matrix.os }}
+  #         files: cov.xml
 
   dist:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository

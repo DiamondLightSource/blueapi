@@ -10,7 +10,7 @@ import click
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
-from blueapi.cli.amq import AmqClient
+from blueapi.cli.amq import AmqClient, BlueskyRemoteError
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
@@ -158,7 +158,14 @@ def run_plan(
     parameters = parameters or "{}"
     task = RunPlan(name=name, params=json.loads(parameters))
 
-    resp = client.create_task(task)
+    try:
+        resp = client.create_task(task)
+    except BlueskyRemoteError as e:
+        if e.response.status_code == 404:
+            print(f'Plan "{name}" not found')
+        else:
+            pprint(e.response)
+        return
     task_id = resp.task_id
 
     with amq_client:

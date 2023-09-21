@@ -1,13 +1,17 @@
 import threading
 from typing import Callable, Optional
 
+from requests import Response
+
 from blueapi.messaging import MessageContext, MessagingTemplate
 from blueapi.worker import WorkerEvent
 
 
 class BlueskyRemoteError(Exception):
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
+    response: Response
+
+    def __init__(self, message: Response) -> None:
+        self.response = message
 
 
 class AmqClient:

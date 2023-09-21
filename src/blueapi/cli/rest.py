@@ -108,7 +108,7 @@ class BlueapiRestClient:
         url = self._url(suffix)
         response = requests.request(method, url, json=data)
         if raise_if(response):
-            raise BlueskyRemoteError(str(response))
+            raise BlueskyRemoteError(response)
         deserialized = parse_obj_as(target_type, response.json())
         return deserialized
 

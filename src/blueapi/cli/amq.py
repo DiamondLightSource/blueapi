@@ -5,6 +5,8 @@ from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate
 from blueapi.worker import ProgressEvent, WorkerEvent
 
+from .updates import CliEventRenderer, ProgressBarRenderer
+
 
 class BlueskyRemoteError(Exception):
     def __init__(self, message: str) -> None:
@@ -34,6 +36,8 @@ class AmqClient:
     ) -> None:
         """Run callbacks on events/progress events with a given correlation id."""
 
+        progress_bar = CliEventRenderer(correlation_id)
+
         def on_event_wrapper(
             ctx: MessageContext, event: Union[WorkerEvent, ProgressEvent, DataEvent]
         ) -> None:
@@ -43,6 +47,8 @@ class AmqClient:
 
                 if (event.is_complete()) and (ctx.correlation_id == correlation_id):
                     self.complete.set()
+            elif isinstance(event, ProgressEvent):
+                progress_bar.on_progress_event(event)
 
         self.app.subscribe(
             self.app.destinations.topic("public.worker.event"),

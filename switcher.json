@@ -224,6 +224,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-310/"
   },
   {
+    "version": "fix-cli",
+    "url": "https://DiamondLightSource.github.io/blueapi/fix-cli/"
+  },
+  {
     "version": "fix_flake8_failure",
     "url": "https://DiamondLightSource.github.io/blueapi/fix_flake8_failure/"
   },

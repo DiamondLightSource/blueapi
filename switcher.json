@@ -188,6 +188,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/authn_authz/"
   },
   {
+    "version": "better-error",
+    "url": "https://DiamondLightSource.github.io/blueapi/better-error/"
+  },
+  {
     "version": "camel-case",
     "url": "https://DiamondLightSource.github.io/blueapi/camel-case/"
   },
@@ -222,10 +226,6 @@
   {
     "version": "fix-310",
     "url": "https://DiamondLightSource.github.io/blueapi/fix-310/"
-  },
-  {
-    "version": "fix-cli",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-cli/"
   },
   {
     "version": "fix_flake8_failure",

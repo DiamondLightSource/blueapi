@@ -1,11 +1,13 @@
 import threading
 from typing import Callable, Optional, Union
 
+from bluesky.callbacks.best_effort import BestEffortCallback
+
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext, MessagingTemplate
 from blueapi.worker import ProgressEvent, WorkerEvent
 
-from .updates import CliEventRenderer, ProgressBarRenderer
+from .updates import CliEventRenderer
 
 
 class BlueskyRemoteError(Exception):
@@ -37,6 +39,7 @@ class AmqClient:
         """Run callbacks on events/progress events with a given correlation id."""
 
         progress_bar = CliEventRenderer(correlation_id)
+        callback = BestEffortCallback()
 
         def on_event_wrapper(
             ctx: MessageContext, event: Union[WorkerEvent, ProgressEvent, DataEvent]
@@ -49,6 +52,8 @@ class AmqClient:
                     self.complete.set()
             elif isinstance(event, ProgressEvent):
                 progress_bar.on_progress_event(event)
+            elif isinstance(event, DataEvent):
+                callback(event.name, event.doc)
 
         self.app.subscribe(
             self.app.destinations.topic("public.worker.event"),

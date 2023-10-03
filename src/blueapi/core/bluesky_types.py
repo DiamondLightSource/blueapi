@@ -126,8 +126,3 @@ class WatchableStatus(Status, Protocol):
         """
 
         ...
-
-
-@runtime_checkable
-class HasComponents(Protocol):
-    component_names: List[str]

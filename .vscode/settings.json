@@ -14,4 +14,22 @@
     },
     "esbonio.server.enabled": true,
     "esbonio.sphinx.confDir": "",
+    "cloudcode.kubeconfigs": [
+        {
+            "name": "/home/rose/.kube/config_k8s-p38",
+            "configPath": "/home/rose/.kube/config_k8s-p38"
+        },
+    ],
+    "cloudcode.active-kubeconfig": "/home/rose/.kube/config_k8s-p38",
+    "cloudcode.apigee.dockerOptions": {
+        "environmentVariables": {
+            "XTERM": "xterm-256color"
+        },
+        "dns": "8.8.8.8",
+        "detached": true,
+        "privileged": true,
+        "labels": {},
+        "volumes": {},
+        "additionalArguments": ""
+    },
 }

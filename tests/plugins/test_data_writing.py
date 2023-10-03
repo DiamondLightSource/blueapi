@@ -14,7 +14,7 @@ from bluesky.preprocessors import (
 
 from blueapi.core import DataEvent, MsgGenerator
 from blueapi.plugins.data_writing import (
-    DATA_COLLECTION_NUMBER,
+    DATA_SESSION,
     DataCollectionProvider,
     InMemoryDataCollectionProvider,
     data_writing_wrapper,
@@ -79,15 +79,15 @@ def multi_run_single_stage_multi_group(
         return (yield from bps.one_shot(detectors))
 
     def inner_plan() -> MsgGenerator:
-        yield from run_wrapper(stageless_count(), md={DATA_COLLECTION_NUMBER: 1})
-        yield from run_wrapper(stageless_count(), md={DATA_COLLECTION_NUMBER: 1})
-        yield from run_wrapper(stageless_count(), md={DATA_COLLECTION_NUMBER: 2})
-        yield from run_wrapper(stageless_count(), md={DATA_COLLECTION_NUMBER: 2})
+        yield from run_wrapper(stageless_count(), md={DATA_SESSION: 1})
+        yield from run_wrapper(stageless_count(), md={DATA_SESSION: 1})
+        yield from run_wrapper(stageless_count(), md={DATA_SESSION: 2})
+        yield from run_wrapper(stageless_count(), md={DATA_SESSION: 2})
 
     yield from stage_wrapper(inner_plan(), detectors)
 
 
-@run_decorator(md={DATA_COLLECTION_NUMBER: 12345})
+@run_decorator(md={DATA_SESSION: 12345})
 @set_run_key_decorator("outer")
 def nested_run_with_metadata(detectors: List[FakeFileWritingDetector]) -> MsgGenerator:
     yield from set_run_key_wrapper(bp.count(detectors), "inner")
@@ -114,7 +114,7 @@ def test_simple_run_gets_scan_number(
         provider,
     )
     assert docs[0].name == "start"
-    assert docs[0].doc[DATA_COLLECTION_NUMBER] == 0
+    assert docs[0].doc[DATA_SESSION] == 0
     assert_all_detectors_used_collection_numbers(docs, detectors, [0])
 
 
@@ -132,8 +132,8 @@ def test_multi_run_gets_scan_numbers(
     )
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 2
-    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
-    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 1
+    assert start_docs[0].doc[DATA_SESSION] == 0
+    assert start_docs[1].doc[DATA_SESSION] == 1
     assert_all_detectors_used_collection_numbers(docs, detectors, [0, 1])
 
 
@@ -149,8 +149,8 @@ def test_multi_run_single_stage(
     )
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 2
-    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
-    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 0
+    assert start_docs[0].doc[DATA_SESSION] == 0
+    assert start_docs[1].doc[DATA_SESSION] == 0
     assert_all_detectors_used_collection_numbers(docs, detectors, [0, 0])
 
 
@@ -166,10 +166,10 @@ def test_multi_run_single_stage_multi_group(
     )
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 4
-    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
-    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 0
-    assert start_docs[2].doc[DATA_COLLECTION_NUMBER] == 0
-    assert start_docs[3].doc[DATA_COLLECTION_NUMBER] == 0
+    assert start_docs[0].doc[DATA_SESSION] == 0
+    assert start_docs[1].doc[DATA_SESSION] == 0
+    assert start_docs[2].doc[DATA_SESSION] == 0
+    assert start_docs[3].doc[DATA_SESSION] == 0
     assert_all_detectors_used_collection_numbers(docs, detectors, [0, 0, 0, 0])
 
 
@@ -185,9 +185,9 @@ def test_nested_run_with_metadata(
     )
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 3
-    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
-    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 1
-    assert start_docs[2].doc[DATA_COLLECTION_NUMBER] == 2
+    assert start_docs[0].doc[DATA_SESSION] == 0
+    assert start_docs[1].doc[DATA_SESSION] == 1
+    assert start_docs[2].doc[DATA_SESSION] == 2
     assert_all_detectors_used_collection_numbers(docs, detectors, [1, 2])
 
 
@@ -203,9 +203,9 @@ def test_nested_run_without_metadata(
     )
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 3
-    assert start_docs[0].doc[DATA_COLLECTION_NUMBER] == 0
-    assert start_docs[1].doc[DATA_COLLECTION_NUMBER] == 1
-    assert start_docs[2].doc[DATA_COLLECTION_NUMBER] == 2
+    assert start_docs[0].doc[DATA_SESSION] == 0
+    assert start_docs[1].doc[DATA_SESSION] == 1
+    assert start_docs[2].doc[DATA_SESSION] == 2
     assert_all_detectors_used_collection_numbers(docs, detectors, [1, 2])
 
 

@@ -13,7 +13,7 @@ classifiers = [
 ]
 description = "Lightweight Bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky @ git+https://github.com/bluesky/bluesky.git",
+    "bluesky @ git+https://github.com/bluesky/bluesky.git@1.10.0-with-streams",
     "ophyd",
     "nslsii",
     "pyepics",

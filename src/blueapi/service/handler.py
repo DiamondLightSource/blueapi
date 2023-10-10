@@ -6,6 +6,7 @@ from blueapi.core import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
+from blueapi.preprocessors.attach_metadata import attach_metadata
 from blueapi.worker.reworker import RunEngineWorker
 from blueapi.worker.worker import Worker
 
@@ -74,13 +75,22 @@ class Handler:
 
 
 HANDLER: Optional[Handler] = None
+#PROVIDER: Optional[GDADirectoryProvider] = None
 
 
 def setup_handler(
     config: Optional[ApplicationConfig] = None,
 ) -> None:
     global HANDLER
-    handler = Handler(config)
+    #global PROVIDER
+    
+    # make a global GdaDirectoryProvider, if config provided.
+    if config:
+        config.env()
+
+    #provider = GDADirectoryProvider(config.)
+
+    handler = Handler(config, context=BlueskyContext(plan_wrappers=[attach_metadata]))
     handler.start()
 
     HANDLER = handler

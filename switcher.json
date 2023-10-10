@@ -316,6 +316,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
   },
   {
+    "version": "unpin_dodal",
+    "url": "https://DiamondLightSource.github.io/blueapi/unpin_dodal/"
+  },
+  {
     "version": "visit-directory",
     "url": "https://DiamondLightSource.github.io/blueapi/visit-directory/"
   }

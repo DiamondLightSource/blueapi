@@ -26,6 +26,7 @@ from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
 
 from blueapi.config import EnvironmentConfig, SourceKind
+from blueapi.preprocessors.attach_metadata import GDADirectoryProvider
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
 from .bluesky_types import (
@@ -59,6 +60,7 @@ class BlueskyContext:
     plans: Dict[str, Plan] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
+    directory_provider: Optional[GDADirectoryProvider] = field(default=None)
 
     _reference_cache: Dict[Type, Type] = field(default_factory=dict)
 
@@ -89,9 +91,6 @@ class BlueskyContext:
             return find_component(self.devices, addr)
 
     def with_config(self, config: EnvironmentConfig) -> None:
-        # need to see in config. And create directory provider here.
-        # import dodal and call factory function to make instance of GdaDirectoryProvider.
-        self.dir_provider = make_directory_provider(config.thing)
         for source in config.sources:
             mod = import_module(str(source.module))
 
@@ -132,7 +131,9 @@ class BlueskyContext:
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         from dodal.utils import make_all_devices
 
-        for device in make_all_devices(module, **kwargs).values():
+        for device in make_all_devices(
+            module, directory_provider=self.directory_provider
+        ).values():
             self.device(device)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:

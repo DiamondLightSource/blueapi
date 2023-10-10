@@ -1,12 +1,16 @@
+from typing import List
+
 import bluesky.plan_stubs as bps
 from bluesky.utils import make_decorator
 from ophyd_async.detector import DirectoryInfo, DirectoryProvider
 
-from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import MsgGenerator
 
 
 class GDADirectoryProvider(DirectoryProvider):
+    def __init__(self, url: str, visit_id: str) -> None:
+        ...
+
     def __call__(self) -> DirectoryInfo:
         return super().__call__()
 
@@ -17,14 +21,11 @@ class GDADirectoryProvider(DirectoryProvider):
 DATA_SESSION = "data_session"
 DATA_GROUPS = "data_groups"
 
-# TODO: this is a temporary solution; I should think about how config is passed down in
-# the whole app.
-config = ConfigLoader(ApplicationConfig).load().env
-
 
 def attach_metadata(
-    plan: MsgGenerator,
+    data_groups: List[str],
     provider: GDADirectoryProvider,
+    plan: MsgGenerator,
 ) -> MsgGenerator:
     """Updates a directory provider default location for file storage."""
     staging = False
@@ -40,12 +41,7 @@ def attach_metadata(
 
         if message.command == "open_run":
             message.kwargs[DATA_SESSION] = provider().filename_prefix
-            message.kwargs[DATA_GROUPS] = [
-                config.facility,
-                config.science_group,
-                config.beamline,
-                config.visit_id,
-            ]
+            message.kwargs[DATA_GROUPS] = data_groups
 
         yield message
 

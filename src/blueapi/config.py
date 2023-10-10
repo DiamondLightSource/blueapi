@@ -63,10 +63,21 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
     ]
     scratch: Optional[ScratchConfig] = Field(default=None)
+    visit_service_url: str = "http://p38-control.diamond.ac.uk:8088/api/0.0.1"
+    visit_id: str = "v1"
+    facility: str = "Diamond"
+    science_group: str = "MX"
+    beamline: str = "I03"
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, EnvironmentConfig):
-            return str(self.sources) == str(other.sources)
+            return (
+                (str(self.sources) == str(other.sources))
+                and (self.facility == other.facility)
+                and (self.science_group == other.science_group)
+                and (self.beamline == other.beamline)
+            )
+
         return False
 
 

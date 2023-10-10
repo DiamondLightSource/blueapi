@@ -89,6 +89,9 @@ class BlueskyContext:
             return find_component(self.devices, addr)
 
     def with_config(self, config: EnvironmentConfig) -> None:
+        # need to see in config. And create directory provider here.
+        # import dodal and call factory function to make instance of GdaDirectoryProvider.
+        self.dir_provider = make_directory_provider(config.thing)
         for source in config.sources:
             mod = import_module(str(source.module))
 

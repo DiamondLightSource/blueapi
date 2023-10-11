@@ -16,7 +16,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "blueapi.selectorLabels" . | nindent 8 }}
+        {{- include "blueapi.metadataLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -35,6 +35,9 @@ spec:
           - secret:
               name: {{ . }}
           {{- end }}
+      {{- with .Values.extraVolumes -}}
+        {{ toYaml . | nindent 6 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -56,6 +59,9 @@ spec:
             - "/config/secret.yaml"
             {{- end }}
             - "serve"
+          {{- with .Values.extraContainers }}
+            {{- toYaml . | nindent 8 }}
+          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

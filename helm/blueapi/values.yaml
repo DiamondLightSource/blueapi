@@ -75,13 +75,41 @@ worker:
   env:
     sources:
       - kind: deviceFunctions
-        module: blueapi.startup.example
+        module: blueapi.startup.example_devices
+      - kind: planFunctions
+        module: blueapi.startup.example_plans
       - kind: planFunctions
         module: blueapi.plans
   stomp:
     auth:
-      username: guest
-      passcode: guest
-    host: rabbitmq
+      username: foo
+      passcode: bar
+    host: localhost
     port: 61613
 # Config for the worker goes here, will be mounted into a config file
+
+extraLabels: {}
+extraVolumes: {}
+extraContainers: {}
+
+rabbitmq:
+  persistence:
+    enabled: true # TODO: Best approach for storage
+  auth:
+    username: foo
+    password: bar
+  extraPlugins: rabbitmq_stomp
+  rbac:
+    create: false
+  serviceAccount:
+    name: default-full-access-mounted # TODO: use only required permissions
+    create: false
+  extraContainerPorts:
+    - name: stomp
+      containerPort: 61613
+  service:
+    extraPorts:
+      - name: stomp
+        port: 61613
+        targetPort: stomp
+        nodePort: null

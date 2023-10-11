@@ -10,8 +10,8 @@ metadata:
 spec:
   type: service
   lifecycle: production
-  owner: user:vid18871 # TODO: owner: DAQ-Core
-  #  system: Athena  # TODO: Define Athena system: presumably same location as DAQ-Core/DAQ?
+  owner: group:data-acquisition
+  system: Athena
   providesApis:
     - blueapiControl
     - blueapiEvents
@@ -27,7 +27,7 @@ metadata:
 spec:
   type: openapi
   lifecycle: production
-  owner: user:vid18871
+  owner: group:data-acquisition
   definition:
     $text: ./docs/user/reference/openapi.yaml
 ---
@@ -42,6 +42,6 @@ metadata:
 spec:
   type: asyncapi
   lifecycle: production
-  owner: user:vid18871
+  owner: group:data-acquisition
   definition:
     $text: ./docs/user/reference/asyncapi.yaml

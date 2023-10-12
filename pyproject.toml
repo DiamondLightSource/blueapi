@@ -25,7 +25,7 @@ dependencies = [
     "uvicorn",
     "requests",
     "dls_bluesky_core",
-    "dodal @ git+https://github.com/DiamondLightSource/dodal.git@1.0.0",
+    "dls-dodal",
     "typing_extensions<4.6",
 ]
 dynamic = ["version"]

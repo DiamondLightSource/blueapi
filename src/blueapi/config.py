@@ -1,6 +1,17 @@
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Generic, Literal, Mapping, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as
@@ -40,6 +51,14 @@ class StompConfig(BaseModel):
     auth: Optional[BasicAuthentication] = None
 
 
+class ScratchConfig(BlueapiBaseModel):
+    """
+    Config for the scratch space where editable Python packages can be installed
+    """
+
+    path: Path = Field(default=Path("/tmp/blueapi/scratch"))
+
+
 class EnvironmentConfig(BlueapiBaseModel):
     """
     Config for the RunEngine environment
@@ -53,6 +72,7 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
     ]
+    scratch: Optional[ScratchConfig] = Field(default_factory=ScratchConfig)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, EnvironmentConfig):

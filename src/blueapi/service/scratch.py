@@ -2,28 +2,10 @@ import logging
 import os
 import subprocess
 import sys
-import time
-from abc import ABC, abstractmethod
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Set
-
-import pkg_resources
-from pydantic import Field
+from typing import List, Optional, Set
 
 from blueapi.config import ScratchConfig
-from blueapi.utils import BlueapiBaseModel
-
-
-class PythonPackage(BlueapiBaseModel):
-    name: str
-    version: str
-    extras: List[str] = Field(default_factory=list)
-
-
-class PackageInstallation(BlueapiBaseModel):
-    package: PythonPackage
-    location: Path
 
 
 class PipShim:
@@ -39,12 +21,17 @@ class PipShim:
         extras: List[str],
     ) -> None:
         logging.debug(f"Installing {path}{extras}")
+
+        # Ensure that the path is a valid input for pip, either /path/to/package
+        # or /path/to/package[extra1, extra2, ...]
         package_arg = str(path)
         if len(extras) > 0:
             extras_fmt = ",".join(extras)
             package_source = f"{package_arg}[{extras_fmt}]"
         else:
             package_source = package_arg
+
+        # Run pip in a subprocess
         subprocess.check_call(
             [
                 sys.executable,
@@ -88,7 +75,6 @@ class ScratchManager:
         environment
         """
 
-        self._check_scratch_exists()
         directories = self._get_directories_in_scratch()
         logging.info(f"Syncing scratch packages, installing from {directories}")
         for directory in directories:

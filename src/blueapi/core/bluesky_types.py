@@ -29,6 +29,8 @@ try:
 except ImportError:
     from typing_extensions import Protocol, runtime_checkable  # type: ignore
 
+PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
+
 #: An object that encapsulates the device to do useful things to produce
 # data (e.g. move and read)
 Device = Union[

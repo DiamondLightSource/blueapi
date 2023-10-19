@@ -76,6 +76,8 @@ class EnvironmentConfig(BlueapiBaseModel):
                 and (self.facility == other.facility)
                 and (self.science_group == other.science_group)
                 and (self.beamline == other.beamline)
+                and (self.visit_id == other.visit_id)
+                and (self.visit_service_url == other.visit_service_url)
             )
 
         return False

@@ -35,6 +35,12 @@ spec:
           - secret:
               name: {{ . }}
           {{- end }}
+      {{- if .Values.scratch.hostPath }}
+      - name: scratch-host
+        hostPath:
+          path: {{ .Values.scratch.hostPath }}
+          type: Directory
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -47,6 +53,11 @@ spec:
             - name: worker-config
               mountPath: "/config"
               readOnly: true
+            {{- if .Values.scratch.hostPath }}
+            - name: scratch-host
+              mountPath: {{ .Values.worker.env.scratch.path }}
+              mountPropagation: HostToContainer
+            {{- end }}
           command: ["blueapi"]
           args:
             - "-c"

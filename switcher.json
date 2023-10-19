@@ -288,6 +288,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/remove_servers/"
   },
   {
+    "version": "scratch",
+    "url": "https://DiamondLightSource.github.io/blueapi/scratch/"
+  },
+  {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   },
@@ -314,10 +318,6 @@
   {
     "version": "type-validator-partials",
     "url": "https://DiamondLightSource.github.io/blueapi/type-validator-partials/"
-  },
-  {
-    "version": "unpin_dodal",
-    "url": "https://DiamondLightSource.github.io/blueapi/unpin_dodal/"
   },
   {
     "version": "visit-directory",

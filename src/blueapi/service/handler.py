@@ -33,7 +33,7 @@ class Handler:
         worker: Optional[Worker] = None,
     ) -> None:
         self.config = config or ApplicationConfig()
-        self.context = context or BlueskyContext(plan_wrappers=[])
+        self.context = context or BlueskyContext()
 
         self.context.with_config(self.config.env)
 

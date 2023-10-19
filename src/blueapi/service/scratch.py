@@ -51,6 +51,7 @@ class PipShim:
                 "-m",
                 "pip",
                 "install",
+                "--no-deps",
                 "-e",
                 package_source,
             ]
@@ -59,27 +60,32 @@ class PipShim:
 
 class ScratchManager:
     """
-    Ensures editable packages are loaded from the scratch space, which is a "special" directory
+    Ensures editable packages are loaded from the scratch space, which is a "special"
+    directory
     """
 
     _root_path: Path
+    _auto_make_directory: bool
     _pip: PipShim
 
     def __init__(
         self,
         root_path: Path,
+        auto_make_directory: bool,
         pip: Optional[PipShim] = None,
     ) -> None:
         self._root_path = root_path
+        self._auto_make_directory = auto_make_directory
         self._pip = pip or PipShim()
 
     @classmethod
     def from_config(cls, config: ScratchConfig) -> "ScratchManager":
-        return cls(config.path)
+        return cls(config.path, config.auto_make_directory)
 
     def sync_packages(self) -> None:
         """
-        Editably install all packages in the scratch directory into blueapi's Python environment
+        Editably install all packages in the scratch directory into blueapi's Python
+        environment
         """
 
         self._check_scratch_exists()
@@ -95,7 +101,14 @@ class ScratchManager:
         return set(filter(lambda file: file.is_dir(), all_files))
 
     def _check_scratch_exists(self) -> None:
-        if not self._root_path.exists():
-            raise FileNotFoundError(
-                f"Scratch directory {self._root_path} does not exist"
-            )
+        if self._root_path.is_file():
+            raise FileExistsError(f"{self._root_path} is not a directory")
+        elif not self._root_path.exists():
+            if self._auto_make_directory:
+                self._root_path.mkdir(parents=True)
+            else:
+                raise FileNotFoundError(
+                    f"Scratch directory {self._root_path} does not exist"
+                )
+        else:
+            logging.debug("Have ensured that scratch directory exists")

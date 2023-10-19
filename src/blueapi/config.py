@@ -57,6 +57,7 @@ class ScratchConfig(BlueapiBaseModel):
     """
 
     path: Path = Field(default=Path("/tmp/blueapi/scratch"))
+    auto_make_directory: bool = Field(default=False)
 
 
 class EnvironmentConfig(BlueapiBaseModel):

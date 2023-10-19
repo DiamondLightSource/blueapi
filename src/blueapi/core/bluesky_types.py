@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Callable, Mapping, Optional, Type, Union, get_type_hints, List
+from typing import Any, Callable, Mapping, Type, Union, get_type_hints
 
 from bluesky.protocols import (
     Checkable,
@@ -19,6 +19,7 @@ from bluesky.protocols import (
     WritesExternalAssets,
 )
 from dls_bluesky_core.core import MsgGenerator, PlanGenerator
+from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel, Field
 
 from blueapi.utils import BlueapiBaseModel
@@ -45,6 +46,7 @@ Device = Union[
     WritesExternalAssets,
     Configurable,
     Triggerable,
+    AsyncDevice,
 ]
 
 #: Protocols defining interface to hardware

@@ -2,21 +2,9 @@ from typing import List
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import make_decorator
-from ophyd_async.detector import DirectoryInfo, DirectoryProvider
+from dodal.parameters.gda_directory_provider import VisitDirectoryProvider
 
 from blueapi.core import MsgGenerator
-
-
-class GDADirectoryProvider(DirectoryProvider):
-    def __init__(self, url: str, visit_id: str) -> None:
-        ...
-
-    def __call__(self) -> DirectoryInfo:
-        return super().__call__()
-
-    async def update(self) -> None:
-        ...
-
 
 DATA_SESSION = "data_session"
 DATA_GROUPS = "data_groups"
@@ -24,7 +12,7 @@ DATA_GROUPS = "data_groups"
 
 def attach_metadata(
     data_groups: List[str],
-    provider: GDADirectoryProvider,
+    provider: VisitDirectoryProvider,
     plan: MsgGenerator,
 ) -> MsgGenerator:
     """Updates a directory provider default location for file storage."""

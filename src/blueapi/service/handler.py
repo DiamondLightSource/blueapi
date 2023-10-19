@@ -2,12 +2,17 @@ import logging
 from functools import partial
 from typing import Mapping, Optional
 
+from dodal.parameters.gda_directory_provider import (
+    VisitDirectoryProvider,
+    VisitDirectoryProviderConfig,
+)
+
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
-from blueapi.preprocessors.attach_metadata import GDADirectoryProvider, attach_metadata
+from blueapi.preprocessors.attach_metadata import attach_metadata
 from blueapi.worker.reworker import RunEngineWorker
 from blueapi.worker.worker import Worker
 
@@ -93,8 +98,12 @@ def setup_handler(
             config.env.beamline,
             config.env.visit_id,
         ]
-        provider = GDADirectoryProvider(
-            config.env.visit_service_url, config.env.visit_id
+        provider = VisitDirectoryProvider(
+            VisitDirectoryProviderConfig(
+                url=config.env.visit_service_url,
+                beamline=config.env.beamline,
+                base_path=config.env.visit_id,
+            )
         )
         attach_metadata_with_config = partial(attach_metadata, data_groups, provider)
         plan_wrappers.append(attach_metadata_with_config)

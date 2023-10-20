@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Any, Iterable, List, Optional, Set, Union
+from typing import Any, Iterable, List, Optional
 
 from bluesky.protocols import HasName
 from pydantic import Field

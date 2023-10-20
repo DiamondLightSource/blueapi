@@ -1,8 +1,7 @@
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
-from typing import Iterable, List
+from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest

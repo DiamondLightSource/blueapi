@@ -70,7 +70,7 @@ affinity: {}
 
 scratch:
   {}
-  # hostPath: /dls_sw/p38/software/
+  # hostPath: /usr/local/blueapi-software-scratch
 
 worker:
   api:

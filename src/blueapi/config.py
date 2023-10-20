@@ -62,7 +62,7 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
     ]
-    scratch: Optional[ScratchConfig] = Field(default_factory=ScratchConfig)
+    scratch: Optional[ScratchConfig] = Field(default=None)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, EnvironmentConfig):

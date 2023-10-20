@@ -1,3 +1,4 @@
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -95,6 +96,22 @@ def test_does_pip_install(
             pip.install_editable.assert_called_once_with(inp, [])
     else:
         pip.install_editable.assert_not_called()
+
+
+def test_handles_install_error(
+    scratch_directory: MagicMock,
+    pip: MagicMock,
+    manager: ScratchManager,
+) -> None:
+    scratch_directory.is_file.return_value = False
+    pip.install_editable.side_effect = [
+        None,
+        subprocess.CalledProcessError(1, ["foo", "bar"]),
+        None,
+    ]
+    with patch("blueapi.service.scratch.os.listdir") as listdir:
+        listdir.return_value = ["foo", "bar", "baz"]
+        manager.sync_packages()
 
 
 def test_pip_shim_no_extras() -> None:

@@ -78,7 +78,10 @@ class ScratchManager:
         directories = self._get_directories_in_scratch()
         logging.info(f"Syncing scratch packages, installing from {directories}")
         for directory in directories:
-            self._pip.install_editable(directory, [])
+            try:
+                self._pip.install_editable(directory, [])
+            except subprocess.CalledProcessError as ex:
+                logging.error(f"Unable to install {directory}", ex)
         logging.info("Scratch packages installed")
 
     def _get_directories_in_scratch(self) -> Set[Path]:

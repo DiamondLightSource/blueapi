@@ -68,6 +68,10 @@ affinity: {}
 
 #existingSecret: see templates/secret.yaml
 
+scratch:
+  {}
+  # hostPath: /usr/local/blueapi-software-scratch
+
 worker:
   api:
     host: 0.0.0.0 # Allow non-loopback traffic
@@ -78,6 +82,9 @@ worker:
         module: blueapi.startup.example
       - kind: planFunctions
         module: blueapi.plans
+    scratch:
+      path: /blueapi-plugins/scratch
+      auto_make_directory: true
   stomp:
     auth:
       username: guest

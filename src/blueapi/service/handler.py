@@ -2,7 +2,10 @@ import logging
 from functools import partial
 from typing import Mapping, Optional
 
-from dodal.parameters.gda_directory_provider import VisitDirectoryProvider
+from dodal.parameters.gda_directory_provider import (
+    VisitDirectoryProvider,
+    VisitServiceClient,
+)
 
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
@@ -90,9 +93,9 @@ def setup_handler(
 
     if config:
         provider = VisitDirectoryProvider(
-            url=config.env.data_writing.visit_service_url,
             data_group_name=config.env.data_writing.group_name,
             data_directory=config.env.data_writing.visit_directory,
+            client=VisitServiceClient(config.env.data_writing.visit_service_url),
         )
 
         # Make all dodal devices created by the context use provider if they can

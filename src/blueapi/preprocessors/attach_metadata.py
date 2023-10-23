@@ -11,9 +11,8 @@ DATA_GROUPS = "data_groups"
 
 
 def attach_metadata(
-    data_groups: List[str],
-    provider: VisitDirectoryProvider,
     plan: MsgGenerator,
+    provider: VisitDirectoryProvider,
 ) -> MsgGenerator:
     """Updates a directory provider default location for file storage."""
     staging = False
@@ -26,10 +25,12 @@ def attach_metadata(
         if (message.command == "stage") and (not staging and will_write_data):
             yield from bps.wait_for([provider.update])
             staging = True
+        elif message.command == "unstage":
+            staging = False
 
         if message.command == "open_run":
-            message.kwargs[DATA_SESSION] = provider().filename_prefix
-            message.kwargs[DATA_GROUPS] = data_groups
+            directory_info = provider()
+            message.kwargs[DATA_SESSION] = directory_info.filename_prefix
 
         yield message
 

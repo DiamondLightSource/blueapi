@@ -5,12 +5,12 @@ from unittest.mock import patch
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
-from dls_bluesky_core.core import MsgGenerator, PlanGenerator
+from dls_bluesky_core.core import MsgGenerator, PlanGenerator, inject
 from ophyd.sim import SynAxis, SynGauss
 from pydantic import ValidationError, parse_obj_as
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
-from blueapi.core import BlueskyContext, inject, is_bluesky_compatible_device
+from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory
 
 SIM_MOTOR_NAME = "sim"

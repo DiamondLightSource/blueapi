@@ -71,7 +71,7 @@ class BlueskyContext:
         wrapped_plan = functools.reduce(
             lambda wrapped, next_wrapper: next_wrapper(wrapped),
             self.plan_wrappers,
-            initial=plan,
+            plan,
         )
         yield from wrapped_plan
 

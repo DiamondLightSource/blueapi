@@ -97,6 +97,22 @@ You would add the following into your configuration file:
 You can have as many sources for plans and devices as are needed.
 
 
+Scratch Area on Kubernetes
+--------------------------
+
+Sometimes in-the-loop development of plans and devices may be required. If running blueapi out of a virtual environment local packages can be installed with ``pip install -e path/to/package``, but there is also a way to support editable packages on Kubernetes with a shared filesystem.
+
+Blueapi can be configured to install editable Python packages from a chosen directory, the helm chart can mount this directory from the
+host machine, include the following in your ``values.yaml``:
+
+.. code:: yaml
+
+  scratch:
+    hostPath: path/to/scratch/area  # e.g. /dls_sw/<my_beamline>/software/blueapi/scratch
+
+You can then clone projects into the scratch directory and blueapi will automatically incorporate them on startup. You must still include configuration to load the plans and devices from specific modules within those packages, see above. 
+
+
 .. _dodal: https://github.com/DiamondLightSource/dodal
 .. _`python skeleton`: https://diamondlightsource.github.io/python3-pip-skeleton/main/index.html
 .. _`New Skeleton Project Tutorial`: https://diamondlightsource.github.io/python3-pip-skeleton-cli/main/user/tutorials/new.html

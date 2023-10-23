@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Add Plans and Devices to your Blueapi Environment &#8212; blueapi 0.3.5.dev14+g508a628a documentation</title>
+    <title>Add Plans and Devices to your Blueapi Environment &#8212; blueapi 0.3.5.dev15+g3f87223e documentation</title>
   
   
   
@@ -38,7 +38,7 @@
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
   <script src="../../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
 
-    <script src="../../_static/documentation_options.js?v=295d2a26"></script>
+    <script src="../../_static/documentation_options.js?v=94c5821f"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -556,6 +556,17 @@ For example:</p>
 </div>
 <p>You can have as many sources for plans and devices as are needed.</p>
 </section>
+<section id="scratch-area-on-kubernetes">
+<h2>Scratch Area on Kubernetes<a class="headerlink" href="#scratch-area-on-kubernetes" title="Link to this heading">#</a></h2>
+<p>Sometimes in-the-loop development of plans and devices may be required. If running blueapi out of a virtual environment local packages can be installed with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">path/to/package</span></code>, but there is also a way to support editable packages on Kubernetes with a shared filesystem.</p>
+<p>Blueapi can be configured to install editable Python packages from a chosen directory, the helm chart can mount this directory from the
+host machine, include the following in your <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">scratch</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hostPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/scratch/area</span><span class="w">  </span><span class="c1"># e.g. /dls_sw/&lt;my_beamline&gt;/software/blueapi/scratch</span>
+</pre></div>
+</div>
+<p>You can then clone projects into the scratch directory and blueapi will automatically incorporate them on startup. You must still include configuration to load the plans and devices from specific modules within those packages, see above.</p>
+</section>
 </section>
 
 
@@ -604,6 +615,7 @@ For example:</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#home-of-code">Home of Code</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#format">Format</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scratch-area-on-kubernetes">Scratch Area on Kubernetes</a></li>
 </ul>
   </nav></div>
 

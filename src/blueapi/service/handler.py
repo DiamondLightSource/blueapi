@@ -105,6 +105,14 @@ def setup_handler(
                 base_path=config.env.visit_id,
             )
         )
+
+        # Make all dodal devices created by the context use provider if they can
+        from dodal.parameters.gda_directory_provider import (
+            set_directory_provider_singleton,
+        )
+
+        set_directory_provider_singleton(provider)
+
         attach_metadata_with_config = partial(attach_metadata, data_groups, provider)
         plan_wrappers.append(attach_metadata_with_config)
 

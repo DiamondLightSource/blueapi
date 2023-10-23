@@ -113,7 +113,8 @@ class BlueskyContext:
                 device.set_name(device_name)
                 coros[device_name] = device.connect(sim)
 
-        await wait_for_connection(**coros)
+        if len(coros) > 0:
+            await wait_for_connection(**coros)
 
     def with_plan_module(self, module: ModuleType) -> None:
         """
@@ -145,13 +146,7 @@ class BlueskyContext:
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         from dodal.utils import make_all_devices
 
-        kwargs = (
-            {"directory_provider": self.directory_provider}
-            if self.directory_provider
-            else {}
-        )
-
-        for device in make_all_devices(module, **kwargs).values():
+        for device in make_all_devices(module).values():
             self.device(device)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:

@@ -2,10 +2,7 @@ import logging
 from functools import partial
 from typing import Mapping, Optional
 
-from dodal.parameters.gda_directory_provider import (
-    VisitDirectoryProvider,
-    VisitDirectoryProviderConfig,
-)
+from dodal.parameters.gda_directory_provider import VisitDirectoryProvider
 
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
@@ -92,18 +89,10 @@ def setup_handler(
     plan_wrappers = []
 
     if config:
-        data_groups = [
-            config.env.facility,
-            config.env.science_group,
-            config.env.beamline,
-            config.env.visit_id,
-        ]
         provider = VisitDirectoryProvider(
-            VisitDirectoryProviderConfig(
-                url=config.env.visit_service_url,
-                beamline=config.env.beamline,
-                base_path=config.env.visit_id,
-            )
+            url=config.env.data_writing.visit_service_url,
+            data_group_name=config.env.data_writing.group_name,
+            data_directory=config.env.data_writing.visit_directory,
         )
 
         # Make all dodal devices created by the context use provider if they can
@@ -113,13 +102,15 @@ def setup_handler(
 
         set_directory_provider_singleton(provider)
 
-        attach_metadata_with_config = partial(attach_metadata, data_groups, provider)
+        attach_metadata_with_config = partial(attach_metadata, [], provider)
         plan_wrappers.append(attach_metadata_with_config)
 
     handler = Handler(
         config,
         context=BlueskyContext(
-            plan_wrappers=plan_wrappers, directory_provider=provider
+            plan_wrappers=plan_wrappers,
+            directory_provider=provider,
+            sim=False,
         ),
     )
     handler.start()

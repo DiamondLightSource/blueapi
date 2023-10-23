@@ -49,6 +49,12 @@ class ScratchConfig(BlueapiBaseModel):
     auto_make_directory: bool = Field(default=False)
 
 
+class DataWritingConfig(BlueapiBaseModel):
+    visit_service_url: str = "http://localhost:8088/api"
+    visit_directory: Path = Path("/tmp/0-0")
+    group_name: str = "example"
+
+
 class EnvironmentConfig(BlueapiBaseModel):
     """
     Config for the RunEngine environment
@@ -63,24 +69,7 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
     ]
     scratch: Optional[ScratchConfig] = Field(default=None)
-    visit_service_url: str = "http://p38-control.diamond.ac.uk:8088/api/0.0.1"
-    visit_id: str = "v1"
-    facility: str = "Diamond"
-    science_group: str = "MX"
-    beamline: str = "I03"
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, EnvironmentConfig):
-            return (
-                (str(self.sources) == str(other.sources))
-                and (self.facility == other.facility)
-                and (self.science_group == other.science_group)
-                and (self.beamline == other.beamline)
-                and (self.visit_id == other.visit_id)
-                and (self.visit_service_url == other.visit_service_url)
-            )
-
-        return False
+    data_writing: DataWritingConfig = Field(default_factory=DataWritingConfig)
 
 
 class LoggingConfig(BlueapiBaseModel):

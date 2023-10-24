@@ -22,13 +22,13 @@ from typing import (
 )
 
 from bluesky.run_engine import RunEngine, call_in_bluesky_event_loop
-from dodal.parameters.gda_directory_provider import VisitDirectoryProvider
 from ophyd_async.core import Device as AsyncDevice
 from ophyd_async.core import wait_for_connection
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
 
 from blueapi.config import EnvironmentConfig, SourceKind
+from blueapi.data_management.gda_directory_provider import VisitDirectoryProvider
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
 from .bluesky_types import (

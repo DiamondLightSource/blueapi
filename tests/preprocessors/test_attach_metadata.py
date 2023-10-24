@@ -13,16 +13,16 @@ from bluesky.preprocessors import (
     stage_wrapper,
 )
 from bluesky.protocols import HasName, Readable, Reading, Status, Triggerable
-from dodal.parameters.gda_directory_provider import (
-    DataCollectionIdentifier,
-    VisitDirectoryProvider,
-    VisitServiceClient,
-)
 from event_model.documents.event_descriptor import DataKey
 from ophyd.status import StatusBase
 from ophyd_async.core import DirectoryProvider
 
 from blueapi.core import DataEvent, MsgGenerator
+from blueapi.data_management.gda_directory_provider import (
+    DataCollectionIdentifier,
+    VisitDirectoryProvider,
+    VisitServiceClient,
+)
 from blueapi.preprocessors.attach_metadata import DATA_SESSION, attach_metadata
 
 DATA_DIRECTORY = Path("/tmp")

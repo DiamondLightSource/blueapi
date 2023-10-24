@@ -59,9 +59,8 @@ class LocalVisitServiceClient(VisitServiceClientBase):
         self._count = 0
 
     async def create_new_collection(self) -> DataCollectionIdentifier:
-        count = self._count
         self._count += 1
-        return DataCollectionIdentifier(collectionNumber=count)
+        return DataCollectionIdentifier(collectionNumber=self._count)
 
     async def get_current_collection(self) -> DataCollectionIdentifier:
         return DataCollectionIdentifier(collectionNumber=self._count)

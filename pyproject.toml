@@ -44,6 +44,7 @@ dev = [
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
     "pytest-cov",
+    "pytest-asyncio",
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-click",

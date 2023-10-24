@@ -2,15 +2,14 @@ import logging
 from functools import partial
 from typing import Mapping, Optional
 
-from dodal.parameters.gda_directory_provider import (
+from blueapi.config import ApplicationConfig
+from blueapi.core import BlueskyContext
+from blueapi.core.event import EventStream
+from blueapi.data_management.gda_directory_provider import (
     LocalVisitServiceClient,
     VisitDirectoryProvider,
     VisitServiceClient,
 )
-
-from blueapi.config import ApplicationConfig
-from blueapi.core import BlueskyContext
-from blueapi.core.event import EventStream
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
 from blueapi.preprocessors.attach_metadata import attach_metadata

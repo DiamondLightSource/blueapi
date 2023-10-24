@@ -2,9 +2,9 @@ from typing import List
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import make_decorator
-from dodal.parameters.gda_directory_provider import VisitDirectoryProvider
 
 from blueapi.core import MsgGenerator
+from blueapi.data_management.gda_directory_provider import VisitDirectoryProvider
 
 DATA_SESSION = "data_session"
 DATA_GROUPS = "data_groups"

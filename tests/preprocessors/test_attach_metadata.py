@@ -36,17 +36,28 @@ RUN_2 = DATA_DIRECTORY / f"{DATA_GROUP_NAME}-2"
 
 class MockVisitServiceClient(VisitServiceClient):
     _count: int
+    _fail: bool
 
     def __init__(self) -> None:
         super().__init__("http://example.com")
         self._count = 0
+        self._fail = False
+
+    def always_fail(self) -> None:
+        self._fail = True
 
     async def create_new_collection(self) -> DataCollectionIdentifier:
+        if self._fail:
+            raise ConnectionError()
+
         count = self._count
         self._count += 1
         return DataCollectionIdentifier(collectionNumber=count)
 
     async def get_current_collection(self) -> DataCollectionIdentifier:
+        if self._fail:
+            raise ConnectionError()
+
         return DataCollectionIdentifier(collectionNumber=self._count)
 
 
@@ -299,9 +310,44 @@ def test_nested_run_without_metadata(
     start_docs = find_start_docs(docs)
     assert len(start_docs) == 3
     assert start_docs[0].doc[DATA_SESSION] == f"{DATA_GROUP_NAME}-0"
-    assert start_docs[1].doc[DATA_SESSION] == f"{DATA_GROUP_NAME}-0"
-    assert start_docs[2].doc[DATA_SESSION] == f"{DATA_GROUP_NAME}-0"
+    assert start_docs[1].doc[DATA_SESSION] == f"{DATA_GROUP_NAME}-1"
+    assert start_docs[2].doc[DATA_SESSION] == f"{DATA_GROUP_NAME}-2"
     assert_all_detectors_used_collection_numbers(docs, detectors, [RUN_1, RUN_2])
+
+
+def test_visit_directory_provider_fails(
+    run_engine: RunEngine,
+    detectors: List[Readable],
+    provider: DirectoryProvider,
+    client: MockVisitServiceClient,
+) -> None:
+    client.always_fail()
+    with pytest.raises(ValueError):
+        collect_docs(
+            run_engine,
+            simple_run(detectors),
+            provider,
+        )
+
+
+def test_visit_directory_provider_fails_after_one_sucess(
+    run_engine: RunEngine,
+    detectors: List[Readable],
+    provider: DirectoryProvider,
+    client: MockVisitServiceClient,
+) -> None:
+    collect_docs(
+        run_engine,
+        simple_run(detectors),
+        provider,
+    )
+    client.always_fail()
+    with pytest.raises(ValueError):
+        collect_docs(
+            run_engine,
+            simple_run(detectors),
+            provider,
+        )
 
 
 def collect_docs(

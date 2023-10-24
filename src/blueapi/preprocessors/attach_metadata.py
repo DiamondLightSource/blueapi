@@ -1,5 +1,3 @@
-from typing import List
-
 import bluesky.plan_stubs as bps
 from bluesky.utils import make_decorator
 

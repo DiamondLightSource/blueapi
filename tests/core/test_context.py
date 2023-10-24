@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Dict, List, Type, Union
-from unittest.mock import patch
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync

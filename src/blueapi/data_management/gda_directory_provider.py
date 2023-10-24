@@ -69,8 +69,8 @@ class LocalVisitServiceClient(VisitServiceClientBase):
 
 class VisitDirectoryProvider(DirectoryProvider):
     """
-    Gets information from a remote service to construct the path that detectors should write to,
-    and determine how their files should be named.
+    Gets information from a remote service to construct the path that detectors
+    should write to, and determine how their files should be named.
     """
 
     _data_group_name: str

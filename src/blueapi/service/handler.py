@@ -1,5 +1,4 @@
 import logging
-from functools import partial
 from typing import Mapping, Optional
 
 from blueapi.config import ApplicationConfig
@@ -9,6 +8,7 @@ from blueapi.data_management.gda_directory_provider import (
     LocalVisitServiceClient,
     VisitDirectoryProvider,
     VisitServiceClient,
+    VisitServiceClientBase,
 )
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
@@ -92,6 +92,7 @@ def setup_handler(
     plan_wrappers = []
 
     if config:
+        visit_service_client: VisitServiceClientBase
         if config.env.data_writing.visit_service_url is not None:
             visit_service_client = VisitServiceClient(
                 config.env.data_writing.visit_service_url

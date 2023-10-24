@@ -1,0 +1,8 @@
+env:
+  sources:
+    - kind: dodal
+      module: dodal.beamlines.p38
+    - kind: planFunctions
+      module: dls_bluesky_core.plans
+    - kind: planFunctions
+      module: dls_bluesky_core.stubs

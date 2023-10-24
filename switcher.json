@@ -252,6 +252,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
   },
   {
+    "version": "p38-config",
+    "url": "https://DiamondLightSource.github.io/blueapi/p38-config/"
+  },
+  {
     "version": "p38alpha",
     "url": "https://DiamondLightSource.github.io/blueapi/p38alpha/"
   },
@@ -286,10 +290,6 @@
   {
     "version": "remove_servers",
     "url": "https://DiamondLightSource.github.io/blueapi/remove_servers/"
-  },
-  {
-    "version": "scratch",
-    "url": "https://DiamondLightSource.github.io/blueapi/scratch/"
   },
   {
     "version": "shape-meta",

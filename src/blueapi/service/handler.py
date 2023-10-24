@@ -3,6 +3,7 @@ from functools import partial
 from typing import Mapping, Optional
 
 from dodal.parameters.gda_directory_provider import (
+    LocalVisitServiceClient,
     VisitDirectoryProvider,
     VisitServiceClient,
 )
@@ -92,10 +93,17 @@ def setup_handler(
     plan_wrappers = []
 
     if config:
+        if config.env.data_writing.visit_service_url is not None:
+            visit_service_client = VisitServiceClient(
+                config.env.data_writing.visit_service_url
+            )
+        else:
+            visit_service_client = LocalVisitServiceClient()
+
         provider = VisitDirectoryProvider(
             data_group_name=config.env.data_writing.group_name,
             data_directory=config.env.data_writing.visit_directory,
-            client=VisitServiceClient(config.env.data_writing.visit_service_url),
+            client=visit_service_client,
         )
 
         # Make all dodal devices created by the context use provider if they can
@@ -105,8 +113,7 @@ def setup_handler(
 
         set_directory_provider_singleton(provider)
 
-        attach_metadata_with_config = partial(attach_metadata, [], provider)
-        plan_wrappers.append(attach_metadata_with_config)
+        plan_wrappers.append(lambda plan: attach_metadata(plan, provider))
 
     handler = Handler(
         config,

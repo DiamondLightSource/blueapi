@@ -50,7 +50,7 @@ class ScratchConfig(BlueapiBaseModel):
 
 
 class DataWritingConfig(BlueapiBaseModel):
-    visit_service_url: str = "http://localhost:8088/api"
+    visit_service_url: Optional[str] = None  # e.g. "http://localhost:8088/api"
     visit_directory: Path = Path("/tmp/0-0")
     group_name: str = "example"
 

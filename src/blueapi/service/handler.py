@@ -107,11 +107,17 @@ def setup_handler(
         )
 
         # Make all dodal devices created by the context use provider if they can
-        from dodal.parameters.gda_directory_provider import (
-            set_directory_provider_singleton,
-        )
+        try:
+            from dodal.parameters.gda_directory_provider import (
+                set_directory_provider_singleton,
+            )
 
-        set_directory_provider_singleton(provider)
+            set_directory_provider_singleton(provider)
+        except ImportError:
+            logging.error(
+                "Unable to set directory provider for ophyd-async devices, "
+                "a newer version of dodal is required"
+            )
 
         plan_wrappers.append(lambda plan: attach_metadata(plan, provider))
 

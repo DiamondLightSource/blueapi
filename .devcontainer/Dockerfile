@@ -32,6 +32,9 @@ FROM python:3.11 as runtime
 COPY --from=build /venv/ /venv/
 ENV PATH=/venv/bin:$PATH
 
+
+RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip
+
 # change this entrypoint if it is not the same as the repo
 ENTRYPOINT ["blueapi"]
 CMD ["serve"]

@@ -24,7 +24,7 @@ WORKDIR /context
 # install python package into /venv
 RUN pip install ${PIP_OPTIONS}
 
-FROM python:3.11-slim as runtime
+FROM python:3.11 as runtime
 
 # Add apt-get system dependecies for runtime here if needed
 

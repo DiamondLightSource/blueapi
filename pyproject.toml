@@ -13,19 +13,20 @@ classifiers = [
 ]
 description = "Lightweight Bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky<1.11",
+    "bluesky @ git+https://github.com/bluesky/bluesky.git",
     "ophyd",
     "nslsii",
     "pyepics",
     "pydantic<2.0",
     "stomp.py",
+    "aiohttp",
     "PyYAML",
     "click<8.1.4",
     "fastapi[all]<0.100",
     "uvicorn",
     "requests",
-    "dls_bluesky_core",
-    "dls-dodal",
+    "dls-bluesky-core @ git+https://github.com/DiamondLightSource/dls-bluesky-core.git",  #requires ophyd-async
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@directory_provider", # requires aioca...
     "typing_extensions<4.6",
 ]
 dynamic = ["version"]
@@ -43,6 +44,7 @@ dev = [
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
     "pytest-cov",
+    "pytest-asyncio",
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-click",

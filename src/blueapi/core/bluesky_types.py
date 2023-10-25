@@ -19,6 +19,7 @@ from bluesky.protocols import (
     WritesExternalAssets,
 )
 from dls_bluesky_core.core import MsgGenerator, PlanGenerator
+from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel, Field
 
 from blueapi.utils import BlueapiBaseModel
@@ -27,6 +28,8 @@ try:
     from typing import Protocol, runtime_checkable
 except ImportError:
     from typing_extensions import Protocol, runtime_checkable  # type: ignore
+
+PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
 
 #: An object that encapsulates the device to do useful things to produce
 # data (e.g. move and read)
@@ -45,6 +48,7 @@ Device = Union[
     WritesExternalAssets,
     Configurable,
     Triggerable,
+    AsyncDevice,
 ]
 
 #: Protocols defining interface to hardware

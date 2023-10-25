@@ -224,10 +224,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/context-methods/"
   },
   {
-    "version": "data-writing-detectors",
-    "url": "https://DiamondLightSource.github.io/blueapi/data-writing-detectors/"
-  },
-  {
     "version": "debug-p38alpha",
     "url": "https://DiamondLightSource.github.io/blueapi/debug-p38alpha/"
   },
@@ -310,6 +306,10 @@
   {
     "version": "remove_servers",
     "url": "https://DiamondLightSource.github.io/blueapi/remove_servers/"
+  },
+  {
+    "version": "scratch-bash",
+    "url": "https://DiamondLightSource.github.io/blueapi/scratch-bash/"
   },
   {
     "version": "shape-meta",

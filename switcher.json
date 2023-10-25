@@ -300,6 +300,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/remove_servers/"
   },
   {
+    "version": "scratch-fix",
+    "url": "https://DiamondLightSource.github.io/blueapi/scratch-fix/"
+  },
+  {
     "version": "shape-meta",
     "url": "https://DiamondLightSource.github.io/blueapi/shape-meta/"
   },

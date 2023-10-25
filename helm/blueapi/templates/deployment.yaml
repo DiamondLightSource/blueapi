@@ -58,7 +58,7 @@ spec:
               mountPath: {{ .Values.scratch.containerPath }}
               mountPropagation: HostToContainer
             {{- end }}
-          command: ["blueapi"]
+          # command: ["blueapi"]
           args:
             - "-c"
             - "/config/config.yaml"

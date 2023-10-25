@@ -5,11 +5,10 @@
 replicaCount: 1
 
 image:
-  # repository: ghcr.io/diamondlightsource/blueapi
-  repository: gcr.io/diamond-privreg/daq-core/blueapi
+  repository: ghcr.io/diamondlightsource/blueapi
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -70,9 +69,8 @@ affinity: {}
 #existingSecret: see templates/secret.yaml
 
 scratch:
-  {}
-  # hostPath: /dls_sw/p38/software/blueapi/scratch
-  # containerPath: /blueapi-plugins/scratch
+  hostPath: "" # example: /dls_sw/p38/software/blueapi/scratch
+  containerPath: /blueapi-plugins/scratch
 
 worker:
   api:
@@ -81,9 +79,13 @@ worker:
   env:
     sources:
       - kind: deviceFunctions
-        module: blueapi.startup.example
+        module: blueapi.startup.example_devices
       - kind: planFunctions
-        module: blueapi.plans
+        module: blueapi.startup.example_plans
+      - kind: planFunctions
+        module: dls_bluesky_core.plans
+      - kind: planFunctions
+        module: dls_bluesky_core.stubs
   stomp:
     auth:
       username: guest

@@ -8,9 +8,6 @@ env:
       module: dls_bluesky_core.plans
     - kind: planFunctions
       module: dls_bluesky_core.stubs
-  scratch:
-    path: /blueapi-plugins/scratch
-    auto_make_directory: true
 stomp:
   host: localhost
   port: 61613

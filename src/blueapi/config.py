@@ -40,15 +40,6 @@ class StompConfig(BaseModel):
     auth: Optional[BasicAuthentication] = None
 
 
-class ScratchConfig(BlueapiBaseModel):
-    """
-    Config for the scratch space where editable Python packages can be installed
-    """
-
-    path: Path = Field(default=Path("/tmp/blueapi/scratch"))
-    auto_make_directory: bool = Field(default=False)
-
-
 class DataWritingConfig(BlueapiBaseModel):
     visit_service_url: Optional[str] = None  # e.g. "http://localhost:8088/api"
     visit_directory: Path = Path("/tmp/0-0")
@@ -68,8 +59,12 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
     ]
-    scratch: Optional[ScratchConfig] = Field(default=None)
     data_writing: DataWritingConfig = Field(default_factory=DataWritingConfig)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, EnvironmentConfig):
+            return str(self.sources) == str(other.sources)
+        return False
 
 
 class LoggingConfig(BlueapiBaseModel):

@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.3.6",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.6/"
+  },
+  {
     "version": "0.3.5-beta12",
     "url": "https://DiamondLightSource.github.io/blueapi/0.3.5-beta12/"
   },
@@ -298,10 +302,6 @@
   {
     "version": "remove_servers",
     "url": "https://DiamondLightSource.github.io/blueapi/remove_servers/"
-  },
-  {
-    "version": "scratch-fix",
-    "url": "https://DiamondLightSource.github.io/blueapi/scratch-fix/"
   },
   {
     "version": "shape-meta",

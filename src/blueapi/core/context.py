@@ -1,3 +1,4 @@
+import functools
 import logging
 from dataclasses import dataclass, field
 from importlib import import_module
@@ -10,6 +11,7 @@ from typing import (
     Generic,
     List,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -19,19 +21,24 @@ from typing import (
     get_type_hints,
 )
 
-from bluesky import RunEngine
+from bluesky.run_engine import RunEngine, call_in_bluesky_event_loop
+from ophyd_async.core import Device as AsyncDevice
+from ophyd_async.core import wait_for_connection
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
 
 from blueapi.config import EnvironmentConfig, SourceKind
+from blueapi.data_management.gda_directory_provider import VisitDirectoryProvider
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     Device,
     HasName,
+    MsgGenerator,
     Plan,
     PlanGenerator,
+    PlanWrapper,
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )
@@ -51,11 +58,22 @@ class BlueskyContext:
     run_engine: RunEngine = field(
         default_factory=lambda: RunEngine(context_managers=[])
     )
+    plan_wrappers: Sequence[PlanWrapper] = field(default_factory=list)
     plans: Dict[str, Plan] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
+    directory_provider: Optional[VisitDirectoryProvider] = field(default=None)
+    sim: bool = field(default=False)
 
     _reference_cache: Dict[Type, Type] = field(default_factory=dict)
+
+    def wrap(self, plan: MsgGenerator) -> MsgGenerator:
+        wrapped_plan = functools.reduce(
+            lambda wrapped, next_wrapper: next_wrapper(wrapped),
+            self.plan_wrappers,
+            plan,
+        )
+        yield from wrapped_plan
 
     def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
         """
@@ -86,6 +104,18 @@ class BlueskyContext:
             elif source.kind is SourceKind.DODAL:
                 self.with_dodal_module(mod)
 
+        call_in_bluesky_event_loop(self.connect_devices(self.sim))
+
+    async def connect_devices(self, sim: bool = False) -> None:
+        coros = {}
+        for device_name, device in self.devices.items():
+            if isinstance(device, AsyncDevice):
+                device.set_name(device_name)
+                coros[device_name] = device.connect(sim)
+
+        if len(coros) > 0:
+            await wait_for_connection(**coros)
+
     def with_plan_module(self, module: ModuleType) -> None:
         """
         Register all functions in the module supplied as plans.
@@ -113,10 +143,10 @@ class BlueskyContext:
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
 
-    def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
+    def with_dodal_module(self, module: ModuleType) -> None:
         from dodal.utils import make_all_devices
 
-        for device in make_all_devices(module, **kwargs).values():
+        for device in make_all_devices(module).values():
             self.device(device)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:

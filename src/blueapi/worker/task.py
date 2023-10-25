@@ -29,7 +29,8 @@ class Task(BlueapiBaseModel):
         func = ctx.plan_functions[self.name]
         prepared_params = self._ensure_params(ctx)
         plan_generator = func(**prepared_params.dict())
-        ctx.run_engine(plan_generator)
+        wrapped_plan_generator = ctx.wrap(plan_generator)
+        ctx.run_engine(wrapped_plan_generator)
 
     def _ensure_params(self, ctx: BlueskyContext) -> BaseModel:
         if self._prepared_params is None:

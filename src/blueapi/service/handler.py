@@ -4,8 +4,15 @@ from typing import Mapping, Optional
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from blueapi.core.event import EventStream
+from blueapi.data_management.gda_directory_provider import (
+    LocalVisitServiceClient,
+    VisitDirectoryProvider,
+    VisitServiceClient,
+    VisitServiceClientBase,
+)
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
+from blueapi.preprocessors.attach_metadata import attach_metadata
 from blueapi.worker.reworker import RunEngineWorker
 from blueapi.worker.worker import Worker
 
@@ -80,7 +87,48 @@ def setup_handler(
     config: Optional[ApplicationConfig] = None,
 ) -> None:
     global HANDLER
-    handler = Handler(config)
+
+    provider = None
+    plan_wrappers = []
+
+    if config:
+        visit_service_client: VisitServiceClientBase
+        if config.env.data_writing.visit_service_url is not None:
+            visit_service_client = VisitServiceClient(
+                config.env.data_writing.visit_service_url
+            )
+        else:
+            visit_service_client = LocalVisitServiceClient()
+
+        provider = VisitDirectoryProvider(
+            data_group_name=config.env.data_writing.group_name,
+            data_directory=config.env.data_writing.visit_directory,
+            client=visit_service_client,
+        )
+
+        # Make all dodal devices created by the context use provider if they can
+        try:
+            from dodal.parameters.gda_directory_provider import (
+                set_directory_provider_singleton,
+            )
+
+            set_directory_provider_singleton(provider)
+        except ImportError:
+            logging.error(
+                "Unable to set directory provider for ophyd-async devices, "
+                "a newer version of dodal is required"
+            )
+
+        plan_wrappers.append(lambda plan: attach_metadata(plan, provider))
+
+    handler = Handler(
+        config,
+        context=BlueskyContext(
+            plan_wrappers=plan_wrappers,
+            directory_provider=provider,
+            sim=False,
+        ),
+    )
     handler.start()
 
     HANDLER = handler

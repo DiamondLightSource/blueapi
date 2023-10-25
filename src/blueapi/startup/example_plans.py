@@ -1,10 +1,11 @@
 from typing import List
 
 from bluesky.protocols import Movable, Readable
+from dls_bluesky_core.core import inject
 from dls_bluesky_core.plans import count
 from dls_bluesky_core.stubs import move
 
-from blueapi.core import MsgGenerator, inject
+from blueapi.core import MsgGenerator
 
 
 def stp_snapshot(

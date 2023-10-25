@@ -1,11 +1,10 @@
 import logging
-import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
 from aiohttp import ClientSession
-from ophyd_async.core import DirectoryInfo, DirectoryProvider, StaticDirectoryProvider
+from ophyd_async.core import DirectoryInfo, DirectoryProvider
 from pydantic import BaseModel
 
 
@@ -127,19 +126,3 @@ class VisitDirectoryProvider(DirectoryProvider):
             raise ValueError(
                 "No current collection, update() needs to be called at least once"
             )
-
-
-_SINGLETON: Optional[VisitDirectoryProvider] = None
-
-
-def set_directory_provider_singleton(provider: VisitDirectoryProvider):
-    global _SINGLETON
-
-    _SINGLETON = provider
-
-
-def get_directory_provider() -> DirectoryProvider:
-    if _SINGLETON is not None:
-        return _SINGLETON
-    else:
-        return StaticDirectoryProvider(tempfile.TemporaryFile(), "")

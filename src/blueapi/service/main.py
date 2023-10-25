@@ -7,7 +7,6 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.scratch import ScratchManager
 from blueapi.worker import RunPlan, TrackableTask, WorkerState
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
@@ -235,10 +234,6 @@ def set_state(
 
 def start(config: ApplicationConfig):
     import uvicorn
-
-    if config.env.scratch is not None:
-        scratch = ScratchManager.from_config(config.env.scratch)
-        scratch.sync_packages()
 
     app.state.config = config
     uvicorn.run(app, host=config.api.host, port=config.api.port)

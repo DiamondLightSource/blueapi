@@ -30,11 +30,12 @@ FROM python:3.11 as runtime
 
 # copy the virtual environment from the build stage and put it in PATH
 COPY --from=build /venv/ /venv/
+COPY ./container-startup.sh /container-startup.sh
 ENV PATH=/venv/bin:$PATH
 
 
 RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip
 
 # change this entrypoint if it is not the same as the repo
-ENTRYPOINT ["blueapi"]
+ENTRYPOINT ["/container-startup.sh"]
 CMD ["serve"]

@@ -55,10 +55,9 @@ spec:
               readOnly: true
             {{- if .Values.scratch.hostPath }}
             - name: scratch-host
-              mountPath: {{ .Values.worker.env.scratch.path }}
+              mountPath: {{ .Values.scratch.containerPath }}
               mountPropagation: HostToContainer
             {{- end }}
-          command: ["blueapi"]
           args:
             - "-c"
             - "/config/config.yaml"

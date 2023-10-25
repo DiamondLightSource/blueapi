@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import logging
 from dataclasses import dataclass, field
@@ -114,7 +115,7 @@ class BlueskyContext:
                 coros[device_name] = device.connect(sim)
 
         if len(coros) > 0:
-            await wait_for_connection(**coros)
+            await asyncio.wait(wait_for_connection(**coros), timeout=30.0)
 
     def with_plan_module(self, module: ModuleType) -> None:
         """

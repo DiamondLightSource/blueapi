@@ -170,6 +170,7 @@ html_theme_options = dict(
             url=f"https://github.com/{github_user}/{github_repo}/releases",
         )
     ],
+    navigation_with_keys=True,
 )
 
 # A dictionary of values to pass into the template engine’s context for all pages

@@ -1,3 +1,4 @@
+import importlib
 import logging
 import os
 import subprocess
@@ -44,6 +45,16 @@ class PipShim:
             ]
         )
 
+    def reload_modules_within(self, root: Path) -> None:
+        for module in sys.modules.values():
+            if (
+                hasattr(module, "__file__")
+                and module.__file__ is not None
+                and root in Path(module.__file__).parents
+            ):
+                logging.info(f"Reloading {module}")
+                importlib.reload(module)
+
 
 class ScratchManager:
     """
@@ -82,7 +93,9 @@ class ScratchManager:
                 self._pip.install_editable(directory, [])
             except subprocess.CalledProcessError as ex:
                 logging.error(f"Unable to install {directory}", ex)
-        logging.info("Scratch packages installed")
+        logging.info("Scratch packages installed, reloading modules")
+        self._pip.reload_modules_within(self._root_path)
+        logging.info("Reload complete")
 
     def _get_directories_in_scratch(self) -> Set[Path]:
         self._check_scratch_exists()

@@ -276,6 +276,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/p45-debugging/"
   },
   {
+    "version": "permissions",
+    "url": "https://DiamondLightSource.github.io/blueapi/permissions/"
+  },
+  {
     "version": "pinnedPydantic",
     "url": "https://DiamondLightSource.github.io/blueapi/pinnedPydantic/"
   },

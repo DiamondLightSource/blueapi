@@ -25,7 +25,7 @@ dependencies = [
     "fastapi[all]<0.100",
     "uvicorn",
     "requests",
-    "dls_bluesky_core @ git+https://github.com/DiamondLightSource/dls-bluesky-core.git@main",
+    "dls-bluesky-core @ git+https://github.com/DiamondLightSource/dls-bluesky-core.git@main",
     "dls-dodal",
     "typing_extensions<4.6",
 ]

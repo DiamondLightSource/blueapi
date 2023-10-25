@@ -61,11 +61,6 @@ class EnvironmentConfig(BlueapiBaseModel):
     ]
     data_writing: DataWritingConfig = Field(default_factory=DataWritingConfig)
 
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, EnvironmentConfig):
-            return str(self.sources) == str(other.sources)
-        return False
-
 
 class LoggingConfig(BlueapiBaseModel):
     level: LogLevel = "INFO"

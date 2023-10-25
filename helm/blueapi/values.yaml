@@ -69,7 +69,7 @@ affinity: {}
 #existingSecret: see templates/secret.yaml
 
 scratch:
-  hostPath: "" # example: /dls_sw/p38/software/blueapi/scratch
+  hostPath: "" # example: /usr/local/blueapi-software-scratch
   containerPath: /blueapi-plugins/scratch
 
 worker:

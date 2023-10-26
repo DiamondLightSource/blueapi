@@ -16,15 +16,13 @@ async def connect_ophyd_async_devices(
     tasks: Dict[asyncio.Task, str] = {}
     for device in devices:
         if isinstance(device, OphydAsyncDevice):
-            task = asyncio.Task(device.connect(sim=sim))
+            task = asyncio.create_task(device.connect(sim=sim))
             tasks[task] = device.name
-    await _wait_for_tasks(tasks, timeout=timeout)
+    if tasks:
+        await _wait_for_tasks(tasks, timeout=timeout)
 
 
-async def _wait_for_tasks(
-    tasks: Dict[asyncio.Task, str],
-    timeout: float,
-):
+async def _wait_for_tasks(tasks: Dict[asyncio.Task, str], timeout: float):
     done, pending = await asyncio.wait(tasks, timeout=timeout)
     if pending:
         msg = f"{len(pending)} Devices did not connect:"

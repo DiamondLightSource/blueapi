@@ -104,6 +104,7 @@ testpaths = "docs src tests"
 markers = [
     "handler: marks tests that interact with the global handler object in handler.py",
 ]
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 data_file = "/tmp/blueapi.coverage"

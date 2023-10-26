@@ -23,14 +23,16 @@ from typing import (
 )
 
 from bluesky.run_engine import RunEngine, call_in_bluesky_event_loop
-from ophyd_async.core import Device as AsyncDevice
-from ophyd_async.core import wait_for_connection
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
 
 from blueapi.config import EnvironmentConfig, SourceKind
 from blueapi.data_management.gda_directory_provider import VisitDirectoryProvider
-from blueapi.utils import BlueapiPlanModelConfig, load_module_all
+from blueapi.utils import (
+    BlueapiPlanModelConfig,
+    connect_ophyd_async_devices,
+    load_module_all,
+)
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
@@ -105,17 +107,12 @@ class BlueskyContext:
             elif source.kind is SourceKind.DODAL:
                 self.with_dodal_module(mod)
 
-        call_in_bluesky_event_loop(self.connect_devices(self.sim))
-
-    async def connect_devices(self, sim: bool = False) -> None:
-        coros = {}
-        for device_name, device in self.devices.items():
-            if isinstance(device, AsyncDevice):
-                device.set_name(device_name)
-                coros[device_name] = device.connect(sim)
-
-        if len(coros) > 0:
-            await asyncio.wait(wait_for_connection(**coros), timeout=30.0)
+        call_in_bluesky_event_loop(
+            connect_ophyd_async_devices(
+                self.devices.values(),
+                self.sim,
+            )
+        )
 
     def with_plan_module(self, module: ModuleType) -> None:
         """

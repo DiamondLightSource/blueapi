@@ -1,8 +1,9 @@
 import bluesky.preprocessors as bpp
 from bluesky.utils import make_decorator
-from ophyd_async.core import DirectoryProvider
+from blueapi.data_management.visit_directory_provider import VisitDirectoryProvider
 
 from blueapi.core import MsgGenerator
+import bluesky.plan_stubs as bps
 
 DATA_SESSION = "data_session"
 DATA_GROUPS = "data_groups"
@@ -10,14 +11,15 @@ DATA_GROUPS = "data_groups"
 
 def attach_metadata(
     plan: MsgGenerator,
-    provider: DirectoryProvider,
+    provider: VisitDirectoryProvider,
 ) -> MsgGenerator:
     """
     Attach data session metadata to the runs within a plan and make it correlate
     with an ophyd-async DirectoryProvider.
 
-    This calls the directory provider and ensures the start document contains
-    the correct data session.
+    This updates the directory provider (which in turn makes a call to to a service
+    to figure out which scan number we are using for such a scan), and ensures the
+    start document contains the correct data session.
 
     Args:
         plan: The plan to preprocess
@@ -29,6 +31,7 @@ def attach_metadata(
     Yields:
         Iterator[Msg]: Plan messages
     """
+    yield from bps.wait_for([provider.update])
     directory_info = provider()
     yield from bpp.inject_md_wrapper(
         plan, md={DATA_SESSION: directory_info.filename_prefix}

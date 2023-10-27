@@ -22,7 +22,6 @@ from typing import (
 )
 
 from bluesky.run_engine import RunEngine, call_in_bluesky_event_loop
-from ophyd_async.core import DirectoryProvider
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
 

@@ -8,7 +8,7 @@ on:
     - cron: "0 8 * * WED"
 env:
   # The target python version, which must match the Dockerfile version
-  CONTAINER_PYTHON: "3.9"
+  CONTAINER_PYTHON: "3.11"
 
 jobs:
   lint:

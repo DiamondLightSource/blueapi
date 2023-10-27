@@ -18,6 +18,20 @@ class PreprocessorApplicationPolicy(str, Enum):
     NEVER = "NEVER"
 
 
+class PreprocessorModelUpdate(BlueapiBaseModel):
+    """
+    Description of updates to a preprocessor that can be applied to plans
+    """
+
+    description: Optional[str] = Field(
+        description="Optional extended description of the preprocessor and its function"
+    )
+    application_policy: Optional[PreprocessorApplicationPolicy] = Field(
+        description="Policy that determines whether this preprocessor should be "
+        "applied to a plan",
+    )
+
+
 class PreprocessorModel(BlueapiBaseModel):
     """
     Description of a preprocessor that can be applied to plans
@@ -31,6 +45,12 @@ class PreprocessorModel(BlueapiBaseModel):
         description="Policy that determines whether this preprocessor should be "
         "applied to a plan",
     )
+
+    def update(self, update: PreprocessorModelUpdate) -> None:
+        if update.description is not None:
+            self.description = update.description
+        if update.application_policy is not None:
+            self.application_policy = update.application_policy
 
 
 class PreprocessorModelQueryResponse(BlueapiBaseModel):

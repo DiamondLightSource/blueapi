@@ -18,6 +18,7 @@ from .preprocesor import (
     PreprocessorApplicationPolicy,
     PreprocessorModel,
     PreprocessorModelQueryResponse,
+    PreprocessorModelUpdate,
 )
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "PreprocessorModel",
     "PlanPreprocessor",
     "PreprocessorModelQueryResponse",
+    "PreprocessorModelUpdate",
 ]

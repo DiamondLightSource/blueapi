@@ -4,7 +4,11 @@ import requests
 from pydantic import parse_obj_as
 
 from blueapi.config import RestConfig
-from blueapi.core import PreprocessorModel, PreprocessorModelQueryResponse
+from blueapi.core import (
+    PreprocessorModel,
+    PreprocessorModelQueryResponse,
+    PreprocessorModelUpdate,
+)
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -113,7 +117,7 @@ class BlueapiRestClient:
     def update_preprocessor(
         self,
         name: str,
-        model: PreprocessorModel,
+        model: PreprocessorModelUpdate,
     ) -> PreprocessorModel:
         return self._request_and_deserialize(
             f"/preprocessors/{name}",

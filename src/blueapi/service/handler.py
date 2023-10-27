@@ -89,7 +89,7 @@ def setup_handler(
 
     if config:
         provider = StaticDirectoryProvider(
-            filename_prefix="blueapi",
+            filename_prefix=f"{config.env.data_writing.group_name}-blueapi",
             directory_path=str(config.env.data_writing.visit_directory),
         )
 

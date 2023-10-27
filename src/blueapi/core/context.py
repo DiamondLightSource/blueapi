@@ -64,7 +64,6 @@ class BlueskyContext:
     plans: Dict[str, Plan] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
-    directory_provider: Optional[DirectoryProvider] = field(default=None)
     sim: bool = field(default=False)
 
     _reference_cache: Dict[Type, Type] = field(default_factory=dict)

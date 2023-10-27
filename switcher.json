@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.3.10",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.10/"
+  },
+  {
     "version": "0.3.9",
     "url": "https://DiamondLightSource.github.io/blueapi/0.3.9/"
   },
@@ -346,9 +350,5 @@
   {
     "version": "visit-directory",
     "url": "https://DiamondLightSource.github.io/blueapi/visit-directory/"
-  },
-  {
-    "version": "yield-from-preprocessor",
-    "url": "https://DiamondLightSource.github.io/blueapi/yield-from-preprocessor/"
   }
 ]

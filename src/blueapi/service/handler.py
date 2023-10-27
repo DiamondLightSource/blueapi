@@ -1,15 +1,11 @@
 import logging
 from typing import Mapping, Optional
 
+from ophyd_async.core import StaticDirectoryProvider
+
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from blueapi.core.event import EventStream
-from blueapi.data_management.gda_directory_provider import (
-    LocalVisitServiceClient,
-    VisitDirectoryProvider,
-    VisitServiceClient,
-    VisitServiceClientBase,
-)
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
 from blueapi.preprocessors.attach_metadata import attach_metadata
@@ -92,18 +88,9 @@ def setup_handler(
     plan_wrappers = []
 
     if config:
-        visit_service_client: VisitServiceClientBase
-        if config.env.data_writing.visit_service_url is not None:
-            visit_service_client = VisitServiceClient(
-                config.env.data_writing.visit_service_url
-            )
-        else:
-            visit_service_client = LocalVisitServiceClient()
-
-        provider = VisitDirectoryProvider(
-            data_group_name=config.env.data_writing.group_name,
-            data_directory=config.env.data_writing.visit_directory,
-            client=visit_service_client,
+        provider = StaticDirectoryProvider(
+            filename_prefix=f"{config.env.data_writing.group_name}-blueapi",
+            directory_path=str(config.env.data_writing.visit_directory),
         )
 
         # Make all dodal devices created by the context use provider if they can
@@ -125,7 +112,6 @@ def setup_handler(
         config,
         context=BlueskyContext(
             plan_wrappers=plan_wrappers,
-            directory_provider=provider,
             sim=False,
         ),
     )

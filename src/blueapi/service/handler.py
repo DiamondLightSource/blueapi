@@ -6,12 +6,6 @@ from ophyd_async.core import StaticDirectoryProvider
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from blueapi.core.event import EventStream
-from blueapi.data_management.gda_directory_provider import (
-    LocalVisitServiceClient,
-    VisitDirectoryProvider,
-    VisitServiceClient,
-    VisitServiceClientBase,
-)
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
 from blueapi.preprocessors.attach_metadata import attach_metadata

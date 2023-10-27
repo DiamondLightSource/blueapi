@@ -22,11 +22,11 @@ from typing import (
 )
 
 from bluesky.run_engine import RunEngine, call_in_bluesky_event_loop
+from ophyd_async.core import DirectoryProvider
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
 
 from blueapi.config import EnvironmentConfig, SourceKind
-from blueapi.data_management.gda_directory_provider import VisitDirectoryProvider
 from blueapi.utils import (
     BlueapiPlanModelConfig,
     connect_ophyd_async_devices,
@@ -64,7 +64,7 @@ class BlueskyContext:
     plans: Dict[str, Plan] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
-    directory_provider: Optional[VisitDirectoryProvider] = field(default=None)
+    directory_provider: Optional[DirectoryProvider] = field(default=None)
     sim: bool = field(default=False)
 
     _reference_cache: Dict[Type, Type] = field(default_factory=dict)

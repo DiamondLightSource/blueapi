@@ -17,6 +17,7 @@ dependencies = [
     "ophyd",
     "nslsii",
     "pyepics",
+    "aioca",
     "pydantic<2.0",
     "stomp.py",
     "aiohttp",
@@ -25,8 +26,8 @@ dependencies = [
     "fastapi[all]<0.100",
     "uvicorn",
     "requests",
-    "dls-bluesky-core @ git+https://github.com/DiamondLightSource/dls-bluesky-core.git",  #requires ophyd-async
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@directory_provider", # requires aioca...
+    "dls-bluesky-core @ git+https://github.com/DiamondLightSource/dls-bluesky-core.git", #requires ophyd-async
+    "dls-dodal",
     "typing_extensions<4.6",
 ]
 dynamic = ["version"]

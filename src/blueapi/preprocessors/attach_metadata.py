@@ -1,9 +1,9 @@
+import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import make_decorator
-from blueapi.data_management.visit_directory_provider import VisitDirectoryProvider
 
 from blueapi.core import MsgGenerator
-import bluesky.plan_stubs as bps
+from blueapi.data_management.visit_directory_provider import VisitDirectoryProvider
 
 DATA_SESSION = "data_session"
 DATA_GROUPS = "data_groups"

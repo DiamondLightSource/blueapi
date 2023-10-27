@@ -2,7 +2,12 @@ import logging
 from typing import Mapping, Optional
 
 from blueapi.config import ApplicationConfig
-from blueapi.core import BlueskyContext
+from blueapi.core import (
+    BlueskyContext,
+    PlanPreprocessor,
+    PreprocessorApplicationPolicy,
+    PreprocessorModel,
+)
 from blueapi.core.event import EventStream
 from blueapi.data_management.gda_directory_provider import (
     LocalVisitServiceClient,
@@ -88,10 +93,7 @@ def setup_handler(
 ) -> None:
     global HANDLER
 
-    provider = None
-    plan_wrappers = []
-
-    if config:
+    if config is not None:
         visit_service_client: VisitServiceClientBase
         if config.env.data_writing.visit_service_url is not None:
             visit_service_client = VisitServiceClient(
@@ -119,7 +121,25 @@ def setup_handler(
                 "a newer version of dodal is required"
             )
 
-        plan_wrappers.append(lambda plan: attach_metadata(plan, provider))
+        plan_wrappers = {
+            "data_writing_metadata": PlanPreprocessor(
+                PreprocessorModel(
+                    name="data_writing_metadata",
+                    description="""
+                    When a plan collects data, this preprocessor will cause
+                    ophyd-async detectors to write to a specified directory
+                    (unique per collection).
+                    It will also bundle grouping information about these
+                    detectors into the run start document.
+                    """,
+                    application_policy=PreprocessorApplicationPolicy.ALWAYS,
+                ),
+                lambda plan: attach_metadata(plan, provider),
+            )
+        }
+    else:
+        plan_wrappers = {}
+        provider = None
 
     handler = Handler(
         config,

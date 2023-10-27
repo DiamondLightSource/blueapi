@@ -13,6 +13,12 @@ from .bluesky_types import (
 )
 from .context import BlueskyContext
 from .event import EventPublisher, EventStream
+from .preprocesor import (
+    PlanPreprocessor,
+    PreprocessorApplicationPolicy,
+    PreprocessorModel,
+    PreprocessorModelQueryResponse,
+)
 
 __all__ = [
     "Plan",
@@ -29,4 +35,8 @@ __all__ = [
     "is_bluesky_plan_generator",
     "is_bluesky_compatible_device_type",
     "configure_bluesky_event_loop",
+    "PreprocessorApplicationPolicy",
+    "PreprocessorModel",
+    "PlanPreprocessor",
+    "PreprocessorModelQueryResponse",
 ]

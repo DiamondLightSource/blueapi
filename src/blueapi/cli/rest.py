@@ -4,6 +4,7 @@ import requests
 from pydantic import parse_obj_as
 
 from blueapi.config import RestConfig
+from blueapi.core import PreprocessorModel, PreprocessorModelQueryResponse
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -95,6 +96,30 @@ class BlueapiRestClient:
             target_type=WorkerState,
             method="PUT",
             data={"new_state": state, "reason": reason},
+        )
+
+    def get_preprocessors(self) -> PreprocessorModelQueryResponse:
+        return self._request_and_deserialize(
+            "/preprocessors",
+            target_type=PreprocessorModelQueryResponse,
+        )
+
+    def get_preprocessor(self, name: str) -> PreprocessorModel:
+        return self._request_and_deserialize(
+            f"/preprocessors/{name}",
+            target_type=PreprocessorModel,
+        )
+
+    def update_preprocessor(
+        self,
+        name: str,
+        model: PreprocessorModel,
+    ) -> PreprocessorModel:
+        return self._request_and_deserialize(
+            f"/preprocessors/{name}",
+            target_type=PreprocessorModel,
+            method="PUT",
+            data=model.dict(),
         )
 
     def _request_and_deserialize(

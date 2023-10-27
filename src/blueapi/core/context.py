@@ -9,9 +9,9 @@ from typing import (
     Callable,
     Dict,
     Generic,
+    Iterable,
     List,
     Optional,
-    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -45,6 +45,7 @@ from .bluesky_types import (
     is_bluesky_plan_generator,
 )
 from .device_lookup import find_component
+from .preprocesor import PlanPreprocessor, PreprocessorApplicationPolicy
 
 LOGGER = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class BlueskyContext:
     run_engine: RunEngine = field(
         default_factory=lambda: RunEngine(context_managers=[])
     )
-    plan_wrappers: Sequence[PlanWrapper] = field(default_factory=list)
+    plan_wrappers: Dict[str, PlanPreprocessor] = field(default_factory=dict)
     plans: Dict[str, Plan] = field(default_factory=dict)
     devices: Dict[str, Device] = field(default_factory=dict)
     plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
@@ -70,12 +71,34 @@ class BlueskyContext:
     _reference_cache: Dict[Type, Type] = field(default_factory=dict)
 
     def wrap(self, plan: MsgGenerator) -> MsgGenerator:
+        """
+        Wrap a plan in all valid wrappers configured by the Bluesky context
+
+        Args:
+            plan: Plan to wrap in generator form (plan function should
+                already be called)
+
+        Returns:
+            MsgGenerator: Wrapped plan
+
+        Yields:
+            Iterator[MsgGenerator]: Plan messages
+        """
+
         wrapped_plan = functools.reduce(
             lambda wrapped, next_wrapper: next_wrapper(wrapped),
-            self.plan_wrappers,
+            self._get_enabled_wrappers(),
             plan,
         )
         yield from wrapped_plan
+
+    def _get_enabled_wrappers(self) -> Iterable[PlanWrapper]:
+        for preprocessor in self.plan_wrappers.values():
+            if (
+                preprocessor.model.application_policy
+                is PreprocessorApplicationPolicy.ALWAYS
+            ):
+                yield preprocessor.wrapper
 
     def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
         """

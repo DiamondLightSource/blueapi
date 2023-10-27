@@ -12,6 +12,7 @@ from requests.exceptions import ConnectionError
 from blueapi import __version__
 from blueapi.cli.amq import AmqClient
 from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.core import PreprocessorApplicationPolicy, PreprocessorModel
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
 from blueapi.service.model import WorkerTask
@@ -230,6 +231,63 @@ def stop(obj: dict) -> None:
 
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.cancel_current_task(state=WorkerState.STOPPING))
+
+
+@controller.group(name="preprocessors")
+@click.pass_context
+def preprocessors(ctx: click.Context) -> None:
+    if ctx.invoked_subcommand is None:
+        print("Please invoke subcommand!")
+        return
+
+
+@preprocessors.command(name="list")
+@check_connection
+@click.pass_obj
+def list_preprocessors(obj: dict) -> None:
+    client: BlueapiRestClient = obj["rest_client"]
+    pprint(client.get_preprocessors())
+
+
+@preprocessors.command(name="enable")
+@click.argument("name", type=str, required=True)
+@check_connection
+@click.pass_obj
+def enable_preprocessor(obj: dict, name: str) -> None:
+    client: BlueapiRestClient = obj["rest_client"]
+    _set_preprocessor_policy(
+        client,
+        name,
+        PreprocessorApplicationPolicy.ALWAYS,
+    )
+
+
+@preprocessors.command(name="disable")
+@click.argument("name", type=str, required=True)
+@check_connection
+@click.pass_obj
+def disable_preprocessor(obj: dict, name: str) -> None:
+    client: BlueapiRestClient = obj["rest_client"]
+    _set_preprocessor_policy(
+        client,
+        name,
+        PreprocessorApplicationPolicy.NEVER,
+    )
+
+
+def _set_preprocessor_policy(
+    client: BlueapiRestClient,
+    name: str,
+    policy: PreprocessorApplicationPolicy,
+) -> None:
+    preprocessor = client.get_preprocessor(name)
+    updated = PreprocessorModel(
+        name=preprocessor.name,
+        description=preprocessor.description,
+        application_policy=policy,
+    )
+    result = client.update_preprocessor(name, updated)
+    pprint(result)
 
 
 # helper function

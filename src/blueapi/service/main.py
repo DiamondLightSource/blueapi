@@ -7,6 +7,7 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
+from blueapi.core import PreprocessorModel, PreprocessorModelQueryResponse
 from blueapi.worker import RunPlan, TrackableTask, WorkerState
 
 from .handler import Handler, get_handler, setup_handler, teardown_handler
@@ -230,6 +231,41 @@ def set_state(
         response.status_code = status.HTTP_400_BAD_REQUEST
 
     return handler.worker.state
+
+
+@app.get("/preprocessors")
+def get_preprocessors(
+    handler: Handler = Depends(get_handler),
+) -> PreprocessorModelQueryResponse:
+    wrappers = handler.context.plan_wrappers
+    return PreprocessorModelQueryResponse(
+        models=[wrapper.model for wrapper in wrappers.values()]
+    )
+
+
+@app.get("/preprocessors/{name}")
+def get_preprocessor(
+    name: str,
+    handler: Handler = Depends(get_handler),
+):
+    wrappers = handler.context.plan_wrappers
+    return wrappers[name].model
+
+
+@app.put("/preprocessors/{name}")
+def update_preprocessor(
+    name: str,
+    model: PreprocessorModel,
+    handler: Handler = Depends(get_handler),
+):
+    wrappers = handler.context.plan_wrappers
+    current = wrappers[name]
+    if current.model.name == model.name:
+        current.model = model
+        return model
+    else:
+        # TODO: Different error, should be forbidden
+        raise KeyError("Changing name is not permitted")
 
 
 def start(config: ApplicationConfig):

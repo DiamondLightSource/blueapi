@@ -19,11 +19,11 @@ class VisitServiceClientBase(ABC):
 
     @abstractmethod
     async def create_new_collection(self) -> DataCollectionIdentifier:
-        ...
+        """Create new collection"""
 
     @abstractmethod
     async def get_current_collection(self) -> DataCollectionIdentifier:
-        ...
+        """Get current collection"""
 
 
 class VisitServiceClient(VisitServiceClientBase):

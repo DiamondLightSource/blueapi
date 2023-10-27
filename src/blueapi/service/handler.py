@@ -112,7 +112,6 @@ def setup_handler(
         config,
         context=BlueskyContext(
             plan_wrappers=plan_wrappers,
-            directory_provider=provider,
             sim=False,
         ),
     )

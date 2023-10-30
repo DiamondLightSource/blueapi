@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.3.11",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.11/"
+  },
+  {
     "version": "0.3.10",
     "url": "https://DiamondLightSource.github.io/blueapi/0.3.10/"
   },
@@ -314,10 +318,6 @@
   {
     "version": "pydantic1",
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic1/"
-  },
-  {
-    "version": "reintroduce-visit-service",
-    "url": "https://DiamondLightSource.github.io/blueapi/reintroduce-visit-service/"
   },
   {
     "version": "remove_servers",

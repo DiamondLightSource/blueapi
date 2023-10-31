@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.3.13",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.13/"
+  },
+  {
     "version": "0.3.12",
     "url": "https://DiamondLightSource.github.io/blueapi/0.3.12/"
   },
@@ -234,10 +238,6 @@
   {
     "version": "combine_events",
     "url": "https://DiamondLightSource.github.io/blueapi/combine_events/"
-  },
-  {
-    "version": "configure-scratch-area",
-    "url": "https://DiamondLightSource.github.io/blueapi/configure-scratch-area/"
   },
   {
     "version": "consume_failed_devices",

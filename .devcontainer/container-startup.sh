@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-SCRATCH_AREA="/blueapi-plugins/scratch"
+if [[ -z "${SCRATCH_AREA}" ]]; then
+  SCRATCH_AREA="/blueapi-plugins/scratch"
+fi
 
 mkdir -p ${SCRATCH_AREA}
 

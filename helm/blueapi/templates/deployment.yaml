@@ -67,6 +67,9 @@ spec:
             - "/config/secret.yaml"
             {{- end }}
             - "serve"
+          env:
+            - name: SCRATCH_AREA
+              value: {{ .Values.scratch.containerPath }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

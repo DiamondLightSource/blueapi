@@ -68,6 +68,8 @@ affinity: {}
 
 #existingSecret: see templates/secret.yaml
 
+hostNetwork: false # May be needed for talking to arcane protocols such as EPICS
+
 scratch:
   hostPath: "" # example: /usr/local/blueapi-software-scratch
   containerPath: /blueapi-plugins/scratch

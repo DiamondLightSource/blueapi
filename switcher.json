@@ -236,6 +236,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/combine_events/"
   },
   {
+    "version": "configure-scratch-area",
+    "url": "https://DiamondLightSource.github.io/blueapi/configure-scratch-area/"
+  },
+  {
     "version": "consume_failed_devices",
     "url": "https://DiamondLightSource.github.io/blueapi/consume_failed_devices/"
   },

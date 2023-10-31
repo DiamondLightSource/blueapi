@@ -264,6 +264,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix_flake8_failure/"
   },
   {
+    "version": "host-network",
+    "url": "https://DiamondLightSource.github.io/blueapi/host-network/"
+  },
+  {
     "version": "hotfix-linting",
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
   },

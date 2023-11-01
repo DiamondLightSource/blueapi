@@ -23,7 +23,7 @@ dependencies = [
     "aiohttp",
     "PyYAML",
     "click<8.1.4",
-    "fastapi[all]<0.100",
+    "fastapi[all]<0.99",
     "uvicorn",
     "requests",
     "dls-bluesky-core @ git+https://github.com/DiamondLightSource/dls-bluesky-core.git", #requires ophyd-async

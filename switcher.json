@@ -304,6 +304,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/permissions/"
   },
   {
+    "version": "pin-fastapi",
+    "url": "https://DiamondLightSource.github.io/blueapi/pin-fastapi/"
+  },
+  {
     "version": "pinnedPydantic",
     "url": "https://DiamondLightSource.github.io/blueapi/pinnedPydantic/"
   },

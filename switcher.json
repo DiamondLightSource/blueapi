@@ -256,6 +256,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
+    "version": "doc-listener",
+    "url": "https://DiamondLightSource.github.io/blueapi/doc-listener/"
+  },
+  {
     "version": "docref",
     "url": "https://DiamondLightSource.github.io/blueapi/docref/"
   },

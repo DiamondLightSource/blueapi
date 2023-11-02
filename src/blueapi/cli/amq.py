@@ -55,9 +55,15 @@ class AmqClient:
             elif isinstance(event, DataEvent):
                 callback(event.name, event.doc)
 
+        self.subscribe_to_all_events(on_event_wrapper)
+
+    def subscribe_to_all_events(
+        self,
+        on_event: Callable[[Union[WorkerEvent, ProgressEvent, DataEvent]], None],
+    ) -> None:
         self.app.subscribe(
             self.app.destinations.topic("public.worker.event"),
-            on_event_wrapper,
+            on_event,
         )
 
     def wait_for_complete(self, timeout: Optional[float] = None) -> None:

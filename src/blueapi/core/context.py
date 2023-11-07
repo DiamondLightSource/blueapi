@@ -138,10 +138,10 @@ class BlueskyContext:
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
 
-    def with_dodal_module(self, module: ModuleType) -> None:
+    def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         from dodal.utils import make_all_devices
 
-        for device in make_all_devices(module).values():
+        for device in make_all_devices(module, **kwargs).values():
             self.device(device)
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:

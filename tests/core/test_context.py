@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Dict, List, Type, Union
+from unittest.mock import patch
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
@@ -169,6 +170,24 @@ def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
         "motor_bundle_a",
         "motor_bundle_b",
     } == empty_context.devices.keys()
+
+
+def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
+    empty_context: BlueskyContext,
+) -> None:
+    """
+    Note that this functionality is currently used by hyperion.
+    """
+    import tests.core.fake_device_module as device_module
+
+    with patch("dodal.utils.make_all_devices") as mock_make_all_devices:
+        empty_context.with_dodal_module(
+            device_module, some_argument=1, another_argument="two"
+        )
+
+        mock_make_all_devices.assert_called_once_with(
+            device_module, some_argument=1, another_argument="two"
+        )
 
 
 @pytest.mark.parametrize(

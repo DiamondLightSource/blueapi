@@ -70,6 +70,9 @@ affinity: {}
 
 hostNetwork: false # May be needed for talking to arcane protocols such as EPICS
 
+listener:
+  enabled: true
+
 scratch:
   hostPath: "" # example: /usr/local/blueapi-software-scratch
   containerPath: /blueapi-plugins/scratch

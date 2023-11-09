@@ -72,12 +72,8 @@ spec:
               value: {{ .Values.scratch.containerPath }}
         {{- if .Values.listener.enabled -}}
         - name: {{ .Chart.Name }}-document-listener
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
           args:
             - "-c"
             - "/config/config.yaml"

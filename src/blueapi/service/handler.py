@@ -37,7 +37,10 @@ class Handler:
 
         self.context.with_config(self.config.env)
 
-        self.worker = worker or RunEngineWorker(self.context, broadcast_statuses=self.config.env.events.broadcast_status_events,)
+        self.worker = worker or RunEngineWorker(
+            self.context,
+            broadcast_statuses=self.config.env.events.broadcast_status_events,
+        )
         self.messaging_template = (
             messaging_template
             or StompMessagingTemplate.autoconfigured(self.config.stomp)

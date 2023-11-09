@@ -50,6 +50,7 @@ class WorkerEventConfig(BlueapiBaseModel):
     """
     Config for event broadcasting via the message bus
     """
+
     broadcast_status_events: bool = True
 
 

@@ -69,6 +69,7 @@ class RunEngineWorker(Worker[Task]):
         self,
         ctx: BlueskyContext,
         start_stop_timeout: float = DEFAULT_START_STOP_TIMEOUT,
+        broadcast_statuses: bool = True,
     ) -> None:
         self._ctx = ctx
         self._start_stop_timeout = start_stop_timeout
@@ -90,6 +91,7 @@ class RunEngineWorker(Worker[Task]):
         self._stopping = Event()
         self._stopped = Event()
         self._stopped.set()
+        self._broadcast_statuses = broadcast_statuses
 
     def clear_task(self, task_id: str) -> str:
         task = self._pending_tasks.pop(task_id)
@@ -197,7 +199,8 @@ class RunEngineWorker(Worker[Task]):
         LOGGER.info("Worker starting")
         self._ctx.run_engine.state_hook = self._on_state_change
         self._ctx.run_engine.subscribe(self._on_document)
-        self._ctx.run_engine.waiting_hook = self._waiting_hook
+        if self._broadcast_statuses:
+            self._ctx.run_engine.waiting_hook = self._waiting_hook
 
         self._stopped.clear()
         self._started.set()

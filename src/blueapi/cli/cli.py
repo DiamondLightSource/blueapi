@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from collections import deque
 from functools import wraps
 from pathlib import Path
@@ -128,6 +127,8 @@ def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.get_devices().dict())
+
+
 @controller.command(name="listen")
 @check_connection
 @click.pass_obj
@@ -136,11 +137,17 @@ def listen_to_events(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
 
-    def on_event(context: MessageContext, event: Union[WorkerEvent, ProgressEvent, DataEvent],) -> None:
+    def on_event(
+        context: MessageContext,
+        event: Union[WorkerEvent, ProgressEvent, DataEvent],
+    ) -> None:
         converted = json.dumps(event.dict(), indent=2)
         print(converted)
 
-    print(f"Subscribing to all bluesky events from {config.stomp.host}:{config.stomp.port}")
+    print(
+        "Subscribing to all bluesky events from "
+        f"{config.stomp.host}:{config.stomp.port}"
+    )
     with amq_client:
         amq_client.subscribe_to_all_events(on_event)
         input("Press enter to exit")

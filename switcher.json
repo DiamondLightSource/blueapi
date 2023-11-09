@@ -292,6 +292,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
   },
   {
+    "version": "optional-status-events",
+    "url": "https://DiamondLightSource.github.io/blueapi/optional-status-events/"
+  },
+  {
     "version": "p38-config",
     "url": "https://DiamondLightSource.github.io/blueapi/p38-config/"
   },

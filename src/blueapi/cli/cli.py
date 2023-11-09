@@ -143,7 +143,7 @@ def listen_to_events(obj: dict) -> None:
     print(f"Subscribing to all bluesky events from {config.stomp.host}:{config.stomp.port}")
     with amq_client:
         amq_client.subscribe_to_all_events(on_event)
-        input()
+        input("Press enter to exit")
 
 
 @controller.command(name="run")

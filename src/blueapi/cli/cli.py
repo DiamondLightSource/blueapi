@@ -12,6 +12,8 @@ from requests.exceptions import ConnectionError
 from blueapi import __version__
 from blueapi.cli.amq import AmqClient
 from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.core import DataEvent
+from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
 from blueapi.service.model import WorkerTask
@@ -21,7 +23,7 @@ from blueapi.service.openapi import (
     print_schema_as_yaml,
     write_schema_as_yaml,
 )
-from blueapi.worker import RunPlan, WorkerEvent, WorkerState
+from blueapi.worker import ProgressEvent, RunPlan, WorkerEvent, WorkerState
 
 from .rest import BlueapiRestClient
 
@@ -125,6 +127,30 @@ def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
     pprint(client.get_devices().dict())
+
+
+@controller.command(name="listen")
+@check_connection
+@click.pass_obj
+def listen_to_events(obj: dict) -> None:
+    """Listen to events output by blueapi"""
+    config: ApplicationConfig = obj["config"]
+    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+
+    def on_event(
+        context: MessageContext,
+        event: Union[WorkerEvent, ProgressEvent, DataEvent],
+    ) -> None:
+        converted = json.dumps(event.dict(), indent=2)
+        print(converted)
+
+    print(
+        "Subscribing to all bluesky events from "
+        f"{config.stomp.host}:{config.stomp.port}"
+    )
+    with amq_client:
+        amq_client.subscribe_to_all_events(on_event)
+        input("Press enter to exit")
 
 
 @controller.command(name="run")

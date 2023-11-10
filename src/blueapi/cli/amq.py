@@ -15,6 +15,9 @@ class BlueskyRemoteError(Exception):
         super().__init__(message)
 
 
+_Event = Union[WorkerEvent, ProgressEvent, DataEvent]
+
+
 class AmqClient:
     app: MessagingTemplate
     complete: threading.Event
@@ -42,7 +45,8 @@ class AmqClient:
         callback = BestEffortCallback()
 
         def on_event_wrapper(
-            ctx: MessageContext, event: Union[WorkerEvent, ProgressEvent, DataEvent]
+            ctx: MessageContext,
+            event: _Event,
         ) -> None:
             if isinstance(event, WorkerEvent):
                 if (on_event is not None) and (ctx.correlation_id == correlation_id):
@@ -55,9 +59,15 @@ class AmqClient:
             elif isinstance(event, DataEvent):
                 callback(event.name, event.doc)
 
+        self.subscribe_to_all_events(on_event_wrapper)
+
+    def subscribe_to_all_events(
+        self,
+        on_event: Callable[[MessageContext, _Event], None],
+    ) -> None:
         self.app.subscribe(
             self.app.destinations.topic("public.worker.event"),
-            on_event_wrapper,
+            on_event,
         )
 
     def wait_for_complete(self, timeout: Optional[float] = None) -> None:

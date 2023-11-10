@@ -70,21 +70,6 @@ spec:
           env:
             - name: SCRATCH_AREA
               value: {{ .Values.scratch.containerPath }}
-        {{ if .Values.listener.enabled -}}
-        - name: {{ .Chart.Name }}-document-listener
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          resources:
-            {{- toYaml .Values.listener.resources | nindent 12 }}
-          args:
-            - "-c"
-            - "/config/config.yaml"
-            {{- with .Values.existingSecret }}
-            - "-c"
-            - "/config/secret.yaml"
-            {{- end }}
-            - "listen"
-        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

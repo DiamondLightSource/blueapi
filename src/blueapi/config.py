@@ -46,6 +46,14 @@ class DataWritingConfig(BlueapiBaseModel):
     group_name: str = "example"
 
 
+class WorkerEventConfig(BlueapiBaseModel):
+    """
+    Config for event broadcasting via the message bus
+    """
+
+    broadcast_status_events: bool = True
+
+
 class EnvironmentConfig(BlueapiBaseModel):
     """
     Config for the RunEngine environment
@@ -60,6 +68,7 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
     ]
     data_writing: DataWritingConfig = Field(default_factory=DataWritingConfig)
+    events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
 
 
 class LoggingConfig(BlueapiBaseModel):

@@ -235,4 +235,3 @@ class StompMessagingTemplate(MessagingTemplate):
 
     def is_connected(self) -> bool:
         return self._conn.is_connected()
-

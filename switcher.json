@@ -256,6 +256,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/debug-p38alpha/"
   },
   {
+    "version": "deployment-fixes",
+    "url": "https://DiamondLightSource.github.io/blueapi/deployment-fixes/"
+  },
+  {
     "version": "deserialization-errors",
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },

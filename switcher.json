@@ -4,6 +4,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
+    "version": "0.3.14",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.14/"
+  },
+  {
     "version": "0.3.13",
     "url": "https://DiamondLightSource.github.io/blueapi/0.3.13/"
   },
@@ -286,10 +290,6 @@
   {
     "version": "optional-dependencies",
     "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
-  },
-  {
-    "version": "optional-status-events",
-    "url": "https://DiamondLightSource.github.io/blueapi/optional-status-events/"
   },
   {
     "version": "p38-config",

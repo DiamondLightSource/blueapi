@@ -272,10 +272,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-310/"
   },
   {
-    "version": "fix-templating",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-templating/"
-  },
-  {
     "version": "fix_flake8_failure",
     "url": "https://DiamondLightSource.github.io/blueapi/fix_flake8_failure/"
   },

@@ -70,7 +70,7 @@ spec:
           env:
             - name: SCRATCH_AREA
               value: {{ .Values.scratch.containerPath }}
-        {{- if .Values.listener.enabled -}}
+        {{ if .Values.listener.enabled -}}
         - name: {{ .Chart.Name }}-document-listener
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}

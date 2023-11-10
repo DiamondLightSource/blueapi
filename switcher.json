@@ -276,6 +276,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-310/"
   },
   {
+    "version": "fix-shutdown",
+    "url": "https://DiamondLightSource.github.io/blueapi/fix-shutdown/"
+  },
+  {
     "version": "fix_flake8_failure",
     "url": "https://DiamondLightSource.github.io/blueapi/fix_flake8_failure/"
   },

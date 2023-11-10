@@ -184,3 +184,12 @@ class MessagingTemplate(ABC):
         """
         Disconnect the app from transport
         """
+
+    @abstractmethod
+    def is_connected(self) -> bool:
+        """
+        Returns status of the connection between the app and the transport.
+
+        Returns:
+            status (bool): Returns True if connected, False otherwise
+        """

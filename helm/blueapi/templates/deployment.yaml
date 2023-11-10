@@ -74,8 +74,14 @@ spec:
         - name: {{ .Chart.Name }}-document-listener
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           resources:
             {{- toYaml .Values.listener.resources | nindent 12 }}
+          volumeMounts:
+            - name: worker-config
+              mountPath: "/config"
+              readOnly: true
           args:
             - "-c"
             - "/config/config.yaml"

@@ -4,6 +4,7 @@ from collections import deque
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
+from typing import List, Optional, Tuple, Union
 
 import click
 from requests.exceptions import ConnectionError
@@ -150,10 +151,21 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict, event_type: List[str]) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    if config.stomp is not None:
-        amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
-    else:
-        raise RuntimeError("Message bus needs to be configured")
+    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    event_type = event_type or list(EVENT_TYPE_MAPPINGS.keys())
+
+    def is_allowed(event: Union[WorkerEvent, ProgressEvent, DataEvent]) -> bool:
+        return (
+            any(
+                map(
+                    lambda allowed_type: isinstance(
+                        event,
+                        EVENT_TYPE_MAPPINGS[allowed_type],
+                    ),
+                    event_type or [],
+                )
+            )
+        )
 
     def on_event(
         context: MessageContext,

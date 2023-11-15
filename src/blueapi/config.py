@@ -71,8 +71,21 @@ class EnvironmentConfig(BlueapiBaseModel):
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
 
 
+class LoggingLevelConfig(BlueapiBaseModel):
+    """
+    Log levels of blueapi applications and components
+    """
+    
+    service: LogLevel = "INFO"
+    cli: LogLevel = "ERROR"
+
+
 class LoggingConfig(BlueapiBaseModel):
-    level: LogLevel = "INFO"
+    """
+    Config for how blueapi logs behave
+    """
+
+    level: LoggingLevelConfig = Field(default_factory=LoggingLevelConfig)
 
 
 class RestConfig(BlueapiBaseModel):

@@ -9,7 +9,8 @@ from super_state_machine.errors import TransitionError
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan, TrackableTask, WorkerState
 
-from .handler import Handler, get_handler, setup_handler, teardown_handler
+from .handler import get_handler, setup_handler, teardown_handler
+from .handler_base import BlueskyHandler
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -49,40 +50,33 @@ async def on_key_error_404(_: Request, __: KeyError):
 
 
 @app.get("/plans", response_model=PlanResponse)
-def get_plans(handler: Handler = Depends(get_handler)):
+def get_plans(handler: BlueskyHandler = Depends(get_handler)):
     """Retrieve information about all available plans."""
-    return PlanResponse(
-        plans=[PlanModel.from_plan(plan) for plan in handler.context.plans.values()]
-    )
+    return PlanResponse(plans=handler.plans)
 
 
 @app.get(
     "/plans/{name}",
     response_model=PlanModel,
 )
-def get_plan_by_name(name: str, handler: Handler = Depends(get_handler)):
+def get_plan_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)):
     """Retrieve information about a plan by its (unique) name."""
-    return PlanModel.from_plan(handler.context.plans[name])
+    return handler.get_plan(name)
 
 
 @app.get("/devices", response_model=DeviceResponse)
-def get_devices(handler: Handler = Depends(get_handler)):
+def get_devices(handler: BlueskyHandler = Depends(get_handler)):
     """Retrieve information about all available devices."""
-    return DeviceResponse(
-        devices=[
-            DeviceModel.from_device(device)
-            for device in handler.context.devices.values()
-        ]
-    )
+    return DeviceResponse(devices=handler.devices)
 
 
 @app.get(
     "/devices/{name}",
     response_model=DeviceModel,
 )
-def get_device_by_name(name: str, handler: Handler = Depends(get_handler)):
+def get_device_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)):
     """Retrieve information about a devices by its (unique) name."""
-    return DeviceModel.from_device(handler.context.devices[name])
+    return handler.get_device(name)
 
 
 @app.post(
@@ -96,11 +90,11 @@ def submit_task(
     task: RunPlan = Body(
         ..., example=RunPlan(name="count", params={"detectors": ["x"]})
     ),
-    handler: Handler = Depends(get_handler),
+    handler: BlueskyHandler = Depends(get_handler),
 ):
     """Submit a task to the worker."""
     try:
-        task_id: str = handler.worker.submit_task(task)
+        task_id: str = handler.submit_task(task)
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
@@ -112,9 +106,9 @@ def submit_task(
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 def delete_submitted_task(
     task_id: str,
-    handler: Handler = Depends(get_handler),
+    handler: BlueskyHandler = Depends(get_handler),
 ) -> TaskResponse:
-    return TaskResponse(task_id=handler.worker.clear_task(task_id))
+    return TaskResponse(task_id=handler.clear_pending_task(task_id))
 
 
 @app.put(
@@ -124,15 +118,14 @@ def delete_submitted_task(
 )
 def update_task(
     task: WorkerTask,
-    handler: Handler = Depends(get_handler),
+    handler: BlueskyHandler = Depends(get_handler),
 ) -> WorkerTask:
-    active_task = handler.worker.get_active_task()
+    active_task = handler.active_task
     if active_task is not None and not active_task.is_complete:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    elif task.task_id is not None:
-        handler.worker.begin_task(task.task_id)
+    handler.begin_task(task)
     return task
 
 
@@ -142,25 +135,28 @@ def update_task(
 )
 def get_task(
     task_id: str,
-    handler: Handler = Depends(get_handler),
+    handler: BlueskyHandler = Depends(get_handler),
 ) -> TrackableTask:
     """Retrieve a task"""
-
-    task = handler.worker.get_pending_task(task_id)
-    if task is None:
+    pending = handler.get_pending_task(task_id)
+    if pending is None:
         raise KeyError
-    return task
+    return pending
 
 
 @app.get("/worker/task")
-def get_active_task(handler: Handler = Depends(get_handler)) -> WorkerTask:
-    return WorkerTask.of_worker(handler.worker)
+def get_active_task(handler: BlueskyHandler = Depends(get_handler)) -> WorkerTask:
+    active = handler.active_task
+    if active is not None:
+        return WorkerTask(task_id=active.task_id)
+    else:
+        return WorkerTask(task_id=None)
 
 
 @app.get("/worker/state")
-def get_state(handler: Handler = Depends(get_handler)) -> WorkerState:
+def get_state(handler: BlueskyHandler = Depends(get_handler)) -> WorkerState:
     """Get the State of the Worker"""
-    return handler.worker.state
+    return handler.state
 
 
 # Map of current_state: allowed new_states
@@ -189,7 +185,7 @@ _ALLOWED_TRANSITIONS: Dict[WorkerState, Set[WorkerState]] = {
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    handler: Handler = Depends(get_handler),
+    handler: BlueskyHandler = Depends(get_handler),
 ) -> WorkerState:
     """
     Request that the worker is put into a particular state.
@@ -208,19 +204,19 @@ def set_state(
         - If reason is set, the reason will be passed as the reason for the Run failure.
     - **All other transitions return 400: Bad Request**
     """
-    current_state = handler.worker.state
+    current_state = handler.state
     new_state = state_change_request.new_state
     if (
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
         if new_state == WorkerState.PAUSED:
-            handler.worker.pause(defer=state_change_request.defer)
+            handler.pause_worker(defer=state_change_request.defer)
         elif new_state == WorkerState.RUNNING:
-            handler.worker.resume()
+            handler.resume_worker()
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
             try:
-                handler.worker.cancel_active_task(
+                handler.cancel_active_task(
                     state_change_request.new_state is WorkerState.ABORTING,
                     state_change_request.reason,
                 )
@@ -229,7 +225,7 @@ def set_state(
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
 
-    return handler.worker.state
+    return handler.state
 
 
 def start(config: ApplicationConfig):

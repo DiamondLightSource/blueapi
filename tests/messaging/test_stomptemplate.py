@@ -154,7 +154,7 @@ def test_reconnect(template: MessagingTemplate, test_queue: str) -> None:
     template.disconnect()
     connected = template.is_connected()
     assert connected is False
-    
+
     template.connect()
     connected = template.is_connected()
     assert connected is True

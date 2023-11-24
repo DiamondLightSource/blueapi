@@ -80,7 +80,8 @@ class Handler:
 
     def stop(self) -> None:
         self.worker.stop()
-        self.messaging_template.disconnect()
+        if self.messaging_template.is_connected():
+            self.messaging_template.disconnect()
 
 
 HANDLER: Optional[Handler] = None

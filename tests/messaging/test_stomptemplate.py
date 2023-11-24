@@ -152,7 +152,9 @@ def test_reconnect(template: MessagingTemplate, test_queue: str) -> None:
     reply = template.send_and_receive(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
     template.disconnect()
+    assert not template.is_connected()
     template.connect()
+    assert template.is_connected()
     reply = template.send_and_receive(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
 

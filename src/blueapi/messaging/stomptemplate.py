@@ -232,3 +232,6 @@ class StompMessagingTemplate(MessagingTemplate):
             sub.callback(frame)
         else:
             LOGGER.warn(f"No subscription active for id: {sub_id}")
+
+    def is_connected(self) -> bool:
+        return self._conn.is_connected()

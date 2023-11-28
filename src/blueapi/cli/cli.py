@@ -155,15 +155,13 @@ def listen_to_events(obj: dict, event_type: List[str]) -> None:
     event_type = event_type or list(EVENT_TYPE_MAPPINGS.keys())
 
     def is_allowed(event: Union[WorkerEvent, ProgressEvent, DataEvent]) -> bool:
-        return (
-            any(
-                map(
-                    lambda allowed_type: isinstance(
-                        event,
-                        EVENT_TYPE_MAPPINGS[allowed_type],
-                    ),
-                    event_type or [],
-                )
+        return any(
+            map(
+                lambda allowed_type: isinstance(
+                    event,
+                    EVENT_TYPE_MAPPINGS[allowed_type],
+                ),
+                event_type or [],
             )
         )
 

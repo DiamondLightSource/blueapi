@@ -75,7 +75,7 @@ class LoggingLevelConfig(BlueapiBaseModel):
     """
     Log levels of blueapi applications and components
     """
-    
+
     service: LogLevel = "INFO"
     cli: LogLevel = "ERROR"
 

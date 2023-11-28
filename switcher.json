@@ -344,6 +344,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/pydantic1/"
   },
   {
+    "version": "remove-example-config",
+    "url": "https://DiamondLightSource.github.io/blueapi/remove-example-config/"
+  },
+  {
     "version": "remove_servers",
     "url": "https://DiamondLightSource.github.io/blueapi/remove_servers/"
   },

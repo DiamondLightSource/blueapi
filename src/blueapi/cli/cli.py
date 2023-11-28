@@ -4,10 +4,10 @@ from collections import deque
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Optional, Tuple, Union
+from typing import Any, Mapping, Optional, Tuple, Union
 
 import click
-import orjson
+from pydantic import BaseModel
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
@@ -18,12 +18,8 @@ from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
 from blueapi.service.model import WorkerTask
-from blueapi.service.openapi import (
-    DOCS_SCHEMA_LOCATION,
-    generate_schema,
-    print_schema_as_yaml,
-    write_schema_as_yaml,
-)
+from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
+from blueapi.utils import print_as_yaml, write_as_yaml
 from blueapi.worker import ProgressEvent, RunPlan, WorkerEvent, WorkerState
 
 from .rest import BlueapiRestClient
@@ -72,10 +68,7 @@ def schema(output: Optional[Path] = None, update: bool = False) -> None:
 
     if update:
         output = DOCS_SCHEMA_LOCATION
-    if output is not None:
-        write_schema_as_yaml(output, schema)
-    else:
-        print_schema_as_yaml(schema)
+    _print_or_write_yaml(output, schema)
 
 
 @main.command(name="config")
@@ -84,18 +77,16 @@ def schema(output: Optional[Path] = None, update: bool = False) -> None:
 def config(obj, output: Optional[Path] = None, update: bool = False) -> None:
     """Print the complete config used by this CLI"""
     config: ApplicationConfig = obj["config"]
+    _print_or_write_yaml(output, config)
 
-    # This is annoying, we have to convert the model to a JSON string and then back
-    # into a dictionary rather than directly calling .dict() because unserializable
-    # objects such as Paths make it into the dict that way. This is resolved in
-    # pydantic 2, see:
-    # https://stackoverflow.com/questions/65622045/pydantic-convert-to-jsonable-dict-not-full-json-string
-    config_dict = orjson.loads(config.json())
 
+def _print_or_write_yaml(
+    output: Optional[Path], data: Union[Mapping[str, Any], BaseModel]
+) -> None:
     if output is not None:
-        write_schema_as_yaml(output, config_dict)
+        write_as_yaml(output, data)
     else:
-        print_schema_as_yaml(config_dict)
+        print_as_yaml(data)
 
 
 @main.command(name="serve")

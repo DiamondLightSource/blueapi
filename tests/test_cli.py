@@ -174,8 +174,8 @@ def test_config_passed_down_to_command_children(
 
 def test_print_config_prints_default_config_with_no_other_arguments(runner: CliRunner):
     # Hard-coding the default config here means this test will fail if the default ever
-    # changes. This is not intended as a showstopper but just to prevent the default 
-    # changing without developer intention. If this test's assertion is failing for you 
+    # changes. This is not intended as a showstopper but just to prevent the default
+    # changing without developer intention. If this test's assertion is failing for you
     # and you are okay with the default changing, run blueapi config and paste the output
     # into this variable.
     default_config = """api:

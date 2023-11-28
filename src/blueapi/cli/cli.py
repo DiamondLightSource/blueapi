@@ -7,6 +7,7 @@ from pprint import pprint
 from typing import Optional, Tuple, Union
 
 import click
+import orjson
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
@@ -75,6 +76,26 @@ def schema(output: Optional[Path] = None, update: bool = False) -> None:
         write_schema_as_yaml(output, schema)
     else:
         print_schema_as_yaml(schema)
+
+
+@main.command(name="config")
+@click.pass_obj
+@click.option("-o", "--output", type=Path, help="Path to file to save the schema")
+def config(obj, output: Optional[Path] = None, update: bool = False) -> None:
+    """Print the complete config used by this CLI"""
+    config: ApplicationConfig = obj["config"]
+
+    # This is annoying, we have to convert the model to a JSON string and then back
+    # into a dictionary rather than directly calling .dict() because unserializable
+    # objects such as Paths make it into the dict that way. This is resolved in
+    # pydantic 2, see:
+    # https://stackoverflow.com/questions/65622045/pydantic-convert-to-jsonable-dict-not-full-json-string
+    config_dict = orjson.loads(config.json())
+
+    if output is not None:
+        write_schema_as_yaml(output, config_dict)
+    else:
+        print_schema_as_yaml(config_dict)
 
 
 @main.command(name="serve")

@@ -9,7 +9,6 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.cli import main
-from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
 
@@ -176,8 +175,8 @@ def test_print_config_prints_default_config_with_no_other_arguments(runner: CliR
     # Hard-coding the default config here means this test will fail if the default ever
     # changes. This is not intended as a showstopper but just to prevent the default
     # changing without developer intention. If this test's assertion is failing for you
-    # and you are okay with the default changing, run blueapi config and paste the output
-    # into this variable.
+    # and you are okay with the default changing, run blueapi config and paste the
+    # output into this variable.
     default_config = """api:
   host: localhost
   port: 8000

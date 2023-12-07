@@ -83,3 +83,11 @@ class BlueskyHandler(ABC):
     def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
         """Returns a task matching the task ID supplied,
         if the worker knows of it"""
+
+    @abstractmethod
+    def start(self):
+        """Start the handler"""
+
+    @abstractmethod
+    def stop(self):
+        """Stop the handler"""

@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response, status
 from pydantic import ValidationError
@@ -9,7 +9,6 @@ from super_state_machine.errors import TransitionError
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan, TrackableTask, WorkerState
 
-from .handler import get_handler, setup_handler, teardown_handler
 from .handler_base import BlueskyHandler
 from .model import (
     DeviceModel,
@@ -20,8 +19,33 @@ from .model import (
     TaskResponse,
     WorkerTask,
 )
+from .subprocess_handler import SubprocessHandler
 
 REST_API_VERSION = "0.0.4"
+
+HANDLER: Optional[BlueskyHandler] = None
+
+
+def get_handler() -> BlueskyHandler:
+    if HANDLER is None:
+        raise ValueError()
+    return HANDLER
+
+
+def setup_handler(config: Optional[ApplicationConfig] = None):
+    global HANDLER
+    handler = SubprocessHandler(config)
+    handler.start()
+
+    HANDLER = handler
+
+
+def teardown_handler():
+    global HANDLER
+    if HANDLER is None:
+        return
+    HANDLER.stop()
+    HANDLER = None
 
 
 @asynccontextmanager

@@ -91,7 +91,7 @@ def test_get_plans_and_devices(
 
     # Put a plan in handler.context manually.
     plan = Plan(name="my-plan", model=MyModel)
-    handler.context.plans = {"my-plan": plan}
+    handler._context.plans = {"my-plan": plan}
 
     # Setup requests.get call to return the output of the FastAPI call for plans.
     # Call the CLI function and check the output.
@@ -110,14 +110,14 @@ def test_get_plans_and_devices(
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output - expect nothing as no devices set.
-    handler.context.devices = {}
+    handler._context.devices = {}
     mock_requests.return_value = client.get("/devices")
     unset_devices = runner.invoke(main, ["controller", "devices"])
     assert unset_devices.output == "{'devices': []}\n"
 
     # Put a device in handler.context manually.
     device = MyDevice("my-device")
-    handler.context.devices = {"my-device": device}
+    handler._context.devices = {"my-device": device}
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output.

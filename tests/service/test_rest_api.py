@@ -23,7 +23,7 @@ def test_get_plans(handler: Handler, client: TestClient) -> None:
 
     plan = Plan(name="my-plan", model=MyModel)
 
-    handler.context.plans = {"my-plan": plan}
+    handler._context.plans = {"my-plan": plan}
     response = client.get("/plans")
 
     assert response.status_code == status.HTTP_200_OK
@@ -49,7 +49,7 @@ def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
 
     plan = Plan(name="my-plan", model=MyModel)
 
-    handler.context.plans = {"my-plan": plan}
+    handler._context.plans = {"my-plan": plan}
     response = client.get("/plans/my-plan")
 
     assert response.status_code == status.HTTP_200_OK
@@ -159,7 +159,7 @@ def test_get_devices(handler: Handler, client: TestClient) -> None:
 
     device = MyDevice("my-device")
 
-    handler.context.devices = {"my-device": device}
+    handler._context.devices = {"my-device": device}
     response = client.get("/devices")
 
     assert response.status_code == status.HTTP_200_OK
@@ -180,7 +180,7 @@ def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
 
     device = MyDevice("my-device")
 
-    handler.context.devices = {"my-device": device}
+    handler._context.devices = {"my-device": device}
     response = client.get("/devices/my-device")
 
     assert response.status_code == status.HTTP_200_OK
@@ -201,23 +201,23 @@ def test_create_task(handler: Handler, client: TestClient) -> None:
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
 
-    pending = handler.worker.get_pending_task(task_id)
+    pending = handler.get_pending_task(task_id)
     assert pending is not None
     assert pending.task == _TASK
 
 
 def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
-    handler.worker.start()
+    handler.start()
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
 
     task_json = {"task_id": task_id}
     client.put("/worker/task", json=task_json)
 
-    active_task = handler.worker.get_active_task()
+    active_task = handler.active_task
     assert active_task is not None
     assert active_task.task_id == task_id
-    handler.worker.stop()
+    handler.stop()
 
 
 def test_put_plan_with_unknown_plan_name_fails(
@@ -229,12 +229,12 @@ def test_put_plan_with_unknown_plan_name_fails(
 
     response = client.post("/tasks", json=task_json)
 
-    assert not handler.worker.get_pending_tasks()
+    assert not handler.pending_tasks
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_get_plan_returns_posted_plan(handler: Handler, client: TestClient) -> None:
-    handler.worker.start()
+    handler.start()
     post_response = client.post("/tasks", json=_TASK.dict())
     task_id = post_response.json()["task_id"]
 
@@ -258,13 +258,13 @@ def test_put_plan_with_bad_params_fails(handler: Handler, client: TestClient) ->
 
     response = client.post("/tasks", json=task_json)
 
-    assert not handler.worker.get_pending_tasks()
+    assert not handler.pending_tasks
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_get_state_updates(handler: Handler, client: TestClient) -> None:
     assert client.get("/worker/state").text == f'"{WorkerState.IDLE.name}"'
-    handler.worker._on_state_change(  # type: ignore
+    handler._worker._on_state_change(  # type: ignore
         RunEngineStateMachine.States.RUNNING
     )
     assert client.get("/worker/state").text == f'"{WorkerState.RUNNING.name}"'
@@ -273,8 +273,8 @@ def test_get_state_updates(handler: Handler, client: TestClient) -> None:
 @pytest.fixture
 def mockable_state_machine(handler: Handler):
     def set_state(state: RunEngineStateMachine.States):
-        handler.context.run_engine.state = state  # type: ignore
-        handler.worker._on_state_change(state)  # type: ignore
+        handler._context.run_engine.state = state  # type: ignore
+        handler._worker._on_state_change(state)  # type: ignore
 
     def pause(_: bool):
         set_state(RunEngineStateMachine.States.PAUSED)
@@ -282,9 +282,9 @@ def mockable_state_machine(handler: Handler):
     def run():
         set_state(RunEngineStateMachine.States.RUNNING)
 
-    mock_pause = handler.context.run_engine.request_pause = MagicMock()  # type: ignore
+    mock_pause = handler._context.run_engine.request_pause = MagicMock()  # type: ignore
     mock_pause.side_effect = pause
-    mock_resume = handler.context.run_engine.resume = MagicMock()  # type: ignore
+    mock_resume = handler._context.run_engine.resume = MagicMock()  # type: ignore
     mock_resume.side_effect = run
     yield handler
 
@@ -292,7 +292,7 @@ def mockable_state_machine(handler: Handler):
 def test_running_while_idle_denied(
     mockable_state_machine: Handler, client: TestClient
 ) -> None:
-    re = mockable_state_machine.context.run_engine
+    re = mockable_state_machine._context.run_engine
 
     assert client.get("/worker/state").text == f'"{WorkerState.IDLE.name}"'
     response = client.put("/worker/state", json={"new_state": WorkerState.RUNNING.name})
@@ -306,7 +306,7 @@ def test_running_while_idle_denied(
 def test_pausing_while_idle_denied(
     mockable_state_machine: Handler, client: TestClient
 ) -> None:
-    re = mockable_state_machine.context.run_engine
+    re = mockable_state_machine._context.run_engine
 
     assert client.get("/worker/state").text == f'"{WorkerState.IDLE.name}"'
     response = client.put("/worker/state", json={"new_state": WorkerState.PAUSED.name})
@@ -321,8 +321,8 @@ def test_pausing_while_idle_denied(
 def test_calls_pause_if_running(
     mockable_state_machine: Handler, client: TestClient, defer: Optional[bool]
 ) -> None:
-    re = mockable_state_machine.context.run_engine
-    mockable_state_machine.worker._on_state_change(  # type: ignore
+    re = mockable_state_machine._context.run_engine
+    mockable_state_machine._worker._on_state_change(  # type: ignore
         RunEngineStateMachine.States.RUNNING
     )
 
@@ -339,8 +339,8 @@ def test_calls_pause_if_running(
 
 
 def test_pause_and_resume(mockable_state_machine: Handler, client: TestClient) -> None:
-    re = mockable_state_machine.context.run_engine
-    mockable_state_machine.worker._on_state_change(  # type: ignore
+    re = mockable_state_machine._context.run_engine
+    mockable_state_machine._worker._on_state_change(  # type: ignore
         RunEngineStateMachine.States.RUNNING
     )
 
@@ -364,38 +364,38 @@ def test_clear_pending_task_no_longer_pending(handler: Handler, client: TestClie
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
 
-    pending = handler.worker.get_pending_task(task_id)
+    pending = handler.get_pending_task(task_id)
     assert pending is not None
     assert pending.task == _TASK
 
     delete_response = client.delete(f"/tasks/{task_id}")
     assert delete_response.status_code is status.HTTP_200_OK
-    assert not handler.worker.get_pending_tasks()
-    assert handler.worker.get_pending_task(task_id) is None
+    assert not handler.pending_tasks
+    assert handler.get_pending_task(task_id) is None
 
 
 def test_clear_not_pending_task_not_found(handler: Handler, client: TestClient):
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
 
-    pending = handler.worker.get_pending_task(task_id)
+    pending = handler.get_pending_task(task_id)
     assert pending is not None
     assert pending.task == _TASK
 
     delete_response = client.delete("/tasks/wrong-task-id")
     assert delete_response.status_code is status.HTTP_404_NOT_FOUND
-    pending = handler.worker.get_pending_task(task_id)
+    pending = handler.get_pending_task(task_id)
     assert pending is not None
     assert pending.task == _TASK
 
 
 def test_clear_when_empty(handler: Handler, client: TestClient):
-    pending = handler.worker.get_pending_tasks()
+    pending = handler.pending_tasks
     assert not pending
 
     delete_response = client.delete("/tasks/wrong-task-id")
     assert delete_response.status_code is status.HTTP_404_NOT_FOUND
-    assert not handler.worker.get_pending_tasks()
+    assert not handler.pending_tasks
 
 
 @pytest.mark.parametrize(
@@ -409,27 +409,27 @@ def test_delete_running_task(
     stops: int,
     aborts: int,
 ):
-    stop = mockable_state_machine.context.run_engine.stop = MagicMock()  # type: ignore
+    stop = mockable_state_machine._context.run_engine.stop = MagicMock()  # type: ignore
     abort = (
-        mockable_state_machine.context.run_engine.abort  # type: ignore
+        mockable_state_machine._context.run_engine.abort  # type: ignore
     ) = MagicMock()
 
     def start_task(_: str):
-        mockable_state_machine.worker._current = (  # type: ignore
-            mockable_state_machine.worker.get_pending_task(task_id)
+        mockable_state_machine._worker._current = (  # type: ignore
+            mockable_state_machine._worker.get_pending_task(task_id)
         )
-        mockable_state_machine.worker._on_state_change(  # type: ignore
+        mockable_state_machine._worker._on_state_change(  # type: ignore
             RunEngineStateMachine.States.RUNNING
         )
 
-    mockable_state_machine.worker.begin_task = start_task  # type: ignore
+    mockable_state_machine._worker.begin_task = start_task  # type: ignore
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
 
     task_json = {"task_id": task_id}
     client.put("/worker/task", json=task_json)
 
-    active_task = mockable_state_machine.worker.get_active_task()
+    active_task = mockable_state_machine.active_task
     assert active_task is not None
     assert active_task.task_id == task_id
 
@@ -441,25 +441,25 @@ def test_delete_running_task(
 
 def test_reason_passed_to_abort(mockable_state_machine: Handler, client: TestClient):
     abort = (
-        mockable_state_machine.context.run_engine.abort  # type: ignore
+        mockable_state_machine._context.run_engine.abort  # type: ignore
     ) = MagicMock()
 
     def start_task(_: str):
-        mockable_state_machine.worker._current = (  # type: ignore
-            mockable_state_machine.worker.get_pending_task(task_id)
+        mockable_state_machine._worker._current = (  # type: ignore
+            mockable_state_machine._worker.get_pending_task(task_id)
         )
-        mockable_state_machine.worker._on_state_change(  # type: ignore
+        mockable_state_machine._worker._on_state_change(  # type: ignore
             RunEngineStateMachine.States.RUNNING
         )
 
-    mockable_state_machine.worker.begin_task = start_task  # type: ignore
+    mockable_state_machine._worker.begin_task = start_task  # type: ignore
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
 
     task_json = {"task_id": task_id}
     client.put("/worker/task", json=task_json)
 
-    active_task = mockable_state_machine.worker.get_active_task()
+    active_task = mockable_state_machine._worker.get_active_task()
     assert active_task is not None
     assert active_task.task_id == task_id
 
@@ -477,8 +477,8 @@ def test_reason_passed_to_abort(mockable_state_machine: Handler, client: TestCli
 def test_current_complete_returns_400(
     mockable_state_machine: Handler, client: TestClient, worker_state: WorkerState
 ):
-    mockable_state_machine.worker._current = MagicMock()  # type: ignore
-    mockable_state_machine.worker._current.is_complete = True  # type: ignore
+    mockable_state_machine._worker._current = MagicMock()  # type: ignore
+    mockable_state_machine._worker._current.is_complete = True  # type: ignore
 
     # As _current.is_complete, necessarily state of run_engine is IDLE
     response = client.put(

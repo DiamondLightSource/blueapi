@@ -180,12 +180,18 @@ class StompMessagingTemplate(MessagingTemplate):
         self._listener.on_disconnected = self._on_disconnected
 
         LOGGER.info("Connecting...")
-        self._conn.connect(
-            username=self._authentication.username,
-            passcode=self._authentication.passcode,
-            wait=True,
-        )
-        connected.wait()
+
+        try:
+            self._conn.connect(
+                username=self._authentication.username,
+                passcode=self._authentication.passcode,
+                wait=True,
+            )
+            connected.wait()
+        except ConnectFailedException as ex:
+            LOGGER.error("Failed to connect")
+            LOGGER.exception(ex)
+
         self._ensure_subscribed()
 
     def _ensure_subscribed(self, sub_ids: Optional[List[str]] = None) -> None:

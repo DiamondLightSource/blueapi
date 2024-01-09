@@ -145,7 +145,6 @@ def setup_handler(
 
     provider = None
     plan_wrappers = []
-
     if config:
         visit_service_client: VisitServiceClientBase
         if config.env.data_writing.visit_service_url is not None:

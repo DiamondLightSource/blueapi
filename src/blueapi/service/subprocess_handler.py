@@ -1,18 +1,26 @@
-from multiprocessing import Pool
+import signal
+from multiprocessing import Pool, set_start_method
+from multiprocessing.pool import Pool as PoolClass
 from typing import List, Optional
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.facade import BlueskyHandler
 from blueapi.service.handler import get_handler, setup_handler, teardown_handler
+from blueapi.service.handler_base import BlueskyHandler
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import RunPlan
 from blueapi.worker.worker import TrackableTask
 
+set_start_method("spawn", force=True)
+
+
+def _init_worker():
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
 
 class SubprocessHandler(BlueskyHandler):
     _config: ApplicationConfig
-    _subprocess: Pool
+    _subprocess: PoolClass
 
     def __init__(
         self,
@@ -22,15 +30,16 @@ class SubprocessHandler(BlueskyHandler):
         self._subprocess = None
 
     def start(self):
-        if self._subprocess is not None:
-            raise ValueError("Subprocess already running")
-        self._subprocess = Pool(processes=1)
-        self._subprocess.apply(setup_handler, [self._config])
+        if self._subprocess is None:
+            self._subprocess = Pool(initializer=_init_worker, processes=1)
+            self._subprocess.apply(setup_handler, [self._config])
 
     def stop(self):
-        self._subprocess.apply(teardown_handler)
-        self._subprocess.terminate()
-        self._subprocess = None
+        if self._subprocess is not None:
+            self._subprocess.apply(teardown_handler)
+            self._subprocess.close()
+            self._subprocess.join()
+            self._subprocess = None
 
     def reload_context(self):
         self.stop()

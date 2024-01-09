@@ -180,7 +180,9 @@ def test_failed_connect(failing_template: MessagingTemplate, test_queue: str) ->
     ) as mock_logger:
         failing_template.connect()
         assert not failing_template.is_connected()
-        mock_logger.assert_called_once_with("Failed to connect", exc_info=ANY)
+        mock_logger.assert_called_once_with(
+            "Failed to connect to message bus", exc_info=ANY
+        )
 
 
 @pytest.mark.stomp

@@ -4,7 +4,10 @@ from queue import Queue
 from typing import Any, Iterable, List, Type
 
 import pytest
+from mock import ANY, MagicMock, patch
 from pydantic import BaseModel, BaseSettings, Field
+from stomp import Connection
+from stomp.exception import ConnectFailedException
 
 from blueapi.config import StompConfig
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
@@ -157,6 +160,27 @@ def test_reconnect(template: MessagingTemplate, test_queue: str) -> None:
     assert template.is_connected()
     reply = template.send_and_receive(test_queue, "test", str).result(timeout=_TIMEOUT)
     assert reply == "ack"
+
+
+@pytest.fixture()
+def failing_template() -> MessagingTemplate:
+    def connection_exception(*args, **kwargs):
+        raise ConnectFailedException
+
+    connection = Connection()
+    connection.connect = MagicMock(side_effect=connection_exception)
+    return StompMessagingTemplate(connection)
+
+
+@pytest.mark.stomp
+def test_failed_connect(failing_template: MessagingTemplate, test_queue: str) -> None:
+    assert not failing_template.is_connected()
+    with patch(
+        "blueapi.messaging.stomptemplate.LOGGER.error", autospec=True
+    ) as mock_logger:
+        failing_template.connect()
+        assert not failing_template.is_connected()
+        mock_logger.assert_called_once_with("Failed to connect", exc_info=ANY)
 
 
 @pytest.mark.stomp

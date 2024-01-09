@@ -53,8 +53,8 @@ class SubprocessHandler(BlueskyHandler):
     def submit_task(self, task: RunPlan) -> str:
         return self._subprocess.apply(submit_task, [task])
 
-    def delete_task(self, task_id: str) -> str:
-        return self._subprocess.apply(delete_task, [task_id])
+    def clear_pending_task(self, task_id: str) -> str:
+        return self._subprocess.apply(clear_pending_task, [task_id])
 
     def begin_task(self, task: WorkerTask) -> WorkerTask:
         return self._subprocess.apply(begin_task, [task])
@@ -107,8 +107,8 @@ def submit_task(task: RunPlan) -> str:
     return get_handler().submit_task(task)
 
 
-def delete_task(task_id: str) -> str:
-    return get_handler().delete_task(task_id)
+def clear_pending_task(task_id: str) -> str:
+    return get_handler().clear_pending_task(task_id)
 
 
 def begin_task(task: WorkerTask) -> WorkerTask:

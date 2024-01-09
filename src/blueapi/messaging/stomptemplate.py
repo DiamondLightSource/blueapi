@@ -189,8 +189,7 @@ class StompMessagingTemplate(MessagingTemplate):
             )
             connected.wait()
         except ConnectFailedException as ex:
-            LOGGER.error("Failed to connect")
-            LOGGER.exception(ex)
+            LOGGER.exception(msg="Failed to connect", exc_info=ex)
 
         self._ensure_subscribed()
 

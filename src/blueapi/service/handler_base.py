@@ -91,3 +91,8 @@ class BlueskyHandler(ABC):
     @abstractmethod
     def stop(self):
         """Stop the handler"""
+
+    @property
+    @abstractmethod
+    def initialized(self) -> bool:
+        """Handler initialization state"""

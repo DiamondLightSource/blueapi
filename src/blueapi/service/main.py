@@ -1,7 +1,16 @@
 from contextlib import asynccontextmanager
 from typing import Dict, Optional, Set
 
-from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import (
+    BackgroundTasks,
+    Body,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -13,6 +22,7 @@ from .handler_base import BlueskyHandler
 from .model import (
     DeviceModel,
     DeviceResponse,
+    EnvironmentResponse,
     PlanModel,
     PlanResponse,
     StateChangeRequest,
@@ -71,6 +81,26 @@ async def on_key_error_404(_: Request, __: KeyError):
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "Item not found"},
     )
+
+
+@app.get("/environment", response_model=EnvironmentResponse)
+def get_environment(
+    handler: BlueskyHandler = Depends(get_handler),
+) -> EnvironmentResponse:
+    return EnvironmentResponse(initialized=handler.initialized)
+
+
+@app.delete("/environment")
+async def delete_environment(
+    background_tasks: BackgroundTasks,
+    handler: BlueskyHandler = Depends(get_handler),
+):
+    def restart_handler(handler: BlueskyHandler):
+        handler.stop()
+        handler.start()
+
+    if handler.initialized:
+        background_tasks.add_task(restart_handler, handler)
 
 
 @app.get("/plans", response_model=PlanResponse)

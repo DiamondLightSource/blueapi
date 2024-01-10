@@ -1,3 +1,4 @@
+import logging
 import signal
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
@@ -15,12 +16,14 @@ set_start_method("spawn", force=True)
 
 
 def _init_worker():
+    # Replace sigint to allow subprocess to be terminated
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 class SubprocessHandler(BlueskyHandler):
     _config: ApplicationConfig
     _subprocess: PoolClass
+    _initialized: bool = False
 
     def __init__(
         self,
@@ -32,10 +35,15 @@ class SubprocessHandler(BlueskyHandler):
     def start(self):
         if self._subprocess is None:
             self._subprocess = Pool(initializer=_init_worker, processes=1)
+            self._subprocess.apply(
+                logging.basicConfig, kwds={"level": self._config.logging.level}
+            )
             self._subprocess.apply(setup_handler, [self._config])
+            self._initialized = True
 
     def stop(self):
         if self._subprocess is not None:
+            self._initialized = False
             self._subprocess.apply(teardown_handler)
             self._subprocess.close()
             self._subprocess.join()
@@ -91,6 +99,10 @@ class SubprocessHandler(BlueskyHandler):
 
     def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
         return self._subprocess.apply(get_pending_task, [task_id])
+
+    @property
+    def initialized(self) -> bool:
+        return self._initialized
 
 
 # Free functions (passed to subprocess) for each of the methods required by Handler
@@ -150,3 +162,7 @@ def pending_tasks() -> List[TrackableTask]:
 
 def get_pending_task(task_id: str) -> Optional[TrackableTask]:
     return get_handler().get_pending_task(task_id)
+
+
+def initialized() -> bool:
+    return get_handler().initialized

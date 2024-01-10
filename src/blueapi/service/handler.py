@@ -28,6 +28,7 @@ class Handler(BlueskyHandler):
     _worker: Worker
     _config: ApplicationConfig
     _messaging_template: MessagingTemplate
+    _initialized: bool = False
 
     def __init__(
         self,
@@ -64,6 +65,7 @@ class Handler(BlueskyHandler):
         )
 
         self._messaging_template.connect()
+        self._initialized = True
 
     def _publish_event_streams(
         self, streams_to_destinations: Mapping[EventStream, str]
@@ -79,6 +81,7 @@ class Handler(BlueskyHandler):
         )
 
     def stop(self) -> None:
+        self._initialized = False
         self._worker.stop()
         if self._messaging_template.is_connected():
             self._messaging_template.disconnect()
@@ -133,6 +136,10 @@ class Handler(BlueskyHandler):
 
     def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
         return self._worker.get_pending_task(task_id)
+
+    @property
+    def initialized(self) -> bool:
+        return self._initialized
 
 
 HANDLER: Optional[Handler] = None

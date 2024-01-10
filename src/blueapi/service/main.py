@@ -31,7 +31,7 @@ from .model import (
 )
 from .subprocess_handler import SubprocessHandler
 
-REST_API_VERSION = "0.0.4"
+REST_API_VERSION = "0.0.5"
 
 HANDLER: Optional[BlueskyHandler] = None
 

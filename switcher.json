@@ -288,6 +288,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix_flake8_failure/"
   },
   {
+    "version": "helm-docs",
+    "url": "https://DiamondLightSource.github.io/blueapi/helm-docs/"
+  },
+  {
     "version": "hotfix-linting",
     "url": "https://DiamondLightSource.github.io/blueapi/hotfix-linting/"
   },

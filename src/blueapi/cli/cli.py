@@ -27,7 +27,8 @@ from blueapi.worker import ProgressEvent, RunPlan, WorkerEvent, WorkerState
 
 from .rest import BlueapiRestClient
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
+
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")

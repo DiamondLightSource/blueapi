@@ -17,6 +17,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
     """
 
     task_id: str
+    request_id: str = None
     task: T
     is_complete: bool = False
     is_pending: bool = True

@@ -9,3 +9,7 @@ env:
   data_writing:
     visit_directory: /dls/p38/data/2023/cm33874-1
     group_name: BL38P
+
+jaeger:
+  otlp:
+    host: jaeger-all-in-one.p38-daq

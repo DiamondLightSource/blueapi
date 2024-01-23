@@ -8,6 +8,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan, TrackableTask, WorkerState
+from blueapi.tracing import instrument_fastapi_app
 
 from .handler import get_handler, setup_handler, teardown_handler
 from .handler_base import BlueskyHandler
@@ -39,6 +40,11 @@ app = FastAPI(
     lifespan=lifespan,
     version=REST_API_VERSION,
 )
+
+instrument_fastapi_app(app, "blueapi")
+"""
+Set up basic automated instrumentation for the FastAPI app. 
+"""
 
 
 @app.exception_handler(KeyError)

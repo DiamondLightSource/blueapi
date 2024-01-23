@@ -78,6 +78,17 @@ scratch:
   hostPath: "" # example: /usr/local/blueapi-software-scratch
   containerPath: /blueapi-plugins/scratch
 
+jaeger:
+  otlp:
+    protocol: http/protobuf
+    insecure: true
+    host: localhost
+    port: 4318
+    request:
+      headers: ".*"
+    response:
+      headers: ".*"
+
 worker:
   api:
     host: 0.0.0.0 # Allow non-loopback traffic

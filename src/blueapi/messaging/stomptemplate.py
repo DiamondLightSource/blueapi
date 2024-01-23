@@ -14,12 +14,24 @@ from stomp.utils import Frame
 
 from blueapi.config import BasicAuthentication, StompConfig
 from blueapi.utils import handle_all_exceptions, serialize
+from blueapi.tracing import (
+    SpanKind,
+    get_current_span,
+    add_trace_attributes,
+    propagate_context_in_headers,
+    retrieve_context_from_headers,
+    set_baggage,
+    get_tracer,
+)
+
 
 from .base import DestinationProvider, MessageListener, MessagingTemplate
 from .context import MessageContext
 from .utils import determine_deserialization_type
 
 LOGGER = logging.getLogger(__name__)
+TRACER = get_tracer("stomptemplate")
+''' Initialise a Tracer for this module provided by the app's global TracerProvider. '''
 
 CORRELATION_ID_HEADER = "correlation-id"
 
@@ -113,6 +125,7 @@ class StompMessagingTemplate(MessagingTemplate):
     def destinations(self) -> DestinationProvider:
         return self._destination_provider
 
+    @TRACER.start_as_current_span("send", kind=SpanKind.PRODUCER)
     def send(
         self,
         destination: str,
@@ -124,6 +137,7 @@ class StompMessagingTemplate(MessagingTemplate):
             destination, json.dumps(serialize(obj)), on_reply, correlation_id
         )
 
+    @TRACER.start_as_current_span(name="_send_str", kind=SpanKind.PRODUCER)
     def _send_str(
         self,
         destination: str,
@@ -132,7 +146,7 @@ class StompMessagingTemplate(MessagingTemplate):
         correlation_id: Optional[str] = None,
     ) -> None:
         LOGGER.info(f"SENDING {message} to {destination}")
-
+        add_trace_attributes({"Destination": destination, "Message": message})
         headers: Dict[str, Any] = {"JMSType": "TextMessage"}
         if on_reply is not None:
             reply_queue_name = self.destinations.temporary_queue(str(uuid.uuid1()))
@@ -140,8 +154,16 @@ class StompMessagingTemplate(MessagingTemplate):
             self.subscribe(reply_queue_name, on_reply)
         if correlation_id:
             headers = {**headers, CORRELATION_ID_HEADER: correlation_id}
+            set_baggage(CORRELATION_ID_HEADER, correlation_id)
+            """ Specify some baggage to be forwarded with the message. In this case the
+                correlation ID which might come from the original client call """
+        propagate_context_in_headers(headers)
+        """ Inject the trace context details into the STOMP header which will allow the 
+            recipient to link their tracing to the current trace tree. Any baggage will
+            also be included """
         self._conn.send(headers=headers, body=message, destination=destination)
 
+    @TRACER.start_as_current_span("subscribe", kind=SpanKind.CONSUMER)
     def subscribe(self, destination: str, callback: MessageListener) -> None:
         LOGGER.debug(f"New subscription to {destination}")
         obj_type = determine_deserialization_type(callback, default=str)
@@ -166,7 +188,9 @@ class StompMessagingTemplate(MessagingTemplate):
         # If we're connected, subscribe immediately, otherwise the subscription is
         # deferred until connection.
         self._ensure_subscribed([sub_id])
+        add_trace_attributes({"Desination": destination, "Subscription Id": sub_id})
 
+    @TRACER.start_as_current_span("connect", kind=SpanKind.CLIENT)
     def connect(self) -> None:
         if self._conn.is_connected():
             return
@@ -175,6 +199,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
         def finished_connecting(_: Frame):
             connected.set()
+            get_current_span().add_event("Connected")
 
         self._listener.on_connected = finished_connecting
         self._listener.on_disconnected = self._on_disconnected
@@ -193,6 +218,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
         self._ensure_subscribed()
 
+    @TRACER.start_as_current_span("_ensure_subscribed", kind=SpanKind.CLIENT)
     def _ensure_subscribed(self, sub_ids: Optional[List[str]] = None) -> None:
         # We must defer subscription until after connection, because stomp literally
         # sends a SUB to the broker. But it still nice to be able to call subscribe
@@ -203,6 +229,7 @@ class StompMessagingTemplate(MessagingTemplate):
                 LOGGER.info(f"Subscribing to {sub.destination}")
                 self._conn.subscribe(destination=sub.destination, id=sub_id, ack="auto")
 
+    @TRACER.start_as_current_span("disconnect", kind=SpanKind.CLIENT)
     def disconnect(self) -> None:
         LOGGER.info("Disconnecting...")
 
@@ -231,12 +258,19 @@ class StompMessagingTemplate(MessagingTemplate):
     @handle_all_exceptions
     def _on_message(self, frame: Frame) -> None:
         LOGGER.info(f"Received {frame}")
-        sub_id = frame.headers.get("subscription")
-        sub = self._subscriptions.get(sub_id)
-        if sub is not None:
-            sub.callback(frame)
-        else:
-            LOGGER.warn(f"No subscription active for id: {sub_id}")
+        with TRACER.start_as_current_span(
+            "_on_message", retrieve_context_from_headers(frame), SpanKind.CONSUMER
+        ):
+            """ Initialise a span, retrieving the sender's span context from the STOMP headers
+                which will be used as our parent context ensuring that this span forms part of
+                the sender's trace."""
+            add_trace_attributes({"Frame": frame})
+            sub_id = frame.headers.get("subscription")
+            sub = self._subscriptions.get(sub_id)
+            if sub is not None:
+                sub.callback(frame)
+            else:
+                LOGGER.warn(f"No subscription active for id: {sub_id}")
 
     def is_connected(self) -> bool:
         return self._conn.is_connected()

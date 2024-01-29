@@ -316,6 +316,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/optional-dependencies/"
   },
   {
+    "version": "otel",
+    "url": "https://DiamondLightSource.github.io/blueapi/otel/"
+  },
+  {
     "version": "p38-config",
     "url": "https://DiamondLightSource.github.io/blueapi/p38-config/"
   },

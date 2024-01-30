@@ -24,8 +24,9 @@ def instrument_fastapi_app(app: FastAPI, name: str) -> None:
         use the get_tracer_provider call to hook in to the apps OTEL infrastructure when creating 
         new SpanProcessors or setting up manual Span generation. '''
     resource = Resource(attributes={"service.name": name})
-    set_tracer_provider(TracerProvider(resource=resource))
-    get_tracer_provider().add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    provider = TracerProvider(resource=resource)
+    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    set_tracer_provider(provider)
     FastAPIInstrumentor().instrument_app(app)
 
 
@@ -52,7 +53,7 @@ def get_header_from_frame(frame: Frame, key: str) -> dict:
 
 
 def propagate_context_in_headers(
-    headers: dict[str, typing.Any], context: Context = None
+    headers: dict[str, typing.Any], context: Context = get_current()
 ) -> None:
     PROPAGATOR.inject(headers, context)
 

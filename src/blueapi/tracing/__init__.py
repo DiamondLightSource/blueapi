@@ -13,6 +13,7 @@ from .tracing_utils import (
     propagate_context_in_headers,
     retrieve_context_from_headers,
     get_trace_context,
+    Context,
 )
 
 __all__ = [

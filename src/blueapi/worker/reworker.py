@@ -22,6 +22,7 @@ from blueapi.tracing import (
     add_trace_attributes,
     get_baggage,
     get_trace_context,
+    Context,
     get_tracer,
 )
 
@@ -74,6 +75,8 @@ class RunEngineWorker(Worker[Task]):
     _started: Event
     _stopping: Event
     _stopped: Event
+    _register_lock: RLock
+    _context_register: Dict[str, Context]
 
     def __init__(
         self,
@@ -150,7 +153,7 @@ class RunEngineWorker(Worker[Task]):
         )
 
         trackable_task = TrackableTask(
-            task_id=task_id, request_id=get_baggage("correlation_id"), task=task
+            task_id=task_id, request_id=str(get_baggage("correlation_id")), task=task
         )
         self._pending_tasks[task_id] = trackable_task
         return task_id

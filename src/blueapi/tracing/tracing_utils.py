@@ -53,7 +53,7 @@ def get_header_from_frame(frame: Frame, key: str) -> dict:
 
 
 def propagate_context_in_headers(
-    headers: dict[str, typing.Any], context: Context = get_current()
+    headers: dict[str, typing.Any], context: typing.Optional[Context] = None
 ) -> None:
     PROPAGATOR.inject(headers, context)
 

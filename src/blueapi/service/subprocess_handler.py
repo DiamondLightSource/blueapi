@@ -2,17 +2,18 @@ import logging
 import signal
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
-from typing import List, Optional
+from typing import Callable, Iterable, List, Optional
 
 from blueapi.config import ApplicationConfig
 from blueapi.service.handler import get_handler, setup_handler, teardown_handler
-from blueapi.service.handler_base import BlueskyHandler
+from blueapi.service.handler_base import BlueskyHandler, HandlerNotStartedError
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import RunPlan
 from blueapi.worker.worker import TrackableTask
 
 set_start_method("spawn", force=True)
+LOGGER = logging.getLogger(__name__)
 
 
 def _init_worker():
@@ -22,7 +23,7 @@ def _init_worker():
 
 class SubprocessHandler(BlueskyHandler):
     _config: ApplicationConfig
-    _subprocess: PoolClass
+    _subprocess: Optional[PoolClass]
     _initialized: bool = False
 
     def __init__(
@@ -52,53 +53,63 @@ class SubprocessHandler(BlueskyHandler):
     def reload_context(self):
         self.stop()
         self.start()
+        LOGGER.info("Context reloaded")
+
+    def _run_in_subprocess(
+        self, function: Callable, arguments: Optional[Iterable] = None
+    ):
+        if arguments is None:
+            arguments = []
+        if self._subprocess is None:
+            raise HandlerNotStartedError("Subprocess handler has not been started")
+        return self._subprocess.apply(function, arguments)
 
     @property
     def plans(self) -> List[PlanModel]:
-        return self._subprocess.apply(plans)
+        return self._run_in_subprocess(plans)
 
     def get_plan(self, name: str) -> PlanModel:
-        return self._subprocess.apply(get_plan, [name])
+        return self._run_in_subprocess(get_plan, [name])
 
     @property
     def devices(self) -> List[DeviceModel]:
-        return self._subprocess.apply(devices)
+        return self._run_in_subprocess(devices)
 
     def get_device(self, name: str) -> DeviceModel:
-        return self._subprocess.apply(get_device, [name])
+        return self._run_in_subprocess(get_device, [name])
 
     def submit_task(self, task: RunPlan) -> str:
-        return self._subprocess.apply(submit_task, [task])
+        return self._run_in_subprocess(submit_task, [task])
 
     def clear_pending_task(self, task_id: str) -> str:
-        return self._subprocess.apply(clear_pending_task, [task_id])
+        return self._run_in_subprocess(clear_pending_task, [task_id])
 
     def begin_task(self, task: WorkerTask) -> WorkerTask:
-        return self._subprocess.apply(begin_task, [task])
+        return self._run_in_subprocess(begin_task, [task])
 
     @property
     def active_task(self) -> Optional[TrackableTask]:
-        return self._subprocess.apply(active_task)
+        return self._run_in_subprocess(active_task)
 
     @property
     def state(self) -> WorkerState:
-        return self._subprocess.apply(state)
+        return self._run_in_subprocess(state)
 
     def pause_worker(self, defer: Optional[bool]) -> None:
-        return self._subprocess.apply(pause_worker, [defer])
+        return self._run_in_subprocess(pause_worker, [defer])
 
     def resume_worker(self) -> None:
-        return self._subprocess.apply(resume_worker)
+        return self._run_in_subprocess(resume_worker)
 
     def cancel_active_task(self, failure: bool, reason: Optional[str]) -> None:
-        return self._subprocess.apply(cancel_active_task, [failure, reason])
+        return self._run_in_subprocess(cancel_active_task, [failure, reason])
 
     @property
     def pending_tasks(self) -> List[TrackableTask]:
-        return self._subprocess.apply(pending_tasks)
+        return self._run_in_subprocess(pending_tasks)
 
     def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
-        return self._subprocess.apply(get_pending_task, [task_id])
+        return self._run_in_subprocess(get_pending_task, [task_id])
 
     @property
     def initialized(self) -> bool:
@@ -162,7 +173,3 @@ def pending_tasks() -> List[TrackableTask]:
 
 def get_pending_task(task_id: str) -> Optional[TrackableTask]:
     return get_handler().get_pending_task(task_id)
-
-
-def initialized() -> bool:
-    return get_handler().initialized

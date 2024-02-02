@@ -96,3 +96,8 @@ class BlueskyHandler(ABC):
     @abstractmethod
     def initialized(self) -> bool:
         """Handler initialization state"""
+
+
+class HandlerNotStartedError(Exception):
+    def __init__(self, message):
+        super().__init__(message)

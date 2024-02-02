@@ -4,8 +4,7 @@ from blueapi.utils import handle_all_exceptions
 
 
 @handle_all_exceptions
-def shouldnt_error():
-    ...
+def shouldnt_error(): ...
 
 
 @handle_all_exceptions

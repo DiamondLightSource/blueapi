@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
+from blueapi.service.main import get_handler, setup_handler, teardown_handler
 from blueapi.worker.task import RunPlan
 from src.blueapi.worker import WorkerState
 
@@ -485,3 +486,24 @@ def test_current_complete_returns_400(
         "/worker/state", json={"new_state": WorkerState.ABORTING.name, "reason": "foo"}
     )
     assert response.status_code is status.HTTP_400_BAD_REQUEST
+
+
+def test_get_environment(handler: Handler, client: TestClient) -> None:
+    assert client.get("/environment").json() == {"initialized": False}
+
+
+def test_delete_environment(handler: Handler, client: TestClient) -> None:
+    handler._initialized = True
+    assert client.delete("/environment").status_code is status.HTTP_200_OK
+
+
+def test_teardown_handler():
+    setup_handler()
+    assert get_handler() is not None
+    teardown_handler()
+    with pytest.raises(ValueError):
+        get_handler()
+
+
+def test_teardown_handler_does_not_raise():
+    assert teardown_handler() is None

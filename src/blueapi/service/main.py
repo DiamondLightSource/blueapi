@@ -1,7 +1,16 @@
 from contextlib import asynccontextmanager
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 
-from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import (
+    BackgroundTasks,
+    Body,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -9,19 +18,44 @@ from super_state_machine.errors import TransitionError
 from blueapi.config import ApplicationConfig
 from blueapi.worker import RunPlan, TrackableTask, WorkerState
 
-from .handler import get_handler, setup_handler, teardown_handler
 from .handler_base import BlueskyHandler
 from .model import (
     DeviceModel,
     DeviceResponse,
+    EnvironmentResponse,
     PlanModel,
     PlanResponse,
     StateChangeRequest,
     TaskResponse,
     WorkerTask,
 )
+from .subprocess_handler import SubprocessHandler
 
-REST_API_VERSION = "0.0.4"
+REST_API_VERSION = "0.0.5"
+
+HANDLER: Optional[BlueskyHandler] = None
+
+
+def get_handler() -> BlueskyHandler:
+    if HANDLER is None:
+        raise ValueError()
+    return HANDLER
+
+
+def setup_handler(config: Optional[ApplicationConfig] = None):
+    global HANDLER
+    handler = SubprocessHandler(config)
+    handler.start()
+
+    HANDLER = handler
+
+
+def teardown_handler():
+    global HANDLER
+    if HANDLER is None:
+        return
+    HANDLER.stop()
+    HANDLER = None
 
 
 @asynccontextmanager
@@ -47,6 +81,26 @@ async def on_key_error_404(_: Request, __: KeyError):
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "Item not found"},
     )
+
+
+@app.get("/environment", response_model=EnvironmentResponse)
+def get_environment(
+    handler: BlueskyHandler = Depends(get_handler),
+) -> EnvironmentResponse:
+    return EnvironmentResponse(initialized=handler.initialized)
+
+
+@app.delete("/environment")
+async def delete_environment(
+    background_tasks: BackgroundTasks,
+    handler: BlueskyHandler = Depends(get_handler),
+):
+    def restart_handler(handler: BlueskyHandler):
+        handler.stop()
+        handler.start()
+
+    if handler.initialized:
+        background_tasks.add_task(restart_handler, handler)
 
 
 @app.get("/plans", response_model=PlanResponse)

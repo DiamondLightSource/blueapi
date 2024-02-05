@@ -128,3 +128,11 @@ class StateChangeRequest(BlueapiBaseModel):
         description="The reason for the current run to be aborted",
         default=None,
     )
+
+
+class EnvironmentResponse(BlueapiBaseModel):
+    """
+    State of internal environment.
+    """
+
+    initialized: bool = Field(description="blueapi context initialized")

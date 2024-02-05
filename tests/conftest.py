@@ -9,8 +9,8 @@ from bluesky import RunEngine
 from bluesky.run_engine import RunEngineStateMachine, TransitionError
 from fastapi.testclient import TestClient
 
-from blueapi.service.handler import Handler, get_handler
-from blueapi.service.main import app
+from blueapi.service.handler import Handler
+from blueapi.service.main import app, get_handler
 from src.blueapi.core import BlueskyContext
 
 

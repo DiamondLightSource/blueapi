@@ -388,6 +388,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/stomp-correlation/"
   },
   {
+    "version": "stop-caching-params",
+    "url": "https://DiamondLightSource.github.io/blueapi/stop-caching-params/"
+  },
+  {
     "version": "test-cli",
     "url": "https://DiamondLightSource.github.io/blueapi/test-cli/"
   },

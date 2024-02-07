@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
 from blueapi.service.main import get_handler, setup_handler, teardown_handler
+from blueapi.service.model import WorkerTask
 from blueapi.worker.task import RunPlan
 from src.blueapi.worker import WorkerState
 
@@ -206,8 +207,32 @@ def test_create_task(handler: Handler, client: TestClient) -> None:
     assert pending is not None
     assert pending.task == _TASK
 
-
 def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
+    handler.start()
+    response = client.post("/tasks", json=_TASK.dict())
+    task_id = response.json()["task_id"]
+
+    task_json = {"task_id": task_id}
+    client.put("/worker/task", json=task_json)
+
+    resp = client.get("/worker/task")
+    assert resp.status_code == 200
+    active_task = WorkerTask(**resp.json())
+    assert active_task is not None
+    assert active_task.task_id == task_id
+    handler.stop()
+
+
+def test_worker_task_is_none_on_startup(handler: Handler, client: TestClient) -> None:
+    handler.start()
+    resp = client.get("/worker/task")
+    assert resp.status_code == 200
+    active_task = WorkerTask(**resp.json())
+    assert active_task.task_id is None
+    handler.stop()
+
+
+def test_get_worker_task(handler: Handler, client: TestClient) -> None:
     handler.start()
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]

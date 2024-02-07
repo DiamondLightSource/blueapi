@@ -207,6 +207,7 @@ def test_create_task(handler: Handler, client: TestClient) -> None:
     assert pending is not None
     assert pending.task == _TASK
 
+
 def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
     handler.start()
     response = client.post("/tasks", json=_TASK.dict())

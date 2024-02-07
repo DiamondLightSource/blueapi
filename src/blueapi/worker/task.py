@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping
 
 from pydantic import BaseModel, Field
 

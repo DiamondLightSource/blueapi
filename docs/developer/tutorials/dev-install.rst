@@ -37,11 +37,6 @@ requires python 3.9 or later) or to run in a container under `VSCode
             $ code blueapi
             # Click on 'Reopen in Container' when prompted
             # Open a new terminal
-            
-        .. note:: 
-            
-            See the epics-containers_ documentation for more complex 
-            use cases, such as integration with podman.
 
 See what was installed
 ----------------------

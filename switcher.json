@@ -288,6 +288,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-310/"
   },
   {
+    "version": "fix-docs-links",
+    "url": "https://DiamondLightSource.github.io/blueapi/fix-docs-links/"
+  },
+  {
     "version": "fix_flake8_failure",
     "url": "https://DiamondLightSource.github.io/blueapi/fix_flake8_failure/"
   },

@@ -129,7 +129,7 @@ class RunEngineWorker(Worker[Task]):
             raise KeyError(f"No pending task with ID {task_id}")
 
     def submit_task(self, task: Task) -> str:
-        task.prepare_params(self._ctx)
+        task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         trackable_task = TrackableTask(task_id=task_id, task=task)
         self._pending_tasks[task_id] = trackable_task

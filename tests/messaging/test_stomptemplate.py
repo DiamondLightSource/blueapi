@@ -11,6 +11,7 @@ from stomp.exception import ConnectFailedException
 
 from blueapi.config import StompConfig
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
+from blueapi.tracing import set_console_exporter
 
 _TIMEOUT: float = 10.0
 _COUNT = itertools.count()
@@ -18,6 +19,7 @@ _COUNT = itertools.count()
 
 class StompTestingSettings(BaseSettings):
     blueapi_test_stomp_ports: List[int] = Field(default=[61613])
+    set_console_exporter()
 
     def test_stomp_configs(self) -> Iterable[StompConfig]:
         for port in self.blueapi_test_stomp_ports:

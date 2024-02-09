@@ -75,7 +75,6 @@ class RunEngineWorker(Worker[Task]):
     _started: Event
     _stopping: Event
     _stopped: Event
-    _register_lock: RLock
     _context_register: Dict[str, Context]
 
     def __init__(
@@ -105,7 +104,6 @@ class RunEngineWorker(Worker[Task]):
         self._stopped = Event()
         self._stopped.set()
         self._broadcast_statuses = broadcast_statuses
-        self._register_lock = RLock()
         self._context_register = {}
 
     def clear_task(self, task_id: str) -> str:
@@ -169,20 +167,19 @@ class RunEngineWorker(Worker[Task]):
             if (
                 event.task_status is not None
                 and event.task_status.task_id == trackable_task.task_id
+                and trackable_task.task_id in self._context_register
             ):
                 task_started.set()
 
         LOGGER.info(f"Submitting: {trackable_task}")
         try:
             sub = self.worker_events.subscribe(mark_task_as_started)
+            self._context_register[trackable_task.task_id] = get_trace_context()
+            ''' Cache the current trace context as the one for this task id '''            
             self._task_channel.put_nowait(trackable_task)
             task_started.wait(timeout=5.0)
             if not task_started.is_set():
                 raise TimeoutError("Failed to start plan within timeout")
-
-            with self._register_lock:
-                self._context_register[trackable_task.task_id] = get_trace_context()
-                ''' Cache the current trace context as the one for this task id '''
 
             add_trace_attributes(
                 {
@@ -346,26 +343,26 @@ class RunEngineWorker(Worker[Task]):
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
-            with self._register_lock:
-                with TRACER.start_as_current_span(
-                    "Document publish",
-                    context=self._context_register[self._current.task_id],
-                    kind=SpanKind.PRODUCER,
-                ):
-                    ''' Start a new span but inject the context cached when the current task was
-                        created. This will make the documents received part of the same trace. '''
-                    add_trace_attributes(
-                        {
-                            "Name": name,
-                            "Document": str(document),
-                            "TaskId": self._current.task_id,
-                        }
-                    )
+            # task_context=self._context_register[self._current.task_id]
+            with TRACER.start_as_current_span(
+                "Document publish",
+                context=self._context_register[self._current.task_id],
+                kind=SpanKind.PRODUCER,
+            ):
+                ''' Start a new span but inject the context cached when the current task was
+                    created. This will make the documents received part of the same trace. '''
+                add_trace_attributes(
+                    {
+                        "Name": name,
+                        "Document": str(document),
+                        "TaskId": self._current.task_id,
+                    }
+                )
 
-                    correlation_id = self._current.request_id
-                    self._data_events.publish(
-                        DataEvent(name=name, doc=document), correlation_id
-                    )
+                correlation_id = self._current.request_id
+                self._data_events.publish(
+                    DataEvent(name=name, doc=document), correlation_id
+                )
         else:
             raise KeyError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"

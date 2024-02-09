@@ -103,8 +103,7 @@ class SomeConfigurable:
 
     def describe_configuration(  # type: ignore
         self,
-    ) -> SyncOrAsync[Dict[str, Descriptor]]:
-        ...
+    ) -> SyncOrAsync[Dict[str, Descriptor]]: ...
 
 
 @pytest.fixture
@@ -301,8 +300,7 @@ def test_concrete_type_conversion(empty_context: BlueskyContext) -> None:
 def test_concrete_method_annotation(empty_context: BlueskyContext) -> None:
     hasname_ref = empty_context._reference(Named)
 
-    def demo(named: Named) -> None:
-        ...
+    def demo(named: Named) -> None: ...
 
     spec = empty_context._type_spec_for_function(demo)
     assert spec["named"][0] is hasname_ref

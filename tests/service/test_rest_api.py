@@ -410,9 +410,9 @@ def test_delete_running_task(
     aborts: int,
 ):
     stop = mockable_state_machine._context.run_engine.stop = MagicMock()  # type: ignore
-    abort = (
-        mockable_state_machine._context.run_engine.abort  # type: ignore
-    ) = MagicMock()
+    abort = mockable_state_machine._context.run_engine.abort = (  # type: ignore
+        MagicMock()
+    )
 
     def start_task(_: str):
         mockable_state_machine._worker._current = (  # type: ignore
@@ -440,9 +440,9 @@ def test_delete_running_task(
 
 
 def test_reason_passed_to_abort(mockable_state_machine: Handler, client: TestClient):
-    abort = (
-        mockable_state_machine._context.run_engine.abort  # type: ignore
-    ) = MagicMock()
+    abort = mockable_state_machine._context.run_engine.abort = (  # type: ignore
+        MagicMock()
+    )
 
     def start_task(_: str):
         mockable_state_machine._worker._current = (  # type: ignore

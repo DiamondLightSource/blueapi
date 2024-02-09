@@ -4,8 +4,8 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
-    "version": "0.3.15.dev0",
-    "url": "https://DiamondLightSource.github.io/blueapi/0.3.15.dev0/"
+    "version": "0.3.15-dev0",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.15-dev0/"
   },
   {
     "version": "0.3.15",
@@ -186,6 +186,10 @@
   {
     "version": "0.0.1-pre",
     "url": "https://DiamondLightSource.github.io/blueapi/0.0.1-pre/"
+  },
+  {
+    "version": "0.3.15.dev0",
+    "url": "https://DiamondLightSource.github.io/blueapi/0.3.15.dev0/"
   },
   {
     "version": "0.3.3-alpha",

@@ -1,21 +1,25 @@
 import typing
 
 from fastapi import FastAPI
+from opentelemetry.context import Context, get_current  # type: ignore
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import (  # type: ignore
+    OTLPSpanExporter,
+)
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor  # type: ignore
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter  # type: ignore
+from opentelemetry.propagate import get_global_textmap  # type: ignore
 from opentelemetry.sdk.resources import Resource  # type: ignore
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter  # type: ignore
 from opentelemetry.sdk.trace import TracerProvider  # type: ignore
+from opentelemetry.sdk.trace.export import (  # type: ignore
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+)
 from opentelemetry.trace import (  # type: ignore
     Tracer,
+    get_current_span,
     get_tracer_provider,
     set_tracer_provider,
-    get_current_span,
 )
-from opentelemetry.propagate import get_global_textmap  # type: ignore
-from opentelemetry.context import Context, get_current  # type: ignore
 from stomp.utils import Frame
-
 
 PROPAGATOR = get_global_textmap()
 
@@ -33,6 +37,7 @@ def instrument_fastapi_app(app: FastAPI, name: str) -> None:
     provider = TracerProvider(resource=resource)
     provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
     set_tracer_provider(provider)
+    FastAPIInstrumentor().instrument_app(app)
 
 
 def set_console_exporter() -> None:

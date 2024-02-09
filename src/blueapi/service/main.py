@@ -7,8 +7,8 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
-from blueapi.worker import RunPlan, TrackableTask, WorkerState
 from blueapi.tracing import instrument_fastapi_app
+from blueapi.worker import RunPlan, TrackableTask, WorkerState
 
 from .handler import get_handler, setup_handler, teardown_handler
 from .handler_base import BlueskyHandler
@@ -43,7 +43,7 @@ app = FastAPI(
 
 instrument_fastapi_app(app, "blueapi")
 """
-Set up basic automated instrumentation for the FastAPI app. 
+Set up basic automated instrumentation for the FastAPI app.
 """
 
 

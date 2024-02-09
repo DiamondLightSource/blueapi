@@ -16,13 +16,12 @@ from blueapi.core import (
     EventStream,
     WatchableStatus,
 )
-
 from blueapi.tracing import (
+    Context,
     SpanKind,
     add_trace_attributes,
     get_baggage,
     get_trace_context,
-    Context,
     get_tracer,
 )
 
@@ -41,7 +40,7 @@ from .worker_busy_error import WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 TRACER = get_tracer("reworker")
-''' Initialise a Tracer for this module provided by the app's global TracerProvider. '''
+""" Initialise a Tracer for this module provided by the app's global TracerProvider. """
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
 
@@ -175,7 +174,7 @@ class RunEngineWorker(Worker[Task]):
         try:
             sub = self.worker_events.subscribe(mark_task_as_started)
             self._context_register[trackable_task.task_id] = get_trace_context()
-            ''' Cache the current trace context as the one for this task id '''            
+            """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
             task_started.wait(timeout=5.0)
             if not task_started.is_set():
@@ -349,8 +348,9 @@ class RunEngineWorker(Worker[Task]):
                 context=self._context_register[self._current.task_id],
                 kind=SpanKind.PRODUCER,
             ):
-                ''' Start a new span but inject the context cached when the current task was
-                    created. This will make the documents received part of the same trace. '''
+                """Start a new span but inject the context cached when the current task
+                was created. This will make the documents received part of the same
+                trace."""
                 add_trace_attributes(
                     {
                         "Name": name,

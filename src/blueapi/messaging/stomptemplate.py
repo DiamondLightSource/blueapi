@@ -13,17 +13,16 @@ from stomp.exception import ConnectFailedException
 from stomp.utils import Frame
 
 from blueapi.config import BasicAuthentication, StompConfig
-from blueapi.utils import handle_all_exceptions, serialize
 from blueapi.tracing import (
     SpanKind,
-    get_current_span,
     add_trace_attributes,
+    get_current_span,
+    get_tracer,
     propagate_context_in_headers,
     retrieve_context_from_headers,
     set_baggage,
-    get_tracer,
 )
-
+from blueapi.utils import handle_all_exceptions, serialize
 
 from .base import DestinationProvider, MessageListener, MessagingTemplate
 from .context import MessageContext
@@ -31,7 +30,7 @@ from .utils import determine_deserialization_type
 
 LOGGER = logging.getLogger(__name__)
 TRACER = get_tracer("stomptemplate")
-''' Initialise a Tracer for this module provided by the app's global TracerProvider. '''
+""" Initialise a Tracer for this module provided by the app's global TracerProvider. """
 
 CORRELATION_ID_HEADER = "correlation-id"
 
@@ -158,7 +157,7 @@ class StompMessagingTemplate(MessagingTemplate):
             """ Specify some baggage to be forwarded with the message. In this case the
                 correlation ID which might come from the original client call """
         propagate_context_in_headers(headers)
-        """ Inject the trace context details into the STOMP header which will allow the 
+        """ Inject the trace context details into the STOMP header which will allow the
             recipient to link their tracing to the current trace tree. Any baggage will
             also be included """
         self._conn.send(headers=headers, body=message, destination=destination)
@@ -261,9 +260,9 @@ class StompMessagingTemplate(MessagingTemplate):
         with TRACER.start_as_current_span(
             "_on_message", retrieve_context_from_headers(frame), SpanKind.CONSUMER
         ):
-            """ Initialise a span, retrieving the sender's span context from the STOMP headers
-                which will be used as our parent context ensuring that this span forms part of
-                the sender's trace."""
+            """Initialise a span, retrieving the sender's span context from the STOMP
+            headers which will be used as our parent context ensuring that this span
+            forms part of the sender's trace."""
             add_trace_attributes({"Frame": frame})
             sub_id = frame.headers.get("subscription")
             sub = self._subscriptions.get(sub_id)

@@ -82,7 +82,7 @@ jaeger:
   otlp:
     protocol: http/protobuf
     insecure: true
-    host: localhost
+    host: http://localhost
     port: 4318
     request:
       headers: ".*"

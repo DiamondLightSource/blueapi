@@ -12,4 +12,4 @@ env:
 
 jaeger:
   otlp:
-    host: jaeger-all-in-one.p38-daq
+    host: http://jaeger-all-in-one.p38-daq

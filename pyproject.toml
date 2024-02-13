@@ -26,9 +26,13 @@ dependencies = [
     "fastapi[all]<0.99",
     "uvicorn",
     "requests",
-    "dls-bluesky-core", #requires ophyd-async
+    "dls-bluesky-core",                      #requires ophyd-async
     "dls-dodal",
     "typing_extensions<4.6",
+    "opentelemetry-distro",
+    "opentelemetry-instrumentation-fastapi",
+    "opentelemetry-exporter-otlp",
+
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

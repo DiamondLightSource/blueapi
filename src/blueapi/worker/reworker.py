@@ -16,6 +16,14 @@ from blueapi.core import (
     EventStream,
     WatchableStatus,
 )
+from blueapi.tracing import (
+    Context,
+    SpanKind,
+    add_trace_attributes,
+    get_baggage,
+    get_trace_context,
+    get_tracer,
+)
 
 from .event import (
     ProgressEvent,
@@ -31,6 +39,8 @@ from .worker import TrackableTask, Worker
 from .worker_busy_error import WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
+TRACER = get_tracer("reworker")
+""" Initialise a Tracer for this module provided by the app's global TracerProvider. """
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
 
@@ -64,6 +74,7 @@ class RunEngineWorker(Worker[Task]):
     _started: Event
     _stopping: Event
     _stopped: Event
+    _context_register: Dict[str, Context]
 
     def __init__(
         self,
@@ -92,6 +103,7 @@ class RunEngineWorker(Worker[Task]):
         self._stopped = Event()
         self._stopped.set()
         self._broadcast_statuses = broadcast_statuses
+        self._context_register = {}
 
     def clear_task(self, task_id: str) -> str:
         task = self._pending_tasks.pop(task_id)
@@ -128,13 +140,22 @@ class RunEngineWorker(Worker[Task]):
         else:
             raise KeyError(f"No pending task with ID {task_id}")
 
+    @TRACER.start_as_current_span("Create_trackable_task", kind=SpanKind.SERVER)
     def submit_task(self, task: Task) -> str:
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
-        trackable_task = TrackableTask(task_id=task_id, task=task)
+
+        add_trace_attributes(
+            {"TaskId": task_id, "Plan": task.name, "Params": str(task.params)}
+        )
+
+        trackable_task = TrackableTask(
+            task_id=task_id, request_id=str(get_baggage("correlation_id")), task=task
+        )
         self._pending_tasks[task_id] = trackable_task
         return task_id
 
+    @TRACER.start_as_current_span("Submit_trackable_task", kind=SpanKind.SERVER)
     def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
         if self.state is not WorkerState.IDLE:
             raise WorkerBusyError(f"Worker is in state {self.state}")
@@ -145,16 +166,28 @@ class RunEngineWorker(Worker[Task]):
             if (
                 event.task_status is not None
                 and event.task_status.task_id == trackable_task.task_id
+                and trackable_task.task_id in self._context_register
             ):
                 task_started.set()
 
         LOGGER.info(f"Submitting: {trackable_task}")
         try:
             sub = self.worker_events.subscribe(mark_task_as_started)
+            self._context_register[trackable_task.task_id] = get_trace_context()
+            """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
             task_started.wait(timeout=5.0)
             if not task_started.is_set():
                 raise TimeoutError("Failed to start plan within timeout")
+
+            add_trace_attributes(
+                {
+                    "TaskId": trackable_task.task_id,
+                    "Plan": trackable_task.task.name,
+                    "Params": str(trackable_task.task.params),
+                }
+            )
+
         except Full:
             LOGGER.error("Cannot submit task while another is running")
             raise WorkerBusyError("Cannot submit task while another is running")
@@ -309,10 +342,27 @@ class RunEngineWorker(Worker[Task]):
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
-            correlation_id = self._current.task_id
-            self._data_events.publish(
-                DataEvent(name=name, doc=document), correlation_id
-            )
+            # task_context=self._context_register[self._current.task_id]
+            with TRACER.start_as_current_span(
+                "Document publish",
+                context=self._context_register[self._current.task_id],
+                kind=SpanKind.PRODUCER,
+            ):
+                """Start a new span but inject the context cached when the current task
+                was created. This will make the documents received part of the same
+                trace."""
+                add_trace_attributes(
+                    {
+                        "Name": name,
+                        "Document": str(document),
+                        "TaskId": self._current.task_id,
+                    }
+                )
+
+                correlation_id = self._current.request_id
+                self._data_events.publish(
+                    DataEvent(name=name, doc=document), correlation_id
+                )
         else:
             raise KeyError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"

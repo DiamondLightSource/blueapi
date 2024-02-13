@@ -75,7 +75,7 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "{{ .Values.jaeger.otlp.host }}:{{ .Values.jaeger.otlp.port }}"
             - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: {{ .Values.jaeger.otlp.insecure }}
+              value: "{{ .Values.jaeger.otlp.insecure }}"
             - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST
               value: {{ .Values.jaeger.otlp.request.headers }}
             - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE

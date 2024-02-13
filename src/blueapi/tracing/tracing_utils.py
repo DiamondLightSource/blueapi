@@ -35,7 +35,7 @@ def instrument_fastapi_app(app: FastAPI, name: str) -> None:
     generation."""
     resource = Resource(attributes={"service.name": name})
     provider = TracerProvider(resource=resource)
-    provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(provider)
     FastAPIInstrumentor().instrument_app(app)
 
@@ -43,7 +43,7 @@ def instrument_fastapi_app(app: FastAPI, name: str) -> None:
 def set_console_exporter() -> None:
     resource = Resource(attributes={"service.name": "BlueAPI"})
     provider = TracerProvider(resource=resource)
-    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
 
 def get_tracer(name: str) -> Tracer:

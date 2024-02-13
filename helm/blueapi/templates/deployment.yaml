@@ -77,9 +77,9 @@ spec:
             - name: OTEL_EXPORTER_OTLP_INSECURE
               value: "{{ .Values.jaeger.otlp.insecure }}"
             - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST
-              value: "{{ .Values.jaeger.otlp.request.headers }}"
+              value: {{ .Values.jaeger.otlp.request.headers }}
             - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE
-              value: "{{ .Values.jaeger.otlp.response.headers }}"
+              value: {{ .Values.jaeger.otlp.response.headers }}
 
       {{- with .Values.nodeSelector }}
       nodeSelector:

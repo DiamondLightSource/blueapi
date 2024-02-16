@@ -72,7 +72,7 @@ class BlueapiRestClient:
             data=task.dict(),
         )
 
-    def delete_task(self, task_id: str) -> TaskResponse:
+    def clear_pending_task(self, task_id: str) -> TaskResponse:
         return self._request_and_deserialize(
             f"/tasks/{task_id}", TaskResponse, method="DELETE"
         )

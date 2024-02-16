@@ -11,6 +11,8 @@ from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
+from blueapi.service.main import get_handler, setup_handler, teardown_handler
+from blueapi.service.model import WorkerTask
 from blueapi.worker.task import RunPlan
 from src.blueapi.worker import WorkerState
 
@@ -207,6 +209,31 @@ def test_create_task(handler: Handler, client: TestClient) -> None:
 
 
 def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
+    handler.start()
+    response = client.post("/tasks", json=_TASK.dict())
+    task_id = response.json()["task_id"]
+
+    task_json = {"task_id": task_id}
+    client.put("/worker/task", json=task_json)
+
+    resp = client.get("/worker/task")
+    assert resp.status_code == 200
+    active_task = WorkerTask(**resp.json())
+    assert active_task is not None
+    assert active_task.task_id == task_id
+    handler.stop()
+
+
+def test_worker_task_is_none_on_startup(handler: Handler, client: TestClient) -> None:
+    handler.start()
+    resp = client.get("/worker/task")
+    assert resp.status_code == 200
+    active_task = WorkerTask(**resp.json())
+    assert active_task.task_id is None
+    handler.stop()
+
+
+def test_get_worker_task(handler: Handler, client: TestClient) -> None:
     handler.start()
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
@@ -485,3 +512,24 @@ def test_current_complete_returns_400(
         "/worker/state", json={"new_state": WorkerState.ABORTING.name, "reason": "foo"}
     )
     assert response.status_code is status.HTTP_400_BAD_REQUEST
+
+
+def test_get_environment(handler: Handler, client: TestClient) -> None:
+    assert client.get("/environment").json() == {"initialized": False}
+
+
+def test_delete_environment(handler: Handler, client: TestClient) -> None:
+    handler._initialized = True
+    assert client.delete("/environment").status_code is status.HTTP_200_OK
+
+
+def test_teardown_handler():
+    setup_handler()
+    assert get_handler() is not None
+    teardown_handler()
+    with pytest.raises(ValueError):
+        get_handler()
+
+
+def test_teardown_handler_does_not_raise():
+    assert teardown_handler() is None

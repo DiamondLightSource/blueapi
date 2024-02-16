@@ -33,6 +33,18 @@ components:
       - devices
       title: DeviceResponse
       type: object
+    EnvironmentResponse:
+      additionalProperties: false
+      description: State of internal environment.
+      properties:
+        initialized:
+          description: blueapi context initialized
+          title: Initialized
+          type: boolean
+      required:
+      - initialized
+      title: EnvironmentResponse
+      type: object
     HTTPValidationError:
       properties:
         detail:
@@ -197,7 +209,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.4
+  version: 0.0.5
 openapi: 3.0.2
 paths:
   /devices:
@@ -237,6 +249,26 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Device By Name
+  /environment:
+    delete:
+      operationId: delete_environment_environment_delete
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: Successful Response
+      summary: Delete Environment
+    get:
+      operationId: get_environment_environment_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentResponse'
+          description: Successful Response
+      summary: Get Environment
   /plans:
     get:
       description: Retrieve information about all available plans.

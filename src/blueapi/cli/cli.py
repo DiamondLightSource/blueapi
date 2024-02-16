@@ -27,19 +27,16 @@ from blueapi.worker import ProgressEvent, RunPlan, WorkerEvent, WorkerState
 
 from .rest import BlueapiRestClient
 
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
-
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
 @click.pass_context
-@click.command(context_settings=CONTEXT_SETTINGS)
 def main(ctx: click.Context, config: Union[Optional[Path], Tuple[Path, ...]]) -> None:
     # if no command is supplied, run with the options passed
 
+    ctx.help_option_names = ["-h", "--help"]
     config_loader = ConfigLoader(ApplicationConfig)
     if config is not None:
         configs = (config,) if isinstance(config, Path) else config

@@ -4,9 +4,10 @@ from collections import deque
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Optional, Tuple, Union
+from typing import Any, Mapping, Optional, Tuple, Union
 
 import click
+from pydantic import BaseModel
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
@@ -17,12 +18,8 @@ from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
 from blueapi.service.model import WorkerTask
-from blueapi.service.openapi import (
-    DOCS_SCHEMA_LOCATION,
-    generate_schema,
-    print_schema_as_yaml,
-    write_schema_as_yaml,
-)
+from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
+from blueapi.utils import print_as_yaml, write_as_yaml
 from blueapi.worker import ProgressEvent, RunPlan, WorkerEvent, WorkerState
 
 from .rest import BlueapiRestClient
@@ -71,10 +68,25 @@ def schema(output: Optional[Path] = None, update: bool = False) -> None:
 
     if update:
         output = DOCS_SCHEMA_LOCATION
+    _print_or_write_yaml(output, schema)
+
+
+@main.command(name="config")
+@click.pass_obj
+@click.option("-o", "--output", type=Path, help="Path to file to save the schema")
+def config(obj, output: Optional[Path] = None, update: bool = False) -> None:
+    """Print the complete config used by this CLI"""
+    config: ApplicationConfig = obj["config"]
+    _print_or_write_yaml(output, config)
+
+
+def _print_or_write_yaml(
+    output: Optional[Path], data: Union[Mapping[str, Any], BaseModel]
+) -> None:
     if output is not None:
-        write_schema_as_yaml(output, schema)
+        write_as_yaml(output, data)
     else:
-        print_schema_as_yaml(schema)
+        print_as_yaml(data)
 
 
 @main.command(name="serve")

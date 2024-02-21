@@ -284,6 +284,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/context-methods/"
   },
   {
+    "version": "credentials-from-env",
+    "url": "https://DiamondLightSource.github.io/blueapi/credentials-from-env/"
+  },
+  {
     "version": "debug-p38alpha",
     "url": "https://DiamondLightSource.github.io/blueapi/debug-p38alpha/"
   },

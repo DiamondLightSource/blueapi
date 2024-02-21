@@ -66,8 +66,6 @@ tolerations: []
 
 affinity: {}
 
-#existingSecret: see templates/secret.yaml
-
 hostNetwork: false # May be needed for talking to arcane protocols such as EPICS
 
 listener:
@@ -77,6 +75,16 @@ listener:
 scratch:
   hostPath: "" # example: /usr/local/blueapi-software-scratch
   containerPath: /blueapi-plugins/scratch
+
+# Additional envVars to mount to the pod as a String
+extraEnvVars: |
+  - name: SCRATCH_AREA
+    value: {{ .Values.scratch.containerPath }}
+  - name: RABBITMQ_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: rabbitmq-password
+        key: rabbitmq-password
 
 worker:
   api:
@@ -95,7 +103,7 @@ worker:
   stomp:
     auth:
       username: guest
-      passcode: guest
+      passcode: ${RABBITMQ_PASSWORD}
     host: rabbitmq
     port: 61613
 # Config for the worker goes here, will be mounted into a config file

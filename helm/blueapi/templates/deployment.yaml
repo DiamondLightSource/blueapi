@@ -32,10 +32,6 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-config
-          {{- with .Values.existingSecret }}
-          - secret:
-              name: {{ . }}
-          {{- end }}
       {{- if .Values.scratch.hostPath }}
       - name: scratch-host
         hostPath:
@@ -62,14 +58,11 @@ spec:
           args:
             - "-c"
             - "/config/config.yaml"
-            {{- with .Values.existingSecret }}
-            - "-c"
-            - "/config/secret.yaml"
-            {{- end }}
             - "serve"
           env:
-            - name: SCRATCH_AREA
-              value: {{ .Values.scratch.containerPath }}
+            {{- if .Values.extraEnvVars }}
+            {{- tpl .Values.extraEnvVars . | nindent 10 }}
+            {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

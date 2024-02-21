@@ -162,8 +162,8 @@ def setup_handler(
             visit_service_client = LocalVisitServiceClient()
 
         provider = VisitDirectoryProvider(
-            data_group_name=config.env.data_writing.group_name,
-            data_directory=config.env.data_writing.visit_directory,
+            beamline=config.env.data_writing.beamline,
+            root=config.env.data_writing.root,
             client=visit_service_client,
         )
 

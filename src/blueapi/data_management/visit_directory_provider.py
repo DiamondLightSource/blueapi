@@ -1,4 +1,3 @@
-import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
@@ -9,6 +8,12 @@ from pydantic import BaseModel
 
 
 class DataCollectionIdentifier(BaseModel):
+    """
+    Equivalent to a `Scan Number` or `scan_id`, non-globally unique scan identifier.
+    Should be always incrementing, unique per-visit, co-ordinated with any other
+    scan engines.
+    """
+
     collectionNumber: int
 
 
@@ -71,23 +76,22 @@ class VisitDirectoryProvider(DirectoryProvider):
     should write to, and determine how their files should be named.
     """
 
-    _data_group_name: str
-    _data_directory: Path
-
+    _beamline: str
+    _root: Path
+    _resource_dir = Path(".")
     _client: VisitServiceClientBase
     _current_collection: Optional[DirectoryInfo]
     _session: Optional[ClientSession]
 
     def __init__(
         self,
-        data_group_name: str,
-        data_directory: Path,
+        beamline: str,
+        root: Optional[Path],
         client: VisitServiceClientBase,
     ):
-        self._data_group_name = data_group_name
-        self._data_directory = data_directory
         self._client = client
-
+        self._root = root or Path("/")
+        self._beamline = beamline
         self._current_collection = None
         self._session = None
 
@@ -101,23 +105,22 @@ class VisitDirectoryProvider(DirectoryProvider):
         # TODO: Query visit service to get information about visit and data collection
         # TODO: Use AuthN information as part of verification with visit service
 
-        try:
-            collection_id_info = await self._client.create_new_collection()
-            self._current_collection = self._generate_directory_info(collection_id_info)
-        except Exception as ex:
-            # TODO: The catch all is needed because the RunEngine will not
-            # currently handle it, see
-            # https://github.com/bluesky/bluesky/pull/1623
-            self._current_collection = None
-            logging.exception(ex)
+        collection_id_info = await self._client.create_new_collection()
+        self._current_collection = self._generate_directory_info(collection_id_info)
+
+    def clear(self) -> None:
+        self._current_collection = None
 
     def _generate_directory_info(
         self,
         collection_id_info: DataCollectionIdentifier,
     ) -> DirectoryInfo:
         collection_id = collection_id_info.collectionNumber
-        file_prefix = f"{self._data_group_name}-{collection_id}"
-        return DirectoryInfo(str(self._data_directory), file_prefix)
+        return DirectoryInfo(
+            root=self._root,
+            resource_dir=self._resource_dir,
+            prefix=f"{self._beamline}-{collection_id}",
+        )
 
     def __call__(self) -> DirectoryInfo:
         if self._current_collection is not None:

@@ -69,8 +69,8 @@ def client() -> VisitServiceClient:
 @pytest.fixture
 def provider(client: VisitServiceClient) -> VisitDirectoryProvider:
     return VisitDirectoryProvider(
-        data_directory=DATA_DIRECTORY,
-        data_group_name=DATA_GROUP_NAME,
+        root=DATA_DIRECTORY,
+        beamline=DATA_GROUP_NAME,
         client=client,
     )
 
@@ -101,13 +101,13 @@ class FakeDetector(Readable, HasName, Triggerable):
         }
 
     async def describe(self) -> Dict[str, DataKey]:
-        directory_info = self._provider()
-        path = f"{directory_info.directory_path}/{directory_info.filename_prefix}"
+        info = self._provider()
+        path = info.root / info.resource_dir / info.prefix
         return {
             f"{self.name}_data": {
                 "dtype": "string",
                 "shape": [1],
-                "source": path,
+                "source": str(path),
             }
         }
 
@@ -339,7 +339,7 @@ def test_visit_directory_provider_fails(
         )
 
 
-def test_visit_directory_provider_fails_after_one_sucess(
+def test_visit_directory_provider_fails_after_one_success(
     run_engine: RunEngine,
     detectors: List[Readable],
     provider: DirectoryProvider,
@@ -351,7 +351,7 @@ def test_visit_directory_provider_fails_after_one_sucess(
         provider,
     )
     client.always_fail()
-    with pytest.raises(ValueError):
+    with pytest.raises(Exception):
         collect_docs(
             run_engine,
             simple_run(detectors),

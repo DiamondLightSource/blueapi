@@ -1,6 +1,7 @@
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import make_decorator
+from ophyd_async.core import DirectoryInfo
 
 from blueapi.core import MsgGenerator
 from blueapi.data_management.visit_directory_provider import VisitDirectoryProvider
@@ -32,10 +33,9 @@ def attach_metadata(
         Iterator[Msg]: Plan messages
     """
     yield from bps.wait_for([provider.update])
-    directory_info = provider()
-    yield from bpp.inject_md_wrapper(
-        plan, md={DATA_SESSION: directory_info.filename_prefix}
-    )
+    directory_info: DirectoryInfo = provider()
+    yield from bpp.inject_md_wrapper(plan, md={DATA_SESSION: directory_info.prefix})
+    provider.clear()
 
 
 attach_metadata_decorator = make_decorator(attach_metadata)

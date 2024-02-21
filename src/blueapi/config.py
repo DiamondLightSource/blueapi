@@ -51,9 +51,22 @@ class StompConfig(BaseModel):
 
 
 class DataWritingConfig(BlueapiBaseModel):
+    """Configuration for where to write output files for ophyd-async devices.
+
+    Args:
+        visit_service_url (Optional[str]): the /api endpoint of a visit_service
+        beamline (str): beamline identifier to use in constructing the name of files
+        root (Optional[str]): root to use when constructing StreamResources.
+            When visits are part of the response from the visit_service,
+            this will be deprecated and replaced with a method that constructs
+            it (e.g. return f"/{year}/{visit_id})
+    """
+
+    beamline: str = "example"
+    root: Optional[
+        Path
+    ] = None  # When mounting with a static root, e.g. /2024/cm12345-1/
     visit_service_url: Optional[str] = None  # e.g. "http://localhost:8088/api"
-    visit_directory: Path = Path("/tmp/0-0")
-    group_name: str = "example"
 
 
 class WorkerEventConfig(BlueapiBaseModel):

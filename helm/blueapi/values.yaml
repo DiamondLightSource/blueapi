@@ -91,6 +91,9 @@ worker:
     host: 0.0.0.0 # Allow non-loopback traffic
     port: 8000
   env:
+    data_writing:
+      beamline: example
+      root: /tmp
     sources:
       - kind: deviceFunctions
         module: blueapi.startup.example_devices

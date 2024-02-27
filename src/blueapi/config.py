@@ -1,9 +1,10 @@
+import os
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Generic, Literal, Mapping, Optional, Type, TypeVar, Union
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, parse_obj_as
+from pydantic import BaseModel, Field, ValidationError, parse_obj_as, validator
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -23,11 +24,20 @@ class Source(BaseModel):
 
 class BasicAuthentication(BaseModel):
     """
-    Log in details for when a server uses authentication
+    Log in details for when a server uses authentication.
+    If username or passcode match exactly the regex ^\\${(.*)}$
+    they attempt to replace with an environment variable of the same.
+    i.e. ${foo} or ${FOO} are replaced with the value of FOO
     """
 
     username: str = "guest"
     passcode: str = "guest"
+
+    @validator("username", "passcode")
+    def get_from_env(cls, v: str):
+        if v.startswith("${") and v.endswith("}"):
+            return os.environ[v.removeprefix("${").removesuffix("}").upper()]
+        return v
 
 
 class StompConfig(BaseModel):

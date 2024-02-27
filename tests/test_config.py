@@ -2,10 +2,11 @@ import os
 from pathlib import Path
 from typing import Any, Type
 
+import mock
 import pytest
 from pydantic import BaseModel, Field
 
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import ApplicationConfig, BasicAuthentication, ConfigLoader
 from blueapi.utils import InvalidConfigError
 
 
@@ -126,3 +127,32 @@ def test_example_config_yaml_gives_same_config_as_model(default_yaml: Path):
     yaml_config = loader.load()
 
     assert default_config == yaml_config
+
+
+@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
+def test_auth_from_env():
+    auth = BasicAuthentication(username="${FOO}", passcode="baz")
+    assert auth.username == "bar"
+
+
+@mock.patch.dict(os.environ, {"FOO": "bar", "BAZ": "qux"}, clear=True)
+def test_auth_from_env_repeated_key():
+    auth = BasicAuthentication(username="${FOO}", passcode="${FOO}")
+    assert auth.username == "bar"
+    assert auth.passcode == "bar"
+
+
+@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
+def test_auth_from_env_ignore_case():
+    auth = BasicAuthentication(username="${FOO}", passcode="${foo}")
+    assert auth.username == "bar"
+    assert auth.passcode == "bar"
+
+
+@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
+def test_auth_from_env_throws_when_not_available():
+    # Eagerly throws an exception, will fail during initial loading
+    with pytest.raises(KeyError):
+        BasicAuthentication(username="${BAZ}", passcode="baz")
+    with pytest.raises(KeyError):
+        BasicAuthentication(username="${baz}", passcode="baz")

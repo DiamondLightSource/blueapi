@@ -9,14 +9,14 @@ For an introduction to bluesky plans and general forms/advice, `see the bluesky 
 Plans
 ~~~~~
 
-While the bluesky project uses ``plan`` in a general sense to refer to any operations that may be run by the ``RunEngine``, blueapi distinguishes between a ``plan`` and a ``stub``. This distinction is made to allow for a subset of ``stub``\ s to be exposed and run, as ``stub``\ s may not make sense to run alone.
+While the bluesky project uses ``plan`` in a general sense to refer to any ``Iterable`` of ``Msg``\ s which may be run by the ``RunEngine``, blueapi distinguishes between a ``plan`` and a ``stub``. This distinction is made to allow for a subset of ``stub``\ s to be exposed and run, as ``stub``\ s may not make sense to run alone.
 
-Generally, if a ``MsgGenerator`` includes at least one ``open_run`` and ``close_run``, it is a ``plan``, a complete description of an experiment. If it does not, it is a ``stub``. This distinction is made in the bluesky core library between ``plan``\ s and ``plan_stub``\ s modules.
+Generally, a ``plan`` includes at least one ``open_run`` and ``close_run`` and is a complete description of an experiment. If it does not, it is a ``stub``. This distinction is made in the bluesky core library between the ``plan``\ s and ``plan_stub``\ s modules.
 
 Type Annotations
 ^^^^^^^^^^^^^^^^
 
-A ``plan`` may be any iterable of ``Msg`` instructions, but in the context of blueapi plans are the result of calling a ``PlanGenerator`` function that return a ``MsgGenerator`` (a python ``Generator`` that yields ``Msg``\ s). ``PlanGenerator`` and ``MsgGenerator`` types are available to import from ``dodal``.
+To be imported into the blueapi context, ``plan``\ s and ``stub``\ s must be the in the form of a ``PlanGenerator``: any function that return a ``MsgGenerator`` (a python ``Generator`` that yields ``Msg``\ s). ``PlanGenerator`` and ``MsgGenerator`` types are available to import from ``dodal``.
 
 .. note::
     ``PlanGenerator``\ s must be annotated with the return type ``MsgGenerator`` to be added to the blueapi context.
@@ -50,14 +50,14 @@ Therefore, ``PlanGenerator``\ s must only take as arguments `those types which a
 
 .. note::
 
-    Allowed argument types for Pydantic BaseModels include the primitives, types that extend ``BaseModel`` and ``dict``\ s; ``list``\ s  and other ``sequence``\ s of supported types. Blueapi will deserialise these types from a JSON blob, so ``dict``\ s should use ``str`` keys where possible.
+    Allowed argument types for Pydantic BaseModels include the primitives, types that extend ``BaseModel`` and ``dict``\ s, ``list``\ s  and other ``sequence``\ s of supported types. Blueapi will deserialise these types from JSON, so ``dict``\ s should use ``str`` keys.
 
 Injecting defaults
 ^^^^^^^^^^^^^^^^^^
 
 Often when writing a plan, it is known which device the plan will mostly or always be run with, but at the time of writing the plan the device object has not been instantiated: dodal defines device factory functions, but these cannot be injected as default arguments to plans.
 
-Dodal defines an ``inject`` function which bypasses the type checking of the constructed schemas, defering to the blueapi contexting fetching of the device when the plan is imported. This allows defaulting devices, so long as there is a device of that name in the context when the plan is import and it conforms to the type annotation.
+Dodal defines an ``inject`` function which bypasses the type checking of the constructed schemas, defering to the blueapi contexting fetching of the device when the plan is imported. This allows defaulting devices, so long as there is a device of that name in the context which conforms to the type annotation.
 
 .. code:: python
 

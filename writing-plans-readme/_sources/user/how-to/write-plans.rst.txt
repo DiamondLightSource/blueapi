@@ -1,30 +1,25 @@
-Writing bluesky plans for blueapi
+Writing Bluesky plans for Blueapi
 =================================
 
-**Please read the following completely and carefully, as you risk losing data if plans are written incorrectly.**.
+.. warning::
+    Please read the following completely and carefully, as you risk losing data if plans are written incorrectly!
 
-For an introduction to bluesky plans and general forms/advice, `see the
-bluesky documentation <https://nsls-ii.github.io/bluesky/plans.html>`__.
-Blueapi has some additional requirements, which are explained below.
-
-Generally, if a ``MsgGenerator`` includes at least one
-``open_run`` and ``close_run``, it is a ``plan``, a complete description
-of an experiment. If it does not, it is a ``stub``.
+For an introduction to bluesky plans and general forms/advice, `see the bluesky documentation <https://nsls-ii.github.io/bluesky/plans.html>`__. Blueapi has some additional requirements, which are explained below.
 
 Plans
 ~~~~~
 
-A ``plan`` is a complete data collection proceedure.
+While the bluesky project uses ``plan`` in a general sense to refer to any operations that may be run by the ``RunEngine``, blueapi distinguishes between a ``plan`` and a ``stub``. This distinction is made to allow for a subset of ``stub``\ s to be exposed and run, when ``stub``\ s may leave the beamline in an unknown state.
+
+Generally, if a ``MsgGenerator`` includes at least one ``open_run`` and ``close_run``, it is a ``plan``, a complete description of an experiment. If it does not, it is a ``stub``. This distinction is made in the bluesky core library between ``plan``\ s and ``plan_stub``\ s modules.
 
 Type Annotations
 ^^^^^^^^^^^^^^^^
 
-“Plans” in the bluesky context are any iterable of ``Msg`` instructions,
-but in the context of blueapi are ``PlanGenerator``\ s: functions that
-take any arguments and return a ``MsgGenerator`` (a python ``Generator``
-that yields ``Msg``\ s). **These ``PlanGenerator``\ s must be annotated
-with the return type ``MsgGenerator`` to be added to the blueapi
-context**.
+A ``plan`` may be any iterable of ``Msg`` instructions, but in the context of blueapi are ``PlanGenerator``\ s: functions that return a ``MsgGenerator`` (a python ``Generator`` that yields ``Msg``\ s). ``PlanGenerator`` and ``MsgGenerator`` types are available to import from ``dodal``.
+
+.. note::
+    ``PlanGenerator``\ s must be annotated with the return type ``MsgGenerator`` to be added to the blueapi context.
 
 .. code:: python
 
@@ -32,16 +27,12 @@ context**.
        # The minimum plan acceptable to blueapi
        yield from {}
 
-**Plan arguments should be annotated**, which will enable use of the
-schema generated for each plan, and enables checking the arguments are
-valid. **Input annotations should be as broad as possible**, the least
-specific implementation that is sufficient to accomplish the
-requirements of the plan, as this will allow re-use of the behaviour.
+.. note::
+    ``PlanGenerator`` arguments must be annotated to enable blueapi to generate their schema
 
-For example, if a plan is written to drive a specific implementation of
-Movable, but never calls any methods on the device and only yields
-bluesky ``'set'`` Msgs, it can be generalised to instead use the base
-protocol ``Movable``.
+**Input annotations should be as broad as possible**, the least specific implementation that is sufficient to accomplish the requirements of the plan.
+
+For example, if a plan is written to drive a specific implementation of Movable, but never calls any methods on the device and only yields bluesky ``'set'`` Msgs, it can be generalised to instead use the base protocol ``Movable``.
 
 .. code:: python
 
@@ -50,18 +41,19 @@ protocol ``Movable``.
        for _ in range(i):
            yield from abs_set(axis, location)
 
+Allowed Argument Types
+^^^^^^^^^^^^^^^^^^^^^^
+
+When added to the blueapi context, ``PlanGenerator``\ s are formalised into their schema- `a Pydantic BaseModel <https://docs.pydantic.dev/1.10/usage/models/>`__ with the expected argument types and their defaults. 
+
+Therefore, ``PlanGenerator``\ s must only take as arguments `those types which are valid Pydantic fields <https://docs.pydantic.dev/1.10/usage/types/>`__ or Device types which implement ``BLUESKY_PROTOCOLS`` defined in dodal, which are fetched from the context at runtime.
+
 Injecting defaults
 ^^^^^^^^^^^^^^^^^^
 
-Often when writing a plan, it is known which device the plan will mostly
-or always be run with, but at the time of writing the plan the device
-object has not been instantiated: dodal defines device factory
-functions, but these cannot be injected as default arguments to plans.
+Often when writing a plan, it is known which device the plan will mostly or always be run with, but at the time of writing the plan the device object has not been instantiated: dodal defines device factory functions, but these cannot be injected as default arguments to plans.
 
-Importing ``inject`` from dls-bluesky-core, which fetches the device from the
-blueapi context when the plan is imported allows defaulting devices, so
-long as there is a device of that name in the context, and it complies
-to the type annotation of the function.
+Dodal defines an ``inject`` function which bypasses the type checking of the constructed schemas, defering to the blueapi contexting fetching of the device when the plan is imported. This allows defaulting devices, so long as there is a device of that name in the context when the plan is import and it conforms to the type annotation.
 
 .. code:: python
 
@@ -74,15 +66,11 @@ to the type annotation of the function.
 Metadata
 ^^^^^^^^
 
-The bluesky event model allows for rich structured metadata to be
-attached to a scan. To enable this to be used consistently, a standard
-for attach metadata to a plan is **plans should include ``metadata`` as
-their final argument, which must have the type Optional[Mapping[str,
-Any]],**\ `and a default of
-None <https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python>`__\ **,
-with the plan defaulting to an empty dict if passed None. If the plan
-calls to a stub/plan which takes metadata, the plan should pass down its
-metadata, which may be a differently named argument**.
+The bluesky event model allows for rich structured metadata to be attached to a scan. To enable this to be used consistently, blueapi encourages a standard form.
+
+.. note::
+
+    Plans **should** include ``metadata`` as their final argument, if they do it **must** have the type Optional[Mapping[str, Any]], `and a default of None <https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python>`__\, with the plan defaulting to an empty dict if passed ``None``. If the plan calls to a stub/plan which takes metadata, the plan **must** pass down its metadata, which may be a differently named argument.
 
 .. code:: python
 
@@ -92,12 +80,7 @@ metadata, which may be a differently named argument**.
 Docstrings
 ^^^^^^^^^^
 
-When importing plans blueapi constructs a context and schemas, which
-includes the docstrings of imported Plans. **These should therefore
-explain as much about the scan as cannot be ascertained from its
-arguments and name**. This may include units of arguments (e.g. seconds
-or microseconds), its purpose in the function, the purpose of the plan
-etc.
+Blueapi plan schemas include includes the docstrings of imported Plans. **These should therefore explain as much about the scan as cannot be ascertained from its arguments and name**. This may include units of arguments (e.g. seconds or microseconds), its purpose in the function, the purpose of the plan etc.
 
 .. code:: python
 
@@ -131,13 +114,13 @@ etc.
 Decorators
 ^^^^^^^^^^
 
-dls-bluesky-core defines a decorator for configuring any ``ophyd-async`` devices,
-which will be the majority of devices at Diamond, to write to a common
-location. **This is an absolute requirement to write data onto the
-Diamond Filesystem**.
+Dodal defines a decorator for configuring any ``ophyd-async`` devices- which will be the majority of devices at Diamond- to write to a common location. 
 
-**This decorator must be used every time a new data collection is
-intended to begin. For an example, see below**.
+.. warning::
+
+    **This is an absolute requirement to write data onto the Diamond Filesystem**.
+
+    This decorator must be used every time a new data collection is intended to begin. For an example, see below.
 
 .. code:: python
 
@@ -183,21 +166,31 @@ intended to begin. For an example, see below**.
 Stubs
 ~~~~~
 
-Some functionality in your plans may make sense to factor out to allow
-re-use. These pieces of functionality may or may not make sense outside
-of the context of a plan. Some will, such as nudging a motor, but others
-may not, such as waiting to consume data from the previous position, or
-opening a run without an equivalent closure.
+Some functionality in your plans may make sense to factor out to allow re-use. These pieces of functionality may or may not make sense outside of the context of a plan. Some will, such as nudging a motor, but others may not, such as waiting to consume data from the previous position, or opening a run without an equivalent closure.
 
-To enable blueapi to expose the stubs that it makes sense to, but not
-the others, blueapi will only expose a subset of ``MsgGenerator``\ s
-under the following conditions:
+To enable blueapi to expose the stubs that it makes sense to, but not the others, blueapi will only expose a subset of ``MsgGenerator``\ s under the following conditions:
 
 | ``__init__.py`` in directory has ``__exports__``: List[str]: only
   those named in ``__exports__``
 | ``__init__.py`` in directory has ``__all__``: List[str] but no
   ``__exports__``: only those named in ``__all__``
 
-This allows other python packages (such as ``plans``) to access every
-function in ``__all__``, while only allowing a subset to be called from
-blueapi as standalone.
+This allows other python packages (such as ``plans``) to access every function in ``__all__``, while only allowing a subset to be called from blueapi as standalone.
+
+.. code:: python
+
+    # Rehomes all of the beamline's devices. May require to be run standalone
+    from .package import rehome_devices
+    # Awaits a standard callback from analysis. Should not be run standalone
+    from .package import await_callback
+
+    # Exported from the module for use by other modules
+    __all__ = [
+        "rehome_devices",
+        "await_callback",
+    ]
+
+    # Imported by instances of blueapi and allowed to be run
+    __exports__ = [
+        "rehome_devices",
+    ]

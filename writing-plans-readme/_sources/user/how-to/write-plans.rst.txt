@@ -9,22 +9,22 @@ For an introduction to bluesky plans and general forms/advice, `see the bluesky 
 Plans
 ~~~~~
 
-While the bluesky project uses ``plan`` in a general sense to refer to any operations that may be run by the ``RunEngine``, blueapi distinguishes between a ``plan`` and a ``stub``. This distinction is made to allow for a subset of ``stub``\ s to be exposed and run, when ``stub``\ s may leave the beamline in an unknown state.
+While the bluesky project uses ``plan`` in a general sense to refer to any operations that may be run by the ``RunEngine``, blueapi distinguishes between a ``plan`` and a ``stub``. This distinction is made to allow for a subset of ``stub``\ s to be exposed and run, as ``stub``\ s may not make sense to run alone.
 
 Generally, if a ``MsgGenerator`` includes at least one ``open_run`` and ``close_run``, it is a ``plan``, a complete description of an experiment. If it does not, it is a ``stub``. This distinction is made in the bluesky core library between ``plan``\ s and ``plan_stub``\ s modules.
 
 Type Annotations
 ^^^^^^^^^^^^^^^^
 
-A ``plan`` may be any iterable of ``Msg`` instructions, but in the context of blueapi are ``PlanGenerator``\ s: functions that return a ``MsgGenerator`` (a python ``Generator`` that yields ``Msg``\ s). ``PlanGenerator`` and ``MsgGenerator`` types are available to import from ``dodal``.
+A ``plan`` may be any iterable of ``Msg`` instructions, but in the context of blueapi plans are the result of calling a ``PlanGenerator`` function that return a ``MsgGenerator`` (a python ``Generator`` that yields ``Msg``\ s). ``PlanGenerator`` and ``MsgGenerator`` types are available to import from ``dodal``.
 
 .. note::
     ``PlanGenerator``\ s must be annotated with the return type ``MsgGenerator`` to be added to the blueapi context.
 
 .. code:: python
 
-   def plan() -> MsgGenerator:
-       # The minimum plan acceptable to blueapi
+   def foo() -> MsgGenerator:
+       # The minimum PlanGenerator acceptable to blueapi
        yield from {}
 
 .. note::
@@ -47,6 +47,10 @@ Allowed Argument Types
 When added to the blueapi context, ``PlanGenerator``\ s are formalised into their schema- `a Pydantic BaseModel <https://docs.pydantic.dev/1.10/usage/models/>`__ with the expected argument types and their defaults. 
 
 Therefore, ``PlanGenerator``\ s must only take as arguments `those types which are valid Pydantic fields <https://docs.pydantic.dev/1.10/usage/types/>`__ or Device types which implement ``BLUESKY_PROTOCOLS`` defined in dodal, which are fetched from the context at runtime.
+
+.. note::
+
+    Allowed argument types for Pydantic BaseModels include the primitives, types that extend ``BaseModel`` and ``dict``\ s; ``list``\ s  and other ``sequence``\ s of supported types. Blueapi will deserialise these types from a JSON blob, so ``dict``\ s should use ``str`` keys where possible.
 
 Injecting defaults
 ^^^^^^^^^^^^^^^^^^

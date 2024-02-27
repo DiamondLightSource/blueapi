@@ -80,11 +80,11 @@ scratch:
 extraEnvVars: |
   - name: SCRATCH_AREA
     value: {{ .Values.scratch.containerPath }}
-  - name: RABBITMQ_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: rabbitmq-password
-        key: rabbitmq-password
+  # - name: RABBITMQ_PASSWORD
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: rabbitmq-password
+  #       key: rabbitmq-password
 
 worker:
   api:
@@ -103,7 +103,7 @@ worker:
   stomp:
     auth:
       username: guest
-      passcode: ${RABBITMQ_PASSWORD}
+      passcode: guest
     host: rabbitmq
     port: 61613
 # Config for the worker goes here, will be mounted into a config file

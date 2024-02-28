@@ -105,11 +105,12 @@ class VisitDirectoryProvider(DirectoryProvider):
         # TODO: Query visit service to get information about visit and data collection
         # TODO: Use AuthN information as part of verification with visit service
 
-        collection_id_info = await self._client.create_new_collection()
-        self._current_collection = self._generate_directory_info(collection_id_info)
-
-    def clear(self) -> None:
-        self._current_collection = None
+        try:
+            collection_id_info = await self._client.create_new_collection()
+            self._current_collection = self._generate_directory_info(collection_id_info)
+        except Exception as e:
+            self._current_collection = None
+            raise e
 
     def _generate_directory_info(
         self,

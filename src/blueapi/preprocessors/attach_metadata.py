@@ -35,7 +35,6 @@ def attach_metadata(
     yield from bps.wait_for([provider.update])
     directory_info: DirectoryInfo = provider()
     yield from bpp.inject_md_wrapper(plan, md={DATA_SESSION: directory_info.prefix})
-    provider.clear()
 
 
 attach_metadata_decorator = make_decorator(attach_metadata)

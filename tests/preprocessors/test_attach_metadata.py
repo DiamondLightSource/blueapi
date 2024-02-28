@@ -351,7 +351,7 @@ def test_visit_directory_provider_fails_after_one_success(
         provider,
     )
     client.always_fail()
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         collect_docs(
             run_engine,
             simple_run(detectors),

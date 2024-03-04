@@ -300,6 +300,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/deserialization-errors/"
   },
   {
+    "version": "deviceInfo",
+    "url": "https://DiamondLightSource.github.io/blueapi/deviceInfo/"
+  },
+  {
     "version": "directoryInfo",
     "url": "https://DiamondLightSource.github.io/blueapi/directoryInfo/"
   },

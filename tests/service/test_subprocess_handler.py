@@ -7,7 +7,7 @@ from blueapi.service.handler_base import BlueskyHandler, HandlerNotStartedError
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.service.subprocess_handler import SubprocessHandler
 from blueapi.worker.event import WorkerState
-from blueapi.worker.task import RunPlan
+from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask
 
 
@@ -63,7 +63,7 @@ class DummyHandler(BlueskyHandler):
     def get_device(self, name: str) -> DeviceModel:
         return DeviceModel(name="device1", protocols=[])
 
-    def submit_task(self, task: RunPlan) -> str:
+    def submit_task(self, task: Task) -> str:
         return "0"
 
     def clear_pending_task(self, task_id: str) -> str:
@@ -90,7 +90,7 @@ class DummyHandler(BlueskyHandler):
     def pending_tasks(self) -> List[TrackableTask]:
         return [
             TrackableTask(
-                task_id="abc", task=RunPlan(name="sleep", params={"time": 0.0})
+                task_id="abc", task=Task(name="sleep", params={"time": 0.0})
             )
         ]
 
@@ -137,8 +137,8 @@ def test_method_routing(get_handler_mock: MagicMock):
     assert sp_handler.get_device("name") == dummy_handler.get_device("name")
 
     assert sp_handler.submit_task(
-        RunPlan(name="sleep", params={"time": 0.0})
-    ) == dummy_handler.submit_task(RunPlan(name="sleep", params={"time": 0.0}))
+        Task(name="sleep", params={"time": 0.0})
+    ) == dummy_handler.submit_task(Task(name="sleep", params={"time": 0.0}))
 
     assert sp_handler.clear_pending_task("task_id") == dummy_handler.clear_pending_task(
         "task_id"

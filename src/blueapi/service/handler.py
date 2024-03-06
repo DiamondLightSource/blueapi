@@ -17,7 +17,7 @@ from blueapi.service.handler_base import BlueskyHandler
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import WorkerState
 from blueapi.worker.reworker import RunEngineWorker
-from blueapi.worker.task import RunPlan
+from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask, Worker
 
 LOGGER = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ class Handler(BlueskyHandler):
     def get_device(self, name: str) -> DeviceModel:
         return DeviceModel.from_device(self._context.devices[name])
 
-    def submit_task(self, task: RunPlan) -> str:
+    def submit_task(self, task: Task) -> str:
         return self._worker.submit_task(task)
 
     def clear_pending_task(self, task_id: str) -> str:

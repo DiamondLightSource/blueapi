@@ -13,10 +13,10 @@ from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
 from blueapi.service.main import get_handler, setup_handler, teardown_handler
 from blueapi.service.model import WorkerTask
-from blueapi.worker.task import RunPlan
+from blueapi.worker.task import Task
 from src.blueapi.worker import WorkerState
 
-_TASK = RunPlan(name="count", params={"detectors": ["x"]})
+_TASK = Task(name="count", params={"detectors": ["x"]})
 
 
 def test_get_plans(handler: Handler, client: TestClient) -> None:

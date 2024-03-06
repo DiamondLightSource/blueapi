@@ -12,7 +12,7 @@ from blueapi.service.model import (
     TaskResponse,
     WorkerTask,
 )
-from blueapi.worker import RunPlan, TrackableTask, WorkerState
+from blueapi.worker import Task, TrackableTask, WorkerState
 
 from .amq import BlueskyRemoteError
 
@@ -56,15 +56,15 @@ class BlueapiRestClient:
             data={"new_state": state, "defer": defer},
         )
 
-    def get_task(self, task_id: str) -> TrackableTask[RunPlan]:
+    def get_task(self, task_id: str) -> TrackableTask[Task]:
         return self._request_and_deserialize(
-            f"/tasks/{task_id}", TrackableTask[RunPlan]
+            f"/tasks/{task_id}", TrackableTask[Task]
         )
 
     def get_active_task(self) -> WorkerTask:
         return self._request_and_deserialize("/worker/task", WorkerTask)
 
-    def create_task(self, task: RunPlan) -> TaskResponse:
+    def create_task(self, task: Task) -> TaskResponse:
         return self._request_and_deserialize(
             "/tasks",
             TaskResponse,

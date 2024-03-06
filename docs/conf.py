@@ -44,7 +44,12 @@ extensions = [
     "sphinx_copybutton",
     # For the card element
     "sphinx_design",
+    # So we can write markdown files
+    "myst_parser",
 ]
+
+# So we can use the ::: syntax
+myst_enable_extensions = ["colon_fence"]
 
 # If true, Sphinx will warn about all references where the target cannot
 # be found.
@@ -82,9 +87,6 @@ graphviz_output_format = "svg"
 # role, that is, for text marked up `like this`
 default_role = "any"
 
-# The suffix of source filenames.
-source_suffix = ".rst"
-
 # The master toctree document.
 master_doc = "index"
 
@@ -102,15 +104,6 @@ intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
 
 # A dictionary of graphviz graph attributes for inheritance diagrams.
 inheritance_graph_attrs = {"rankdir": "TB"}
-
-# Common links that should be available on every page
-rst_epilog = """
-.. _Diamond Light Source: http://www.diamond.ac.uk
-.. _black: https://github.com/psf/black
-.. _ruff: https://beta.ruff.rs/docs/
-.. _mypy: http://mypy-lang.org/
-.. _pre-commit: https://pre-commit.com/
-"""
 
 # Ignore localhost links for periodic check that links in docs are valid
 linkcheck_ignore = [r"http://localhost:\d+/"]
@@ -167,12 +160,6 @@ html_theme_options = {
     },
     "check_switcher": False,
     "navbar_end": ["theme-switcher", "icon-links", "version-switcher"],
-    "external_links": [
-        {
-            "name": "Release Notes",
-            "url": f"https://github.com/{github_user}/{github_repo}/releases",
-        }
-    ],
     "navigation_with_keys": False,
 }
 
@@ -192,4 +179,4 @@ html_show_copyright = False
 
 # Logo
 html_logo = "images/blueapi-logo.svg"
-html_favicon = "images/blueapi-logo.svg"
+html_favicon = html_logo

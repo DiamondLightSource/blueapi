@@ -28,6 +28,7 @@ side-bar.
 
             how-to/run-container
             how-to/configure-app
+            how-to/write-plans
             how-to/add-plans-and-devices
             how-to/run-cli
 

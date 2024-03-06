@@ -32,4 +32,4 @@ The `Developer Guide`_ contains information on setting up a development
 environment, running the tests and what standards the code and documentation
 should follow.
 
-.. _Developer Guide: https://diamondlightsource.github.io/blueapi/main/developer/how-to/contribute.html
+.. _Developer Guide: https://DiamondLightSource.github.io/blueapi/main/developer/how-to/contribute.html

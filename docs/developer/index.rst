@@ -4,8 +4,6 @@ Developer Guide
 Documentation is split into four categories, also accessible from links in the
 side-bar.
 
-.. note:: Assumes you have read the `../user/index`
-
 .. grid:: 2
     :gutter: 4
 
@@ -35,6 +33,8 @@ side-bar.
             how-to/lint
             how-to/update-tools
             how-to/make-release
+            how-to/pin-requirements
+            how-to/test-container
 
         +++
 

@@ -1,7 +1,7 @@
 Run linting using pre-commit
 ============================
 
-Code linting is handled by black_, flake8_ and isort_ run under pre-commit_.
+Code linting is handled by black_ and ruff_ run under pre-commit_.
 
 Running pre-commit
 ------------------
@@ -15,6 +15,9 @@ commit`` on just the files that have changed::
 
     $ pre-commit install
 
+It is also possible to `automatically enable pre-commit on cloned repositories <https://pre-commit.com/#automatically-enabling-pre-commit-on-repositories>`_.
+This will result in pre-commits being enabled on every repo your user clones from now on.
+
 Fixing issues
 -------------
 
@@ -23,16 +26,14 @@ repository::
 
     $ black .
 
-Likewise with isort::
+Likewise with ruff::
 
-    $ isort .
+    $ ruff --fix .
 
-If you get any flake8 issues you will have to fix those manually.
+Ruff may not be able to automatically fix all issues; in this case, you will have to fix those manually.
 
 VSCode support
 --------------
 
-The ``.vscode/settings.json`` will run black and isort formatters as well as
-flake8 checking on save. Issues will be highlighted in the editor window.
-
-
+The ``.vscode/settings.json`` will run black formatting as well as
+ruff checking on save. Issues will be highlighted in the editor window.

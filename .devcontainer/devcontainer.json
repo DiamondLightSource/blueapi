@@ -2,7 +2,7 @@
 {
     "name": "Python 3 Developer Container",
     "build": {
-        "dockerfile": "Dockerfile",
+        "dockerfile": "../Dockerfile",
         "target": "build",
         // Only upgrade pip, we will install the project below
         "args": {
@@ -50,5 +50,5 @@
     "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind",
     "workspaceFolder": "${localWorkspaceFolder}",
     // After the container is created, install the python project in editable form
-    "postCreateCommand": "pip install -e .[dev]"
+    "postCreateCommand": "pip install -e '.[dev]'"
 }

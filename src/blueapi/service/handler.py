@@ -1,6 +1,8 @@
 import logging
 from typing import List, Mapping, Optional
 
+from dodal.beamlines.beamline_utils import set_directory_provider
+
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from blueapi.core.event import EventStream
@@ -150,7 +152,6 @@ def setup_handler(
 ) -> None:
     global HANDLER
 
-    provider = None
     plan_wrappers = []
     if config:
         visit_service_client: VisitServiceClientBase
@@ -167,19 +168,7 @@ def setup_handler(
             client=visit_service_client,
         )
 
-        # Make all dodal devices created by the context use provider if they can
-        try:
-            from dodal.parameters.gda_directory_provider import (
-                set_directory_provider_singleton,
-            )
-
-            set_directory_provider_singleton(provider)
-        except ImportError:
-            logging.error(
-                "Unable to set directory provider for ophyd-async devices, "
-                "a newer version of dodal is required"
-            )
-
+        set_directory_provider(provider)
         plan_wrappers.append(lambda plan: attach_metadata(plan, provider))
 
     handler = Handler(

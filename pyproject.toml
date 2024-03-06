@@ -26,8 +26,7 @@ dependencies = [
     "fastapi[all]<0.99",
     "uvicorn",
     "requests",
-    "dls-bluesky-core", #requires ophyd-async
-    "dls-dodal",
+    "dls_dodal @ git+https://github.com/DiamondLightSource/dodal.git@rebased_i22",
     "typing_extensions<4.6",
 ]
 dynamic = ["version"]

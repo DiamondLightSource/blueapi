@@ -258,9 +258,7 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
     progress_events: List[ProgressEvent] = []
     worker.progress_events.subscribe(lambda event, id: progress_events.append(event))
 
-    task: Task = Task(
-        name="move", params={"moves": {"additional_status_device": 5.0}}
-    )
+    task: Task = Task(name="move", params={"moves": {"additional_status_device": 5.0}})
     task_id = worker.submit_task(task)
     begin_task_and_wait_until_complete(worker, task_id)
 

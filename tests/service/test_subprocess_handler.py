@@ -89,9 +89,7 @@ class DummyHandler(BlueskyHandler):
     @property
     def pending_tasks(self) -> List[TrackableTask]:
         return [
-            TrackableTask(
-                task_id="abc", task=Task(name="sleep", params={"time": 0.0})
-            )
+            TrackableTask(task_id="abc", task=Task(name="sleep", params={"time": 0.0}))
         ]
 
     def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:

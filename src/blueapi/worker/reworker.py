@@ -35,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
 
 
-class RunEngineWorker(Worker[Task]):
+class TaskWorker(Worker[Task]):
     """
     Worker wrapping BlueskyContext that can work in its own thread/process
 

@@ -10,7 +10,7 @@ from blueapi.core import BlueskyContext, EventStream, MsgGenerator
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.worker import (
     ProgressEvent,
-    RunEngineWorker,
+    TaskWorker,
     Task,
     TaskStatus,
     TrackableTask,
@@ -68,7 +68,7 @@ def context(fake_device: FakeDevice) -> BlueskyContext:
 
 @pytest.fixture
 def inert_worker(context: BlueskyContext) -> Worker[Task]:
-    return RunEngineWorker(context, start_stop_timeout=2.0)
+    return TaskWorker(context, start_stop_timeout=2.0)
 
 
 @pytest.fixture

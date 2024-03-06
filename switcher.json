@@ -236,6 +236,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/121_dodal_integration/"
   },
   {
+    "version": "253-delete-runplan-and-use-just-task",
+    "url": "https://DiamondLightSource.github.io/blueapi/253-delete-runplan-and-use-just-task/"
+  },
+  {
     "version": "DAQ-4642",
     "url": "https://DiamondLightSource.github.io/blueapi/DAQ-4642/"
   },

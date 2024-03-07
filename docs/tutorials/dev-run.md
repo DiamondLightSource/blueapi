@@ -23,7 +23,7 @@ debugging capabilities.
 2. Select "Worker Service" from the debug configuration.
 3. Click the green "Run Button"
 
-:::{figure} ../../images/debug-vscode.png
+:::{figure} ../images/debug-vscode.png
 :align: center
 
 debug in vscode

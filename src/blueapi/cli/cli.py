@@ -1,5 +1,4 @@
 import json
-from pydantic import ValidationError, parse_obj_as
 import logging
 from collections import deque
 from functools import wraps
@@ -8,6 +7,7 @@ from pprint import pprint
 from typing import Optional, Tuple, Union
 
 import click
+from pydantic import ValidationError, parse_obj_as
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
@@ -191,10 +191,11 @@ def run_plan(
         print(text)
         validated_data = parse_obj_as(type(schema), parameters)
         print("Plan params validation successful:", validated_data)
-    except ValidationError as e:
+    except ValidationError:
         # Handle the case where the parameters are invalid according to the PlanModel
         print(
-            f"failed to run the {name} plan, supplied params {parameters} do not match the expected params: {schema}"
+            f"""failed to run the {name} plan,
+            supplied params {parameters} do not match the expected params: {schema}"""
         )
         return
 

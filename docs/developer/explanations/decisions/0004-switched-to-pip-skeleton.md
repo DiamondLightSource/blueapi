@@ -1,25 +1,20 @@
-2. Adopt python_copier_template for project structure
-=====================================================
+# 2. Adopt python_copier_template for project structure
 
-Status
-------
+## Status
 
 Accepted
 
-Context
--------
+## Context
 
-We should use the following `python_copier_template <https://github.com/DiamondLightSource/python_copier_template>`_.
+We should use the following [python_copier_template](https://github.com/DiamondLightSource/python_copier_template).
 The template will ensure consistency in developer
 environments and package management.
 
-Decision
---------
+## Decision
 
 We have switched to using the skeleton.
 
-Consequences
-------------
+## Consequences
 
 This module will use a fixed set of tools as developed in python_copier_template
 and can pull from this template to update the packaging to the latest techniques.

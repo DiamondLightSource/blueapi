@@ -1,16 +1,15 @@
 from dataclasses import dataclass
 
 import pytest
+from blueapi import __version__
+from blueapi.cli.cli import main
+from blueapi.core.bluesky_types import Plan
+from blueapi.service.handler import Handler, teardown_handler
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
 from mock import Mock, patch
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError
-
-from blueapi import __version__
-from blueapi.cli.cli import main
-from blueapi.core.bluesky_types import Plan
-from blueapi.service.handler import Handler, teardown_handler
 
 
 @pytest.fixture(autouse=True)
@@ -150,22 +149,31 @@ def test_config_passed_down_to_command_children(
 
     with patch("uvicorn.run", side_effect=None):
         result = runner.invoke(main, ["-c", config_path, "serve"])
+        assert result.exit_code == 0
 
-    assert result.exit_code == 0
+    with patch("requests.get") as mock_get, patch("requests.post") as mock_post:
+        mock_requests.return_value = Mock()
+        mock_get.return_value.json.return_value = {"time": 5}
 
-    mock_requests.return_value = Mock()
+        runner.invoke(
+            main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+        )
+        assert result.exit_code == 0
 
-    runner.invoke(
-        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
-    )
+        # expect the first call to be to the helper UI
+        assert mock_requests.call_args[0] == (
+            "GET",
+            "http://a.fake.host:12345/plans/sleep",
+        )
 
-    assert mock_requests.call_args[0] == (
-        "POST",
-        "http://a.fake.host:12345/tasks",
-    )
-    assert mock_requests.call_args[1] == {
-        "json": {
-            "name": "sleep",
-            "params": {"time": 5},
+        assert mock_requests.call_args[1] == (
+            "POST",
+            "http://a.fake.host:12345/tasks",
+        )
+        mock_post.return_value = Mock(status_code=200)  # Mock a successful POST request
+        assert mock_requests.call_args[2] == {
+            "json": {
+                "name": "sleep",
+                "params": {"time": 5},
+            }
         }
-    }

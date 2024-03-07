@@ -15,8 +15,8 @@ components:
           title: Protocols
           type: array
       required:
-        - name
-        - protocols
+      - name
+      - protocols
       title: DeviceModel
       type: object
     DeviceResponse:
@@ -26,11 +26,11 @@ components:
         devices:
           description: Devices available to use in plans
           items:
-            $ref: "#/components/schemas/DeviceModel"
+            $ref: '#/components/schemas/DeviceModel'
           title: Devices
           type: array
       required:
-        - devices
+      - devices
       title: DeviceResponse
       type: object
     EnvironmentResponse:
@@ -42,14 +42,14 @@ components:
           title: Initialized
           type: boolean
       required:
-        - initialized
+      - initialized
       title: EnvironmentResponse
       type: object
     HTTPValidationError:
       properties:
         detail:
           items:
-            $ref: "#/components/schemas/ValidationError"
+            $ref: '#/components/schemas/ValidationError'
           title: Detail
           type: array
       title: HTTPValidationError
@@ -71,7 +71,7 @@ components:
           title: Schema
           type: object
       required:
-        - name
+      - name
       title: PlanModel
       type: object
     PlanResponse:
@@ -81,12 +81,31 @@ components:
         plans:
           description: Plans available to use by a worker
           items:
-            $ref: "#/components/schemas/PlanModel"
+            $ref: '#/components/schemas/PlanModel'
           title: Plans
           type: array
       required:
-        - plans
+      - plans
       title: PlanResponse
+      type: object
+    StateChangeRequest:
+      additionalProperties: false
+      description: Request to change the state of the worker.
+      properties:
+        defer:
+          default: false
+          description: Should worker defer Pausing until the next checkpoint
+          title: Defer
+          type: boolean
+        new_state:
+          $ref: '#/components/schemas/WorkerState'
+        reason:
+          description: The reason for the current run to be aborted
+          title: Reason
+          type: string
+      required:
+      - new_state
+      title: StateChangeRequest
       type: object
     Task:
       additionalProperties: false
@@ -101,27 +120,8 @@ components:
           title: Params
           type: object
       required:
-        - name
+      - name
       title: Task
-      type: object
-    StateChangeRequest:
-      additionalProperties: false
-      description: Request to change the state of the worker.
-      properties:
-        defer:
-          default: false
-          description: Should worker defer Pausing until the next checkpoint
-          title: Defer
-          type: boolean
-        new_state:
-          $ref: "#/components/schemas/WorkerState"
-        reason:
-          description: The reason for the current run to be aborted
-          title: Reason
-          type: string
-      required:
-        - new_state
-      title: StateChangeRequest
       type: object
     TaskResponse:
       additionalProperties: false
@@ -132,7 +132,7 @@ components:
           title: Task Id
           type: string
       required:
-        - task_id
+      - task_id
       title: TaskResponse
       type: object
     TrackableTask:
@@ -158,7 +158,7 @@ components:
           title: Task Id
           type: string
       required:
-        - task_id
+      - task_id
       title: TrackableTask
       type: object
     ValidationError:
@@ -166,8 +166,8 @@ components:
         loc:
           items:
             anyOf:
-              - type: string
-              - type: integer
+            - type: string
+            - type: integer
           title: Location
           type: array
         msg:
@@ -177,24 +177,24 @@ components:
           title: Error Type
           type: string
       required:
-        - loc
-        - msg
-        - type
+      - loc
+      - msg
+      - type
       title: ValidationError
       type: object
     WorkerState:
       description: The state of the Worker.
       enum:
-        - IDLE
-        - RUNNING
-        - PAUSING
-        - PAUSED
-        - HALTING
-        - STOPPING
-        - ABORTING
-        - SUSPENDING
-        - PANICKED
-        - UNKNOWN
+      - IDLE
+      - RUNNING
+      - PAUSING
+      - PAUSED
+      - HALTING
+      - STOPPING
+      - ABORTING
+      - SUSPENDING
+      - PANICKED
+      - UNKNOWN
       title: WorkerState
       type: string
     WorkerTask:
@@ -217,11 +217,11 @@ paths:
       description: Retrieve information about all available devices.
       operationId: get_devices_devices_get
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeviceResponse"
+                $ref: '#/components/schemas/DeviceResponse'
           description: Successful Response
       summary: Get Devices
   /devices/{name}:
@@ -229,31 +229,31 @@ paths:
       description: Retrieve information about a devices by its (unique) name.
       operationId: get_device_by_name_devices__name__get
       parameters:
-        - in: path
-          name: name
-          required: true
-          schema:
-            title: Name
-            type: string
+      - in: path
+        name: name
+        required: true
+        schema:
+          title: Name
+          type: string
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeviceModel"
+                $ref: '#/components/schemas/DeviceModel'
           description: Successful Response
-        "422":
+        '422':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Device By Name
   /environment:
     delete:
       operationId: delete_environment_environment_delete
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema: {}
@@ -262,11 +262,11 @@ paths:
     get:
       operationId: get_environment_environment_get
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EnvironmentResponse"
+                $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
       summary: Get Environment
   /plans:
@@ -274,11 +274,11 @@ paths:
       description: Retrieve information about all available plans.
       operationId: get_plans_plans_get
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PlanResponse"
+                $ref: '#/components/schemas/PlanResponse'
           description: Successful Response
       summary: Get Plans
   /plans/{name}:
@@ -286,24 +286,24 @@ paths:
       description: Retrieve information about a plan by its (unique) name.
       operationId: get_plan_by_name_plans__name__get
       parameters:
-        - in: path
-          name: name
-          required: true
-          schema:
-            title: Name
-            type: string
+      - in: path
+        name: name
+        required: true
+        schema:
+          title: Name
+          type: string
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PlanModel"
+                $ref: '#/components/schemas/PlanModel'
           description: Successful Response
-        "422":
+        '422':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Plan By Name
   /tasks:
@@ -317,70 +317,70 @@ paths:
               name: count
               params:
                 detectors:
-                  - x
+                - x
             schema:
-              $ref: "#/components/schemas/Task"
+              $ref: '#/components/schemas/Task'
         required: true
       responses:
-        "201":
+        '201':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TaskResponse"
+                $ref: '#/components/schemas/TaskResponse'
           description: Successful Response
-        "422":
+        '422':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Submit Task
   /tasks/{task_id}:
     delete:
       operationId: delete_submitted_task_tasks__task_id__delete
       parameters:
-        - in: path
-          name: task_id
-          required: true
-          schema:
-            title: Task Id
-            type: string
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          title: Task Id
+          type: string
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TaskResponse"
+                $ref: '#/components/schemas/TaskResponse'
           description: Successful Response
-        "422":
+        '422':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Delete Submitted Task
     get:
       description: Retrieve a task
       operationId: get_task_tasks__task_id__get
       parameters:
-        - in: path
-          name: task_id
-          required: true
-          schema:
-            title: Task Id
-            type: string
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          title: Task Id
+          type: string
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TrackableTask"
+                $ref: '#/components/schemas/TrackableTask'
           description: Successful Response
-        "422":
+        '422':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Task
   /worker/state:
@@ -388,16 +388,15 @@ paths:
       description: Get the State of the Worker
       operationId: get_state_worker_state_get
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WorkerState"
+                $ref: '#/components/schemas/WorkerState'
           description: Successful Response
       summary: Get State
     put:
-      description:
-        "Request that the worker is put into a particular state.\nReturns\
+      description: "Request that the worker is put into a particular state.\nReturns\
         \ the state of the worker at the end of the call.\n\n- **The following transitions\
         \ are allowed and return 202: Accepted**\n- If the worker is **PAUSED**, new_state\
         \ may be **RUNNING** to resume.\n- If the worker is **RUNNING**, new_state\
@@ -416,35 +415,35 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/StateChangeRequest"
+              $ref: '#/components/schemas/StateChangeRequest'
         required: true
       responses:
-        "202":
+        '202':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WorkerState"
+                $ref: '#/components/schemas/WorkerState'
           description: Successful Response
           detail: Transition requested
-        "400":
+        '400':
           description: Bad Request
           detail: Transition not allowed
-        "422":
+        '422':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Set State
   /worker/task:
     get:
       operationId: get_active_task_worker_task_get
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WorkerTask"
+                $ref: '#/components/schemas/WorkerTask'
           description: Successful Response
       summary: Get Active Task
     put:
@@ -453,22 +452,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WorkerTask"
+              $ref: '#/components/schemas/WorkerTask'
         required: true
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WorkerTask"
+                $ref: '#/components/schemas/WorkerTask'
           description: Successful Response
-        "409":
+        '409':
           description: Conflict
           worker: already active
-        "422":
+        '422':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Update Task

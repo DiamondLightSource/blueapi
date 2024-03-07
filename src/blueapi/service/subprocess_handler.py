@@ -9,7 +9,7 @@ from blueapi.service.handler import get_handler, setup_handler, teardown_handler
 from blueapi.service.handler_base import BlueskyHandler, HandlerNotStartedError
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import WorkerState
-from blueapi.worker.task import RunPlan
+from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask
 
 set_start_method("spawn", force=True)
@@ -78,7 +78,7 @@ class SubprocessHandler(BlueskyHandler):
     def get_device(self, name: str) -> DeviceModel:
         return self._run_in_subprocess(get_device, [name])
 
-    def submit_task(self, task: RunPlan) -> str:
+    def submit_task(self, task: Task) -> str:
         return self._run_in_subprocess(submit_task, [task])
 
     def clear_pending_task(self, task_id: str) -> str:
@@ -135,7 +135,7 @@ def get_device(name: str) -> DeviceModel:
     return get_handler().get_device(name)
 
 
-def submit_task(task: RunPlan) -> str:
+def submit_task(task: Task) -> str:
     return get_handler().submit_task(task)
 
 

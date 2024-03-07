@@ -23,7 +23,7 @@ from blueapi.service.openapi import (
     print_schema_as_yaml,
     write_schema_as_yaml,
 )
-from blueapi.worker import ProgressEvent, RunPlan, WorkerEvent, WorkerState
+from blueapi.worker import ProgressEvent, Task, WorkerEvent, WorkerState
 
 from .rest import BlueapiRestClient
 
@@ -211,7 +211,7 @@ def run_plan(
             finished_event.append(event)
 
     parameters = parameters or "{}"
-    task = RunPlan(name=name, params=json.loads(parameters))
+    task = Task(name=name, params=json.loads(parameters))
 
     resp = client.create_task(task)
     task_id = resp.task_id

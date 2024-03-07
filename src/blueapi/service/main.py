@@ -16,7 +16,7 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
-from blueapi.worker import RunPlan, TrackableTask, WorkerState
+from blueapi.worker import Task, TrackableTask, WorkerState
 
 from .handler_base import BlueskyHandler
 from .model import (
@@ -141,9 +141,7 @@ def get_device_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)
 def submit_task(
     request: Request,
     response: Response,
-    task: RunPlan = Body(
-        ..., example=RunPlan(name="count", params={"detectors": ["x"]})
-    ),
+    task: Task = Body(..., example=Task(name="count", params={"detectors": ["x"]})),
     handler: BlueskyHandler = Depends(get_handler),
 ):
     """Submit a task to the worker."""

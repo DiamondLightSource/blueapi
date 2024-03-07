@@ -32,16 +32,6 @@ class Task(BlueapiBaseModel):
         ctx.run_engine(wrapped_plan_generator)
 
 
-# Here for backward compatibility pending
-# https://github.com/DiamondLightSource/blueapi/issues/253
-class RunPlan(Task):
-    """
-    Task that will run a plan
-    """
-
-    ...
-
-
 def _lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:
     """
     Checks plan parameters against context

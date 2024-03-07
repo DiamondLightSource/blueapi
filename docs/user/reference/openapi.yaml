@@ -88,22 +88,6 @@ components:
       - plans
       title: PlanResponse
       type: object
-    RunPlan:
-      additionalProperties: false
-      description: Task that will run a plan
-      properties:
-        name:
-          description: Name of plan to run
-          title: Name
-          type: string
-        params:
-          description: Values for parameters to plan, if any
-          title: Params
-          type: object
-      required:
-      - name
-      title: RunPlan
-      type: object
     StateChangeRequest:
       additionalProperties: false
       description: Request to change the state of the worker.
@@ -122,6 +106,22 @@ components:
       required:
       - new_state
       title: StateChangeRequest
+      type: object
+    Task:
+      additionalProperties: false
+      description: Task that will run a plan
+      properties:
+        name:
+          description: Name of plan to run
+          title: Name
+          type: string
+        params:
+          description: Values for parameters to plan, if any
+          title: Params
+          type: object
+      required:
+      - name
+      title: Task
       type: object
     TaskResponse:
       additionalProperties: false
@@ -319,7 +319,7 @@ paths:
                 detectors:
                 - x
             schema:
-              $ref: '#/components/schemas/RunPlan'
+              $ref: '#/components/schemas/Task'
         required: true
       responses:
         '201':

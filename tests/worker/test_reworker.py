@@ -10,10 +10,9 @@ from blueapi.core import BlueskyContext, EventStream, MsgGenerator
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.worker import (
     ProgressEvent,
-    RunEngineWorker,
-    RunPlan,
     Task,
     TaskStatus,
+    TaskWorker,
     TrackableTask,
     Worker,
     WorkerBusyError,
@@ -21,13 +20,13 @@ from blueapi.worker import (
     WorkerState,
 )
 
-_SIMPLE_TASK = RunPlan(name="sleep", params={"time": 0.0})
-_LONG_TASK = RunPlan(name="sleep", params={"time": 1.0})
-_INDEFINITE_TASK = RunPlan(
+_SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
+_LONG_TASK = Task(name="sleep", params={"time": 1.0})
+_INDEFINITE_TASK = Task(
     name="set_absolute",
     params={"movable": "fake_device", "value": 4.0},
 )
-_FAILING_TASK = RunPlan(name="failing_plan", params={})
+_FAILING_TASK = Task(name="failing_plan", params={})
 
 
 class FakeDevice:
@@ -69,7 +68,7 @@ def context(fake_device: FakeDevice) -> BlueskyContext:
 
 @pytest.fixture
 def inert_worker(context: BlueskyContext) -> Worker[Task]:
-    return RunEngineWorker(context, start_stop_timeout=2.0)
+    return TaskWorker(context, start_stop_timeout=2.0)
 
 
 @pytest.fixture
@@ -259,9 +258,7 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
     progress_events: List[ProgressEvent] = []
     worker.progress_events.subscribe(lambda event, id: progress_events.append(event))
 
-    task: Task = RunPlan(
-        name="move", params={"moves": {"additional_status_device": 5.0}}
-    )
+    task: Task = Task(name="move", params={"moves": {"additional_status_device": 5.0}})
     task_id = worker.submit_task(task)
     begin_task_and_wait_until_complete(worker, task_id)
 
@@ -344,7 +341,7 @@ def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
 def assert_running_count_plan_produces_ordered_worker_and_data_events(
     expected_events: List[Union[WorkerEvent, DataEvent]],
     worker: Worker,
-    task: Task = RunPlan(name="count", params={"detectors": ["image_det"], "num": 1}),
+    task: Task = Task(name="count", params={"detectors": ["image_det"], "num": 1}),
     timeout: float = 5.0,
 ) -> None:
     event_streams: List[EventStream[Any, int]] = [

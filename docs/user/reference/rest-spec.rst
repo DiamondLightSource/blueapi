@@ -1,13 +1,8 @@
----
-title: REST Specification
----
+REST Specification
+==================
 
 Blueapi runs a FastAPI server through which the blueapi worker can be
 interacted with. This page documents all possible endpoints of this
 server.
 
-<div class="openapi">
-
-./openapi.yaml
-
-</div>
+.. openapi:: ./openapi.yaml

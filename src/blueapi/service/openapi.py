@@ -10,7 +10,7 @@ from pyparsing import Any
 from blueapi.service.main import app
 
 DOCS_SCHEMA_LOCATION = (
-    Path(__file__).parents[3] / "docs" / "user" / "reference" / "openapi.yaml"
+    Path(__file__).parents[3] / "docs" / "reference" / "openapi.yaml"
 )
 
 

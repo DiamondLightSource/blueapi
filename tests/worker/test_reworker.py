@@ -10,9 +10,9 @@ from blueapi.core import BlueskyContext, EventStream, MsgGenerator
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.worker import (
     ProgressEvent,
-    TaskWorker,
     Task,
     TaskStatus,
+    TaskWorker,
     TrackableTask,
     Worker,
     WorkerBusyError,

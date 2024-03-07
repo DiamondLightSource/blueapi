@@ -1,4 +1,5 @@
 import json
+from pydantic import ValidationError, parse_obj_as
 import logging
 from collections import deque
 from functools import wraps
@@ -16,7 +17,7 @@ from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
-from blueapi.service.model import WorkerTask
+from blueapi.service.model import PlanModel, WorkerTask
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
     generate_schema,
@@ -182,6 +183,21 @@ def run_plan(
             finished_event.append(event)
 
     parameters = parameters or "{}"
+    schema: PlanModel = client.get_plan(name)
+    progress_tracking = f"Trying to run plan: {name} with the expected schema: {schema}"
+    print(progress_tracking)
+    try:
+        text = "Checking supplied parameters against expected parameters..."
+        print(text)
+        validated_data = parse_obj_as(type(schema), parameters)
+        print("Plan params validation successful:", validated_data)
+    except ValidationError as e:
+        # Handle the case where the parameters are invalid according to the PlanModel
+        print(
+            f"failed to run the {name} plan, supplied params {parameters} do not match the expected params: {schema}"
+        )
+        return
+
     task = Task(name=name, params=json.loads(parameters))
 
     resp = client.create_task(task)

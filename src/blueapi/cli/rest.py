@@ -1,5 +1,7 @@
 from typing import Any, Callable, Literal, Mapping, Optional, Type, TypeVar
 
+from http import HTTPStatus
+
 import requests
 from pydantic import parse_obj_as
 
@@ -21,6 +23,15 @@ T = TypeVar("T")
 
 def _is_exception(response: requests.Response) -> bool:
     return response.status_code >= 400
+
+
+def get_status_message(code: int) -> str:
+    """Returns the standard description for a given HTTP status code."""
+    try:
+        message = HTTPStatus(code).phrase
+        return message
+    except ValueError:
+        return "Unknown Status Code"
 
 
 class BlueapiRestClient:
@@ -106,7 +117,10 @@ class BlueapiRestClient:
         url = self._url(suffix)
         response = requests.request(method, url, json=data)
         if raise_if(response):
-            raise BlueskyRemoteError(str(response))
+            message = get_status_message(response.status_code)
+            t = response.text
+            error_message = f"Response failed with text: {t}, with error code: {response.status_code} which corresponds to {message}"
+            raise BlueskyRemoteError(error_message)
         deserialized = parse_obj_as(target_type, response.json())
         return deserialized
 

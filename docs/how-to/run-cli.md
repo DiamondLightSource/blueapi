@@ -9,7 +9,7 @@ You must have access to the `blueapi` command either via the container or pip in
 :::
 
 :::{seealso}
-In a developer environment, the worker can also be run from vscode: {doc}`../../developer/tutorials/dev-run`.
+In a developer environment, the worker can also be run from vscode: {doc}`../tutorials/dev-run`.
 :::
 
 ## Basic Introspection

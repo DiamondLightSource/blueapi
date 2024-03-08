@@ -14,7 +14,7 @@ Ensure you are inside your virtual environment:
 source venv/bin/activate
 ```
 
-You will need to follow the instructions for setting up ActiveMQ as in {any}`../../user/how-to/run-cli`.
+You will need to follow the instructions for setting up ActiveMQ as in {any}`../how-to/run-cli`.
 
 The worker will be available from the command line (`blueapi serve`), but can be started from vscode with additional
 debugging capabilities.

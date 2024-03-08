@@ -11,7 +11,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
-description = "Lightweight Bluesky-as-a-service wrapper application. Also usable as a library."
+description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
     "bluesky",
     "ophyd",

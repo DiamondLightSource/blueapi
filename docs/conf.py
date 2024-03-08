@@ -46,6 +46,10 @@ extensions = [
     "sphinx_design",
     # So we can write markdown files
     "myst_parser",
+    # OpenAPI directive
+    "sphinxcontrib.openapi",
+    # For documenting the CLI
+    "sphinx_click.ext",
 ]
 
 # So we can use the ::: syntax

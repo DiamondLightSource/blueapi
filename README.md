@@ -19,7 +19,7 @@ Docker          | `docker run ghcr.io/diamondlightsource/blueapi:latest`
 Documentation   | <https://diamondlightsource.github.io/blueapi>
 Releases        | <https://github.com/DiamondLightSource/blueapi/releases>
 
-![concept](docs/images/blueapi.png)
+![concept](https://raw.githubusercontent.com/DiamondLightSource/blueapi/main/docs/images/blueapi.png)
 
 The main premise of blueapi is to minimize the boilerplate required to
 get plans and devices up and running by generating an API for your lab

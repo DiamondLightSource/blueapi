@@ -3,7 +3,7 @@
 Assuming you have setup a developer environment, you can run a development version of the bluesky worker.
 
 :::{seealso}
-{any}`./dev-install`
+`https://diamondlightsource.github.io/python-copier-template/main/how-to/dev-install.html`
 :::
 
 ## Start Bluesky Worker

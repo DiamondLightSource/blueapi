@@ -5,11 +5,11 @@ a test/development/debugging tool and not meant for production!
 
 :::{seealso}
 You must have access to the `blueapi` command either via the container or pip installing.
-{any}`./run-container` and {any}`../tutorials/installation`
+{doc}`./run-container` and {doc}`../tutorials/installation`
 :::
 
 :::{seealso}
-In a developer environment, the worker can also be run from vscode: {any}`../../developer/tutorials/dev-run`.
+In a developer environment, the worker can also be run from vscode: {doc}`../../developer/tutorials/dev-run`.
 :::
 
 ## Basic Introspection

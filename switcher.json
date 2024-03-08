@@ -244,6 +244,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/253-delete-runplan-and-use-just-task/"
   },
   {
+    "version": "384_merge",
+    "url": "https://DiamondLightSource.github.io/blueapi/384_merge/"
+  },
+  {
     "version": "DAQ-4642",
     "url": "https://DiamondLightSource.github.io/blueapi/DAQ-4642/"
   },

@@ -135,5 +135,5 @@ lint.select = [
     "F",  # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
     "W",  # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
     "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    #"UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]

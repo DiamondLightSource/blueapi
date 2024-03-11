@@ -30,7 +30,7 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def get_pending_tasks(self) -> List[TrackableTask[T]]:
+    def get_tasks(self) -> List[TrackableTask[T]]:
         """
         Return a list of all tasks pending on the worker,
         any one of which can be triggered with begin_task.

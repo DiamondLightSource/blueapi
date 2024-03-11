@@ -132,7 +132,7 @@ class Handler(BlueskyHandler):
 
     @property
     def pending_tasks(self) -> List[TrackableTask]:
-        return self._worker.get_pending_tasks()
+        return self._worker.get_tasks()
 
     def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
         return self._worker.get_pending_task(task_id)

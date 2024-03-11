@@ -112,7 +112,7 @@ class TaskWorker(Worker[Task]):
             self._ctx.run_engine.stop()
         return self._current.task_id
 
-    def get_pending_tasks(self) -> List[TrackableTask[Task]]:
+    def get_tasks(self) -> List[TrackableTask[Task]]:
         return list(self._pending_tasks.values())
 
     def get_pending_task(self, task_id: str) -> Optional[TrackableTask[Task]]:

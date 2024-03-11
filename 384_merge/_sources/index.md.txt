@@ -3,6 +3,7 @@ html_theme.sidebar_secondary.remove: true
 ---
 
 ```{include} ../README.md
+:relative-images:
 :end-before: <!-- README only content
 ```
 

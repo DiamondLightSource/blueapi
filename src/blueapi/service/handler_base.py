@@ -43,7 +43,7 @@ class BlueskyHandler(ABC):
         """
 
     @abstractmethod
-    def clear_pending_task(self, task_id: str) -> str:
+    def clear_task(self, task_id: str) -> str:
         """Remove a pending task from the worker"""
 
     @abstractmethod
@@ -75,12 +75,12 @@ class BlueskyHandler(ABC):
 
     @property
     @abstractmethod
-    def pending_tasks(self) -> List[TrackableTask]:
+    def tasks(self) -> List[TrackableTask]:
         """Return a list of all tasks pending on the worker,
         any one of which can be triggered with begin_task"""
 
     @abstractmethod
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
+    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask]:
         """Returns a task matching the task ID supplied,
         if the worker knows of it"""
 

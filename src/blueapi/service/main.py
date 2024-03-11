@@ -160,7 +160,7 @@ def delete_submitted_task(
     task_id: str,
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TaskResponse:
-    return TaskResponse(task_id=handler.clear_pending_task(task_id))
+    return TaskResponse(task_id=handler.clear_task(task_id))
 
 
 @app.put(
@@ -190,7 +190,7 @@ def get_task(
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TrackableTask:
     """Retrieve a task"""
-    pending = handler.get_pending_task(task_id)
+    pending = handler.get_task_by_id(task_id)
     if pending is None:
         raise KeyError
     return pending

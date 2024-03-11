@@ -40,7 +40,7 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask[T]]:
+    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask[T]]:
         """
         Returns a task matching the task ID supplied,
         if the worker knows of it.

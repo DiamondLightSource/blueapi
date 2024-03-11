@@ -25,7 +25,7 @@ def test_initialize():
     sp_handler.start()
     assert sp_handler.initialized
     # Run a single call to the handler for coverage of dispatch to subprocess
-    assert sp_handler.pending_tasks == []
+    assert sp_handler.tasks == []
     sp_handler.stop()
     assert not sp_handler.initialized
 
@@ -66,7 +66,7 @@ class DummyHandler(BlueskyHandler):
     def submit_task(self, task: Task) -> str:
         return "0"
 
-    def clear_pending_task(self, task_id: str) -> str:
+    def clear_task(self, task_id: str) -> str:
         return "1"
 
     def begin_task(self, task: WorkerTask) -> WorkerTask:
@@ -87,12 +87,12 @@ class DummyHandler(BlueskyHandler):
     def cancel_active_task(self, failure: bool, reason: Optional[str]) -> None: ...
 
     @property
-    def pending_tasks(self) -> List[TrackableTask]:
+    def tasks(self) -> List[TrackableTask]:
         return [
             TrackableTask(task_id="abc", task=Task(name="sleep", params={"time": 0.0}))
         ]
 
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
+    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask]:
         return None
 
     def start(self): ...
@@ -138,7 +138,7 @@ def test_method_routing(get_handler_mock: MagicMock):
         Task(name="sleep", params={"time": 0.0})
     ) == dummy_handler.submit_task(Task(name="sleep", params={"time": 0.0}))
 
-    assert sp_handler.clear_pending_task("task_id") == dummy_handler.clear_pending_task(
+    assert sp_handler.clear_task("task_id") == dummy_handler.clear_task(
         "task_id"
     )
 
@@ -156,9 +156,9 @@ def test_method_routing(get_handler_mock: MagicMock):
 
     sp_handler.cancel_active_task(True, "reason")
 
-    assert sp_handler.pending_tasks == dummy_handler.pending_tasks
+    assert sp_handler.tasks == dummy_handler.tasks
 
-    assert sp_handler.get_pending_task("task_id") == dummy_handler.get_pending_task(
+    assert sp_handler.get_task_by_id("task_id") == dummy_handler.get_task_by_id(
         "task_id"
     )
 

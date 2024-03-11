@@ -43,8 +43,8 @@ def test_main_with_nonexistent_config_file():
     runner = CliRunner()
     result = runner.invoke(main, ["-c", "tests/non_existent.yaml"])
 
-    result.exit_code == 1
-    type(result.exception) is FileNotFoundError
+    assert result.exit_code == 1
+    assert type(result.exception) is FileNotFoundError
 
 
 @patch("requests.request")

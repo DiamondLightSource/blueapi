@@ -69,7 +69,7 @@ def is_bluesky_compatible_device_type(cls: Type[Any]) -> bool:
 
 
 def _follows_bluesky_protocols(obj: Any) -> bool:
-    return any(map(lambda protocol: isinstance(obj, protocol), BLUESKY_PROTOCOLS))
+    return any((isinstance(obj, protocol) for protocol in BLUESKY_PROTOCOLS))
 
 
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:

@@ -28,7 +28,7 @@ from .event import (
 from .multithread import run_worker_in_own_thread
 from .task import Task
 from .worker import TrackableTask, Worker
-from .worker_busy_error import WorkerBusyError
+from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -155,15 +155,15 @@ class TaskWorker(Worker[Task]):
             task_started.wait(timeout=5.0)
             if not task_started.is_set():
                 raise TimeoutError("Failed to start plan within timeout")
-        except Full:
+        except Full as f:
             LOGGER.error("Cannot submit task while another is running")
-            raise WorkerBusyError("Cannot submit task while another is running")
+            raise WorkerBusyError("Cannot submit task while another is running") from f
         finally:
             self.worker_events.unsubscribe(sub)
 
     def start(self) -> None:
         if self._started.is_set():
-            raise Exception("Worker is already running")
+            raise WorkerAlreadyStartedError("Worker is already running")
         self._wait_until_stopped()
         run_worker_in_own_thread(self)
         self._wait_until_started()

@@ -44,11 +44,11 @@ class BlueskyHandler(ABC):
 
     @abstractmethod
     def clear_task(self, task_id: str) -> str:
-        """Remove a pending task from the worker"""
+        """Remove a task from the worker"""
 
     @abstractmethod
     def begin_task(self, task: WorkerTask) -> WorkerTask:
-        """Trigger a pending task. Will fail if the worker is busy"""
+        """Trigger a task. Will fail if the worker is busy"""
 
     @property
     @abstractmethod

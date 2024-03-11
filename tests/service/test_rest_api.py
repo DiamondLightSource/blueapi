@@ -203,9 +203,9 @@ def test_create_task(handler: Handler, client: TestClient) -> None:
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
 
-    pending = handler.get_task_by_id(task_id)
-    assert pending is not None
-    assert pending.task == _TASK
+    t = handler.get_task_by_id(task_id)
+    assert t is not None
+    assert t.task == _TASK
 
 
 def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
@@ -391,9 +391,9 @@ def test_clear_pending_task_no_longer_pending(handler: Handler, client: TestClie
     response = client.post("/tasks", json=_TASK.dict())
     task_id = response.json()["task_id"]
 
-    pending = handler.get_task_by_id(task_id)
-    assert pending is not None
-    assert pending.task == _TASK
+    t = handler.get_task_by_id(task_id)
+    assert t is not None
+    assert t.task == _TASK
 
     delete_response = client.delete(f"/tasks/{task_id}")
     assert delete_response.status_code is status.HTTP_200_OK

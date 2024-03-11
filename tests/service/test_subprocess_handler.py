@@ -138,9 +138,7 @@ def test_method_routing(get_handler_mock: MagicMock):
         Task(name="sleep", params={"time": 0.0})
     ) == dummy_handler.submit_task(Task(name="sleep", params={"time": 0.0}))
 
-    assert sp_handler.clear_task("task_id") == dummy_handler.clear_task(
-        "task_id"
-    )
+    assert sp_handler.clear_task("task_id") == dummy_handler.clear_task("task_id")
 
     assert sp_handler.begin_task(WorkerTask(task_id="foo")) == dummy_handler.begin_task(
         WorkerTask(task_id="foo")

@@ -110,17 +110,13 @@ def test_multi_start(inert_worker: Worker) -> None:
 def test_submit_task(worker: Worker) -> None:
     assert worker.get_tasks() == []
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
 
 
 def test_submit_multiple_tasks(worker: Worker) -> None:
     assert worker.get_tasks() == []
     task_id_1 = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [
-        TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK)]
     task_id_2 = worker.submit_task(_LONG_TASK)
     assert worker.get_tasks() == [
         TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK),
@@ -136,14 +132,10 @@ def test_stop_with_task_pending(inert_worker: Worker) -> None:
 
 def test_restart_leaves_task_pending(worker: Worker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
     worker.stop()
     worker.start()
-    assert worker.get_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
 
 
 def test_submit_before_start_pending(inert_worker: Worker) -> None:
@@ -160,9 +152,7 @@ def test_submit_before_start_pending(inert_worker: Worker) -> None:
 
 def test_clear_task(worker: Worker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
     assert worker.clear_task(task_id)
     assert worker.get_tasks() == []
 

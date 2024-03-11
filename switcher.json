@@ -240,6 +240,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/206-unclear-error-message-when-running-plan-without-parameters/"
   },
   {
+    "version": "233-pending-tasks-are-not-cleared",
+    "url": "https://DiamondLightSource.github.io/blueapi/233-pending-tasks-are-not-cleared/"
+  },
+  {
     "version": "253-delete-runplan-and-use-just-task",
     "url": "https://DiamondLightSource.github.io/blueapi/253-delete-runplan-and-use-just-task/"
   },

@@ -1,0 +1,790 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Writing Bluesky plans for Blueapi &#8212; blueapi 0.4.1.dev2+g7bbc94e0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="../../_static/documentation_options.js?v=8fe94a2b"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../_static/design-tabs.js?v=36754332"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user/how-to/write-plans';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '233-pending-tasks-are-not-cleared';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
+    <link rel="icon" href="../../_static/blueapi-logo.svg"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Add Plans and Devices to your Blueapi Environment" href="add-plans-and-devices.html" />
+    <link rel="prev" title="Configure the application" href="configure-app.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/blueapi-logo.svg" class="logo__image only-light" alt=""/>
+    <script>document.write(`<img src="../../_static/blueapi-logo.svg" class="logo__image only-dark" alt=""/>`);</script>
+  
+  
+    <p class="title logo__title">blueapi</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="../index.html">
+                        User Guide
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../developer/index.html">
+                        Developer Guide
+                      </a>
+                    </li>
+                
+
+                <li class="nav-item">
+                  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/blueapi/releases">
+                    Release Notes
+                  </a>
+                </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/blueapi" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/blueapi" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="../index.html">
+                        User Guide
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../developer/index.html">
+                        Developer Guide
+                      </a>
+                    </li>
+                
+
+                <li class="nav-item">
+                  <a class="nav-link nav-external" href="https://github.com/DiamondLightSource/blueapi/releases">
+                    Release Notes
+                  </a>
+                </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/blueapi" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/blueapi" title="PyPI" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fas fa-cube fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-3"
+      type="button"
+      class="version-switcher__button btn btn-sm navbar-btn dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-3"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-3"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-3">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/quickstart.html">Quickstart Guide</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the application</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Writing Bluesky plans for Blueapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="add-plans-and-devices.html">Add Plans and Devices to your Blueapi Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-cli.html">Control the Worker via the CLI</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Explanations</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../explanations/docs-structure.html">About the documentation</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../reference/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/messaging-spec.html">Messaging Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/rest-spec.html">REST Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/cli.html">Command-Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../genindex.html">Index</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">Writing...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="writing-bluesky-plans-for-blueapi">
+<h1>Writing Bluesky plans for Blueapi<a class="headerlink" href="#writing-bluesky-plans-for-blueapi" title="Link to this heading">#</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Please read the following completely and carefully, as you risk losing data if plans are written incorrectly!</p>
+</div>
+<p>For an introduction to bluesky plans and general forms/advice, <a class="reference external" href="https://nsls-ii.github.io/bluesky/plans.html">see the bluesky documentation</a>. Blueapi has some additional requirements, which are explained below.</p>
+<section id="plans">
+<h2>Plans<a class="headerlink" href="#plans" title="Link to this heading">#</a></h2>
+<p>While the bluesky project uses <code class="docutils literal notranslate"><span class="pre">plan</span></code> in a general sense to refer to any <code class="docutils literal notranslate"><span class="pre">Iterable</span></code> of <code class="docutils literal notranslate"><span class="pre">Msg</span></code>s which may be run by the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>, blueapi distinguishes between a <code class="docutils literal notranslate"><span class="pre">plan</span></code> and a <code class="docutils literal notranslate"><span class="pre">stub</span></code>. This distinction is made to allow for a subset of <code class="docutils literal notranslate"><span class="pre">stub</span></code>s to be exposed and run, as <code class="docutils literal notranslate"><span class="pre">stub</span></code>s may not make sense to run alone.</p>
+<p>Generally, a <code class="docutils literal notranslate"><span class="pre">plan</span></code> includes at least one <code class="docutils literal notranslate"><span class="pre">open_run</span></code> and <code class="docutils literal notranslate"><span class="pre">close_run</span></code> and is a complete description of an experiment. If it does not, it is a <code class="docutils literal notranslate"><span class="pre">stub</span></code>. This distinction is made in the bluesky core library between the <code class="docutils literal notranslate"><span class="pre">plan</span></code>s and <code class="docutils literal notranslate"><span class="pre">plan_stub</span></code>s modules.</p>
+<section id="type-annotations">
+<h3>Type Annotations<a class="headerlink" href="#type-annotations" title="Link to this heading">#</a></h3>
+<p>To be imported into the blueapi context, <code class="docutils literal notranslate"><span class="pre">plan</span></code>s and <code class="docutils literal notranslate"><span class="pre">stub</span></code>s must be the in the form of a <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>: any function that return a <code class="docutils literal notranslate"><span class="pre">MsgGenerator</span></code> (a python <code class="docutils literal notranslate"><span class="pre">Generator</span></code> that yields <code class="docutils literal notranslate"><span class="pre">Msg</span></code>s). <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code> and <code class="docutils literal notranslate"><span class="pre">MsgGenerator</span></code> types are available to import from <code class="docutils literal notranslate"><span class="pre">dodal</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>s must be annotated with the return type <code class="docutils literal notranslate"><span class="pre">MsgGenerator</span></code> to be added to the blueapi context.</p>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+    <span class="c1"># The minimum PlanGenerator acceptable to blueapi</span>
+    <span class="k">yield from</span> <span class="p">{}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code> arguments must be annotated to enable blueapi to generate their schema</p>
+</div>
+<p><strong>Input annotations should be as broad as possible</strong>, the least specific implementation that is sufficient to accomplish the requirements of the plan.</p>
+<p>For example, if a plan is written to drive a specific implementation of Movable, but never calls any methods on the device and only yields bluesky <code class="docutils literal notranslate"><span class="pre">'set'</span></code> Msgs, it can be generalised to instead use the base protocol <code class="docutils literal notranslate"><span class="pre">Movable</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">move_to_each_position</span><span class="p">(</span><span class="n">axis</span><span class="p">:</span> <span class="n">Movable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+    <span class="c1"># Originally written for SpecificImplementationMovable</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="n">abs_set</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">location</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="allowed-argument-types">
+<h3>Allowed Argument Types<a class="headerlink" href="#allowed-argument-types" title="Link to this heading">#</a></h3>
+<p>When added to the blueapi context, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>s are formalised into their schema- <a class="reference external" href="https://docs.pydantic.dev/1.10/usage/models/">a Pydantic BaseModel</a> with the expected argument types and their defaults.</p>
+<p>Therefore, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>s must only take as arguments <a class="reference external" href="https://docs.pydantic.dev/1.10/usage/types/">those types which are valid Pydantic fields</a> or Device types which implement <code class="docutils literal notranslate"><span class="pre">BLUESKY_PROTOCOLS</span></code> defined in dodal, which are fetched from the context at runtime.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Allowed argument types for Pydantic BaseModels include the primitives, types that extend <code class="docutils literal notranslate"><span class="pre">BaseModel</span></code> and <code class="docutils literal notranslate"><span class="pre">dict</span></code>s, <code class="docutils literal notranslate"><span class="pre">list</span></code>s  and other <code class="docutils literal notranslate"><span class="pre">sequence</span></code>s of supported types. Blueapi will deserialise these types from JSON, so <code class="docutils literal notranslate"><span class="pre">dict</span></code>s should use <code class="docutils literal notranslate"><span class="pre">str</span></code> keys.</p>
+</div>
+</section>
+<section id="injecting-defaults">
+<h3>Injecting defaults<a class="headerlink" href="#injecting-defaults" title="Link to this heading">#</a></h3>
+<p>Often when writing a plan, it is known which device the plan will mostly or always be run with, but at the time of writing the plan the device object has not been instantiated: dodal defines device factory functions, but these cannot be injected as default arguments to plans.</p>
+<p>Dodal defines an <code class="docutils literal notranslate"><span class="pre">inject</span></code> function which bypasses the type checking of the constructed schemas, defering to the blueapi contexting fetching of the device when the plan is imported. This allows defaulting devices, so long as there is a device of that name in the context which conforms to the type annotation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">touch_synchrotron</span><span class="p">(</span><span class="n">sync</span><span class="p">:</span> <span class="n">Synchrotron</span> <span class="o">=</span> <span class="n">inject</span><span class="p">(</span><span class="s2">&quot;synchrotron&quot;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+    <span class="c1"># There is only one Synchrotron device, so we know which one it will always be.</span>
+    <span class="c1"># If there is no device named &quot;synchrotron&quot; in the blueapi context, it will except.</span>
+    <span class="n">sync</span><span class="o">.</span><span class="n">specific_function</span><span class="p">()</span>
+    <span class="k">yield from</span> <span class="p">{}</span>
+</pre></div>
+</div>
+</section>
+<section id="metadata">
+<h3>Metadata<a class="headerlink" href="#metadata" title="Link to this heading">#</a></h3>
+<p>The bluesky event model allows for rich structured metadata to be attached to a scan. To enable this to be used consistently, blueapi encourages a standard form.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Plans <strong>should</strong> include <code class="docutils literal notranslate"><span class="pre">metadata</span></code> as their final argument, if they do it <strong>must</strong> have the type Optional[Mapping[str, Any]], <a class="reference external" href="https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python">and a default of None</a>, with the plan defaulting to an empty dict if passed <code class="docutils literal notranslate"><span class="pre">None</span></code>. If the plan calls to a stub/plan which takes metadata, the plan <strong>must</strong> pass down its metadata, which may be a differently named argument.</p>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">pass_metadata</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+    <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">{[</span><span class="n">x</span><span class="p">],</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}}</span>
+</pre></div>
+</div>
+</section>
+<section id="docstrings">
+<h3>Docstrings<a class="headerlink" href="#docstrings" title="Link to this heading">#</a></h3>
+<p>Blueapi plan schemas include includes the docstrings of imported Plans. <strong>These should therefore explain as much about the scan as cannot be ascertained from its arguments and name</strong>. This may include units of arguments (e.g. seconds or microseconds), its purpose in the function, the purpose of the plan etc.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">temp_pressure_snapshot</span><span class="p">(</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">inject</span><span class="p">(</span><span class="s2">&quot;sample_temperature&quot;</span><span class="p">),</span>
+    <span class="n">pressure</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">inject</span><span class="p">(</span><span class="s2">&quot;sample_pressure&quot;</span><span class="p">),</span>
+    <span class="n">target_temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">273.0</span><span class="p">,</span>
+    <span class="n">target_pressure</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Moves devices for pressure and temperature (defaults fetched from the context)</span>
+<span class="sd">    and captures a single frame from a collection of devices</span>
+<span class="sd">    Args:</span>
+<span class="sd">        detectors (List[Readable]): A list of devices to read while the sample is at STP</span>
+<span class="sd">        temperature (Optional[Movable]): A device controlling temperature of the sample,</span>
+<span class="sd">            defaults to fetching a device name &quot;sample_temperature&quot; from the context</span>
+<span class="sd">        pressure (Optional[Movable]): A device controlling pressure on the sample,</span>
+<span class="sd">            defaults to fetching a device name &quot;sample_pressure&quot; from the context</span>
+<span class="sd">        target_pressure (Optional[float]): target temperature in Kelvin. Default 273</span>
+<span class="sd">        target_pressure (Optional[float]): target pressure in Pa. Default 10**5</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        MsgGenerator: Plan</span>
+<span class="sd">    Yields:</span>
+<span class="sd">        Iterator[MsgGenerator]: Bluesky messages</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">yield from</span> <span class="n">move</span><span class="p">({</span><span class="n">temperature</span><span class="p">:</span> <span class="n">target_temperature</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="n">target_pressure</span><span class="p">})</span>
+    <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
+</pre></div>
+</div>
+</section>
+<section id="decorators">
+<h3>Decorators<a class="headerlink" href="#decorators" title="Link to this heading">#</a></h3>
+<p>Dodal defines a decorator for configuring any <code class="docutils literal notranslate"><span class="pre">ophyd-async</span></code> devices- which will be the majority of devices at Diamond- to write to a common location.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><strong>This is an absolute requirement to write data onto the Diamond Filesystem</strong>.</p>
+<p>This decorator must be used every time a new data collection is intended to begin. For an example, see below.</p>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@attach_metadata</span>
+<span class="k">def</span> <span class="nf">ophyd_async_snapshot</span><span class="p">(</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configures a number of devices, which may be Ophyd-Async detectors and require</span>
+<span class="sd">    knowledge of where to write their files, then takes a snapshot with them.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        detectors (List[Readable]): Devices, maybe including Ophyd-Async detectors.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        MsgGenerator: Plan</span>
+<span class="sd">    Yields:</span>
+<span class="sd">        Iterator[MsgGenerator]: Bluesky messages</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
+
+<span class="k">def</span> <span class="nf">repeated_snapshot</span><span class="p">(</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configures a number of devices, which may be Ophyd-Async detectors and require</span>
+<span class="sd">    knowledge of where to write their files, then takes multiple snapshot with them.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        detectors (List[Readable]): Devices, maybe including Ophyd-Async detectors.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        MsgGenerator: Plan</span>
+<span class="sd">    Yields:</span>
+<span class="sd">        Iterator[MsgGenerator]: Bluesky messages</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@attach_metadata</span>
+    <span class="k">def</span> <span class="nf">inner_function</span><span class="p">():</span>
+        <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
+
+
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="n">inner_function</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="stubs">
+<h2>Stubs<a class="headerlink" href="#stubs" title="Link to this heading">#</a></h2>
+<p>Some functionality in your plans may make sense to factor out to allow re-use. These pieces of functionality may or may not make sense outside of the context of a plan. Some will, such as nudging a motor, but others may not, such as waiting to consume data from the previous position, or opening a run without an equivalent closure.</p>
+<p>To enable blueapi to expose the stubs that it makes sense to, but not the others, blueapi will only expose a subset of <code class="docutils literal notranslate"><span class="pre">MsgGenerator</span></code>s under the following conditions:</p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> in directory has <code class="docutils literal notranslate"><span class="pre">__exports__</span></code>: List[str]: only
+those named in <code class="docutils literal notranslate"><span class="pre">__exports__</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> in directory has <code class="docutils literal notranslate"><span class="pre">__all__</span></code>: List[str] but no
+<code class="docutils literal notranslate"><span class="pre">__exports__</span></code>: only those named in <code class="docutils literal notranslate"><span class="pre">__all__</span></code></div>
+</div>
+<p>This allows other python packages (such as <code class="docutils literal notranslate"><span class="pre">plans</span></code>) to access every function in <code class="docutils literal notranslate"><span class="pre">__all__</span></code>, while only allowing a subset to be called from blueapi as standalone.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Rehomes all of the beamline&#39;s devices. May require to be run standalone</span>
+<span class="kn">from</span> <span class="nn">.package</span> <span class="kn">import</span> <span class="n">rehome_devices</span>
+<span class="c1"># Awaits a standard callback from analysis. Should not be run standalone</span>
+<span class="kn">from</span> <span class="nn">.package</span> <span class="kn">import</span> <span class="n">await_callback</span>
+
+<span class="c1"># Exported from the module for use by other modules</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;rehome_devices&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;await_callback&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c1"># Imported by instances of blueapi and allowed to be run</span>
+<span class="n">__exports__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;rehome_devices&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="configure-app.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Configure the application</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="add-plans-and-devices.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Add Plans and Devices to your Blueapi Environment</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plans">Plans</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#type-annotations">Type Annotations</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#allowed-argument-types">Allowed Argument Types</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#injecting-defaults">Injecting defaults</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#metadata">Metadata</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#docstrings">Docstrings</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#decorators">Decorators</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stubs">Stubs</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/233-pending-tasks-are-not-cleared/docs/user/how-to/write-plans.rst">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../../_sources/user/how-to/write-plans.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

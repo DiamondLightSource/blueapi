@@ -137,3 +137,7 @@ lint.select = [
     "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
     #"UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Body", "fastapi.Task", "dls_bluesky_core.core.inject"]
+

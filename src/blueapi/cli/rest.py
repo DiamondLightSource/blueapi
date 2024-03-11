@@ -115,7 +115,8 @@ class BlueapiRestClient:
     ) -> T:
         url = self._url(suffix)
         # todo consider changing this to a switch statement for easier mocking
-        # alternatively do single responsiblity principle and decoule request from deserializing.
+        # alternatively do single responsiblity principle
+        # and decoule request from deserializing.
         response = requests.request(method, url, json=data)
         if raise_if(response):
             message = get_status_message(response.status_code)

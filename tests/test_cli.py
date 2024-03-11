@@ -1,15 +1,16 @@
 from dataclasses import dataclass
 
 import pytest
-from blueapi import __version__
-from blueapi.cli.cli import main
-from blueapi.core.bluesky_types import Plan
-from blueapi.service.handler import Handler, teardown_handler
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
 from mock import Mock, patch
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError
+
+from blueapi import __version__
+from blueapi.cli.cli import main
+from blueapi.core.bluesky_types import Plan
+from blueapi.service.handler import Handler, teardown_handler
 
 
 @pytest.fixture(autouse=True)
@@ -209,17 +210,16 @@ def test_config_passed_down_to_command_children_2(
         assert result.exit_code == 0
 
         # Check that the correct GET request was made
-        mock_get.assert_called_once_with(
-            "http://a.fake.host:12345/plans/sleep"
-        )
+        mock_get.assert_called_once_with("http://a.fake.host:12345/plans/sleep")
 
         # If you're sending a POST request in the process that should be captured here
-        # This part depends on how your `main` function and its subcommands handle the POST request
+        # This part depends on how your `main` function
+        # and its subcommands handle the POST request
         # You might need to adjust the assertion to match your application's behavior
         mock_post.assert_called_once_with(
             "http://a.fake.host:12345/tasks",
             json={
                 "name": "sleep",
                 "params": {"time": 5},
-            }
+            },
         )

@@ -45,8 +45,9 @@ async def test_update_sets_collection_number(
 ) -> None:
     await visit_directory_provider.update()
     assert visit_directory_provider() == DirectoryInfo(
-        directory_path="/tmp",
-        filename_prefix="example-1",
+        root=Path("/tmp"),
+        resource_dir=Path("."),
+        prefix="example-1",
     )
 
 
@@ -56,11 +57,13 @@ async def test_update_sets_collection_number_multi(
 ) -> None:
     await visit_directory_provider.update()
     assert visit_directory_provider() == DirectoryInfo(
-        directory_path="/tmp",
-        filename_prefix="example-1",
+        root=Path("/tmp"),
+        resource_dir=Path("."),
+        prefix="example-1",
     )
     await visit_directory_provider.update()
     assert visit_directory_provider() == DirectoryInfo(
-        directory_path="/tmp",
-        filename_prefix="example-2",
+        root=Path("/tmp"),
+        resource_dir=Path("."),
+        prefix="example-2",
     )

@@ -10,7 +10,7 @@
     "python.languageServer": "Pylance",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-        "source.organizeImports": "explicit"
+        "source.organizeImports": true
     },
     "esbonio.server.enabled": true,
     "esbonio.sphinx.confDir": "",

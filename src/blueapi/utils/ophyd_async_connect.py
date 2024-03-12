@@ -43,10 +43,10 @@ async def _wait_for_tasks(tasks: Dict[asyncio.Task, str], timeout: float):
 
 def format_error_message(tasks: Dict[asyncio.Task, str], t: asyncio.Task) -> str:
     e = t.exception()
-    msg = f"\n  {tasks[t]}: {type(e).__name__}"
+    part_one = f"\n  {tasks[t]}: {type(e).__name__}"
     lines = str(e).splitlines()
-    if len(lines) <= 1:
-        msg += f": {e}"
-    else:
-        msg += "".join(f"\n    {line}" for line in lines)
-    return msg
+
+    part_two = (
+        f": {e}" if len(lines) <= 1 else "".join(f"\n    {line}" for line in lines)
+    )
+    return part_one + part_two

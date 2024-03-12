@@ -76,7 +76,7 @@ class BlueskyHandler(ABC):
     @property
     @abstractmethod
     def tasks(self) -> List[TrackableTask]:
-        """Return a list of all tasks pending on the worker,
+        """Return a list of all tasks on the worker,
         any one of which can be triggered with begin_task"""
 
     @abstractmethod

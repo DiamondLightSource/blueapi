@@ -30,9 +30,9 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def get_pending_tasks(self) -> List[TrackableTask[T]]:
+    def get_tasks(self) -> List[TrackableTask[T]]:
         """
-        Return a list of all tasks pending on the worker,
+        Return a list of all tasks on the worker,
         any one of which can be triggered with begin_task.
 
         Returns:
@@ -40,7 +40,7 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask[T]]:
+    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask[T]]:
         """
         Returns a task matching the task ID supplied,
         if the worker knows of it.
@@ -65,7 +65,7 @@ class Worker(ABC, Generic[T]):
     @abstractmethod
     def clear_task(self, task_id: str) -> str:
         """
-        Remove a pending task from the worker
+        Remove a task from the worker
 
         Args:
             task_id: The ID of the task to be removed

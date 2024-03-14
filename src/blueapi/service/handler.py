@@ -105,7 +105,7 @@ class Handler(BlueskyHandler):
     def submit_task(self, task: Task) -> str:
         return self._worker.submit_task(task)
 
-    def clear_pending_task(self, task_id: str) -> str:
+    def clear_task(self, task_id: str) -> str:
         return self._worker.clear_task(task_id)
 
     def begin_task(self, task: WorkerTask) -> WorkerTask:
@@ -131,11 +131,11 @@ class Handler(BlueskyHandler):
         self._worker.cancel_active_task(failure, reason)
 
     @property
-    def pending_tasks(self) -> List[TrackableTask]:
-        return self._worker.get_pending_tasks()
+    def tasks(self) -> List[TrackableTask]:
+        return self._worker.get_tasks()
 
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
-        return self._worker.get_pending_task(task_id)
+    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask]:
+        return self._worker.get_task_by_id(task_id)
 
     @property
     def initialized(self) -> bool:

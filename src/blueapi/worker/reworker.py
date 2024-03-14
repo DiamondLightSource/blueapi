@@ -48,7 +48,7 @@ class TaskWorker(Worker[Task]):
     _ctx: BlueskyContext
     _start_stop_timeout: float
 
-    _pending_tasks: Dict[str, TrackableTask]
+    _tasks: Dict[str, TrackableTask]
 
     _state: WorkerState
     _errors: List[str]
@@ -74,7 +74,7 @@ class TaskWorker(Worker[Task]):
         self._ctx = ctx
         self._start_stop_timeout = start_stop_timeout
 
-        self._pending_tasks = {}
+        self._tasks = {}
 
         self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
         self._errors = []
@@ -94,7 +94,7 @@ class TaskWorker(Worker[Task]):
         self._broadcast_statuses = broadcast_statuses
 
     def clear_task(self, task_id: str) -> str:
-        task = self._pending_tasks.pop(task_id)
+        task = self._tasks.pop(task_id)
         return task.task_id
 
     def cancel_active_task(
@@ -112,17 +112,17 @@ class TaskWorker(Worker[Task]):
             self._ctx.run_engine.stop()
         return self._current.task_id
 
-    def get_pending_tasks(self) -> List[TrackableTask[Task]]:
-        return list(self._pending_tasks.values())
+    def get_tasks(self) -> List[TrackableTask[Task]]:
+        return list(self._tasks.values())
 
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask[Task]]:
-        return self._pending_tasks.get(task_id)
+    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask[Task]]:
+        return self._tasks.get(task_id)
 
     def get_active_task(self) -> Optional[TrackableTask[Task]]:
         return self._current
 
     def begin_task(self, task_id: str) -> None:
-        task = self._pending_tasks.get(task_id)
+        task = self._tasks.get(task_id)
         if task is not None:
             self._submit_trackable_task(task)
         else:
@@ -132,7 +132,7 @@ class TaskWorker(Worker[Task]):
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         trackable_task = TrackableTask(task_id=task_id, task=task)
-        self._pending_tasks[task_id] = trackable_task
+        self._tasks[task_id] = trackable_task
         return task_id
 
     def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:

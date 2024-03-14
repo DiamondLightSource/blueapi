@@ -199,12 +199,14 @@ def run_plan(
 
         print(f"Input validation failed: {formatted_errors}")
         # Handle the case where the parameters are invalid according to the PlanModel
-        expected_params = schema.parameter_schema.get("properties")
-        print(
-            f"""failed to run the {name} plan, supplied params {parameters}
-            do not match the expected params: {expected_params}"""
-        )
-        return
+        s = schema.parameter_schema
+        if s:
+            expected_params = s.get("properties")
+            print(
+                f"""failed to run the {name} plan, supplied params {parameters}
+                do not match the expected params: {expected_params}"""
+            )
+            return
 
     task = Task(name=name, params=json.loads(parameters))
 

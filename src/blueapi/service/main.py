@@ -89,17 +89,18 @@ def get_environment(
     return EnvironmentResponse(initialized=handler.initialized)
 
 
-@app.delete("/environment")
+@app.delete("/environment", response_model=EnvironmentResponse)
 async def delete_environment(
     background_tasks: BackgroundTasks,
     handler: BlueskyHandler = Depends(get_handler),
-):
+) -> EnvironmentResponse:
     def restart_handler(handler: BlueskyHandler):
         handler.stop()
         handler.start()
 
     if handler.initialized:
         background_tasks.add_task(restart_handler, handler)
+    return EnvironmentResponse(initialized=False)
 
 
 @app.get("/plans", response_model=PlanResponse)

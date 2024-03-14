@@ -9,6 +9,7 @@ from blueapi.config import RestConfig
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
+    EnvironmentResponse,
     PlanModel,
     PlanResponse,
     TaskResponse,
@@ -115,7 +116,10 @@ class BlueapiRestClient:
         raise_if: Callable[[requests.Response], bool] = _is_exception,
     ) -> T:
         url = self._url(suffix)
-        response = requests.request(method, url, json=data)
+        if data:
+            response = requests.request(method, url, json=data)
+        else:
+            response = requests.request(method, url)
         if raise_if(response):
             message = get_status_message(response.status_code)
             error_message = f"""Response failed with text: {response.text},
@@ -128,3 +132,11 @@ class BlueapiRestClient:
     def _url(self, suffix: str) -> str:
         base_url = f"{self._config.protocol}://{self._config.host}:{self._config.port}"
         return f"{base_url}{suffix}"
+
+    def get_environment(self) -> EnvironmentResponse:
+        return self._request_and_deserialize("/environment", EnvironmentResponse)
+
+    def reload_environemnt(self) -> EnvironmentResponse:
+        return self._request_and_deserialize(
+            "/environment", EnvironmentResponse, method="DELETE"
+        )

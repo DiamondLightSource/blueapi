@@ -278,6 +278,28 @@ def stop(obj: dict) -> None:
     pprint(client.cancel_current_task(state=WorkerState.STOPPING))
 
 
+@controller.command(name="env")
+@check_connection
+@click.option(
+    "-r",
+    "--reload",
+    is_flag=True,
+    type=bool,
+    help="Reload the current environment",
+    default=False,
+)
+@click.pass_obj
+def env(obj: dict, reload: Optional[bool]) -> None:
+    """
+        Inspect or restart the environment
+    """
+
+    client: BlueapiRestClient = obj["rest_client"]
+    if reload:
+        pprint(client.reload_environemnt())
+    pprint(client.get_environment())
+
+
 # helper function
 def process_event_after_finished(event: WorkerEvent, logger: logging.Logger):
     if event.is_error():

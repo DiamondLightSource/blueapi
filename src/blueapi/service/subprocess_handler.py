@@ -81,8 +81,8 @@ class SubprocessHandler(BlueskyHandler):
     def submit_task(self, task: Task) -> str:
         return self._run_in_subprocess(submit_task, [task])
 
-    def clear_pending_task(self, task_id: str) -> str:
-        return self._run_in_subprocess(clear_pending_task, [task_id])
+    def clear_task(self, task_id: str) -> str:
+        return self._run_in_subprocess(clear_task_by_id, [task_id])
 
     def begin_task(self, task: WorkerTask) -> WorkerTask:
         return self._run_in_subprocess(begin_task, [task])
@@ -105,11 +105,11 @@ class SubprocessHandler(BlueskyHandler):
         return self._run_in_subprocess(cancel_active_task, [failure, reason])
 
     @property
-    def pending_tasks(self) -> List[TrackableTask]:
-        return self._run_in_subprocess(pending_tasks)
+    def tasks(self) -> List[TrackableTask]:
+        return self._run_in_subprocess(tasks)
 
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
-        return self._run_in_subprocess(get_pending_task, [task_id])
+    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask]:
+        return self._run_in_subprocess(get_task_by_id, [task_id])
 
     @property
     def initialized(self) -> bool:
@@ -139,8 +139,8 @@ def submit_task(task: Task) -> str:
     return get_handler().submit_task(task)
 
 
-def clear_pending_task(task_id: str) -> str:
-    return get_handler().clear_pending_task(task_id)
+def clear_task_by_id(task_id: str) -> str:
+    return get_handler().clear_task(task_id)
 
 
 def begin_task(task: WorkerTask) -> WorkerTask:
@@ -167,9 +167,9 @@ def cancel_active_task(failure: bool, reason: Optional[str]) -> None:
     return get_handler().cancel_active_task(failure, reason)
 
 
-def pending_tasks() -> List[TrackableTask]:
-    return get_handler().pending_tasks
+def tasks() -> List[TrackableTask]:
+    return get_handler().tasks
 
 
-def get_pending_task(task_id: str) -> Optional[TrackableTask]:
-    return get_handler().get_pending_task(task_id)
+def get_task_by_id(task_id: str) -> Optional[TrackableTask]:
+    return get_handler().get_task_by_id(task_id)

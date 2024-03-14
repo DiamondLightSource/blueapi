@@ -193,13 +193,16 @@ def run_plan(
         print("Plan params validation successful:", validated_data)
     except ValidationError as e:
         errors = e.errors()
-        formatted_errors = "; ".join([f"{err['loc'][0]}: {err['msg']}" for err in errors])
-    
+        formatted_errors = "; ".join(
+            [f"{err['loc'][0]}: {err['msg']}" for err in errors]
+        )
+
         print(f"Input validation failed: {formatted_errors}")
         # Handle the case where the parameters are invalid according to the PlanModel
-        expected_params = schema.parameter_schema.get('properties')
+        expected_params = schema.parameter_schema.get("properties")
         print(
-            f"""failed to run the {name} plan, supplied params {parameters} do not match the expected params: {expected_params}"""
+            f"""failed to run the {name} plan, supplied params {parameters}
+            do not match the expected params: {expected_params}"""
         )
         return
 

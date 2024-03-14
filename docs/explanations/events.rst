@@ -14,7 +14,7 @@ The base engine programatically emits data events conforming to the `bluesky eve
 are meant to be handled by other subscribing code (e.g. databroker) and are decoupled from concerns such as whether
 a plan has started, finished, paused, errored etc. See the example below:
 
-.. figure:: ../../images/bluesky-events.png
+.. figure:: ../images/bluesky-events.png
     :width: 600px
     :align: center
 

@@ -10,7 +10,7 @@ a test/development/debugging tool and not meant for production!
 
 
 .. seealso:: 
-    In a developer environment, the worker can also be run from vscode: `../../developer/tutorials/dev-run`.
+    In a developer environment, the worker can also be run from vscode: `../tutorials/dev-run`.
 
 
 Basic Introspection

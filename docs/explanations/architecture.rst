@@ -12,7 +12,7 @@ These responsibilities are kept separate in the codebase to ensure a clean, main
 Key Components
 --------------
 
-.. figure:: ../../images/blueapi-architecture.png
+.. figure:: ../images/blueapi-architecture.png
     :width: 600px
     :align: center
 

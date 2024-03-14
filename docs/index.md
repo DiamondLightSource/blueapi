@@ -2,9 +2,9 @@
 html_theme.sidebar_secondary.remove: true
 ---
 
-```{include} ../README.md
+```{include} ../README.rst
 :relative-images:
-:end-before: <!-- README only content
+:end-before: and will be replaced
 ```
 
 

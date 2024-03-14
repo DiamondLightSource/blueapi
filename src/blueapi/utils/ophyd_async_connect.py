@@ -30,7 +30,7 @@ async def _wait_for_tasks(tasks: Dict[asyncio.Task, str], timeout: float):
             t.cancel()
             with suppress(Exception):
                 await t
-            msg += format_error_message(tasks, t)
+            msg += _format_awaited_task_error_message(tasks, t)
         logging.error(msg)
     raised = [t for t in done if t.exception()]
     if raised:
@@ -41,7 +41,9 @@ async def _wait_for_tasks(tasks: Dict[asyncio.Task, str], timeout: float):
         raise NotConnected("Not all Devices connected")
 
 
-def format_error_message(tasks: Dict[asyncio.Task, str], t: asyncio.Task) -> str:
+def _format_awaited_task_error_message(
+    tasks: Dict[asyncio.Task, str], t: asyncio.Task
+) -> str:
     e = t.exception()
     part_one = f"\n  {tasks[t]}: {type(e).__name__}"
     lines = str(e).splitlines()

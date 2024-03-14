@@ -12,7 +12,7 @@ To pull the container from github container registry and run::
 
     ``docker run ghcr.io/diamondlightsource/blueapi:main --version``
 
-with `podman`::
+with ``podman``::
 
     ``podman run ghcr.io/diamondlightsource/blueapi:main --version``
 

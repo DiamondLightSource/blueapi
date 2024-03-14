@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run in a container &#8212; blueapi 0.4.1.dev3+g31d01c76 documentation</title>
+    <title>Run in a container &#8212; blueapi 0.4.1.dev4+g4b5514ef documentation</title>
   
   
   
@@ -38,7 +38,7 @@
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../../_static/documentation_options.js?v=4c618647"></script>
+    <script src="../../_static/documentation_options.js?v=b53c01d3"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -494,7 +494,11 @@ installed are available on <a class="reference external" href="https://ghcr.io/D
 <section id="starting-the-container">
 <h2>Starting the container<a class="headerlink" href="#starting-the-container" title="Link to this heading">#</a></h2>
 <p>To pull the container from github container registry and run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker run ghcr.io/DiamondLightSource/blueapi:main --version
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>``docker run ghcr.io/diamondlightsource/blueapi:main --version``
+</pre></div>
+</div>
+<p>with <code class="docutils literal notranslate"><span class="pre">podman</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>``podman run ghcr.io/diamondlightsource/blueapi:main --version``
 </pre></div>
 </div>
 <p>To get a released version, use a numbered release instead of <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p>

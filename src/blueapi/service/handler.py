@@ -1,5 +1,6 @@
 import logging
-from typing import List, Mapping, Optional
+from collections.abc import Mapping
+from typing import Optional
 
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
@@ -87,14 +88,14 @@ class Handler(BlueskyHandler):
             self._messaging_template.disconnect()
 
     @property
-    def plans(self) -> List[PlanModel]:
+    def plans(self) -> list[PlanModel]:
         return [PlanModel.from_plan(plan) for plan in self._context.plans.values()]
 
     def get_plan(self, name: str) -> PlanModel:
         return PlanModel.from_plan(self._context.plans[name])
 
     @property
-    def devices(self) -> List[DeviceModel]:
+    def devices(self) -> list[DeviceModel]:
         return [
             DeviceModel.from_device(device) for device in self._context.devices.values()
         ]
@@ -131,7 +132,7 @@ class Handler(BlueskyHandler):
         self._worker.cancel_active_task(failure, reason)
 
     @property
-    def tasks(self) -> List[TrackableTask]:
+    def tasks(self) -> list[TrackableTask]:
         return self._worker.get_tasks()
 
     def get_task_by_id(self, task_id: str) -> Optional[TrackableTask]:

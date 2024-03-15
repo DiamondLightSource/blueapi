@@ -1,7 +1,7 @@
+from collections.abc import Iterable
 from concurrent.futures import Future
 from dataclasses import dataclass
 from queue import Queue
-from typing import Iterable
 
 import pytest
 

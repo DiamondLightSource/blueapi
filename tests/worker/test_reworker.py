@@ -1,11 +1,12 @@
 import itertools
 import threading
+from collections.abc import Iterable
 from concurrent.futures import Future
 from queue import Full
-from typing import Any, Callable, Iterable, List, Optional, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
+from unittest.mock import MagicMock, patch
 
 import pytest
-from mock import MagicMock, patch
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream, MsgGenerator
@@ -190,7 +191,7 @@ def test_begin_task_blocks_until_current_task_set(worker: Worker) -> None:
 
 def test_plan_failure_recorded_in_active_task(worker: Worker) -> None:
     task_id = worker.submit_task(_FAILING_TASK)
-    events_future: Future[List[WorkerEvent]] = take_events(
+    events_future: Future[list[WorkerEvent]] = take_events(
         worker.worker_events,
         lambda event: event.task_status is not None and event.task_status.task_failed,
     )
@@ -214,7 +215,7 @@ def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
         assert_run_produces_worker_events(events, worker, task_id)
 
 
-def _sleep_events(task_id: str) -> List[WorkerEvent]:
+def _sleep_events(task_id: str) -> list[WorkerEvent]:
     return [
         WorkerEvent(
             state=WorkerState.RUNNING,
@@ -248,7 +249,7 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
     See https://github.com/bluesky/ophyd/issues/1115
     """
 
-    progress_events: List[ProgressEvent] = []
+    progress_events: list[ProgressEvent] = []
     worker.progress_events.subscribe(lambda event, id: progress_events.append(event))
 
     task: Task = Task(name="move", params={"moves": {"additional_status_device": 5.0}})
@@ -280,7 +281,7 @@ def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: Worker
 
 
 def assert_run_produces_worker_events(
-    expected_events: List[WorkerEvent],
+    expected_events: list[WorkerEvent],
     worker: Worker,
     task_id: str,
 ) -> None:
@@ -291,8 +292,8 @@ def begin_task_and_wait_until_complete(
     worker: Worker,
     task_id: str,
     timeout: float = 5.0,
-) -> List[WorkerEvent]:
-    events: "Future[List[WorkerEvent]]" = take_events(
+) -> list[WorkerEvent]:
+    events: "Future[list[WorkerEvent]]" = take_events(
         worker.worker_events,
         lambda event: event.is_complete(),
     )
@@ -343,18 +344,18 @@ def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
 
 
 def assert_running_count_plan_produces_ordered_worker_and_data_events(
-    expected_events: List[Union[WorkerEvent, DataEvent]],
+    expected_events: list[Union[WorkerEvent, DataEvent]],
     worker: Worker,
     task: Task = Task(name="count", params={"detectors": ["image_det"], "num": 1}),  # noqa: B008
     timeout: float = 5.0,
 ) -> None:
-    event_streams: List[EventStream[Any, int]] = [
+    event_streams: list[EventStream[Any, int]] = [
         worker.data_events,
         worker.worker_events,
     ]
 
     count = itertools.count()
-    events: "Future[List[Any]]" = take_events_from_streams(
+    events: "Future[list[Any]]" = take_events_from_streams(
         event_streams,
         lambda _: next(count) >= len(expected_events) - 1,
     )
@@ -379,7 +380,7 @@ E = TypeVar("E")
 def take_n_events(
     stream: EventStream[E, Any],
     num: int,
-) -> "Future[List[E]]":
+) -> "Future[list[E]]":
     count = itertools.count()
     return take_events(stream, lambda _: next(count) >= num)
 
@@ -387,9 +388,9 @@ def take_n_events(
 def take_events(
     stream: EventStream[E, Any],
     cutoff_predicate: Callable[[E], bool],
-) -> "Future[List[E]]":
-    events: List[E] = []
-    future: "Future[List[E]]" = Future()
+) -> "Future[list[E]]":
+    events: list[E] = []
+    future: "Future[list[E]]" = Future()
 
     def on_event(event: E, event_id: Optional[str]) -> None:
         events.append(event)
@@ -402,9 +403,9 @@ def take_events(
 
 
 def take_events_from_streams(
-    streams: List[EventStream[Any, int]],
+    streams: list[EventStream[Any, int]],
     cutoff_predicate: Callable[[Any], bool],
-) -> "Future[List[Any]]":
+) -> "Future[list[Any]]":
     """Returns a collated list of futures for events in numerous event streams.
 
     The support for generic and algebraic types doesn't appear to extend to
@@ -424,8 +425,8 @@ def take_events_from_streams(
     ]
 
     """
-    events: List[Any] = []
-    future: "Future[List[Any]]" = Future()
+    events: list[Any] = []
+    future: "Future[list[Any]]" = Future()
 
     def on_event(event: Any, event_id: Optional[str]) -> None:
         print(event)
@@ -436,7 +437,7 @@ def take_events_from_streams(
     for stream in streams:
         sub = stream.subscribe(on_event)
 
-        def callback(unused: Future[List[Any]], stream=stream, sub=sub):
+        def callback(unused: Future[list[Any]], stream=stream, sub=sub):
             stream.unsubscribe(sub)
 
         future.add_done_callback(callback)

@@ -1,9 +1,9 @@
 from dataclasses import dataclass
+from unittest.mock import Mock, patch
 
 import pytest
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
-from mock import Mock, patch
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError
 

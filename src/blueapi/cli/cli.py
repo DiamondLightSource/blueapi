@@ -4,7 +4,7 @@ from collections import deque
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import click
 from requests.exceptions import ConnectionError
@@ -34,7 +34,7 @@ from .rest import BlueapiRestClient
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
 @click.pass_context
-def main(ctx: click.Context, config: Union[Optional[Path], Tuple[Path, ...]]) -> None:
+def main(ctx: click.Context, config: Union[Optional[Path], tuple[Path, ...]]) -> None:
     # if no command is supplied, run with the options passed
 
     config_loader = ConfigLoader(ApplicationConfig)

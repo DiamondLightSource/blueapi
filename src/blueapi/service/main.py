@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import Dict, Optional, Set
+from typing import Optional
 
 from fastapi import (
     BackgroundTasks,
@@ -212,7 +212,7 @@ def get_state(handler: BlueskyHandler = Depends(get_handler)) -> WorkerState:
 
 
 # Map of current_state: allowed new_states
-_ALLOWED_TRANSITIONS: Dict[WorkerState, Set[WorkerState]] = {
+_ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
     WorkerState.RUNNING: {
         WorkerState.PAUSED,
         WorkerState.ABORTING,

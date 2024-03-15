@@ -1,7 +1,7 @@
-from typing import List, Optional
+from typing import Optional
+from unittest.mock import MagicMock, patch
 
 import pytest
-from mock import MagicMock, patch
 
 from blueapi.service.handler_base import BlueskyHandler, HandlerNotStartedError
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
@@ -47,14 +47,14 @@ def test_raises_if_not_started():
 
 class DummyHandler(BlueskyHandler):
     @property
-    def plans(self) -> List[PlanModel]:
+    def plans(self) -> list[PlanModel]:
         return [PlanModel(name="plan1"), PlanModel(name="plan2")]
 
     def get_plan(self, name: str) -> PlanModel:
         return PlanModel(name="plan1")
 
     @property
-    def devices(self) -> List[DeviceModel]:
+    def devices(self) -> list[DeviceModel]:
         return [
             DeviceModel(name="device1", protocols=[]),
             DeviceModel(name="device2", protocols=[]),
@@ -87,7 +87,7 @@ class DummyHandler(BlueskyHandler):
     def cancel_active_task(self, failure: bool, reason: Optional[str]) -> None: ...
 
     @property
-    def tasks(self) -> List[TrackableTask]:
+    def tasks(self) -> list[TrackableTask]:
         return [
             TrackableTask(task_id="abc", task=Task(name="sleep", params={"time": 0.0}))
         ]

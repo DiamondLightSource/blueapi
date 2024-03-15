@@ -1,5 +1,6 @@
+from collections.abc import Mapping
 from enum import Enum
-from typing import List, Mapping, Optional, Union
+from typing import Optional, Union
 
 from bluesky.run_engine import RunEngineStateMachine
 from pydantic import Field
@@ -110,8 +111,8 @@ class WorkerEvent(BlueapiBaseModel):
 
     state: WorkerState
     task_status: Optional[TaskStatus] = None
-    errors: List[str] = Field(default_factory=list)
-    warnings: List[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
     def is_error(self) -> bool:
         return (self.task_status is not None and self.task_status.task_failed) or bool(

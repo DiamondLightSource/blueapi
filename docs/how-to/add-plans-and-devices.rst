@@ -12,9 +12,9 @@ The code can be in any pip-installable package, such as:
 * A Github repository
 * A local directory with a ``pyproject.toml`` file or similar.
 
-The easiest place to put the code is a repository created with the `python skeleton`_. Which can then become any of the above.
+The easiest place to put the code is a repository created with the `python-copier-template`_. Which can then become any of the above.
 
-.. seealso:: Guide to setting up a new Python project with an environment and a standard set of tools: `New Skeleton Project Tutorial`_
+.. seealso:: Guide to setting up a new Python project with an environment and a standard set of tools: `Create a new repo from the template`_
 
 For development purposes this code should be installed into your environment with 
 
@@ -114,5 +114,5 @@ You can then clone projects into the scratch directory and blueapi will automati
 
 
 .. _dodal: https://github.com/DiamondLightSource/dodal
-.. _`python skeleton`: https://diamondlightsource.github.io/python3-pip-skeleton/main/index.html
-.. _`New Skeleton Project Tutorial`: https://diamondlightsource.github.io/python3-pip-skeleton-cli/main/user/tutorials/new.html
+.. _`python-copier-template`: https://diamondlightsource.github.io/python-copier-template/main/index.html
+.. _`Create a new repo from the template`: https://diamondlightsource.github.io/python-copier-template/main/tutorials/create-new.html

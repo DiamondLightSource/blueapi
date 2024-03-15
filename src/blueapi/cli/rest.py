@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from typing import Any, Callable, Literal, Mapping, Optional, Type, TypeVar
 
 import requests
@@ -21,6 +22,15 @@ T = TypeVar("T")
 
 def _is_exception(response: requests.Response) -> bool:
     return response.status_code >= 400
+
+
+def get_status_message(code: int) -> str:
+    """Returns the standard description for a given HTTP status code."""
+    try:
+        message = HTTPStatus(code).phrase
+        return message
+    except ValueError:
+        return "Unknown Status Code"
 
 
 class BlueapiRestClient:
@@ -104,9 +114,17 @@ class BlueapiRestClient:
         raise_if: Callable[[requests.Response], bool] = _is_exception,
     ) -> T:
         url = self._url(suffix)
+        # todo consider changing this to a switch statement for easier mocking
+        # alternatively do single responsiblity principle
+        # and decoule request from deserializing.
         response = requests.request(method, url, json=data)
         if raise_if(response):
-            raise BlueskyRemoteError(str(response))
+            message = get_status_message(response.status_code)
+            t = response.text
+            error_message = f"""Response failed with text: {t},
+            with error code: {response.status_code}
+            which corresponds to {message}"""
+            raise BlueskyRemoteError(error_message)
         deserialized = parse_obj_as(target_type, response.json())
         return deserialized
 

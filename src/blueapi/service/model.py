@@ -1,4 +1,5 @@
-from typing import Any, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any, Optional
 
 from bluesky.protocols import HasName
 from pydantic import Field
@@ -16,7 +17,7 @@ class DeviceModel(BlueapiBaseModel):
     """
 
     name: str = Field(description="Name of the device")
-    protocols: List[str] = Field(
+    protocols: list[str] = Field(
         description="Protocols that a device conforms to, indicating its capabilities"
     )
 
@@ -45,7 +46,7 @@ class DeviceResponse(BlueapiBaseModel):
     Response to a query for devices
     """
 
-    devices: List[DeviceModel] = Field(description="Devices available to use in plans")
+    devices: list[DeviceModel] = Field(description="Devices available to use in plans")
 
 
 class PlanModel(BlueapiBaseModel):
@@ -85,7 +86,7 @@ class PlanResponse(BlueapiBaseModel):
     Response to a query for plans
     """
 
-    plans: List[PlanModel] = Field(description="Plans available to use by a worker")
+    plans: list[PlanModel] = Field(description="Plans available to use by a worker")
 
 
 class TaskResponse(BlueapiBaseModel):

@@ -1,5 +1,6 @@
 import itertools
-from typing import Dict, Mapping, Optional, Union
+from collections.abc import Mapping
+from typing import Optional, Union
 
 from tqdm import tqdm
 
@@ -9,7 +10,7 @@ _BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"
 
 
 class ProgressBarRenderer:
-    _bars: Dict[str, tqdm]
+    _bars: dict[str, tqdm]
     _count: itertools.count
 
     def __init__(self) -> None:

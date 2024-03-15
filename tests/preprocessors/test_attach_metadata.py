@@ -1,5 +1,6 @@
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Mapping
+from typing import Any, Callable
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
@@ -92,7 +93,7 @@ class FakeDetector(Readable, HasName, Triggerable):
         self._name = name
         self._provider = provider
 
-    async def read(self) -> Dict[str, Reading]:
+    async def read(self) -> dict[str, Reading]:
         return {
             f"{self.name}_data": {
                 "value": "test",
@@ -100,7 +101,7 @@ class FakeDetector(Readable, HasName, Triggerable):
             },
         }
 
-    async def describe(self) -> Dict[str, DataKey]:
+    async def describe(self) -> dict[str, DataKey]:
         directory_info = self._provider()
         path = f"{directory_info.directory_path}/{directory_info.filename_prefix}"
         return {
@@ -126,7 +127,7 @@ class FakeDetector(Readable, HasName, Triggerable):
 
 
 @pytest.fixture(params=[1, 2])
-def detectors(request, provider: VisitDirectoryProvider) -> List[Readable]:
+def detectors(request, provider: VisitDirectoryProvider) -> list[Readable]:
     number_of_detectors = request.param
     return [
         FakeDetector(
@@ -137,21 +138,21 @@ def detectors(request, provider: VisitDirectoryProvider) -> List[Readable]:
     ]
 
 
-def simple_run(detectors: List[Readable]) -> MsgGenerator:
+def simple_run(detectors: list[Readable]) -> MsgGenerator:
     yield from bp.count(detectors)
 
 
-def multi_run(detectors: List[Readable]) -> MsgGenerator:
+def multi_run(detectors: list[Readable]) -> MsgGenerator:
     yield from bp.count(detectors)
     yield from bp.count(detectors)
 
 
-def multi_nested_plan(detectors: List[Readable]) -> MsgGenerator:
+def multi_nested_plan(detectors: list[Readable]) -> MsgGenerator:
     yield from simple_run(detectors)
     yield from simple_run(detectors)
 
 
-def multi_run_single_stage(detectors: List[Readable]) -> MsgGenerator:
+def multi_run_single_stage(detectors: list[Readable]) -> MsgGenerator:
     def stageless_count() -> MsgGenerator:
         return (yield from bps.one_shot(detectors))
 
@@ -163,7 +164,7 @@ def multi_run_single_stage(detectors: List[Readable]) -> MsgGenerator:
 
 
 def multi_run_single_stage_multi_group(
-    detectors: List[Readable],
+    detectors: list[Readable],
 ) -> MsgGenerator:
     def stageless_count() -> MsgGenerator:
         return (yield from bps.one_shot(detectors))
@@ -179,7 +180,7 @@ def multi_run_single_stage_multi_group(
 
 @run_decorator(md={DATA_SESSION: 12345})
 @set_run_key_decorator("outer")
-def nested_run_with_metadata(detectors: List[Readable]) -> MsgGenerator:
+def nested_run_with_metadata(detectors: list[Readable]) -> MsgGenerator:
     yield from set_run_key_wrapper(bp.count(detectors), "inner")
     yield from set_run_key_wrapper(bp.count(detectors), "inner")
 
@@ -187,7 +188,7 @@ def nested_run_with_metadata(detectors: List[Readable]) -> MsgGenerator:
 @run_decorator()
 @set_run_key_decorator("outer")
 def nested_run_without_metadata(
-    detectors: List[Readable],
+    detectors: list[Readable],
 ) -> MsgGenerator:
     yield from set_run_key_wrapper(bp.count(detectors), "inner")
     yield from set_run_key_wrapper(bp.count(detectors), "inner")
@@ -195,7 +196,7 @@ def nested_run_without_metadata(
 
 def test_simple_run_gets_scan_number(
     run_engine: RunEngine,
-    detectors: List[Readable],
+    detectors: list[Readable],
     provider: DirectoryProvider,
 ) -> None:
     docs = collect_docs(
@@ -211,8 +212,8 @@ def test_simple_run_gets_scan_number(
 @pytest.mark.parametrize("plan", [multi_run, multi_nested_plan])
 def test_multi_run_gets_scan_numbers(
     run_engine: RunEngine,
-    detectors: List[Readable],
-    plan: Callable[[List[Readable]], MsgGenerator],
+    detectors: list[Readable],
+    plan: Callable[[list[Readable]], MsgGenerator],
     provider: DirectoryProvider,
 ) -> None:
     """Test is here to demonstrate that multi run plans will overwrite files."""
@@ -230,7 +231,7 @@ def test_multi_run_gets_scan_numbers(
 
 def test_multi_run_single_stage(
     run_engine: RunEngine,
-    detectors: List[Readable],
+    detectors: list[Readable],
     provider: DirectoryProvider,
 ) -> None:
     docs = collect_docs(
@@ -254,7 +255,7 @@ def test_multi_run_single_stage(
 
 def test_multi_run_single_stage_multi_group(
     run_engine: RunEngine,
-    detectors: List[Readable],
+    detectors: list[Readable],
     provider: DirectoryProvider,
 ) -> None:
     docs = collect_docs(
@@ -282,7 +283,7 @@ def test_multi_run_single_stage_multi_group(
 
 def test_nested_run_with_metadata(
     run_engine: RunEngine,
-    detectors: List[Readable],
+    detectors: list[Readable],
     provider: DirectoryProvider,
 ) -> None:
     """Test is here to demonstrate that nested runs will be treated as a single run.
@@ -304,7 +305,7 @@ def test_nested_run_with_metadata(
 
 def test_nested_run_without_metadata(
     run_engine: RunEngine,
-    detectors: List[Readable],
+    detectors: list[Readable],
     provider: DirectoryProvider,
 ) -> None:
     """Test is here to demonstrate that nested runs will be treated as a single run.
@@ -326,7 +327,7 @@ def test_nested_run_without_metadata(
 
 def test_visit_directory_provider_fails(
     run_engine: RunEngine,
-    detectors: List[Readable],
+    detectors: list[Readable],
     provider: DirectoryProvider,
     client: MockVisitServiceClient,
 ) -> None:
@@ -341,7 +342,7 @@ def test_visit_directory_provider_fails(
 
 def test_visit_directory_provider_fails_after_one_sucess(
     run_engine: RunEngine,
-    detectors: List[Readable],
+    detectors: list[Readable],
     provider: DirectoryProvider,
     client: MockVisitServiceClient,
 ) -> None:
@@ -363,7 +364,7 @@ def collect_docs(
     run_engine: RunEngine,
     plan: MsgGenerator,
     provider: DirectoryProvider,
-) -> List[DataEvent]:
+) -> list[DataEvent]:
     events = []
 
     def on_event(name: str, doc: Mapping[str, Any]) -> None:
@@ -375,9 +376,9 @@ def collect_docs(
 
 
 def assert_all_detectors_used_collection_numbers(
-    docs: List[DataEvent],
-    detectors: List[Readable],
-    source_history: List[Path],
+    docs: list[DataEvent],
+    detectors: list[Readable],
+    source_history: list[Path],
 ) -> None:
     descriptors = find_descriptor_docs(docs)
     assert len(descriptors) == len(source_history)
@@ -390,9 +391,9 @@ def assert_all_detectors_used_collection_numbers(
             assert Path(source) == expected_source
 
 
-def find_start_docs(docs: List[DataEvent]) -> List[DataEvent]:
+def find_start_docs(docs: list[DataEvent]) -> list[DataEvent]:
     return list(filter(lambda event: event.name == "start", docs))
 
 
-def find_descriptor_docs(docs: List[DataEvent]) -> List[DataEvent]:
+def find_descriptor_docs(docs: list[DataEvent]) -> list[DataEvent]:
     return list(filter(lambda event: event.name == "descriptor", docs))

@@ -1,5 +1,14 @@
 import inspect
-from typing import Any, Callable, Mapping, Optional, Type, Union, get_type_hints
+from collections.abc import Mapping
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    Protocol,
+    Union,
+    get_type_hints,
+    runtime_checkable,
+)
 
 from bluesky.protocols import (
     Checkable,
@@ -23,11 +32,6 @@ from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel, Field
 
 from blueapi.utils import BlueapiBaseModel
-
-try:
-    from typing import Protocol, runtime_checkable
-except ImportError:
-    from typing_extensions import Protocol, runtime_checkable  # type: ignore
 
 PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
 
@@ -62,14 +66,14 @@ def is_bluesky_compatible_device(obj: Any) -> bool:
     return is_object and _follows_bluesky_protocols(obj)
 
 
-def is_bluesky_compatible_device_type(cls: Type[Any]) -> bool:
+def is_bluesky_compatible_device_type(cls: type[Any]) -> bool:
     # We must separately check if Obj refers to an class rather than an
     # instance, as both follow the protocols but only one is a type.
     return inspect.isclass(cls) and _follows_bluesky_protocols(cls)
 
 
 def _follows_bluesky_protocols(obj: Any) -> bool:
-    return any((isinstance(obj, protocol) for protocol in BLUESKY_PROTOCOLS))
+    return any(isinstance(obj, protocol) for protocol in BLUESKY_PROTOCOLS)
 
 
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
@@ -89,7 +93,7 @@ class Plan(BlueapiBaseModel):
     description: Optional[str] = Field(
         description="Description/docstring of the plan", default=None
     )
-    model: Type[BaseModel] = Field(
+    model: type[BaseModel] = Field(
         description="Validation model of the parameters for the plan"
     )
 

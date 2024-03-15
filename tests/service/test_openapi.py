@@ -1,7 +1,8 @@
-import mock
+from unittest import mock
+from unittest.mock import Mock, PropertyMock
+
 import pytest
 import yaml
-from mock import Mock, PropertyMock
 
 from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
 

@@ -1,5 +1,6 @@
 import functools
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
@@ -7,13 +8,8 @@ from types import ModuleType
 from typing import (
     Any,
     Callable,
-    Dict,
     Generic,
-    List,
     Optional,
-    Sequence,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     get_args,
@@ -60,12 +56,12 @@ class BlueskyContext:
         default_factory=lambda: RunEngine(context_managers=[])
     )
     plan_wrappers: Sequence[PlanWrapper] = field(default_factory=list)
-    plans: Dict[str, Plan] = field(default_factory=dict)
-    devices: Dict[str, Device] = field(default_factory=dict)
-    plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
+    plans: dict[str, Plan] = field(default_factory=dict)
+    devices: dict[str, Device] = field(default_factory=dict)
+    plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
     sim: bool = field(default=False)
 
-    _reference_cache: Dict[Type, Type] = field(default_factory=dict)
+    _reference_cache: dict[type, type] = field(default_factory=dict)
 
     def wrap(self, plan: MsgGenerator) -> MsgGenerator:
         wrapped_plan = functools.reduce(
@@ -75,7 +71,7 @@ class BlueskyContext:
         )
         yield from wrapped_plan
 
-    def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
+    def find_device(self, addr: Union[str, list[str]]) -> Optional[Device]:
         """
         Find a device in this context, allows for recursive search.
 
@@ -199,7 +195,7 @@ class BlueskyContext:
 
         self.devices[name] = device
 
-    def _reference(self, target: Type) -> Type:
+    def _reference(self, target: type) -> type:
         """
         Create an intermediate reference type for the required ``target`` type that
         will return an existing device during pydantic deserialisation/validation
@@ -238,7 +234,7 @@ class BlueskyContext:
 
     def _type_spec_for_function(
         self, func: Callable[..., Any]
-    ) -> dict[str, Tuple[Type, Any]]:
+    ) -> dict[str, tuple[type, Any]]:
         """
         Parse a function signature and build map of field types and default
         values that can be used to deserialise arguments from external sources.
@@ -271,7 +267,7 @@ class BlueskyContext:
             )
         return new_args
 
-    def _convert_type(self, typ: Type) -> Type:
+    def _convert_type(self, typ: type) -> type:
         """
         Recursively convert a type to something that can be deserialised by
         pydantic. Bluesky protocols (and types that extend them) are replaced

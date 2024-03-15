@@ -26,9 +26,8 @@ dependencies = [
     "fastapi[all]<0.99",
     "uvicorn",
     "requests",
-    "dls-bluesky-core", #requires ophyd-async
+    "dls-bluesky-core",  #requires ophyd-async
     "dls-dodal",
-    "typing_extensions<4.6",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -135,9 +134,13 @@ lint.select = [
     "F",  # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
     "W",  # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
     "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    #"UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
 
 [tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls = ["fastapi.Depends", "fastapi.Body", "fastapi.Task", "dls_bluesky_core.core.inject"]
-
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Body",
+    "fastapi.Task",
+    "dls_bluesky_core.core.inject",
+]

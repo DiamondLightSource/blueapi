@@ -1,5 +1,3 @@
-from typing import List
-
 from bluesky.protocols import Movable, Readable
 from dls_bluesky_core.core import inject
 from dls_bluesky_core.plans import count
@@ -9,7 +7,7 @@ from blueapi.core import MsgGenerator
 
 
 def stp_snapshot(
-    detectors: List[Readable],
+    detectors: list[Readable],
     temperature: Movable = inject("sample_temperature"),
     pressure: Movable = inject("sample_pressure"),
 ) -> MsgGenerator:

@@ -1,10 +1,11 @@
 import logging
 import uuid
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from functools import partial
 from queue import Full, Queue
 from threading import Event, RLock
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Union
+from typing import Any, Optional, Union
 
 from bluesky.protocols import Status
 from super_state_machine.errors import TransitionError
@@ -48,16 +49,16 @@ class TaskWorker(Worker[Task]):
     _ctx: BlueskyContext
     _start_stop_timeout: float
 
-    _tasks: Dict[str, TrackableTask]
+    _tasks: dict[str, TrackableTask]
 
     _state: WorkerState
-    _errors: List[str]
-    _warnings: List[str]
+    _errors: list[str]
+    _warnings: list[str]
     _task_channel: Queue  # type: ignore
     _current: Optional[TrackableTask]
     _status_lock: RLock
-    _status_snapshot: Dict[str, StatusView]
-    _completed_statuses: Set[str]
+    _status_snapshot: dict[str, StatusView]
+    _completed_statuses: set[str]
     _worker_events: EventPublisher[WorkerEvent]
     _progress_events: EventPublisher[ProgressEvent]
     _data_events: EventPublisher[DataEvent]
@@ -112,7 +113,7 @@ class TaskWorker(Worker[Task]):
             self._ctx.run_engine.stop()
         return self._current.task_id
 
-    def get_tasks(self) -> List[TrackableTask[Task]]:
+    def get_tasks(self) -> list[TrackableTask[Task]]:
         return list(self._tasks.values())
 
     def get_task_by_id(self, task_id: str) -> Optional[TrackableTask[Task]]:

@@ -2,11 +2,11 @@
 html_theme.sidebar_secondary.remove: true
 ---
 
-```{include} ../README.rst
-:relative-images:
-:end-before: and will be replaced
+```{include} ../README.md
+:end-before: <!-- README only content
 ```
 
+[concept]: images/blueapi.png
 
 How the documentation is structured
 -----------------------------------

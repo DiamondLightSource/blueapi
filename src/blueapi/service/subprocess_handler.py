@@ -1,8 +1,9 @@
 import logging
 import signal
+from collections.abc import Iterable
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
-from typing import Callable, Iterable, List, Optional
+from typing import Callable, Optional
 
 from blueapi.config import ApplicationConfig
 from blueapi.service.handler import get_handler, setup_handler, teardown_handler
@@ -65,14 +66,14 @@ class SubprocessHandler(BlueskyHandler):
         return self._subprocess.apply(function, arguments)
 
     @property
-    def plans(self) -> List[PlanModel]:
+    def plans(self) -> list[PlanModel]:
         return self._run_in_subprocess(plans)
 
     def get_plan(self, name: str) -> PlanModel:
         return self._run_in_subprocess(get_plan, [name])
 
     @property
-    def devices(self) -> List[DeviceModel]:
+    def devices(self) -> list[DeviceModel]:
         return self._run_in_subprocess(devices)
 
     def get_device(self, name: str) -> DeviceModel:
@@ -105,7 +106,7 @@ class SubprocessHandler(BlueskyHandler):
         return self._run_in_subprocess(cancel_active_task, [failure, reason])
 
     @property
-    def tasks(self) -> List[TrackableTask]:
+    def tasks(self) -> list[TrackableTask]:
         return self._run_in_subprocess(tasks)
 
     def get_task_by_id(self, task_id: str) -> Optional[TrackableTask]:
@@ -119,7 +120,7 @@ class SubprocessHandler(BlueskyHandler):
 # Free functions (passed to subprocess) for each of the methods required by Handler
 
 
-def plans() -> List[PlanModel]:
+def plans() -> list[PlanModel]:
     return get_handler().plans
 
 
@@ -127,7 +128,7 @@ def get_plan(name: str):
     return get_handler().get_plan(name)
 
 
-def devices() -> List[DeviceModel]:
+def devices() -> list[DeviceModel]:
     return get_handler().devices
 
 
@@ -167,7 +168,7 @@ def cancel_active_task(failure: bool, reason: Optional[str]) -> None:
     return get_handler().cancel_active_task(failure, reason)
 
 
-def tasks() -> List[TrackableTask]:
+def tasks() -> list[TrackableTask]:
     return get_handler().tasks
 
 

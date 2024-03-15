@@ -1,7 +1,7 @@
 import asyncio
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
-from typing import Iterator
+from collections.abc import Iterator
 from unittest.mock import MagicMock
 
 import pytest

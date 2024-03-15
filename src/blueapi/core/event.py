@@ -1,6 +1,6 @@
 import itertools
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Generic, Optional, TypeVar
+from typing import Callable, Generic, Optional, TypeVar
 
 #: Event type
 E = TypeVar("E")
@@ -47,7 +47,7 @@ class EventPublisher(EventStream[E, int]):
     Simple Observable that can be fed values to publish
     """
 
-    _subscriptions: Dict[int, Callable[[E, Optional[str]], None]]
+    _subscriptions: dict[int, Callable[[E, Optional[str]], None]]
     _count: itertools.count
 
     def __init__(self) -> None:

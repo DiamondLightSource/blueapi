@@ -1,5 +1,6 @@
+from unittest.mock import Mock, patch
+
 import pytest
-from mock import Mock, patch
 
 from blueapi.service.handler import (
     Handler,

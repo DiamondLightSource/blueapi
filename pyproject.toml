@@ -32,7 +32,7 @@ dependencies = [
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
-readme = "README.rst"
+readme = "README.md"
 requires-python = ">=3.9"
 
 [project.optional-dependencies]

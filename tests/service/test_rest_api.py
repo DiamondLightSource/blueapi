@@ -13,8 +13,8 @@ from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
 from blueapi.service.main import get_handler, setup_handler, teardown_handler
 from blueapi.service.model import WorkerTask
+from blueapi.worker import WorkerState
 from blueapi.worker.task import Task
-from src.blueapi.worker import WorkerState
 
 _TASK = Task(name="count", params={"detectors": ["x"]})
 

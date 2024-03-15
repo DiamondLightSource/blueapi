@@ -141,7 +141,7 @@ def get_device_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)
 def submit_task(
     request: Request,
     response: Response,
-    task: Task = Body(..., example=Task(name="count", params={"detectors": ["x"]})),
+    task: Task = Body(..., example=Task(name="count", params={"detectors": ["x"]})),  # noqa: B008
     handler: BlueskyHandler = Depends(get_handler),
 ):
     """Submit a task to the worker."""
@@ -152,7 +152,7 @@ def submit_task(
     except ValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.errors()
-        )
+        ) from e
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)

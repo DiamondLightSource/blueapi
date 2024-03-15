@@ -9,9 +9,9 @@ from bluesky import RunEngine
 from bluesky.run_engine import RunEngineStateMachine, TransitionError
 from fastapi.testclient import TestClient
 
+from blueapi.core import BlueskyContext
 from blueapi.service.handler import Handler
 from blueapi.service.main import app, get_handler
-from src.blueapi.core import BlueskyContext
 
 
 def pytest_addoption(parser):
@@ -69,7 +69,7 @@ def RE(request):
 @pytest.fixture
 def handler(RE: RunEngine) -> Iterator[Handler]:
     context: BlueskyContext = BlueskyContext(run_engine=MagicMock())
-    context.run_engine.state = RunEngineStateMachine.States.IDLE
+    context.run_engine.state = RunEngineStateMachine.States.IDLE  # type: ignore
     handler = Handler(context=context, messaging_template=MagicMock())
 
     yield handler

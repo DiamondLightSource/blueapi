@@ -21,6 +21,6 @@ def serialize(obj: Any) -> Any:
         # with camelCase field names
         return obj.dict(by_alias=True)
     elif hasattr(obj, "__pydantic_model__"):
-        return serialize(getattr(obj, "__pydantic_model__"))
+        return serialize(obj.__pydantic_model__)
     else:
         return obj

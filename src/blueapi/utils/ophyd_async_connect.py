@@ -3,9 +3,8 @@ import logging
 from contextlib import suppress
 from typing import Any, Dict, Iterable
 
-from ophyd_async.core import DEFAULT_TIMEOUT
+from ophyd_async.core import DEFAULT_TIMEOUT, NotConnected
 from ophyd_async.core import Device as OphydAsyncDevice
-from ophyd_async.core import NotConnected
 
 
 async def connect_ophyd_async_devices(

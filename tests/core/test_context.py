@@ -51,8 +51,11 @@ def has_default_reference(m: Movable = inject(SIM_MOTOR_NAME)) -> MsgGenerator:
     yield from []
 
 
+MOVABLE_DEFAULT = [inject(SIM_MOTOR_NAME)]
+
+
 def has_default_nested_reference(
-    m: list[Movable] = [inject(SIM_MOTOR_NAME)],
+    m: list[Movable] = MOVABLE_DEFAULT,
 ) -> MsgGenerator:
     yield from []
 

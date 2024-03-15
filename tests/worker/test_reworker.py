@@ -1,9 +1,11 @@
 import itertools
 import threading
 from concurrent.futures import Future
+from queue import Full
 from typing import Any, Callable, Iterable, List, Optional, TypeVar, Union
 
 import pytest
+from mock import MagicMock, patch
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream, MsgGenerator
@@ -15,6 +17,7 @@ from blueapi.worker import (
     TaskWorker,
     TrackableTask,
     Worker,
+    WorkerAlreadyStartedError,
     WorkerBusyError,
     WorkerEvent,
     WorkerState,
@@ -102,7 +105,7 @@ def test_restart(inert_worker: Worker) -> None:
 
 def test_multi_start(inert_worker: Worker) -> None:
     inert_worker.start()
-    with pytest.raises(Exception):
+    with pytest.raises(WorkerAlreadyStartedError):
         inert_worker.start()
     inert_worker.stop()
 
@@ -260,6 +263,17 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
     assert "STATUS_AFTER_FINISH" not in display_names
 
 
+@patch("queue.Queue.put_nowait")
+def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: Worker):
+    def raise_full(item):
+        raise Full()
+
+    put_nowait.side_effect = raise_full
+    task = worker.submit_task(_SIMPLE_TASK)
+    with pytest.raises(WorkerBusyError):
+        worker.begin_task(task)
+
+
 #
 # Worker helpers
 #
@@ -331,7 +345,7 @@ def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
 def assert_running_count_plan_produces_ordered_worker_and_data_events(
     expected_events: List[Union[WorkerEvent, DataEvent]],
     worker: Worker,
-    task: Task = Task(name="count", params={"detectors": ["image_det"], "num": 1}),
+    task: Task = Task(name="count", params={"detectors": ["image_det"], "num": 1}),  # noqa: B008
     timeout: float = 5.0,
 ) -> None:
     event_streams: List[EventStream[Any, int]] = [
@@ -421,5 +435,9 @@ def take_events_from_streams(
 
     for stream in streams:
         sub = stream.subscribe(on_event)
-        future.add_done_callback(lambda _: stream.unsubscribe(sub))
+
+        def callback(unused: Future[List[Any]], stream=stream, sub=sub):
+            stream.unsubscribe(sub)
+
+        future.add_done_callback(callback)
     return future

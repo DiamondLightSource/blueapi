@@ -42,7 +42,7 @@ def test_reload():
 def test_raises_if_not_started():
     sp_handler = SubprocessHandler()
     with pytest.raises(HandlerNotStartedError):
-        sp_handler.state
+        assert sp_handler.state is None
 
 
 class DummyHandler(BlueskyHandler):
@@ -108,7 +108,6 @@ class DummyHandler(BlueskyHandler):
 
 @patch("blueapi.service.subprocess_handler.get_handler")
 def test_method_routing(get_handler_mock: MagicMock):
-
     # Mock get_handler to prevent using a real internal handler
     dummy_handler = DummyHandler()
     get_handler_mock.return_value = dummy_handler

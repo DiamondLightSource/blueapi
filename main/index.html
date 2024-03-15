@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>blueapi &#8212; blueapi 0.4.1.dev5+g93565369 documentation</title>
+    <title>blueapi &#8212; blueapi 0.4.1.dev6+g503811c1 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="_static/documentation_options.js?v=1482e8e4"></script>
+    <script src="_static/documentation_options.js?v=3bcc7994"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -435,51 +435,51 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="blueapi">
+  <p><a class="reference external" href="https://github.com/DiamondLightSource/blueapi/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/DiamondLightSource/blueapi/actions/workflows/ci.yml/badge.svg" /></a>
+<a class="reference external" href="https://codecov.io/gh/DiamondLightSource/blueapi"><img alt="Coverage" src="https://codecov.io/gh/DiamondLightSource/blueapi/branch/main/graph/badge.svg" /></a>
+<a class="reference external" href="https://pypi.org/project/blueapi"><img alt="PyPI" src="https://img.shields.io/pypi/v/blueapi.svg" /></a>
+<a class="reference external" href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a></p>
+<section id="blueapi">
 <h1>blueapi<a class="headerlink" href="#blueapi" title="Link to this heading">#</a></h1>
-<p>|code_ci| |docs_ci| |coverage| |pypi_version| |license|</p>
 <p>Lightweight bluesky-as-a-service wrapper application. Also usable as a library.</p>
-<p>============== ==============================================================
-PyPI           <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">blueapi</span></code>
-Source code    https://github.com/DiamondLightSource/blueapi
-Documentation  https://DiamondLightSource.github.io/blueapi
-Releases       https://github.com/DiamondLightSource/blueapi/releases
-============== ==============================================================</p>
-<p>This module wraps bluesky_ plans and devices inside a server and exposes endpoints to send commands/receive data.
-Useful for installation at labs where multiple people may control equipment,
-possibly from remote locations.</p>
-<p>|concept|</p>
+<table class="table">
+<thead>
+<tr class="row-odd"><th class="head text-center"><p>Source</p></th>
+<th class="head text-center"><p><a class="github reference external" href="https://github.com/DiamondLightSource/blueapi">DiamondLightSource/blueapi</a></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-center"><p>PyPI</p></td>
+<td class="text-center"><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">blueapi</span></code></p></td>
+</tr>
+<tr class="row-odd"><td class="text-center"><p>Docker</p></td>
+<td class="text-center"><p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">ghcr.io/diamondlightsource/blueapi:latest</span></code></p></td>
+</tr>
+<tr class="row-even"><td class="text-center"><p>Documentation</p></td>
+<td class="text-center"><p><a class="reference external" href="https://diamondlightsource.github.io/blueapi">https://diamondlightsource.github.io/blueapi</a></p></td>
+</tr>
+<tr class="row-odd"><td class="text-center"><p>Releases</p></td>
+<td class="text-center"><p><a class="github reference external" href="https://github.com/DiamondLightSource/blueapi/releases">DiamondLightSource/blueapi</a></p></td>
+</tr>
+</tbody>
+</table>
+<p>This module wraps <a class="reference external" href="https://blueskyproject.io/bluesky">bluesky</a> plans and devices
+inside a server and exposes endpoints to send commands/receive data. Useful for
+installation at labs where multiple people may control equipment, possibly from
+remote locations.</p>
+<p><img alt="concept" src="_images/blueapi.png" /></p>
 <p>The main premise of blueapi is to minimize the boilerplate required to get plans
-and devices up and running by generating an API for your lab out of type-annotated
-plans. For example, take the following plan:</p>
-<p>.. code:: python</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>import bluesky.plans as bp
-from blueapi.core import MsgGenerator
+and devices up and running by generating an API for your lab out of
+type-annotated plans. For example, take the following plan:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="kn">import</span> <span class="nn">bluesky.plans</span> <span class="k">as</span> <span class="nn">bp</span>
+    <span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">MsgGenerator</span>
 
-def my_plan(foo: str, bar: int) -&gt; MsgGenerator:
-    yield from bp.scan(...)
+    <span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">foo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bar</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+        <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Blueapi’s job is to detect this plan and automatically add it to the lab’s API so it
-can be invoked easily with a few REST calls.</p>
-<p>.. _bluesky: https://blueskyproject.io/bluesky</p>
-<p>.. |code_ci| image:: https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml/badge.svg?branch=main
-:target: https://github.com/DiamondLightSource/blueapi/actions/workflows/code.yml
-:alt: Code CI</p>
-<p>.. |docs_ci| image:: https://github.com/DiamondLightSource/blueapi/actions/workflows/docs.yml/badge.svg?branch=main
-:target: https://github.com/DiamondLightSource/blueapi/actions/workflows/docs.yml
-:alt: Docs CI</p>
-<p>.. |coverage| image:: https://codecov.io/gh/DiamondLightSource/blueapi/branch/main/graph/badge.svg
-:target: https://codecov.io/gh/DiamondLightSource/blueapi
-:alt: Test Coverage</p>
-<p>.. |pypi_version| image:: https://img.shields.io/pypi/v/blueapi.svg
-:target: https://pypi.org/project/blueapi
-:alt: Latest PyPI version</p>
-<p>.. |license| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
-:target: https://opensource.org/licenses/Apache-2.0
-:alt: Apache License</p>
-<p>..
-Anything below this line is used when viewing README.rst</p>
+<p>Blueapi’s job is to detect this plan and automatically add it to the lab’s API
+so it can be invoked easily with a few REST calls.</p>
 <section id="how-the-documentation-is-structured">
 <h2>How the documentation is structured<a class="headerlink" href="#how-the-documentation-is-structured" title="Link to this heading">#</a></h2>
 <p>Documentation is split into <a class="reference external" href="https://diataxis.fr">four categories</a>, also accessible from links in the top bar.</p>
@@ -517,7 +517,7 @@ Anything below this line is used when viewing README.rst</p>
 <li class="toctree-l1"><a class="reference internal" href="how-to.html">How-to Guides</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="how-to/add-plans-and-devices.html">Add Plans and Devices to your Blueapi Environment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="how-to/configure-app.html">Configure the application</a></li>
-<li class="toctree-l2"><a class="reference internal" href="how-to/contribute.html">Contributing to the project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="how-to/contribute.html">Contribute to the project</a></li>
 <li class="toctree-l2"><a class="reference internal" href="how-to/run-cli.html">Control the Worker via the CLI</a></li>
 <li class="toctree-l2"><a class="reference internal" href="how-to/run-container.html">Run in a container</a></li>
 <li class="toctree-l2"><a class="reference internal" href="how-to/write-plans.html">Writing Bluesky plans for Blueapi</a></li>

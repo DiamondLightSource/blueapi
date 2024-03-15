@@ -69,7 +69,7 @@ def RE(request):
 @pytest.fixture
 def handler(RE: RunEngine) -> Iterator[Handler]:
     context: BlueskyContext = BlueskyContext(run_engine=MagicMock())
-    context.run_engine.state = RunEngineStateMachine.States.IDLE
+    context.run_engine.state = RunEngineStateMachine.States.IDLE  # type: ignore
     handler = Handler(context=context, messaging_template=MagicMock())
 
     yield handler

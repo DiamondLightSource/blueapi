@@ -1,4 +1,5 @@
-from typing import Any, Callable, Literal, Mapping, Optional, Type, TypeVar
+from collections.abc import Mapping
+from typing import Any, Callable, Literal, Optional, TypeVar
 
 import requests
 from pydantic import parse_obj_as
@@ -98,7 +99,7 @@ class BlueapiRestClient:
     def _request_and_deserialize(
         self,
         suffix: str,
-        target_type: Type[T],
+        target_type: type[T],
         data: Optional[Mapping[str, Any]] = None,
         method="GET",
         raise_if: Callable[[requests.Response], bool] = _is_exception,

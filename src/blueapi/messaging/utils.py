@@ -1,12 +1,11 @@
 import inspect
-from typing import Type
 
 from .base import MessageListener
 
 
 def determine_deserialization_type(
-    listener: MessageListener, default: Type = str
-) -> Type:
+    listener: MessageListener, default: type = str
+) -> type:
     """
     Inspect a message listener function to determine the type to deserialize
     a message to

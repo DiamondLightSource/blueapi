@@ -1,7 +1,8 @@
 import os
+from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Generic, Literal, Mapping, Optional, Type, TypeVar, Union
+from typing import Any, Generic, Literal, Optional, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as, validator
@@ -137,10 +138,10 @@ class ConfigLoader(Generic[C]):
     of default values, dictionaries, YAML/JSON files etc.
     """
 
-    _schema: Type[C]
-    _values: Dict[str, Any]
+    _schema: type[C]
+    _values: dict[str, Any]
 
-    def __init__(self, schema: Type[C]) -> None:
+    def __init__(self, schema: type[C]) -> None:
         self._schema = schema
         self._values = {}
 
@@ -155,7 +156,7 @@ class ConfigLoader(Generic[C]):
                                         if defaults provided.
         """
 
-        def recursively_update_map(old: Dict[str, Any], new: Mapping[str, Any]) -> None:
+        def recursively_update_map(old: dict[str, Any], new: Mapping[str, Any]) -> None:
             for key in new:
                 if (
                     key in old

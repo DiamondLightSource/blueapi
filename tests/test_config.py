@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
-from typing import Any, Type
+from typing import Any
+from unittest import mock
 
-import mock
 import pytest
 from pydantic import BaseModel, Field
 
@@ -56,7 +56,7 @@ def default_yaml(package_root: Path) -> Path:
 
 
 @pytest.mark.parametrize("schema", [ConfigWithDefaults, NestedConfigWithDefaults])
-def test_load_defaults(schema: Type[Any]) -> None:
+def test_load_defaults(schema: type[Any]) -> None:
     loader = ConfigLoader(schema)
     assert loader.load() == schema()
 

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Optional
 
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import WorkerState
@@ -12,7 +12,7 @@ class BlueskyHandler(ABC):
 
     @property
     @abstractmethod
-    def plans(self) -> List[PlanModel]:
+    def plans(self) -> list[PlanModel]:
         """
         All available plans in the BlueskyContext
         """
@@ -25,7 +25,7 @@ class BlueskyHandler(ABC):
 
     @property
     @abstractmethod
-    def devices(self) -> List[DeviceModel]:
+    def devices(self) -> list[DeviceModel]:
         """
         All available devices in the BlueskyContext
         """
@@ -75,7 +75,7 @@ class BlueskyHandler(ABC):
 
     @property
     @abstractmethod
-    def tasks(self) -> List[TrackableTask]:
+    def tasks(self) -> list[TrackableTask]:
         """Return a list of all tasks on the worker,
         any one of which can be triggered with begin_task"""
 

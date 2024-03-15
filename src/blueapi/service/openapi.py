@@ -1,7 +1,7 @@
 """Generate openapi.json."""
 
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Mapping
 
 import yaml
 from fastapi.openapi.utils import get_openapi

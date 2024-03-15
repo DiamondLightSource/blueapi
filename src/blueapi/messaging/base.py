@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
-from typing import Any, Callable, Optional, Type
+from typing import Any, Callable, Optional
 
 from .context import MessageContext
 
@@ -86,7 +86,7 @@ class MessagingTemplate(ABC):
         self,
         destination: str,
         obj: Any,
-        reply_type: Type = str,
+        reply_type: type = str,
         correlation_id: Optional[str] = None,
     ) -> Future:
         """

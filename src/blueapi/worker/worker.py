@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, List, Optional, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from pydantic import Field
 
@@ -20,7 +20,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
     task: T
     is_complete: bool = False
     is_pending: bool = True
-    errors: List[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
 
 
 class Worker(ABC, Generic[T]):
@@ -30,7 +30,7 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def get_tasks(self) -> List[TrackableTask[T]]:
+    def get_tasks(self) -> list[TrackableTask[T]]:
         """
         Return a list of all tasks on the worker,
         any one of which can be triggered with begin_task.

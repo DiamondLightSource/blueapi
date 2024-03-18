@@ -1,9 +1,9 @@
 from typing import List
 
+from bluesky.plan_stubs import mv
+from bluesky.plans import count
 from bluesky.protocols import Movable, Readable
-from dls_bluesky_core.core import inject
-from dls_bluesky_core.plans import count
-from dls_bluesky_core.stubs import move
+from dodal.common import inject
 
 from blueapi.core import MsgGenerator
 
@@ -27,5 +27,5 @@ def stp_snapshot(
     Yields:
         Iterator[MsgGenerator]: Bluesky messages
     """
-    yield from move({temperature: 0, pressure: 10**5})
+    yield from mv({temperature: 0, pressure: 10**5})
     yield from count(detectors, 1)

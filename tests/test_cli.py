@@ -143,6 +143,7 @@ def test_config_passed_down_to_command_children(
     mock_requests: Mock,
     mock_handler: Mock,
     handler: Handler,
+    client: TestClient,
     runner: CliRunner,
 ):
     mock_handler.side_effect = Mock(return_value=handler)
@@ -152,74 +153,64 @@ def test_config_passed_down_to_command_children(
         result = runner.invoke(main, ["-c", config_path, "serve"])
         assert result.exit_code == 0
 
-    with patch("requests.get") as mock_get, patch("requests.post") as mock_post:
-        mock_requests.return_value = Mock()
-        mock_get.return_value.json.return_value = {"time": 5}
+    mock_requests.return_value = client.get("/plans/sleep")
+    runner.invoke(
+        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+    )
+    assert result.exit_code == 0
 
-        runner.invoke(
-            main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
-        )
-        assert result.exit_code == 0
+    # Put a plan in handler.context manually.
+    plan = Plan(name="my-plan", model=MyModel)
+    handler._context.plans = {"my-plan": plan}
 
-        # expect the first call to be to the helper UI
-        assert mock_requests.call_args[0] == (
-            "GET",
-            "http://a.fake.host:12345/plans/sleep",
-        )
+    # Setup requests.get call to return the output of the FastAPI call for plans.
+    # Call the CLI function and check the output.
+    mock_requests.return_value = client.get("/plans")
+    plans = runner.invoke(main, ["controller", "plans"])
 
-        assert mock_requests.call_args[1] == (
-            "POST",
-            "http://a.fake.host:12345/tasks",
-        )
-        mock_post.return_value = Mock(status_code=200)  # Mock a successful POST request
-        assert mock_requests.call_args[2] == {
-            "json": {
-                "name": "sleep",
-                "params": {"time": 5},
-            }
-        }
+    assert (
+        plans.output == "{'plans': [{'description': None,\n"
+        "            'name': 'my-plan',\n"
+        "            'parameter_schema': {'properties': {'id': {'title': 'Id',\n"
+        "                                                       'type': 'string'}},\n"
+        "                                 'required': ['id'],\n"
+        "                                 'title': 'MyModel',\n"
+        "                                 'type': 'object'}}]}\n"
+    )
 
+    # Setup requests.get call to return the output of the FastAPI call for devices.
+    # Call the CLI function and check the output - expect nothing as no devices set.
+    handler._context.devices = {}
+    mock_requests.return_value = client.get("/devices")
+    unset_devices = runner.invoke(main, ["controller", "devices"])
+    assert unset_devices.output == "{'devices': []}\n"
 
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-def test_config_passed_down_to_command_children_2(
-    mock_handler: Mock,
-    handler,  # This seems to be provided; ensure it's correctly instantiated
-    runner: CliRunner,  # Ensure runner is correctly instantiated before the test
-):
-    mock_handler.side_effect = Mock(return_value=handler)
-    config_path = "tests/example_yaml/rest_config.yaml"
+    # Put a device in handler.context manually.
+    device = MyDevice("my-device")
+    handler._context.devices = {"my-device": device}
 
-    with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(main, ["-c", config_path, "serve"])
-        assert result.exit_code == 0
+    # Setup requests.get call to return the output of the FastAPI call for devices.
+    # Call the CLI function and check the output.
+    mock_requests.return_value = client.get("/devices")
+    devices = runner.invoke(main, ["controller", "devices"])
 
-    # Mocking `requests.get` and `requests.post` separately
-    with patch("requests.request") as mock_get, patch("requests.post") as mock_post:
-        # Mock the GET response
-        mock_get.return_value = Mock()
-        mock_get.return_value.json.return_value = {"time": 5}
+    assert (
+        devices.output
+        == "{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
+    )
+    # expect the first call to be to the helper
+    assert mock_requests.call_args[0] == (
+        "GET",
+        "http://a.fake.host:12345/plans/sleep",
+    )
 
-        # Mock the POST response
-        mock_post.return_value = Mock(status_code=200)  # Mock a successful POST request
+    mock_requests.return_value = client.post(
+        "/tasks", json={"name": "sleep", "params": {"time": 5}}
+    )
 
-        # Invoke the command that triggers the HTTP requests
-        result = runner.invoke(
-            main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
-        )
-        assert result.exit_code == 0
+    assert mock_requests.call_args[1] == (
+        "POST",
+        "http://a.fake.host:12345/tasks",
+    )
 
-        # Check that the correct GET request was made
-        mock_get.assert_called_once_with("http://a.fake.host:12345/plans/sleep")
-
-        # If you're sending a POST request in the process that should be captured here
-        # This part depends on how your `main` function
-        # and its subcommands handle the POST request
-        # You might need to adjust the assertion to match your application's behavior
-        mock_post.assert_called_once_with(
-            "http://a.fake.host:12345/tasks",
-            json={
-                "name": "sleep",
-                "params": {"time": 5},
-            },
-        )
+    

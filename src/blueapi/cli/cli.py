@@ -182,7 +182,7 @@ def run_plan(
         if event.is_complete():
             finished_event.append(event)
 
-    parameters = parameters or "{}"
+    parameters = json.loads(parameters) or "{}"
     schema: PlanModel = client.get_plan(name)
     progress_tracking = f"Trying to run plan: {name}."
     print(progress_tracking)

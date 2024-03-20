@@ -149,13 +149,130 @@ def test_config_passed_down_to_command_children(
 ):
     config_path = "tests/example_yaml/rest_config.yaml"
 
+    mock_handler.side_effect = Mock(return_value=handler)
     with patch("uvicorn.run", side_effect=None):
         result = runner.invoke(main, ["-c", config_path, "serve"])
         assert result.exit_code == 0
 
+    assert result.exit_code == 0
+
+    # Put a plan in handler.context manually.
+    plan = Plan(name="my-plan", model=MyModel)
+    handler._context.plans = {"my-plan": plan}
+
+    # Setup requests.get call to return the output of the FastAPI call for plans.
+    # Call the CLI function and check the output.
+    mock_requests.return_value = client.get("/plans")
+    plans = runner.invoke(main, ["controller", "plans"])
+
+    assert (
+        plans.output == "{'plans': [{'description': None,\n"
+        "            'name': 'my-plan',\n"
+        "            'parameter_schema': {'properties': {'id': {'title': 'Id',\n"
+        "                                                       'type': 'string'}},\n"
+        "                                 'required': ['id'],\n"
+        "                                 'title': 'MyModel',\n"
+        "                                 'type': 'object'}}]}\n"
+    )
+
+    # Setup requests.get call to return the output of the FastAPI call for devices.
+    # Call the CLI function and check the output - expect nothing as no devices set.
+    handler._context.devices = {}
+    mock_requests.return_value = client.get("/devices")
+    unset_devices = runner.invoke(main, [ "-c", config_path, "controller", "devices"])
+    assert unset_devices.output == "{'devices': []}\n"
+
+    assert mock_requests.call_args[0] == (
+        "GET",
+        "http://a.fake.host:12345/devices",
+    )
+
+    # Put a device in handler.context manually.
+    device = MyDevice("my-device")
+    handler._context.devices = {"my-device": device}
+
+    # Setup requests.get call to return the output of the FastAPI call for devices.
+    # Call the CLI function and check the output.
+    mock_requests.return_value = client.get("/devices")
+    devices = runner.invoke(main, ["controller", "devices"])
+
+    assert mock_requests.call_args[1] == (
+        "GET",
+        "http://a.fake.host:12345/devices",
+    )
+
+    assert (
+        devices.output
+        == "{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
+    )
+
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("requests.request")
+def test_plan_accepted_with_right_parameters(
+    mock_requests: Mock,
+    mock_handler: Mock,
+    handler: Handler,
+    client: TestClient,
+    runner: CliRunner,
+):
+
+    # needed so that the handler is instantiated as MockHandler() instead of Handler().
+    mock_handler.side_effect = Mock(return_value=handler)
+
+    # Setup the (Mock)Handler.
+    with patch("uvicorn.run", side_effect=None):
+        result = runner.invoke(main, ["serve"])
+
+    assert result.exit_code == 0
+
     mock_requests.return_value = client.get("/plans/sleep")
     output = runner.invoke(
-        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+        main, [ "controller", "run", "sleep", '{"time": 5}']
+    )
+    assert result.exit_code == 0
+    print(output)
+    # 'Trying to run plan: sleep.\nChecking supplied parameters against expected parameters...\nInput validation failed: __root__: value is not a valid dict\nfailed to run the sleep plan, supplied params {"time": 5}\n                do not match the expected params: {\'time\': {\'title\': \'Time\', \'type\': \'number\'}}\n'
+
+    # expect the first call to be to the helper
+    assert mock_requests.call_args[0] == (
+        "GET",
+        "http://localhost:12345/plans/sleep",
+    )
+
+    mock_requests.return_value = client.post(
+        "/tasks", json={"name": "sleep", "params": {"time": 5}}
+    )
+
+    assert mock_requests.call_args[1] == (
+        "POST",
+        "http://localhost:12345/tasks",
+    )
+
+
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("requests.request")
+def test_plan_rejected_with_wrong_parameters(
+    mock_requests: Mock,
+    mock_handler: Mock,
+    handler: Handler,
+    client: TestClient,
+    runner: CliRunner,
+):
+
+    # needed so that the handler is instantiated as MockHandler() instead of Handler().
+    mock_handler.side_effect = Mock(return_value=handler)
+
+    # Setup the (Mock)Handler.
+    with patch("uvicorn.run", side_effect=None):
+        result = runner.invoke(main, ["serve"])
+
+    assert result.exit_code == 0
+
+    mock_requests.return_value = client.get("/plans/sleep")
+    output = runner.invoke(
+        main, [ "controller", "run", "sleep", '{"time": 5}']
     )
     assert result.exit_code == 0
     print(output)
@@ -176,28 +293,3 @@ def test_config_passed_down_to_command_children(
         "http://a.fake.host:12345/tasks",
     )
 
-
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-@patch("requests.request")
-def test_plan_accepted_with_right_parameters(
-    mock_requests: Mock,
-    mock_handler: Mock,
-    handler: Handler,
-    client: TestClient,
-    runner: CliRunner,
-):
-    pass
-
-
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-@patch("requests.request")
-def test_plan_rejected_with_wrong_parameters(
-    mock_requests: Mock,
-    mock_handler: Mock,
-    handler: Handler,
-    client: TestClient,
-    runner: CliRunner,
-):
-    pass

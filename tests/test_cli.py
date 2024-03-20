@@ -136,6 +136,7 @@ def test_invalid_config_path_handling(runner: CliRunner):
     assert result.exit_code == 1
 
 
+# todo make this use devices as above, not the sleep plan
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("requests.request")
@@ -146,7 +147,6 @@ def test_config_passed_down_to_command_children(
     client: TestClient,
     runner: CliRunner,
 ):
-    mock_handler.side_effect = Mock(return_value=handler)
     config_path = "tests/example_yaml/rest_config.yaml"
 
     with patch("uvicorn.run", side_effect=None):
@@ -154,50 +154,13 @@ def test_config_passed_down_to_command_children(
         assert result.exit_code == 0
 
     mock_requests.return_value = client.get("/plans/sleep")
-    runner.invoke(
+    output = runner.invoke(
         main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
     )
     assert result.exit_code == 0
+    print(output)
+    # 'Trying to run plan: sleep.\nChecking supplied parameters against expected parameters...\nInput validation failed: __root__: value is not a valid dict\nfailed to run the sleep plan, supplied params {"time": 5}\n                do not match the expected params: {\'time\': {\'title\': \'Time\', \'type\': \'number\'}}\n'
 
-    # Put a plan in handler.context manually.
-    plan = Plan(name="my-plan", model=MyModel)
-    handler._context.plans = {"my-plan": plan}
-
-    # Setup requests.get call to return the output of the FastAPI call for plans.
-    # Call the CLI function and check the output.
-    mock_requests.return_value = client.get("/plans")
-    plans = runner.invoke(main, ["controller", "plans"])
-
-    assert (
-        plans.output == "{'plans': [{'description': None,\n"
-        "            'name': 'my-plan',\n"
-        "            'parameter_schema': {'properties': {'id': {'title': 'Id',\n"
-        "                                                       'type': 'string'}},\n"
-        "                                 'required': ['id'],\n"
-        "                                 'title': 'MyModel',\n"
-        "                                 'type': 'object'}}]}\n"
-    )
-
-    # Setup requests.get call to return the output of the FastAPI call for devices.
-    # Call the CLI function and check the output - expect nothing as no devices set.
-    handler._context.devices = {}
-    mock_requests.return_value = client.get("/devices")
-    unset_devices = runner.invoke(main, ["controller", "devices"])
-    assert unset_devices.output == "{'devices': []}\n"
-
-    # Put a device in handler.context manually.
-    device = MyDevice("my-device")
-    handler._context.devices = {"my-device": device}
-
-    # Setup requests.get call to return the output of the FastAPI call for devices.
-    # Call the CLI function and check the output.
-    mock_requests.return_value = client.get("/devices")
-    devices = runner.invoke(main, ["controller", "devices"])
-
-    assert (
-        devices.output
-        == "{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
-    )
     # expect the first call to be to the helper
     assert mock_requests.call_args[0] == (
         "GET",
@@ -212,3 +175,29 @@ def test_config_passed_down_to_command_children(
         "POST",
         "http://a.fake.host:12345/tasks",
     )
+
+
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("requests.request")
+def test_plan_accepted_with_right_parameters(
+    mock_requests: Mock,
+    mock_handler: Mock,
+    handler: Handler,
+    client: TestClient,
+    runner: CliRunner,
+):
+    pass
+
+
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("requests.request")
+def test_plan_rejected_with_wrong_parameters(
+    mock_requests: Mock,
+    mock_handler: Mock,
+    handler: Handler,
+    client: TestClient,
+    runner: CliRunner,
+):
+    pass

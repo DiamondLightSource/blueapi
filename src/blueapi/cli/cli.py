@@ -189,7 +189,7 @@ def run_plan(
     try:
         text = "Checking supplied parameters against expected parameters..."
         print(text)
-        validated_data = parse_obj_as(type(schema.parameter_schema), parameters)
+        validated_data = parse_obj_as(type(schema), parameters)
         print("Plan params validation successful:", validated_data)
     except ValidationError as e:
         errors = e.errors()

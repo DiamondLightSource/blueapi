@@ -212,5 +212,3 @@ def test_config_passed_down_to_command_children(
         "POST",
         "http://a.fake.host:12345/tasks",
     )
-
-    

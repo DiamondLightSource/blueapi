@@ -10,8 +10,8 @@ metadata:
 spec:
   type: service
   lifecycle: production
-  owner: user:vid18871 # TODO: owner: DAQ-Core
-  #  system: Athena  # TODO: Define Athena system: presumably same location as DAQ-Core/DAQ?
+  owner: group:data-acquisition
+  system: athena
   providesApis:
     - blueapiControl
     - blueapiEvents

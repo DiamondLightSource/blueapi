@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from unittest.mock import call
 
 import pytest
 from click.testing import CliRunner
@@ -136,7 +137,6 @@ def test_invalid_config_path_handling(runner: CliRunner):
     assert result.exit_code == 1
 
 
-# todo make this use devices as above, not the sleep plan
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("requests.request")
@@ -179,12 +179,13 @@ def test_config_passed_down_to_command_children(
     # Call the CLI function and check the output - expect nothing as no devices set.
     handler._context.devices = {}
     mock_requests.return_value = client.get("/devices")
-    unset_devices = runner.invoke(main, [ "-c", config_path, "controller", "devices"])
+    unset_devices = runner.invoke(main, ["-c", config_path, "controller", "devices"])
     assert unset_devices.output == "{'devices': []}\n"
 
-    assert mock_requests.call_args[0] == (
+    assert mock_requests.call_args_list[0] == call(
         "GET",
         "http://a.fake.host:12345/devices",
+        json=None,
     )
 
     # Put a device in handler.context manually.
@@ -196,15 +197,17 @@ def test_config_passed_down_to_command_children(
     mock_requests.return_value = client.get("/devices")
     devices = runner.invoke(main, ["controller", "devices"])
 
-    assert mock_requests.call_args[1] == (
+    assert mock_requests.call_args_list[1] == call(
         "GET",
         "http://a.fake.host:12345/devices",
+        json=None,
     )
 
     assert (
         devices.output
         == "{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
     )
+
 
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
@@ -227,26 +230,24 @@ def test_plan_accepted_with_right_parameters(
     assert result.exit_code == 0
 
     mock_requests.return_value = client.get("/plans/sleep")
-    output = runner.invoke(
-        main, [ "controller", "run", "sleep", '{"time": 5}']
-    )
+    output = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert result.exit_code == 0
     print(output)
-    # 'Trying to run plan: sleep.\nChecking supplied parameters against expected parameters...\nInput validation failed: __root__: value is not a valid dict\nfailed to run the sleep plan, supplied params {"time": 5}\n                do not match the expected params: {\'time\': {\'title\': \'Time\', \'type\': \'number\'}}\n'
 
     # expect the first call to be to the helper
-    assert mock_requests.call_args[0] == (
-        "GET",
-        "http://localhost:12345/plans/sleep",
+    assert mock_requests.call_args_list[0] == call(
+        "GET", "http://localhost:8000/plans/sleep", json=None
     )
 
     mock_requests.return_value = client.post(
         "/tasks", json={"name": "sleep", "params": {"time": 5}}
     )
+    assert len(mock_requests.call_args_list) == 2
 
-    assert mock_requests.call_args[1] == (
+    assert mock_requests.call_args_list[1] == call(
         "POST",
-        "http://localhost:12345/tasks",
+        "http://localhost:8000/tasks",
+        json={"name": "sleep", "params": {"time": 5}},
     )
 
 
@@ -271,25 +272,14 @@ def test_plan_rejected_with_wrong_parameters(
     assert result.exit_code == 0
 
     mock_requests.return_value = client.get("/plans/sleep")
-    output = runner.invoke(
-        main, [ "controller", "run", "sleep", '{"time": 5}']
-    )
+    # Erroneous invocation - with a string argument instead of number
+    output = runner.invoke(main, ["controller", "run", "sleep", '{"tim": "test"}'])
     assert result.exit_code == 0
     print(output)
-    # 'Trying to run plan: sleep.\nChecking supplied parameters against expected parameters...\nInput validation failed: __root__: value is not a valid dict\nfailed to run the sleep plan, supplied params {"time": 5}\n                do not match the expected params: {\'time\': {\'title\': \'Time\', \'type\': \'number\'}}\n'
 
-    # expect the first call to be to the helper
-    assert mock_requests.call_args[0] == (
-        "GET",
-        "http://a.fake.host:12345/plans/sleep",
+    # expect the first and only call to be to the helper
+    assert mock_requests.call_args_list[0] == call(
+        "GET", "http://localhost:8000/plans/sleep", json=None
     )
 
-    mock_requests.return_value = client.post(
-        "/tasks", json={"name": "sleep", "params": {"time": 5}}
-    )
-
-    assert mock_requests.call_args[1] == (
-        "POST",
-        "http://a.fake.host:12345/tasks",
-    )
-
+    assert len(mock_requests.call_args_list) == 1

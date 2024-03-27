@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Debug Rest Service",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
             "args": [
@@ -18,7 +18,7 @@
         },
         {
             "name": "Debug Unit Test",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
             "program": "${file}",
@@ -40,6 +40,18 @@
             "justMyCode": false,
             "module": "blueapi.cli",
             "args": [
+                "serve"
+            ]
+        },
+        {
+            "name": "Run Service with config override",
+            "type": "debugpy",
+            "request": "launch",
+            "justMyCode": false,
+            "module": "blueapi.cli",
+            "args": [
+                "-c",
+                "tests/example_yaml/rest_config.yaml",
                 "serve"
             ]
         },

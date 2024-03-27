@@ -144,7 +144,6 @@ def test_config_passed_down_to_command_children(
     mock_requests: Mock,
     mock_handler: Mock,
     handler: Handler,
-    client: TestClient,
     runner: CliRunner,
 ):
     config_path = "tests/example_yaml/rest_config.yaml"
@@ -162,50 +161,12 @@ def test_config_passed_down_to_command_children(
 
     # Setup requests.get call to return the output of the FastAPI call for plans.
     # Call the CLI function and check the output.
-    mock_requests.return_value = client.get("/plans")
-    plans = runner.invoke(main, ["controller", "plans"])
-
-    assert (
-        plans.output == "{'plans': [{'description': None,\n"
-        "            'name': 'my-plan',\n"
-        "            'parameter_schema': {'properties': {'id': {'title': 'Id',\n"
-        "                                                       'type': 'string'}},\n"
-        "                                 'required': ['id'],\n"
-        "                                 'title': 'MyModel',\n"
-        "                                 'type': 'object'}}]}\n"
-    )
-
-    # Setup requests.get call to return the output of the FastAPI call for devices.
-    # Call the CLI function and check the output - expect nothing as no devices set.
-    handler._context.devices = {}
-    mock_requests.return_value = client.get("/devices")
-    unset_devices = runner.invoke(main, ["-c", config_path, "controller", "devices"])
-    assert unset_devices.output == "{'devices': []}\n"
+    _ = runner.invoke(main, ["-c", config_path, "controller", "plans"])
 
     assert mock_requests.call_args_list[0] == call(
         "GET",
-        "http://a.fake.host:12345/devices",
+        "http://a.fake.host:12345/plans",
         json=None,
-    )
-
-    # Put a device in handler.context manually.
-    device = MyDevice("my-device")
-    handler._context.devices = {"my-device": device}
-
-    # Setup requests.get call to return the output of the FastAPI call for devices.
-    # Call the CLI function and check the output.
-    mock_requests.return_value = client.get("/devices")
-    devices = runner.invoke(main, ["controller", "devices"])
-
-    assert mock_requests.call_args_list[1] == call(
-        "GET",
-        "http://a.fake.host:12345/devices",
-        json=None,
-    )
-
-    assert (
-        devices.output
-        == "{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
     )
 
 

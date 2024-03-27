@@ -35,7 +35,7 @@
         },
         {
             "name": "Run Service",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
@@ -45,7 +45,7 @@
         },
         {
             "name": "Controller (get plans)",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
@@ -56,7 +56,7 @@
         },
         {
             "name": "Controller (get devices)",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
@@ -67,7 +67,7 @@
         },
         {
             "name": "Controller (sleep)",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi.cli",
@@ -75,7 +75,6 @@
                 "controller",
                 "run",
                 "sleep",
-                "-p",
                 "{\"time\": 5}"
             ]
         }

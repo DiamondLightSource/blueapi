@@ -296,6 +296,7 @@ def env(obj: dict, reload: Optional[bool]) -> None:
 
     client: BlueapiRestClient = obj["rest_client"]
     if reload:
+        print('reloading the environment...')
         pprint(client.reload_environemnt())
     pprint(client.get_environment())
 

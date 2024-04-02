@@ -291,12 +291,12 @@ def stop(obj: dict) -> None:
 @click.pass_obj
 def env(obj: dict, reload: Optional[bool]) -> None:
     """
-        Inspect or restart the environment
+    Inspect or restart the environment
     """
 
     client: BlueapiRestClient = obj["rest_client"]
     if reload:
-        print('reloading the environment...')
+        print("reloading the environment...")
         pprint(client.reload_environemnt())
     pprint(client.get_environment())
 

@@ -200,3 +200,58 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
         input="\n",
     )
     assert result.exit_code == 0
+
+
+def test_invalid_condition_for_run(runner: CliRunner):
+    result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    assert type(result.exception) is RuntimeError
+
+
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("requests.request")
+def test_get_env(
+    mock_requests: Mock,
+    mock_handler: Mock,
+    handler: Handler,
+    client: TestClient,
+    runner: CliRunner,
+):
+    with patch("uvicorn.run", side_effect=None):
+        result = runner.invoke(main, ["serve"])
+
+    assert result.exit_code == 0
+
+    mock_requests.return_value = Mock()
+
+    runner.invoke(main, ["controller", "env"])
+
+    assert mock_requests.call_args[0] == (
+        "GET",
+        "http://localhost:8000/environment",
+    )
+
+
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("requests.request")
+def test_reset_env(
+    mock_requests: Mock,
+    mock_handler: Mock,
+    handler: Handler,
+    client: TestClient,
+    runner: CliRunner,
+):
+    with patch("uvicorn.run", side_effect=None):
+        result = runner.invoke(main, ["serve"])
+
+    assert result.exit_code == 0
+
+    mock_requests.return_value = Mock()
+
+    runner.invoke(main, ["controller", "env", "-r"])
+
+    assert mock_requests.call_args[0] == (
+        "DELETE",
+        "http://localhost:8000/environment",
+    )

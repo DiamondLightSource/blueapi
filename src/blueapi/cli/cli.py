@@ -307,9 +307,10 @@ def env(obj: dict, reload: Optional[bool]) -> None:
 
     # Initialize a variable to keep track of the environment status
     environment_initialized = False
-
+    polling_count = 0
+    max_polling_count = 10
     # Use a while loop to keep checking until the environment is initialized
-    while not environment_initialized:
+    while (not environment_initialized and polling_count < max_polling_count):
         # Fetch the current environment status
         environment_status = client.get_environment()
 
@@ -319,7 +320,10 @@ def env(obj: dict, reload: Optional[bool]) -> None:
             environment_initialized = True
         else:
             print("Waiting for environment to initialize...")
-            sleep(5)  # Wait for 5 seconds before checking again
+            polling_count += 1
+            sleep(1)  # Wait for 1 seconds before checking again
+    if(polling_count == max_polling_count):
+        raise TimeoutError("Environment initialization timed out.")
 
     # Once out of the loop, print the initialized environment status
     pprint(environment_status)

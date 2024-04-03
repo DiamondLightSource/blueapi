@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 from pydantic import BaseModel, Field
 
-from blueapi.config import ApplicationConfig, BasicAuthentication, ConfigLoader
+from blueapi.config import BasicAuthentication, ConfigLoader
 from blueapi.utils import InvalidConfigError
 
 
@@ -117,6 +117,7 @@ def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) ->
     loader.use_values_from_yaml(nested_config_yaml)
     with pytest.raises(InvalidConfigError):
         loader.load()
+
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
 def test_auth_from_env():

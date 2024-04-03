@@ -4,6 +4,8 @@ from collections import deque
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
+from time import sleep
+from typing import Optional
 
 import click
 from pydantic import ValidationError
@@ -295,10 +297,32 @@ def env(obj: dict, reload: Optional[bool]) -> None:
     """
 
     client: BlueapiRestClient = obj["rest_client"]
-    if reload:
-        print("reloading the environment...")
-        pprint(client.reload_environemnt())
-    pprint(client.get_environment())
+    if not reload:
+        pprint(client.get_environment())
+        return
+
+    # Reload the environment if needed
+    print("Reloading the environment...")
+    pprint(client.reload_environment())
+
+    # Initialize a variable to keep track of the environment status
+    environment_initialized = False
+
+    # Use a while loop to keep checking until the environment is initialized
+    while not environment_initialized:
+        # Fetch the current environment status
+        environment_status = client.get_environment()
+
+        # Check if the environment is initialized
+        if environment_status.initialized:
+            print("Environment is initialized.")
+            environment_initialized = True
+        else:
+            print("Waiting for environment to initialize...")
+            sleep(5)  # Wait for 5 seconds before checking again
+
+    # Once out of the loop, print the initialized environment status
+    pprint(environment_status)
 
 
 # helper function

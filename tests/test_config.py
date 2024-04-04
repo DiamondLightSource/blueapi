@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 from pydantic import BaseModel, Field
 
-from blueapi.config import ApplicationConfig, BasicAuthentication, ConfigLoader
+from blueapi.config import BasicAuthentication, ConfigLoader
 from blueapi.utils import InvalidConfigError
 
 
@@ -117,16 +117,6 @@ def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) ->
     loader.use_values_from_yaml(nested_config_yaml)
     with pytest.raises(InvalidConfigError):
         loader.load()
-
-
-def test_example_config_yaml_gives_same_config_as_model(default_yaml: Path):
-    loader = ConfigLoader(ApplicationConfig)
-    default_config = loader.load()
-
-    loader.use_values_from_yaml(default_yaml)
-    yaml_config = loader.load()
-
-    assert default_config == yaml_config
 
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)

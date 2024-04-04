@@ -260,6 +260,7 @@ def test_reset_env(
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("requests.request")
+@patch("time.sleep", return_value=None)
 def test_reset_env2(
     mock_requests: Mock,
     mock_handler: Mock,
@@ -267,21 +268,18 @@ def test_reset_env2(
     client: TestClient,
     runner: CliRunner,
 ):
-    # Mock the sleep function to avoid actual delays in the test
-    with patch("time.sleep", return_value=None):
-        with patch("uvicorn.run", side_effect=None):
-            result = runner.invoke(main, ["serve"])
+    with patch("uvicorn.run", side_effect=None):
+        result = runner.invoke(main, ["serve"])
 
-        assert result.exit_code == 0
+    assert result.exit_code == 0
 
-        mock_requests.return_value = Mock()
+    mock_requests.return_value = Mock()
 
-        # Invoke the CLI command that would trigger the environment initialization check
-        runner.invoke(main, ["controller", "env", "-r"])
+    # Invoke the CLI command that would trigger the environment initialization check
+    runner.invoke(main, ["controller", "env", "-r"])
 
-        # Check if the DELETE request was made correctly
-        assert mock_requests.call_args[0] == (
-            "DELETE",
-            "http://localhost:8000/environment",
-        )
-
+    # Check if the DELETE request was made correctly
+    assert mock_requests.call_args[0] == (
+        "DELETE",
+        "http://localhost:8000/environment",
+    )

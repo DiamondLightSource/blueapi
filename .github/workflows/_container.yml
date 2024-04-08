@@ -37,7 +37,7 @@ jobs:
 
       - name: Create tags for publishing image
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.5.1
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |

@@ -27,7 +27,7 @@ dependencies = [
     "uvicorn",
     "requests",
     "dls-bluesky-core",  #requires ophyd-async
-    "dls-dodal",
+    "dls-dodal<1.21",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

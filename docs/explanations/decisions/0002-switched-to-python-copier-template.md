@@ -1,4 +1,4 @@
-# 4. Adopt python-copier-template for project structure
+# 2. Adopt python-copier-template for project structure
 
 ## Status
 

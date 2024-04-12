@@ -1,5 +1,5 @@
-from collections.abc import Mapping
-from typing import Any, Callable, Literal, Optional, TypeVar
+from collections.abc import Callable, Mapping
+from typing import Any, Literal, TypeVar
 
 import requests
 from pydantic import parse_obj_as
@@ -27,7 +27,7 @@ def _is_exception(response: requests.Response) -> bool:
 class BlueapiRestClient:
     _config: RestConfig
 
-    def __init__(self, config: Optional[RestConfig] = None) -> None:
+    def __init__(self, config: RestConfig | None = None) -> None:
         self._config = config or RestConfig()
 
     def get_plans(self) -> PlanResponse:
@@ -48,7 +48,7 @@ class BlueapiRestClient:
     def set_state(
         self,
         state: Literal[WorkerState.RUNNING, WorkerState.PAUSED],
-        defer: Optional[bool] = False,
+        defer: bool | None = False,
     ):
         return self._request_and_deserialize(
             "/worker/state",
@@ -87,7 +87,7 @@ class BlueapiRestClient:
     def cancel_current_task(
         self,
         state: Literal[WorkerState.ABORTING, WorkerState.STOPPING],
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ):
         return self._request_and_deserialize(
             "/worker/state",
@@ -100,7 +100,7 @@ class BlueapiRestClient:
         self,
         suffix: str,
         target_type: type[T],
-        data: Optional[Mapping[str, Any]] = None,
+        data: Mapping[str, Any] | None = None,
         method="GET",
         raise_if: Callable[[requests.Response], bool] = _is_exception,
     ) -> T:

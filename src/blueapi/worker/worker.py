@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
 from pydantic import Field
 
@@ -40,7 +40,7 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask[T]]:
+    def get_task_by_id(self, task_id: str) -> TrackableTask[T] | None:
         """
         Returns a task matching the task ID supplied,
         if the worker knows of it.
@@ -53,7 +53,7 @@ class Worker(ABC, Generic[T]):
                 None if the task ID is unknown to the worker.
         """
 
-    def get_active_task(self) -> Optional[TrackableTask[T]]:
+    def get_active_task(self) -> TrackableTask[T] | None:
         """
         Returns the task the worker is currently running
 
@@ -77,7 +77,7 @@ class Worker(ABC, Generic[T]):
     def cancel_active_task(
         self,
         failure: bool = False,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> str:
         """
         Remove the currently active task from the worker if there is one

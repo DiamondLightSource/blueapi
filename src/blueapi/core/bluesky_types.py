@@ -1,11 +1,8 @@
 import inspect
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import (
     Any,
-    Callable,
-    Optional,
     Protocol,
-    Union,
     get_type_hints,
     runtime_checkable,
 )
@@ -37,23 +34,23 @@ PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
 
 #: An object that encapsulates the device to do useful things to produce
 # data (e.g. move and read)
-Device = Union[
-    Checkable,
-    Flyable,
-    HasHints,
-    HasName,
-    HasParent,
-    Movable,
-    Pausable,
-    Readable,
-    Stageable,
-    Stoppable,
-    Subscribable,
-    WritesExternalAssets,
-    Configurable,
-    Triggerable,
-    AsyncDevice,
-]
+Device = (
+    Checkable
+    | Flyable
+    | HasHints
+    | HasName
+    | HasParent
+    | Movable
+    | Pausable
+    | Readable
+    | Stageable
+    | Stoppable
+    | Subscribable
+    | WritesExternalAssets
+    | Configurable
+    | Triggerable
+    | AsyncDevice
+)
 
 #: Protocols defining interface to hardware
 BLUESKY_PROTOCOLS = list(Device.__args__)  # type: ignore
@@ -90,7 +87,7 @@ class Plan(BlueapiBaseModel):
     """
 
     name: str = Field(description="Referenceable name of the plan")
-    description: Optional[str] = Field(
+    description: str | None = Field(
         description="Description/docstring of the plan", default=None
     )
     model: type[BaseModel] = Field(

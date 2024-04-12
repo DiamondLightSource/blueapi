@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from functools import partial
 from queue import Full, Queue
 from threading import Event, RLock
-from typing import Any, Optional, Union
+from typing import Any
 
 from bluesky.protocols import Status
 from super_state_machine.errors import TransitionError
@@ -55,7 +55,7 @@ class TaskWorker(Worker[Task]):
     _errors: list[str]
     _warnings: list[str]
     _task_channel: Queue  # type: ignore
-    _current: Optional[TrackableTask]
+    _current: TrackableTask | None
     _status_lock: RLock
     _status_snapshot: dict[str, StatusView]
     _completed_statuses: set[str]
@@ -101,7 +101,7 @@ class TaskWorker(Worker[Task]):
     def cancel_active_task(
         self,
         failure: bool = False,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> str:
         if self._current is None:
             # Persuades mypy that self._current is not None
@@ -116,10 +116,10 @@ class TaskWorker(Worker[Task]):
     def get_tasks(self) -> list[TrackableTask[Task]]:
         return list(self._tasks.values())
 
-    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask[Task]]:
+    def get_task_by_id(self, task_id: str) -> TrackableTask[Task] | None:
         return self._tasks.get(task_id)
 
-    def get_active_task(self) -> Optional[TrackableTask[Task]]:
+    def get_active_task(self) -> TrackableTask[Task] | None:
         return self._current
 
     def begin_task(self, task_id: str) -> None:
@@ -142,7 +142,7 @@ class TaskWorker(Worker[Task]):
 
         task_started = Event()
 
-        def mark_task_as_started(event: WorkerEvent, _: Optional[str]) -> None:
+        def mark_task_as_started(event: WorkerEvent, _: str | None) -> None:
             if (
                 event.task_status is not None
                 and event.task_status.task_id == trackable_task.task_id
@@ -228,7 +228,7 @@ class TaskWorker(Worker[Task]):
     def _cycle(self) -> None:
         try:
             LOGGER.info("Awaiting task")
-            next_task: Union[TrackableTask, KillSignal] = self._task_channel.get()
+            next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
                 LOGGER.info(f"Got new task: {next_task}")
                 self._current = next_task  # Informing mypy that the task is not None
@@ -266,7 +266,7 @@ class TaskWorker(Worker[Task]):
     def _on_state_change(
         self,
         raw_new_state: RawRunEngineState,
-        raw_old_state: Optional[RawRunEngineState] = None,
+        raw_old_state: RawRunEngineState | None = None,
     ) -> None:
         new_state = WorkerState.from_bluesky_state(raw_new_state)
         if raw_old_state:
@@ -286,7 +286,7 @@ class TaskWorker(Worker[Task]):
     def _report_status(
         self,
     ) -> None:
-        task_status: Optional[TaskStatus]
+        task_status: TaskStatus | None
         errors = self._errors
         warnings = self._warnings
         if self._current is not None:
@@ -319,7 +319,7 @@ class TaskWorker(Worker[Task]):
                 "Trying to emit a document despite the fact that the RunEngine is idle"
             )
 
-    def _waiting_hook(self, statuses: Optional[Iterable[Status]]) -> None:
+    def _waiting_hook(self, statuses: Iterable[Status] | None) -> None:
         if statuses is not None:
             with self._status_lock:
                 for status in statuses:
@@ -347,15 +347,15 @@ class TaskWorker(Worker[Task]):
         status: Status,
         status_uuid: str,
         *,
-        name: Optional[str] = None,
-        current: Optional[float] = None,
-        initial: Optional[float] = None,
-        target: Optional[float] = None,
-        unit: Optional[str] = None,
-        precision: Optional[int] = None,
-        fraction: Optional[float] = None,
-        time_elapsed: Optional[float] = None,
-        time_remaining: Optional[float] = None,
+        name: str | None = None,
+        current: float | None = None,
+        initial: float | None = None,
+        target: float | None = None,
+        unit: str | None = None,
+        precision: int | None = None,
+        fraction: float | None = None,
+        time_elapsed: float | None = None,
+        time_remaining: float | None = None,
     ) -> None:
         if not status.done:
             percentage = float(1.0 - fraction) if fraction is not None else None

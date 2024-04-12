@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-from typing import Optional
 
 from fastapi import (
     BackgroundTasks,
@@ -33,7 +32,7 @@ from .subprocess_handler import SubprocessHandler
 
 REST_API_VERSION = "0.0.5"
 
-HANDLER: Optional[BlueskyHandler] = None
+HANDLER: BlueskyHandler | None = None
 
 
 def get_handler() -> BlueskyHandler:
@@ -42,7 +41,7 @@ def get_handler() -> BlueskyHandler:
     return HANDLER
 
 
-def setup_handler(config: Optional[ApplicationConfig] = None):
+def setup_handler(config: ApplicationConfig | None = None):
     global HANDLER
     handler = SubprocessHandler(config)
     handler.start()

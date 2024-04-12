@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from concurrent.futures import Future
-from typing import Any, Callable, Optional
+from typing import Any
 
 from .context import MessageContext
 
@@ -87,7 +88,7 @@ class MessagingTemplate(ABC):
         destination: str,
         obj: Any,
         reply_type: type = str,
-        correlation_id: Optional[str] = None,
+        correlation_id: str | None = None,
     ) -> Future:
         """
         Send a message expecting a single reply.
@@ -118,8 +119,8 @@ class MessagingTemplate(ABC):
         self,
         destination: str,
         obj: Any,
-        on_reply: Optional[MessageListener] = None,
-        correlation_id: Optional[str] = None,
+        on_reply: MessageListener | None = None,
+        correlation_id: str | None = None,
     ) -> None:
         """
         Send a message to a destination

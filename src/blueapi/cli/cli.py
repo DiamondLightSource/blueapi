@@ -4,7 +4,6 @@ from collections import deque
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Optional, Union
 
 import click
 from requests.exceptions import ConnectionError
@@ -34,7 +33,7 @@ from .rest import BlueapiRestClient
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
 @click.pass_context
-def main(ctx: click.Context, config: Union[Optional[Path], tuple[Path, ...]]) -> None:
+def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     # if no command is supplied, run with the options passed
 
     config_loader = ConfigLoader(ApplicationConfig)
@@ -65,7 +64,7 @@ def main(ctx: click.Context, config: Union[Optional[Path], tuple[Path, ...]]) ->
     is_flag=True,
     help="[Development only] update the schema in the documentation",
 )
-def schema(output: Optional[Path] = None, update: bool = False) -> None:
+def schema(output: Path | None = None, update: bool = False) -> None:
     """Generate the schema for the REST API"""
     schema = generate_schema()
 
@@ -139,7 +138,7 @@ def listen_to_events(obj: dict) -> None:
 
     def on_event(
         context: MessageContext,
-        event: Union[WorkerEvent, ProgressEvent, DataEvent],
+        event: WorkerEvent | ProgressEvent | DataEvent,
     ) -> None:
         converted = json.dumps(event.dict(), indent=2)
         print(converted)
@@ -166,7 +165,7 @@ def listen_to_events(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: Optional[str], timeout: Optional[float]
+    obj: dict, name: str, parameters: str | None, timeout: float | None
 ) -> None:
     """Run a plan with parameters"""
     config: ApplicationConfig = obj["config"]
@@ -236,7 +235,7 @@ def resume(obj: dict) -> None:
 @check_connection
 @click.argument("reason", type=str, required=False)
 @click.pass_obj
-def abort(obj: dict, reason: Optional[str] = None) -> None:
+def abort(obj: dict, reason: str | None = None) -> None:
     """
     Abort the execution of the current task, marking any ongoing runs as failed,
     with optional reason

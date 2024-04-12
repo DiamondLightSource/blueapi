@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Any, Optional
+from typing import Any
 
 from bluesky.protocols import HasName
 from pydantic import Field
@@ -55,10 +55,8 @@ class PlanModel(BlueapiBaseModel):
     """
 
     name: str = Field(description="Name of the plan")
-    description: Optional[str] = Field(
-        description="Docstring of the plan", default=None
-    )
-    parameter_schema: Optional[dict[str, Any]] = Field(
+    description: str | None = Field(description="Docstring of the plan", default=None)
+    parameter_schema: dict[str, Any] | None = Field(
         description="Schema of the plan's parameters",
         alias="schema",
         default_factory=dict,
@@ -102,7 +100,7 @@ class WorkerTask(BlueapiBaseModel):
     Worker's active task ID, can be None
     """
 
-    task_id: Optional[str] = Field(
+    task_id: str | None = Field(
         description="The ID of the current task, None if the worker is idle"
     )
 
@@ -121,11 +119,11 @@ class StateChangeRequest(BlueapiBaseModel):
     """
 
     new_state: WorkerState = Field()
-    defer: Optional[bool] = Field(
+    defer: bool | None = Field(
         description="Should worker defer Pausing until the next checkpoint",
         default=False,
     )
-    reason: Optional[str] = Field(
+    reason: str | None = Field(
         description="The reason for the current run to be aborted",
         default=None,
     )

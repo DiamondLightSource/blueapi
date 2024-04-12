@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Mapping
-from typing import Optional
 
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
@@ -33,10 +32,10 @@ class Handler(BlueskyHandler):
 
     def __init__(
         self,
-        config: Optional[ApplicationConfig] = None,
-        context: Optional[BlueskyContext] = None,
-        messaging_template: Optional[MessagingTemplate] = None,
-        worker: Optional[Worker] = None,
+        config: ApplicationConfig | None = None,
+        context: BlueskyContext | None = None,
+        messaging_template: MessagingTemplate | None = None,
+        worker: Worker | None = None,
     ) -> None:
         self._config = config or ApplicationConfig()
         self._context = context or BlueskyContext()
@@ -115,27 +114,27 @@ class Handler(BlueskyHandler):
         return task
 
     @property
-    def active_task(self) -> Optional[TrackableTask]:
+    def active_task(self) -> TrackableTask | None:
         return self._worker.get_active_task()
 
     @property
     def state(self) -> WorkerState:
         return self._worker.state
 
-    def pause_worker(self, defer: Optional[bool]) -> None:
+    def pause_worker(self, defer: bool | None) -> None:
         self._worker.pause(defer)
 
     def resume_worker(self) -> None:
         self._worker.resume()
 
-    def cancel_active_task(self, failure: bool, reason: Optional[str]):
+    def cancel_active_task(self, failure: bool, reason: str | None):
         self._worker.cancel_active_task(failure, reason)
 
     @property
     def tasks(self) -> list[TrackableTask]:
         return self._worker.get_tasks()
 
-    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask]:
+    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         return self._worker.get_task_by_id(task_id)
 
     @property
@@ -143,11 +142,11 @@ class Handler(BlueskyHandler):
         return self._initialized
 
 
-HANDLER: Optional[Handler] = None
+HANDLER: Handler | None = None
 
 
 def setup_handler(
-    config: Optional[ApplicationConfig] = None,
+    config: ApplicationConfig | None = None,
 ) -> None:
     global HANDLER
 

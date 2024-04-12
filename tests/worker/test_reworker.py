@@ -1,9 +1,9 @@
 import itertools
 import threading
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from concurrent.futures import Future
 from queue import Full
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, TypeVar
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -211,7 +211,7 @@ def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
     task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
     event_sequences = [_sleep_events(task_id) for task_id in task_ids]
 
-    for task_id, events in zip(task_ids, event_sequences):
+    for task_id, events in zip(task_ids, event_sequences, strict=False):
         assert_run_produces_worker_events(events, worker, task_id)
 
 
@@ -344,7 +344,7 @@ def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
 
 
 def assert_running_count_plan_produces_ordered_worker_and_data_events(
-    expected_events: list[Union[WorkerEvent, DataEvent]],
+    expected_events: list[WorkerEvent | DataEvent],
     worker: Worker,
     task: Task = Task(name="count", params={"detectors": ["image_det"], "num": 1}),  # noqa: B008
     timeout: float = 5.0,
@@ -392,7 +392,7 @@ def take_events(
     events: list[E] = []
     future: "Future[list[E]]" = Future()
 
-    def on_event(event: E, event_id: Optional[str]) -> None:
+    def on_event(event: E, event_id: str | None) -> None:
         events.append(event)
         if cutoff_predicate(event):
             future.set_result(events)
@@ -428,7 +428,7 @@ def take_events_from_streams(
     events: list[Any] = []
     future: "Future[list[Any]]" = Future()
 
-    def on_event(event: Any, event_id: Optional[str]) -> None:
+    def on_event(event: Any, event_id: str | None) -> None:
         print(event)
         events.append(event)
         if cutoff_predicate(event):

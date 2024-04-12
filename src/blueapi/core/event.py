@@ -1,6 +1,7 @@
 import itertools
 from abc import ABC, abstractmethod
-from typing import Callable, Generic, Optional, TypeVar
+from collections.abc import Callable
+from typing import Generic, TypeVar
 
 #: Event type
 E = TypeVar("E")
@@ -15,7 +16,7 @@ class EventStream(ABC, Generic[E, S]):
     """
 
     @abstractmethod
-    def subscribe(self, __callback: Callable[[E, Optional[str]], None]) -> S:
+    def subscribe(self, __callback: Callable[[E, str | None], None]) -> S:
         """
         Subscribe to new events with a callback
 
@@ -47,14 +48,14 @@ class EventPublisher(EventStream[E, int]):
     Simple Observable that can be fed values to publish
     """
 
-    _subscriptions: dict[int, Callable[[E, Optional[str]], None]]
+    _subscriptions: dict[int, Callable[[E, str | None], None]]
     _count: itertools.count
 
     def __init__(self) -> None:
         self._subscriptions = {}
         self._count = itertools.count()
 
-    def subscribe(self, callback: Callable[[E, Optional[str]], None]) -> int:
+    def subscribe(self, callback: Callable[[E, str | None], None]) -> int:
         sub_id = next(self._count)
         self._subscriptions[sub_id] = callback
         return sub_id
@@ -65,7 +66,7 @@ class EventPublisher(EventStream[E, int]):
     def unsubscribe_all(self) -> None:
         self._subscriptions = {}
 
-    def publish(self, event: E, correlation_id: Optional[str] = None) -> None:
+    def publish(self, event: E, correlation_id: str | None = None) -> None:
         """
         Publish a new event to all subscribers
 

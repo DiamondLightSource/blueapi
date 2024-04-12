@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
 
 from aiohttp import ClientSession
 from ophyd_async.core import DirectoryInfo, DirectoryProvider
@@ -75,8 +74,8 @@ class VisitDirectoryProvider(DirectoryProvider):
     _data_directory: Path
 
     _client: VisitServiceClientBase
-    _current_collection: Optional[DirectoryInfo]
-    _session: Optional[ClientSession]
+    _current_collection: DirectoryInfo | None
+    _session: ClientSession | None
 
     def __init__(
         self,

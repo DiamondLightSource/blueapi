@@ -1,6 +1,6 @@
 import threading
 import time as ttime
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from ophyd.sim import SynAxis
 from ophyd.status import MoveStatus, Status
@@ -13,7 +13,7 @@ class SynAxisWithMotionEvents(SynAxis):
         self,
         *,
         name: str,
-        readback_func: Optional[Callable] = None,
+        readback_func: Callable | None = None,
         value: float = 0.0,
         delay: float = 0.0,
         events_per_move: int = 6,

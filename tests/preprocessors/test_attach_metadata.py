@@ -1,6 +1,6 @@
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
@@ -383,7 +383,7 @@ def assert_all_detectors_used_collection_numbers(
     descriptors = find_descriptor_docs(docs)
     assert len(descriptors) == len(source_history)
 
-    for descriptor, expected_source in zip(descriptors, source_history):
+    for descriptor, expected_source in zip(descriptors, source_history, strict=False):
         for detector in detectors:
             source = descriptor.doc.get("data_keys", {}).get(f"{detector.name}_data")[
                 "source"

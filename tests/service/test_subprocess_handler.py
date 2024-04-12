@@ -1,4 +1,3 @@
-from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -73,18 +72,18 @@ class DummyHandler(BlueskyHandler):
         return WorkerTask(task_id=task.task_id)
 
     @property
-    def active_task(self) -> Optional[TrackableTask]:
+    def active_task(self) -> TrackableTask | None:
         return None
 
     @property
     def state(self) -> WorkerState:
         return WorkerState.IDLE
 
-    def pause_worker(self, defer: Optional[bool]) -> None: ...
+    def pause_worker(self, defer: bool | None) -> None: ...
 
     def resume_worker(self) -> None: ...
 
-    def cancel_active_task(self, failure: bool, reason: Optional[str]) -> None: ...
+    def cancel_active_task(self, failure: bool, reason: str | None) -> None: ...
 
     @property
     def tasks(self) -> list[TrackableTask]:
@@ -92,7 +91,7 @@ class DummyHandler(BlueskyHandler):
             TrackableTask(task_id="abc", task=Task(name="sleep", params={"time": 0.0}))
         ]
 
-    def get_task_by_id(self, task_id: str) -> Optional[TrackableTask]:
+    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         return None
 
     def start(self): ...

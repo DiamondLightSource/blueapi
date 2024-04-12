@@ -1,6 +1,5 @@
 import json
 from dataclasses import dataclass
-from typing import Optional
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -346,7 +345,7 @@ def test_pausing_while_idle_denied(
 
 @pytest.mark.parametrize("defer", [True, False, None])
 def test_calls_pause_if_running(
-    mockable_state_machine: Handler, client: TestClient, defer: Optional[bool]
+    mockable_state_machine: Handler, client: TestClient, defer: bool | None
 ) -> None:
     re = mockable_state_machine._context.run_engine
     mockable_state_machine._worker._on_state_change(  # type: ignore

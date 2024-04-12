@@ -1,5 +1,5 @@
 import threading
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 from bluesky.callbacks.best_effort import BestEffortCallback
 
@@ -15,13 +15,13 @@ class BlueskyRemoteError(Exception):
         super().__init__(message)
 
 
-_Event = Union[WorkerEvent, ProgressEvent, DataEvent]
+_Event = WorkerEvent | ProgressEvent | DataEvent
 
 
 class AmqClient:
     app: MessagingTemplate
     complete: threading.Event
-    timed_out: Optional[bool]
+    timed_out: bool | None
 
     def __init__(self, app: MessagingTemplate) -> None:
         self.app = app
@@ -37,7 +37,7 @@ class AmqClient:
     def subscribe_to_topics(
         self,
         correlation_id: str,
-        on_event: Optional[Callable[[WorkerEvent], None]] = None,
+        on_event: Callable[[WorkerEvent], None] | None = None,
     ) -> None:
         """Run callbacks on events/progress events with a given correlation id."""
 
@@ -70,7 +70,7 @@ class AmqClient:
             on_event,
         )
 
-    def wait_for_complete(self, timeout: Optional[float] = None) -> None:
+    def wait_for_complete(self, timeout: float | None = None) -> None:
         self.timed_out = not self.complete.wait(timeout=timeout)
 
         self.complete.clear()

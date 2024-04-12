@@ -2,7 +2,7 @@ import os
 from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
-from typing import Any, Generic, Literal, Optional, TypeVar, Union
+from typing import Any, Generic, Literal, TypeVar
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as, validator
@@ -20,7 +20,7 @@ class SourceKind(str, Enum):
 
 class Source(BaseModel):
     kind: SourceKind
-    module: Union[Path, str]
+    module: Path | str
 
 
 class BasicAuthentication(BaseModel):
@@ -48,11 +48,11 @@ class StompConfig(BaseModel):
 
     host: str = "localhost"
     port: int = 61613
-    auth: Optional[BasicAuthentication] = None
+    auth: BasicAuthentication | None = None
 
 
 class DataWritingConfig(BlueapiBaseModel):
-    visit_service_url: Optional[str] = None  # e.g. "http://localhost:8088/api"
+    visit_service_url: str | None = None  # e.g. "http://localhost:8088/api"
     visit_directory: Path = Path("/tmp/0-0")
     group_name: str = "example"
 

@@ -18,7 +18,7 @@ dependencies = [
     "pyepics",
     "aioca",
     "pydantic<2.0",
-    "stomp.py",
+    "stomp-py",
     "aiohttp",
     "PyYAML",
     "click<8.1.4",

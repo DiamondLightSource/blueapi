@@ -134,7 +134,9 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
+    if _message_template is not None:
+        amq_client = AmqClient(_message_template)
 
     def on_event(
         context: MessageContext,
@@ -172,8 +174,9 @@ def run_plan(
     client: BlueapiRestClient = obj["rest_client"]
 
     logger = logging.getLogger(__name__)
-
-    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
+    if _message_template is not None:
+        amq_client = AmqClient(_message_template)
     finished_event: deque[WorkerEvent] = deque()
 
     def store_finished_event(event: WorkerEvent) -> None:

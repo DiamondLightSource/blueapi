@@ -28,13 +28,16 @@ class StompTestingSettings(BaseSettings):
 @pytest.fixture(params=StompTestingSettings().test_stomp_configs())
 def disconnected_template(request: pytest.FixtureRequest) -> MessagingTemplate:
     stomp_config = request.param
-    return StompMessagingTemplate.autoconfigured(stomp_config)
+    template = StompMessagingTemplate.autoconfigured(stomp_config)
+    assert template is not None
+    return template
 
 
 @pytest.fixture(params=StompTestingSettings().test_stomp_configs())
 def template(request: pytest.FixtureRequest) -> Iterable[MessagingTemplate]:
     stomp_config = request.param
     template = StompMessagingTemplate.autoconfigured(stomp_config)
+    assert template is not None
     template.connect()
     yield template
     template.disconnect()

@@ -133,6 +133,7 @@ def get_devices(obj: dict) -> None:
 @click.pass_obj
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
+    logger = logging.getLogger(__name__)
     config: ApplicationConfig = obj["config"]
     _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
     if _message_template is not None:
@@ -150,9 +151,12 @@ def listen_to_events(obj: dict) -> None:
             "Subscribing to all bluesky events from "
             f"{config.stomp.host}:{config.stomp.port}"
         )
-    with amq_client:
-        amq_client.subscribe_to_all_events(on_event)
-        input("Press enter to exit")
+        with amq_client:
+            amq_client.subscribe_to_all_events(on_event)
+            input("Press enter to exit")
+    else:
+        logger.error("Stomp configuration not found")
+        raise Exception("Stomp configuration not found ")
 
 
 @controller.command(name="run")

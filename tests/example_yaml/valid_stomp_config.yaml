@@ -1,0 +1,6 @@
+stomp:
+  auth:
+    username: admin
+    passcode: admin
+  host: localhost
+  port: 61613

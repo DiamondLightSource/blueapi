@@ -1,7 +1,10 @@
 import itertools
 import threading
+from collections.abc import Callable, Iterable
 from concurrent.futures import Future
-from typing import Any, Callable, Iterable, List, Optional, TypeVar, Union
+from queue import Full
+from typing import Any, TypeVar
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -15,6 +18,7 @@ from blueapi.worker import (
     TaskWorker,
     TrackableTask,
     Worker,
+    WorkerAlreadyStartedError,
     WorkerBusyError,
     WorkerEvent,
     WorkerState,
@@ -102,27 +106,23 @@ def test_restart(inert_worker: Worker) -> None:
 
 def test_multi_start(inert_worker: Worker) -> None:
     inert_worker.start()
-    with pytest.raises(Exception):
+    with pytest.raises(WorkerAlreadyStartedError):
         inert_worker.start()
     inert_worker.stop()
 
 
 def test_submit_task(worker: Worker) -> None:
-    assert worker.get_pending_tasks() == []
+    assert worker.get_tasks() == []
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_pending_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
 
 
 def test_submit_multiple_tasks(worker: Worker) -> None:
-    assert worker.get_pending_tasks() == []
+    assert worker.get_tasks() == []
     task_id_1 = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_pending_tasks() == [
-        TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK)]
     task_id_2 = worker.submit_task(_LONG_TASK)
-    assert worker.get_pending_tasks() == [
+    assert worker.get_tasks() == [
         TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK),
         TrackableTask(task_id=task_id_2, task=_LONG_TASK),
     ]
@@ -136,35 +136,29 @@ def test_stop_with_task_pending(inert_worker: Worker) -> None:
 
 def test_restart_leaves_task_pending(worker: Worker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_pending_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
     worker.stop()
     worker.start()
-    assert worker.get_pending_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
 
 
 def test_submit_before_start_pending(inert_worker: Worker) -> None:
     task_id = inert_worker.submit_task(_SIMPLE_TASK)
     inert_worker.start()
-    assert inert_worker.get_pending_tasks() == [
+    assert inert_worker.get_tasks() == [
         TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
     ]
     inert_worker.stop()
-    assert inert_worker.get_pending_tasks() == [
+    assert inert_worker.get_tasks() == [
         TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
     ]
 
 
 def test_clear_task(worker: Worker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_pending_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
-    ]
+    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
     assert worker.clear_task(task_id)
-    assert worker.get_pending_tasks() == []
+    assert worker.get_tasks() == []
 
 
 def test_clear_nonexistant_task(worker: Worker) -> None:
@@ -197,7 +191,7 @@ def test_begin_task_blocks_until_current_task_set(worker: Worker) -> None:
 
 def test_plan_failure_recorded_in_active_task(worker: Worker) -> None:
     task_id = worker.submit_task(_FAILING_TASK)
-    events_future: Future[List[WorkerEvent]] = take_events(
+    events_future: Future[list[WorkerEvent]] = take_events(
         worker.worker_events,
         lambda event: event.task_status is not None and event.task_status.task_failed,
     )
@@ -217,11 +211,11 @@ def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
     task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
     event_sequences = [_sleep_events(task_id) for task_id in task_ids]
 
-    for task_id, events in zip(task_ids, event_sequences):
+    for task_id, events in zip(task_ids, event_sequences, strict=False):
         assert_run_produces_worker_events(events, worker, task_id)
 
 
-def _sleep_events(task_id: str) -> List[WorkerEvent]:
+def _sleep_events(task_id: str) -> list[WorkerEvent]:
     return [
         WorkerEvent(
             state=WorkerState.RUNNING,
@@ -255,7 +249,7 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
     See https://github.com/bluesky/ophyd/issues/1115
     """
 
-    progress_events: List[ProgressEvent] = []
+    progress_events: list[ProgressEvent] = []
     worker.progress_events.subscribe(lambda event, id: progress_events.append(event))
 
     task: Task = Task(name="move", params={"moves": {"additional_status_device": 5.0}})
@@ -270,13 +264,24 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
     assert "STATUS_AFTER_FINISH" not in display_names
 
 
+@patch("queue.Queue.put_nowait")
+def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: Worker):
+    def raise_full(item):
+        raise Full()
+
+    put_nowait.side_effect = raise_full
+    task = worker.submit_task(_SIMPLE_TASK)
+    with pytest.raises(WorkerBusyError):
+        worker.begin_task(task)
+
+
 #
 # Worker helpers
 #
 
 
 def assert_run_produces_worker_events(
-    expected_events: List[WorkerEvent],
+    expected_events: list[WorkerEvent],
     worker: Worker,
     task_id: str,
 ) -> None:
@@ -287,8 +292,8 @@ def begin_task_and_wait_until_complete(
     worker: Worker,
     task_id: str,
     timeout: float = 5.0,
-) -> List[WorkerEvent]:
-    events: "Future[List[WorkerEvent]]" = take_events(
+) -> list[WorkerEvent]:
+    events: "Future[list[WorkerEvent]]" = take_events(
         worker.worker_events,
         lambda event: event.is_complete(),
     )
@@ -339,18 +344,18 @@ def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
 
 
 def assert_running_count_plan_produces_ordered_worker_and_data_events(
-    expected_events: List[Union[WorkerEvent, DataEvent]],
+    expected_events: list[WorkerEvent | DataEvent],
     worker: Worker,
-    task: Task = Task(name="count", params={"detectors": ["image_det"], "num": 1}),
+    task: Task = Task(name="count", params={"detectors": ["image_det"], "num": 1}),  # noqa: B008
     timeout: float = 5.0,
 ) -> None:
-    event_streams: List[EventStream[Any, int]] = [
+    event_streams: list[EventStream[Any, int]] = [
         worker.data_events,
         worker.worker_events,
     ]
 
     count = itertools.count()
-    events: "Future[List[Any]]" = take_events_from_streams(
+    events: "Future[list[Any]]" = take_events_from_streams(
         event_streams,
         lambda _: next(count) >= len(expected_events) - 1,
     )
@@ -375,7 +380,7 @@ E = TypeVar("E")
 def take_n_events(
     stream: EventStream[E, Any],
     num: int,
-) -> "Future[List[E]]":
+) -> "Future[list[E]]":
     count = itertools.count()
     return take_events(stream, lambda _: next(count) >= num)
 
@@ -383,11 +388,11 @@ def take_n_events(
 def take_events(
     stream: EventStream[E, Any],
     cutoff_predicate: Callable[[E], bool],
-) -> "Future[List[E]]":
-    events: List[E] = []
-    future: "Future[List[E]]" = Future()
+) -> "Future[list[E]]":
+    events: list[E] = []
+    future: "Future[list[E]]" = Future()
 
-    def on_event(event: E, event_id: Optional[str]) -> None:
+    def on_event(event: E, event_id: str | None) -> None:
         events.append(event)
         if cutoff_predicate(event):
             future.set_result(events)
@@ -398,9 +403,9 @@ def take_events(
 
 
 def take_events_from_streams(
-    streams: List[EventStream[Any, int]],
+    streams: list[EventStream[Any, int]],
     cutoff_predicate: Callable[[Any], bool],
-) -> "Future[List[Any]]":
+) -> "Future[list[Any]]":
     """Returns a collated list of futures for events in numerous event streams.
 
     The support for generic and algebraic types doesn't appear to extend to
@@ -420,10 +425,10 @@ def take_events_from_streams(
     ]
 
     """
-    events: List[Any] = []
-    future: "Future[List[Any]]" = Future()
+    events: list[Any] = []
+    future: "Future[list[Any]]" = Future()
 
-    def on_event(event: Any, event_id: Optional[str]) -> None:
+    def on_event(event: Any, event_id: str | None) -> None:
         print(event)
         events.append(event)
         if cutoff_predicate(event):
@@ -431,5 +436,9 @@ def take_events_from_streams(
 
     for stream in streams:
         sub = stream.subscribe(on_event)
-        future.add_done_callback(lambda _: stream.unsubscribe(sub))
+
+        def callback(unused: Future[list[Any]], stream=stream, sub=sub):
+            stream.unsubscribe(sub)
+
+        future.add_done_callback(callback)
     return future

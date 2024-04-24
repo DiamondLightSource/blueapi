@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Dict, List, Type, Union
 from unittest.mock import patch
 
 import pytest
@@ -51,8 +50,11 @@ def has_default_reference(m: Movable = inject(SIM_MOTOR_NAME)) -> MsgGenerator:
     yield from []
 
 
+MOVABLE_DEFAULT = [inject(SIM_MOTOR_NAME)]
+
+
 def has_default_nested_reference(
-    m: list[Movable] = [inject(SIM_MOTOR_NAME)],
+    m: list[Movable] = MOVABLE_DEFAULT,
 ) -> MsgGenerator:
     yield from []
 
@@ -98,12 +100,12 @@ def devicey_context(sim_motor: SynAxis, sim_detector: SynGauss) -> BlueskyContex
 
 
 class SomeConfigurable:
-    def read_configuration(self) -> SyncOrAsync[Dict[str, Reading]]:  # type: ignore
+    def read_configuration(self) -> SyncOrAsync[dict[str, Reading]]:  # type: ignore
         ...
 
     def describe_configuration(  # type: ignore
         self,
-    ) -> SyncOrAsync[Dict[str, Descriptor]]: ...
+    ) -> SyncOrAsync[dict[str, Descriptor]]: ...
 
 
 @pytest.fixture
@@ -192,9 +194,7 @@ def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
 @pytest.mark.parametrize(
     "addr", ["sim", "sim_det", "sim.setpoint", ["sim"], ["sim", "setpoint"]]
 )
-def test_lookup_device(
-    devicey_context: BlueskyContext, addr: Union[str, List[str]]
-) -> None:
+def test_lookup_device(devicey_context: BlueskyContext, addr: str | list[str]) -> None:
     device = devicey_context.find_device(addr)
     assert is_bluesky_compatible_device(device)
 
@@ -266,7 +266,7 @@ def test_device_reference_cache(empty_context: BlueskyContext) -> None:
 
 
 def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
-    movable_ref: Type = empty_context._reference(Movable)
+    movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref
     assert (
         empty_context._convert_type(dict[Movable, list[tuple[int, Movable]]])

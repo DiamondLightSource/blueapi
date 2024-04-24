@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-from typing import Dict, Optional, Set
 
 from fastapi import (
     BackgroundTasks,
@@ -33,7 +32,7 @@ from .subprocess_handler import SubprocessHandler
 
 REST_API_VERSION = "0.0.5"
 
-HANDLER: Optional[BlueskyHandler] = None
+HANDLER: BlueskyHandler | None = None
 
 
 def get_handler() -> BlueskyHandler:
@@ -42,7 +41,7 @@ def get_handler() -> BlueskyHandler:
     return HANDLER
 
 
-def setup_handler(config: Optional[ApplicationConfig] = None):
+def setup_handler(config: ApplicationConfig | None = None):
     global HANDLER
     handler = SubprocessHandler(config)
     handler.start()
@@ -141,13 +140,13 @@ def get_device_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)
 def submit_task(
     request: Request,
     response: Response,
-    task: Task = Body(..., example=Task(name="count", params={"detectors": ["x"]})),
+    task: Task = Body(..., example=Task(name="count", params={"detectors": ["x"]})),  # noqa: B008
     handler: BlueskyHandler = Depends(get_handler),
 ):
     """Submit a task to the worker."""
     plan_model = handler.get_plan(task.name)
     try:
-        validated_data = parse_obj_as(type(plan_model.parameter_schema), task.params)
+        parse_obj_as(type(plan_model.parameter_schema), task.params)
         # print("Plan params validation successful:", validated_data)
         # now can go on to push the task
         task_id: str = handler.submit_task(task)
@@ -159,14 +158,14 @@ def submit_task(
             [f"{err['loc'][0]}: {err['msg']}" for err in errors]
         )
         error_detail_response = f"""
-        Input validation failed: {formatted_errors}, 
+        Input validation failed: {formatted_errors},
         suppplied params {task.params},
         do not match the expected params: {plan_model.parameter_schema}
         """
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=error_detail_response,
-        )
+        ) from e
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
@@ -174,7 +173,7 @@ def delete_submitted_task(
     task_id: str,
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TaskResponse:
-    return TaskResponse(task_id=handler.clear_pending_task(task_id))
+    return TaskResponse(task_id=handler.clear_task(task_id))
 
 
 @app.put(
@@ -204,10 +203,10 @@ def get_task(
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TrackableTask:
     """Retrieve a task"""
-    pending = handler.get_pending_task(task_id)
-    if pending is None:
+    task = handler.get_task_by_id(task_id)
+    if task is None:
         raise KeyError
-    return pending
+    return task
 
 
 @app.get("/worker/task")
@@ -226,7 +225,7 @@ def get_state(handler: BlueskyHandler = Depends(get_handler)) -> WorkerState:
 
 
 # Map of current_state: allowed new_states
-_ALLOWED_TRANSITIONS: Dict[WorkerState, Set[WorkerState]] = {
+_ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
     WorkerState.RUNNING: {
         WorkerState.PAUSED,
         WorkerState.ABORTING,

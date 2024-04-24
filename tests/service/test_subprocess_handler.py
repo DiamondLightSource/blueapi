@@ -1,7 +1,6 @@
-from typing import List, Optional
+from unittest.mock import MagicMock, patch
 
 import pytest
-from mock import MagicMock, patch
 
 from blueapi.service.handler_base import BlueskyHandler, HandlerNotStartedError
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
@@ -25,7 +24,7 @@ def test_initialize():
     sp_handler.start()
     assert sp_handler.initialized
     # Run a single call to the handler for coverage of dispatch to subprocess
-    assert sp_handler.pending_tasks == []
+    assert sp_handler.tasks == []
     sp_handler.stop()
     assert not sp_handler.initialized
 
@@ -42,19 +41,19 @@ def test_reload():
 def test_raises_if_not_started():
     sp_handler = SubprocessHandler()
     with pytest.raises(HandlerNotStartedError):
-        sp_handler.state
+        assert sp_handler.state is None
 
 
 class DummyHandler(BlueskyHandler):
     @property
-    def plans(self) -> List[PlanModel]:
+    def plans(self) -> list[PlanModel]:
         return [PlanModel(name="plan1"), PlanModel(name="plan2")]
 
     def get_plan(self, name: str) -> PlanModel:
         return PlanModel(name="plan1")
 
     @property
-    def devices(self) -> List[DeviceModel]:
+    def devices(self) -> list[DeviceModel]:
         return [
             DeviceModel(name="device1", protocols=[]),
             DeviceModel(name="device2", protocols=[]),
@@ -66,33 +65,33 @@ class DummyHandler(BlueskyHandler):
     def submit_task(self, task: Task) -> str:
         return "0"
 
-    def clear_pending_task(self, task_id: str) -> str:
+    def clear_task(self, task_id: str) -> str:
         return "1"
 
     def begin_task(self, task: WorkerTask) -> WorkerTask:
         return WorkerTask(task_id=task.task_id)
 
     @property
-    def active_task(self) -> Optional[TrackableTask]:
+    def active_task(self) -> TrackableTask | None:
         return None
 
     @property
     def state(self) -> WorkerState:
         return WorkerState.IDLE
 
-    def pause_worker(self, defer: Optional[bool]) -> None: ...
+    def pause_worker(self, defer: bool | None) -> None: ...
 
     def resume_worker(self) -> None: ...
 
-    def cancel_active_task(self, failure: bool, reason: Optional[str]) -> None: ...
+    def cancel_active_task(self, failure: bool, reason: str | None) -> None: ...
 
     @property
-    def pending_tasks(self) -> List[TrackableTask]:
+    def tasks(self) -> list[TrackableTask]:
         return [
             TrackableTask(task_id="abc", task=Task(name="sleep", params={"time": 0.0}))
         ]
 
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
+    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         return None
 
     def start(self): ...
@@ -108,7 +107,6 @@ class DummyHandler(BlueskyHandler):
 
 @patch("blueapi.service.subprocess_handler.get_handler")
 def test_method_routing(get_handler_mock: MagicMock):
-
     # Mock get_handler to prevent using a real internal handler
     dummy_handler = DummyHandler()
     get_handler_mock.return_value = dummy_handler
@@ -138,9 +136,7 @@ def test_method_routing(get_handler_mock: MagicMock):
         Task(name="sleep", params={"time": 0.0})
     ) == dummy_handler.submit_task(Task(name="sleep", params={"time": 0.0}))
 
-    assert sp_handler.clear_pending_task("task_id") == dummy_handler.clear_pending_task(
-        "task_id"
-    )
+    assert sp_handler.clear_task("task_id") == dummy_handler.clear_task("task_id")
 
     assert sp_handler.begin_task(WorkerTask(task_id="foo")) == dummy_handler.begin_task(
         WorkerTask(task_id="foo")
@@ -156,9 +152,9 @@ def test_method_routing(get_handler_mock: MagicMock):
 
     sp_handler.cancel_active_task(True, "reason")
 
-    assert sp_handler.pending_tasks == dummy_handler.pending_tasks
+    assert sp_handler.tasks == dummy_handler.tasks
 
-    assert sp_handler.get_pending_task("task_id") == dummy_handler.get_pending_task(
+    assert sp_handler.get_task_by_id("task_id") == dummy_handler.get_task_by_id(
         "task_id"
     )
 

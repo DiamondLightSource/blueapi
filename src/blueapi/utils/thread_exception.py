@@ -1,11 +1,12 @@
 import sys
 import traceback
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any
 
 
 def handle_all_exceptions(
-    func: Callable[..., Any], callback: Optional[Callable[[Exception], None]] = None
+    func: Callable[..., Any], callback: Callable[[Exception], None] | None = None
 ) -> Callable:
     """
     Ensure any uncaught exception traceback is printed to stdout. This does not

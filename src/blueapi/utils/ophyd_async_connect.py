@@ -1,11 +1,11 @@
 import asyncio
 import logging
+from collections.abc import Iterable
 from contextlib import suppress
-from typing import Any, Dict, Iterable
+from typing import Any
 
-from ophyd_async.core import DEFAULT_TIMEOUT
+from ophyd_async.core import DEFAULT_TIMEOUT, NotConnected
 from ophyd_async.core import Device as OphydAsyncDevice
-from ophyd_async.core import NotConnected
 
 
 async def connect_ophyd_async_devices(
@@ -13,7 +13,7 @@ async def connect_ophyd_async_devices(
     sim: bool = False,
     timeout: float = DEFAULT_TIMEOUT,
 ) -> None:
-    tasks: Dict[asyncio.Task, str] = {}
+    tasks: dict[asyncio.Task, str] = {}
     for device in devices:
         if isinstance(device, OphydAsyncDevice):
             task = asyncio.create_task(device.connect(sim=sim))
@@ -22,7 +22,7 @@ async def connect_ophyd_async_devices(
         await _wait_for_tasks(tasks, timeout=timeout)
 
 
-async def _wait_for_tasks(tasks: Dict[asyncio.Task, str], timeout: float):
+async def _wait_for_tasks(tasks: dict[asyncio.Task, str], timeout: float):
     done, pending = await asyncio.wait(tasks, timeout=timeout)
     if pending:
         msg = f"{len(pending)} Devices did not connect:"
@@ -30,13 +30,7 @@ async def _wait_for_tasks(tasks: Dict[asyncio.Task, str], timeout: float):
             t.cancel()
             with suppress(Exception):
                 await t
-            e = t.exception()
-            msg += f"\n  {tasks[t]}: {type(e).__name__}"
-            lines = str(e).splitlines()
-            if len(lines) <= 1:
-                msg += f": {e}"
-            else:
-                msg += "".join(f"\n    {line}" for line in lines)
+            msg += _format_awaited_task_error_message(tasks, t)
         logging.error(msg)
     raised = [t for t in done if t.exception()]
     if raised:
@@ -45,3 +39,16 @@ async def _wait_for_tasks(tasks: Dict[asyncio.Task, str], timeout: float):
             logging.exception(f"  {tasks[t]}:", exc_info=t.exception())
     if pending or raised:
         raise NotConnected("Not all Devices connected")
+
+
+def _format_awaited_task_error_message(
+    tasks: dict[asyncio.Task, str], t: asyncio.Task
+) -> str:
+    e = t.exception()
+    part_one = f"\n  {tasks[t]}: {type(e).__name__}"
+    lines = str(e).splitlines()
+
+    part_two = (
+        f": {e}" if len(lines) <= 1 else "".join(f"\n    {line}" for line in lines)
+    )
+    return part_one + part_two

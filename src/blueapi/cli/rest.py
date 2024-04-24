@@ -1,5 +1,6 @@
+from collections.abc import Callable, Mapping
 from http import HTTPStatus
-from typing import Any, Callable, Literal, Mapping, Optional, Type, TypeVar
+from typing import Any, Literal, TypeVar
 
 import requests
 from pydantic import parse_obj_as
@@ -36,7 +37,7 @@ def get_status_message(code: int) -> str:
 class BlueapiRestClient:
     _config: RestConfig
 
-    def __init__(self, config: Optional[RestConfig] = None) -> None:
+    def __init__(self, config: RestConfig | None = None) -> None:
         self._config = config or RestConfig()
 
     def get_plans(self) -> PlanResponse:
@@ -57,7 +58,7 @@ class BlueapiRestClient:
     def set_state(
         self,
         state: Literal[WorkerState.RUNNING, WorkerState.PAUSED],
-        defer: Optional[bool] = False,
+        defer: bool | None = False,
     ):
         return self._request_and_deserialize(
             "/worker/state",
@@ -80,7 +81,7 @@ class BlueapiRestClient:
             data=task.dict(),
         )
 
-    def clear_pending_task(self, task_id: str) -> TaskResponse:
+    def clear_task(self, task_id: str) -> TaskResponse:
         return self._request_and_deserialize(
             f"/tasks/{task_id}", TaskResponse, method="DELETE"
         )
@@ -96,7 +97,7 @@ class BlueapiRestClient:
     def cancel_current_task(
         self,
         state: Literal[WorkerState.ABORTING, WorkerState.STOPPING],
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ):
         return self._request_and_deserialize(
             "/worker/state",
@@ -108,8 +109,8 @@ class BlueapiRestClient:
     def _request_and_deserialize(
         self,
         suffix: str,
-        target_type: Type[T],
-        data: Optional[Mapping[str, Any]] = None,
+        target_type: type[T],
+        data: Mapping[str, Any] | None = None,
         method="GET",
         raise_if: Callable[[requests.Response], bool] = _is_exception,
     ) -> T:

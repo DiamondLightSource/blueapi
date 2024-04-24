@@ -3,9 +3,10 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from threading import Event
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
 import stomp
 from pydantic import parse_obj_as
@@ -74,8 +75,8 @@ class StompMessagingTemplate(MessagingTemplate):
     _authentication: BasicAuthentication
     _sub_num: itertools.count
     _listener: stomp.ConnectionListener
-    _subscriptions: Dict[str, Subscription]
-    _pending_subscriptions: Set[str]
+    _subscriptions: dict[str, Subscription]
+    _pending_subscriptions: set[str]
     _disconnected: Event
 
     # Stateless implementation means attribute can be static
@@ -84,8 +85,8 @@ class StompMessagingTemplate(MessagingTemplate):
     def __init__(
         self,
         conn: stomp.Connection,
-        reconnect_policy: Optional[StompReconnectPolicy] = None,
-        authentication: Optional[BasicAuthentication] = None,
+        reconnect_policy: StompReconnectPolicy | None = None,
+        authentication: BasicAuthentication | None = None,
     ) -> None:
         self._conn = conn
         self._reconnect_policy = reconnect_policy or StompReconnectPolicy()
@@ -117,8 +118,8 @@ class StompMessagingTemplate(MessagingTemplate):
         self,
         destination: str,
         obj: Any,
-        on_reply: Optional[MessageListener] = None,
-        correlation_id: Optional[str] = None,
+        on_reply: MessageListener | None = None,
+        correlation_id: str | None = None,
     ) -> None:
         self._send_str(
             destination, json.dumps(serialize(obj)), on_reply, correlation_id
@@ -128,12 +129,12 @@ class StompMessagingTemplate(MessagingTemplate):
         self,
         destination: str,
         message: str,
-        on_reply: Optional[MessageListener] = None,
-        correlation_id: Optional[str] = None,
+        on_reply: MessageListener | None = None,
+        correlation_id: str | None = None,
     ) -> None:
         LOGGER.info(f"SENDING {message} to {destination}")
 
-        headers: Dict[str, Any] = {"JMSType": "TextMessage"}
+        headers: dict[str, Any] = {"JMSType": "TextMessage"}
         if on_reply is not None:
             reply_queue_name = self.destinations.temporary_queue(str(uuid.uuid1()))
             headers = {**headers, "reply-to": reply_queue_name}
@@ -148,7 +149,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
         def wrapper(frame: Frame) -> None:
             as_dict = json.loads(frame.body)
-            value = parse_obj_as(obj_type, as_dict)
+            value: Any = parse_obj_as(obj_type, as_dict)
 
             context = MessageContext(
                 frame.headers["destination"],
@@ -193,7 +194,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
         self._ensure_subscribed()
 
-    def _ensure_subscribed(self, sub_ids: Optional[List[str]] = None) -> None:
+    def _ensure_subscribed(self, sub_ids: list[str] | None = None) -> None:
         # We must defer subscription until after connection, because stomp literally
         # sends a SUB to the broker. But it still nice to be able to call subscribe
         # on template before it connects, then just run the subscribes after connection.

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -9,5 +8,5 @@ class MessageContext:
     """
 
     destination: str
-    reply_destination: Optional[str]
-    correlation_id: Optional[str]
+    reply_destination: str | None
+    correlation_id: str | None

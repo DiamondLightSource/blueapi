@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
 
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import WorkerState
@@ -12,7 +11,7 @@ class BlueskyHandler(ABC):
 
     @property
     @abstractmethod
-    def plans(self) -> List[PlanModel]:
+    def plans(self) -> list[PlanModel]:
         """
         All available plans in the BlueskyContext
         """
@@ -25,7 +24,7 @@ class BlueskyHandler(ABC):
 
     @property
     @abstractmethod
-    def devices(self) -> List[DeviceModel]:
+    def devices(self) -> list[DeviceModel]:
         """
         All available devices in the BlueskyContext
         """
@@ -43,16 +42,16 @@ class BlueskyHandler(ABC):
         """
 
     @abstractmethod
-    def clear_pending_task(self, task_id: str) -> str:
-        """Remove a pending task from the worker"""
+    def clear_task(self, task_id: str) -> str:
+        """Remove a task from the worker"""
 
     @abstractmethod
     def begin_task(self, task: WorkerTask) -> WorkerTask:
-        """Trigger a pending task. Will fail if the worker is busy"""
+        """Trigger a task. Will fail if the worker is busy"""
 
     @property
     @abstractmethod
-    def active_task(self) -> Optional[TrackableTask]:
+    def active_task(self) -> TrackableTask | None:
         """Task the worker is currently running"""
 
     @property
@@ -61,7 +60,7 @@ class BlueskyHandler(ABC):
         """State of the worker"""
 
     @abstractmethod
-    def pause_worker(self, defer: Optional[bool]) -> None:
+    def pause_worker(self, defer: bool | None) -> None:
         """Command the worker to pause"""
 
     @abstractmethod
@@ -69,18 +68,18 @@ class BlueskyHandler(ABC):
         """Command the worker to resume"""
 
     @abstractmethod
-    def cancel_active_task(self, failure: bool, reason: Optional[str]) -> None:
+    def cancel_active_task(self, failure: bool, reason: str | None) -> None:
         """Remove the currently active task from the worker if there is one
         Returns the task_id of the active task"""
 
     @property
     @abstractmethod
-    def pending_tasks(self) -> List[TrackableTask]:
-        """Return a list of all tasks pending on the worker,
+    def tasks(self) -> list[TrackableTask]:
+        """Return a list of all tasks on the worker,
         any one of which can be triggered with begin_task"""
 
     @abstractmethod
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
+    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         """Returns a task matching the task ID supplied,
         if the worker knows of it"""
 

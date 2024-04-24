@@ -1,5 +1,5 @@
 import logging
-from typing import List, Mapping, Optional
+from collections.abc import Mapping
 
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
@@ -32,10 +32,10 @@ class Handler(BlueskyHandler):
 
     def __init__(
         self,
-        config: Optional[ApplicationConfig] = None,
-        context: Optional[BlueskyContext] = None,
-        messaging_template: Optional[MessagingTemplate] = None,
-        worker: Optional[Worker] = None,
+        config: ApplicationConfig | None = None,
+        context: BlueskyContext | None = None,
+        messaging_template: MessagingTemplate | None = None,
+        worker: Worker | None = None,
     ) -> None:
         self._config = config or ApplicationConfig()
         self._context = context or BlueskyContext()
@@ -87,14 +87,14 @@ class Handler(BlueskyHandler):
             self._messaging_template.disconnect()
 
     @property
-    def plans(self) -> List[PlanModel]:
+    def plans(self) -> list[PlanModel]:
         return [PlanModel.from_plan(plan) for plan in self._context.plans.values()]
 
     def get_plan(self, name: str) -> PlanModel:
         return PlanModel.from_plan(self._context.plans[name])
 
     @property
-    def devices(self) -> List[DeviceModel]:
+    def devices(self) -> list[DeviceModel]:
         return [
             DeviceModel.from_device(device) for device in self._context.devices.values()
         ]
@@ -105,7 +105,7 @@ class Handler(BlueskyHandler):
     def submit_task(self, task: Task) -> str:
         return self._worker.submit_task(task)
 
-    def clear_pending_task(self, task_id: str) -> str:
+    def clear_task(self, task_id: str) -> str:
         return self._worker.clear_task(task_id)
 
     def begin_task(self, task: WorkerTask) -> WorkerTask:
@@ -114,39 +114,39 @@ class Handler(BlueskyHandler):
         return task
 
     @property
-    def active_task(self) -> Optional[TrackableTask]:
+    def active_task(self) -> TrackableTask | None:
         return self._worker.get_active_task()
 
     @property
     def state(self) -> WorkerState:
         return self._worker.state
 
-    def pause_worker(self, defer: Optional[bool]) -> None:
+    def pause_worker(self, defer: bool | None) -> None:
         self._worker.pause(defer)
 
     def resume_worker(self) -> None:
         self._worker.resume()
 
-    def cancel_active_task(self, failure: bool, reason: Optional[str]):
+    def cancel_active_task(self, failure: bool, reason: str | None):
         self._worker.cancel_active_task(failure, reason)
 
     @property
-    def pending_tasks(self) -> List[TrackableTask]:
-        return self._worker.get_pending_tasks()
+    def tasks(self) -> list[TrackableTask]:
+        return self._worker.get_tasks()
 
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask]:
-        return self._worker.get_pending_task(task_id)
+    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
+        return self._worker.get_task_by_id(task_id)
 
     @property
     def initialized(self) -> bool:
         return self._initialized
 
 
-HANDLER: Optional[Handler] = None
+HANDLER: Handler | None = None
 
 
 def setup_handler(
-    config: Optional[ApplicationConfig] = None,
+    config: ApplicationConfig | None = None,
 ) -> None:
     global HANDLER
 

@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from types import ModuleType
-from typing import Any, Iterable, List
+from typing import Any
 
 
 def load_module_all(mod: ModuleType) -> Iterable[Any]:
@@ -21,7 +22,7 @@ def load_module_all(mod: ModuleType) -> Iterable[Any]:
         Iterator[Iterable[Any]]: Each successive variable in globals
     """
 
-    def get_named_subset(names: List[str]):
+    def get_named_subset(names: list[str]):
         for name in names:
             yield getattr(mod, name)
 

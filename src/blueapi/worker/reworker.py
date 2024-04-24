@@ -1,10 +1,11 @@
 import logging
 import uuid
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from functools import partial
 from queue import Full, Queue
 from threading import Event, RLock
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Union
+from typing import Any
 
 from bluesky.protocols import Status
 from super_state_machine.errors import TransitionError
@@ -28,7 +29,7 @@ from .event import (
 from .multithread import run_worker_in_own_thread
 from .task import Task
 from .worker import TrackableTask, Worker
-from .worker_busy_error import WorkerBusyError
+from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,16 +49,16 @@ class TaskWorker(Worker[Task]):
     _ctx: BlueskyContext
     _start_stop_timeout: float
 
-    _pending_tasks: Dict[str, TrackableTask]
+    _tasks: dict[str, TrackableTask]
 
     _state: WorkerState
-    _errors: List[str]
-    _warnings: List[str]
+    _errors: list[str]
+    _warnings: list[str]
     _task_channel: Queue  # type: ignore
-    _current: Optional[TrackableTask]
+    _current: TrackableTask | None
     _status_lock: RLock
-    _status_snapshot: Dict[str, StatusView]
-    _completed_statuses: Set[str]
+    _status_snapshot: dict[str, StatusView]
+    _completed_statuses: set[str]
     _worker_events: EventPublisher[WorkerEvent]
     _progress_events: EventPublisher[ProgressEvent]
     _data_events: EventPublisher[DataEvent]
@@ -74,7 +75,7 @@ class TaskWorker(Worker[Task]):
         self._ctx = ctx
         self._start_stop_timeout = start_stop_timeout
 
-        self._pending_tasks = {}
+        self._tasks = {}
 
         self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
         self._errors = []
@@ -94,13 +95,13 @@ class TaskWorker(Worker[Task]):
         self._broadcast_statuses = broadcast_statuses
 
     def clear_task(self, task_id: str) -> str:
-        task = self._pending_tasks.pop(task_id)
+        task = self._tasks.pop(task_id)
         return task.task_id
 
     def cancel_active_task(
         self,
         failure: bool = False,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> str:
         if self._current is None:
             # Persuades mypy that self._current is not None
@@ -112,17 +113,17 @@ class TaskWorker(Worker[Task]):
             self._ctx.run_engine.stop()
         return self._current.task_id
 
-    def get_pending_tasks(self) -> List[TrackableTask[Task]]:
-        return list(self._pending_tasks.values())
+    def get_tasks(self) -> list[TrackableTask[Task]]:
+        return list(self._tasks.values())
 
-    def get_pending_task(self, task_id: str) -> Optional[TrackableTask[Task]]:
-        return self._pending_tasks.get(task_id)
+    def get_task_by_id(self, task_id: str) -> TrackableTask[Task] | None:
+        return self._tasks.get(task_id)
 
-    def get_active_task(self) -> Optional[TrackableTask[Task]]:
+    def get_active_task(self) -> TrackableTask[Task] | None:
         return self._current
 
     def begin_task(self, task_id: str) -> None:
-        task = self._pending_tasks.get(task_id)
+        task = self._tasks.get(task_id)
         if task is not None:
             self._submit_trackable_task(task)
         else:
@@ -132,7 +133,7 @@ class TaskWorker(Worker[Task]):
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         trackable_task = TrackableTask(task_id=task_id, task=task)
-        self._pending_tasks[task_id] = trackable_task
+        self._tasks[task_id] = trackable_task
         return task_id
 
     def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
@@ -141,7 +142,7 @@ class TaskWorker(Worker[Task]):
 
         task_started = Event()
 
-        def mark_task_as_started(event: WorkerEvent, _: Optional[str]) -> None:
+        def mark_task_as_started(event: WorkerEvent, _: str | None) -> None:
             if (
                 event.task_status is not None
                 and event.task_status.task_id == trackable_task.task_id
@@ -155,15 +156,15 @@ class TaskWorker(Worker[Task]):
             task_started.wait(timeout=5.0)
             if not task_started.is_set():
                 raise TimeoutError("Failed to start plan within timeout")
-        except Full:
+        except Full as f:
             LOGGER.error("Cannot submit task while another is running")
-            raise WorkerBusyError("Cannot submit task while another is running")
+            raise WorkerBusyError("Cannot submit task while another is running") from f
         finally:
             self.worker_events.unsubscribe(sub)
 
     def start(self) -> None:
         if self._started.is_set():
-            raise Exception("Worker is already running")
+            raise WorkerAlreadyStartedError("Worker is already running")
         self._wait_until_stopped()
         run_worker_in_own_thread(self)
         self._wait_until_started()
@@ -227,7 +228,7 @@ class TaskWorker(Worker[Task]):
     def _cycle(self) -> None:
         try:
             LOGGER.info("Awaiting task")
-            next_task: Union[TrackableTask, KillSignal] = self._task_channel.get()
+            next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
                 LOGGER.info(f"Got new task: {next_task}")
                 self._current = next_task  # Informing mypy that the task is not None
@@ -265,7 +266,7 @@ class TaskWorker(Worker[Task]):
     def _on_state_change(
         self,
         raw_new_state: RawRunEngineState,
-        raw_old_state: Optional[RawRunEngineState] = None,
+        raw_old_state: RawRunEngineState | None = None,
     ) -> None:
         new_state = WorkerState.from_bluesky_state(raw_new_state)
         if raw_old_state:
@@ -285,7 +286,7 @@ class TaskWorker(Worker[Task]):
     def _report_status(
         self,
     ) -> None:
-        task_status: Optional[TaskStatus]
+        task_status: TaskStatus | None
         errors = self._errors
         warnings = self._warnings
         if self._current is not None:
@@ -318,7 +319,7 @@ class TaskWorker(Worker[Task]):
                 "Trying to emit a document despite the fact that the RunEngine is idle"
             )
 
-    def _waiting_hook(self, statuses: Optional[Iterable[Status]]) -> None:
+    def _waiting_hook(self, statuses: Iterable[Status] | None) -> None:
         if statuses is not None:
             with self._status_lock:
                 for status in statuses:
@@ -346,15 +347,15 @@ class TaskWorker(Worker[Task]):
         status: Status,
         status_uuid: str,
         *,
-        name: Optional[str] = None,
-        current: Optional[float] = None,
-        initial: Optional[float] = None,
-        target: Optional[float] = None,
-        unit: Optional[str] = None,
-        precision: Optional[int] = None,
-        fraction: Optional[float] = None,
-        time_elapsed: Optional[float] = None,
-        time_remaining: Optional[float] = None,
+        name: str | None = None,
+        current: float | None = None,
+        initial: float | None = None,
+        target: float | None = None,
+        unit: str | None = None,
+        precision: int | None = None,
+        fraction: float | None = None,
+        time_elapsed: float | None = None,
+        time_remaining: float | None = None,
     ) -> None:
         if not status.done:
             percentage = float(1.0 - fraction) if fraction is not None else None

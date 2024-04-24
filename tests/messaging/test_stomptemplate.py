@@ -1,10 +1,11 @@
 import itertools
+from collections.abc import Iterable
 from concurrent.futures import Future
 from queue import Queue
-from typing import Any, Iterable, List, Type
+from typing import Any
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
-from mock import ANY, MagicMock, patch
 from pydantic import BaseModel, BaseSettings, Field
 from stomp import Connection
 from stomp.exception import ConnectFailedException
@@ -17,7 +18,7 @@ _COUNT = itertools.count()
 
 
 class StompTestingSettings(BaseSettings):
-    blueapi_test_stomp_ports: List[int] = Field(default=[61613])
+    blueapi_test_stomp_ports: list[int] = Field(default=[61613])
 
     def test_stomp_configs(self) -> Iterable[StompConfig]:
         for port in self.blueapi_test_stomp_ports:
@@ -122,7 +123,7 @@ class Foo(BaseModel):
     [("test", str), (1, int), (Foo(a=1, b="test"), Foo)],
 )
 def test_deserialization(
-    template: MessagingTemplate, test_queue: str, message: Any, message_type: Type
+    template: MessagingTemplate, test_queue: str, message: Any, message_type: type
 ) -> None:
     def server(ctx: MessageContext, message: message_type) -> None:  # type: ignore
         reply_queue = ctx.reply_destination

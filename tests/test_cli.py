@@ -1,10 +1,9 @@
 from dataclasses import dataclass
-from unittest.mock import call
+from unittest.mock import Mock, call, patch
 
 import pytest
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
-from mock import Mock, patch
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError
 
@@ -44,8 +43,8 @@ def test_main_with_nonexistent_config_file():
     runner = CliRunner()
     result = runner.invoke(main, ["-c", "tests/non_existent.yaml"])
 
-    result.exit_code == 1
-    type(result.exception) is FileNotFoundError
+    assert result.exit_code == 1
+    assert type(result.exception) is FileNotFoundError
 
 
 @patch("requests.request")
@@ -180,7 +179,6 @@ def test_plan_accepted_with_right_parameters(
     client: TestClient,
     runner: CliRunner,
 ):
-
     # needed so that the handler is instantiated as MockHandler() instead of Handler().
     mock_handler.side_effect = Mock(return_value=handler)
 
@@ -216,7 +214,6 @@ def test_plan_rejected_with_wrong_parameters(
     client: TestClient,
     runner: CliRunner,
 ):
-
     # needed so that the handler is instantiated as MockHandler() instead of Handler().
     mock_handler.side_effect = Mock(return_value=handler)
 

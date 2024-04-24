@@ -1,5 +1,5 @@
 import itertools
-from typing import Dict, Mapping, Optional, Union
+from collections.abc import Mapping
 
 from tqdm import tqdm
 
@@ -9,7 +9,7 @@ _BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"
 
 
 class ProgressBarRenderer:
-    _bars: Dict[str, tqdm]
+    _bars: dict[str, tqdm]
     _count: itertools.count
 
     def __init__(self) -> None:
@@ -43,13 +43,13 @@ class ProgressBarRenderer:
 
 
 class CliEventRenderer:
-    _task_id: Optional[str]
+    _task_id: str | None
     _pbar_renderer: ProgressBarRenderer
 
     def __init__(
         self,
-        task_id: Optional[str] = None,
-        pbar_renderer: Optional[ProgressBarRenderer] = None,
+        task_id: str | None = None,
+        pbar_renderer: ProgressBarRenderer | None = None,
     ) -> None:
         self._task_id = task_id
         if pbar_renderer is None:
@@ -64,7 +64,7 @@ class CliEventRenderer:
         if self._relates_to_task(event):
             print(str(event.state))
 
-    def _relates_to_task(self, event: Union[WorkerEvent, ProgressEvent]) -> bool:
+    def _relates_to_task(self, event: WorkerEvent | ProgressEvent) -> bool:
         if self._task_id is None:
             return True
         elif isinstance(event, WorkerEvent):

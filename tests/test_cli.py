@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -260,8 +260,9 @@ def test_reset_env(
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("requests.request")
-@patch("time.sleep", return_value=None)
+@patch("blueapi.cli.cli.sleep", return_value=None)
 def test_reset_env2(
+    mock_sleep: MagicMock,
     mock_requests: Mock,
     mock_handler: Mock,
     handler: Handler,

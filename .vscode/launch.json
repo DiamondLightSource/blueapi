@@ -29,6 +29,7 @@
             "env": {
                 // Enable break on exception when debugging tests (see: tests/conftest.py)
                 "PYTEST_RAISE": "1",
+                "PYTEST_ADDOPTS": "--no-cov -vv"
             },
         },
         {

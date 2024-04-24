@@ -136,7 +136,7 @@ class BlueapiRestClient:
     def get_environment(self) -> EnvironmentResponse:
         return self._request_and_deserialize("/environment", EnvironmentResponse)
 
-    def reload_environemnt(self) -> EnvironmentResponse:
+    def reload_environment(self) -> EnvironmentResponse:
         return self._request_and_deserialize(
             "/environment", EnvironmentResponse, method="DELETE"
         )

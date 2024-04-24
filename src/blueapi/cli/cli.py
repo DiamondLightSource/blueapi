@@ -296,7 +296,7 @@ def env(obj: dict, reload: Optional[bool]) -> None:
     Inspect or restart the environment
     """
 
-    client: BlueapiRestClient = obj["rest_client"]
+    assert isinstance(client := obj["rest_client"], BlueapiRestClient)
     if not reload:
         pprint(client.get_environment())
         return

@@ -190,22 +190,16 @@ def test_plan_accepted_with_right_parameters(
 
     assert result.exit_code == 0
 
-    mock_requests.return_value = client.get("/plans/sleep")
     output = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert result.exit_code == 0
     print(output)
 
-    # expect the first call to be to the helper
-    assert mock_requests.call_args_list[0] == call(
-        "GET", "http://localhost:8000/plans/sleep", json=None
-    )
-
     mock_requests.return_value = client.post(
         "/tasks", json={"name": "sleep", "params": {"time": 5}}
     )
-    assert len(mock_requests.call_args_list) == 2
+    assert len(mock_requests.call_args_list) == 1
 
-    assert mock_requests.call_args_list[1] == call(
+    assert mock_requests.call_args_list[0] == call(
         "POST",
         "http://localhost:8000/tasks",
         json={"name": "sleep", "params": {"time": 5}},
@@ -232,7 +226,6 @@ def test_plan_rejected_with_wrong_parameters(
 
     assert result.exit_code == 0
 
-    mock_requests.return_value = client.get("/plans/sleep")
     # Erroneous invocation - with a string argument instead of number
     output = runner.invoke(main, ["controller", "run", "sleep", '{"tim": "test"}'])
     assert result.exit_code == 0
@@ -240,7 +233,9 @@ def test_plan_rejected_with_wrong_parameters(
 
     # expect the first and only call to be to the helper
     assert mock_requests.call_args_list[0] == call(
-        "GET", "http://localhost:8000/plans/sleep", json=None
+        "POST",
+        "http://localhost:8000/tasks",
+        json={"name": "sleep", "params": {"tim": "test"}},
     )
 
     assert len(mock_requests.call_args_list) == 1

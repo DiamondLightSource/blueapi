@@ -11,7 +11,7 @@ from fastapi import (
     Response,
     status,
 )
-from pydantic import ValidationError
+from pydantic import ValidationError, parse_obj_as
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
@@ -145,13 +145,27 @@ def submit_task(
     handler: BlueskyHandler = Depends(get_handler),
 ):
     """Submit a task to the worker."""
+    plan_model = handler.get_plan(task.name)
     try:
+        validated_data = parse_obj_as(type(plan_model.parameter_schema), task.params)
+        # print("Plan params validation successful:", validated_data)
+        # now can go on to push the task
         task_id: str = handler.submit_task(task)
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
+        errors = e.errors()
+        formatted_errors = "; ".join(
+            [f"{err['loc'][0]}: {err['msg']}" for err in errors]
+        )
+        error_detail_response = f"""
+        Input validation failed: {formatted_errors}, 
+        suppplied params {task.params},
+        do not match the expected params: {plan_model.parameter_schema}
+        """
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.errors()
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=error_detail_response,
         )
 
 

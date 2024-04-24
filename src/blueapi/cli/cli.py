@@ -183,31 +183,6 @@ def run_plan(
             finished_event.append(event)
 
     parameters = json.loads(parameters) or "{}"
-    plan_model: PlanModel = client.get_plan(name)
-    progress_tracking = f"Trying to run plan: {name}."
-    print(progress_tracking)
-    try:
-        text = "Checking supplied parameters against expected parameters..."
-        print(text)
-        validated_data = parse_obj_as(type(plan_model.parameter_schema), parameters)
-        print("Plan params validation successful:", validated_data)
-    except ValidationError as e:
-        errors = e.errors()
-        formatted_errors = "; ".join(
-            [f"{err['loc'][0]}: {err['msg']}" for err in errors]
-        )
-
-        print(f"Input validation failed: {formatted_errors}")
-        # Handle the case where the parameters are invalid according to the PlanModel
-        s = plan_model.parameter_schema
-        if s:
-            expected_params = s.get("properties")
-            print(
-                f"""failed to run the {name} plan, supplied params {parameters}
-                do not match the expected params: {expected_params}"""
-            )
-            return
-
     task = Task(name=name, params=parameters)
 
     resp = client.create_task(task)

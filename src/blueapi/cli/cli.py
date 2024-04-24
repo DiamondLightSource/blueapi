@@ -1,9 +1,11 @@
 import json
 import logging
 from collections import deque
+from collections.abc import Mapping
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
+from typing import Any
 
 import click
 from requests.exceptions import ConnectionError
@@ -180,8 +182,10 @@ def run_plan(
         if event.is_complete():
             finished_event.append(event)
 
-    parameters = json.loads(parameters) or "{}"
-    task = Task(name=name, params=parameters)
+    parsed_params: Mapping[str, Any] = (
+        json.loads(parameters) if isinstance(parameters, str) else "{}"
+    )
+    task = Task(name=name, params=parsed_params)
 
     resp = client.create_task(task)
     task_id = resp.task_id

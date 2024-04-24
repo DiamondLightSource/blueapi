@@ -145,10 +145,11 @@ def listen_to_events(obj: dict) -> None:
         converted = json.dumps(event.dict(), indent=2)
         print(converted)
 
-    print(
-        "Subscribing to all bluesky events from "
-        f"{config.stomp.host}:{config.stomp.port}"
-    )
+    if config.stomp is not None:
+        print(
+            "Subscribing to all bluesky events from "
+            f"{config.stomp.host}:{config.stomp.port}"
+        )
     with amq_client:
         amq_client.subscribe_to_all_events(on_event)
         input("Press enter to exit")

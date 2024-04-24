@@ -12,6 +12,7 @@ from stomp.exception import ConnectFailedException
 
 from blueapi.config import StompConfig
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
+from blueapi.service.handler import setup_handler, teardown_handler
 
 _TIMEOUT: float = 10.0
 _COUNT = itertools.count()
@@ -221,3 +222,14 @@ def acknowledge(template: MessagingTemplate, destination: str) -> None:
         template.send(reply_queue, "ack", correlation_id=ctx.correlation_id)
 
     template.subscribe(destination, server)
+
+
+def test_autoconfigured_none_is_none():
+    template = StompMessagingTemplate.autoconfigured(None)
+    assert template is None
+
+
+def test_messaging_template_none_is_none():
+    handler = setup_handler(None)
+    assert handler is None
+    teardown_handler()

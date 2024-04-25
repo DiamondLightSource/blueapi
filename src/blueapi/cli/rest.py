@@ -3,7 +3,7 @@ from http import HTTPStatus
 from typing import Any, Literal, TypeVar
 
 import requests
-from pydantic import TypeAdapter, parse_obj_as
+from pydantic import parse_obj_as
 
 from blueapi.config import RestConfig
 from blueapi.service.model import (
@@ -125,7 +125,7 @@ class BlueapiRestClient:
             with error code: {response.status_code}
             which corresponds to {message}"""
             raise BlueskyRemoteError(error_message)
-        deserialized = TypeAdapter.validate_python(target_type, response.json())
+        deserialized = parse_obj_as(target_type, response.json())
         return deserialized
 
     def _url(self, suffix: str) -> str:

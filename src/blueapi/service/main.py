@@ -10,7 +10,7 @@ from fastapi import (
     Response,
     status,
 )
-from pydantic import TypeAdapter, ValidationError, parse_obj_as
+from pydantic import ValidationError, parse_obj_as
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
@@ -146,7 +146,7 @@ def submit_task(
     """Submit a task to the worker."""
     plan_model = handler.get_plan(task.name)
     try:
-        TypeAdapter.validate_python(type(plan_model.parameter_schema), task.params)
+        parse_obj_as(type(plan_model.parameter_schema), task.params)
     except ValidationError as e:
         errors = e.errors()
         formatted_errors = "; ".join(

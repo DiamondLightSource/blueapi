@@ -8,6 +8,7 @@ from pprint import pprint
 from typing import Any
 
 import click
+from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
@@ -17,7 +18,7 @@ from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
-from blueapi.service.model import WorkerTask
+from blueapi.service.model import TaskResponse, WorkerTask
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
     generate_schema,
@@ -185,10 +186,17 @@ def run_plan(
     parsed_params: Mapping[str, Any] = (
         json.loads(parameters) if isinstance(parameters, str) else "{}"
     )
-    task = Task(name=name, params=parsed_params)
-
-    resp = client.create_task(task)
-    task_id = resp.task_id
+    task_id = ""
+    try:
+        task = Task(name=name, params=parsed_params)
+        resp: TaskResponse = client.create_task(task)
+        task_id = resp.task_id
+    except ValidationError:
+        pprint(f"failed to validate the task parameters, {task_id}")
+        return
+    except ValueError:
+        pprint("task could not run")
+        return
 
     with amq_client:
         amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)

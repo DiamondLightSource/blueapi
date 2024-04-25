@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
-from blueapi.cli.amq import AmqClient
+from blueapi.cli.amq import AmqClient, BlueskyRemoteError
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
@@ -193,6 +193,9 @@ def run_plan(
         task_id = resp.task_id
     except ValidationError:
         pprint(f"failed to validate the task parameters, {task_id}")
+        return
+    except BlueskyRemoteError as e:
+        pprint(f"server error with this message: {e.message} ")
         return
     except ValueError:
         pprint("task could not run")

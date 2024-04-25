@@ -31,12 +31,10 @@ class AmqClient:
         self.timed_out = None
 
     def __enter__(self) -> None:
-        if self.app is not None:
-            self.app.connect()
+        self.app.connect()
 
     def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
-        if self.app is not None:
-            self.app.disconnect()
+        self.app.disconnect()
 
     def subscribe_to_topics(
         self,
@@ -69,11 +67,10 @@ class AmqClient:
         self,
         on_event: Callable[[MessageContext, _Event], None],
     ) -> None:
-        if self.app is not None:
-            self.app.subscribe(
-                self.app.destinations.topic("public.worker.event"),
-                on_event,
-            )
+        self.app.subscribe(
+            self.app.destinations.topic("public.worker.event"),
+            on_event,
+        )
 
     def wait_for_complete(self, timeout: float | None = None) -> None:
         self.timed_out = not self.complete.wait(timeout=timeout)

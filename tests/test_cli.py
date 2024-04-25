@@ -175,6 +175,7 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
     assert type(result.exception) is RuntimeError
 
+
 @pytest.mark.stomp
 def test_valid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(

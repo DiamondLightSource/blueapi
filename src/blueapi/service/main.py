@@ -10,7 +10,7 @@ from fastapi import (
     Response,
     status,
 )
-from pydantic import ValidationError, parse_obj_as
+from pydantic import TypeAdapter, ValidationError, parse_obj_as
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
@@ -146,12 +146,7 @@ def submit_task(
     """Submit a task to the worker."""
     plan_model = handler.get_plan(task.name)
     try:
-        parse_obj_as(type(plan_model.parameter_schema), task.params)
-        # print("Plan params validation successful:", validated_data)
-        # now can go on to push the task
-        task_id: str = handler.submit_task(task)
-        response.headers["Location"] = f"{request.url}/{task_id}"
-        return TaskResponse(task_id=task_id)
+        TypeAdapter.validate_python(type(plan_model.parameter_schema), task.params)
     except ValidationError as e:
         errors = e.errors()
         formatted_errors = "; ".join(
@@ -166,6 +161,10 @@ def submit_task(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=error_detail_response,
         ) from e
+    # if no error now can go on to push the task
+    task_id: str = handler.submit_task(task)
+    response.headers["Location"] = f"{request.url}/{task_id}"
+    return TaskResponse(task_id=task_id)
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)

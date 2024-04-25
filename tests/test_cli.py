@@ -146,13 +146,10 @@ def test_config_passed_down_to_command_children(
     runner: CliRunner,
 ):
     config_path = "tests/example_yaml/rest_config.yaml"
-
     mock_handler.side_effect = Mock(return_value=handler)
     with patch("uvicorn.run", side_effect=None):
         result = runner.invoke(main, ["-c", config_path, "serve"])
         assert result.exit_code == 0
-
-    assert result.exit_code == 0
 
     # Put a plan in handler.context manually.
     plan = Plan(name="my-plan", model=MyModel)
@@ -188,9 +185,8 @@ def test_plan_accepted_with_right_parameters(
 
     assert result.exit_code == 0
 
-    output = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert result.exit_code == 0
-    print(output)
 
     mock_requests.return_value = client.post(
         "/tasks", json={"name": "sleep", "params": {"time": 5}}
@@ -224,9 +220,7 @@ def test_plan_rejected_with_wrong_parameters(
     assert result.exit_code == 0
 
     # Erroneous invocation - with a string argument instead of number
-    output = runner.invoke(main, ["controller", "run", "sleep", '{"tim": "test"}'])
-    assert result.exit_code == 0
-    print(output)
+    runner.invoke(main, ["controller", "run", "sleep", '{"tim": "test"}'])
 
     # expect the first and only call to be to the helper
     assert mock_requests.call_args_list[0] == call(

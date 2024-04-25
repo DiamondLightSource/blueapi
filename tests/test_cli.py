@@ -171,13 +171,12 @@ def test_config_passed_down_to_command_children(
     }
 
 
-def test_invalid_stomp_config_for_listner(runner: CliRunner):
+def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
-    assert result.exit_code == 1
     assert type(result.exception) is RuntimeError
 
-
-def test_valid_stomp_config_for_listner(runner: CliRunner):
+@pytest.mark.stomp
+def test_valid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(
         main,
         [

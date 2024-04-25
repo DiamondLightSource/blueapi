@@ -174,17 +174,23 @@ def test_config_passed_down_to_command_children(
 def test_invalid_stomp_config_for_listner(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
     assert result.exit_code == 1
+    assert type(result.exception) is RuntimeError
 
 
 def test_valid_stomp_config_for_listner(runner: CliRunner):
-    with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(
-            main,
-            [
-                "-c",
-                "tests/example_yaml/valid_stomp_config.yaml",
-                "controller",
-                "listen",
-            ],
-        )
-    assert result.exit_code == 1
+    result = runner.invoke(
+        main,
+        [
+            "-c",
+            "tests/example_yaml/valid_stomp_config.yaml",
+            "controller",
+            "listen",
+        ],
+        input="\n",
+    )
+    assert result.exit_code == 0
+
+
+def test_invalid_condition_for_run(runner: CliRunner):
+    result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    assert type(result.exception) is RuntimeError

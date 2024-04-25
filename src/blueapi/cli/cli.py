@@ -133,11 +133,8 @@ def get_devices(obj: dict) -> None:
 @click.pass_obj
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
-    logger = logging.getLogger(__name__)
     config: ApplicationConfig = obj["config"]
-    _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
-    if _message_template is not None:
-        amq_client = AmqClient(_message_template)
+    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
 
     def on_event(
         context: MessageContext,
@@ -151,12 +148,9 @@ def listen_to_events(obj: dict) -> None:
             "Subscribing to all bluesky events from "
             f"{config.stomp.host}:{config.stomp.port}"
         )
-        with amq_client:
-            amq_client.subscribe_to_all_events(on_event)
-            input("Press enter to exit")
-    else:
-        logger.error("Stomp configuration not found")
-        raise Exception("Stomp configuration not found ")
+    with amq_client:
+        amq_client.subscribe_to_all_events(on_event)
+        input("Press enter to exit")
 
 
 @controller.command(name="run")
@@ -182,6 +176,10 @@ def run_plan(
     _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
     if _message_template is not None:
         amq_client = AmqClient(_message_template)
+    else:
+        raise RuntimeError(
+            "Message bus needs to be configured to get done message after run"
+        )
     finished_event: deque[WorkerEvent] = deque()
 
     def store_finished_event(event: WorkerEvent) -> None:

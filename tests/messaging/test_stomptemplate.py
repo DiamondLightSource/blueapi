@@ -12,7 +12,7 @@ from stomp.exception import ConnectFailedException
 
 from blueapi.config import StompConfig
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
-from blueapi.service.handler import setup_handler, teardown_handler
+from blueapi.service.handler import get_handler, setup_handler, teardown_handler
 
 _TIMEOUT: float = 10.0
 _COUNT = itertools.count()
@@ -229,7 +229,8 @@ def test_autoconfigured_none_is_none():
     assert template is None
 
 
-def test_messaging_template_none_is_none():
-    handler = setup_handler(None)
-    assert handler is None
+def test_messaging_template_can_be_set_with_none():
+    setup_handler(None)
     teardown_handler()
+    with pytest.raises(ValueError):
+        get_handler()

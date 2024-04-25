@@ -23,16 +23,20 @@ class AmqClient:
     complete: threading.Event
     timed_out: bool | None
 
-    def __init__(self, app: MessagingTemplate) -> None:
+    def __init__(self, app: MessagingTemplate | None) -> None:
+        if app is None:
+            raise RuntimeError("Message bus needs to be configured")
         self.app = app
         self.complete = threading.Event()
         self.timed_out = None
 
     def __enter__(self) -> None:
-        self.app.connect()
+        if self.app is not None:
+            self.app.connect()
 
     def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
-        self.app.disconnect()
+        if self.app is not None:
+            self.app.disconnect()
 
     def subscribe_to_topics(
         self,
@@ -65,10 +69,11 @@ class AmqClient:
         self,
         on_event: Callable[[MessageContext, _Event], None],
     ) -> None:
-        self.app.subscribe(
-            self.app.destinations.topic("public.worker.event"),
-            on_event,
-        )
+        if self.app is not None:
+            self.app.subscribe(
+                self.app.destinations.topic("public.worker.event"),
+                on_event,
+            )
 
     def wait_for_complete(self, timeout: float | None = None) -> None:
         self.timed_out = not self.complete.wait(timeout=timeout)

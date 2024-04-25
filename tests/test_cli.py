@@ -173,7 +173,23 @@ def test_config_passed_down_to_command_children(
 
 def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
-    assert type(result.exception) is RuntimeError
+    assert (
+        isinstance(result.exception, RuntimeError)
+        and str(result.exception) == "Message bus needs to be configured"
+    )
+
+
+def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
+    with patch("uvicorn.run", side_effect=None):
+        result = runner.invoke(main, ["serve"])
+    assert result.exit_code == 0
+
+    result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    assert (
+        isinstance(result.exception, RuntimeError)
+        and str(result.exception)
+        == "Cannot run plans without Stomp configuration to track progress"
+    )
 
 
 @pytest.mark.stomp

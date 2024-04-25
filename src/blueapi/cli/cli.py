@@ -178,7 +178,7 @@ def run_plan(
         amq_client = AmqClient(_message_template)
     else:
         raise RuntimeError(
-            "Message bus needs to be configured to get done message after run"
+            "Cannot run plans without Stomp configuration to track progress"
         )
     finished_event: deque[WorkerEvent] = deque()
 

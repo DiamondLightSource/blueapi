@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Union
 from unittest.mock import patch
 
 import pytest
@@ -271,6 +272,24 @@ def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
     assert (
         empty_context._convert_type(dict[Movable, list[tuple[int, Movable]]])
         == dict[movable_ref, list[tuple[int, movable_ref]]]  # type: ignore
+    )
+
+
+def test_reference_type_conversion_union(empty_context: BlueskyContext) -> None:
+    movable_ref: type = empty_context._reference(Movable)
+    assert empty_context._convert_type(Movable) == movable_ref
+    assert (
+        empty_context._convert_type(Union[Movable, int]) == Union[movable_ref, int]  # noqa # type: ignore
+    )
+
+
+def test_reference_type_conversion_new_style_union(
+    empty_context: BlueskyContext,
+) -> None:
+    movable_ref: type = empty_context._reference(Movable)
+    assert empty_context._convert_type(Movable) == movable_ref
+    assert (
+        empty_context._convert_type(Movable | int) == movable_ref | int  # type: ignore
     )
 
 

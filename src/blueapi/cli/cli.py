@@ -5,7 +5,6 @@ from functools import wraps
 from pathlib import Path
 from pprint import pprint
 from time import sleep
-from typing import Optional
 
 import click
 from pydantic import ValidationError
@@ -291,7 +290,7 @@ def stop(obj: dict) -> None:
     default=False,
 )
 @click.pass_obj
-def env(obj: dict, reload: Optional[bool]) -> None:
+def env(obj: dict, reload: bool | None) -> None:
     """
     Inspect or restart the environment
     """

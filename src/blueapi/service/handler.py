@@ -79,8 +79,9 @@ class Handler(BlueskyHandler):
             self._publish_event_stream(stream, destination)
 
     def _publish_event_stream(self, stream: EventStream, destination: str) -> None:
-        def forward_message(event, correlation_id):
-            self._messaging_template.send(destination, event, None, correlation_id)
+        def forward_message(event: Any, correlation_id: str | None) -> None:
+            if self._messaging_template is not None:
+                self._messaging_template.send(destination, event, None, correlation_id)
 
         stream.subscribe(forward_message)
 

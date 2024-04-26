@@ -46,10 +46,13 @@ class Handler(BlueskyHandler):
             self._context,
             broadcast_statuses=self._config.env.events.broadcast_status_events,
         )
-        self._messaging_template = (
-            messaging_template
-            or StompMessagingTemplate.autoconfigured(self._config.stomp)
-        )
+        if self._config.stomp is None:
+            self._messaging_template = messaging_template
+        else:
+            self._messaging_template = (
+                messaging_template
+                or StompMessagingTemplate.autoconfigured(self._config.stomp)
+            )
 
     def start(self) -> None:
         self._worker.start()

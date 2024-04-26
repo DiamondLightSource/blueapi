@@ -101,9 +101,7 @@ class StompMessagingTemplate(MessagingTemplate):
         self._subscriptions = {}
 
     @classmethod
-    def autoconfigured(cls, config: StompConfig | None) -> MessagingTemplate | None:
-        if config is None:
-            return None
+    def autoconfigured(cls, config: StompConfig) -> MessagingTemplate:
         return cls(
             stomp.Connection(
                 [(config.host, config.port)],

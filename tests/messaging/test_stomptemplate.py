@@ -224,11 +224,6 @@ def acknowledge(template: MessagingTemplate, destination: str) -> None:
     template.subscribe(destination, server)
 
 
-def test_no_default_configuration():
-    template = StompMessagingTemplate.autoconfigured(None)
-    assert template is None
-
-
 def test_messaging_template_can_be_set_with_none():
     setup_handler(None)
     teardown_handler()

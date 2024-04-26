@@ -134,7 +134,10 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    if config.stomp is not None:
+        amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    else:
+        raise RuntimeError("Message bus needs to be configured")
 
     def on_event(
         context: MessageContext,
@@ -143,11 +146,10 @@ def listen_to_events(obj: dict) -> None:
         converted = json.dumps(event.dict(), indent=2)
         print(converted)
 
-    if config.stomp is not None:
-        print(
-            "Subscribing to all bluesky events from "
-            f"{config.stomp.host}:{config.stomp.port}"
-        )
+    print(
+        "Subscribing to all bluesky events from "
+        f"{config.stomp.host}:{config.stomp.port}"
+    )
     with amq_client:
         amq_client.subscribe_to_all_events(on_event)
         input("Press enter to exit")
@@ -173,13 +175,13 @@ def run_plan(
     client: BlueapiRestClient = obj["rest_client"]
 
     logger = logging.getLogger(__name__)
-    _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
-    if _message_template is not None:
-        amq_client = AmqClient(_message_template)
+    if config.stomp is not None:
+        _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
     else:
         raise RuntimeError(
             "Cannot run plans without Stomp configuration to track progress"
         )
+    amq_client = AmqClient(_message_template)
     finished_event: deque[WorkerEvent] = deque()
 
     def store_finished_event(event: WorkerEvent) -> None:

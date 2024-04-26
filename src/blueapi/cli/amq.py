@@ -23,9 +23,7 @@ class AmqClient:
     complete: threading.Event
     timed_out: bool | None
 
-    def __init__(self, app: MessagingTemplate | None) -> None:
-        if app is None:
-            raise RuntimeError("Message bus needs to be configured")
+    def __init__(self, app: MessagingTemplate) -> None:
         self.app = app
         self.complete = threading.Event()
         self.timed_out = None

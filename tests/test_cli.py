@@ -180,10 +180,6 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
 
 
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
-    with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(main, ["serve"])
-    assert result.exit_code == 0
-
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert (
         isinstance(result.exception, RuntimeError)

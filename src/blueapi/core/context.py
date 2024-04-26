@@ -4,15 +4,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
-from types import ModuleType
-from typing import (
-    Any,
-    Generic,
-    TypeVar,
-    get_args,
-    get_origin,
-    get_type_hints,
-)
+from types import ModuleType, UnionType
+from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.run_engine import RunEngine, call_in_bluesky_event_loop
 from pydantic import create_model
@@ -264,7 +257,7 @@ class BlueskyContext:
             )
         return new_args
 
-    def _convert_type(self, typ: type) -> type:
+    def _convert_type(self, typ: type | Any) -> type:
         """
         Recursively convert a type to something that can be deserialised by
         pydantic. Bluesky protocols (and types that extend them) are replaced
@@ -288,6 +281,8 @@ class BlueskyContext:
         if args:
             new_types = tuple(self._convert_type(i) for i in args)
             root = get_origin(typ)
+            if root == UnionType:
+                root = Union
             return root[new_types] if root else typ
         return typ
 

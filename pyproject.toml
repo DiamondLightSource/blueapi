@@ -17,16 +17,16 @@ dependencies = [
     "nslsii",
     "pyepics",
     "aioca",
-    "pydantic<2.0",
+    "pydantic<3.0",
     "stomp-py",
     "aiohttp",
     "PyYAML",
-    "click<8.1.4",
-    "fastapi[all]<0.99",
+    "click<8.1.8",
+    "fastapi[all]<0.111",
     "uvicorn",
     "requests",
     "dls-bluesky-core",  #requires ophyd-async
-    "dls-dodal<1.21",
+    "dls-dodal<1.22",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

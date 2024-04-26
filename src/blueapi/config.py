@@ -111,7 +111,7 @@ class ApplicationConfig(BlueapiBaseModel):
     config tree.
     """
 
-    stomp: StompConfig = Field(default_factory=StompConfig)
+    stomp: StompConfig | None = None
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)

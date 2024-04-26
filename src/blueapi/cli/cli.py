@@ -150,19 +150,10 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict, event_type: List[str]) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
-    event_type = event_type or list(EVENT_TYPE_MAPPINGS.keys())
-
-    def is_allowed(event: Union[WorkerEvent, ProgressEvent, DataEvent]) -> bool:
-        return any(
-            map(
-                lambda allowed_type: isinstance(
-                    event,
-                    EVENT_TYPE_MAPPINGS[allowed_type],
-                ),
-                event_type or [],
-            )
-        )
+    if config.stomp is not None:
+        amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    else:
+        raise RuntimeError("Message bus needs to be configured")
 
     def on_event(
         context: MessageContext,
@@ -201,8 +192,13 @@ def run_plan(
     client: BlueapiRestClient = obj["rest_client"]
 
     logger = logging.getLogger(__name__)
-
-    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    if config.stomp is not None:
+        _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
+    else:
+        raise RuntimeError(
+            "Cannot run plans without Stomp configuration to track progress"
+        )
+    amq_client = AmqClient(_message_template)
     finished_event: deque[WorkerEvent] = deque()
 
     def store_finished_event(event: WorkerEvent) -> None:

@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Mapping
+from typing import Any
 
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
@@ -27,7 +28,7 @@ class Handler(BlueskyHandler):
     _context: BlueskyContext
     _worker: Worker
     _config: ApplicationConfig
-    _messaging_template: MessagingTemplate
+    _messaging_template: MessagingTemplate | None
     _initialized: bool = False
 
     def __init__(
@@ -46,25 +47,30 @@ class Handler(BlueskyHandler):
             self._context,
             broadcast_statuses=self._config.env.events.broadcast_status_events,
         )
-        self._messaging_template = (
-            messaging_template
-            or StompMessagingTemplate.autoconfigured(self._config.stomp)
-        )
+        if self._config.stomp is None:
+            self._messaging_template = messaging_template
+        else:
+            self._messaging_template = (
+                messaging_template
+                or StompMessagingTemplate.autoconfigured(self._config.stomp)
+            )
 
     def start(self) -> None:
         self._worker.start()
 
-        event_topic = self._messaging_template.destinations.topic("public.worker.event")
+        if self._messaging_template is not None:
+            event_topic = self._messaging_template.destinations.topic(
+                "public.worker.event"
+            )
+            self._publish_event_streams(
+                {
+                    self._worker.worker_events: event_topic,
+                    self._worker.progress_events: event_topic,
+                    self._worker.data_events: event_topic,
+                }
+            )
 
-        self._publish_event_streams(
-            {
-                self._worker.worker_events: event_topic,
-                self._worker.progress_events: event_topic,
-                self._worker.data_events: event_topic,
-            }
-        )
-
-        self._messaging_template.connect()
+            self._messaging_template.connect()
         self._initialized = True
 
     def _publish_event_streams(
@@ -74,16 +80,19 @@ class Handler(BlueskyHandler):
             self._publish_event_stream(stream, destination)
 
     def _publish_event_stream(self, stream: EventStream, destination: str) -> None:
-        stream.subscribe(
-            lambda event, correlation_id: self._messaging_template.send(
-                destination, event, None, correlation_id
-            )
-        )
+        def forward_message(event: Any, correlation_id: str | None) -> None:
+            if self._messaging_template is not None:
+                self._messaging_template.send(destination, event, None, correlation_id)
+
+        stream.subscribe(forward_message)
 
     def stop(self) -> None:
         self._initialized = False
         self._worker.stop()
-        if self._messaging_template.is_connected():
+        if (
+            self._messaging_template is not None
+            and self._messaging_template.is_connected()
+        ):
             self._messaging_template.disconnect()
 
     @property

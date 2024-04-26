@@ -12,6 +12,7 @@ from stomp.exception import ConnectFailedException
 
 from blueapi.config import StompConfig
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
+from blueapi.service.handler import get_handler, setup_handler, teardown_handler
 
 _TIMEOUT: float = 10.0
 _COUNT = itertools.count()
@@ -28,13 +29,16 @@ class StompTestingSettings(BaseSettings):
 @pytest.fixture(params=StompTestingSettings().test_stomp_configs())
 def disconnected_template(request: pytest.FixtureRequest) -> MessagingTemplate:
     stomp_config = request.param
-    return StompMessagingTemplate.autoconfigured(stomp_config)
+    template = StompMessagingTemplate.autoconfigured(stomp_config)
+    assert template is not None
+    return template
 
 
 @pytest.fixture(params=StompTestingSettings().test_stomp_configs())
 def template(request: pytest.FixtureRequest) -> Iterable[MessagingTemplate]:
     stomp_config = request.param
     template = StompMessagingTemplate.autoconfigured(stomp_config)
+    assert template is not None
     template.connect()
     yield template
     template.disconnect()
@@ -218,3 +222,10 @@ def acknowledge(template: MessagingTemplate, destination: str) -> None:
         template.send(reply_queue, "ack", correlation_id=ctx.correlation_id)
 
     template.subscribe(destination, server)
+
+
+def test_messaging_template_can_be_set_with_none():
+    setup_handler(None)
+    teardown_handler()
+    with pytest.raises(ValueError):
+        get_handler()

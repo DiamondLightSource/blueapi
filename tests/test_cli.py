@@ -169,3 +169,40 @@ def test_config_passed_down_to_command_children(
             "params": {"time": 5},
         }
     }
+
+
+def test_invalid_stomp_config_for_listener(runner: CliRunner):
+    result = runner.invoke(main, ["controller", "listen"])
+    assert (
+        isinstance(result.exception, RuntimeError)
+        and str(result.exception) == "Message bus needs to be configured"
+    )
+
+
+def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
+    result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    assert (
+        isinstance(result.exception, RuntimeError)
+        and str(result.exception)
+        == "Cannot run plans without Stomp configuration to track progress"
+    )
+
+
+@pytest.mark.stomp
+def test_valid_stomp_config_for_listener(runner: CliRunner):
+    result = runner.invoke(
+        main,
+        [
+            "-c",
+            "tests/example_yaml/valid_stomp_config.yaml",
+            "controller",
+            "listen",
+        ],
+        input="\n",
+    )
+    assert result.exit_code == 0
+
+
+def test_invalid_condition_for_run(runner: CliRunner):
+    result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    assert type(result.exception) is RuntimeError

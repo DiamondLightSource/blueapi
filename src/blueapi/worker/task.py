@@ -28,9 +28,7 @@ class Task(BlueapiBaseModel):
 
         func = ctx.plan_functions[self.name]
         prepared_params = self.prepare_params(ctx)
-        plan_generator = func(**prepared_params.dict())
-        wrapped_plan_generator = ctx.wrap(plan_generator)
-        ctx.run_engine(wrapped_plan_generator)
+        ctx.run_engine(func(**prepared_params.dict()))
 
 
 def _lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:

@@ -51,12 +51,6 @@ class StompConfig(BaseModel):
     auth: BasicAuthentication | None = None
 
 
-class DataWritingConfig(BlueapiBaseModel):
-    visit_service_url: str | None = None  # e.g. "http://localhost:8088/api"
-    visit_directory: Path = Path("/tmp/0-0")
-    group_name: str = "example"
-
-
 class WorkerEventConfig(BlueapiBaseModel):
     """
     Config for event broadcasting via the message bus
@@ -78,7 +72,6 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
     ]
-    data_writing: DataWritingConfig = Field(default_factory=DataWritingConfig)
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
 
 

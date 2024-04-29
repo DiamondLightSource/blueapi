@@ -1,6 +1,5 @@
-import functools
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
@@ -22,10 +21,8 @@ from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     Device,
     HasName,
-    MsgGenerator,
     Plan,
     PlanGenerator,
-    PlanWrapper,
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )
@@ -45,21 +42,12 @@ class BlueskyContext:
     run_engine: RunEngine = field(
         default_factory=lambda: RunEngine(context_managers=[])
     )
-    plan_wrappers: Sequence[PlanWrapper] = field(default_factory=list)
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
     sim: bool = field(default=False)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
-
-    def wrap(self, plan: MsgGenerator) -> MsgGenerator:
-        wrapped_plan = functools.reduce(
-            lambda wrapped, next_wrapper: next_wrapper(wrapped),
-            self.plan_wrappers,
-            plan,
-        )
-        yield from wrapped_plan
 
     def find_device(self, addr: str | list[str]) -> Device | None:
         """

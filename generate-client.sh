@@ -9,5 +9,6 @@ NEW_PATH=src/blueapi
 rm -rf "$NEW_PATH"/openapi_client
 mv -f tmp/openapi_client $NEW_PATH
 
+sed -i 's/from openapi_client/from project.openapi_client/g' src/project/openapi_client/__init__.py
 echo "__all__ = [ApiClient]" >> "$NEW_PATH"/openapi_client/__init__.py
 rm -rf tmp

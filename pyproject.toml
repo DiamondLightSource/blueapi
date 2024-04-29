@@ -74,6 +74,9 @@ write_to = "src/blueapi/_version.py"
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules
 namespace_packages = false    # rely only on __init__ files to determine fully qualified module names.
+exclude = [
+    "src/blueapi/openapi_client"
+]
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
@@ -133,6 +136,9 @@ lint.select = [
     "W",  # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
     "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+]
+exclude = [
+    "src/blueapi/openapi_client"
 ]
 
 [tool.ruff.lint.flake8-bugbear]

@@ -1,4 +1,5 @@
 
+echo "Starting the refresh of the REST client library."
 podman run --rm \
   -v ${PWD}:/local openapitools/openapi-generator-cli generate \
   -i /local/docs/reference/schema-for-autogen.yaml \
@@ -12,3 +13,4 @@ mv -f tmp/openapi_client $NEW_PATH
 sed -i 's/from openapi_client/from project.openapi_client/g' src/project/openapi_client/__init__.py
 echo "__all__ = [ApiClient]" >> "$NEW_PATH"/openapi_client/__init__.py
 rm -rf tmp
+echo "API client integration complete."

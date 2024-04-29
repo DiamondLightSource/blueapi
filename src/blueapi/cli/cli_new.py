@@ -24,7 +24,7 @@ from blueapi.service.openapi import (
 )
 from blueapi.worker import ProgressEvent, Task, WorkerEvent, WorkerState
 
-from blueapi.openapi_client.api_client import ApiClient
+from blueapi.openapi_client.api.default_api import DefaultApi
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
@@ -96,7 +96,8 @@ def controller(ctx: click.Context) -> None:
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
     # ctx.obj["rest_client"] = BlueapiRestClient(config.api)
-    ctx.obj["rest_client"] = ApiClient(config.api)
+    # todo consider the API being not that useful
+    ctx.obj["rest_client"] = DefaultApi(config.api)
 
 
 def check_connection(func):
@@ -115,8 +116,8 @@ def check_connection(func):
 @click.pass_obj
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_plans().dict())
+    client: DefaultApi= obj["rest_client"]
+    pprint(client.get_plans_plans_get().dict())
 
 
 @controller.command(name="devices")
@@ -124,8 +125,8 @@ def get_plans(obj: dict) -> None:
 @click.pass_obj
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_devices().dict())
+    client: DefaultApi = obj["rest_client"]
+    pprint(client.get_devices_devices_get().dict())
 
 
 @controller.command(name="listen")
@@ -172,7 +173,7 @@ def run_plan(
 ) -> None:
     """Run a plan with parameters"""
     config: ApplicationConfig = obj["config"]
-    client: BlueapiRestClient = obj["rest_client"]
+    client: DefaultApi= obj["rest_client"]
 
     logger = logging.getLogger(__name__)
     if config.stomp is not None:
@@ -191,12 +192,12 @@ def run_plan(
     parameters = parameters or "{}"
     task = Task(name=name, params=json.loads(parameters))
 
-    resp = client.create_task(task)
+    resp = client.submit_task_tasks_post(task)
     task_id = resp.task_id
 
     with amq_client:
         amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)
-        updated = client.update_worker_task(WorkerTask(task_id=task_id))
+        updated = client.update_task_worker_task_put(WorkerTask(task_id=task_id))
 
         amq_client.wait_for_complete(timeout=timeout)
 
@@ -214,8 +215,8 @@ def run_plan(
 def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_state())
+    client: DefaultApi= obj["rest_client"]
+    pprint(client.get_state_worker_state_get().dict())
 
 
 @controller.command(name="pause")
@@ -225,8 +226,8 @@ def get_state(obj: dict) -> None:
 def pause(obj: dict, defer: bool = False) -> None:
     """Pause the execution of the current task"""
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.set_state(WorkerState.PAUSED, defer=defer))
+    client: DefaultApi= obj["rest_client"]
+    pprint(client.set_state_worker_state_put(WorkerState.PAUSED, defer=defer))
 
 
 @controller.command(name="resume")
@@ -235,8 +236,8 @@ def pause(obj: dict, defer: bool = False) -> None:
 def resume(obj: dict) -> None:
     """Resume the execution of the current task"""
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.set_state(WorkerState.RUNNING))
+    client: DefaultApi= obj["rest_client"]
+    pprint(client.set_state_worker_state_put(WorkerState.RUNNING))
 
 
 @controller.command(name="abort")
@@ -249,8 +250,8 @@ def abort(obj: dict, reason: str | None = None) -> None:
     with optional reason
     """
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.cancel_current_task(state=WorkerState.ABORTING, reason=reason))
+    client: DefaultApi = obj["rest_client"]
+    pprint(client.set_state_worker_state_put(state=WorkerState.ABORTING, reason=reason))
 
 
 @controller.command(name="stop")
@@ -261,8 +262,8 @@ def stop(obj: dict) -> None:
     Stop the execution of the current task, marking as ongoing runs as success
     """
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.cancel_current_task(state=WorkerState.STOPPING))
+    client: DefaultApi= obj["rest_client"]
+    pprint(client.set_state_worker_state_put(state=WorkerState.STOPPING))
 
 
 # helper function

@@ -79,7 +79,6 @@ namespace_packages = false    # rely only on __init__ files to determine fully q
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst"
-    --cov=blueapi --cov-report term --cov-report xml:cov.xml
     --ignore=src/blueapi/startup
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings

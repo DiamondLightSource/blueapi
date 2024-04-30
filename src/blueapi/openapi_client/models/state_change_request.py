@@ -20,7 +20,7 @@ import json
 
 from typing import Optional
 from pydantic import BaseModel, Field, StrictBool, StrictStr
-from openapi_client.models.worker_state import WorkerState
+from blueapi.openapi_client.models.worker_state import WorkerState
 
 class StateChangeRequest(BaseModel):
     """

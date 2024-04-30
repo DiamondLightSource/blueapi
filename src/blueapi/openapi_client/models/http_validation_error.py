@@ -20,7 +20,7 @@ import json
 
 from typing import List, Optional
 from pydantic import BaseModel, conlist
-from openapi_client.models.validation_error import ValidationError
+from blueapi.openapi_client.models.validation_error import ValidationError
 
 class HTTPValidationError(BaseModel):
     """

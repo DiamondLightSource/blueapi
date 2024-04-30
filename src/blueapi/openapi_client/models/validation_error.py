@@ -20,7 +20,7 @@ import json
 
 from typing import List
 from pydantic import BaseModel, Field, StrictStr, conlist
-from openapi_client.models.location_inner import LocationInner
+from blueapi.openapi_client.models.location_inner import LocationInner
 
 class ValidationError(BaseModel):
     """

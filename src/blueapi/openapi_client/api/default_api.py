@@ -22,21 +22,21 @@ from pydantic import StrictStr
 
 from typing import Any
 
-from openapi_client.models.device_model import DeviceModel
-from openapi_client.models.device_response import DeviceResponse
-from openapi_client.models.environment_response import EnvironmentResponse
-from openapi_client.models.plan_model import PlanModel
-from openapi_client.models.plan_response import PlanResponse
-from openapi_client.models.state_change_request import StateChangeRequest
-from openapi_client.models.task import Task
-from openapi_client.models.task_response import TaskResponse
-from openapi_client.models.trackable_task import TrackableTask
-from openapi_client.models.worker_state import WorkerState
-from openapi_client.models.worker_task import WorkerTask
+from blueapi.openapi_client.models.device_model import DeviceModel
+from blueapi.openapi_client.models.device_response import DeviceResponse
+from blueapi.openapi_client.models.environment_response import EnvironmentResponse
+from blueapi.openapi_client.models.plan_model import PlanModel
+from blueapi.openapi_client.models.plan_response import PlanResponse
+from blueapi.openapi_client.models.state_change_request import StateChangeRequest
+from blueapi.openapi_client.models.task import Task
+from blueapi.openapi_client.models.task_response import TaskResponse
+from blueapi.openapi_client.models.trackable_task import TrackableTask
+from blueapi.openapi_client.models.worker_state import WorkerState
+from blueapi.openapi_client.models.worker_task import WorkerTask
 
-from openapi_client.api_client import ApiClient
-from openapi_client.api_response import ApiResponse
-from openapi_client.exceptions import (  # noqa: F401
+from blueapi.openapi_client.api_client import ApiClient
+from blueapi.openapi_client.api_response import ApiResponse
+from blueapi.openapi_client.exceptions import (  # noqa: F401
     ApiTypeError,
     ApiValueError
 )

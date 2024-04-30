@@ -24,11 +24,11 @@ import tempfile
 
 from urllib.parse import quote
 
-from openapi_client.configuration import Configuration
-from openapi_client.api_response import ApiResponse
+from blueapi.openapi_client.configuration import Configuration
+from blueapi.openapi_client.api_response import ApiResponse
 import openapi_client.models
-from openapi_client import rest
-from openapi_client.exceptions import ApiValueError, ApiException
+from blueapi.openapi_client import rest
+from blueapi.openapi_client.exceptions import ApiValueError, ApiException
 
 
 class ApiClient:

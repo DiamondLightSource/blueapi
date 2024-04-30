@@ -20,7 +20,7 @@ import json
 
 from typing import List
 from pydantic import BaseModel, Field, conlist
-from openapi_client.models.plan_model import PlanModel
+from blueapi.openapi_client.models.plan_model import PlanModel
 
 class PlanResponse(BaseModel):
     """

@@ -10,7 +10,8 @@ NEW_PATH=src/blueapi
 rm -rf "$NEW_PATH"/openapi_client
 mv -f tmp/openapi_client $NEW_PATH
 
-sed -i 's/from openapi_client/from project.openapi_client/g' src/project/openapi_client/__init__.py
+# sed -i 's/from openapi_client/from project.openapi_client/g' src/project/openapi_client/__init__.py
+find src/blueapi/openapi_client -type f -name '*.py' -exec sed -i 's/from openapi_client/from blueapi.openapi_client/g' {} +
 echo "__all__ = [ApiClient]" >> "$NEW_PATH"/openapi_client/__init__.py
 rm -rf tmp
 echo "API client integration complete."

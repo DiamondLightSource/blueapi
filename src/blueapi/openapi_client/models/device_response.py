@@ -20,7 +20,7 @@ import json
 
 from typing import List
 from pydantic import BaseModel, Field, conlist
-from openapi_client.models.device_model import DeviceModel
+from blueapi.openapi_client.models.device_model import DeviceModel
 
 class DeviceResponse(BaseModel):
     """

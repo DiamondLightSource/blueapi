@@ -15,7 +15,7 @@ from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
-from blueapi.service.model import WorkerTask
+from blueapi.service.model import StateChangeRequest, WorkerTask
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
     generate_schema,
@@ -251,7 +251,8 @@ def abort(obj: dict, reason: str | None = None) -> None:
     """
 
     client: DefaultApi = obj["rest_client"]
-    pprint(client.set_state_worker_state_put(new_state=WorkerState.ABORTING, reason=reason))
+    request:StateChangeRequest = StateChangeRequest(new_state=WorkerState.ABORTING, reason=reason)
+    pprint(client.set_state_worker_state_put(state_change_request=request))
 
 
 @controller.command(name="stop")
@@ -263,7 +264,8 @@ def stop(obj: dict) -> None:
     """
 
     client: DefaultApi= obj["rest_client"]
-    pprint(client.set_state_worker_state_put(new_state=WorkerState.STOPPING))
+    request:StateChangeRequest = StateChangeRequest(new_state=WorkerState.STOPPING)
+    pprint(client.set_state_worker_state_put(state_change_request=request))
 
 
 # helper function

@@ -26,7 +26,6 @@ from blueapi.worker import ProgressEvent, Task, WorkerEvent, WorkerState
 
 from .rest import BlueapiRestClient
 
-from blueapi.openapi_client.api_client import ApiClient
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")

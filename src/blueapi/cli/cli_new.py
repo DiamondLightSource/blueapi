@@ -14,6 +14,7 @@ from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
+from blueapi.openapi_client.api.default_api import DefaultApi
 from blueapi.service.main import start
 from blueapi.service.model import StateChangeRequest, WorkerTask
 from blueapi.service.openapi import (
@@ -24,7 +25,6 @@ from blueapi.service.openapi import (
 )
 from blueapi.worker import ProgressEvent, Task, WorkerEvent, WorkerState
 
-from blueapi.openapi_client.api.default_api import DefaultApi
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
@@ -116,7 +116,7 @@ def check_connection(func):
 @click.pass_obj
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
-    client: DefaultApi= obj["rest_client"]
+    client: DefaultApi = obj["rest_client"]
     pprint(client.get_plans_plans_get().dict())
 
 
@@ -173,7 +173,7 @@ def run_plan(
 ) -> None:
     """Run a plan with parameters"""
     config: ApplicationConfig = obj["config"]
-    client: DefaultApi= obj["rest_client"]
+    client: DefaultApi = obj["rest_client"]
 
     logger = logging.getLogger(__name__)
     if config.stomp is not None:
@@ -215,7 +215,7 @@ def run_plan(
 def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
-    client: DefaultApi= obj["rest_client"]
+    client: DefaultApi = obj["rest_client"]
     pprint(client.get_state_worker_state_get().dict())
 
 
@@ -226,7 +226,7 @@ def get_state(obj: dict) -> None:
 def pause(obj: dict, defer: bool = False) -> None:
     """Pause the execution of the current task"""
 
-    client: DefaultApi= obj["rest_client"]
+    client: DefaultApi = obj["rest_client"]
     pprint(client.set_state_worker_state_put(WorkerState.PAUSED, defer=defer))
 
 
@@ -236,7 +236,7 @@ def pause(obj: dict, defer: bool = False) -> None:
 def resume(obj: dict) -> None:
     """Resume the execution of the current task"""
 
-    client: DefaultApi= obj["rest_client"]
+    client: DefaultApi = obj["rest_client"]
     pprint(client.set_state_worker_state_put(WorkerState.RUNNING))
 
 
@@ -251,7 +251,9 @@ def abort(obj: dict, reason: str | None = None) -> None:
     """
 
     client: DefaultApi = obj["rest_client"]
-    request:StateChangeRequest = StateChangeRequest(new_state=WorkerState.ABORTING, reason=reason)
+    request: StateChangeRequest = StateChangeRequest(
+        new_state=WorkerState.ABORTING, reason=reason
+    )
     pprint(client.set_state_worker_state_put(state_change_request=request))
 
 
@@ -263,8 +265,8 @@ def stop(obj: dict) -> None:
     Stop the execution of the current task, marking as ongoing runs as success
     """
 
-    client: DefaultApi= obj["rest_client"]
-    request:StateChangeRequest = StateChangeRequest(new_state=WorkerState.STOPPING)
+    client: DefaultApi = obj["rest_client"]
+    request: StateChangeRequest = StateChangeRequest(new_state=WorkerState.STOPPING)
     pprint(client.set_state_worker_state_put(state_change_request=request))
 
 

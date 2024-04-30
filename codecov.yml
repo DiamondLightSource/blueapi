@@ -6,3 +6,4 @@ coverage:
         threshold: 1% # the leniency in hitting the target
 ignore:
   - "src/blueapi/startup"
+  - "src/blueapi/openapi_client"

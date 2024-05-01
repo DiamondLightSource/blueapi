@@ -1,5 +1,11 @@
 
+if [ "$INSIDE_DEVCONTAINER" == "true" ]; then
+    echo "This script is not allowed to run inside the devcontainer as it needs podman"
+    exit 1
+fi
+
 echo "Starting the refresh of the REST client library."
+
 podman run --rm \
   -v ${PWD}:/local openapitools/openapi-generator-cli generate \
   -i /local/docs/reference/schema-for-autogen.yaml \

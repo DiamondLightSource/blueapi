@@ -7,7 +7,9 @@
     },
     "remoteEnv": {
         // Allow X11 apps to run inside the container
-        "DISPLAY": "${localEnv:DISPLAY}"
+        "DISPLAY": "${localEnv:DISPLAY}",
+        "INSIDE_DEVCONTAINER": "true"
+    }
     },
     "customizations": {
         "vscode": {

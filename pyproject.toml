@@ -12,17 +12,20 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
+    "aenum",
     "bluesky",
     "ophyd",
     "nslsii",
     "pyepics",
     "aioca",
-    "pydantic<2.0",
+    "pydantic >=1.10.5, <2.0",
     "stomp-py",
     "aiohttp",
+    "python_dateutil",
     "PyYAML",
     "click<8.1.4",
     "fastapi[all]<0.99",
+    "urllib3",
     "uvicorn",
     "requests",
     "dls-bluesky-core",  #requires ophyd-async
@@ -42,6 +45,7 @@ dev = [
     "pydata-sphinx-theme>=0.12",
     "mypy",
     "pytest-cov",
+    "pytest-randomly",
     "pytest-asyncio",
     "ruff",
     "sphinx-autobuild",

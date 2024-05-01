@@ -22,10 +22,12 @@ from typing import List
 from pydantic import BaseModel, Field, StrictStr, conlist
 from blueapi.openapi_client.models.location_inner import LocationInner
 
+
 class ValidationError(BaseModel):
     """
     ValidationError
     """
+
     loc: conlist(LocationInner) = Field(...)
     msg: StrictStr = Field(...)
     type: StrictStr = Field(...)
@@ -33,6 +35,7 @@ class ValidationError(BaseModel):
 
     class Config:
         """Pydantic configuration"""
+
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -51,17 +54,14 @@ class ValidationError(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
         # override the default output from pydantic by calling `to_dict()` of each item in loc (list)
         _items = []
         if self.loc:
             for _item in self.loc:
                 if _item:
                     _items.append(_item.to_dict())
-            _dict['loc'] = _items
+            _dict["loc"] = _items
         return _dict
 
     @classmethod
@@ -73,11 +73,15 @@ class ValidationError(BaseModel):
         if not isinstance(obj, dict):
             return ValidationError.parse_obj(obj)
 
-        _obj = ValidationError.parse_obj({
-            "loc": [LocationInner.from_dict(_item) for _item in obj.get("loc")] if obj.get("loc") is not None else None,
-            "msg": obj.get("msg"),
-            "type": obj.get("type")
-        })
+        _obj = ValidationError.parse_obj(
+            {
+                "loc": (
+                    [LocationInner.from_dict(_item) for _item in obj.get("loc")]
+                    if obj.get("loc") is not None
+                    else None
+                ),
+                "msg": obj.get("msg"),
+                "type": obj.get("type"),
+            }
+        )
         return _obj
-
-

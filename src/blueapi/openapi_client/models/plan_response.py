@@ -22,15 +22,20 @@ from typing import List
 from pydantic import BaseModel, Field, conlist
 from blueapi.openapi_client.models.plan_model import PlanModel
 
+
 class PlanResponse(BaseModel):
     """
     Response to a query for plans  # noqa: E501
     """
-    plans: conlist(PlanModel) = Field(default=..., description="Plans available to use by a worker")
+
+    plans: conlist(PlanModel) = Field(
+        default=..., description="Plans available to use by a worker"
+    )
     __properties = ["plans"]
 
     class Config:
         """Pydantic configuration"""
+
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -49,17 +54,14 @@ class PlanResponse(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
         # override the default output from pydantic by calling `to_dict()` of each item in plans (list)
         _items = []
         if self.plans:
             for _item in self.plans:
                 if _item:
                     _items.append(_item.to_dict())
-            _dict['plans'] = _items
+            _dict["plans"] = _items
         return _dict
 
     @classmethod
@@ -71,9 +73,13 @@ class PlanResponse(BaseModel):
         if not isinstance(obj, dict):
             return PlanResponse.parse_obj(obj)
 
-        _obj = PlanResponse.parse_obj({
-            "plans": [PlanModel.from_dict(_item) for _item in obj.get("plans")] if obj.get("plans") is not None else None
-        })
+        _obj = PlanResponse.parse_obj(
+            {
+                "plans": (
+                    [PlanModel.from_dict(_item) for _item in obj.get("plans")]
+                    if obj.get("plans") is not None
+                    else None
+                )
+            }
+        )
         return _obj
-
-

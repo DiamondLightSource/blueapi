@@ -25,6 +25,7 @@ from pydantic import StrictStr, Field
 
 LOCATIONINNER_ANY_OF_SCHEMAS = ["int", "str"]
 
+
 class LocationInner(BaseModel):
     """
     LocationInner
@@ -46,14 +47,18 @@ class LocationInner(BaseModel):
     def __init__(self, *args, **kwargs) -> None:
         if args:
             if len(args) > 1:
-                raise ValueError("If a position argument is used, only 1 is allowed to set `actual_instance`")
+                raise ValueError(
+                    "If a position argument is used, only 1 is allowed to set `actual_instance`"
+                )
             if kwargs:
-                raise ValueError("If a position argument is used, keyword arguments cannot be used.")
+                raise ValueError(
+                    "If a position argument is used, keyword arguments cannot be used."
+                )
             super().__init__(actual_instance=args[0])
         else:
             super().__init__(**kwargs)
 
-    @validator('actual_instance')
+    @validator("actual_instance")
     def actual_instance_must_validate_anyof(cls, v):
         instance = LocationInner.construct()
         error_messages = []
@@ -71,7 +76,10 @@ class LocationInner(BaseModel):
             error_messages.append(str(e))
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in LocationInner with anyOf schemas: int, str. Details: " + ", ".join(error_messages))
+            raise ValueError(
+                "No match found when setting the actual_instance in LocationInner with anyOf schemas: int, str. Details: "
+                + ", ".join(error_messages)
+            )
         else:
             return v
 
@@ -105,7 +113,10 @@ class LocationInner(BaseModel):
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into LocationInner with anyOf schemas: int, str. Details: " + ", ".join(error_messages))
+            raise ValueError(
+                "No match found when deserializing the JSON string into LocationInner with anyOf schemas: int, str. Details: "
+                + ", ".join(error_messages)
+            )
         else:
             return instance
 
@@ -134,5 +145,3 @@ class LocationInner(BaseModel):
     def to_str(self) -> str:
         """Returns the string representation of the actual instance"""
         return pprint.pformat(self.dict())
-
-

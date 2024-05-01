@@ -21,15 +21,21 @@ import json
 from typing import Optional
 from pydantic import BaseModel, Field, StrictStr
 
+
 class WorkerTask(BaseModel):
     """
     Worker's active task ID, can be None  # noqa: E501
     """
-    task_id: Optional[StrictStr] = Field(default=None, description="The ID of the current task, None if the worker is idle")
+
+    task_id: Optional[StrictStr] = Field(
+        default=None,
+        description="The ID of the current task, None if the worker is idle",
+    )
     __properties = ["task_id"]
 
     class Config:
         """Pydantic configuration"""
+
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -48,10 +54,7 @@ class WorkerTask(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
         return _dict
 
     @classmethod
@@ -63,9 +66,5 @@ class WorkerTask(BaseModel):
         if not isinstance(obj, dict):
             return WorkerTask.parse_obj(obj)
 
-        _obj = WorkerTask.parse_obj({
-            "task_id": obj.get("task_id")
-        })
+        _obj = WorkerTask.parse_obj({"task_id": obj.get("task_id")})
         return _obj
-
-

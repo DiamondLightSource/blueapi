@@ -22,17 +22,25 @@ from typing import Optional
 from pydantic import BaseModel, Field, StrictBool, StrictStr
 from blueapi.openapi_client.models.worker_state import WorkerState
 
+
 class StateChangeRequest(BaseModel):
     """
     Request to change the state of the worker.  # noqa: E501
     """
-    defer: Optional[StrictBool] = Field(default=False, description="Should worker defer Pausing until the next checkpoint")
+
+    defer: Optional[StrictBool] = Field(
+        default=False,
+        description="Should worker defer Pausing until the next checkpoint",
+    )
     new_state: WorkerState = Field(...)
-    reason: Optional[StrictStr] = Field(default=None, description="The reason for the current run to be aborted")
+    reason: Optional[StrictStr] = Field(
+        default=None, description="The reason for the current run to be aborted"
+    )
     __properties = ["defer", "new_state", "reason"]
 
     class Config:
         """Pydantic configuration"""
+
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -51,10 +59,7 @@ class StateChangeRequest(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
         return _dict
 
     @classmethod
@@ -66,11 +71,11 @@ class StateChangeRequest(BaseModel):
         if not isinstance(obj, dict):
             return StateChangeRequest.parse_obj(obj)
 
-        _obj = StateChangeRequest.parse_obj({
-            "defer": obj.get("defer") if obj.get("defer") is not None else False,
-            "new_state": obj.get("new_state"),
-            "reason": obj.get("reason")
-        })
+        _obj = StateChangeRequest.parse_obj(
+            {
+                "defer": obj.get("defer") if obj.get("defer") is not None else False,
+                "new_state": obj.get("new_state"),
+                "reason": obj.get("reason"),
+            }
+        )
         return _obj
-
-

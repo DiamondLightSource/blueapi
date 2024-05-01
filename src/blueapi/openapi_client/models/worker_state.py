@@ -18,9 +18,6 @@ import re  # noqa: F401
 from aenum import Enum, no_arg
 
 
-
-
-
 class WorkerState(str, Enum):
     """
     The state of the Worker.
@@ -29,20 +26,18 @@ class WorkerState(str, Enum):
     """
     allowed enum values
     """
-    IDLE = 'IDLE'
-    RUNNING = 'RUNNING'
-    PAUSING = 'PAUSING'
-    PAUSED = 'PAUSED'
-    HALTING = 'HALTING'
-    STOPPING = 'STOPPING'
-    ABORTING = 'ABORTING'
-    SUSPENDING = 'SUSPENDING'
-    PANICKED = 'PANICKED'
-    UNKNOWN = 'UNKNOWN'
+    IDLE = "IDLE"
+    RUNNING = "RUNNING"
+    PAUSING = "PAUSING"
+    PAUSED = "PAUSED"
+    HALTING = "HALTING"
+    STOPPING = "STOPPING"
+    ABORTING = "ABORTING"
+    SUSPENDING = "SUSPENDING"
+    PANICKED = "PANICKED"
+    UNKNOWN = "UNKNOWN"
 
     @classmethod
     def from_json(cls, json_str: str) -> WorkerState:
         """Create an instance of WorkerState from a JSON string"""
         return WorkerState(json.loads(json_str))
-
-

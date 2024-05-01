@@ -22,15 +22,20 @@ from typing import List
 from pydantic import BaseModel, Field, conlist
 from blueapi.openapi_client.models.device_model import DeviceModel
 
+
 class DeviceResponse(BaseModel):
     """
     Response to a query for devices  # noqa: E501
     """
-    devices: conlist(DeviceModel) = Field(default=..., description="Devices available to use in plans")
+
+    devices: conlist(DeviceModel) = Field(
+        default=..., description="Devices available to use in plans"
+    )
     __properties = ["devices"]
 
     class Config:
         """Pydantic configuration"""
+
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -49,17 +54,14 @@ class DeviceResponse(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
         # override the default output from pydantic by calling `to_dict()` of each item in devices (list)
         _items = []
         if self.devices:
             for _item in self.devices:
                 if _item:
                     _items.append(_item.to_dict())
-            _dict['devices'] = _items
+            _dict["devices"] = _items
         return _dict
 
     @classmethod
@@ -71,9 +73,13 @@ class DeviceResponse(BaseModel):
         if not isinstance(obj, dict):
             return DeviceResponse.parse_obj(obj)
 
-        _obj = DeviceResponse.parse_obj({
-            "devices": [DeviceModel.from_dict(_item) for _item in obj.get("devices")] if obj.get("devices") is not None else None
-        })
+        _obj = DeviceResponse.parse_obj(
+            {
+                "devices": (
+                    [DeviceModel.from_dict(_item) for _item in obj.get("devices")]
+                    if obj.get("devices") is not None
+                    else None
+                )
+            }
+        )
         return _obj
-
-

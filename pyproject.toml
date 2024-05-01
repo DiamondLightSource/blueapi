@@ -17,7 +17,7 @@ dependencies = [
     "nslsii",
     "pyepics",
     "aioca",
-    "pydantic<2.0",
+    "pydantic",
     "stomp-py",
     "aiohttp",
     "PyYAML",

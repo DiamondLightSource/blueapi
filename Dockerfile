@@ -21,6 +21,10 @@ RUN pip install .
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim as runtime
 # Add apt-get system dependecies for runtime here if needed
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Git required for installing packages at runtime
+    git \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=build /venv/ /venv/
 COPY ./container-startup.sh /container-startup.sh
 ENV PATH=/venv/bin:$PATH

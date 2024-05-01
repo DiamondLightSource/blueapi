@@ -26,7 +26,7 @@ from urllib.parse import quote
 
 from blueapi.openapi_client.configuration import Configuration
 from blueapi.openapi_client.api_response import ApiResponse
-import openapi_client.models
+import blueapi.openapi_client.models
 from blueapi.openapi_client import rest
 from blueapi.openapi_client.exceptions import ApiValueError, ApiException
 

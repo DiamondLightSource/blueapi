@@ -15,8 +15,8 @@ from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.openapi_client.api.default_api import DefaultApi
+from blueapi.openapi_client.models.worker_task import StateChangeRequest, WorkerTask
 from blueapi.service.main import start
-from blueapi.service.model import StateChangeRequest, WorkerTask
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
     generate_schema,
@@ -227,7 +227,10 @@ def pause(obj: dict, defer: bool = False) -> None:
     """Pause the execution of the current task"""
 
     client: DefaultApi = obj["rest_client"]
-    pprint(client.set_state_worker_state_put(WorkerState.PAUSED, defer=defer))
+    request: StateChangeRequest = StateChangeRequest(
+        new_state=WorkerState.PAUSED, defer=defer
+    )
+    pprint(client.set_state_worker_state_put(request))
 
 
 @controller.command(name="resume")
@@ -237,7 +240,8 @@ def resume(obj: dict) -> None:
     """Resume the execution of the current task"""
 
     client: DefaultApi = obj["rest_client"]
-    pprint(client.set_state_worker_state_put(WorkerState.RUNNING))
+    request: StateChangeRequest = StateChangeRequest(new_state=WorkerState.RUNNING)
+    pprint(client.set_state_worker_state_put(request))
 
 
 @controller.command(name="abort")

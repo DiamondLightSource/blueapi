@@ -1,0 +1,36 @@
+name: Validate OpenAPI Schema
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install fastapi uvicorn yamldiff && pip install -e .[dev]
+
+
+      - name: Generate OpenAPI schema
+        run: python -m blueapi schema --output generated_schema.yaml
+
+      - name: Compare OpenAPI schemas
+        run: |
+          if ! yamldiff generated_schema.yaml docs/user/reference/openapi.yaml; then
+            echo "Schema mismatch detected!"
+            exit 1
+          fi

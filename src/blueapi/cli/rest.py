@@ -114,7 +114,7 @@ class BlueapiRestClient:
         data: Mapping[str, Any] | None = None,
         method="GET",
         raise_if: Callable[[requests.Response], bool] = _is_exception,
-    ) -> T:
+    ) -> T | BlueskyRemoteError:
         url = self._url(suffix)
         if data:
             response = requests.request(method, url, json=data)

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -206,3 +206,31 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
 def test_invalid_condition_for_run(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert type(result.exception) is RuntimeError
+
+
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("urllib3.PoolManager.request")
+def test_my_client_method(self, mock_requests):
+    # Setup a mock response
+    mock_response = MagicMock()
+    mock_response.status = 200  # Set the HTTP status code
+    mock_response.data = b'{"result": "success"}'  # Mock a JSON response
+
+    # Configure the mock to return the response
+    mock_requests.return_value = mock_response
+
+    # Call the method under test
+    response = self.client.my_method()  # Replace 'my_method' with your actual method
+
+    # Assert the expected outcome
+    self.assertEqual(response["result"], "success")
+    # You can also check if the request was made as expected
+    mock_requests.assert_called_once_with(
+        "GET",  # or 'POST', etc.
+        "http://example.com/api",  # Expected URL
+        body=None,  # Expected body
+        preload_content=True,  # Other parameters as expected
+        timeout=None,
+        headers={},
+    )

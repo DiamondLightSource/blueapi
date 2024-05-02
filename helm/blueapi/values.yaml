@@ -68,6 +68,8 @@ affinity: {}
 
 hostNetwork: false # May be needed for talking to arcane protocols such as EPICS
 
+restartOnConfigChange: true
+
 listener:
   enabled: true
   resources: {}

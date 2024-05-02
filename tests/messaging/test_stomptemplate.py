@@ -1,6 +1,7 @@
 import itertools
 from collections.abc import Iterable
 from concurrent.futures import Future
+from functools import wraps
 from queue import Queue
 from typing import Any
 from unittest.mock import ANY, MagicMock, patch
@@ -16,6 +17,19 @@ from blueapi.service.handler import get_handler, setup_handler, teardown_handler
 
 _TIMEOUT: float = 10.0
 _COUNT = itertools.count()
+
+
+def handle_future_exceptions(test_func):
+    @wraps(test_func)
+    def wrapper(*args, **kwargs):
+        f = kwargs.get("f") or next(arg for arg in args if isinstance(arg, Future))
+        try:
+            return test_func(*args, **kwargs)
+        except Exception as e:
+            f.set_exception(e)
+            raise  # Optionally re-raise to ensure pytest marks it as a failed test
+
+    return wrapper
 
 
 class StompTestingSettings(BaseSettings):
@@ -72,15 +86,29 @@ def test_send(template: MessagingTemplate, test_queue: str) -> None:
 
 
 @pytest.mark.stomp
+@handle_future_exceptions
 def test_send_to_topic(template: MessagingTemplate, test_topic: str) -> None:
     f: Future = Future()
 
     def callback(ctx: MessageContext, message: str) -> None:
         f.set_result(message)
 
-    template.subscribe(test_topic, callback)
-    template.send(test_topic, "test_message")
-    assert f.result(timeout=_TIMEOUT)
+    try:
+        template.subscribe(test_topic, callback)
+        template.send(test_topic, "test_message")
+        assert f.result(
+            timeout=_TIMEOUT
+        )  # This will now properly handle timeouts and exceptions
+    except Exception as e:
+        f.set_exception(e)  # Set any exceptions that occur during send/subscribe
+        raise  # Ensure the exception is also raised for pytest to catch
+
+    # def callback(ctx: MessageContext, message: str) -> None:
+    #     f.set_result(message)
+
+    # template.subscribe(test_topic, callback)
+    # template.send(test_topic, "test_message")
+    # assert f.result(timeout=_TIMEOUT)
 
 
 @pytest.mark.stomp

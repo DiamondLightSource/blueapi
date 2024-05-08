@@ -15,6 +15,8 @@ from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.openapi_client.api.default_api import DefaultApi
+from blueapi.openapi_client.api_client import ApiClient
+from blueapi.openapi_client.configuration import Configuration
 from blueapi.openapi_client.models.state_change_request import StateChangeRequest
 from blueapi.openapi_client.models.task import Task
 from blueapi.openapi_client.models.worker_task import WorkerTask
@@ -97,9 +99,12 @@ def controller(ctx: click.Context) -> None:
 
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
-    # ctx.obj["rest_client"] = BlueapiRestClient(config.api)
-    # todo consider the API being not that useful
-    ctx.obj["rest_client"] = DefaultApi(config.api)
+    # NOTE this load the config from yaml if passed, else default
+    # configuration = {"proxy": f"http://{config.api.host}:{config.api.port}"}
+    configuration = Configuration(host=f"http://{config.api.host}:{config.api.port}")
+
+    api = DefaultApi(api_client=ApiClient(configuration))
+    ctx.obj["rest_client"] = api
 
 
 def check_connection(func):

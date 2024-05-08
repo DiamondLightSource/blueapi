@@ -211,13 +211,11 @@ def test_invalid_condition_for_run(runner: CliRunner):
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("urllib3.PoolManager.request")
-def test_my_client_method(
-    self, mock_requests: Mock, mock_handler: Mock, handler: Handler, runner: CliRunner
-):
+def test_get_devices_2(mock_requests: Mock, mock_handler: Mock, runner: CliRunner):
     # Setup a mock response
     mock_response = MagicMock()
-    mock_response.status = 200  # Set the HTTP status code
-    mock_response.data = b'{"result": "success"}'  # Mock a JSON response
+    mock_response.status = 200  # expect a successful response
+    mock_response.data = b'{"devices": []}'  # Mock a JSON response
 
     config_path = "tests/example_yaml/rest_config.yaml"
 
@@ -228,12 +226,18 @@ def test_my_client_method(
     # Configure the mock to return the response
     mock_requests.return_value = mock_response
 
-    runner.invoke(
-        main, ["controller", "-c", config_path, "run", "sleep", '{"time": 5}']
-    )
+    mock_handler._context.devices = {}
+
+    response = runner.invoke(main, ["-c", config_path, "controller", "devices"])
+    print(response)
     mock_requests.assert_called_once_with(
-        "POST",
-        "http://127.0.0.1",
-        body={"time": 5},
+        "GET",
+        "http://a.fake.host:12345/devices",
+        fields={},
+        preload_content=True,
         timeout=None,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "OpenAPI-Generator/1.0.0/python",
+        },
     )

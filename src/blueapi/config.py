@@ -81,7 +81,7 @@ class LoggingConfig(BlueapiBaseModel):
 
 class RestConfig(BlueapiBaseModel):
     host: str = "localhost"
-    port: int = 8000
+    port: int = 8001
     protocol: str = "http"
 
 

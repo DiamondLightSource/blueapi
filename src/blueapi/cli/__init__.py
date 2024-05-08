@@ -1,3 +1,3 @@
-from .cli import main
+from .cli_new import main
 
 __all__ = ["main"]

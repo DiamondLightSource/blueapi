@@ -7,8 +7,6 @@ from pprint import pprint
 
 import click
 from requests.exceptions import ConnectionError
-from src.blueapi.openapi_client.models.state_change_request import StateChangeRequest
-from src.blueapi.openapi_client.models.task import Task
 
 from blueapi import __version__
 from blueapi.cli.amq import AmqClient
@@ -17,6 +15,8 @@ from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.openapi_client.api.default_api import DefaultApi
+from blueapi.openapi_client.models.state_change_request import StateChangeRequest
+from blueapi.openapi_client.models.task import Task
 from blueapi.openapi_client.models.worker_task import WorkerTask
 from blueapi.service.main import start
 from blueapi.service.openapi import (

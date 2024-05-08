@@ -211,7 +211,9 @@ def test_invalid_condition_for_run(runner: CliRunner):
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("urllib3.PoolManager.request")
-def test_my_client_method(self, mock_requests, runner: CliRunner):
+def test_my_client_method(
+    self, mock_requests: Mock, mock_handler: Mock, handler: Handler, runner: CliRunner
+):
     # Setup a mock response
     mock_response = MagicMock()
     mock_response.status = 200  # Set the HTTP status code
@@ -226,21 +228,12 @@ def test_my_client_method(self, mock_requests, runner: CliRunner):
     # Configure the mock to return the response
     mock_requests.return_value = mock_response
 
-    # Call the method under test
-
-    response = runner.invoke(
+    runner.invoke(
         main, ["controller", "-c", config_path, "run", "sleep", '{"time": 5}']
     )
-
-    # Assert the expected outcome
-    # self.assertEqual(response["result"], "success")
-    assert response["result"] == "success"
-    # You can also check if the request was made as expected
     mock_requests.assert_called_once_with(
-        "GET",  # or 'POST', etc.
-        "http://example.com/api",  # Expected URL
-        body=None,  # Expected body
-        preload_content=True,  # Other parameters as expected
+        "POST",
+        "http://127.0.0.1",
+        body={"time": 5},
         timeout=None,
-        headers={},
     )

@@ -221,10 +221,12 @@ def test_my_client_method(self, mock_requests):
     mock_requests.return_value = mock_response
 
     # Call the method under test
-    response = self.client.my_method()  # Replace 'my_method' with your actual method
+
+    response = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
 
     # Assert the expected outcome
-    self.assertEqual(response["result"], "success")
+    # self.assertEqual(response["result"], "success")
+    assert response["result"] == "success"
     # You can also check if the request was made as expected
     mock_requests.assert_called_once_with(
         "GET",  # or 'POST', etc.

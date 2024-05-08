@@ -73,6 +73,7 @@ def test_topic(template: MessagingTemplate) -> str:
     return template.destinations.topic(f"test-{next(_COUNT)}")
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_send(template: MessagingTemplate, test_queue: str) -> None:
     f: Future = Future()
@@ -85,8 +86,8 @@ def test_send(template: MessagingTemplate, test_queue: str) -> None:
     assert f.result(timeout=_TIMEOUT)
 
 
-@pytest.mark.stomp
 @handle_future_exceptions
+@pytest.mark.stomp
 def test_send_to_topic(template: MessagingTemplate, test_topic: str) -> None:
     f: Future = Future()
 
@@ -111,6 +112,7 @@ def test_send_to_topic(template: MessagingTemplate, test_topic: str) -> None:
     # assert f.result(timeout=_TIMEOUT)
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_send_on_reply(template: MessagingTemplate, test_queue: str) -> None:
     acknowledge(template, test_queue)
@@ -124,6 +126,7 @@ def test_send_on_reply(template: MessagingTemplate, test_queue: str) -> None:
     assert f.result(timeout=_TIMEOUT)
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_send_and_receive(template: MessagingTemplate, test_queue: str) -> None:
     acknowledge(template, test_queue)
@@ -131,6 +134,7 @@ def test_send_and_receive(template: MessagingTemplate, test_queue: str) -> None:
     assert reply == "ack"
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_listener(template: MessagingTemplate, test_queue: str) -> None:
     @template.listener(test_queue)
@@ -149,6 +153,7 @@ class Foo(BaseModel):
     b: str
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 @pytest.mark.parametrize(
     "message,message_type",
@@ -170,6 +175,7 @@ def test_deserialization(
     assert reply == message
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_subscribe_before_connect(
     disconnected_template: MessagingTemplate, test_queue: str
@@ -182,6 +188,7 @@ def test_subscribe_before_connect(
     assert reply == "ack"
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_reconnect(template: MessagingTemplate, test_queue: str) -> None:
     acknowledge(template, test_queue)
@@ -205,6 +212,7 @@ def failing_template() -> MessagingTemplate:
     return StompMessagingTemplate(connection)
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_failed_connect(failing_template: MessagingTemplate, test_queue: str) -> None:
     assert not failing_template.is_connected()
@@ -218,6 +226,7 @@ def test_failed_connect(failing_template: MessagingTemplate, test_queue: str) ->
         )
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_correlation_id(
     template: MessagingTemplate, test_queue: str, test_queue_2: str

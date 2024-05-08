@@ -211,18 +211,26 @@ def test_invalid_condition_for_run(runner: CliRunner):
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("urllib3.PoolManager.request")
-def test_my_client_method(self, mock_requests):
+def test_my_client_method(self, mock_requests, runner: CliRunner):
     # Setup a mock response
     mock_response = MagicMock()
     mock_response.status = 200  # Set the HTTP status code
     mock_response.data = b'{"result": "success"}'  # Mock a JSON response
+
+    config_path = "tests/example_yaml/rest_config.yaml"
+
+    with patch("uvicorn.run", side_effect=None):
+        initial_result = runner.invoke(main, ["-c", config_path, "serve"])
+        print(initial_result)
 
     # Configure the mock to return the response
     mock_requests.return_value = mock_response
 
     # Call the method under test
 
-    response = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    response = runner.invoke(
+        main, ["controller", "-c", config_path, "run", "sleep", '{"time": 5}']
+    )
 
     # Assert the expected outcome
     # self.assertEqual(response["result"], "success")

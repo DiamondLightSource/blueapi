@@ -136,6 +136,21 @@ class TaskWorker(Worker[Task]):
         self._tasks[task_id] = trackable_task
         return task_id
 
+    def get_tasks_by_status(self, status: str) -> list[TrackableTask[Task]]:
+        # We assume status can be 'unstarted', 'pending', or 'complete'
+        if status == "unstarted":
+            return [
+                task
+                for task in self._tasks.values()
+                if not task.is_complete and not task.is_pending
+            ]
+        elif status == "pending":
+            return [task for task in self._tasks.values() if task.is_pending]
+        elif status == "complete":
+            return [task for task in self._tasks.values() if task.is_complete]
+        else:
+            raise ValueError("Unknown status")
+
     def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
         if self.state is not WorkerState.IDLE:
             raise WorkerBusyError(f"Worker is in state {self.state}")

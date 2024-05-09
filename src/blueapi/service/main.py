@@ -6,6 +6,7 @@ from fastapi import (
     Depends,
     FastAPI,
     HTTPException,
+    Query,
     Request,
     Response,
     status,
@@ -152,6 +153,21 @@ def submit_task(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.errors()
         ) from e
+
+
+@app.get("/tasks")
+def get_tasks(
+    status: str = Query("unstarted", description="The status of the tasks to retrieve"),
+    handler: BlueskyHandler = Depends(get_handler),
+) -> list[TrackableTask]:
+    """
+    Retrieve tasks based on their status. The default status is 'unstarted'.
+    """
+    try:
+        tasks = handler.get_tasks_by_status(status)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))  # noqa: B904
+    return tasks
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)

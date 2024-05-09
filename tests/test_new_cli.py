@@ -168,6 +168,7 @@ def test_get_plans_with_custom_config(
     plans = runner.invoke(main, ["-c", config_path, "controller", "plans"])
     # ValueError('stderr not separately captured')
     # (<class 'TypeError'>, TypeError("expected string or bytes-like object, got 'MagicMock'"), <traceback object at 0x7fc470ee8b40>)
+    # response = plan.json()
 
     assert (
         plans.output == "{'plans': [{'description': None,\n"

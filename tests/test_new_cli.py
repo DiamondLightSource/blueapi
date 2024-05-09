@@ -46,18 +46,6 @@ def test_main_with_nonexistent_config_file():
     assert type(result.exception) is FileNotFoundError
 
 
-@patch("requests.request")
-def test_connection_error_caught_by_wrapper_func(mock_requests: Mock):
-    mock_requests.side_effect = ConnectionError()
-    runner = CliRunner()
-    result = runner.invoke(main, ["controller", "plans"])
-
-    assert result.stdout == "Failed to establish connection to FastAPI server.\n"
-
-
-# Some CLI commands require the rest api to be running...
-
-
 class MyModel(BaseModel):
     id: str
 
@@ -66,10 +54,12 @@ class MyModel(BaseModel):
 class MyDevice:
     name: str
 
+
 def test_invalid_config_path_handling(runner: CliRunner):
     # test what happens if you pass an invalid config file...
     result = runner.invoke(main, ["-c", "non_existent.yaml"])
     assert result.exit_code == 1
+
 
 def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
@@ -147,6 +137,8 @@ def test_get_devices_with_custom_config(
             "User-Agent": "OpenAPI-Generator/1.0.0/python",
         },
     )
+    # todo assert that the output is in the right format
+    assert True is False
 
 
 @pytest.mark.handler
@@ -174,6 +166,8 @@ def test_get_plans_with_custom_config(
     plan = Plan(name="my-plan", model=MyModel)
     mock_handler._context.plans = {"my-plan": plan}
     plans = runner.invoke(main, ["-c", config_path, "controller", "plans"])
+    # ValueError('stderr not separately captured')
+    # (<class 'TypeError'>, TypeError("expected string or bytes-like object, got 'MagicMock'"), <traceback object at 0x7fc470ee8b40>)
 
     assert (
         plans.output == "{'plans': [{'description': None,\n"

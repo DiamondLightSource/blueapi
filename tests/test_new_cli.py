@@ -3,14 +3,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from click.testing import CliRunner
-from fastapi.testclient import TestClient
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.cli_new import main
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.handler import Handler, teardown_handler
+from blueapi.service.handler import teardown_handler
 
 
 @pytest.fixture(autouse=True)

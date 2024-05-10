@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from unittest.mock import MagicMock, Mock, patch
 
@@ -11,7 +12,7 @@ from blueapi.cli.cli_new import main
 from blueapi.core.bluesky_types import Plan
 from blueapi.openapi_client.rest import RESTResponse
 from blueapi.service.handler import teardown_handler
-from blueapi.service.model import DeviceModel
+from blueapi.service.model import DeviceModel, DeviceResponse
 
 
 @pytest.fixture(autouse=True)
@@ -143,9 +144,11 @@ def test_get_devices_with_one_device(mock_requests: Mock, runner: CliRunner):
     mock_urllib3_response.status = 200
     mock_urllib3_response.reason = "OK"
     sg = Scatterguard(name="my-scatterguard")
-    model = DeviceModel.from_device(sg)
-    raw_response = f'{{"devices": [{model}]}}'
-    mock_urllib3_response.data = raw_response.encode()
+    sg_model = DeviceModel.from_device(sg)
+    r = DeviceResponse(devices=[sg_model])
+
+    expected_dict = r.json()
+    mock_urllib3_response.data = expected_dict.encode()
     mock_urllib3_response.headers = {"Content-Type": "application/json"}
 
     config_path = "tests/example_yaml/rest_config.yaml"
@@ -170,7 +173,11 @@ def test_get_devices_with_one_device(mock_requests: Mock, runner: CliRunner):
         },
     )
     assert response.exit_code == 0
-    assert response.output == f"{raw_response}\n"
+    parsed_response = json.loads(
+        response.output.replace("'", '"')
+    )  # Replace single quotes to double quotes for valid JSON format
+    parsed_expected = json.loads(expected_dict)
+    assert parsed_response == parsed_expected
 
 
 @pytest.mark.handler

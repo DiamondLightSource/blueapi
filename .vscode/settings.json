@@ -9,7 +9,7 @@
         "editor.defaultFormatter": "charliermarsh.ruff",
     },
     "python.testing.pytestArgs": [
-        "tests"
+        "."
     ],
     "python.testing.unittestArgs": [
         "-v",

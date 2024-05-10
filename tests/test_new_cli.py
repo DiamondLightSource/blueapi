@@ -9,8 +9,7 @@ from pydantic import BaseModel
 
 from blueapi import __version__
 from blueapi.cli.cli_new import main
-from blueapi.core.bluesky_types import Plan
-from blueapi.openapi_client.rest import RESTResponse
+from blueapi.openapi_client.models.plan_response import PlanResponse
 from blueapi.service.handler import teardown_handler
 from blueapi.service.model import DeviceModel, DeviceResponse
 
@@ -101,7 +100,6 @@ def test_invalid_condition_for_run(runner: CliRunner):
     assert type(result.exception) is RuntimeError
 
 
-@pytest.mark.handler
 @patch("urllib3.PoolManager.request")
 def test_get_devices_empty_with_custom_config(mock_requests: Mock, runner: CliRunner):
     # Setup a mock response
@@ -136,7 +134,6 @@ def test_get_devices_empty_with_custom_config(mock_requests: Mock, runner: CliRu
     assert response.output == "{'devices': []}\n"
 
 
-@pytest.mark.handler
 @patch("urllib3.PoolManager.request")
 def test_get_devices_with_one_device(mock_requests: Mock, runner: CliRunner):
     # Setup a mock response
@@ -180,23 +177,18 @@ def test_get_devices_with_one_device(mock_requests: Mock, runner: CliRunner):
     assert parsed_response == parsed_expected
 
 
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
 @patch("urllib3.PoolManager.request")
-def test_get_plans_empty(mock_requests: Mock, mock_handler: Mock, runner: CliRunner):
+def test_get_plans_empty(mock_requests: Mock, runner: CliRunner):
     # Setup a mock response
-    # resp = {"status": 200, "data": b'{"plans": []}', "reason": "OK"}
     mock_urllib3_response = MagicMock()
     mock_urllib3_response.status = 200
     mock_urllib3_response.reason = "OK"
-    mock_urllib3_response.data = b'{"plans": []}'
+    r = PlanResponse(plans=[])
+    expected_dict = r.json()
+    mock_urllib3_response.data = expected_dict.encode()
     mock_urllib3_response.headers = {"Content-Type": "application/json"}
 
-    # Create RESTResponse instance using the mocked urllib3 response
-    mock_response = RESTResponse(resp=mock_urllib3_response)
-    # mock_response = RESTResponse(resp=resp)
-
-    # Put a plan in handler.context manually.
+    mock_requests.return_value = mock_urllib3_response
 
     config_path = "tests/example_yaml/rest_config.yaml"
 
@@ -205,25 +197,7 @@ def test_get_plans_empty(mock_requests: Mock, mock_handler: Mock, runner: CliRun
         print(initial_result)
 
     # Configure the mock to return the response
-    mock_requests.return_value = mock_response
-
-    plan = Plan(name="my-plan", model=MyModel)
-    mock_handler._context.plans = {"my-plan": plan}
-    plans = runner.invoke(main, ["-c", config_path, "controller", "plans"])
-    # ValueError('stderr not separately captured')
-    # (<class 'TypeError'>,
-    # TypeError("expected string or bytes-like object, got 'MagicMock'")
-    # response = plan.json()
-
-    assert (
-        plans.output == "{'plans': [{'description': None,\n"
-        "            'name': 'my-plan',\n"
-        "            'parameter_schema': {'properties': {'id': {'title': 'Id',\n"
-        "                                                       'type': 'string'}},\n"
-        "                                 'required': ['id'],\n"
-        "                                 'title': 'MyModel',\n"
-        "                                 'type': 'object'}}]}\n"
-    )
+    response = runner.invoke(main, ["-c", config_path, "controller", "plans"])
 
     mock_requests.assert_called_once_with(
         "GET",
@@ -236,6 +210,37 @@ def test_get_plans_empty(mock_requests: Mock, mock_handler: Mock, runner: CliRun
             "User-Agent": "OpenAPI-Generator/1.0.0/python",
         },
     )
+
+    parsed_response = json.loads(
+        response.output.replace("'", '"')
+    )  # Replace single quotes to double quotes for valid JSON format
+    parsed_expected = json.loads(expected_dict)
+    assert parsed_response == parsed_expected
+
+
+@patch("urllib3.PoolManager.request")
+def test_get_plans_one_plan(mock_requests: Mock, runner: CliRunner):
+    # todo = Plan(
+    #     name="todo",
+    #     args={"time": 5},
+    #     kwargs={},
+    #     plan="from bluesky.plans import sleep\nyield from sleep(5)",
+    # )
+    raise AssertionError("Not implemented")
+
+
+@patch("urllib3.PoolManager.request")
+def test_handle_sleep_plan_accepted(mock_requests: Mock, runner: CliRunner):
+    raise AssertionError("Not implemented")
+    # todo set plan with sleep args
+    # runner.invoke(
+    #     main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+    # )
+
+
+@patch("urllib3.PoolManager.request")
+def test_handle_sleep_plan_rejected(mock_requests: Mock, runner: CliRunner):
+    raise AssertionError("Not implemented")
     # todo set plan with sleep args
     # runner.invoke(
     #     main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']

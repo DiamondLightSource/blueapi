@@ -269,6 +269,12 @@ def test_get_plans_one_plan(mock_requests: Mock, runner: CliRunner):
     assert parsed_response == parsed_expected
 
 
+def test_returns_warning_empty_argument(runner: CliRunner):
+    result = runner.invoke(main, ["controller", "run"])
+    assert result.exit_code == 2
+    assert "Error: Missing argument 'NAME'" in result.output
+
+
 @patch("urllib3.PoolManager.request")
 def test_handle_sleep_plan_accepted(mock_requests: Mock, runner: CliRunner):
     # Setup a mock response
@@ -289,8 +295,11 @@ def test_handle_sleep_plan_accepted(mock_requests: Mock, runner: CliRunner):
         print(initial_result)
 
     response = runner.invoke(
-        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+        # main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+        main,
+        ["-c", config_path, "controller", "run", "sleep"],
     )
+    # RuntimeError: Cannot run plans without Stomp configuration to track progress
 
     mock_requests.assert_called_once_with(
         "POST",

@@ -11,6 +11,7 @@ from blueapi import __version__
 from blueapi.cli.cli_new import main
 from blueapi.core.bluesky_types import Plan
 from blueapi.openapi_client.models.plan_response import PlanResponse
+from blueapi.openapi_client.models.task_response import TaskResponse
 from blueapi.service.handler import teardown_handler
 from blueapi.service.model import DeviceModel, DeviceResponse, PlanModel
 
@@ -225,9 +226,6 @@ def test_get_plans_one_plan(mock_requests: Mock, runner: CliRunner):
         model=PlanModel,
         name="todo",
         description="just a description",
-        # args={"time": 5},
-        # kwargs={},
-        # plan="from bluesky.plans import sleep\nyield from sleep(5)",
     )
 
     sleep_model = PlanModel.from_plan(sleep_plan)
@@ -273,17 +271,47 @@ def test_get_plans_one_plan(mock_requests: Mock, runner: CliRunner):
 
 @patch("urllib3.PoolManager.request")
 def test_handle_sleep_plan_accepted(mock_requests: Mock, runner: CliRunner):
-    raise AssertionError("Not implemented")
-    # todo set plan with sleep args
-    # runner.invoke(
-    #     main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
-    # )
+    # Setup a mock response
+    mock_urllib3_response = MagicMock()
+    mock_urllib3_response.status = 201
+    mock_urllib3_response.reason = "OK"
+    r = TaskResponse(task_id="123")
+    expected_dict = r.json()
+    mock_urllib3_response.data = expected_dict.encode()
+    mock_urllib3_response.headers = {"Content-Type": "application/json"}
+
+    mock_requests.return_value = mock_urllib3_response
+
+    config_path = "tests/example_yaml/rest_config.yaml"
+
+    with patch("uvicorn.run", side_effect=None):
+        initial_result = runner.invoke(main, ["-c", config_path, "serve"])
+        print(initial_result)
+
+    response = runner.invoke(
+        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+    )
+
+    mock_requests.assert_called_once_with(
+        "POST",
+        "http://a.fake.host:12345/tasks",
+        fields={},
+        preload_content=True,
+        timeout=None,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "OpenAPI-Generator/1.0.0/python",
+        },
+    )
+
+    p = response.output.replace("'", '"').replace(
+        "None", "null"
+    )  # NOTE that is a bit odd maybe pydantic serializer will be diff later
+    parsed_expected = json.loads(expected_dict)
+    parsed_response = json.loads(p)
+    assert parsed_response == parsed_expected
 
 
 @patch("urllib3.PoolManager.request")
 def test_handle_sleep_plan_rejected(mock_requests: Mock, runner: CliRunner):
     raise AssertionError("Not implemented")
-    # todo set plan with sleep args
-    # runner.invoke(
-    #     main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
-    # )

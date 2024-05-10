@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from blueapi import __version__
 from blueapi.cli.cli_new import main
 from blueapi.core.bluesky_types import Plan
+from blueapi.openapi_client.rest import RESTResponse
 from blueapi.service.handler import teardown_handler
 
 
@@ -147,9 +148,8 @@ def test_get_plans_with_custom_config(
     mock_requests: Mock, mock_handler: Mock, runner: CliRunner
 ):
     # Setup a mock response
-    mock_response = MagicMock()
-    mock_response.status = 200  # expect a successful response
-    mock_response.data = b'{"plans": []}'  # Mock a JSON response
+    resp = {"status": 200, "data": b'{"plans": []}', "reason": "OK"}
+    mock_response = RESTResponse(resp=resp)
 
     # Put a plan in handler.context manually.
 

@@ -11,4 +11,11 @@
     "python.testing.pytestArgs": [
         "tests"
     ],
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "*test*.py"
+    ],
 }

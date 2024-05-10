@@ -99,11 +99,8 @@ def test_invalid_condition_for_run(runner: CliRunner):
 
 
 @pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
 @patch("urllib3.PoolManager.request")
-def test_get_devices_empty_with_custom_config(
-    mock_requests: Mock, mock_handler: Mock, runner: CliRunner
-):
+def test_get_devices_empty_with_custom_config(mock_requests: Mock, runner: CliRunner):
     # Setup a mock response
     mock_urllib3_response = MagicMock()
     mock_urllib3_response.status = 200
@@ -134,7 +131,10 @@ def test_get_devices_empty_with_custom_config(
     )
     assert response.exit_code == 0
     assert response.output == "{'devices': []}\n"
-t 
+
+
+t
+
 
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")

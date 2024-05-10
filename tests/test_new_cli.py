@@ -101,13 +101,15 @@ def test_invalid_condition_for_run(runner: CliRunner):
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("urllib3.PoolManager.request")
-def test_get_devices_with_custom_config(
+def test_get_devices_empty_with_custom_config(
     mock_requests: Mock, mock_handler: Mock, runner: CliRunner
 ):
     # Setup a mock response
-    mock_response = MagicMock()
-    mock_response.status = 200  # expect a successful response
-    mock_response.data = b'{"devices": []}'  # Mock a JSON response
+    mock_urllib3_response = MagicMock()
+    mock_urllib3_response.status = 200
+    mock_urllib3_response.reason = "OK"
+    mock_urllib3_response.data = b'{"devices": []}'
+    mock_urllib3_response.headers = {"Content-Type": "application/json"}
 
     config_path = "tests/example_yaml/rest_config.yaml"
 
@@ -116,16 +118,9 @@ def test_get_devices_with_custom_config(
         print(initial_result)
 
     # Configure the mock to return the response
-    mock_requests.return_value = mock_response
-
-    mock_handler._context.devices = {}
-
-    # # Put a device in handler.context manually.
-    # device = MyDevice("my-device")
-    # mock_handler._context.devices = {"my-device": device}
+    mock_requests.return_value = mock_urllib3_response
 
     response = runner.invoke(main, ["-c", config_path, "controller", "devices"])
-    print(response)
     mock_requests.assert_called_once_with(
         "GET",
         "http://a.fake.host:12345/devices",
@@ -137,19 +132,25 @@ def test_get_devices_with_custom_config(
             "User-Agent": "OpenAPI-Generator/1.0.0/python",
         },
     )
-    # todo assert that the output is in the right format
-    assert True is False
-
+    assert response.exit_code == 0
+    assert response.output == "{'devices': []}\n"
+t 
 
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
 @patch("urllib3.PoolManager.request")
-def test_get_plans_with_custom_config(
-    mock_requests: Mock, mock_handler: Mock, runner: CliRunner
-):
+def test_get_plans_empty(mock_requests: Mock, mock_handler: Mock, runner: CliRunner):
     # Setup a mock response
-    resp = {"status": 200, "data": b'{"plans": []}', "reason": "OK"}
-    mock_response = RESTResponse(resp=resp)
+    # resp = {"status": 200, "data": b'{"plans": []}', "reason": "OK"}
+    mock_urllib3_response = MagicMock()
+    mock_urllib3_response.status = 200
+    mock_urllib3_response.reason = "OK"
+    mock_urllib3_response.data = b'{"plans": []}'
+    mock_urllib3_response.headers = {"Content-Type": "application/json"}
+
+    # Create RESTResponse instance using the mocked urllib3 response
+    mock_response = RESTResponse(resp=mock_urllib3_response)
+    # mock_response = RESTResponse(resp=resp)
 
     # Put a plan in handler.context manually.
 

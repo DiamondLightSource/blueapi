@@ -154,9 +154,7 @@ def setup_handler(
 
     handler = Handler(
         config,
-        context=BlueskyContext(
-            sim=False,
-        ),
+        context=BlueskyContext(),
     )
     handler.start()
 

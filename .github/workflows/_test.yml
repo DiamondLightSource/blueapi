@@ -65,8 +65,11 @@ jobs:
           python-version: ${{ inputs.python-version }}
           pip-install: ".[dev]"
 
-      - name: Run tests
+      - name: Run non stomp tests
         run: tox -e tests
+
+      - name: Run stomp tests
+        run: tox -e tests-stomp
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

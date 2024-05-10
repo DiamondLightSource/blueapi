@@ -3,11 +3,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from click.testing import CliRunner
+from dodal.devices.scatterguard import Scatterguard
 from pydantic import BaseModel
 
 from blueapi import __version__
 from blueapi.cli.cli_new import main
 from blueapi.core.bluesky_types import Plan
+from blueapi.openapi_client.models.device_model import DeviceModel
 from blueapi.openapi_client.rest import RESTResponse
 from blueapi.service.handler import teardown_handler
 
@@ -133,7 +135,42 @@ def test_get_devices_empty_with_custom_config(mock_requests: Mock, runner: CliRu
     assert response.output == "{'devices': []}\n"
 
 
-t
+@pytest.mark.handler
+@patch("urllib3.PoolManager.request")
+def test_get_devices_with_one_device(mock_requests: Mock, runner: CliRunner):
+    # Setup a mock response
+    mock_urllib3_response = MagicMock()
+    mock_urllib3_response.status = 200
+    mock_urllib3_response.reason = "OK"
+    sg = Scatterguard(name="my-scatterguard")
+    model = DeviceModel.from_device(sg)
+    raw_response = f'{"devices": [{model}]}'
+    mock_urllib3_response.data = raw_response.encode()
+    mock_urllib3_response.headers = {"Content-Type": "application/json"}
+
+    config_path = "tests/example_yaml/rest_config.yaml"
+
+    with patch("uvicorn.run", side_effect=None):
+        initial_result = runner.invoke(main, ["-c", config_path, "serve"])
+        print(initial_result)
+
+    # Configure the mock to return the response
+    mock_requests.return_value = mock_urllib3_response
+
+    response = runner.invoke(main, ["-c", config_path, "controller", "devices"])
+    mock_requests.assert_called_once_with(
+        "GET",
+        "http://a.fake.host:12345/devices",
+        fields={},
+        preload_content=True,
+        timeout=None,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "OpenAPI-Generator/1.0.0/python",
+        },
+    )
+    assert response.exit_code == 0
+    assert response.output == f"{raw_response}\n"
 
 
 @pytest.mark.handler

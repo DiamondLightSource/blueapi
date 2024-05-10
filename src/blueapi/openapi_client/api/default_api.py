@@ -36,7 +36,10 @@ from blueapi.openapi_client.models.worker_task import WorkerTask
 
 from blueapi.openapi_client.api_client import ApiClient
 from blueapi.openapi_client.api_response import ApiResponse
-from blueapi.openapi_client.exceptions import ApiTypeError, ApiValueError  # noqa: F401
+from blueapi.openapi_client.exceptions import (  # noqa: F401
+    ApiTypeError,
+    ApiValueError
+)
 
 
 class DefaultApi:
@@ -72,18 +75,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: object
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the delete_environment_environment_delete_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.delete_environment_environment_delete_with_http_info(
-            **kwargs
-        )  # noqa: E501
+        return self.delete_environment_environment_delete_with_http_info(**kwargs)  # noqa: E501
 
     @validate_arguments
-    def delete_environment_environment_delete_with_http_info(
-        self, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def delete_environment_environment_delete_with_http_info(self, **kwargs) -> ApiResponse:  # noqa: E501
         """Delete Environment  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -119,28 +118,29 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = []
+        _all_params = [
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method delete_environment_environment_delete" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
@@ -150,27 +150,25 @@ class DefaultApi:
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "object",
+            '200': "object",
         }
 
         return self.api_client.call_api(
-            "/environment",
-            "DELETE",
+            '/environment', 'DELETE',
             _path_params,
             _query_params,
             _header_params,
@@ -179,18 +177,15 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def delete_submitted_task_tasks_task_id_delete(
-        self, task_id: StrictStr, **kwargs
-    ) -> TaskResponse:  # noqa: E501
+    def delete_submitted_task_tasks_task_id_delete(self, task_id : StrictStr, **kwargs) -> TaskResponse:  # noqa: E501
         """Delete Submitted Task  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -212,18 +207,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: TaskResponse
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the delete_submitted_task_tasks_task_id_delete_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.delete_submitted_task_tasks_task_id_delete_with_http_info(
-            task_id, **kwargs
-        )  # noqa: E501
+        return self.delete_submitted_task_tasks_task_id_delete_with_http_info(task_id, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def delete_submitted_task_tasks_task_id_delete_with_http_info(
-        self, task_id: StrictStr, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def delete_submitted_task_tasks_task_id_delete_with_http_info(self, task_id : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
         """Delete Submitted Task  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -261,61 +252,62 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = ["task_id"]
+        _all_params = [
+            'task_id'
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method delete_submitted_task_tasks_task_id_delete" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
         # process the path parameters
         _path_params = {}
-        if _params["task_id"] is not None:
-            _path_params["task_id"] = _params["task_id"]
+        if _params['task_id'] is not None:
+            _path_params['task_id'] = _params['task_id']
+
 
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "TaskResponse",
-            "422": "HTTPValidationError",
+            '200': "TaskResponse",
+            '422': "HTTPValidationError",
         }
 
         return self.api_client.call_api(
-            "/tasks/{task_id}",
-            "DELETE",
+            '/tasks/{task_id}', 'DELETE',
             _path_params,
             _query_params,
             _header_params,
@@ -324,13 +316,12 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
     def get_active_task_worker_task_get(self, **kwargs) -> WorkerTask:  # noqa: E501
@@ -353,18 +344,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: WorkerTask
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the get_active_task_worker_task_get_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.get_active_task_worker_task_get_with_http_info(
-            **kwargs
-        )  # noqa: E501
+        return self.get_active_task_worker_task_get_with_http_info(**kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_active_task_worker_task_get_with_http_info(
-        self, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def get_active_task_worker_task_get_with_http_info(self, **kwargs) -> ApiResponse:  # noqa: E501
         """Get Active Task  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -400,28 +387,29 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = []
+        _all_params = [
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method get_active_task_worker_task_get" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
@@ -431,27 +419,25 @@ class DefaultApi:
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "WorkerTask",
+            '200': "WorkerTask",
         }
 
         return self.api_client.call_api(
-            "/worker/task",
-            "GET",
+            '/worker/task', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -460,18 +446,15 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def get_device_by_name_devices_name_get(
-        self, name: StrictStr, **kwargs
-    ) -> DeviceModel:  # noqa: E501
+    def get_device_by_name_devices_name_get(self, name : StrictStr, **kwargs) -> DeviceModel:  # noqa: E501
         """Get Device By Name  # noqa: E501
 
         Retrieve information about a devices by its (unique) name.  # noqa: E501
@@ -494,18 +477,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: DeviceModel
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the get_device_by_name_devices_name_get_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.get_device_by_name_devices_name_get_with_http_info(
-            name, **kwargs
-        )  # noqa: E501
+        return self.get_device_by_name_devices_name_get_with_http_info(name, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_device_by_name_devices_name_get_with_http_info(
-        self, name: StrictStr, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def get_device_by_name_devices_name_get_with_http_info(self, name : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
         """Get Device By Name  # noqa: E501
 
         Retrieve information about a devices by its (unique) name.  # noqa: E501
@@ -544,61 +523,62 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = ["name"]
+        _all_params = [
+            'name'
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method get_device_by_name_devices_name_get" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
         # process the path parameters
         _path_params = {}
-        if _params["name"] is not None:
-            _path_params["name"] = _params["name"]
+        if _params['name'] is not None:
+            _path_params['name'] = _params['name']
+
 
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "DeviceModel",
-            "422": "HTTPValidationError",
+            '200': "DeviceModel",
+            '422': "HTTPValidationError",
         }
 
         return self.api_client.call_api(
-            "/devices/{name}",
-            "GET",
+            '/devices/{name}', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -607,13 +587,12 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
     def get_devices_devices_get(self, **kwargs) -> DeviceResponse:  # noqa: E501
@@ -637,16 +616,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: DeviceResponse
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the get_devices_devices_get_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
         return self.get_devices_devices_get_with_http_info(**kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_devices_devices_get_with_http_info(
-        self, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def get_devices_devices_get_with_http_info(self, **kwargs) -> ApiResponse:  # noqa: E501
         """Get Devices  # noqa: E501
 
         Retrieve information about all available devices.  # noqa: E501
@@ -683,28 +660,29 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = []
+        _all_params = [
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method get_devices_devices_get" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
@@ -714,27 +692,25 @@ class DefaultApi:
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "DeviceResponse",
+            '200': "DeviceResponse",
         }
 
         return self.api_client.call_api(
-            "/devices",
-            "GET",
+            '/devices', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -743,18 +719,15 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def get_environment_environment_get(
-        self, **kwargs
-    ) -> EnvironmentResponse:  # noqa: E501
+    def get_environment_environment_get(self, **kwargs) -> EnvironmentResponse:  # noqa: E501
         """Get Environment  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -774,18 +747,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: EnvironmentResponse
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the get_environment_environment_get_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.get_environment_environment_get_with_http_info(
-            **kwargs
-        )  # noqa: E501
+        return self.get_environment_environment_get_with_http_info(**kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_environment_environment_get_with_http_info(
-        self, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def get_environment_environment_get_with_http_info(self, **kwargs) -> ApiResponse:  # noqa: E501
         """Get Environment  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -821,28 +790,29 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = []
+        _all_params = [
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method get_environment_environment_get" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
@@ -852,27 +822,25 @@ class DefaultApi:
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "EnvironmentResponse",
+            '200': "EnvironmentResponse",
         }
 
         return self.api_client.call_api(
-            "/environment",
-            "GET",
+            '/environment', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -881,18 +849,15 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def get_plan_by_name_plans_name_get(
-        self, name: StrictStr, **kwargs
-    ) -> PlanModel:  # noqa: E501
+    def get_plan_by_name_plans_name_get(self, name : StrictStr, **kwargs) -> PlanModel:  # noqa: E501
         """Get Plan By Name  # noqa: E501
 
         Retrieve information about a plan by its (unique) name.  # noqa: E501
@@ -915,18 +880,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: PlanModel
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the get_plan_by_name_plans_name_get_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.get_plan_by_name_plans_name_get_with_http_info(
-            name, **kwargs
-        )  # noqa: E501
+        return self.get_plan_by_name_plans_name_get_with_http_info(name, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_plan_by_name_plans_name_get_with_http_info(
-        self, name: StrictStr, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def get_plan_by_name_plans_name_get_with_http_info(self, name : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
         """Get Plan By Name  # noqa: E501
 
         Retrieve information about a plan by its (unique) name.  # noqa: E501
@@ -965,61 +926,62 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = ["name"]
+        _all_params = [
+            'name'
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method get_plan_by_name_plans_name_get" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
         # process the path parameters
         _path_params = {}
-        if _params["name"] is not None:
-            _path_params["name"] = _params["name"]
+        if _params['name'] is not None:
+            _path_params['name'] = _params['name']
+
 
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "PlanModel",
-            "422": "HTTPValidationError",
+            '200': "PlanModel",
+            '422': "HTTPValidationError",
         }
 
         return self.api_client.call_api(
-            "/plans/{name}",
-            "GET",
+            '/plans/{name}', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -1028,13 +990,12 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
     def get_plans_plans_get(self, **kwargs) -> PlanResponse:  # noqa: E501
@@ -1058,8 +1019,8 @@ class DefaultApi:
                  returns the request thread.
         :rtype: PlanResponse
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the get_plans_plans_get_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
         return self.get_plans_plans_get_with_http_info(**kwargs)  # noqa: E501
@@ -1102,28 +1063,29 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = []
+        _all_params = [
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method get_plans_plans_get" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
@@ -1133,27 +1095,25 @@ class DefaultApi:
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "PlanResponse",
+            '200': "PlanResponse",
         }
 
         return self.api_client.call_api(
-            "/plans",
-            "GET",
+            '/plans', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -1162,13 +1122,12 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
     def get_state_worker_state_get(self, **kwargs) -> WorkerState:  # noqa: E501
@@ -1178,8 +1137,6 @@ class DefaultApi:
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> from blueapi.openapi_client.api.default_api import DefaultApi
-        >>> api = DefaultApi()
         >>> thread = api.get_state_worker_state_get(async_req=True)
         >>> result = thread.get()
 
@@ -1194,16 +1151,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: WorkerState
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the get_state_worker_state_get_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
         return self.get_state_worker_state_get_with_http_info(**kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_state_worker_state_get_with_http_info(
-        self, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def get_state_worker_state_get_with_http_info(self, **kwargs) -> ApiResponse:  # noqa: E501
         """Get State  # noqa: E501
 
         Get the State of the Worker  # noqa: E501
@@ -1240,28 +1195,29 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = []
+        _all_params = [
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method get_state_worker_state_get" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
@@ -1271,27 +1227,25 @@ class DefaultApi:
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "WorkerState",
+            '200': "WorkerState",
         }
 
         return self.api_client.call_api(
-            "/worker/state",
-            "GET",
+            '/worker/state', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -1300,18 +1254,15 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def get_task_tasks_task_id_get(
-        self, task_id: StrictStr, **kwargs
-    ) -> TrackableTask:  # noqa: E501
+    def get_task_tasks_task_id_get(self, task_id : StrictStr, **kwargs) -> TrackableTask:  # noqa: E501
         """Get Task  # noqa: E501
 
         Retrieve a task  # noqa: E501
@@ -1334,18 +1285,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: TrackableTask
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the get_task_tasks_task_id_get_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.get_task_tasks_task_id_get_with_http_info(
-            task_id, **kwargs
-        )  # noqa: E501
+        return self.get_task_tasks_task_id_get_with_http_info(task_id, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_task_tasks_task_id_get_with_http_info(
-        self, task_id: StrictStr, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def get_task_tasks_task_id_get_with_http_info(self, task_id : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
         """Get Task  # noqa: E501
 
         Retrieve a task  # noqa: E501
@@ -1384,61 +1331,62 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = ["task_id"]
+        _all_params = [
+            'task_id'
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method get_task_tasks_task_id_get" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
         # process the path parameters
         _path_params = {}
-        if _params["task_id"] is not None:
-            _path_params["task_id"] = _params["task_id"]
+        if _params['task_id'] is not None:
+            _path_params['task_id'] = _params['task_id']
+
 
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "TrackableTask",
-            "422": "HTTPValidationError",
+            '200': "TrackableTask",
+            '422': "HTTPValidationError",
         }
 
         return self.api_client.call_api(
-            "/tasks/{task_id}",
-            "GET",
+            '/tasks/{task_id}', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -1447,18 +1395,15 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def set_state_worker_state_put(
-        self, state_change_request: StateChangeRequest, **kwargs
-    ) -> WorkerState:  # noqa: E501
+    def set_state_worker_state_put(self, state_change_request : StateChangeRequest, **kwargs) -> WorkerState:  # noqa: E501
         """Set State  # noqa: E501
 
         Request that the worker is put into a particular state. Returns the state of the worker at the end of the call.  - **The following transitions are allowed and return 202: Accepted** - If the worker is **PAUSED**, new_state may be **RUNNING** to resume. - If the worker is **RUNNING**, new_state may be **PAUSED** to pause:     - If defer is False (default): pauses and rewinds to the previous checkpoint     - If defer is True: waits until the next checkpoint to pause     - **If the task has no checkpoints, the task will instead be Aborted** - If the worker is **RUNNING/PAUSED**, new_state may be **STOPPING** to stop.     Stop marks any currently open Runs in the Task as a success and ends the task. - If the worker is **RUNNING/PAUSED**, new_state may be **ABORTING** to abort.     Abort marks any currently open Runs in the Task as a Failure and ends the task.     - If reason is set, the reason will be passed as the reason for the Run failure. - **All other transitions return 400: Bad Request**  # noqa: E501
@@ -1481,18 +1426,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: WorkerState
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the set_state_worker_state_put_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.set_state_worker_state_put_with_http_info(
-            state_change_request, **kwargs
-        )  # noqa: E501
+        return self.set_state_worker_state_put_with_http_info(state_change_request, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def set_state_worker_state_put_with_http_info(
-        self, state_change_request: StateChangeRequest, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def set_state_worker_state_put_with_http_info(self, state_change_request : StateChangeRequest, **kwargs) -> ApiResponse:  # noqa: E501
         """Set State  # noqa: E501
 
         Request that the worker is put into a particular state. Returns the state of the worker at the end of the call.  - **The following transitions are allowed and return 202: Accepted** - If the worker is **PAUSED**, new_state may be **RUNNING** to resume. - If the worker is **RUNNING**, new_state may be **PAUSED** to pause:     - If defer is False (default): pauses and rewinds to the previous checkpoint     - If defer is True: waits until the next checkpoint to pause     - **If the task has no checkpoints, the task will instead be Aborted** - If the worker is **RUNNING/PAUSED**, new_state may be **STOPPING** to stop.     Stop marks any currently open Runs in the Task as a success and ends the task. - If the worker is **RUNNING/PAUSED**, new_state may be **ABORTING** to abort.     Abort marks any currently open Runs in the Task as a Failure and ends the task.     - If reason is set, the reason will be passed as the reason for the Run failure. - **All other transitions return 400: Bad Request**  # noqa: E501
@@ -1531,28 +1472,30 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = ["state_change_request"]
+        _all_params = [
+            'state_change_request'
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method set_state_worker_state_put" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
@@ -1562,40 +1505,37 @@ class DefaultApi:
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
-        if _params["state_change_request"] is not None:
-            _body_params = _params["state_change_request"]
+        if _params['state_change_request'] is not None:
+            _body_params = _params['state_change_request']
 
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # set the HTTP header `Content-Type`
-        _content_types_list = _params.get(
-            "_content_type",
-            self.api_client.select_header_content_type(["application/json"]),
-        )
+        _content_types_list = _params.get('_content_type',
+            self.api_client.select_header_content_type(
+                ['application/json']))
         if _content_types_list:
-            _header_params["Content-Type"] = _content_types_list
+                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "202": "WorkerState",
-            "400": None,
-            "422": "HTTPValidationError",
+            '202': "WorkerState",
+            '400': None,
+            '422': "HTTPValidationError",
         }
 
         return self.api_client.call_api(
-            "/worker/state",
-            "PUT",
+            '/worker/state', 'PUT',
             _path_params,
             _query_params,
             _header_params,
@@ -1604,18 +1544,15 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def submit_task_tasks_post(
-        self, task: Task, **kwargs
-    ) -> TaskResponse:  # noqa: E501
+    def submit_task_tasks_post(self, task : Task, **kwargs) -> TaskResponse:  # noqa: E501
         """Submit Task  # noqa: E501
 
         Submit a task to the worker.  # noqa: E501
@@ -1638,16 +1575,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: TaskResponse
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the submit_task_tasks_post_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
         return self.submit_task_tasks_post_with_http_info(task, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def submit_task_tasks_post_with_http_info(
-        self, task: Task, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def submit_task_tasks_post_with_http_info(self, task : Task, **kwargs) -> ApiResponse:  # noqa: E501
         """Submit Task  # noqa: E501
 
         Submit a task to the worker.  # noqa: E501
@@ -1686,28 +1621,30 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = ["task"]
+        _all_params = [
+            'task'
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method submit_task_tasks_post" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
@@ -1717,39 +1654,36 @@ class DefaultApi:
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
-        if _params["task"] is not None:
-            _body_params = _params["task"]
+        if _params['task'] is not None:
+            _body_params = _params['task']
 
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # set the HTTP header `Content-Type`
-        _content_types_list = _params.get(
-            "_content_type",
-            self.api_client.select_header_content_type(["application/json"]),
-        )
+        _content_types_list = _params.get('_content_type',
+            self.api_client.select_header_content_type(
+                ['application/json']))
         if _content_types_list:
-            _header_params["Content-Type"] = _content_types_list
+                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "201": "TaskResponse",
-            "422": "HTTPValidationError",
+            '201': "TaskResponse",
+            '422': "HTTPValidationError",
         }
 
         return self.api_client.call_api(
-            "/tasks",
-            "POST",
+            '/tasks', 'POST',
             _path_params,
             _query_params,
             _header_params,
@@ -1758,18 +1692,15 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def update_task_worker_task_put(
-        self, worker_task: WorkerTask, **kwargs
-    ) -> WorkerTask:  # noqa: E501
+    def update_task_worker_task_put(self, worker_task : WorkerTask, **kwargs) -> WorkerTask:  # noqa: E501
         """Update Task  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -1791,18 +1722,14 @@ class DefaultApi:
                  returns the request thread.
         :rtype: WorkerTask
         """
-        kwargs["_return_http_data_only"] = True
-        if "_preload_content" in kwargs:
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
             message = "Error! Please call the update_task_worker_task_put_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.update_task_worker_task_put_with_http_info(
-            worker_task, **kwargs
-        )  # noqa: E501
+        return self.update_task_worker_task_put_with_http_info(worker_task, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def update_task_worker_task_put_with_http_info(
-        self, worker_task: WorkerTask, **kwargs
-    ) -> ApiResponse:  # noqa: E501
+    def update_task_worker_task_put_with_http_info(self, worker_task : WorkerTask, **kwargs) -> ApiResponse:  # noqa: E501
         """Update Task  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -1840,28 +1767,30 @@ class DefaultApi:
 
         _params = locals()
 
-        _all_params = ["worker_task"]
+        _all_params = [
+            'worker_task'
+        ]
         _all_params.extend(
             [
-                "async_req",
-                "_return_http_data_only",
-                "_preload_content",
-                "_request_timeout",
-                "_request_auth",
-                "_content_type",
-                "_headers",
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
             ]
         )
 
         # validate the arguments
-        for _key, _val in _params["kwargs"].items():
+        for _key, _val in _params['kwargs'].items():
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
                     " to method update_task_worker_task_put" % _key
                 )
             _params[_key] = _val
-        del _params["kwargs"]
+        del _params['kwargs']
 
         _collection_formats = {}
 
@@ -1871,40 +1800,37 @@ class DefaultApi:
         # process the query parameters
         _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get("_headers", {}))
+        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
         _form_params = []
         _files = {}
         # process the body parameter
         _body_params = None
-        if _params["worker_task"] is not None:
-            _body_params = _params["worker_task"]
+        if _params['worker_task'] is not None:
+            _body_params = _params['worker_task']
 
         # set the HTTP header `Accept`
-        _header_params["Accept"] = self.api_client.select_header_accept(
-            ["application/json"]
-        )  # noqa: E501
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
 
         # set the HTTP header `Content-Type`
-        _content_types_list = _params.get(
-            "_content_type",
-            self.api_client.select_header_content_type(["application/json"]),
-        )
+        _content_types_list = _params.get('_content_type',
+            self.api_client.select_header_content_type(
+                ['application/json']))
         if _content_types_list:
-            _header_params["Content-Type"] = _content_types_list
+                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
         _auth_settings = []  # noqa: E501
 
         _response_types_map = {
-            "200": "WorkerTask",
-            "409": None,
-            "422": "HTTPValidationError",
+            '200': "WorkerTask",
+            '409': None,
+            '422': "HTTPValidationError",
         }
 
         return self.api_client.call_api(
-            "/worker/task",
-            "PUT",
+            '/worker/task', 'PUT',
             _path_params,
             _query_params,
             _header_params,
@@ -1913,10 +1839,9 @@ class DefaultApi:
             files=_files,
             response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get("async_req"),
-            _return_http_data_only=_params.get("_return_http_data_only"),  # noqa: E501
-            _preload_content=_params.get("_preload_content", True),
-            _request_timeout=_params.get("_request_timeout"),
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get("_request_auth"),
-        )
+            _request_auth=_params.get('_request_auth'))

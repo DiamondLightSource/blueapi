@@ -21,24 +21,17 @@ import json
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field, StrictStr
 
-
 class PlanModel(BaseModel):
     """
     Representation of a plan  # noqa: E501
     """
-
-    description: Optional[StrictStr] = Field(
-        default=None, description="Docstring of the plan"
-    )
+    description: Optional[StrictStr] = Field(default=None, description="Docstring of the plan")
     name: StrictStr = Field(default=..., description="Name of the plan")
-    var_schema: Optional[Dict[str, Any]] = Field(
-        default=None, alias="schema", description="Schema of the plan's parameters"
-    )
+    var_schema: Optional[Dict[str, Any]] = Field(default=None, alias="schema", description="Schema of the plan's parameters")
     __properties = ["description", "name", "schema"]
 
     class Config:
         """Pydantic configuration"""
-
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -57,7 +50,10 @@ class PlanModel(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
+        _dict = self.dict(by_alias=True,
+                          exclude={
+                          },
+                          exclude_none=True)
         return _dict
 
     @classmethod
@@ -69,11 +65,11 @@ class PlanModel(BaseModel):
         if not isinstance(obj, dict):
             return PlanModel.parse_obj(obj)
 
-        _obj = PlanModel.parse_obj(
-            {
-                "description": obj.get("description"),
-                "name": obj.get("name"),
-                "var_schema": obj.get("schema"),
-            }
-        )
+        _obj = PlanModel.parse_obj({
+            "description": obj.get("description"),
+            "name": obj.get("name"),
+            "var_schema": obj.get("schema")
+        })
         return _obj
+
+

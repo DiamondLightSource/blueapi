@@ -18,22 +18,18 @@ import re  # noqa: F401
 import json
 
 
-from pydantic import BaseModel, Field, StrictStr
 
+from pydantic import BaseModel, Field, StrictStr
 
 class TaskResponse(BaseModel):
     """
     Acknowledgement that a task has started, includes its ID  # noqa: E501
     """
-
-    task_id: StrictStr = Field(
-        default=..., description="Unique identifier for the task"
-    )
+    task_id: StrictStr = Field(default=..., description="Unique identifier for the task")
     __properties = ["task_id"]
 
     class Config:
         """Pydantic configuration"""
-
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -52,7 +48,10 @@ class TaskResponse(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
+        _dict = self.dict(by_alias=True,
+                          exclude={
+                          },
+                          exclude_none=True)
         return _dict
 
     @classmethod
@@ -64,5 +63,9 @@ class TaskResponse(BaseModel):
         if not isinstance(obj, dict):
             return TaskResponse.parse_obj(obj)
 
-        _obj = TaskResponse.parse_obj({"task_id": obj.get("task_id")})
+        _obj = TaskResponse.parse_obj({
+            "task_id": obj.get("task_id")
+        })
         return _obj
+
+

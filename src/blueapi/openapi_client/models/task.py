@@ -21,21 +21,16 @@ import json
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field, StrictStr
 
-
 class Task(BaseModel):
     """
     Task that will run a plan  # noqa: E501
     """
-
     name: StrictStr = Field(default=..., description="Name of plan to run")
-    params: Optional[Dict[str, Any]] = Field(
-        default=None, description="Values for parameters to plan, if any"
-    )
+    params: Optional[Dict[str, Any]] = Field(default=None, description="Values for parameters to plan, if any")
     __properties = ["name", "params"]
 
     class Config:
         """Pydantic configuration"""
-
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -54,7 +49,10 @@ class Task(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
+        _dict = self.dict(by_alias=True,
+                          exclude={
+                          },
+                          exclude_none=True)
         return _dict
 
     @classmethod
@@ -66,5 +64,10 @@ class Task(BaseModel):
         if not isinstance(obj, dict):
             return Task.parse_obj(obj)
 
-        _obj = Task.parse_obj({"name": obj.get("name"), "params": obj.get("params")})
+        _obj = Task.parse_obj({
+            "name": obj.get("name"),
+            "params": obj.get("params")
+        })
         return _obj
+
+

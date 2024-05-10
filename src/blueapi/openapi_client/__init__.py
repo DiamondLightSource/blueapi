@@ -45,5 +45,4 @@ from blueapi.openapi_client.models.trackable_task import TrackableTask
 from blueapi.openapi_client.models.validation_error import ValidationError
 from blueapi.openapi_client.models.worker_state import WorkerState
 from blueapi.openapi_client.models.worker_task import WorkerTask
-
 __all__ = [ApiClient]

@@ -18,22 +18,18 @@ import re  # noqa: F401
 import json
 
 
-from pydantic import BaseModel, Field, StrictBool
 
+from pydantic import BaseModel, Field, StrictBool
 
 class EnvironmentResponse(BaseModel):
     """
     State of internal environment.  # noqa: E501
     """
-
-    initialized: StrictBool = Field(
-        default=..., description="blueapi context initialized"
-    )
+    initialized: StrictBool = Field(default=..., description="blueapi context initialized")
     __properties = ["initialized"]
 
     class Config:
         """Pydantic configuration"""
-
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -52,7 +48,10 @@ class EnvironmentResponse(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
+        _dict = self.dict(by_alias=True,
+                          exclude={
+                          },
+                          exclude_none=True)
         return _dict
 
     @classmethod
@@ -64,5 +63,9 @@ class EnvironmentResponse(BaseModel):
         if not isinstance(obj, dict):
             return EnvironmentResponse.parse_obj(obj)
 
-        _obj = EnvironmentResponse.parse_obj({"initialized": obj.get("initialized")})
+        _obj = EnvironmentResponse.parse_obj({
+            "initialized": obj.get("initialized")
+        })
         return _obj
+
+

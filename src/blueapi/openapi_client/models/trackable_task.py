@@ -21,12 +21,10 @@ import json
 from typing import Any, List, Optional
 from pydantic import BaseModel, Field, StrictBool, StrictStr, conlist
 
-
 class TrackableTask(BaseModel):
     """
     A representation of a task that the worker recognizes  # noqa: E501
     """
-
     errors: Optional[conlist(StrictStr)] = None
     is_complete: Optional[StrictBool] = False
     is_pending: Optional[StrictBool] = True
@@ -36,7 +34,6 @@ class TrackableTask(BaseModel):
 
     class Config:
         """Pydantic configuration"""
-
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -55,11 +52,14 @@ class TrackableTask(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
+        _dict = self.dict(by_alias=True,
+                          exclude={
+                          },
+                          exclude_none=True)
         # set to None if task (nullable) is None
         # and __fields_set__ contains the field
         if self.task is None and "task" in self.__fields_set__:
-            _dict["task"] = None
+            _dict['task'] = None
 
         return _dict
 
@@ -72,19 +72,13 @@ class TrackableTask(BaseModel):
         if not isinstance(obj, dict):
             return TrackableTask.parse_obj(obj)
 
-        _obj = TrackableTask.parse_obj(
-            {
-                "errors": obj.get("errors"),
-                "is_complete": (
-                    obj.get("is_complete")
-                    if obj.get("is_complete") is not None
-                    else False
-                ),
-                "is_pending": (
-                    obj.get("is_pending") if obj.get("is_pending") is not None else True
-                ),
-                "task": obj.get("task"),
-                "task_id": obj.get("task_id"),
-            }
-        )
+        _obj = TrackableTask.parse_obj({
+            "errors": obj.get("errors"),
+            "is_complete": obj.get("is_complete") if obj.get("is_complete") is not None else False,
+            "is_pending": obj.get("is_pending") if obj.get("is_pending") is not None else True,
+            "task": obj.get("task"),
+            "task_id": obj.get("task_id")
+        })
         return _obj
+
+

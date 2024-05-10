@@ -21,22 +21,16 @@ import json
 from typing import List
 from pydantic import BaseModel, Field, StrictStr, conlist
 
-
 class DeviceModel(BaseModel):
     """
     Representation of a device  # noqa: E501
     """
-
     name: StrictStr = Field(default=..., description="Name of the device")
-    protocols: conlist(StrictStr) = Field(
-        default=...,
-        description="Protocols that a device conforms to, indicating its capabilities",
-    )
+    protocols: conlist(StrictStr) = Field(default=..., description="Protocols that a device conforms to, indicating its capabilities")
     __properties = ["name", "protocols"]
 
     class Config:
         """Pydantic configuration"""
-
         allow_population_by_field_name = True
         validate_assignment = True
 
@@ -55,7 +49,10 @@ class DeviceModel(BaseModel):
 
     def to_dict(self):
         """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
+        _dict = self.dict(by_alias=True,
+                          exclude={
+                          },
+                          exclude_none=True)
         return _dict
 
     @classmethod
@@ -67,7 +64,10 @@ class DeviceModel(BaseModel):
         if not isinstance(obj, dict):
             return DeviceModel.parse_obj(obj)
 
-        _obj = DeviceModel.parse_obj(
-            {"name": obj.get("name"), "protocols": obj.get("protocols")}
-        )
+        _obj = DeviceModel.parse_obj({
+            "name": obj.get("name"),
+            "protocols": obj.get("protocols")
+        })
         return _obj
+
+

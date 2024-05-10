@@ -140,9 +140,7 @@ def get_device_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)
 def submit_task(
     request: Request,
     response: Response,
-    task: Task = Body(
-        ..., example=Task(name="count", params={"detectors": ["x"]})
-    ),  # noqa: B008
+    task: Task = Body(..., example=Task(name="count", params={"detectors": ["x"]})),  # noqa: B008
     handler: BlueskyHandler = Depends(get_handler),
 ):
     """Submit a task to the worker."""

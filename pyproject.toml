@@ -96,6 +96,9 @@ markers = [
     "handler: marks tests that interact with the global handler object in handler.py",
 ]
 asyncio_mode = "auto"
+norecursedirs = [
+    "src/blueapi/openapi_client"
+]
 
 [tool.coverage.run]
 data_file = "/tmp/blueapi.coverage"

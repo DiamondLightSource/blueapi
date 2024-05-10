@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from click.testing import CliRunner
 from pydantic import BaseModel
-from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.cli_new import main
@@ -167,7 +166,8 @@ def test_get_plans_with_custom_config(
     mock_handler._context.plans = {"my-plan": plan}
     plans = runner.invoke(main, ["-c", config_path, "controller", "plans"])
     # ValueError('stderr not separately captured')
-    # (<class 'TypeError'>, TypeError("expected string or bytes-like object, got 'MagicMock'"), <traceback object at 0x7fc470ee8b40>)
+    # (<class 'TypeError'>,
+    # TypeError("expected string or bytes-like object, got 'MagicMock'")
     # response = plan.json()
 
     assert (

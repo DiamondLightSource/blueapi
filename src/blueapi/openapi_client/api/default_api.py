@@ -1178,6 +1178,8 @@ class DefaultApi:
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
+        >>> from blueapi.openapi_client.api.default_api import DefaultApi
+        >>> api = DefaultApi()
         >>> thread = api.get_state_worker_state_get(async_req=True)
         >>> result = thread.get()
 

@@ -346,9 +346,7 @@ def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
 def assert_running_count_plan_produces_ordered_worker_and_data_events(
     expected_events: list[WorkerEvent | DataEvent],
     worker: Worker,
-    task: Task = Task(
-        name="count", params={"detectors": ["image_det"], "num": 1}
-    ),  # noqa: B008
+    task: Task = Task(name="count", params={"detectors": ["image_det"], "num": 1}),  # noqa: B008
     timeout: float = 5.0,
 ) -> None:
     event_streams: list[EventStream[Any, int]] = [

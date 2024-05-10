@@ -9,9 +9,10 @@ from pydantic import BaseModel
 
 from blueapi import __version__
 from blueapi.cli.cli_new import main
+from blueapi.core.bluesky_types import Plan
 from blueapi.openapi_client.models.plan_response import PlanResponse
 from blueapi.service.handler import teardown_handler
-from blueapi.service.model import DeviceModel, DeviceResponse
+from blueapi.service.model import DeviceModel, DeviceResponse, PlanModel
 
 
 @pytest.fixture(autouse=True)
@@ -220,13 +221,54 @@ def test_get_plans_empty(mock_requests: Mock, runner: CliRunner):
 
 @patch("urllib3.PoolManager.request")
 def test_get_plans_one_plan(mock_requests: Mock, runner: CliRunner):
-    # todo = Plan(
-    #     name="todo",
-    #     args={"time": 5},
-    #     kwargs={},
-    #     plan="from bluesky.plans import sleep\nyield from sleep(5)",
-    # )
-    raise AssertionError("Not implemented")
+    sleep_plan = Plan(
+        model=PlanModel,
+        name="todo",
+        description="just a description",
+        # args={"time": 5},
+        # kwargs={},
+        # plan="from bluesky.plans import sleep\nyield from sleep(5)",
+    )
+
+    sleep_model = PlanModel.from_plan(sleep_plan)
+    # Setup a mock response
+    mock_urllib3_response = MagicMock()
+    mock_urllib3_response.status = 200
+    mock_urllib3_response.reason = "OK"
+    r = PlanResponse(plans=[sleep_model])
+    expected_dict = r.json()
+    mock_urllib3_response.data = expected_dict.encode()
+    mock_urllib3_response.headers = {"Content-Type": "application/json"}
+
+    mock_requests.return_value = mock_urllib3_response
+
+    config_path = "tests/example_yaml/rest_config.yaml"
+
+    with patch("uvicorn.run", side_effect=None):
+        initial_result = runner.invoke(main, ["-c", config_path, "serve"])
+        print(initial_result)
+
+    # Configure the mock to return the response
+    response = runner.invoke(main, ["-c", config_path, "controller", "plans"])
+
+    mock_requests.assert_called_once_with(
+        "GET",
+        "http://a.fake.host:12345/plans",
+        fields={},
+        preload_content=True,
+        timeout=None,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "OpenAPI-Generator/1.0.0/python",
+        },
+    )
+
+    p = response.output.replace("'", '"').replace(
+        "None", "null"
+    )  # NOTE that is a bit odd maybe pydantic serializer will be diff later
+    parsed_expected = json.loads(expected_dict)
+    parsed_response = json.loads(p)
+    assert parsed_response == parsed_expected
 
 
 @patch("urllib3.PoolManager.request")

@@ -23,5 +23,8 @@ find src/blueapi/openapi_client -type f -name '*.py' -exec sed -i 's/from openap
 find src/blueapi/openapi_client -type f -name '*.py' -exec sed -i 's/import openapi_client/import blueapi.openapi_client/g' {} +
 
 echo "__all__ = [ApiClient]" >> "$NEW_PATH"/openapi_client/__init__.py
+correction_line="from blueapi import openapi_client"
+sed -i "26i ${correction_line}" "$NEW_PATH"/openapi_client/api_client.py
+
 rm -rf tmp
 echo "API client integration complete."

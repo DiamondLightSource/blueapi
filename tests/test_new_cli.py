@@ -9,9 +9,9 @@ from pydantic import BaseModel
 from blueapi import __version__
 from blueapi.cli.cli_new import main
 from blueapi.core.bluesky_types import Plan
-from blueapi.openapi_client.models.device_model import DeviceModel
 from blueapi.openapi_client.rest import RESTResponse
 from blueapi.service.handler import teardown_handler
+from blueapi.service.model import DeviceModel
 
 
 @pytest.fixture(autouse=True)
@@ -144,7 +144,7 @@ def test_get_devices_with_one_device(mock_requests: Mock, runner: CliRunner):
     mock_urllib3_response.reason = "OK"
     sg = Scatterguard(name="my-scatterguard")
     model = DeviceModel.from_device(sg)
-    raw_response = f'{"devices": [{model}]}'
+    raw_response = f'{{"devices": [{model}]}}'
     mock_urllib3_response.data = raw_response.encode()
     mock_urllib3_response.headers = {"Content-Type": "application/json"}
 

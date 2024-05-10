@@ -23,6 +23,7 @@ import re
 import tempfile
 
 from urllib.parse import quote
+from blueapi import openapi_client
 
 from blueapi.openapi_client.configuration import Configuration
 from blueapi.openapi_client.api_response import ApiResponse

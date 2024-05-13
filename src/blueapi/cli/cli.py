@@ -302,7 +302,12 @@ def env(obj: dict, reload: bool | None) -> None:
 
     # Reload the environment if needed
     print("Reloading the environment...")
-    pprint(client.reload_environment())
+    try:
+        pprint(client.reload_environment())
+
+    except BlueskyRemoteError:
+        pprint("Failed to reload the environment")
+        exit()
 
     # Initialize a variable to keep track of the environment status
     environment_initialized = False

@@ -114,18 +114,14 @@ class BlueapiRestClient:
         data: Mapping[str, Any] | None = None,
         method="GET",
         raise_if: Callable[[requests.Response], bool] = _is_exception,
-    ) -> T | BlueskyRemoteError:
+    ) -> T:
         url = self._url(suffix)
         if data:
             response = requests.request(method, url, json=data)
         else:
             response = requests.request(method, url)
         if raise_if(response):
-            message = get_status_message(response.status_code)
-            error_message = f"""Response failed with text: {response.text},
-            with error code: {response.status_code}
-            which corresponds to {message}"""
-            raise BlueskyRemoteError(error_message)
+            raise BlueskyRemoteError(str(response))
         deserialized = parse_obj_as(target_type, response.json())
         return deserialized
 

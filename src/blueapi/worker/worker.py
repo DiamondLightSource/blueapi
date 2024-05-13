@@ -108,6 +108,14 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
+    def get_tasks_by_status(self, status: str) -> list[TrackableTask[T]]:
+        """
+        Retrieve a list of tasks based on their status.
+        :param status: The status to filter tasks by.
+        :return: A list of tasks that match the given status.
+        """
+
+    @abstractmethod
     def start(self) -> None:
         """
         Start worker in a new thread. Does not block, configures the bluesky

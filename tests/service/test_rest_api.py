@@ -225,8 +225,12 @@ def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
 
 
 tasks_data = [
-    TrackableTask(task_id="1", task=Task(), is_complete=False, is_pending=False),
-    TrackableTask(task_id="2", task=Task(), is_complete=False, is_pending=True),
+    TrackableTask(
+        task_id="1", task=Task(name="first_task"), is_complete=False, is_pending=False
+    ),
+    TrackableTask(
+        task_id="2", task=Task(name="first_task"), is_complete=False, is_pending=True
+    ),
 ]
 
 

@@ -9,7 +9,7 @@ import click
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
-from blueapi.cli.amq import AmqClient
+from blueapi.cli.event_bus_client import EventBusClient
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
@@ -135,7 +135,9 @@ def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
     if config.stomp is not None:
-        amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+        event_bus_client = EventBusClient(
+            StompMessagingTemplate.autoconfigured(config.stomp)
+        )
     else:
         raise RuntimeError("Message bus needs to be configured")
 
@@ -150,8 +152,8 @@ def listen_to_events(obj: dict) -> None:
         "Subscribing to all bluesky events from "
         f"{config.stomp.host}:{config.stomp.port}"
     )
-    with amq_client:
-        amq_client.subscribe_to_all_events(on_event)
+    with event_bus_client:
+        event_bus_client.subscribe_to_all_events(on_event)
         input("Press enter to exit")
 
 
@@ -181,7 +183,7 @@ def run_plan(
         raise RuntimeError(
             "Cannot run plans without Stomp configuration to track progress"
         )
-    amq_client = AmqClient(_message_template)
+    event_bus_client = EventBusClient(_message_template)
     finished_event: deque[WorkerEvent] = deque()
 
     def store_finished_event(event: WorkerEvent) -> None:
@@ -194,13 +196,13 @@ def run_plan(
     resp = client.create_task(task)
     task_id = resp.task_id
 
-    with amq_client:
-        amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)
+    with event_bus_client:
+        event_bus_client.subscribe_to_topics(task_id, on_event=store_finished_event)
         updated = client.update_worker_task(WorkerTask(task_id=task_id))
 
-        amq_client.wait_for_complete(timeout=timeout)
+        event_bus_client.wait_for_complete(timeout=timeout)
 
-        if amq_client.timed_out:
+        if event_bus_client.timed_out:
             logger.error(f"Plan did not complete within {timeout} seconds")
             return
 

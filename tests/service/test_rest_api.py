@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, Mock, call
 
 import pytest
 from bluesky.run_engine import RunEngineStateMachine
@@ -236,7 +236,8 @@ tasks_data = [
 
 def test_get_unstarted_tasks(handler: Handler, client: TestClient):
     handler.start()
-    handler._context.tasks = tasks_data
+    # handler.tasks = tasks_data  # overriding the property
+    handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
     response = client.get("/tasks?status=unstarted")
     assert response.status_code == 200
     assert (
@@ -249,7 +250,8 @@ def test_get_unstarted_tasks(handler: Handler, client: TestClient):
 
 def test_get_tasks_bad_status(handler: Handler, client: TestClient):
     handler.start()
-    handler._context.tasks = tasks_data
+    # handler.tasks = tasks_data
+    handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
     response = client.get("/tasks?status=invalid")
     assert response.status_code == 400
     assert "Unsupported status" in response.json()["detail"]

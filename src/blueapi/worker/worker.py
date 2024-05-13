@@ -111,8 +111,11 @@ class Worker(ABC, Generic[T]):
     def get_tasks_by_status(self, status: str) -> list[TrackableTask[T]]:
         """
         Retrieve a list of tasks based on their status.
-        :param status: The status to filter tasks by.
-        :return: A list of tasks that match the given status.
+
+        Args:
+           str: The status to filter tasks by.
+        Returns:
+          list[TrackableTask[T]]: A list of tasks that match the given status.
         """
 
     @abstractmethod

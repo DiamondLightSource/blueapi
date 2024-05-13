@@ -279,8 +279,7 @@ def test_reference_type_conversion_union(empty_context: BlueskyContext) -> None:
     movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref
     assert (
-        empty_context._convert_type(Union[Movable, int])
-        == Union[movable_ref, int]  # noqa # type: ignore
+        empty_context._convert_type(Union[Movable, int]) == Union[movable_ref, int]  # noqa # type: ignore
     )
 
 

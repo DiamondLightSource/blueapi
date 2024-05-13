@@ -234,8 +234,9 @@ tasks_data = [
 ]
 
 
-def test_get_unstarted_tasks(client, mock_handler):
-    mock_handler.start()
+def test_get_unstarted_tasks(handler: Handler, client: TestClient):
+    handler.start()
+    handler._context.tasks = tasks_data
     response = client.get("/tasks?status=unstarted")
     assert response.status_code == 200
     assert (
@@ -246,7 +247,9 @@ def test_get_unstarted_tasks(client, mock_handler):
     )  # Check that the correct task ID is returned
 
 
-def test_get_tasks_bad_status(client, mock_handler):
+def test_get_tasks_bad_status(handler: Handler, client: TestClient):
+    handler.start()
+    handler._context.tasks = tasks_data
     response = client.get("/tasks?status=invalid")
     assert response.status_code == 400
     assert "Unsupported status" in response.json()["detail"]

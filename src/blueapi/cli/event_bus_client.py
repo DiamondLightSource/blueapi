@@ -18,7 +18,7 @@ class BlueskyRemoteError(Exception):
 _Event = WorkerEvent | ProgressEvent | DataEvent
 
 
-class AmqClient:
+class EventBusClient:
     app: MessagingTemplate
     complete: threading.Event
     timed_out: bool | None

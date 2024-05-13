@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Generic, TypeVar
 
 from pydantic import Field
@@ -11,6 +12,13 @@ from .event import ProgressEvent, WorkerEvent, WorkerState
 T = TypeVar("T")
 
 
+class TaskStatus(Enum):
+    PENDING = "PENDING"
+    COMPLETE = "COMPLETE"
+    ERROR = "ERROR"
+    UNDERWAY = "UNDERWAY"
+
+
 class TrackableTask(BlueapiBaseModel, Generic[T]):
     """
     A representation of a task that the worker recognizes
@@ -18,8 +26,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
 
     task_id: str
     task: T
-    is_complete: bool = False
-    is_pending: bool = True
+    status: TaskStatus = TaskStatus.PENDING
     errors: list[str] = Field(default_factory=list)
 
 

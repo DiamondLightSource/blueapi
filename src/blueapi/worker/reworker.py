@@ -142,7 +142,7 @@ class TaskWorker(Worker[Task]):
             return [
                 task
                 for task in self._tasks.values()
-                if not task.is_complete and not task.is_pending
+                if task.status == TaskStatus.UNDERWAY
             ]
         elif status == "pending":
             return [task for task in self._tasks.values() if task.is_pending]

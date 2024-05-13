@@ -6,14 +6,13 @@ from inspect import Parameter, signature
 from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
-from bluesky.run_engine import RunEngine, call_in_bluesky_event_loop
+from bluesky.run_engine import RunEngine
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
 
 from blueapi.config import EnvironmentConfig, SourceKind
 from blueapi.utils import (
     BlueapiPlanModelConfig,
-    connect_ophyd_async_devices,
     load_module_all,
 )
 
@@ -45,7 +44,6 @@ class BlueskyContext:
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
-    sim: bool = field(default=False)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
 
@@ -77,13 +75,6 @@ class BlueskyContext:
                 self.with_device_module(mod)
             elif source.kind is SourceKind.DODAL:
                 self.with_dodal_module(mod)
-
-        call_in_bluesky_event_loop(
-            connect_ophyd_async_devices(
-                self.devices.values(),
-                self.sim,
-            )
-        )
 
     def with_plan_module(self, module: ModuleType) -> None:
         """

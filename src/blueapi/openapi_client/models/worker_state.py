@@ -19,9 +19,7 @@ from aenum import Enum, no_arg
 
 
 
-
-
-class WorkerState(str, Enum):
+class WorkerState( Enum):
     """
     The state of the Worker.
     """

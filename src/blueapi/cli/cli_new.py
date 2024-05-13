@@ -17,18 +17,17 @@ from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.openapi_client.api.default_api import DefaultApi
 from blueapi.openapi_client.api_client import ApiClient
 from blueapi.openapi_client.configuration import Configuration
-from blueapi.openapi_client.models.state_change_request import StateChangeRequest
 from blueapi.openapi_client.models.task import Task
-from blueapi.openapi_client.models.worker_state import WorkerState
 from blueapi.openapi_client.models.worker_task import WorkerTask
 from blueapi.service.main import start
+from blueapi.service.model import StateChangeRequest
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
     generate_schema,
     print_schema_as_yaml,
     write_schema_as_yaml,
 )
-from blueapi.worker import ProgressEvent, WorkerEvent
+from blueapi.worker import ProgressEvent, WorkerEvent, WorkerState
 
 
 @click.group(invoke_without_command=True)

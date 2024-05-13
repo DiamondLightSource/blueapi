@@ -44,6 +44,7 @@ dev = [
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
     "mypy",
+    "pytest",
     "pytest-cov",
     "pytest-randomly",
     "pytest-asyncio",

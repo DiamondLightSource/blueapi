@@ -297,7 +297,7 @@ def test_handle_sleep_plan__called_no_arguments(mock_requests: Mock, runner: Cli
     runner.invoke(
         # main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
         main,
-        ["-c", config_path, "controller", "run", "sleep"],
+        ["-c", config_path, "--eventbus=False", "controller", "run", "sleep"],
     )
     # ValueError('stderr not separately captured')
     # RuntimeError: Cannot run plans without Stomp configuration to track progress

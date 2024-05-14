@@ -165,23 +165,23 @@ def listen_to_events(obj: dict) -> None:
     help="Timeout for the plan in seconds. None hangs forever",
     default=None,
 )
+@click.option(
+    "--eventbus",
+    "-b",
+    type=bool,
+    default=True,
+    help="run withelistening for messages. Disable for API testing",
+)
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: str | None, timeout: float | None
+    obj: dict, name: str, parameters: str | None, timeout: float | None, eventbus: bool
 ) -> None:
     """Run a plan with parameters"""
     config: ApplicationConfig = obj["config"]
     client: BlueapiRestClient = obj["rest_client"]
 
     logger = logging.getLogger(__name__)
-    if config.stomp is not None:
-        _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
-    else:
-        raise RuntimeError(
-            "Cannot run plans without Stomp configuration to track progress"
-        )
-    amq_client = AmqClient(_message_template)
     finished_event: deque[WorkerEvent] = deque()
 
     def store_finished_event(event: WorkerEvent) -> None:
@@ -194,15 +194,23 @@ def run_plan(
     resp = client.create_task(task)
     task_id = resp.task_id
 
-    with amq_client:
-        amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)
-        updated = client.update_worker_task(WorkerTask(task_id=task_id))
+    if eventbus:
+        if config.stomp is not None:
+            _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
+        else:
+            raise RuntimeError(
+                "Cannot run plans without Stomp configuration to track progress"
+            )
+        amq_client = AmqClient(_message_template)
+        with amq_client:
+            amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)
+            updated = client.update_worker_task(WorkerTask(task_id=task_id))
 
-        amq_client.wait_for_complete(timeout=timeout)
+            amq_client.wait_for_complete(timeout=timeout)
 
-        if amq_client.timed_out:
-            logger.error(f"Plan did not complete within {timeout} seconds")
-            return
+            if amq_client.timed_out:
+                logger.error(f"Plan did not complete within {timeout} seconds")
+                return
 
     process_event_after_finished(finished_event.pop(), logger)
     pprint(updated.dict())

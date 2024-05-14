@@ -14,6 +14,7 @@ from blueapi.openapi_client.models.plan_response import PlanResponse
 from blueapi.openapi_client.models.task_response import TaskResponse
 from blueapi.service.handler import teardown_handler
 from blueapi.service.model import DeviceModel, DeviceResponse, PlanModel
+from tests.messaging.test_stomptemplate import handle_future_exceptions
 
 
 @pytest.fixture(autouse=True)
@@ -82,6 +83,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     )
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_valid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(

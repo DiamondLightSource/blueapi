@@ -11,6 +11,7 @@ from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
+from tests.messaging.test_stomptemplate import handle_future_exceptions
 
 
 @pytest.fixture(autouse=True)
@@ -188,6 +189,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     )
 
 
+@handle_future_exceptions
 @pytest.mark.stomp
 def test_valid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(

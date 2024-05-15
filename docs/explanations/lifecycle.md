@@ -1,11 +1,8 @@
-Lifecycle of a Plan
-===================
+# Lifecycle of a Plan
 
 The following demonstrates exactly what the code does with a plan through its lifecycle 
 of being written, loaded and run. Take the following plan.
-
-.. code:: python
-
+```
     from typing import Any, List, Mapping, Optional, Union
     
     import bluesky.plans as bp
@@ -42,23 +39,21 @@ of being written, loaded and run. Take the following plan.
         """
     
         yield from bp.count(detectors, num, delay=delay, md=metadata)
+```
 
 
-
-Loading and Registration
-------------------------
+## Loading and Registration
 
 Blueapi will load this plan into its context if configured to load either this module or a module that 
-imports it. The ``BlueskyContext`` will go through all global variables in the module and register them
+imports it. The `BlueskyContext` will go through all global variables in the module and register them
 if it detects that they are plans.
 
 At the point of registration it will inspect the plan's parameters and their type hints, from which it
-will build a pydantic_ model of the parameters to validate against. In other words, it will build something
+will build a [pydantic](https://docs.pydantic.dev/) model of the parameters to validate against. In other words, it will build something
 like this:
 
 
-.. code:: python
-
+```
     from pydantic import BaseModel
 
     class CountParameters(BaseModel):
@@ -71,31 +66,26 @@ like this:
             arbitrary_types_allowed = True
             validate_all = True
 
-.. note:: 
-    
     This is for illustrative purposes only, this code is not actually generated, but an object
     resembling this class is constructed in memory.
     The default arguments will be validated by the context to inject the "det" device when the
     plan is run. The existence of the "det" default device is not checked until this time.
+```
 
 The model is also stored in the context.
 
 
-Startup
--------
+## Startup
 
 On startup, the context is passed to the worker, which is passed to the service.
-The worker also holds a reference to the ``RunEngine`` that can run the plan.
+The worker also holds a reference to the `RunEngine` that can run the plan.
 
 
-Request
--------
+## Request
 
 A user can send a request to run the plan to the service, which includes values for the parameters.
 It takes the form of JSON and may look something like this:
-
-.. code:: json
-
+```
     {
         "name": "count",
         "params": {
@@ -107,33 +97,32 @@ It takes the form of JSON and may look something like this:
             "delay": 0.1
         }
     }
+```
 
-The ``Service`` receives the request and passes it to the worker, which holds it in an internal queue
+The `Service` receives the request and passes it to the worker, which holds it in an internal queue
 and executes it as soon as it can. 
 
 
-Validation
-----------
+## Validation
 
 The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry
 The parameter values in the request are validated against the model, this includes looking up devices
-with names ``andor`` and ``pilatus`` or, if detectors was not passed ``det``.
+with names `andor` and `pilatus` or, if detectors was not passed `det`.
+
+See also [type validators](./type_validators.md)
 
 
-.. seealso:: `./type_validators`
-
-Execution
----------
+## Execution
 
 The validated parameter values are then passed to the plan function, which is passed to the RunEngine.
-The plan is executed. While it is running, the ``Worker`` will publish
+The plan is executed. While it is running, the `Worker` will publish
 
-* Changes to the state of the ``RunEngine``
+* Changes to the state of the `RunEngine`
 * Changes to any device statuses running within a plan (e.g. when a motor changes position)
-* Event model documents emitted by the ``RunEngine``
+* Event model documents emitted by the `RunEngine`
 * When a plan starts, finishes or fails.
 
 If an error occurs during any of the stages from "Request" onwards it is sent back to the user
 over the message bus.
 
-.. _pydantic: https://docs.pydantic.dev/
+

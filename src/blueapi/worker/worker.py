@@ -12,7 +12,7 @@ from .event import ProgressEvent, WorkerEvent, WorkerState
 T = TypeVar("T")
 
 
-class TaskStatus(Enum):
+class TaskStatusEnum(str, Enum):
     PENDING = "PENDING"
     COMPLETE = "COMPLETE"
     ERROR = "ERROR"
@@ -26,7 +26,8 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
 
     task_id: str
     task: T
-    status: TaskStatus = TaskStatus.PENDING
+    is_complete: bool = False
+    is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
 
 

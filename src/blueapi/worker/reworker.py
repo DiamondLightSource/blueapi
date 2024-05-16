@@ -28,7 +28,7 @@ from .event import (
 )
 from .multithread import run_worker_in_own_thread
 from .task import Task
-from .worker import TrackableTask, Worker
+from .worker import TaskStatusEnum, TrackableTask, Worker
 from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
@@ -136,17 +136,16 @@ class TaskWorker(Worker[Task]):
         self._tasks[task_id] = trackable_task
         return task_id
 
-    def get_tasks_by_status(self, status: str) -> list[TrackableTask[Task]]:
-        # We assume status can be 'unstarted', 'pending', or 'complete'
-        if status == "unstarted":
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask[Task]]:
+        if status == TaskStatusEnum.UNDERWAY:
             return [
                 task
                 for task in self._tasks.values()
-                if task.status == TaskStatus.UNDERWAY
+                if not task.is_complete and not task.is_pending
             ]
-        elif status == "pending":
+        elif status == TaskStatusEnum.PENDING:
             return [task for task in self._tasks.values() if task.is_pending]
-        elif status == "complete":
+        elif status == TaskStatusEnum.COMPLETE:
             return [task for task in self._tasks.values() if task.is_complete]
         else:
             raise ValueError("Unknown status")

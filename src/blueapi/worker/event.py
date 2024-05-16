@@ -6,6 +6,7 @@ from pydantic import Field
 from super_state_machine.extras import PropertyMachine, ProxyString
 
 from blueapi.utils import BlueapiBaseModel
+from blueapi.worker.worker import TaskStatusEnum
 
 # The RunEngine can return any of these three types as its state
 RawRunEngineState = type[PropertyMachine | ProxyString | str]
@@ -92,16 +93,6 @@ class ProgressEvent(BlueapiBaseModel):
     statuses: Mapping[str, StatusView] = Field(default_factory=dict)
 
 
-class TaskStatus(BlueapiBaseModel):
-    """
-    Status of a task the worker is running.
-    """
-
-    task_id: str
-    task_complete: bool
-    task_failed: bool
-
-
 class WorkerEvent(BlueapiBaseModel):
     """
     Event describing the state of the worker and any tasks it's running.
@@ -109,14 +100,16 @@ class WorkerEvent(BlueapiBaseModel):
     """
 
     state: WorkerState
-    task_status: TaskStatus | None = None
+    task_status: TaskStatusEnum = TaskStatusEnum.PENDING
     errors: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
 
     def is_error(self) -> bool:
-        return (self.task_status is not None and self.task_status.task_failed) or bool(
-            self.errors
-        )
+        return (
+            self.task_status is not None and self.task_status == TaskStatusEnum.ERROR
+        ) or bool(self.errors)
 
     def is_complete(self) -> bool:
-        return self.task_status is not None and self.task_status.task_complete
+        return (
+            self.task_status is not None and self.task_status == TaskStatusEnum.COMPLETE
+        )

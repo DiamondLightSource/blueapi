@@ -49,6 +49,16 @@ class BlueskyHandler(ABC):
     def begin_task(self, task: WorkerTask) -> WorkerTask:
         """Trigger a task. Will fail if the worker is busy"""
 
+    @abstractmethod
+    def get_tasks_by_status(self, status: str) -> list[TrackableTask[Task]]:
+        """
+        Retrieve a list of tasks based on their status.
+        Args:
+           str: The status to filter tasks by.
+        Returns:
+          list[TrackableTask[T]]: A list of tasks that match the given status.
+        """
+
     @property
     @abstractmethod
     def active_task(self) -> TrackableTask | None:

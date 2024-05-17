@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Generic, TypeVar
 
 from pydantic import Field
@@ -9,6 +10,13 @@ from blueapi.utils import BlueapiBaseModel
 from .event import ProgressEvent, WorkerEvent, WorkerState
 
 T = TypeVar("T")
+
+
+class TaskStatusEnum(str, Enum):
+    PENDING = "PENDING"
+    COMPLETE = "COMPLETE"
+    ERROR = "ERROR"
+    UNDERWAY = "UNDERWAY"
 
 
 class TrackableTask(BlueapiBaseModel, Generic[T]):
@@ -105,6 +113,16 @@ class Worker(ABC, Generic[T]):
             task: A description of the task
         Returns:
             str: A unique ID to refer to this task
+        """
+
+    @abstractmethod
+    def get_tasks_by_status(self, status: str) -> list[TrackableTask[T]]:
+        """
+        Retrieve a list of tasks based on their status.
+        Args:
+           str: The status to filter tasks by.
+        Returns:
+          list[TrackableTask[T]]: A list of tasks that match the given status.
         """
 
     @abstractmethod

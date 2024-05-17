@@ -14,6 +14,7 @@ from blueapi.service.main import get_handler, setup_handler, teardown_handler
 from blueapi.service.model import WorkerTask
 from blueapi.worker import WorkerState
 from blueapi.worker.task import Task
+from blueapi.worker.worker import TrackableTask
 
 _TASK = Task(name="count", params={"detectors": ["x"]})
 
@@ -222,6 +223,38 @@ def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
     assert active_task.task_id == task_id
     handler.stop()
 
+
+tasks_data = [
+    TrackableTask(
+        task_id="1", task=Task(name="first_task"), is_complete=False, is_pending=False
+    ),
+    TrackableTask(
+        task_id="2", task=Task(name="first_task"), is_complete=False, is_pending=True
+    ),
+]
+
+
+def test_get_unstarted_tasks(handler: Handler, client: TestClient):
+    handler.start()
+    # handler.tasks = tasks_data  # overriding the property
+    handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
+    response = client.get("/tasks?status=unstarted")
+    assert response.status_code == 200
+    assert (
+        len(response.json()) == 1
+    )  # As per our mock data, only 1 task should be 'unstarted'
+    assert (
+        response.json()[0]["task_id"] == "1"
+    )  # Check that the correct task ID is returned
+
+
+def test_get_tasks_bad_status(handler: Handler, client: TestClient):
+    handler.start()
+    # handler.tasks = tasks_data
+    handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
+    response = client.get("/tasks?status=invalid")
+    assert response.status_code == 400
+    assert "Unsupported status" in response.json()["detail"]
 
 def test_worker_task_is_none_on_startup(handler: Handler, client: TestClient) -> None:
     handler.start()

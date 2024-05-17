@@ -15,7 +15,7 @@ from blueapi.service.model import (
 )
 from blueapi.worker import Task, TrackableTask, WorkerState
 
-from .amq import BlueskyRemoteError
+from .event_bus_client import BlueskyRemoteError
 
 T = TypeVar("T")
 

@@ -12,6 +12,7 @@ from .event import ProgressEvent, WorkerEvent, WorkerState
 T = TypeVar("T")
 
 
+# NOTE this is interim until the refactor
 class TaskStatusEnum(str, Enum):
     PENDING = "PENDING"
     COMPLETE = "COMPLETE"

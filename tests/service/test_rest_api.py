@@ -256,6 +256,7 @@ def test_get_tasks_bad_status(handler: Handler, client: TestClient):
     assert response.status_code == 400
     assert "Unsupported status" in response.json()["detail"]
 
+
 def test_worker_task_is_none_on_startup(handler: Handler, client: TestClient) -> None:
     handler.start()
     resp = client.get("/worker/task")

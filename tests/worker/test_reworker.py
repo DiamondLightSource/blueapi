@@ -23,6 +23,7 @@ from blueapi.worker import (
     WorkerEvent,
     WorkerState,
 )
+from blueapi.worker.worker import TaskStatusEnum
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
@@ -213,6 +214,48 @@ def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
 
     for task_id, events in zip(task_ids, event_sequences, strict=False):
         assert_run_produces_worker_events(events, worker, task_id)
+
+
+@pytest.mark.parametrize(
+    "status, expected_task_ids",
+    [
+        (TaskStatusEnum.UNDERWAY, ["task1"]),
+        (TaskStatusEnum.PENDING, ["task2"]),
+        (TaskStatusEnum.COMPLETE, ["task3"]),
+    ],
+)
+def test_get_tasks_by_status(worker: Worker, status, expected_task_ids):
+    worker._tasks = {
+        "task1": TrackableTask(
+            task_id="task1",
+            task=Task(
+                name="set_absolute", params={"movable": "fake_device", "value": 4.0}
+            ),
+            is_complete=False,
+            is_pending=False,
+        ),
+        "task2": TrackableTask(
+            task_id="task2",
+            task=Task(
+                name="set_absolute", params={"movable": "fake_device", "value": 4.0}
+            ),
+            is_complete=False,
+            is_pending=True,
+        ),
+        "task3": TrackableTask(
+            task_id="task3",
+            task=Task(
+                name="set_absolute", params={"movable": "fake_device", "value": 4.0}
+            ),
+            is_complete=True,
+            is_pending=False,
+        ),
+    }
+
+    result = worker.get_tasks_by_status(status)
+    result_ids = [task_id for task_id, task in worker._tasks.items() if task in result]
+
+    assert result_ids == expected_task_ids
 
 
 def _sleep_events(task_id: str) -> list[WorkerEvent]:

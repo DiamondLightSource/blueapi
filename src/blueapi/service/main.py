@@ -17,6 +17,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import Task, TrackableTask, WorkerState
+from blueapi.worker.worker import TaskStatusEnum
 
 from .handler_base import BlueskyHandler
 from .model import (
@@ -163,6 +164,9 @@ def get_tasks(
     """
     Retrieve tasks based on their status. The default status is 'unstarted'.
     """
+    if status not in TaskStatusEnum.__members__:
+        raise HTTPException(status_code=400, detail="Invalid status query parameter")
+
     try:
         tasks = handler.get_tasks_by_status(status)
     except ValueError as e:

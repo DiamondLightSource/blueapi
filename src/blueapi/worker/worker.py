@@ -116,7 +116,7 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def get_tasks_by_status(self, status: str) -> list[TrackableTask[T]]:
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask[T]]:
         """
         Retrieve a list of tasks based on their status.
         Args:

@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, Mock, call
 
 import pytest
 from bluesky.run_engine import RunEngineStateMachine

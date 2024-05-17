@@ -106,8 +106,14 @@ class BlueskyContext:
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         from dodal.utils import make_all_devices
 
-        for device in make_all_devices(module, **kwargs)[0].values():
+        devices, exceptions = make_all_devices(module, **kwargs)
+
+        for device in devices.values():
             self.device(device)
+
+        num_failed = len(exceptions)
+
+        LOGGER.warning(f"{num_failed} device(s) failed to connect: {exceptions}")
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

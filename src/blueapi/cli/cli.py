@@ -6,10 +6,11 @@ from pathlib import Path
 from pprint import pprint
 
 import click
+from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
-from blueapi.cli.event_bus_client import EventBusClient
+from blueapi.cli.event_bus_client import BlueskyRemoteError, EventBusClient
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
@@ -191,10 +192,21 @@ def run_plan(
             finished_event.append(event)
 
     parameters = parameters or "{}"
-    task = Task(name=name, params=json.loads(parameters))
-
-    resp = client.create_task(task)
-    task_id = resp.task_id
+    task_id = ""
+    parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
+    try:
+        task = Task(name=name, params=parsed_params)
+        resp = client.create_task(task)
+        task_id = resp.task_id
+    except ValidationError:
+        pprint(f"failed to validate the task parameters, {task_id}")
+        return
+    except BlueskyRemoteError as e:
+        pprint(f"server error with this message: {e.message} ")
+        return
+    except ValueError:
+        pprint("task could not run")
+        return
 
     with event_bus_client:
         event_bus_client.subscribe_to_topics(task_id, on_event=store_finished_event)

@@ -5,12 +5,17 @@ from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.handler import get_handler, setup_handler, teardown_handler
+from blueapi.service.handler import (
+    get_handler,
+    get_tasks_by_status,
+    setup_handler,
+    teardown_handler,
+)
 from blueapi.service.handler_base import BlueskyHandler, HandlerNotStartedError
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
-from blueapi.worker.worker import TrackableTask
+from blueapi.worker.worker import TaskStatusEnum, TrackableTask
 
 set_start_method("spawn", force=True)
 LOGGER = logging.getLogger(__name__)
@@ -78,6 +83,9 @@ class SubprocessHandler(BlueskyHandler):
 
     def submit_task(self, task: Task) -> str:
         return self._run_in_subprocess(submit_task, [task])
+
+    def get_tasks_by_status(self, task_status: TaskStatusEnum) -> list[TrackableTask]:
+        return self._run_in_subprocess(get_tasks_by_status, [task_status])
 
     def clear_task(self, task_id: str) -> str:
         return self._run_in_subprocess(clear_task_by_id, [task_id])

@@ -28,6 +28,7 @@ from .model import (
     PlanResponse,
     StateChangeRequest,
     TaskResponse,
+    TasksListResponse,
     WorkerTask,
 )
 from .subprocess_handler import SubprocessHandler
@@ -160,7 +161,7 @@ def submit_task(
 def get_tasks(
     status: str = Query("unstarted", description="The status of the tasks to retrieve"),
     handler: BlueskyHandler = Depends(get_handler),
-) -> list[TrackableTask]:
+) -> TasksListResponse:
     """
     Retrieve tasks based on their status. The default status is 'unstarted'.
     """
@@ -171,7 +172,7 @@ def get_tasks(
         tasks = handler.get_tasks_by_status(status)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))  # noqa: B904
-    return tasks
+    return TasksListResponse(tasks=tasks)
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)

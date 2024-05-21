@@ -6,7 +6,7 @@ from pydantic import Field
 
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 from blueapi.utils import BlueapiBaseModel
-from blueapi.worker import Worker, WorkerState
+from blueapi.worker import TrackableTask, Worker, WorkerState
 
 _UNKNOWN_NAME = "UNKNOWN"
 
@@ -93,6 +93,14 @@ class TaskResponse(BlueapiBaseModel):
     """
 
     task_id: str = Field(description="Unique identifier for the task")
+
+
+class TasksListResponse(BlueapiBaseModel):
+    """
+    Diagnostic information on the tasks
+    """
+
+    tasks: list[TrackableTask] = Field(description="List of tasks")
 
 
 class WorkerTask(BlueapiBaseModel):

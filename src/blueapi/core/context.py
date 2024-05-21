@@ -7,6 +7,7 @@ from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.run_engine import RunEngine
+from dodal.common.beamlines.beamline_utils import get_directory_provider
 from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
 from pydantic import create_model
@@ -108,6 +109,12 @@ class BlueskyContext:
         for device in devices.values():
             self.device(device)
 
+        directory_provider = get_directory_provider()
+        if directory_provider is not None:
+            self.run_engine.scan_id_source = (
+                lambda _: directory_provider.next_scan_number
+            )
+
         # If exceptions have occurred, we log them but we do not make blueapi
         # fall over
         if len(exceptions) > 0:
@@ -118,8 +125,8 @@ class BlueskyContext:
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """
-        Register the argument as a plan in the context. Can be used as a decorator e.g.
-        @ctx.plan
+        from dodal.beamlines.beamline_utils import get_directory_provider
+        from dodal.utils import make_all_devices
         def my_plan(a: int, b: str):
             ...
 

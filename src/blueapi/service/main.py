@@ -157,9 +157,14 @@ def submit_task(
         ) from e
 
 
+example_query = Query(
+    TaskStatusEnum.UNSTARTED, description="The status of the tasks to retrieve"
+)
+
+
 @app.get("/tasks")
 def get_tasks(
-    status: str = Query("unstarted", description="The status of the tasks to retrieve"),
+    status: TaskStatusEnum = example_query,
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TasksListResponse:
     """

@@ -88,6 +88,7 @@ async def on_key_error_404(_: Request, __: KeyError):
 def get_environment(
     handler: BlueskyHandler = Depends(get_handler),
 ) -> EnvironmentResponse:
+    """Get the current state of the environment, i.e. initialization state."""
     return handler.state
 
 
@@ -96,6 +97,8 @@ async def delete_environment(
     background_tasks: BackgroundTasks,
     handler: BlueskyHandler = Depends(get_handler),
 ) -> EnvironmentResponse:
+    """Delete the current environment, causing internal components to be reloaded."""
+
     def restart_handler(handler: BlueskyHandler):
         handler.stop()
         handler.start()
@@ -216,10 +219,12 @@ def get_tasks(
     response_model=WorkerTask,
     responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
 )
-def update_task(
+def set_active_task(
     task: WorkerTask,
     handler: BlueskyHandler = Depends(get_handler),
 ) -> WorkerTask:
+    """Set a task to active status, the worker should begin it as soon as possible.
+    This will return an error response if the worker is not idle."""
     active_task = handler.active_task
     if active_task is not None and not active_task.is_complete:
         raise HTTPException(

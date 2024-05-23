@@ -45,7 +45,8 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
             if path.exists():
                 config_loader.use_values_from_yaml(path)
             else:
-                raise FileNotFoundError(f"Cannot find file: {path}")
+                print(f"Cannot find file: {path}")
+                return
 
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
@@ -141,7 +142,8 @@ def listen_to_events(obj: dict) -> None:
             StompMessagingTemplate.autoconfigured(config.stomp)
         )
     else:
-        raise RuntimeError("Message bus needs to be configured")
+        print("Message bus needs to be configured")
+        return
 
     def on_event(
         context: MessageContext,
@@ -327,7 +329,8 @@ def env(obj: dict, reload: bool | None) -> None:
             polling_count += 1
             sleep(1)  # Wait for 1 seconds before checking again
     if polling_count == max_polling_count:
-        raise TimeoutError("Environment initialization timed out.")
+        print("Environment initialization timed out.")
+        return
 
     # Once out of the loop, print the initialized environment status
     pprint(environment_status)

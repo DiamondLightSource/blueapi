@@ -3,7 +3,6 @@ import logging
 from collections import deque
 from functools import wraps
 from pathlib import Path
-from pprint import pprint
 from time import sleep
 
 import click
@@ -45,7 +44,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
             if path.exists():
                 config_loader.use_values_from_yaml(path)
             else:
-                print(f"Cannot find file: {path}")
+                logging.error(f"Cannot find file: {path}")
                 return
 
     ctx.ensure_object(dict)
@@ -55,7 +54,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     logging.basicConfig(level=loaded_config.logging.level)
 
     if ctx.invoked_subcommand is None:
-        print("Please invoke subcommand!")
+        logging.logger("Please invoke subcommand!")
 
 
 @main.command(name="schema")
@@ -94,7 +93,7 @@ def controller(ctx: click.Context) -> None:
     """Client utility for controlling and introspecting the worker"""
 
     if ctx.invoked_subcommand is None:
-        print("Please invoke subcommand!")
+        logging.error("Please invoke subcommand!")
         return
 
     ctx.ensure_object(dict)
@@ -108,7 +107,8 @@ def check_connection(func):
         try:
             func(*args, **kwargs)
         except ConnectionError:
-            print("Failed to establish connection to FastAPI server.")
+            logging.error("Failed to establish connection to FastAPI server.")
+            return
 
     return wrapper
 
@@ -119,7 +119,7 @@ def check_connection(func):
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_plans().dict())
+    logging.info(client.get_plans().dict())
 
 
 @controller.command(name="devices")
@@ -128,7 +128,7 @@ def get_plans(obj: dict) -> None:
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_devices().dict())
+    logging.info(client.get_devices().dict())
 
 
 @controller.command(name="listen")
@@ -142,7 +142,7 @@ def listen_to_events(obj: dict) -> None:
             StompMessagingTemplate.autoconfigured(config.stomp)
         )
     else:
-        print("Message bus needs to be configured")
+        logging.logger("Message bus needs to be configured")
         return
 
     def on_event(
@@ -150,9 +150,9 @@ def listen_to_events(obj: dict) -> None:
         event: WorkerEvent | ProgressEvent | DataEvent,
     ) -> None:
         converted = json.dumps(event.dict(), indent=2)
-        print(converted)
+        logging.logger(converted)
 
-    print(
+    logging.logger(
         "Subscribing to all bluesky events from "
         f"{config.stomp.host}:{config.stomp.port}"
     )
@@ -221,7 +221,7 @@ def run_plan(
             return
 
     process_event_after_finished(finished_event.pop(), logger)
-    pprint(updated.dict())
+    logging.logger(updated.dict())
 
 
 @controller.command(name="state")
@@ -231,7 +231,7 @@ def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_state())
+    logging.logger(client.get_state())
 
 
 @controller.command(name="pause")
@@ -242,7 +242,7 @@ def pause(obj: dict, defer: bool = False) -> None:
     """Pause the execution of the current task"""
 
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.set_state(WorkerState.PAUSED, defer=defer))
+    logging.logger(client.set_state(WorkerState.PAUSED, defer=defer))
 
 
 @controller.command(name="resume")
@@ -252,7 +252,7 @@ def resume(obj: dict) -> None:
     """Resume the execution of the current task"""
 
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.set_state(WorkerState.RUNNING))
+    logging.logger(client.set_state(WorkerState.RUNNING))
 
 
 @controller.command(name="abort")
@@ -266,7 +266,9 @@ def abort(obj: dict, reason: str | None = None) -> None:
     """
 
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.cancel_current_task(state=WorkerState.ABORTING, reason=reason))
+    logging.logger(
+        client.cancel_current_task(state=WorkerState.ABORTING, reason=reason)
+    )
 
 
 @controller.command(name="stop")
@@ -278,7 +280,7 @@ def stop(obj: dict) -> None:
     """
 
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.cancel_current_task(state=WorkerState.STOPPING))
+    logging.logger(client.cancel_current_task(state=WorkerState.STOPPING))
 
 
 @controller.command(name="env")
@@ -299,16 +301,16 @@ def env(obj: dict, reload: bool | None) -> None:
 
     assert isinstance(client := obj["rest_client"], BlueapiRestClient)
     if not reload:
-        pprint(client.get_environment())
+        logging.logger(client.get_environment())
         return
 
     # Reload the environment if needed
-    print("Reloading the environment...")
+    logging.logger("Reloading the environment...")
     try:
-        pprint(client.reload_environment())
+        logging.logger(client.reload_environment())
 
     except BlueskyRemoteError:
-        pprint("Failed to reload the environment")
+        logging.logger("Failed to reload the environment")
         exit()
 
     # Initialize a variable to keep track of the environment status
@@ -322,18 +324,18 @@ def env(obj: dict, reload: bool | None) -> None:
 
         # Check if the environment is initialized
         if environment_status.initialized:
-            print("Environment is initialized.")
+            logging.info("Environment is initialized.")
             environment_initialized = True
         else:
-            print("Waiting for environment to initialize...")
+            logging.info("Waiting for environment to initialize...")
             polling_count += 1
             sleep(1)  # Wait for 1 seconds before checking again
     if polling_count == max_polling_count:
-        print("Environment initialization timed out.")
+        logging.error("Environment initialization timed out.")
         return
 
     # Once out of the loop, print the initialized environment status
-    pprint(environment_status)
+    logging.info(environment_status)
 
 
 # helper function

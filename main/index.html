@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>blueapi &#8212; blueapi 0.4.3a4.dev1+ga476f085 documentation</title>
+    <title>How the documentation is structured &#8212; blueapi 0.4.3a4.dev3+ga3f023f0 documentation</title>
   
   
   
@@ -31,19 +31,19 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=87e54e7c" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="_static/documentation_options.js?v=4d40f440"></script>
+    <script src="_static/documentation_options.js?v=a15ed7fa"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=30646c52"></script>
-    <script src="_static/design-tabs.js?v=36754332"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
@@ -283,6 +283,10 @@ document.write(`
   
 
   
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
 </div>
 
     </header>
@@ -435,12 +439,15 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <p><img src="https://raw.githubusercontent.com/DiamondLightSource/blueapi/main/docs/images/blueapi-logo.svg"
+  <section id="how-the-documentation-is-structured">
+<h1>How the documentation is structured<a class="headerlink" href="#how-the-documentation-is-structured" title="Link to this heading">#</a></h1>
+<p><img src="https://raw.githubusercontent.com/DiamondLightSource/blueapi/main/docs/images/blueapi-logo.svg"
      style="background: none" width="120px" height="120px" align="right"></p>
 <p><a class="reference external" href="https://github.com/DiamondLightSource/blueapi/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/DiamondLightSource/blueapi/actions/workflows/ci.yml/badge.svg" /></a>
 <a class="reference external" href="https://codecov.io/gh/DiamondLightSource/blueapi"><img alt="Coverage" src="https://codecov.io/gh/DiamondLightSource/blueapi/branch/main/graph/badge.svg" /></a>
 <a class="reference external" href="https://pypi.org/project/blueapi"><img alt="PyPI" src="https://img.shields.io/pypi/v/blueapi.svg" /></a>
 <a class="reference external" href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a></p>
+</section>
 <section id="blueapi">
 <h1>blueapi<a class="headerlink" href="#blueapi" title="Link to this heading">#</a></h1>
 <p>Lightweight bluesky-as-a-service wrapper application. Also usable as a library.</p>
@@ -469,7 +476,7 @@ document.write(`
 inside a server and exposes endpoints to send commands/receive data. Useful for
 installation at labs where multiple people may control equipment, possibly from
 remote locations.</p>
-<p><img alt="concept" src="_images/blueapi.png" /></p>
+<p>![concept][]</p>
 <p>The main premise of blueapi is to minimize the boilerplate required to get plans
 and devices up and running by generating an API for your lab out of
 type-annotated plans. For example, take the following plan:</p>
@@ -482,9 +489,13 @@ type-annotated plans. For example, take the following plan:</p>
 </div>
 <p>Blueapi’s job is to detect this plan and automatically add it to the lab’s API
 so it can be invoked easily with a few REST calls.</p>
-<section id="how-the-documentation-is-structured">
-<h2>How the documentation is structured<a class="headerlink" href="#how-the-documentation-is-structured" title="Link to this heading">#</a></h2>
 <p>Documentation is split into <a class="reference external" href="https://diataxis.fr">four categories</a>, also accessible from links in the top bar.</p>
+<ul class="simple">
+<li><p>Tutorials - Tutorials for installation and typical usage. New users start here.</p></li>
+<li><p>How-To-s - Practical step-by-step guides for the more experienced user.</p></li>
+<li><p>Explanations - Explanations of how it works and why it works that way.</p></li>
+<li><p>Reference - Technical reference material including APIs and release notes.</p></li>
+</ul>
 <!-- https://sphinx-design.readthedocs.io/en/latest/grids.html -->
 <div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
 <div class="sd-row sd-row-cols-2 sd-row-cols-xs-2 sd-row-cols-sm-2 sd-row-cols-md-2 sd-row-cols-lg-2 sd-g-4 sd-g-xs-4 sd-g-sm-4 sd-g-md-4 sd-g-lg-4 docutils">
@@ -583,7 +594,6 @@ so it can be invoked easily with a few REST calls.</p>
 </div>
 </div>
 </section>
-</section>
 
 
                 </article>
@@ -610,6 +620,52 @@ so it can be invoked easily with a few REST calls.</p>
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">How the documentation is structured</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi">blueapi</a><ul class="visible nav section-nav flex-column">
+</ul>
+</li>
+</ul>
+
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/index.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/index.md.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
               
             
           </div>

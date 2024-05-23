@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run/Debug in a Developer Environment &#8212; blueapi 0.4.3a4.dev1+ga476f085 documentation</title>
+    <title>Run/Debug in a Developer Environment &#8212; blueapi 0.4.3a4.dev3+ga3f023f0 documentation</title>
   
   
   
@@ -31,19 +31,19 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=87e54e7c" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../_static/documentation_options.js?v=4d40f440"></script>
+    <script src="../_static/documentation_options.js?v=a15ed7fa"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
-    <script src="../_static/design-tabs.js?v=36754332"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/dev-run';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
@@ -484,17 +484,13 @@ document.write(`
   <section id="run-debug-in-a-developer-environment">
 <h1>Run/Debug in a Developer Environment<a class="headerlink" href="#run-debug-in-a-developer-environment" title="Link to this heading">#</a></h1>
 <p>Assuming you have setup a developer environment, you can run a development version of the bluesky worker.</p>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference external" href="https://diamondlightsource.github.io/python-copier-template/main/how-to/dev-install.html">https://diamondlightsource.github.io/python-copier-template/main/how-to/dev-install.html</a></p>
-</div>
 <section id="start-bluesky-worker">
 <h2>Start Bluesky Worker<a class="headerlink" href="#start-bluesky-worker" title="Link to this heading">#</a></h2>
 <p>Ensure you are inside your virtual environment:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>venv/bin/activate
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">source</span> <span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
 </pre></div>
 </div>
-<p>You will need to follow the instructions for setting up ActiveMQ as in <a class="reference internal" href="../how-to/run-cli.html"><span class="doc">Control the Worker via the CLI</span></a>.</p>
+<p>You will need to follow the instructions for setting up ActiveMQ as in <a class="reference internal" href="../how-to/run-cli.html"><span class="std std-doc">run cli instructions</span></a>.</p>
 <p>The worker will be available from the command line (<code class="docutils literal notranslate"><span class="pre">blueapi</span> <span class="pre">serve</span></code>), but can be started from vscode with additional
 debugging capabilities.</p>
 <ol class="arabic simple">
@@ -502,12 +498,7 @@ debugging capabilities.</p>
 <li><p>Select “Worker Service” from the debug configuration.</p></li>
 <li><p>Click the green “Run Button”</p></li>
 </ol>
-<figure class="align-center" id="id1">
-<img alt="../_images/debug-vscode.png" src="../_images/debug-vscode.png" />
-<figcaption>
-<p><span class="caption-text">debug in vscode</span><a class="headerlink" href="#id1" title="Link to this image">#</a></p>
-</figcaption>
-</figure>
+<p><a class="reference download internal" download="" href="../_downloads/200c2353e1b89f5c528b6db1f533fcc9/debug-vscode.png"><span class="xref download myst">debug in vscode</span></a></p>
 </section>
 </section>
 
@@ -565,7 +556,7 @@ debugging capabilities.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/tutorials/dev-run.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/tutorials/dev-run.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -580,7 +571,7 @@ debugging capabilities.</p>
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/tutorials/dev-run.rst.txt">
+    <a href="../_sources/tutorials/dev-run.md.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

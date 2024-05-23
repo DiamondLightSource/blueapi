@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Lifecycle of a Plan &#8212; blueapi 0.4.3a4.dev1+ga476f085 documentation</title>
+    <title>Lifecycle of a Plan &#8212; blueapi 0.4.3a4.dev3+ga3f023f0 documentation</title>
   
   
   
@@ -31,19 +31,19 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=87e54e7c" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../_static/documentation_options.js?v=4d40f440"></script>
+    <script src="../_static/documentation_options.js?v=a15ed7fa"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
-    <script src="../_static/design-tabs.js?v=36754332"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/lifecycle';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
@@ -493,42 +493,42 @@ document.write(`
 <h1>Lifecycle of a Plan<a class="headerlink" href="#lifecycle-of-a-plan" title="Link to this heading">#</a></h1>
 <p>The following demonstrates exactly what the code does with a plan through its lifecycle
 of being written, loaded and run. Take the following plan.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
-
-<span class="kn">import</span> <span class="nn">bluesky.plans</span> <span class="k">as</span> <span class="nn">bp</span>
-<span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">MsgGenerator</span>
-<span class="kn">from</span> <span class="nn">dls_bluesky_core.core</span> <span class="kn">import</span> <span class="n">inject</span>
-<span class="kn">from</span> <span class="nn">bluesky.protocols</span> <span class="kn">import</span> <span class="n">Readable</span>
-
-
-<span class="k">def</span> <span class="nf">count</span><span class="p">(</span>
-    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">inject</span><span class="p">(</span><span class="s2">&quot;det&quot;</span><span class="p">)],</span>  <span class="c1"># default valid for Blueapi only</span>
-    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Take `n` readings from a collection of detectors</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        detectors (List[Readable]): Readable devices to read: when being run in Blueapi</span>
-<span class="sd">                                    defaults to fetching a device named &quot;det&quot; from its</span>
-<span class="sd">                                    context, else will require to be overriden.</span>
-<span class="sd">        num (int, optional): Number of readings to take. Defaults to 1.</span>
-<span class="sd">        delay (Optional[Union[float, List[float]]], optional): Delay between readings.</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+    
+    <span class="kn">import</span> <span class="nn">bluesky.plans</span> <span class="k">as</span> <span class="nn">bp</span>
+    <span class="kn">from</span> <span class="nn">blueapi.core</span> <span class="kn">import</span> <span class="n">MsgGenerator</span>
+    <span class="kn">from</span> <span class="nn">dls_bluesky_core.core</span> <span class="kn">import</span> <span class="n">inject</span>
+    <span class="kn">from</span> <span class="nn">bluesky.protocols</span> <span class="kn">import</span> <span class="n">Readable</span>
+    
+    
+    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span>
+        <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">inject</span><span class="p">(</span><span class="s2">&quot;det&quot;</span><span class="p">)],</span>  <span class="c1"># default valid for Blueapi only</span>
+        <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Take `n` readings from a collection of detectors</span>
+<span class="sd">    </span>
+<span class="sd">        Args:</span>
+<span class="sd">            detectors (List[Readable]): Readable devices to read: when being run in Blueapi</span>
+<span class="sd">                                        defaults to fetching a device named &quot;det&quot; from its</span>
+<span class="sd">                                        context, else will require to be overriden.</span>
+<span class="sd">            num (int, optional): Number of readings to take. Defaults to 1.</span>
+<span class="sd">            delay (Optional[Union[float, List[float]]], optional): Delay between readings.</span>
+<span class="sd">                                                                Defaults to None.</span>
+<span class="sd">            metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include</span>
+<span class="sd">                                                            in exported data.</span>
 <span class="sd">                                                            Defaults to None.</span>
-<span class="sd">        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include</span>
-<span class="sd">                                                        in exported data.</span>
-<span class="sd">                                                        Defaults to None.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        MsgGenerator: _description_</span>
-
-<span class="sd">    Yields:</span>
-<span class="sd">        Iterator[MsgGenerator]: _description_</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="n">delay</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+<span class="sd">    </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            MsgGenerator: _description_</span>
+<span class="sd">    </span>
+<span class="sd">        Yields:</span>
+<span class="sd">            Iterator[MsgGenerator]: _description_</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    
+        <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="n">delay</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="loading-and-registration">
@@ -539,25 +539,23 @@ if it detects that they are plans.</p>
 <p>At the point of registration it will inspect the plan’s parameters and their type hints, from which it
 will build a <a class="reference external" href="https://docs.pydantic.dev/">pydantic</a> model of the parameters to validate against. In other words, it will build something
 like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
 
-<span class="k">class</span> <span class="nc">CountParameters</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;det&quot;</span><span class="p">]</span>
-    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">class</span> <span class="nc">CountParameters</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+        <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;det&quot;</span><span class="p">]</span>
+        <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="n">arbitrary_types_allowed</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="n">validate_all</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+            <span class="n">arbitrary_types_allowed</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">validate_all</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">This</span> <span class="ow">is</span> <span class="k">for</span> <span class="n">illustrative</span> <span class="n">purposes</span> <span class="n">only</span><span class="p">,</span> <span class="n">this</span> <span class="n">code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">actually</span> <span class="n">generated</span><span class="p">,</span> <span class="n">but</span> <span class="n">an</span> <span class="nb">object</span>
+    <span class="n">resembling</span> <span class="n">this</span> <span class="k">class</span> <span class="nc">is</span> <span class="n">constructed</span> <span class="ow">in</span> <span class="n">memory</span><span class="o">.</span>
+    <span class="n">The</span> <span class="n">default</span> <span class="n">arguments</span> <span class="n">will</span> <span class="n">be</span> <span class="n">validated</span> <span class="n">by</span> <span class="n">the</span> <span class="n">context</span> <span class="n">to</span> <span class="n">inject</span> <span class="n">the</span> <span class="s2">&quot;det&quot;</span> <span class="n">device</span> <span class="n">when</span> <span class="n">the</span>
+    <span class="n">plan</span> <span class="ow">is</span> <span class="n">run</span><span class="o">.</span> <span class="n">The</span> <span class="n">existence</span> <span class="n">of</span> <span class="n">the</span> <span class="s2">&quot;det&quot;</span> <span class="n">default</span> <span class="n">device</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">checked</span> <span class="n">until</span> <span class="n">this</span> <span class="n">time</span><span class="o">.</span>
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This is for illustrative purposes only, this code is not actually generated, but an object
-resembling this class is constructed in memory.
-The default arguments will be validated by the context to inject the “det” device when the
-plan is run. The existence of the “det” default device is not checked until this time.</p>
 </div>
 <p>The model is also stored in the context.</p>
 </section>
@@ -570,17 +568,17 @@ The worker also holds a reference to the <code class="docutils literal notransla
 <h2>Request<a class="headerlink" href="#request" title="Link to this heading">#</a></h2>
 <p>A user can send a request to run the plan to the service, which includes values for the parameters.
 It takes the form of JSON and may look something like this:</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;count&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;detectors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;andor&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">&quot;pilatus&quot;</span>
-<span class="w">        </span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;num&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;delay&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;detectors&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;andor&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pilatus&quot;</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;num&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s2">&quot;delay&quot;</span><span class="p">:</span> <span class="mf">0.1</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">Service</span></code> receives the request and passes it to the worker, which holds it in an internal queue
@@ -591,10 +589,7 @@ and executes it as soon as it can.</p>
 <p>The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry
 The parameter values in the request are validated against the model, this includes looking up devices
 with names <code class="docutils literal notranslate"><span class="pre">andor</span></code> and <code class="docutils literal notranslate"><span class="pre">pilatus</span></code> or, if detectors was not passed <code class="docutils literal notranslate"><span class="pre">det</span></code>.</p>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="type_validators.html"><span class="doc">Type Validators</span></a></p>
-</div>
+<p>See also <a class="reference internal" href="type_validators.html"><span class="std std-doc">type validators</span></a></p>
 </section>
 <section id="execution">
 <h2>Execution<a class="headerlink" href="#execution" title="Link to this heading">#</a></h2>
@@ -669,7 +664,7 @@ over the message bus.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/explanations/lifecycle.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/explanations/lifecycle.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -684,7 +679,7 @@ over the message bus.</p>
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/explanations/lifecycle.rst.txt">
+    <a href="../_sources/explanations/lifecycle.md.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

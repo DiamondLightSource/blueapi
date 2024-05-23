@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Events Emitted by the Worker &#8212; blueapi 0.4.3a4.dev1+ga476f085 documentation</title>
+    <title>Events Emitted by the Worker &#8212; blueapi 0.4.3a4.dev3+ga3f023f0 documentation</title>
   
   
   
@@ -31,19 +31,19 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css?v=0a3b3ea7" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=87e54e7c" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../_static/documentation_options.js?v=4d40f440"></script>
+    <script src="../_static/documentation_options.js?v=a15ed7fa"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
-    <script src="../_static/design-tabs.js?v=36754332"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/events';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.15.2';
@@ -491,23 +491,17 @@ document.write(`
                   
   <section id="events-emitted-by-the-worker">
 <h1>Events Emitted by the Worker<a class="headerlink" href="#events-emitted-by-the-worker" title="Link to this heading">#</a></h1>
-<p>Blueapi adds new events on top of the <a class="reference external" href="https://blueskyproject.io/event-model/main/index.html">bluesky event model</a>.</p>
+<p>Blueapi adds new events on top of the <a class="reference external" href="https://blueskyproject.io/event-model/main/index.html"><code class="docutils literal notranslate"><span class="pre">bluesky</span> <span class="pre">event</span> <span class="pre">model</span></code></a>.</p>
 <section id="reasons">
 <h2>Reasons<a class="headerlink" href="#reasons" title="Link to this heading">#</a></h2>
 <p>Since the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> is traditionally used by a human in front of an IPython terminal, it
 sometimes assumes intuitive behaviour. The worker replaces the human and so must fill in the
 gaps.</p>
-<p>The base engine programatically emits data events conforming to the <a class="reference external" href="https://blueskyproject.io/event-model/main/index.html">bluesky event model</a>. These
+<p>The base engine programatically emits data events conforming to the <code class="docutils literal notranslate"><span class="pre">bluesky</span> <span class="pre">event</span> <span class="pre">model</span></code>_. These
 are meant to be handled by other subscribing code (e.g. databroker) and are decoupled from concerns such as whether
 a plan has started, finished, paused, errored etc. See the example below:</p>
-<figure class="align-center" id="id1">
-<a class="reference internal image-reference" href="../_images/bluesky-events.png"><img alt="../_images/bluesky-events.png" src="../_images/bluesky-events.png" style="width: 600px;" />
-</a>
-<figcaption>
-<p><span class="caption-text">sequence of event emission compared to plan start/finish, in a complicated case</span><a class="headerlink" href="#id1" title="Link to this image">#</a></p>
-</figcaption>
-</figure>
-<p>Note the gap between the start of the plan and the issue of the first <a class="reference external" href="https://blueskyproject.io/event-model/main/user/explanations/data-model.html#run-start-document">run start document</a>, and the similar gap
+<p><img alt="sequence of event emission compared to plan start/finish, in a complicated case" src="../_images/bluesky-events.png" /></p>
+<p>Note the gap between the start of the plan and the issue of the first <a class="reference external" href="https://blueskyproject.io/event-model/main/user/explanations/data-model.html#run-start-document"><code class="docutils literal notranslate"><span class="pre">run</span> <span class="pre">start</span> <span class="pre">document</span></code></a>, and the similar gap
 for the stop document vs end of the plan, thsse are typically used for setup and cleanup.
 Also note that a plan can produce an arbitrary number of runs. This decoupling is fine in an IPython terminal
 because a human user can see when a plan has started, can see when it’s finished and can see which runs are
@@ -530,17 +524,9 @@ every time the engine:</p>
 <p>When controlling plans programatically, it can be useful to verify that event model documents really are related to
 the plan you just asked the worker to run. The worker will therefore bundle a correlation ID into the headers of
 messages containing documents.</p>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference external" href="https://microsoft.github.io/code-with-engineering-playbook/observability/correlation-id/">Microsoft Playbook on Correlation IDs</a></p>
-</div>
+<p>see also <a class="reference external" href="https://microsoft.github.io/code-with-engineering-playbook/observability/correlation-id/"><code class="docutils literal notranslate"><span class="pre">Microsoft</span> <span class="pre">Playbook</span> <span class="pre">on</span> <span class="pre">Correlation</span> <span class="pre">IDs</span></code></a></p>
 <p>ActiveMQ will give this header a different name depending on the protocol you use.</p>
-<table class="table" id="id2">
-<caption><span class="caption-text">Correlation ID Headers</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
-<colgroup>
-<col style="width: 50.0%" />
-<col style="width: 50.0%" />
-</colgroup>
+<table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Protocol</p></th>
 <th class="head"><p>Header name</p></th>
@@ -614,7 +600,7 @@ messages containing documents.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/explanations/events.rst">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/explanations/events.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -629,7 +615,7 @@ messages containing documents.</p>
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/explanations/events.rst.txt">
+    <a href="../_sources/explanations/events.md.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

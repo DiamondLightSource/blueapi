@@ -158,7 +158,7 @@ def submit_task(
 
 
 example_query = Query(
-    TaskStatusEnum.UNSTARTED, description="The status of the tasks to retrieve"
+    TaskStatusEnum.PENDING, description="The status of the tasks to retrieve"
 )
 
 

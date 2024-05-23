@@ -7,7 +7,6 @@ from multiprocessing.pool import Pool as PoolClass
 from blueapi.config import ApplicationConfig
 from blueapi.service.handler import (
     get_handler,
-    get_tasks_by_status,
     setup_handler,
     teardown_handler,
 )
@@ -143,6 +142,10 @@ def get_device(name: str) -> DeviceModel:
 
 def submit_task(task: Task) -> str:
     return get_handler().submit_task(task)
+
+
+def get_tasks_by_status(task_status: TaskStatusEnum) -> list[TrackableTask]:
+    return get_handler().get_tasks_by_status(task_status)
 
 
 def clear_task_by_id(task_id: str) -> str:

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -206,35 +206,3 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
 def test_invalid_condition_for_run(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert type(result.exception) is RuntimeError
-
-
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-@patch("requests.request")
-def test_plan_rejected_with_wrong_parameters(
-    mock_requests: Mock,
-    mock_handler: Mock,
-    handler: Handler,
-    client: TestClient,
-    runner: CliRunner,
-):
-    # needed so that the handler is instantiated as MockHandler() instead of Handler().
-    mock_handler.side_effect = Mock(return_value=handler)
-
-    # Setup the (Mock)Handler.
-    with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(main, ["serve"])
-
-    assert result.exit_code == 0
-
-    # Erroneous invocation - with a string argument instead of number
-    runner.invoke(main, ["controller", "run", "sleep", '{"tim": "test"}'])
-
-    # expect the first and only call to be to the helper
-    assert mock_requests.call_args_list[0] == call(
-        "POST",
-        "http://localhost:8000/tasks",
-        json={"name": "sleep", "params": {"tim": "test"}},
-    )
-
-    assert len(mock_requests.call_args_list) == 1

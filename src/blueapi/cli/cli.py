@@ -181,9 +181,8 @@ def run_plan(
     if config.stomp is not None:
         _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
     else:
-        raise RuntimeError(
-            "Cannot run plans without Stomp configuration to track progress"
-        )
+        pprint("ERROR: Cannot run plans without Stomp configuration to track progress")
+        return
     event_bus_client = EventBusClient(_message_template)
     finished_event: deque[WorkerEvent] = deque()
 

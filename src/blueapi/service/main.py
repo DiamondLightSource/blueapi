@@ -10,7 +10,7 @@ from fastapi import (
     Response,
     status,
 )
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
@@ -163,30 +163,28 @@ def submit_task(
         ) from e
 
 
-class StatusQuery(BaseModel):
-    status: TaskStatusEnum
-
-    @validator("status", pre=True, always=True)
-    def validate_status(cls, v):
-        v_upper = v.upper()
-        if v_upper not in TaskStatusEnum.__members__:
-            raise ValueError("Invalid status query parameter")
-        return TaskStatusEnum(v_upper)
+def validate_task_status(v: str) -> TaskStatusEnum:
+    v_upper = v.upper()
+    if v_upper not in TaskStatusEnum.__members__:
+        raise ValueError("Invalid status query parameter")
+    return TaskStatusEnum(v_upper)
 
 
-@app.get("/tasks")
+@app.get("/tasks/", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
 def get_tasks(
-    query: StatusQuery = Depends(),
+    query: str,
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
     The status of a newly created task is 'unstarted'.
     """
+    desired_status = validate_task_status(query)
+
     try:
-        tasks = handler.get_tasks_by_status(query.status)
+        tasks = handler.get_tasks_by_status(desired_status)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))  # noqa: B904
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))  # noqa: B904
     return TasksListResponse(tasks=tasks)
 
 

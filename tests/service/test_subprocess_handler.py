@@ -7,7 +7,7 @@ from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.service.subprocess_handler import SubprocessHandler
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
-from blueapi.worker.worker import TrackableTask
+from blueapi.worker.worker import TaskStatusEnum, TrackableTask
 
 
 @pytest.fixture(scope="module")
@@ -70,6 +70,9 @@ class DummyHandler(BlueskyHandler):
 
     def begin_task(self, task: WorkerTask) -> WorkerTask:
         return WorkerTask(task_id=task.task_id)
+
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
+        return []
 
     @property
     def active_task(self) -> TrackableTask | None:

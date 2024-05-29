@@ -238,7 +238,7 @@ def test_get_unstarted_tasks(handler: Handler, client: TestClient):
     handler.start()
     # handler.tasks = tasks_data  # overriding the property
     handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
-    response = client.get("/tasks?status=pending")
+    response = client.get("/tasks/?status=pending")
     assert response.status_code == 200
     assert (
         len(response.json()) == 1
@@ -253,7 +253,7 @@ def test_get_tasks_bad_status(handler: Handler, client: TestClient):
     handler.start()
     # handler.tasks = tasks_data
     handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
-    response = client.get("/tasks?status=invalid")
+    response = client.get("/tasks/?task_status=invalid")
     assert response.status_code == 400
     assert "Unsupported status" in response.json()["detail"]
     handler.stop()

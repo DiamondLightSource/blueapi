@@ -172,14 +172,14 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 
 @app.get("/tasks/", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
 def get_tasks(
-    query: str,
+    task_status: str,
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
     The status of a newly created task is 'unstarted'.
     """
-    desired_status = validate_task_status(query)
+    desired_status = validate_task_status(task_status)
 
     try:
         tasks = handler.get_tasks_by_status(desired_status)

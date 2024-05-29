@@ -238,14 +238,11 @@ def test_get_unstarted_tasks(handler: Handler, client: TestClient):
     handler.start()
     # handler.tasks = tasks_data  # overriding the property
     handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
-    response = client.get("/tasks/?status=pending")
+    response = client.get("/tasks/?task_status=pending")
     assert response.status_code == 200
-    assert (
-        len(response.json()) == 1
-    )  # As per our mock data, only 1 task should be 'unstarted'
-    assert (
-        response.json()[0]["task_id"] == "1"
-    )  # Check that the correct task ID is returned
+    r = response.json()
+    assert len(r) == 1  # As per our mock data, only 1 task should be 'unstarted'
+    assert r["tasks"][0]["task_id"] == "1"  # Check that the correct task ID is returned
     handler.stop()
 
 
@@ -255,7 +252,7 @@ def test_get_tasks_bad_status(handler: Handler, client: TestClient):
     handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
     response = client.get("/tasks/?task_status=invalid")
     assert response.status_code == 400
-    assert "Unsupported status" in response.json()["detail"]
+    assert "Invalid status query parameter" in response.json()["detail"]
     handler.stop()
 
 

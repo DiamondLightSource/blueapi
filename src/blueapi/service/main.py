@@ -6,12 +6,11 @@ from fastapi import (
     Depends,
     FastAPI,
     HTTPException,
-    Query,
     Request,
     Response,
     status,
 )
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError, validator
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
@@ -82,6 +81,13 @@ async def on_key_error_404(_: Request, __: KeyError):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "Item not found"},
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST, content={"detail": str(exc)}
     )
 
 
@@ -157,24 +163,28 @@ def submit_task(
         ) from e
 
 
-example_query = Query(
-    TaskStatusEnum.PENDING, description="The status of the tasks to retrieve"
-)
+class StatusQuery(BaseModel):
+    status: TaskStatusEnum
+
+    @validator("status", pre=True, always=True)
+    def validate_status(cls, v):
+        v_upper = v.upper()
+        if v_upper not in TaskStatusEnum.__members__:
+            raise ValueError("Invalid status query parameter")
+        return TaskStatusEnum(v_upper)
 
 
 @app.get("/tasks")
 def get_tasks(
-    status: TaskStatusEnum = example_query,
+    query: StatusQuery = Depends(),
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TasksListResponse:
     """
-    Retrieve tasks based on their status. The default status is 'unstarted'.
+    Retrieve tasks based on their status.
+    The status of a newly created task is 'unstarted'.
     """
-    if status not in TaskStatusEnum.__members__:
-        raise HTTPException(status_code=400, detail="Invalid status query parameter")
-
     try:
-        tasks = handler.get_tasks_by_status(status)
+        tasks = handler.get_tasks_by_status(query.status)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))  # noqa: B904
     return TasksListResponse(tasks=tasks)

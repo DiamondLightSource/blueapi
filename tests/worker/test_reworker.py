@@ -336,7 +336,7 @@ def begin_task_and_wait_until_complete(
     task_id: str,
     timeout: float = 5.0,
 ) -> list[WorkerEvent]:
-    events: "Future[list[WorkerEvent]]" = take_events(
+    events: Future[list[WorkerEvent]] = take_events(
         worker.worker_events,
         lambda event: event.is_complete(),
     )
@@ -398,7 +398,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     ]
 
     count = itertools.count()
-    events: "Future[list[Any]]" = take_events_from_streams(
+    events: Future[list[Any]] = take_events_from_streams(
         event_streams,
         lambda _: next(count) >= len(expected_events) - 1,
     )
@@ -433,7 +433,7 @@ def take_events(
     cutoff_predicate: Callable[[E], bool],
 ) -> "Future[list[E]]":
     events: list[E] = []
-    future: "Future[list[E]]" = Future()
+    future: Future[list[E]] = Future()
 
     def on_event(event: E, event_id: str | None) -> None:
         events.append(event)
@@ -469,7 +469,7 @@ def take_events_from_streams(
 
     """
     events: list[Any] = []
-    future: "Future[list[Any]]" = Future()
+    future: Future[list[Any]] = Future()
 
     def on_event(event: Any, event_id: str | None) -> None:
         print(event)

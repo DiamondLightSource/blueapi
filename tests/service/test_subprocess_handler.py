@@ -44,6 +44,15 @@ def test_raises_if_not_started():
         assert sp_handler.state is None
 
 
+def test_get_tasks_by_status(sp_handler):
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.PENDING) == []
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.RUNNING) == []
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.COMPLETED) == []
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.FAILED) == []
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.CANCELLED) == []
+    assert True == False, "Test not implemented"
+
+
 class DummyHandler(BlueskyHandler):
     @property
     def plans(self) -> list[PlanModel]:

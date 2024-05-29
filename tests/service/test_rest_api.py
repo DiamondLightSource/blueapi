@@ -237,7 +237,7 @@ tasks_data = [
 def test_get_unstarted_tasks(handler: Handler, client: TestClient):
     handler.start()
     # handler.tasks = tasks_data  # overriding the property
-    handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
+    handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)  # noqa
     response = client.get("/tasks/?task_status=pending")
     assert response.status_code == 200
     r = response.json()
@@ -249,7 +249,7 @@ def test_get_unstarted_tasks(handler: Handler, client: TestClient):
 def test_get_tasks_bad_status(handler: Handler, client: TestClient):
     handler.start()
     # handler.tasks = tasks_data
-    handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)
+    handler._worker.get_tasks_by_status = Mock(return_value=tasks_data)  # noqa
     response = client.get("/tasks/?task_status=invalid")
     assert response.status_code == 400
     assert "Invalid status query parameter" in response.json()["detail"]

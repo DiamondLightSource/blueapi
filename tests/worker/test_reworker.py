@@ -224,7 +224,7 @@ def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
         (TaskStatusEnum.COMPLETE, ["task3"]),
     ],
 )
-def test_get_tasks_by_status(worker: Worker, status, expected_task_ids):
+def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
     worker._tasks = {
         "task1": TrackableTask(
             task_id="task1",

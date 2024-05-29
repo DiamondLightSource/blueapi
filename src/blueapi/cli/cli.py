@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from collections import deque
 from functools import wraps
 from pathlib import Path
@@ -28,6 +29,30 @@ from blueapi.worker import ProgressEvent, Task, WorkerEvent, WorkerState
 from .rest import BlueapiRestClient
 
 
+class ConfigurationError(Exception):
+    """Base class for configuration-related errors."""
+
+    exit_code = 1
+
+
+class InvalidParametersError(ConfigurationError):
+    """Error for invalid or missing parameters."""
+
+    exit_code = 50
+
+
+class FormattingError(ConfigurationError):
+    """Error for wrong formatting in the request."""
+
+    exit_code = 51
+
+
+class ServerError(ConfigurationError):
+    """General server error."""
+
+    exit_code = 52
+
+
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option(
@@ -36,15 +61,18 @@ from .rest import BlueapiRestClient
 @click.pass_context
 def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     # if no command is supplied, run with the options passed
-
-    config_loader = ConfigLoader(ApplicationConfig)
-    if config is not None:
-        configs = (config,) if isinstance(config, Path) else config
-        for path in configs:
-            if path.exists():
-                config_loader.use_values_from_yaml(path)
-            else:
-                raise FileNotFoundError(f"Cannot find file: {path}")
+    try:
+        config_loader = ConfigLoader(ApplicationConfig)
+        if config is not None:
+            configs = (config,) if isinstance(config, Path) else config
+            for path in configs:
+                if path.exists():
+                    config_loader.use_values_from_yaml(path)
+                else:
+                    raise FileNotFoundError(f"Cannot find file: {path}")
+    except ConfigurationError as e:
+        print(f"ERROR: {e}")
+        sys.exit(e.exit_code)
 
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
@@ -105,8 +133,9 @@ def check_connection(func):
     def wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except ConnectionError:
+        except ConnectionError as e:
             print("Failed to establish connection to FastAPI server.")
+            sys.exit(e.exit_code)
 
     return wrapper
 
@@ -182,7 +211,7 @@ def run_plan(
         _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
     else:
         pprint("ERROR: Cannot run plans without Stomp configuration to track progress")
-        return
+        quit(code=1)
     event_bus_client = EventBusClient(_message_template)
     finished_event: deque[WorkerEvent] = deque()
 
@@ -199,13 +228,13 @@ def run_plan(
         task_id = resp.task_id
     except ValidationError:
         pprint(f"failed to validate the task parameters, {task_id}")
-        return
+        sys.exit(1)
     except BlueskyRemoteError as e:
-        pprint(f"server error with this message: {e.message} ")
-        return
+        pprint(f"server error with this message: {e} ")
+        sys.exit(1)
     except ValueError:
         pprint("task could not run")
-        return
+        sys.exit(1)
 
     with event_bus_client:
         event_bus_client.subscribe_to_topics(task_id, on_event=store_finished_event)

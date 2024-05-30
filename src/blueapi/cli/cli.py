@@ -3,6 +3,7 @@ import logging
 from collections import deque
 from functools import wraps
 from pathlib import Path
+from pprint import pprint
 from time import sleep
 
 import click
@@ -119,7 +120,7 @@ def check_connection(func):
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
-    print(client.get_plans().dict())
+    pprint(client.get_plans().dict())
 
 
 @controller.command(name="devices")
@@ -128,7 +129,7 @@ def get_plans(obj: dict) -> None:
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
-    print(client.get_devices().dict())
+    pprint(client.get_devices().dict())
 
 
 @controller.command(name="listen")
@@ -150,7 +151,7 @@ def listen_to_events(obj: dict) -> None:
         event: WorkerEvent | ProgressEvent | DataEvent,
     ) -> None:
         converted = json.dumps(event.dict(), indent=2)
-        print(converted)
+        pprint(converted)
 
     print(
         "Subscribing to all bluesky events from "
@@ -221,7 +222,7 @@ def run_plan(
             return
 
     process_event_after_finished(finished_event.pop(), logger)
-    print(updated.dict())
+    pprint(updated.dict())
 
 
 @controller.command(name="state")

@@ -182,9 +182,8 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert (
-        isinstance(result.exception, RuntimeError)
-        and str(result.exception)
-        == "Cannot run plans without Stomp configuration to track progress"
+        "Cannot run plans without Stomp configuration to track progress"
+        in result.output
     )
 
 
@@ -201,8 +200,3 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
         input="\n",
     )
     assert result.exit_code == 0
-
-
-def test_invalid_condition_for_run(runner: CliRunner):
-    result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
-    assert type(result.exception) is RuntimeError

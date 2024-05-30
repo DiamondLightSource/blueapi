@@ -152,7 +152,7 @@ def listen_to_events(obj: dict) -> None:
         event: WorkerEvent | ProgressEvent | DataEvent,
     ) -> None:
         converted = json.dumps(event.dict(), indent=2)
-        pprint(converted)
+        print(converted)
 
     print(
         "Subscribing to all bluesky events from "
@@ -233,7 +233,7 @@ def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
     client: BlueapiRestClient = obj["rest_client"]
-    print(client.get_state())
+    pprint(client.get_state())
 
 
 @controller.command(name="pause")
@@ -244,7 +244,7 @@ def pause(obj: dict, defer: bool = False) -> None:
     """Pause the execution of the current task"""
 
     client: BlueapiRestClient = obj["rest_client"]
-    print(client.set_state(WorkerState.PAUSED, defer=defer))
+    pprint(client.set_state(WorkerState.PAUSED, defer=defer))
 
 
 @controller.command(name="resume")
@@ -254,7 +254,7 @@ def resume(obj: dict) -> None:
     """Resume the execution of the current task"""
 
     client: BlueapiRestClient = obj["rest_client"]
-    print(client.set_state(WorkerState.RUNNING))
+    pprint(client.set_state(WorkerState.RUNNING))
 
 
 @controller.command(name="abort")
@@ -268,7 +268,7 @@ def abort(obj: dict, reason: str | None = None) -> None:
     """
 
     client: BlueapiRestClient = obj["rest_client"]
-    print(client.cancel_current_task(state=WorkerState.ABORTING, reason=reason))
+    pprint(client.cancel_current_task(state=WorkerState.ABORTING, reason=reason))
 
 
 @controller.command(name="stop")
@@ -302,7 +302,7 @@ def env(obj: dict, reload: bool | None) -> None:
     assert isinstance(client := obj["rest_client"], BlueapiRestClient)
     if not reload:
         print(client.get_environment())
-        exit()
+        quit("Exiting the environment inspection")
 
     # Reload the environment if needed
     print("Reloading the environment...")
@@ -311,7 +311,7 @@ def env(obj: dict, reload: bool | None) -> None:
         print(deserialized)
 
     except BlueskyRemoteError:
-        exit("Failed to reload the environment")
+        sys.stderr.write("Failed to reload the environment")
 
     # Initialize a variable to keep track of the environment status
     environment_initialized = False

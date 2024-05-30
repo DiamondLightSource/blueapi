@@ -315,3 +315,50 @@ def test_env_endpoint_interaction(
     # Check other assertions as needed, e.g., output or exit codes
     assert result.exit_code == 0
     assert "Environment is initialized." in result.output
+
+
+@pytest.mark.handler
+@responses.activate
+@patch("blueapi.service.handler.Handler")
+@patch("blueapi.cli.cli.sleep", return_value=None)
+def test_env_timeout(
+    mock_sleep: MagicMock, mock_handler: Mock, handler: Handler, runner: CliRunner
+):
+    max_polling_count = 10  # Assuming this is your max polling count in the command
+
+    # Setup mocked responses for the REST endpoints
+    responses.add(
+        responses.DELETE,
+        "http://localhost:8000/environment",
+        status=200,
+        json=EnvironmentResponse(initialized=False).dict(),
+    )
+    # Add responses for each polling attempt, all indicating not initialized
+    for _ in range(max_polling_count):
+        responses.add(
+            responses.GET,
+            "http://localhost:8000/environment",
+            json=EnvironmentResponse(initialized=False).dict(),
+            status=200,
+        )
+
+    # Run the command that should interact with these endpoints
+    result = runner.invoke(main, ["controller", "env", "-r"])
+
+    # Check if the endpoints were hit as expected
+    assert len(responses.calls) == max_polling_count + 1  # +1 for the DELETE call
+
+    # First call should be DELETE
+    assert responses.calls[0].request.method == "DELETE"
+    assert responses.calls[0].request.url == "http://localhost:8000/environment"
+
+    # Remaining calls should all be GET
+    for call in responses.calls[1:]:  # Skip the first DELETE request
+        assert call.request.method == "GET"
+        assert call.request.url == "http://localhost:8000/environment"
+
+    # Check the output for the timeout message
+    assert "Environment initialization timed out." in result.output
+    assert (
+        result.exit_code == 0
+    )  # Assuming your command exits successfully even on timeout for simplicity

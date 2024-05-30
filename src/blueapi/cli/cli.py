@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from collections import deque
 from functools import wraps
 from pathlib import Path
@@ -46,7 +47,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
                 config_loader.use_values_from_yaml(path)
             else:
                 print(f"Cannot find file: {path}")
-                return
+                sys.exit(1)
 
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
@@ -144,7 +145,7 @@ def listen_to_events(obj: dict) -> None:
         )
     else:
         print("Message bus needs to be configured")
-        return
+        sys.exit(1)
 
     def on_event(
         context: MessageContext,

@@ -132,6 +132,7 @@ def test_get_plans_and_devices(
 def test_invalid_config_path_handling(runner: CliRunner):
     # test what happens if you pass an invalid config file...
     result = runner.invoke(main, ["-c", "non_existent.yaml"])
+    assert result.output == "Cannot find file: non_existent.yaml\n"
     assert result.exit_code == 1
 
 
@@ -172,14 +173,13 @@ def test_config_passed_down_to_command_children(
 
 def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
-    assert (
-        isinstance(result.exception, RuntimeError)
-        and str(result.exception) == "Message bus needs to be configured"
-    )
+    assert result.exit_code == 1
+    assert result.output == "Message bus needs to be configured\n"
 
 
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    assert result.exit_code == 1
     assert (
         "Cannot run plans without Stomp configuration to track progress"
         in result.output
@@ -199,11 +199,6 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
         input="\n",
     )
     assert result.exit_code == 0
-
-
-def test_invalid_condition_for_run(runner: CliRunner):
-    result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
-    assert type(result.exception) is RuntimeError
 
 
 @pytest.mark.handler

@@ -302,16 +302,16 @@ def env(obj: dict, reload: bool | None) -> None:
     assert isinstance(client := obj["rest_client"], BlueapiRestClient)
     if not reload:
         print(client.get_environment())
-        return
+        exit()
 
     # Reload the environment if needed
     print("Reloading the environment...")
     try:
-        print(client.reload_environment())
+        deserialized = client.reload_environment()
+        print(deserialized)
 
     except BlueskyRemoteError:
-        print("Failed to reload the environment")
-        exit()
+        exit("Failed to reload the environment")
 
     # Initialize a variable to keep track of the environment status
     environment_initialized = False

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import responses
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
@@ -11,6 +12,7 @@ from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
+from blueapi.service.model import EnvironmentResponse
 
 
 @pytest.fixture(autouse=True)
@@ -221,53 +223,95 @@ def test_get_env(
 
 @pytest.mark.handler
 @patch("blueapi.service.handler.Handler")
-@patch("requests.request")
-def test_reset_env(
-    mock_requests: Mock,
-    mock_handler: Mock,
-    handler: Handler,
-    client: TestClient,
-    runner: CliRunner,
-):
-    with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(main, ["serve"])
-
-    assert result.exit_code == 0
-
-    mock_requests.return_value = Mock()
-
-    runner.invoke(main, ["controller", "env", "-r"])
-
-    assert mock_requests.call_args[0] == (
-        "DELETE",
-        "http://localhost:8000/environment",
-    )
-
-
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-@patch("requests.request")
+@patch("blueapi.cli.rest.BlueapiRestClient.get_environment")
+@patch("blueapi.cli.rest.BlueapiRestClient.reload_environment")
 @patch("blueapi.cli.cli.sleep", return_value=None)
-def test_reset_env2(
+def test_reset_env_client_behavior(
     mock_sleep: MagicMock,
-    mock_requests: Mock,
+    mock_reload_environment: Mock,
+    mock_get_environment: Mock,
     mock_handler: Mock,
     handler: Handler,
     client: TestClient,
     runner: CliRunner,
 ):
+    # Configure the mock_requests to simulate different responses
+    # First two calls return not initialized, followed by an initialized response
+    mock_get_environment.side_effect = [
+        EnvironmentResponse(initialized=False),  # not initialized
+        EnvironmentResponse(initialized=False),  # not initialized
+        EnvironmentResponse(initialized=True),  # finally initalized
+    ]
+    mock_reload_environment.return_value = "Environment reload initiated."
+
     with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(main, ["serve"])
+        serve_result = runner.invoke(main, ["serve"])
 
-    assert result.exit_code == 0
-
-    mock_requests.return_value = Mock()
+    assert serve_result.exit_code == 0
 
     # Invoke the CLI command that would trigger the environment initialization check
-    runner.invoke(main, ["controller", "env", "-r"])
+    reload_result = runner.invoke(main, ["controller", "env", "-r"])
 
-    # Check if the DELETE request was made correctly
-    assert mock_requests.call_args[0] == (
-        "DELETE",
-        "http://localhost:8000/environment",
+    assert mock_get_environment.call_count == 3
+
+    # Verify if sleep was called between polling iterations
+    assert mock_sleep.call_count == 2  # Since the last check doesn't require a sleep
+
+    # Check if the final environment status is printed correctly
+    # assert "Environment is initialized." in result.output
+    assert (
+        reload_result.output
+        == "Reloading the environment...\nEnvironment reload initiated.\nWaiting for environment to initialize...\nWaiting for environment to initialize...\nEnvironment is initialized.\ninitialized=True\n"  # noqa: E501
     )
+
+
+@responses.activate
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("blueapi.cli.cli.sleep", return_value=None)
+def test_env_endpoint_interaction(
+    mock_sleep: MagicMock, mock_handler: Mock, handler: Handler, runner: CliRunner
+):
+    # Setup mocked responses for the REST endpoints
+    responses.add(
+        responses.DELETE,
+        "http://localhost:8000/environment",
+        status=200,
+        json=EnvironmentResponse(initialized=False).dict(),
+    )
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/environment",
+        json=EnvironmentResponse(initialized=False).dict(),
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/environment",
+        json=EnvironmentResponse(initialized=False).dict(),
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/environment",
+        status=200,
+        json=EnvironmentResponse(initialized=True).dict(),
+    )
+
+    # Run the command that should interact with these endpoints
+    result = runner.invoke(main, ["controller", "env", "-r"])
+
+    # Check if the endpoints were hit as expected
+    assert len(responses.calls) == 4  # Ensures that all expected calls were made
+
+    for index, call in enumerate(responses.calls):
+        if index == 0:
+            assert call.request.method == "DELETE"
+            assert call.request.url == "http://localhost:8000/environment"
+        else:
+            assert call.request.method == "GET"
+            assert call.request.url == "http://localhost:8000/environment"
+
+    # Check other assertions as needed, e.g., output or exit codes
+    assert result.exit_code == 0
+    assert "Environment is initialized." in result.output

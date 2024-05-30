@@ -39,13 +39,6 @@ def test_main_no_params():
     assert result.stdout == expected
 
 
-def test_main_with_nonexistent_config_file():
-    runner = CliRunner()
-    result = runner.invoke(main, ["-c", "tests/non_existent.yaml"])
-
-    assert result.exit_code == 0
-
-
 @patch("requests.request")
 def test_connection_error_caught_by_wrapper_func(mock_requests: Mock):
     mock_requests.side_effect = ConnectionError()

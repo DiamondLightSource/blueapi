@@ -197,11 +197,11 @@ def run_plan(
         task = Task(name=name, params=parsed_params)
         resp = client.create_task(task)
         task_id = resp.task_id
-    except ValidationError:
-        pprint(f"failed to validate the task parameters, {task_id}")
+    except ValidationError as e:
+        pprint(f"failed to validate the task parameters, {task_id}, error: {e}")
         return
     except BlueskyRemoteError as e:
-        pprint(f"server error with this message: {e.message} ")
+        pprint(f"server error with this message: {e}")
         return
     except ValueError:
         pprint("task could not run")

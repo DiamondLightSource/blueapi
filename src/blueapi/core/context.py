@@ -7,14 +7,12 @@ from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.run_engine import RunEngine
+from ophyd_async.core import NotConnected
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
 
 from blueapi.config import EnvironmentConfig, SourceKind
-from blueapi.utils import (
-    BlueapiPlanModelConfig,
-    load_module_all,
-)
+from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
@@ -111,9 +109,11 @@ class BlueskyContext:
         for device in devices.values():
             self.device(device)
 
-        num_failed = len(exceptions)
-
-        LOGGER.warning(f"{num_failed} device(s) failed to connect: {exceptions}")
+        # If exceptions have occurred, we log them but we do not make blueapi
+        # fall over
+        if len(exceptions) > 0:
+            LOGGER.warning(f"{len(exceptions)} device(s) failed to connect")
+            LOGGER.exception(NotConnected(exceptions))
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

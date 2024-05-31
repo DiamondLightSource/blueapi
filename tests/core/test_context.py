@@ -196,7 +196,10 @@ def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
     """
     import tests.core.fake_device_module as device_module
 
-    with patch("dodal.utils.make_all_devices") as mock_make_all_devices:
+    with patch(
+        "blueapi.core.context.make_all_devices",
+        return_value=({}, {}),
+    ) as mock_make_all_devices:
         empty_context.with_dodal_module(
             device_module, some_argument=1, another_argument="two"
         )

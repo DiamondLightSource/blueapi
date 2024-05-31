@@ -111,7 +111,9 @@ class BlueskyContext:
         # If exceptions have occurred, we log them but we do not make blueapi
         # fall over
         if len(exceptions) > 0:
-            LOGGER.warning(f"{len(exceptions)} device(s) failed to connect")
+            LOGGER.warning(
+                f"{len(exceptions)} exceptions occurred while instantiating devices"
+            )
             LOGGER.exception(NotConnected(exceptions))
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:

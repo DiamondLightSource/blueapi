@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 from collections import deque
 from functools import wraps
 from pathlib import Path
@@ -46,8 +45,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
             if path.exists():
                 config_loader.use_values_from_yaml(path)
             else:
-                print(f"Cannot find file: {path}")
-                sys.exit(1)
+                raise FileNotFoundError(f"Cannot find file: {path}")
 
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
@@ -110,7 +108,6 @@ def check_connection(func):
             func(*args, **kwargs)
         except ConnectionError:
             print("Failed to establish connection to FastAPI server.")
-            return
 
     return wrapper
 
@@ -144,8 +141,7 @@ def listen_to_events(obj: dict) -> None:
             StompMessagingTemplate.autoconfigured(config.stomp)
         )
     else:
-        print("Message bus needs to be configured")
-        sys.exit(1)
+        raise RuntimeError("Message bus needs to be configured")
 
     def on_event(
         context: MessageContext,
@@ -186,8 +182,9 @@ def run_plan(
     if config.stomp is not None:
         _message_template = StompMessagingTemplate.autoconfigured(config.stomp)
     else:
-        pprint("ERROR: Cannot run plans without Stomp configuration to track progress")
-        return
+        raise RuntimeError(
+            "Cannot run plans without Stomp configuration to track progress"
+        )
     event_bus_client = EventBusClient(_message_template)
     finished_event: deque[WorkerEvent] = deque()
 
@@ -280,7 +277,7 @@ def stop(obj: dict) -> None:
     """
 
     client: BlueapiRestClient = obj["rest_client"]
-    print(client.cancel_current_task(state=WorkerState.STOPPING))
+    pprint(client.cancel_current_task(state=WorkerState.STOPPING))
 
 
 @controller.command(name="env")
@@ -311,7 +308,8 @@ def env(obj: dict, reload: bool | None) -> None:
         print(deserialized)
 
     except BlueskyRemoteError:
-        sys.stderr.write("Failed to reload the environment")
+        pprint("Failed to reload the environment")
+        quit("Exiting the environment inspection")
 
     # Initialize a variable to keep track of the environment status
     environment_initialized = False

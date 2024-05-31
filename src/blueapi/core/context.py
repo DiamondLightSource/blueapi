@@ -109,12 +109,6 @@ class BlueskyContext:
         for device in devices.values():
             self.device(device)
 
-        directory_provider = get_directory_provider()
-        if directory_provider is not None:
-            self.run_engine.scan_id_source = (
-                lambda _: directory_provider.next_scan_number
-            )
-
         # If exceptions have occurred, we log them but we do not make blueapi
         # fall over
         if len(exceptions) > 0:
@@ -122,6 +116,14 @@ class BlueskyContext:
                 f"{len(exceptions)} exceptions occurred while instantiating devices"
             )
             LOGGER.exception(NotConnected(exceptions))
+
+    def with_dodal_directory_provider(self) -> None:
+        directory_provider = get_directory_provider()
+        if directory_provider is not None:
+            directory_provider.scan_id_source = lambda _: self.run_engine.md["scan_id"]
+
+    def with_scan_id_source(self, source) -> None:
+        self.run_engine.scan_id_source = lambda _: source
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

@@ -1,3 +1,4 @@
+import logging
 import uuid
 from abc import ABC, abstractmethod
 
@@ -39,3 +40,20 @@ class GdaScanIdSource(UniqueScanIdSource):
         response.raise_for_status()
         gda_response = GdaNumtrackerResponse.parse_obj(response.json())
         return gda_response.collectionNumber
+
+
+class AggregateScanIdSource(UniqueScanIdSource):
+    def __init__(self, sources: list[UniqueScanIdSource]) -> None:
+        self._sources = sources
+        super().__init__()
+
+    def get_new_scan_id(self) -> int | str:
+        for source in self._sources:
+            try:
+                return source.get_new_scan_id()
+            except Exception as ex:
+                logging.exception(ex)
+        raise ValueError(
+            "Could not acquire a valid scan ID from any of the "
+            f"following sources: {self._sources}"
+        )

@@ -43,8 +43,13 @@ class BlueskyContext:
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
+    global_plan_wrapper: PlanGenerator | None = None
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
+
+    def with_global_plan_wrapper(self, wrapper_name: str) -> None:
+        wrapper = self.plan_functions[wrapper_name]
+        self.global_plan_wrapper = wrapper
 
     def find_device(self, addr: str | list[str]) -> Device | None:
         """
@@ -74,6 +79,9 @@ class BlueskyContext:
                 self.with_device_module(mod)
             elif source.kind is SourceKind.DODAL:
                 self.with_dodal_module(mod)
+
+        if config.global_plan_wrapper is not None:
+            self.with_global_plan_wrapper(config.global_plan_wrapper)
 
     def with_plan_module(self, module: ModuleType) -> None:
         """

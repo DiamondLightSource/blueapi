@@ -73,6 +73,7 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
     ]
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
+    global_plan_wrapper: str | None = None
 
 
 class LoggingConfig(BlueapiBaseModel):

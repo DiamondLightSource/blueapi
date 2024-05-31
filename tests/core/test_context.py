@@ -52,6 +52,10 @@ def has_default_reference(m: Movable = inject(SIM_MOTOR_NAME)) -> MsgGenerator:
     yield from []
 
 
+def plan_wrapper(plan: MsgGenerator) -> MsgGenerator:  # type: ignore
+    ...
+
+
 MOVABLE_DEFAULT = [inject(SIM_MOTOR_NAME)]
 
 
@@ -387,3 +391,29 @@ def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:
     empty_context.plan(a_plan)
     with pytest.raises(ValidationError):
         empty_context.plans[a_plan.__name__].model(fooBar=1, baz="test")
+
+
+def test_global_wrapper_from_config(
+    empty_context: BlueskyContext,
+) -> None:
+    empty_context.plan(plan_wrapper)
+    empty_context.with_config(
+        EnvironmentConfig(sources=[], global_plan_wrapper="plan_wrapper")
+    )
+    assert empty_context.global_plan_wrapper is plan_wrapper
+
+
+def test_set_global_plan_wrapper(empty_context: BlueskyContext) -> None:
+    empty_context.plan(has_no_params)
+    empty_context.plan(plan_wrapper)
+
+    assert empty_context.global_plan_wrapper is None
+    empty_context.with_global_plan_wrapper("plan_wrapper")
+    assert empty_context.global_plan_wrapper is plan_wrapper
+
+
+def test_do_not_set_global_plan_wrapper(empty_context: BlueskyContext) -> None:
+    empty_context.plan(has_no_params)
+
+    with pytest.raises(KeyError):
+        empty_context.with_global_plan_wrapper("plan_wrapper")

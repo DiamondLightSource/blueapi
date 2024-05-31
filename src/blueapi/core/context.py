@@ -7,6 +7,7 @@ from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.run_engine import RunEngine
+from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
@@ -102,8 +103,6 @@ class BlueskyContext:
         self.with_dodal_module(module)
 
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
-        from dodal.utils import make_all_devices
-
         devices, exceptions = make_all_devices(module, **kwargs)
 
         for device in devices.values():

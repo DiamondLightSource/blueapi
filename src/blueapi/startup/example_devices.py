@@ -72,3 +72,10 @@ def current_det(
         Imax=1,
         labels={"detectors"},
     )
+
+
+def unplugged_motor(name="unplugged_motor") -> SynAxisWithMotionEvents:
+    raise TimeoutError(
+        "This device is supposed to fail, blueapi "
+        "will mark it as not present and start up regardless"
+    )

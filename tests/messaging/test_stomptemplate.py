@@ -3,12 +3,12 @@ from collections.abc import Iterable
 from concurrent.futures import Future
 from queue import Queue
 from typing import Any
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from pydantic import BaseModel, BaseSettings, Field
 from stomp import Connection
-from stomp.exception import ConnectFailedException
+from stomp.exception import ConnectFailedException, NotConnectedException
 
 from blueapi.config import StompConfig
 from blueapi.messaging import MessageContext, MessagingTemplate, StompMessagingTemplate
@@ -16,6 +16,29 @@ from blueapi.service.handler import get_handler, setup_handler, teardown_handler
 
 _TIMEOUT: float = 10.0
 _COUNT = itertools.count()
+
+
+def test_disconnected_error(template: MessagingTemplate, test_queue: str) -> None:
+    acknowledge(template, test_queue)
+
+    f: Future = Future()
+
+    def callback(ctx: MessageContext, message: str) -> None:
+        f.set_result(message)
+
+    with pytest.raises(NotConnectedException):
+        template.send(test_queue, "test_message", callback)
+
+    with patch(
+        "blueapi.messaging.stomptemplate.LOGGER.info", autospec=True
+    ) as mock_logger:
+        template.disconnect()
+        assert not template.is_connected()
+        expected_calls = [
+            call("Disconnecting..."),
+            call("Already disconnected"),
+        ]
+        mock_logger.assert_has_calls(expected_calls)
 
 
 class StompTestingSettings(BaseSettings):

@@ -208,12 +208,12 @@ def test_invalid_condition_for_run(runner: CliRunner):
 
 
 def test_validation_error():
-    assert True == False, "Test not implemented"
+    raise AssertionError("Test not implemented")
 
 
 def test_blueskyremote_error():
-    assert True == False, "Test not implemented"
+    raise AssertionError("Test not implemented")
 
 
 def test_value_error():
-    assert True == False, "Test not implemented"
+    raise AssertionError("Test not implemented")

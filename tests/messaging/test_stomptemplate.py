@@ -18,29 +18,6 @@ _TIMEOUT: float = 10.0
 _COUNT = itertools.count()
 
 
-def test_disconnected_error(template: MessagingTemplate, test_queue: str) -> None:
-    acknowledge(template, test_queue)
-
-    f: Future = Future()
-
-    def callback(ctx: MessageContext, message: str) -> None:
-        f.set_result(message)
-
-    with pytest.raises(NotConnectedException):
-        template.send(test_queue, "test_message", callback)
-
-    with patch(
-        "blueapi.messaging.stomptemplate.LOGGER.info", autospec=True
-    ) as mock_logger:
-        template.disconnect()
-        assert not template.is_connected()
-        expected_calls = [
-            call("Disconnecting..."),
-            call("Already disconnected"),
-        ]
-        mock_logger.assert_has_calls(expected_calls)
-
-
 class StompTestingSettings(BaseSettings):
     blueapi_test_stomp_ports: list[int] = Field(default=[61613])
 
@@ -80,6 +57,31 @@ def test_queue_2(template: MessagingTemplate) -> str:
 @pytest.fixture
 def test_topic(template: MessagingTemplate) -> str:
     return template.destinations.topic(f"test-{next(_COUNT)}")
+
+
+def test_disconnected_error(template: MessagingTemplate, test_queue: str) -> None:
+    acknowledge(template, test_queue)
+
+    f: Future = Future()
+
+    def callback(ctx: MessageContext, message: str) -> None:
+        f.set_result(message)
+
+    if template.is_connected():
+        template.disconnect()
+    with pytest.raises(NotConnectedException):
+        template.send(test_queue, "test_message", callback)
+
+    with patch(
+        "blueapi.messaging.stomptemplate.LOGGER.info", autospec=True
+    ) as mock_logger:
+        template.disconnect()
+        assert not template.is_connected()
+        expected_calls = [
+            call("Disconnecting..."),
+            call("Already disconnected"),
+        ]
+        mock_logger.assert_has_calls(expected_calls)
 
 
 @pytest.mark.stomp

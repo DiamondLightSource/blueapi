@@ -256,7 +256,7 @@ def test_get_tasks_bad_status(handler: Handler, client: TestClient):
     handler.stop()
 
 
-def test_get_tasks_bad_status(handler: Handler, client: TestClient):
+def test_get_tasks_value_error(handler: Handler, client: TestClient):
     handler.start()
     # handler.tasks = tasks_data
     with pytest.raises(ValueError):

@@ -238,7 +238,6 @@ def run_plan(
         pprint("task could not run")
         sys.exit(1)
 
-
     with event_bus_client:
         event_bus_client.subscribe_to_topics(task_id, on_event=store_finished_event)
         updated = client.update_worker_task(WorkerTask(task_id=task_id))

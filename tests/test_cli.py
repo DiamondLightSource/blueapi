@@ -201,6 +201,7 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
     )
     assert result.exit_code == 0
 
+
 def test_invalid_condition_for_run(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert type(result.exception) is SystemExit
@@ -216,4 +217,3 @@ def test_blueskyremote_error():
 
 def test_value_error():
     assert True == False, "Test not implemented"
-

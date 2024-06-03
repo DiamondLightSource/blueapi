@@ -7,14 +7,13 @@ from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.run_engine import RunEngine
+from dodal.utils import make_all_devices
+from ophyd_async.core import NotConnected
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
 
 from blueapi.config import EnvironmentConfig, SourceKind
-from blueapi.utils import (
-    BlueapiPlanModelConfig,
-    load_module_all,
-)
+from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
@@ -104,10 +103,18 @@ class BlueskyContext:
         self.with_dodal_module(module)
 
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
-        from dodal.utils import make_all_devices
+        devices, exceptions = make_all_devices(module, **kwargs)
 
-        for device in make_all_devices(module, **kwargs).values():
+        for device in devices.values():
             self.device(device)
+
+        # If exceptions have occurred, we log them but we do not make blueapi
+        # fall over
+        if len(exceptions) > 0:
+            LOGGER.warning(
+                f"{len(exceptions)} exceptions occurred while instantiating devices"
+            )
+            LOGGER.exception(NotConnected(exceptions))
 
     def plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

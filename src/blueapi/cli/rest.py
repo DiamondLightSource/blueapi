@@ -1,4 +1,5 @@
 from collections.abc import Callable, Mapping
+from http import HTTPStatus
 from typing import Any, Literal, TypeVar
 
 import requests
@@ -18,6 +19,15 @@ from blueapi.worker import Task, TrackableTask, WorkerState
 from .event_bus_client import BlueskyRemoteError
 
 T = TypeVar("T")
+
+
+def get_status_message(code: int) -> str:
+    """Returns the standard description for a given HTTP status code."""
+    try:
+        message = HTTPStatus(code).phrase
+        return message
+    except ValueError:
+        return "Unknown Status Code"
 
 
 def _is_exception(response: requests.Response) -> bool:
@@ -107,7 +117,11 @@ class BlueapiRestClient:
         url = self._url(suffix)
         response = requests.request(method, url, json=data)
         if raise_if(response):
-            raise BlueskyRemoteError(str(response))
+            message = get_status_message(response.status_code)
+            error_message = f"""Response failed with text: {response.text},
+            with error code: {response.status_code}
+            which corresponds to {message}"""
+            raise BlueskyRemoteError(error_message)
         deserialized = parse_obj_as(target_type, response.json())
         return deserialized
 

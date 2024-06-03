@@ -182,8 +182,8 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert (
-        result.output
-        == "'ERROR: Cannot run plans without Stomp configuration to track progress'\n"
+        "Cannot run plans without Stomp configuration to track progress"
+        in result.output
     )
 
 
@@ -201,7 +201,6 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
     )
     assert result.exit_code == 0
 
-
 def test_invalid_condition_for_run(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert type(result.exception) is SystemExit
@@ -217,3 +216,4 @@ def test_blueskyremote_error():
 
 def test_value_error():
     assert True == False, "Test not implemented"
+

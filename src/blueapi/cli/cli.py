@@ -212,6 +212,7 @@ def run_plan(
     else:
         pprint("ERROR: Cannot run plans without Stomp configuration to track progress")
         quit(code=1)
+
     event_bus_client = EventBusClient(_message_template)
     finished_event: deque[WorkerEvent] = deque()
 
@@ -226,6 +227,7 @@ def run_plan(
         task = Task(name=name, params=parsed_params)
         resp = client.create_task(task)
         task_id = resp.task_id
+
     except ValidationError:
         pprint(f"failed to validate the task parameters, {task_id}")
         sys.exit(1)
@@ -235,6 +237,7 @@ def run_plan(
     except ValueError:
         pprint("task could not run")
         sys.exit(1)
+
 
     with event_bus_client:
         event_bus_client.subscribe_to_topics(task_id, on_event=store_finished_event)

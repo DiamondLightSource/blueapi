@@ -423,7 +423,7 @@ E = TypeVar("E")
 def take_n_events(
     stream: EventStream[E, Any],
     num: int,
-) -> "Future[list[E]]":
+) -> Future[list[E]]:
     count = itertools.count()
     return take_events(stream, lambda _: next(count) >= num)
 
@@ -431,7 +431,7 @@ def take_n_events(
 def take_events(
     stream: EventStream[E, Any],
     cutoff_predicate: Callable[[E], bool],
-) -> "Future[list[E]]":
+) -> Future[list[E]]:
     events: list[E] = []
     future: Future[list[E]] = Future()
 
@@ -448,7 +448,7 @@ def take_events(
 def take_events_from_streams(
     streams: list[EventStream[Any, int]],
     cutoff_predicate: Callable[[Any], bool],
-) -> "Future[list[Any]]":
+) -> Future[list[Any]]:
     """Returns a collated list of futures for events in numerous event streams.
 
     The support for generic and algebraic types doesn't appear to extend to

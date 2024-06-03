@@ -206,7 +206,9 @@ class StompMessagingTemplate(MessagingTemplate):
 
     def disconnect(self) -> None:
         LOGGER.info("Disconnecting...")
-
+        if not self.is_connected():
+            LOGGER.info("Already disconnected")
+            return
         # We need to synchronise the disconnect on an event because the stomp Connection
         # object doesn't do it for us
         disconnected = Event()

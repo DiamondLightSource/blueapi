@@ -8,6 +8,7 @@ from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsyn
 from dls_bluesky_core.core import MsgGenerator, PlanGenerator, inject
 from ophyd.sim import SynAxis, SynGauss
 from pydantic import ValidationError, parse_obj_as
+from pytest import LogCaptureFixture
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
@@ -174,6 +175,19 @@ def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
     } == empty_context.devices.keys()
 
 
+def test_add_failing_deivces_from_module(
+    caplog: LogCaptureFixture, empty_context: BlueskyContext
+) -> None:
+    import tests.core.fake_device_module_failing as device_module
+
+    caplog.set_level(10)
+    empty_context.with_device_module(device_module)
+    logs = caplog.get_records("call")
+
+    assert any("TimeoutError: FooBar" in log.message for log in logs)
+    assert len(empty_context.devices.keys()) == 0
+
+
 def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
     empty_context: BlueskyContext,
 ) -> None:
@@ -182,7 +196,10 @@ def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
     """
     import tests.core.fake_device_module as device_module
 
-    with patch("dodal.utils.make_all_devices") as mock_make_all_devices:
+    with patch(
+        "blueapi.core.context.make_all_devices",
+        return_value=({}, {}),
+    ) as mock_make_all_devices:
         empty_context.with_dodal_module(
             device_module, some_argument=1, another_argument="two"
         )

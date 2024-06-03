@@ -44,13 +44,31 @@ def test_raises_if_not_started():
         assert sp_handler.state is None
 
 
+tasks_data = [
+    TrackableTask(
+        task_id="1", task=Task(name="first_task"), is_complete=False, is_pending=True
+    ),
+    TrackableTask(
+        task_id="2", task=Task(name="second_task"), is_complete=False, is_pending=False
+    ),
+    TrackableTask(
+        task_id="3", task=Task(name="third_task"), is_complete=True, is_pending=False
+    ),
+    TrackableTask(
+        task_id="4", task=Task(name="fourth_task"), is_complete=False, is_pending=True
+    ),
+]
+
+
+@patch(
+    "blueapi.service.subprocess_handler.SubprocessHandler.tasks",
+    new_callable=MagicMock(return_value=tasks_data),
+)
 def test_get_tasks_by_status(sp_handler):
-    assert sp_handler.get_tasks_by_status(TaskStatusEnum.PENDING) == []
-    assert sp_handler.get_tasks_by_status(TaskStatusEnum.RUNNING) == []
-    assert sp_handler.get_tasks_by_status(TaskStatusEnum.COMPLETED) == []
-    assert sp_handler.get_tasks_by_status(TaskStatusEnum.FAILED) == []
-    assert sp_handler.get_tasks_by_status(TaskStatusEnum.CANCELLED) == []
-    assert True == False, "Test not implemented"
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.PENDING) == [tasks_data[0]]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.UNDERWAY) == [tasks_data[1]]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.COMPLETED) == [tasks_data[2]]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.ERROR) == []
 
 
 class DummyHandler(BlueskyHandler):

@@ -256,8 +256,14 @@ def test_get_tasks_bad_status(handler: Handler, client: TestClient):
     handler.stop()
 
 
-def test_get_value_error_on_bad_task_id(handler: Handler, client: TestClient):
-    assert True == False, "Test not implemented"
+def test_get_tasks_bad_status(handler: Handler, client: TestClient):
+    handler.start()
+    # handler.tasks = tasks_data
+    with pytest.raises(ValueError):
+        response = client.get("/tasks/?task_status=invalid")
+        assert response.status_code == 400
+        assert "Invalid status query parameter" in response.json()["detail"]
+        handler.stop()
 
 
 def test_worker_task_is_none_on_startup(handler: Handler, client: TestClient) -> None:

@@ -234,6 +234,8 @@ def run_plan(
     except BlueskyRemoteError as e:
         pprint(f"server error with this message: {e} ")
         sys.exit(1)
+        # todo what to do here? let the internal error break this outside loop?
+        # I'd prefer to catch all errors here
     except ValueError:
         pprint("task could not run")
         sys.exit(1)

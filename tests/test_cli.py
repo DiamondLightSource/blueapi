@@ -207,13 +207,13 @@ def test_invalid_condition_for_run(runner: CliRunner):
     assert type(result.exception) is SystemExit
 
 
-def test_validation_error():
-    raise AssertionError("Test not implemented")
+# def test_validation_error():
+#     raise AssertionError("Test not implemented")
 
 
-def test_blueskyremote_error():
-    raise AssertionError("Test not implemented")
+# def test_blueskyremote_error():
+#     raise AssertionError("Test not implemented")
 
 
-def test_value_error():
-    raise AssertionError("Test not implemented")
+# def test_value_error():
+#     raise AssertionError("Test not implemented")

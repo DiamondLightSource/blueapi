@@ -178,7 +178,8 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     assert result.exit_code == 1
     assert (
         isinstance(result.exception, RuntimeError)
-        and str(result.exception) == "Message bus needs to be configured"
+        and str(result.exception)
+        == "Cannot run plans without Stomp configuration to track progress"
     )
 
 

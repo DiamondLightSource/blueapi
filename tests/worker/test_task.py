@@ -1,7 +1,6 @@
 from unittest.mock import Mock
 
 import pytest
-from bluesky.plan_stubs import checkpoint, close_run, open_run
 
 from blueapi.core import BlueskyContext, MsgGenerator
 from blueapi.worker import Task

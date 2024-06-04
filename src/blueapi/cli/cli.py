@@ -307,9 +307,8 @@ def env(obj: dict, reload: bool | None) -> None:
         deserialized = client.reload_environment()
         print(deserialized)
 
-    except BlueskyRemoteError:
-        pprint("Failed to reload the environment")
-        quit("Exiting the environment inspection")
+    except BlueskyRemoteError as e:
+        raise BlueskyRemoteError("Failed to reload the environment") from e
 
     # Initialize a variable to keep track of the environment status
     environment_initialized = False
@@ -329,8 +328,7 @@ def env(obj: dict, reload: bool | None) -> None:
             polling_count += 1
             sleep(1)  # Wait for 1 seconds before checking again
     if polling_count == max_polling_count:
-        print("Environment initialization timed out.")
-        return
+        raise TimeoutError("Environment initialization timed out.")
 
     # Once out of the loop, print the initialized environment status
     print(environment_status)

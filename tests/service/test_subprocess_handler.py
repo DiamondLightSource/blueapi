@@ -65,6 +65,12 @@ tasks_data = [
     new_callable=MagicMock(return_value=tasks_data),
 )
 def test_get_tasks_by_status(sp_handler):
+    h = SubprocessHandler()
+    h.tasks = tasks_data
+    assert h.get_tasks_by_status(TaskStatusEnum.PENDING) == [tasks_data[0]]
+    assert h.get_tasks_by_status(TaskStatusEnum.UNDERWAY) == [tasks_data[1]]
+    assert h.get_tasks_by_status(TaskStatusEnum.COMPLETED) == [tasks_data[2]]
+    assert h.get_tasks_by_status(TaskStatusEnum.ERROR) == []
     assert sp_handler.get_tasks_by_status(TaskStatusEnum.PENDING) == [tasks_data[0]]
     assert sp_handler.get_tasks_by_status(TaskStatusEnum.UNDERWAY) == [tasks_data[1]]
     assert sp_handler.get_tasks_by_status(TaskStatusEnum.COMPLETED) == [tasks_data[2]]

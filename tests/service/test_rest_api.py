@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngineStateMachine
@@ -235,25 +235,22 @@ tasks_data = [
 
 
 def test_get_unstarted_tasks(handler: Handler, client: TestClient):
-    handler.start()
     # handler.tasks = tasks_data  # overriding the property
     with patch.object(handler._worker, "get_tasks_by_status", return_value=tasks_data):
         response = client.get("/tasks/?task_status=pending")
         assert response.status_code == 200
         r = response.json()
         assert len(r) == 1  # As per our mock data, only 1 task should be 'unstarted'
-        assert r["tasks"][0]["task_id"] == "1"  # Check that the correct task ID is returned
-    handler.stop()
+        assert (
+            r["tasks"][0]["task_id"] == "1"
+        )  # Check that the correct task ID is returned
 
 
 def test_get_tasks_bad_status(handler: Handler, client: TestClient):
-    handler.start()
-    # handler.tasks = tasks_data
     with patch.object(handler._worker, "get_tasks_by_status", return_value=tasks_data):
         response = client.get("/tasks/?task_status=invalid")
         assert response.status_code == 400
         assert "Invalid status query parameter" in response.json()["detail"]
-    handler.stop()
 
 
 def test_worker_task_is_none_on_startup(handler: Handler, client: TestClient) -> None:

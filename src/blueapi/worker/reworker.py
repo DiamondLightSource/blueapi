@@ -137,10 +137,8 @@ class TaskWorker(Worker[Task]):
         return task_id
 
     def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask[Task]]:
-        if status == TaskStatusEnum.UNDERWAY:
-            return [
-                self.get_active_task()
-            ]
+        if status == TaskStatusEnum.RUNNING:
+            return [self.get_active_task()]
         elif status == TaskStatusEnum.PENDING:
             return [task for task in self._tasks.values() if task.is_pending]
         elif status == TaskStatusEnum.COMPLETE:

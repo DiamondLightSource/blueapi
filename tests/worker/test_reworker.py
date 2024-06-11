@@ -219,7 +219,7 @@ def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
 @pytest.mark.parametrize(
     "status, expected_task_ids",
     [
-        (TaskStatusEnum.UNDERWAY, ["task1"]),
+        (TaskStatusEnum.RUNNING, ["task1"]),
         (TaskStatusEnum.PENDING, ["task2"]),
         (TaskStatusEnum.COMPLETE, ["task3"]),
     ],

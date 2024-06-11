@@ -65,11 +65,11 @@ def test_get_tasks_by_status():
     h.tasks = tasks_data
     h.start()
     assert h.get_tasks_by_status(TaskStatusEnum.PENDING) == [tasks_data[0]]
-    assert h.get_tasks_by_status(TaskStatusEnum.UNDERWAY) == [tasks_data[1]]
+    assert h.get_tasks_by_status(TaskStatusEnum.RUNNING) == [tasks_data[1]]
     assert h.get_tasks_by_status(TaskStatusEnum.COMPLETED) == [tasks_data[2]]
     assert h.get_tasks_by_status(TaskStatusEnum.ERROR) == []
     assert sp_handler.get_tasks_by_status(TaskStatusEnum.PENDING) == [tasks_data[0]]
-    assert sp_handler.get_tasks_by_status(TaskStatusEnum.UNDERWAY) == [tasks_data[1]]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.RUNNING) == [tasks_data[1]]
     assert sp_handler.get_tasks_by_status(TaskStatusEnum.COMPLETED) == [tasks_data[2]]
     assert sp_handler.get_tasks_by_status(TaskStatusEnum.ERROR) == []
 

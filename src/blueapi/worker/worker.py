@@ -39,17 +39,17 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def get_tasks(self) -> list[TrackableTask[T]]:
+    def get_tasks(self) -> list[TrackableTask]:
         """
         Return a list of all tasks on the worker,
         any one of which can be triggered with begin_task.
 
         Returns:
-            List[TrackableTask[T]]: List of task objects
+            List[TrackableTask]: List of task objects
         """
 
     @abstractmethod
-    def get_task_by_id(self, task_id: str) -> TrackableTask[T] | None:
+    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         """
         Returns a task matching the task ID supplied,
         if the worker knows of it.
@@ -58,16 +58,16 @@ class Worker(ABC, Generic[T]):
             task_id: The ID of the task
 
         Returns:
-            Optional[TrackableTask[T]]: The task matching the ID,
+            Optional[TrackableTask]: The task matching the ID,
                 None if the task ID is unknown to the worker.
         """
 
-    def get_active_task(self) -> TrackableTask[T] | None:
+    def get_active_task(self) -> TrackableTask | None:
         """
         Returns the task the worker is currently running
 
         Returns:
-            Optional[TrackableTask[T]]: The current task,
+            Optional[TrackableTask]: The current task,
                 None if the worker is idle.
         """
 

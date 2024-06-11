@@ -12,7 +12,6 @@ attrs==23.2.0
 Babel==2.15.0
 beautifulsoup4==4.12.3
 bidict==0.23.1
--e git+ssh://git@github.com/DiamondLightSource/blueapi.git@43c8571ec504d7ca2f15cdc71c0c1ef716728b4d#egg=blueapi
 bluesky==1.13.0a3
 bluesky-kafka==0.10.0
 bluesky-live==0.0.8

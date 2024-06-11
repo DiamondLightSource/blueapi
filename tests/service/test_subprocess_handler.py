@@ -60,13 +60,10 @@ tasks_data = [
 ]
 
 
-@patch(
-    "blueapi.service.subprocess_handler.SubprocessHandler.tasks",
-    new_callable=MagicMock(return_value=tasks_data),
-)
-def test_get_tasks_by_status(sp_handler):
+def test_get_tasks_by_status():
     h = SubprocessHandler()
     h.tasks = tasks_data
+    h.start()
     assert h.get_tasks_by_status(TaskStatusEnum.PENDING) == [tasks_data[0]]
     assert h.get_tasks_by_status(TaskStatusEnum.UNDERWAY) == [tasks_data[1]]
     assert h.get_tasks_by_status(TaskStatusEnum.COMPLETED) == [tasks_data[2]]

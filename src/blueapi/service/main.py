@@ -192,10 +192,7 @@ def get_tasks(
     """
     desired_status = validate_task_status(task_status)
 
-    try:
-        tasks = handler.get_tasks_by_status(desired_status)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)  from e
+    tasks = handler.get_tasks_by_status(desired_status)
     return TasksListResponse(tasks=tasks)
 
 

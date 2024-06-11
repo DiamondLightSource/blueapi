@@ -17,7 +17,7 @@ class TaskStatusEnum(str, Enum):
     PENDING = "PENDING"
     COMPLETE = "COMPLETE"
     ERROR = "ERROR"
-    UNDERWAY = "UNDERWAY"
+    RUNNING = "RUNNING"
 
 
 class TrackableTask(BlueapiBaseModel, Generic[T]):
@@ -117,13 +117,13 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask[T]]:
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
         """
         Retrieve a list of tasks based on their status.
         Args:
            str: The status to filter tasks by.
         Returns:
-          list[TrackableTask[T]]: A list of tasks that match the given status.
+          list[TrackableTask]: A list of tasks that match the given status.
         """
 
     @abstractmethod

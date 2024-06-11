@@ -115,7 +115,7 @@ class Handler(BlueskyHandler):
             self._worker.begin_task(task.task_id)
         return task
 
-    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask[Task]]:
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
         return self._worker.get_tasks_by_status(status)
 
     @property

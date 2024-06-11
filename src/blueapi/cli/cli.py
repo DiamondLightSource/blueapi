@@ -229,7 +229,7 @@ def run_plan(
         task_id = resp.task_id
 
     except ValidationError as e:
-        pprint(f"failed to validate the task parameters, {task_id}, error: {e}")
+        pprint(f"failed to validate the task parameters, error: {e}")
         sys.exit(1)
     except BlueskyRemoteError as e:
         pprint(f"server error with this message: {e} ")

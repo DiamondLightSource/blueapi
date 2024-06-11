@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
@@ -207,8 +207,23 @@ def test_invalid_condition_for_run(runner: CliRunner):
     assert type(result.exception) is SystemExit
 
 
-# def test_validation_error():
-#     raise AssertionError("Test not implemented")
+@patch(
+    "blueapi.cli.rest.BlueapiRestClient.create_task",
+    side_effect=ValidationError,
+    return_value=ValidationError,
+)
+def test_validation_error(runner: CliRunner):
+    result = runner.invoke(
+        main,
+        [
+            "-c",
+            "tests/example_yaml/valid_stomp_config.yaml",
+            "controller",
+            "listen",
+        ],
+        input="\n",
+    )
+    assert type(result.exception) is ValidationError
 
 
 # def test_blueskyremote_error():

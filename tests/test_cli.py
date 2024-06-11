@@ -6,7 +6,7 @@ import responses
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, TimeoutError
 
 from blueapi import __version__
 from blueapi.cli.cli import main
@@ -345,7 +345,8 @@ def test_env_timeout(
         )
 
     # Run the command that should interact with these endpoints
-    result = runner.invoke(main, ["controller", "env", "-r"])
+    with pytest.raises(TimeoutError) as e:
+        result = runner.invoke(main, ["controller", "env", "-r"])
 
     # Check if the endpoints were hit as expected
     assert len(responses.calls) == max_polling_count + 1  # +1 for the DELETE call
@@ -360,7 +361,7 @@ def test_env_timeout(
         assert call.request.url == "http://localhost:8000/environment"
 
     # Check the output for the timeout message
-    assert "Environment initialization timed out." in result.output
+    assert "Environment initialization timed out." in e.output
     assert (
         result.exit_code == 0
     )  # Assuming your command exits successfully even on timeout for simplicity

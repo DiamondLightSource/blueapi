@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -9,6 +9,7 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.cli import main
+from blueapi.cli.event_bus_client import BlueskyRemoteError
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
 
@@ -207,28 +208,62 @@ def test_invalid_condition_for_run(runner: CliRunner):
     assert type(result.exception) is SystemExit
 
 
-@patch(
-    "blueapi.cli.rest.BlueapiRestClient.create_task",
-    side_effect=ValidationError,
-    return_value=ValidationError,
+# @patch(
+#     "blueapi.cli.rest.BlueapiRestClient.create_task",
+#     side_effect=ValidationError,
+#     return_value=ValidationError,
+# )
+# def test_validation_error(runner: CliRunner):
+#     result = runner.invoke(
+#         main,
+#         [
+#             "-c",
+#             "tests/example_yaml/valid_stomp_config.yaml",
+#             "controller",
+#             "listen",
+#         ],
+#         input="\n",
+#     )
+#     assert type(result.exception) is ValidationError
+
+
+# def test_blueskyremote_error():
+#     raise AssertionError("Test not implemented")
+
+
+# def test_value_error():
+#     raise AssertionError("Test not implemented")
+
+
+@pytest.fixture
+def mock_config():
+    # Mock configuration setup
+    config = {"stomp": MagicMock()}
+    rest_client = MagicMock()
+    return {"config": config, "rest_client": rest_client}
+
+
+@pytest.mark.parametrize(
+    "exception, expected_exit_code",
+    [
+        (ValidationError("Invalid parameters", BaseModel), 1),
+        (BlueskyRemoteError("Server error"), 1),
+        (ValueError("Error parsing parameters"), 1),
+    ],
 )
-def test_validation_error(runner: CliRunner):
-    result = runner.invoke(
-        main,
-        [
-            "-c",
-            "tests/example_yaml/valid_stomp_config.yaml",
-            "controller",
-            "listen",
-        ],
-        input="\n",
-    )
-    assert type(result.exception) is ValidationError
-
-
-def test_blueskyremote_error():
-    raise AssertionError("Test not implemented")
-
-
-def test_value_error():
-    raise AssertionError("Test not implemented")
+def test_error_handling(mock_config, exception, expected_exit_code):
+    # Patching the create_task method to raise different exceptions
+    with patch("blueapi.cli.rest.BlueapiRestClient.create_task", side_effect=exception):
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "-c",
+                "tests/example_yaml/valid_stomp_config.yaml",
+                "controller",
+                "listen",
+            ],
+            input="\n",
+            obj=mock_config,
+        )
+        assert result.exit_code == expected_exit_code

@@ -226,9 +226,9 @@ def test_validation_error(runner: CliRunner):
     assert type(result.exception) is ValidationError
 
 
-# def test_blueskyremote_error():
-#     raise AssertionError("Test not implemented")
+def test_blueskyremote_error():
+    raise AssertionError("Test not implemented")
 
 
-# def test_value_error():
-#     raise AssertionError("Test not implemented")
+def test_value_error():
+    raise AssertionError("Test not implemented")

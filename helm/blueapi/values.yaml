@@ -77,6 +77,8 @@ listener:
 scratch:
   hostPath: "" # example: /usr/local/blueapi-software-scratch
   containerPath: /blueapi-plugins/scratch
+  repos:
+    dodal: https://github.com/DiamondLightSource/dodal.git
 
 # Additional envVars to mount to the pod as a String
 extraEnvVars: |

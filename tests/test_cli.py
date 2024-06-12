@@ -10,6 +10,7 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.cli import main
+from blueapi.cli.event_bus_client import BlueskyRemoteError
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
 from blueapi.service.model import EnvironmentResponse
@@ -363,6 +364,43 @@ def test_env_timeout(
     for call in responses.calls[1:]:  # Skip the first DELETE request
         assert call.request.method == "GET"
         assert call.request.url == "http://localhost:8000/environment"
+
+    # Check the output for the timeout message
+    assert (
+        result.exit_code == 1
+    )  # Assuming your command exits successfully even on timeout for simplicity
+
+
+@pytest.mark.handler
+@responses.activate
+@patch("blueapi.service.handler.Handler")
+@patch("blueapi.cli.cli.sleep", return_value=None)
+def test_env_reload_server_side_error(
+    mock_sleep: MagicMock, mock_handler: Mock, handler: Handler, runner: CliRunner
+):
+    # Setup mocked error response from the server
+    responses.add(
+        responses.DELETE,
+        "http://localhost:8000/environment",
+        status=500,
+        json={},
+    )
+    # Run the command that should interact with these endpoints
+    result = runner.invoke(main, ["controller", "env", "-r"])
+    if result.exception is not None:
+        assert isinstance(
+            result.exception, BlueskyRemoteError
+        ), "Expected a BlueskyRemoteError"
+        assert result.exception.args[0] == "Failed to reload the environment"
+    else:
+        raise AssertionError("Expected an exception but got None")
+
+    # Check if the endpoints were hit as expected
+    assert len(responses.calls) == 1  # +1 for the DELETE call
+
+    # Only call should be DELETE
+    assert responses.calls[0].request.method == "DELETE"
+    assert responses.calls[0].request.url == "http://localhost:8000/environment"
 
     # Check the output for the timeout message
     assert (

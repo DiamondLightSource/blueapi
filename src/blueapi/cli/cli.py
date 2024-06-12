@@ -297,41 +297,40 @@ def env(obj: dict, reload: bool | None) -> None:
     """
 
     assert isinstance(client := obj["rest_client"], BlueapiRestClient)
-    if not reload:
+    if reload:
+        # Reload the environment if needed
+        print("Reloading the environment...")
+        try:
+            deserialized = client.reload_environment()
+            print(deserialized)
+
+        except BlueskyRemoteError as e:
+            raise BlueskyRemoteError("Failed to reload the environment") from e
+
+        # Initialize a variable to keep track of the environment status
+        environment_initialized = False
+        polling_count = 0
+        max_polling_count = 10
+        # Use a while loop to keep checking until the environment is initialized
+        while not environment_initialized and polling_count < max_polling_count:
+            # Fetch the current environment status
+            environment_status = client.get_environment()
+
+            # Check if the environment is initialized
+            if environment_status.initialized:
+                print("Environment is initialized.")
+                environment_initialized = True
+            else:
+                print("Waiting for environment to initialize...")
+                polling_count += 1
+                sleep(1)  # Wait for 1 seconds before checking again
+        if polling_count == max_polling_count:
+            raise TimeoutError("Environment initialization timed out.")
+
+        # Once out of the loop, print the initialized environment status
+        print(environment_status)
+    else:
         print(client.get_environment())
-        return
-
-    # Reload the environment if needed
-    print("Reloading the environment...")
-    try:
-        deserialized = client.reload_environment()
-        print(deserialized)
-
-    except BlueskyRemoteError as e:
-        raise BlueskyRemoteError("Failed to reload the environment") from e
-
-    # Initialize a variable to keep track of the environment status
-    environment_initialized = False
-    polling_count = 0
-    max_polling_count = 10
-    # Use a while loop to keep checking until the environment is initialized
-    while not environment_initialized and polling_count < max_polling_count:
-        # Fetch the current environment status
-        environment_status = client.get_environment()
-
-        # Check if the environment is initialized
-        if environment_status.initialized:
-            print("Environment is initialized.")
-            environment_initialized = True
-        else:
-            print("Waiting for environment to initialize...")
-            polling_count += 1
-            sleep(1)  # Wait for 1 seconds before checking again
-    if polling_count == max_polling_count:
-        raise TimeoutError("Environment initialization timed out.")
-
-    # Once out of the loop, print the initialized environment status
-    print(environment_status)
 
 
 # helper function

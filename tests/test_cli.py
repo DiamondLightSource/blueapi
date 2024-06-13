@@ -251,17 +251,17 @@ def mock_config():
         (ValueError("Error parsing parameters"), 1),
     ],
 )
-def test_error_handling(mock_config, exception, expected_exit_code):
+def test_error_handling(mock_config, exception, expected_exit_code, runner: CliRunner):
     # Patching the create_task method to raise different exceptions
     with patch("blueapi.cli.rest.BlueapiRestClient.create_task", side_effect=exception):
-        runner = CliRunner()
         result = runner.invoke(
             main,
             [
                 "-c",
                 "tests/example_yaml/valid_stomp_config.yaml",
-                "controller",
-                "listen",
+                "controller" "run",
+                "sleep",
+                '{"time": 5}',
             ],
             input="\n",
             obj=mock_config,

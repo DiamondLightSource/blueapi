@@ -133,9 +133,9 @@ def check_connection(func):
     def wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except ConnectionError as e:
+        except ConnectionError:
             print("Failed to establish connection to FastAPI server.")
-            sys.exit(e.exit_code)
+            sys.exit(1)
 
     return wrapper
 

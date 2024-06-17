@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
-from blueapi.worker.event import WorkerState
+from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask
 
@@ -48,6 +48,16 @@ class BlueskyHandler(ABC):
     @abstractmethod
     def begin_task(self, task: WorkerTask) -> WorkerTask:
         """Trigger a task. Will fail if the worker is busy"""
+
+    @abstractmethod
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
+        """
+        Retrieve a list of tasks based on their status.
+        Args:
+           str: The status to filter tasks by.
+        Returns:
+          list[TrackableTask]: A list of tasks that match the given status.
+        """
 
     @property
     @abstractmethod

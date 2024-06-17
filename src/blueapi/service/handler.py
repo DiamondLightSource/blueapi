@@ -9,7 +9,7 @@ from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
 from blueapi.service.handler_base import BlueskyHandler
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
-from blueapi.worker.event import WorkerState
+from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.reworker import TaskWorker
 from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask, Worker
@@ -114,6 +114,9 @@ class Handler(BlueskyHandler):
         if task.task_id is not None:
             self._worker.begin_task(task.task_id)
         return task
+
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
+        return self._worker.get_tasks_by_status(status)
 
     @property
     def active_task(self) -> TrackableTask | None:

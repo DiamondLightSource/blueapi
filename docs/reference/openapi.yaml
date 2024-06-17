@@ -135,6 +135,20 @@ components:
       - task_id
       title: TaskResponse
       type: object
+    TasksListResponse:
+      additionalProperties: false
+      description: Diagnostic information on the tasks
+      properties:
+        tasks:
+          description: List of tasks
+          items:
+            $ref: '#/components/schemas/TrackableTask'
+          title: Tasks
+          type: array
+      required:
+      - tasks
+      title: TasksListResponse
+      type: object
     TrackableTask:
       additionalProperties: false
       description: A representation of a task that the worker recognizes
@@ -335,6 +349,33 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Submit Task
+  /tasks/:
+    get:
+      description: 'Retrieve tasks based on their status.
+
+        The status of a newly created task is ''unstarted''.'
+      operationId: get_tasks_tasks__get
+      parameters:
+      - in: query
+        name: task_status
+        required: true
+        schema:
+          title: Task Status
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TasksListResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Tasks
   /tasks/{task_id}:
     delete:
       operationId: delete_submitted_task_tasks__task_id__delete

@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngineStateMachine
@@ -12,8 +12,9 @@ from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler
 from blueapi.service.main import get_handler, setup_handler, teardown_handler
 from blueapi.service.model import WorkerTask
-from blueapi.worker import WorkerState
+from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
+from blueapi.worker.worker import TrackableTask
 
 _TASK = Task(name="count", params={"detectors": ["x"]})
 
@@ -532,3 +533,32 @@ def test_teardown_handler():
 
 def test_teardown_handler_does_not_raise():
     assert teardown_handler() is None
+
+
+tasks_data = [
+    TrackableTask(
+        task_id="1", task=Task(name="first_task"), is_complete=False, is_pending=False
+    ),
+    TrackableTask(
+        task_id="2", task=Task(name="first_task"), is_complete=False, is_pending=True
+    ),
+]
+
+
+def test_get_unstarted_tasks(handler: Handler, client: TestClient):
+    # handler.tasks = tasks_data  # overriding the property
+    with patch.object(handler._worker, "get_tasks_by_status", return_value=tasks_data):
+        response = client.get("/tasks/?task_status=pending")
+        assert response.status_code == 200
+        r = response.json()
+        assert len(r) == 1  # As per our mock data, only 1 task should be 'unstarted'
+        assert (
+            r["tasks"][0]["task_id"] == "1"
+        )  # Check that the correct task ID is returned
+
+
+def test_get_tasks_bad_status(handler: Handler, client: TestClient):
+    with patch.object(handler._worker, "get_tasks_by_status", return_value=tasks_data):
+        response = client.get("/tasks/?task_status=invalid")
+        assert response.status_code == 400
+        assert "Invalid status query parameter" in response.json()["detail"]

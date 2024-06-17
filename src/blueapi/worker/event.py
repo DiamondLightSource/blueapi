@@ -11,6 +11,14 @@ from blueapi.utils import BlueapiBaseModel
 RawRunEngineState = type[PropertyMachine | ProxyString | str]
 
 
+# NOTE this is interim until refactor
+class TaskStatusEnum(str, Enum):
+    PENDING = "PENDING"
+    COMPLETE = "COMPLETE"
+    ERROR = "ERROR"
+    RUNNING = "RUNNING"
+
+
 class WorkerState(str, Enum):
     """
     The state of the Worker.

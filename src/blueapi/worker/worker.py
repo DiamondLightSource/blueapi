@@ -6,7 +6,7 @@ from pydantic import Field
 from blueapi.core import DataEvent, EventStream
 from blueapi.utils import BlueapiBaseModel
 
-from .event import ProgressEvent, WorkerEvent, WorkerState
+from .event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 
 T = TypeVar("T")
 
@@ -105,6 +105,16 @@ class Worker(ABC, Generic[T]):
             task: A description of the task
         Returns:
             str: A unique ID to refer to this task
+        """
+
+    @abstractmethod
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
+        """
+        Retrieve a list of tasks based on their status.
+        Args:
+           str: The status to filter tasks by.
+        Returns:
+          list[TrackableTask]: A list of tasks that match the given status.
         """
 
     @abstractmethod

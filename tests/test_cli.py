@@ -227,9 +227,10 @@ def test_error_handling(mock_config, exception, expected_exit_code, runner: CliR
             [
                 "-c",
                 "tests/example_yaml/valid_stomp_config.yaml",
-                "controller" "run",
+                "controller",
+                "run",
                 "sleep",
-                '{"time": 5}',
+                "'{\"time\": 5}'",
             ],
             input="\n",
             obj=mock_config,

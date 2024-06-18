@@ -191,7 +191,13 @@ def get_tasks(
     Retrieve tasks based on their status.
     The status of a newly created task is 'unstarted'.
     """
-    desired_status = validate_task_status(task_status)
+    try:
+        desired_status = validate_task_status(task_status)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid status query parameter",
+        ) from e
 
     tasks = handler.get_tasks_by_status(desired_status)
     return TasksListResponse(tasks=tasks)

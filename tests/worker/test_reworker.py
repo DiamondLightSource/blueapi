@@ -442,9 +442,7 @@ def take_events_from_streams(
             stream.unsubscribe(sub)
 
         future.add_done_callback(callback)
-        return future
-
-    # assert_run_produces_worker_events(events, worker, task_id)
+    return future
 
 
 @pytest.mark.parametrize(

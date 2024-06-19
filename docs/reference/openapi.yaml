@@ -37,6 +37,10 @@ components:
       additionalProperties: false
       description: State of internal environment.
       properties:
+        error_message:
+          description: If present - error loading context
+          title: Error Message
+          type: string
         initialized:
           description: blueapi context initialized
           title: Initialized

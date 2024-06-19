@@ -513,7 +513,10 @@ def test_current_complete_returns_400(
 
 
 def test_get_environment(handler: Handler, client: TestClient) -> None:
-    assert client.get("/environment").json() == {"initialized": False}
+    assert client.get("/environment").json() == {
+        "initialized": False,
+        "error_message": None,
+    }
 
 
 def test_delete_environment(handler: Handler, client: TestClient) -> None:

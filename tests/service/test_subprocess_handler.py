@@ -1,9 +1,15 @@
+from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from blueapi.service.handler_base import BlueskyHandler, HandlerNotStartedError
-from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
+from blueapi.service.model import (
+    DeviceModel,
+    EnvironmentResponse,
+    PlanModel,
+    WorkerTask,
+)
 from blueapi.service.subprocess_handler import SubprocessHandler
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
@@ -26,31 +32,23 @@ tasks_data = [
 ]
 
 
-@pytest.fixture(scope="module")
-def sp_handler():
-    sp_handler = SubprocessHandler()
-    sp_handler.start()
-    yield sp_handler
-    sp_handler.stop()
-
-
 def test_initialize():
     sp_handler = SubprocessHandler()
-    assert not sp_handler.initialized
+    assert not sp_handler.state.initialized
     sp_handler.start()
-    assert sp_handler.initialized
+    assert sp_handler.state.initialized
     # Run a single call to the handler for coverage of dispatch to subprocess
     assert sp_handler.tasks == []
     sp_handler.stop()
-    assert not sp_handler.initialized
+    assert not sp_handler.state.initialized
 
 
 def test_reload():
     sp_handler = SubprocessHandler()
     sp_handler.start()
-    assert sp_handler.initialized
+    assert sp_handler.state.initialized
     sp_handler.reload_context()
-    assert sp_handler.initialized
+    assert sp_handler.state.initialized
     sp_handler.stop()
 
 
@@ -58,6 +56,27 @@ def test_raises_if_not_started():
     sp_handler = SubprocessHandler()
     with pytest.raises(HandlerNotStartedError):
         assert sp_handler.worker_state is None
+
+
+def test_error_on_handler_setup():
+    sp_handler = SubprocessHandler()
+    expected_state = EnvironmentResponse(
+        initialized=False,
+        error_message="Error configuring blueapi: Can't pickle "
+        "<class 'unittest.mock.MagicMock'>: it's not the same object as "
+        "unittest.mock.MagicMock",
+    )
+
+    # Using a mock for setup_handler causes a failure as the mock is not pickleable
+    # An exception is set on the mock too but this is never reached
+    with mock.patch(
+        "blueapi.service.subprocess_handler.setup_handler",
+        side_effect=Exception("Mock setup_handler exception"),
+    ):
+        sp_handler.reload_context()
+        state = sp_handler.state
+        assert state == expected_state
+    sp_handler.stop()
 
 
 class DummyHandler(BlueskyHandler):
@@ -125,10 +144,10 @@ class DummyHandler(BlueskyHandler):
 
     def stop(self): ...
 
-    # Initialized is a special case as it is not delegated
+    # state is a special case as it is not delegated
     # Tested by test_initialize
     @property
-    def initialized(self) -> bool:
+    def state(self) -> EnvironmentResponse:
         raise Exception("Not implemented")
 
 

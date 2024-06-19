@@ -562,3 +562,15 @@ def test_get_tasks_bad_status(handler: Handler, client: TestClient):
         response = client.get("/tasks/?task_status=invalid")
         assert response.status_code == 400
         assert "Invalid status query parameter" in response.json()["detail"]
+
+
+def test_get_just_all_tasks(handler: Handler, client: TestClient):
+    with patch.object(handler._worker, "get_tasks", return_value=tasks_data):
+        response = client.get("/tasks")
+        assert response.status_code == 200
+        r = response.json()
+        response_tasks = r["tasks"]
+        assert len(response_tasks) == 2
+        assert (
+            response_tasks[0]["task_id"] == "1"
+        )  # Check that the correct task ID is returned

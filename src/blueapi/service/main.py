@@ -182,24 +182,28 @@ def validate_task_status(v: str) -> TaskStatusEnum:
     return TaskStatusEnum(v_upper)
 
 
-@app.get("/tasks/", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
+@app.get("/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
 def get_tasks(
-    task_status: str,
+    task_status: str | None = None,
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
     The status of a newly created task is 'unstarted'.
     """
-    try:
-        desired_status = validate_task_status(task_status)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid status query parameter",
-        ) from e
+    tasks = []
+    if task_status:
+        try:
+            desired_status = validate_task_status(task_status)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid status query parameter",
+            ) from e
 
-    tasks = handler.get_tasks_by_status(desired_status)
+        tasks = handler.get_tasks_by_status(desired_status)
+    else:
+        tasks = handler.tasks
     return TasksListResponse(tasks=tasks)
 
 

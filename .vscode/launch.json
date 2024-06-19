@@ -5,18 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Rest Service",
-            "type": "python",
-            "request": "launch",
-            "module": "uvicorn",
-            "args": [
-                "src.blueapi.rest.main:app",
-                "--reload"
-            ],
-            "jinja": true,
-            "justMyCode": true
-        },
-        {
             "name": "Debug Unit Test",
             "type": "debugpy",
             "request": "launch",
@@ -32,50 +20,30 @@
             },
         },
         {
-            "name": "Run Service",
-            "type": "python",
+            "name": "Blueapi Server",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
-            "module": "blueapi.cli",
+            "module": "blueapi",
             "args": [
                 "serve"
             ]
         },
         {
-            "name": "Controller (get plans)",
-            "type": "python",
+            "name": "Blueapi Controller",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
-            "module": "blueapi.cli",
-            "args": [
-                "controller",
-                "plans"
-            ]
+            "module": "blueapi",
+            "args": "controller ${input:args}"
         },
+    ],
+    "inputs": [
         {
-            "name": "Controller (get devices)",
-            "type": "python",
-            "request": "launch",
-            "justMyCode": false,
-            "module": "blueapi.cli",
-            "args": [
-                "controller",
-                "devices"
-            ]
-        },
-        {
-            "name": "Controller (sleep)",
-            "type": "python",
-            "request": "launch",
-            "justMyCode": false,
-            "module": "blueapi.cli",
-            "args": [
-                "controller",
-                "run",
-                "sleep",
-                "-p",
-                "{\"time\": 5}"
-            ]
+            "id": "args",
+            "type": "promptString",
+            "description": "Arguments to pass to controller",
+            "default": ""
         }
     ]
 }

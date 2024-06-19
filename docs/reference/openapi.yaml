@@ -321,6 +321,32 @@ paths:
           description: Validation Error
       summary: Get Plan By Name
   /tasks:
+    get:
+      description: 'Retrieve tasks based on their status.
+
+        The status of a newly created task is ''unstarted''.'
+      operationId: get_tasks_tasks_get
+      parameters:
+      - in: query
+        name: task_status
+        required: false
+        schema:
+          title: Task Status
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TasksListResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Tasks
     post:
       description: Submit a task to the worker.
       operationId: submit_task_tasks_post
@@ -349,33 +375,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Submit Task
-  /tasks/:
-    get:
-      description: 'Retrieve tasks based on their status.
-
-        The status of a newly created task is ''unstarted''.'
-      operationId: get_tasks_tasks__get
-      parameters:
-      - in: query
-        name: task_status
-        required: true
-        schema:
-          title: Task Status
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TasksListResponse'
-          description: Successful Response
-        '422':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
-      summary: Get Tasks
   /tasks/{task_id}:
     delete:
       operationId: delete_submitted_task_tasks__task_id__delete

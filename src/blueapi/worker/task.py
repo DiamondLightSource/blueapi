@@ -26,6 +26,8 @@ class Task(BlueapiBaseModel):
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(f"Asked to run plan {self.name} with {self.params}")
 
+        # todo here call ensure_connected on alpl the devices marked in the context as needing that
+        # ensure_connected(ctx.lazy_devices.values())
         func = ctx.plan_functions[self.name]
         prepared_params = self.prepare_params(ctx)
         ctx.run_engine(func(**prepared_params.dict()))

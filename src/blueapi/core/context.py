@@ -42,6 +42,7 @@ class BlueskyContext:
     )
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
+    # todo add some format to keep the lazy vs non-lazy devices
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
@@ -104,6 +105,11 @@ class BlueskyContext:
 
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         devices, exceptions = make_all_devices(module, **kwargs)
+        # todo modify here
+        # factories = get_device_factories(module)
+
+        # for non-lazy devices, we instantiate them
+        # for lazy devices we add to the context to do when the plan is run
 
         for device in devices.values():
             self.device(device)

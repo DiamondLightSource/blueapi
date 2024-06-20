@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import responses
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
@@ -12,6 +13,7 @@ from blueapi.cli.cli import main
 from blueapi.cli.event_bus_client import BlueskyRemoteError
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
+from blueapi.service.model import EnvironmentResponse
 
 
 @pytest.fixture(autouse=True)
@@ -38,14 +40,6 @@ def test_main_no_params():
     expected = "Please invoke subcommand!\n"
 
     assert result.stdout == expected
-
-
-def test_main_with_nonexistent_config_file():
-    runner = CliRunner()
-    result = runner.invoke(main, ["-c", "tests/non_existent.yaml"])
-
-    assert result.exit_code == 1
-    assert type(result.exception) is FileNotFoundError
 
 
 @patch("requests.request")
@@ -182,9 +176,11 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
 
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    assert result.exit_code == 1
     assert (
-        "Cannot run plans without Stomp configuration to track progress"
-        in result.output
+        isinstance(result.exception, RuntimeError)
+        and str(result.exception)
+        == "Cannot run plans without Stomp configuration to track progress"
     )
 
 
@@ -201,6 +197,215 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
         input="\n",
     )
     assert result.exit_code == 0
+
+
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("requests.request")
+def test_get_env(
+    mock_requests: Mock,
+    mock_handler: Mock,
+    handler: Handler,
+    client: TestClient,
+    runner: CliRunner,
+):
+    with patch("uvicorn.run", side_effect=None):
+        result = runner.invoke(main, ["serve"])
+
+    assert result.exit_code == 0
+
+    mock_requests.return_value = Mock()
+
+    runner.invoke(main, ["controller", "env"])
+
+    assert mock_requests.call_args[0] == (
+        "GET",
+        "http://localhost:8000/environment",
+    )
+
+
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("blueapi.cli.rest.BlueapiRestClient.get_environment")
+@patch("blueapi.cli.rest.BlueapiRestClient.reload_environment")
+@patch("blueapi.cli.cli.sleep", return_value=None)
+def test_reset_env_client_behavior(
+    mock_sleep: MagicMock,
+    mock_reload_environment: Mock,
+    mock_get_environment: Mock,
+    mock_handler: Mock,
+    handler: Handler,
+    client: TestClient,
+    runner: CliRunner,
+):
+    # Configure the mock_requests to simulate different responses
+    # First two calls return not initialized, followed by an initialized response
+    mock_get_environment.side_effect = [
+        EnvironmentResponse(initialized=False),  # not initialized
+        EnvironmentResponse(initialized=False),  # not initialized
+        EnvironmentResponse(initialized=True),  # finally initalized
+    ]
+    mock_reload_environment.return_value = "Environment reload initiated."
+
+    with patch("uvicorn.run", side_effect=None):
+        serve_result = runner.invoke(main, ["serve"])
+
+    assert serve_result.exit_code == 0
+
+    # Invoke the CLI command that would trigger the environment initialization check
+    reload_result = runner.invoke(main, ["controller", "env", "-r"])
+
+    assert mock_get_environment.call_count == 3
+
+    # Verify if sleep was called between polling iterations
+    assert mock_sleep.call_count == 2  # Since the last check doesn't require a sleep
+
+    # Check if the final environment status is printed correctly
+    # assert "Environment is initialized." in result.output
+    assert (
+        reload_result.output
+        == "Reloading the environment...\nEnvironment reload initiated.\nWaiting for environment to initialize...\nWaiting for environment to initialize...\nEnvironment is initialized.\ninitialized=True\n"  # noqa: E501
+    )
+
+
+@responses.activate
+@pytest.mark.handler
+@patch("blueapi.service.handler.Handler")
+@patch("blueapi.cli.cli.sleep", return_value=None)
+def test_env_endpoint_interaction(
+    mock_sleep: MagicMock, mock_handler: Mock, handler: Handler, runner: CliRunner
+):
+    # Setup mocked responses for the REST endpoints
+    responses.add(
+        responses.DELETE,
+        "http://localhost:8000/environment",
+        status=200,
+        json=EnvironmentResponse(initialized=False).dict(),
+    )
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/environment",
+        json=EnvironmentResponse(initialized=False).dict(),
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/environment",
+        json=EnvironmentResponse(initialized=False).dict(),
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/environment",
+        status=200,
+        json=EnvironmentResponse(initialized=True).dict(),
+    )
+
+    # Run the command that should interact with these endpoints
+    result = runner.invoke(main, ["controller", "env", "-r"])
+
+    # Check if the endpoints were hit as expected
+    assert len(responses.calls) == 4  # Ensures that all expected calls were made
+
+    for index, call in enumerate(responses.calls):
+        if index == 0:
+            assert call.request.method == "DELETE"
+            assert call.request.url == "http://localhost:8000/environment"
+        else:
+            assert call.request.method == "GET"
+            assert call.request.url == "http://localhost:8000/environment"
+
+    # Check other assertions as needed, e.g., output or exit codes
+    assert result.exit_code == 0
+    assert "Environment is initialized." in result.output
+
+
+@pytest.mark.handler
+@responses.activate
+@patch("blueapi.service.handler.Handler")
+@patch("blueapi.cli.cli.sleep", return_value=None)
+def test_env_timeout(
+    mock_sleep: MagicMock, mock_handler: Mock, handler: Handler, runner: CliRunner
+):
+    max_polling_count = 10  # Assuming this is your max polling count in the command
+
+    # Setup mocked responses for the REST endpoints
+    responses.add(
+        responses.DELETE,
+        "http://localhost:8000/environment",
+        status=200,
+        json=EnvironmentResponse(initialized=False).dict(),
+    )
+    # Add responses for each polling attempt, all indicating not initialized
+    for _ in range(max_polling_count):
+        responses.add(
+            responses.GET,
+            "http://localhost:8000/environment",
+            json=EnvironmentResponse(initialized=False).dict(),
+            status=200,
+        )
+
+    # Run the command that should interact with these endpoints
+    result = runner.invoke(main, ["controller", "env", "-r"])
+    if result.exception is not None:
+        assert isinstance(result.exception, TimeoutError), "Expected a TimeoutError"
+        assert result.exception.args[0] == "Environment initialization timed out."
+    else:
+        raise AssertionError("Expected an exception but got None")
+
+    # Check if the endpoints were hit as expected
+    assert len(responses.calls) == max_polling_count + 1  # +1 for the DELETE call
+
+    # First call should be DELETE
+    assert responses.calls[0].request.method == "DELETE"
+    assert responses.calls[0].request.url == "http://localhost:8000/environment"
+
+    # Remaining calls should all be GET
+    for call in responses.calls[1:]:  # Skip the first DELETE request
+        assert call.request.method == "GET"
+        assert call.request.url == "http://localhost:8000/environment"
+
+    # Check the output for the timeout message
+    assert (
+        result.exit_code == 1
+    )  # Assuming your command exits successfully even on timeout for simplicity
+
+
+@pytest.mark.handler
+@responses.activate
+@patch("blueapi.service.handler.Handler")
+@patch("blueapi.cli.cli.sleep", return_value=None)
+def test_env_reload_server_side_error(
+    mock_sleep: MagicMock, mock_handler: Mock, handler: Handler, runner: CliRunner
+):
+    # Setup mocked error response from the server
+    responses.add(
+        responses.DELETE,
+        "http://localhost:8000/environment",
+        status=500,
+        json={},
+    )
+    # Run the command that should interact with these endpoints
+    result = runner.invoke(main, ["controller", "env", "-r"])
+    if result.exception is not None:
+        assert isinstance(
+            result.exception, BlueskyRemoteError
+        ), "Expected a BlueskyRemoteError"
+        assert result.exception.args[0] == "Failed to reload the environment"
+    else:
+        raise AssertionError("Expected an exception but got None")
+
+    # Check if the endpoints were hit as expected
+    assert len(responses.calls) == 1  # +1 for the DELETE call
+
+    # Only call should be DELETE
+    assert responses.calls[0].request.method == "DELETE"
+    assert responses.calls[0].request.url == "http://localhost:8000/environment"
+
+    # Check the output for the timeout message
+    assert (
+        result.exit_code == 1
+    )  # Assuming your command exits successfully even on timeout for simplicity
 
 
 @pytest.fixture

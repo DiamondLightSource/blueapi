@@ -5,9 +5,25 @@ import pytest
 from blueapi.service.handler_base import BlueskyHandler, HandlerNotStartedError
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.service.subprocess_handler import SubprocessHandler
-from blueapi.worker.event import WorkerState
+from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask
+
+tasks_data = [
+    TrackableTask(task_id="0", task=Task(name="sleep", params={"time": 0.0})),
+    TrackableTask(
+        task_id="1", task=Task(name="first_task"), is_complete=False, is_pending=True
+    ),
+    TrackableTask(
+        task_id="2", task=Task(name="second_task"), is_complete=False, is_pending=False
+    ),
+    TrackableTask(
+        task_id="3", task=Task(name="third_task"), is_complete=True, is_pending=False
+    ),
+    TrackableTask(
+        task_id="4", task=Task(name="fourth_task"), is_complete=False, is_pending=True
+    ),
+]
 
 
 @pytest.fixture(scope="module")
@@ -71,6 +87,19 @@ class DummyHandler(BlueskyHandler):
     def begin_task(self, task: WorkerTask) -> WorkerTask:
         return WorkerTask(task_id=task.task_id)
 
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
+        if status == TaskStatusEnum.RUNNING:
+            return [
+                task
+                for task in self.tasks
+                if not task.is_pending and not task.is_complete
+            ]
+        elif status == TaskStatusEnum.PENDING:
+            return [task for task in self.tasks if task.is_pending]
+        elif status == TaskStatusEnum.COMPLETE:
+            return [task for task in self.tasks if task.is_complete]
+        return []
+
     @property
     def active_task(self) -> TrackableTask | None:
         return None
@@ -87,9 +116,7 @@ class DummyHandler(BlueskyHandler):
 
     @property
     def tasks(self) -> list[TrackableTask]:
-        return [
-            TrackableTask(task_id="abc", task=Task(name="sleep", params={"time": 0.0}))
-        ]
+        return tasks_data
 
     def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         return None
@@ -161,3 +188,27 @@ def test_method_routing(get_handler_mock: MagicMock):
     assert sp_handler.start() == dummy_handler.start()
 
     assert sp_handler.stop() == dummy_handler.stop()
+
+
+@patch("blueapi.service.subprocess_handler.get_handler")
+def test_get_tasks_by_status(get_handler_mock: MagicMock):
+    # Mock get_handler to prevent using a real internal handler
+    dummy_handler = DummyHandler()
+    get_handler_mock.return_value = dummy_handler
+
+    sp_handler = SubprocessHandler()
+    sp_handler.start()
+
+    # yield sp_handler
+    sp_handler._run_in_subprocess = MagicMock(  # type: ignore
+        side_effect=lambda f, args=[]: f(*args)
+    )
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.PENDING) == [
+        tasks_data[0],
+        tasks_data[1],
+        tasks_data[4],
+    ]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.RUNNING) == [tasks_data[2]]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.COMPLETE) == [tasks_data[3]]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.ERROR) == []
+    sp_handler.stop()

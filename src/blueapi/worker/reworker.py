@@ -23,6 +23,7 @@ from .event import (
     RawRunEngineState,
     StatusView,
     TaskStatus,
+    TaskStatusEnum,
     WorkerEvent,
     WorkerState,
 )
@@ -113,11 +114,24 @@ class TaskWorker(Worker[Task]):
             self._ctx.run_engine.stop()
         return self._current.task_id
 
-    def get_tasks(self) -> list[TrackableTask[Task]]:
+    def get_tasks(self) -> list[TrackableTask]:
         return list(self._tasks.values())
 
-    def get_task_by_id(self, task_id: str) -> TrackableTask[Task] | None:
+    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         return self._tasks.get(task_id)
+
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
+        if status == TaskStatusEnum.RUNNING:
+            return [
+                task
+                for task in self._tasks.values()
+                if not task.is_pending and not task.is_complete
+            ]
+        elif status == TaskStatusEnum.PENDING:
+            return [task for task in self._tasks.values() if task.is_pending]
+        elif status == TaskStatusEnum.COMPLETE:
+            return [task for task in self._tasks.values() if task.is_complete]
+        return []
 
     def get_active_task(self) -> TrackableTask[Task] | None:
         return self._current

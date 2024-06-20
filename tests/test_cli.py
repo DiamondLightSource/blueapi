@@ -407,6 +407,7 @@ def test_env_reload_server_side_error(
         result.exit_code == 1
     )  # Assuming your command exits successfully even on timeout for simplicity
 
+
 @pytest.fixture
 def mock_config():
     # Mock configuration setup
@@ -440,4 +441,3 @@ def test_error_handling(mock_config, exception, expected_exit_code, runner: CliR
             obj=mock_config,
         )
         assert result.exit_code == expected_exit_code
-

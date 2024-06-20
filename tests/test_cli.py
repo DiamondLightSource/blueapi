@@ -5,7 +5,7 @@ import pytest
 import responses
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
@@ -406,3 +406,38 @@ def test_env_reload_server_side_error(
     assert (
         result.exit_code == 1
     )  # Assuming your command exits successfully even on timeout for simplicity
+
+@pytest.fixture
+def mock_config():
+    # Mock configuration setup
+    config = {"stomp": MagicMock()}
+    rest_client = MagicMock()
+    return {"config": config, "rest_client": rest_client}
+
+
+@pytest.mark.parametrize(
+    "exception, expected_exit_code",
+    [
+        (ValidationError("Invalid parameters", BaseModel), 1),
+        (BlueskyRemoteError("Server error"), 1),
+        (ValueError("Error parsing parameters"), 1),
+    ],
+)
+def test_error_handling(mock_config, exception, expected_exit_code, runner: CliRunner):
+    # Patching the create_task method to raise different exceptions
+    with patch("blueapi.cli.rest.BlueapiRestClient.create_task", side_effect=exception):
+        result = runner.invoke(
+            main,
+            [
+                "-c",
+                "tests/example_yaml/valid_stomp_config.yaml",
+                "controller",
+                "run",
+                "sleep",
+                "'{\"time\": 5}'",
+            ],
+            input="\n",
+            obj=mock_config,
+        )
+        assert result.exit_code == expected_exit_code
+

@@ -135,6 +135,20 @@ components:
       - task_id
       title: TaskResponse
       type: object
+    TasksListResponse:
+      additionalProperties: false
+      description: Diagnostic information on the tasks
+      properties:
+        tasks:
+          description: List of tasks
+          items:
+            $ref: '#/components/schemas/TrackableTask'
+          title: Tasks
+          type: array
+      required:
+      - tasks
+      title: TasksListResponse
+      type: object
     TrackableTask:
       additionalProperties: false
       description: A representation of a task that the worker recognizes
@@ -308,6 +322,32 @@ paths:
           description: Validation Error
       summary: Get Plan By Name
   /tasks:
+    get:
+      description: 'Retrieve tasks based on their status.
+
+        The status of a newly created task is ''unstarted''.'
+      operationId: get_tasks_tasks_get
+      parameters:
+      - in: query
+        name: task_status
+        required: false
+        schema:
+          title: Task Status
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TasksListResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Tasks
     post:
       description: Submit a task to the worker.
       operationId: submit_task_tasks_post

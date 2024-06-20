@@ -16,6 +16,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.worker import Task, TrackableTask, WorkerState
+from blueapi.worker.event import TaskStatusEnum
 
 from .handler_base import BlueskyHandler
 from .model import (
@@ -26,6 +27,7 @@ from .model import (
     PlanResponse,
     StateChangeRequest,
     TaskResponse,
+    TasksListResponse,
     WorkerTask,
 )
 from .subprocess_handler import SubprocessHandler
@@ -175,6 +177,38 @@ def delete_submitted_task(
     handler: BlueskyHandler = Depends(get_handler),
 ) -> TaskResponse:
     return TaskResponse(task_id=handler.clear_task(task_id))
+
+
+def validate_task_status(v: str) -> TaskStatusEnum:
+    v_upper = v.upper()
+    if v_upper not in TaskStatusEnum.__members__:
+        raise ValueError("Invalid status query parameter")
+    return TaskStatusEnum(v_upper)
+
+
+@app.get("/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
+def get_tasks(
+    task_status: str | None = None,
+    handler: BlueskyHandler = Depends(get_handler),
+) -> TasksListResponse:
+    """
+    Retrieve tasks based on their status.
+    The status of a newly created task is 'unstarted'.
+    """
+    tasks = []
+    if task_status:
+        try:
+            desired_status = validate_task_status(task_status)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid status query parameter",
+            ) from e
+
+        tasks = handler.get_tasks_by_status(desired_status)
+    else:
+        tasks = handler.tasks
+    return TasksListResponse(tasks=tasks)
 
 
 @app.put(

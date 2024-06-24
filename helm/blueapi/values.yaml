@@ -77,8 +77,6 @@ listener:
 scratch:
   hostPath: "" # example: /usr/local/blueapi-software-scratch
   containerPath: /blueapi-plugins/scratch
-  repos:
-    dodal: https://github.com/DiamondLightSource/dodal.git
 
 # Additional envVars to mount to the pod as a String
 extraEnvVars: |
@@ -110,4 +108,8 @@ worker:
       passcode: guest
     host: rabbitmq
     port: 61613
+  scratch:
+    repos:
+      - name: "dodal"
+        remote_url: https://github.com/DiamondLightSource/dodal.git
 # Config for the worker goes here, will be mounted into a config file

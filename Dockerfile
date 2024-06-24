@@ -26,12 +26,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /venv/ /venv/
-COPY ./container-startup.sh /container-startup.sh
 ENV PATH=/venv/bin:$PATH
-
 
 RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip
 
-# change this entrypoint if it is not the same as the repo
-ENTRYPOINT ["/container-startup.sh"]
+ENTRYPOINT ["blueapi"]
 CMD ["serve"]

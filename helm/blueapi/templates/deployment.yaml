@@ -41,6 +41,31 @@ spec:
           path: {{ .Values.scratch.hostPath }}
           type: Directory
       {{- end }}
+      - name: venv
+        emptyDir:
+          sizeLimit: 5Gi
+      initContainers:
+      {{- if .Values.scratch.hostPath }}
+      - name: init-venv
+        image: busybox:1.28
+        command: ['sh', '-c', "cp -r /venv /emptyDir/venv"]
+        volumeMounts:
+          - name: venv
+            mountPath: /emptyDir
+      - name: init-scratch
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        args: 
+          - "setup-scratch"
+        volumeMounts:
+          - name: worker-config
+            mountPath: "/config"
+            readOnly: true
+          - name: scratch-host
+            mountPath: {{ .Values.scratch.containerPath }}
+            mountPropagation: HostToContainer
+          - name: venv
+            mountPath: /venv
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -58,6 +83,8 @@ spec:
               mountPath: {{ .Values.scratch.containerPath }}
               mountPropagation: HostToContainer
             {{- end }}
+            - name: venv
+              mountPath: /venv
           args:
             - "-c"
             - "/config/config.yaml"

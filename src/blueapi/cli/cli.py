@@ -28,6 +28,7 @@ from blueapi.service.openapi import (
 from blueapi.worker import ProgressEvent, Task, WorkerEvent, WorkerState
 
 from .rest import BlueapiRestClient
+from .scratch import setup_scratch
 
 
 @click.group(invoke_without_command=True)
@@ -339,6 +340,16 @@ def env(obj: dict, reload: bool | None) -> None:
         print(environment_status)
     else:
         print(client.get_environment())
+
+
+@main.command(name="setup-scratch")
+@click.pass_obj
+def scratch(obj: dict) -> None:
+    config: ApplicationConfig = obj["config"]
+    if config.scratch is not None:
+        setup_scratch(config.scratch)
+    else:
+        raise KeyError("No scratch config supplied")
 
 
 # helper function

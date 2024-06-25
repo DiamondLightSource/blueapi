@@ -68,3 +68,6 @@ lockfiles/
 
 # ruff cache
 .ruff_cache/
+
+# Editor/IDE project files
+.idea/

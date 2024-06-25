@@ -40,10 +40,10 @@ spec:
         hostPath:
           path: {{ .Values.scratch.hostPath }}
           type: Directory
-      {{- end }}
       - name: venv
         emptyDir:
           sizeLimit: 5Gi
+      {{- end }}
       initContainers:
       {{- if .Values.scratch.hostPath }}
       - name: init-venv
@@ -82,9 +82,9 @@ spec:
             - name: scratch-host
               mountPath: {{ .Values.scratch.containerPath }}
               mountPropagation: HostToContainer
-            {{- end }}
             - name: venv
               mountPath: /venv
+            {{- end }}
           args:
             - "-c"
             - "/config/config.yaml"

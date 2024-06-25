@@ -121,6 +121,20 @@ def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
     assert plan.__name__ in empty_context.plans
 
 
+def test_generated_schema(
+    empty_context: BlueskyContext,
+):
+    def demo_plan(foo: int, mov: Movable) -> MsgGenerator:  # type: ignore
+        ...
+
+    empty_context.plan(demo_plan)
+    schema = empty_context.plans["demo_plan"].model.schema()
+    assert schema["properties"] == {
+        "foo": {"title": "Foo", "type": "integer"},
+        "mov": {"title": "Mov", "type": repr(Movable)},
+    }
+
+
 @pytest.mark.parametrize(
     "plan", [has_typeless_param, has_typed_and_typeless_params, has_typeless_params]
 )

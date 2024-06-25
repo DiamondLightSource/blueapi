@@ -110,7 +110,7 @@ def test_get_plan_with_device_reference(handler: Handler, client: TestClient) ->
                         "title": "Delay",
                     },
                     "detectors": {
-                        "items": {"type": "<class " "'bluesky.protocols.Readable'>"},
+                        "items": {"type": "bluesky.protocols.Readable"},
                         "title": "Detectors",
                         "type": "array",
                     },
@@ -133,7 +133,7 @@ def test_get_plan_with_device_reference(handler: Handler, client: TestClient) ->
                     "title": "Delay",
                 },
                 "detectors": {
-                    "items": {"type": "<class " "'bluesky.protocols.Readable'>"},
+                    "items": {"type": "bluesky.protocols.Readable"},
                     "title": "Detectors",
                     "type": "array",
                 },

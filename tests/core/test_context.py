@@ -131,7 +131,7 @@ def test_generated_schema(
     schema = empty_context.plans["demo_plan"].model.schema()
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
-        "mov": {"title": "Mov", "type": repr(Movable)},
+        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable"},
     }
 
 

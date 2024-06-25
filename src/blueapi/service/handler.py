@@ -123,7 +123,7 @@ class Handler(BlueskyHandler):
         return self._worker.get_active_task()
 
     @property
-    def state(self) -> WorkerState:
+    def worker_state(self) -> WorkerState:
         return self._worker.state
 
     def pause_worker(self, defer: bool | None) -> None:

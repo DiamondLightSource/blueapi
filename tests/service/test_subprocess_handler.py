@@ -57,7 +57,7 @@ def test_reload():
 def test_raises_if_not_started():
     sp_handler = SubprocessHandler()
     with pytest.raises(HandlerNotStartedError):
-        assert sp_handler.state is None
+        assert sp_handler.worker_state is None
 
 
 class DummyHandler(BlueskyHandler):
@@ -105,7 +105,7 @@ class DummyHandler(BlueskyHandler):
         return None
 
     @property
-    def state(self) -> WorkerState:
+    def worker_state(self) -> WorkerState:
         return WorkerState.IDLE
 
     def pause_worker(self, defer: bool | None) -> None: ...
@@ -171,7 +171,7 @@ def test_method_routing(get_handler_mock: MagicMock):
 
     assert sp_handler.active_task == dummy_handler.active_task
 
-    assert sp_handler.state == dummy_handler.state
+    assert sp_handler.worker_state == dummy_handler.worker_state
 
     sp_handler.pause_worker(True)
 

@@ -256,7 +256,7 @@ def get_active_task(handler: BlueskyHandler = Depends(get_handler)) -> WorkerTas
 @app.get("/worker/state")
 def get_state(handler: BlueskyHandler = Depends(get_handler)) -> WorkerState:
     """Get the State of the Worker"""
-    return handler.state
+    return handler.worker_state
 
 
 # Map of current_state: allowed new_states
@@ -304,7 +304,7 @@ def set_state(
         - If reason is set, the reason will be passed as the reason for the Run failure.
     - **All other transitions return 400: Bad Request**
     """
-    current_state = handler.state
+    current_state = handler.worker_state
     new_state = state_change_request.new_state
     if (
         current_state in _ALLOWED_TRANSITIONS
@@ -325,7 +325,7 @@ def set_state(
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
 
-    return handler.state
+    return handler.worker_state
 
 
 def start(config: ApplicationConfig):

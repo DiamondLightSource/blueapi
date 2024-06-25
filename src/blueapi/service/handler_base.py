@@ -66,7 +66,7 @@ class BlueskyHandler(ABC):
 
     @property
     @abstractmethod
-    def state(self) -> WorkerState:
+    def worker_state(self) -> WorkerState:
         """State of the worker"""
 
     @abstractmethod

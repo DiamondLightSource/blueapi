@@ -202,7 +202,7 @@ class BlueskyContext:
                     cls, field_schema: dict[str, Any], field: ModelField | None
                 ):
                     if field:
-                        field_schema.update({field.name: repr(target)})
+                        field_schema.update({"type": repr(target)})
 
             self._reference_cache[target] = Reference
 

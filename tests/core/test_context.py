@@ -96,8 +96,8 @@ def empty_context() -> BlueskyContext:
 @pytest.fixture
 def devicey_context(sim_motor: SynAxis, sim_detector: SynGauss) -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx.device(sim_motor)
-    ctx.device(sim_detector)
+    ctx.register_device(sim_motor)
+    ctx.register_device(sim_detector)
     return ctx
 
 
@@ -117,7 +117,7 @@ def some_configurable() -> SomeConfigurable:
 
 @pytest.mark.parametrize("plan", [has_no_params, has_one_param, has_some_params])
 def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
-    empty_context.plan(plan)
+    empty_context.register_plan(plan)
     assert plan.__name__ in empty_context.plans
 
 
@@ -127,7 +127,7 @@ def test_generated_schema(
     def demo_plan(foo: int, mov: Movable) -> MsgGenerator:  # type: ignore
         ...
 
-    empty_context.plan(demo_plan)
+    empty_context.register_plan(demo_plan)
     schema = empty_context.plans["demo_plan"].model.schema()
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
@@ -140,7 +140,7 @@ def test_generated_schema(
 )
 def test_add_invalid_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
     with pytest.raises(ValueError):
-        empty_context.plan(plan)
+        empty_context.register_plan(plan)
 
 
 def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
@@ -151,14 +151,14 @@ def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
 
 
 def test_add_named_device(empty_context: BlueskyContext, sim_motor: SynAxis) -> None:
-    empty_context.device(sim_motor)
+    empty_context.register_device(sim_motor)
     assert empty_context.devices[SIM_MOTOR_NAME] is sim_motor
 
 
 def test_add_nameless_device(
     empty_context: BlueskyContext, some_configurable: SomeConfigurable
 ) -> None:
-    empty_context.device(some_configurable, "conf")
+    empty_context.register_device(some_configurable, "conf")
     assert empty_context.devices["conf"] is some_configurable
 
 
@@ -167,13 +167,13 @@ def test_add_nameless_device_without_override(
     some_configurable: SomeConfigurable,
 ) -> None:
     with pytest.raises(KeyError):
-        empty_context.device(some_configurable)
+        empty_context.register_device(some_configurable)
 
 
 def test_override_device_name(
     empty_context: BlueskyContext, sim_motor: SynAxis
 ) -> None:
-    empty_context.device(sim_motor, "foo")
+    empty_context.register_device(sim_motor, "foo")
     assert empty_context.devices["foo"] is sim_motor
 
 
@@ -246,12 +246,12 @@ def test_lookup_non_device(devicey_context: BlueskyContext) -> None:
 
 def test_add_non_plan(empty_context: BlueskyContext) -> None:
     with pytest.raises(TypeError):
-        empty_context.plan("not a plan")  # type: ignore
+        empty_context.register_plan("not a plan")  # type: ignore
 
 
 def test_add_non_device(empty_context: BlueskyContext) -> None:
     with pytest.raises(TypeError):
-        empty_context.device("not a device")  # type: ignore
+        empty_context.register_device("not a device")  # type: ignore
 
 
 def test_add_devices_and_plans_from_modules_with_config(
@@ -361,8 +361,8 @@ def test_str_default(
     empty_context: BlueskyContext, sim_motor: SynAxis, alt_motor: SynAxis
 ):
     movable_ref = empty_context._reference(Movable)
-    empty_context.device(sim_motor)
-    empty_context.plan(has_default_reference)
+    empty_context.register_device(sim_motor)
+    empty_context.register_plan(has_default_reference)
 
     spec = empty_context._type_spec_for_function(has_default_reference)
     assert spec["m"][0] is movable_ref
@@ -371,7 +371,7 @@ def test_str_default(
     assert has_default_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_reference.__name__].model
     assert parse_obj_as(model, {}).m is sim_motor  # type: ignore
-    empty_context.device(alt_motor)
+    empty_context.register_device(alt_motor)
     assert parse_obj_as(model, {"m": ALT_MOTOR_NAME}).m is alt_motor  # type: ignore
 
 
@@ -379,8 +379,8 @@ def test_nested_str_default(
     empty_context: BlueskyContext, sim_motor: SynAxis, alt_motor: SynAxis
 ):
     movable_ref = empty_context._reference(Movable)
-    empty_context.device(sim_motor)
-    empty_context.plan(has_default_nested_reference)
+    empty_context.register_device(sim_motor)
+    empty_context.register_plan(has_default_nested_reference)
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
     assert spec["m"][0] == list[movable_ref]  # type: ignore
@@ -389,7 +389,7 @@ def test_nested_str_default(
     assert has_default_nested_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_nested_reference.__name__].model
     assert parse_obj_as(model, {}).m == [sim_motor]  # type: ignore
-    empty_context.device(alt_motor)
+    empty_context.register_device(alt_motor)
     assert parse_obj_as(model, {"m": [ALT_MOTOR_NAME]}).m == [alt_motor]  # type: ignore
 
 
@@ -398,6 +398,6 @@ def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:
         if False:
             yield
 
-    empty_context.plan(a_plan)
+    empty_context.register_plan(a_plan)
     with pytest.raises(ValidationError):
         empty_context.plans[a_plan.__name__].model(fooBar=1, baz="test")

@@ -29,6 +29,20 @@ from .device_lookup import find_component
 LOGGER = logging.getLogger(__name__)
 
 
+def bisect_devices_dict(input_dict: dict[str, Device]) -> tuple[dict]:
+    lazy_dict = {}
+    non_lazy_dict = {}
+
+    for key, value in input_dict.items():
+        # Assuming 'lazy' is an attribute or a condition you can check
+        if hasattr(value, "lazy") and value.lazy:
+            lazy_dict[key] = value
+        else:
+            non_lazy_dict[key] = value
+
+    return (non_lazy_dict, lazy_dict)
+
+
 @dataclass
 class BlueskyContext:
     """
@@ -43,6 +57,7 @@ class BlueskyContext:
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
     # todo add some format to keep the lazy vs non-lazy devices
+
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
@@ -98,7 +113,7 @@ class BlueskyContext:
 
         for obj in load_module_all(module):
             if is_bluesky_plan_generator(obj):
-                self.plan(obj)
+                self.register_plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
@@ -109,10 +124,12 @@ class BlueskyContext:
         # factories = get_device_factories(module)
 
         # for non-lazy devices, we instantiate them
-        # for lazy devices we add to the context to do when the plan is run
+        early_devices, lazy_devices = bisect_devices_dict(devices)
+        # todo for lazy devices we add to the context to do when the plan is run
+        # might need to find that inside the worker
 
-        for device in devices.values():
-            self.device(device)
+        for device in early_devices.values():
+            self.register_device(device)
 
         # If exceptions have occurred, we log them but we do not make blueapi
         # fall over
@@ -122,7 +139,7 @@ class BlueskyContext:
             )
             LOGGER.exception(NotConnected(exceptions))
 
-    def plan(self, plan: PlanGenerator) -> PlanGenerator:
+    def register_plan(self, plan: PlanGenerator) -> PlanGenerator:
         """
         Register the argument as a plan in the context. Can be used as a decorator e.g.
         @ctx.plan
@@ -150,7 +167,7 @@ class BlueskyContext:
         self.plan_functions[plan.__name__] = plan
         return plan
 
-    def device(self, device: Device, name: str | None = None) -> None:
+    def register_device(self, device: Device, name: str | None = None) -> None:
         """
         Register an device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`

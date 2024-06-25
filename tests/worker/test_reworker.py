@@ -65,8 +65,8 @@ def context(fake_device: FakeDevice) -> BlueskyContext:
     ctx_config.sources.append(
         Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
     )
-    ctx.plan(failing_plan)
-    ctx.device(fake_device)
+    ctx.register_plan(failing_plan)
+    ctx.register_device(fake_device)
     ctx.with_config(ctx_config)
     return ctx
 

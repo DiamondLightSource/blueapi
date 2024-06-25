@@ -93,8 +93,8 @@ class SubprocessHandler(BlueskyHandler):
         return self._run_in_subprocess(active_task)
 
     @property
-    def state(self) -> WorkerState:
-        return self._run_in_subprocess(state)
+    def worker_state(self) -> WorkerState:
+        return self._run_in_subprocess(worker_state)
 
     def pause_worker(self, defer: bool | None) -> None:
         return self._run_in_subprocess(pause_worker, [defer])
@@ -156,8 +156,8 @@ def active_task() -> TrackableTask | None:
     return get_handler().active_task
 
 
-def state() -> WorkerState:
-    return get_handler().state
+def worker_state() -> WorkerState:
+    return get_handler().worker_state
 
 
 def pause_worker(defer: bool | None) -> None:

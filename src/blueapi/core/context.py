@@ -28,8 +28,10 @@ from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
 
+DevicesDict = dict[str, Device]
 
-def bisect_devices_dict(input_dict: dict[str, Device]) -> tuple[dict]:
+
+def bisect_devices_dict(input_dict: DevicesDict) -> tuple[DevicesDict, DevicesDict]:
     lazy_dict = {}
     non_lazy_dict = {}
 
@@ -56,7 +58,6 @@ class BlueskyContext:
     )
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
-    # todo add some format to keep the lazy vs non-lazy devices
 
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
@@ -118,15 +119,14 @@ class BlueskyContext:
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
 
+    def get_lazy_devices(self) -> DevicesDict:
+        return {k: v for k, v in self.devices.items() if v.lazy}
+
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         devices, exceptions = make_all_devices(module, **kwargs)
-        # todo modify here
-        # factories = get_device_factories(module)
 
         # for non-lazy devices, we instantiate them
-        early_devices, lazy_devices = bisect_devices_dict(devices)
-        # todo for lazy devices we add to the context to do when the plan is run
-        # might need to find that inside the worker
+        early_devices, _ = bisect_devices_dict(devices)
 
         for device in early_devices.values():
             self.register_device(device)

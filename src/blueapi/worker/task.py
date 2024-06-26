@@ -2,6 +2,7 @@ import logging
 from collections.abc import Mapping
 from typing import Any
 
+from ophyd_async.plan_stubs import ensure_connected
 from pydantic import BaseModel, Field
 
 from blueapi.core import BlueskyContext
@@ -26,8 +27,8 @@ class Task(BlueapiBaseModel):
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(f"Asked to run plan {self.name} with {self.params}")
 
-        # todo here call ensure_connected on alpl the devices marked in the context as needing that
-        # ensure_connected(ctx.lazy_devices.values())
+        lazy_devices = ctx.get_lazy_devices()
+        ensure_connected(devices=lazy_devices.values())
         func = ctx.plan_functions[self.name]
         prepared_params = self.prepare_params(ctx)
         ctx.run_engine(func(**prepared_params.dict()))

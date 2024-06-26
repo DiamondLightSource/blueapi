@@ -264,7 +264,7 @@ def test_reset_env_client_behavior(
     # assert "Environment is initialized." in result.output
     assert (
         reload_result.output
-        == "Reloading the environment...\nEnvironment reload initiated.\nWaiting for environment to initialize...\nWaiting for environment to initialize...\nEnvironment is initialized.\ninitialized=True\n"  # noqa: E501
+        == "Reloading the environment...\nEnvironment reload initiated.\nWaiting for environment to initialize...\nWaiting for environment to initialize...\nEnvironment is initialized.\ninitialized=True error_message=None\n"  # noqa: E501
     )
 
 

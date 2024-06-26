@@ -88,7 +88,7 @@ async def on_key_error_404(_: Request, __: KeyError):
 def get_environment(
     handler: BlueskyHandler = Depends(get_handler),
 ) -> EnvironmentResponse:
-    return EnvironmentResponse(initialized=handler.initialized)
+    return handler.state
 
 
 @app.delete("/environment", response_model=EnvironmentResponse)
@@ -100,7 +100,7 @@ async def delete_environment(
         handler.stop()
         handler.start()
 
-    if handler.initialized:
+    if handler.state.initialized or handler.state.error_message is not None:
         background_tasks.add_task(restart_handler, handler)
     return EnvironmentResponse(initialized=False)
 

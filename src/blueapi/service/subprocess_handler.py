@@ -7,7 +7,12 @@ from multiprocessing.pool import Pool as PoolClass
 from blueapi.config import ApplicationConfig
 from blueapi.service.handler import get_handler, setup_handler, teardown_handler
 from blueapi.service.handler_base import BlueskyHandler, HandlerNotStartedError
-from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
+from blueapi.service.model import (
+    DeviceModel,
+    EnvironmentResponse,
+    PlanModel,
+    WorkerTask,
+)
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask
@@ -25,6 +30,7 @@ class SubprocessHandler(BlueskyHandler):
     _config: ApplicationConfig
     _subprocess: PoolClass | None
     _initialized: bool = False
+    _error_message: str | None = None
 
     def __init__(
         self,
@@ -39,7 +45,12 @@ class SubprocessHandler(BlueskyHandler):
             self._subprocess.apply(
                 logging.basicConfig, kwds={"level": self._config.logging.level}
             )
-            self._subprocess.apply(setup_handler, [self._config])
+            try:
+                self._subprocess.apply(setup_handler, [self._config])
+            except Exception as e:
+                self._error_message = f"Error configuring blueapi: {e}"
+                LOGGER.exception(self._error_message)
+                return
             self._initialized = True
 
     def stop(self):
@@ -48,6 +59,7 @@ class SubprocessHandler(BlueskyHandler):
             self._subprocess.apply(teardown_handler)
             self._subprocess.close()
             self._subprocess.join()
+            self._error_message = None
             self._subprocess = None
 
     def reload_context(self):
@@ -113,8 +125,11 @@ class SubprocessHandler(BlueskyHandler):
         return self._run_in_subprocess(get_task_by_id, [task_id])
 
     @property
-    def initialized(self) -> bool:
-        return self._initialized
+    def state(self) -> EnvironmentResponse:
+        return EnvironmentResponse(
+            initialized=self._initialized,
+            error_message=self._error_message,
+        )
 
 
 # Free functions (passed to subprocess) for each of the methods required by Handler

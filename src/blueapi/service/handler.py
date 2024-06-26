@@ -8,7 +8,12 @@ from blueapi.core.event import EventStream
 from blueapi.messaging import StompMessagingTemplate
 from blueapi.messaging.base import MessagingTemplate
 from blueapi.service.handler_base import BlueskyHandler
-from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
+from blueapi.service.model import (
+    DeviceModel,
+    EnvironmentResponse,
+    PlanModel,
+    WorkerTask,
+)
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.reworker import TaskWorker
 from blueapi.worker.task import Task
@@ -143,8 +148,8 @@ class Handler(BlueskyHandler):
         return self._worker.get_task_by_id(task_id)
 
     @property
-    def initialized(self) -> bool:
-        return self._initialized
+    def state(self) -> EnvironmentResponse:
+        return EnvironmentResponse(initialized=self._initialized)
 
 
 HANDLER: Handler | None = None

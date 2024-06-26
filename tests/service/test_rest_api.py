@@ -575,3 +575,27 @@ def test_get_just_all_tasks(handler: Handler, client: TestClient):
         assert (
             response_tasks[0]["task_id"] == "1"
         )  # Check that the correct task ID is returned
+
+
+@patch("blueapi.service.subprocess_handler.get_handler")
+def test_get_tasks_by_status(get_handler_mock: MagicMock):
+    # Mock get_handler to prevent using a real internal handler
+    dummy_handler = DummyHandler()
+    get_handler_mock.return_value = dummy_handler
+
+    sp_handler = SubprocessHandler()
+    sp_handler.start()
+
+    # yield sp_handler
+    sp_handler._run_in_subprocess = MagicMock(  # type: ignore
+        side_effect=lambda f, args=[]: f(*args)
+    )
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.PENDING) == [
+        tasks_data[0],
+        tasks_data[1],
+        tasks_data[4],
+    ]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.RUNNING) == [tasks_data[2]]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.COMPLETE) == [tasks_data[3]]
+    assert sp_handler.get_tasks_by_status(TaskStatusEnum.ERROR) == []
+    sp_handler.stop()

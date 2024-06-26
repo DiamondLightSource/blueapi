@@ -14,6 +14,7 @@ def stp_snapshot(
     """
     Moves devices for pressure and temperature (defaults fetched from the context)
     and captures a single frame from a collection of devices
+
     Args:
         detectors (List[Readable]): A list of devices to read while the sample is at STP
         temperature (Optional[Movable]): A device controlling temperature of the sample,

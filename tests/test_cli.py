@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import responses
+from textwrap import dedent
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
@@ -94,21 +95,19 @@ def test_get_plans_and_devices(
     plans = runner.invoke(main, ["controller", "plans"])
 
     assert (
-        plans.output == "{'plans': [{'description': None,\n"
-        "            'name': 'my-plan',\n"
-        "            'parameter_schema': {'properties': {'id': {'title': 'Id',\n"
-        "                                                       'type': 'string'}},\n"
-        "                                 'required': ['id'],\n"
-        "                                 'title': 'MyModel',\n"
-        "                                 'type': 'object'}}]}\n"
-    )
+        plans.output == dedent("""\
+                my-plan
+                    Args
+                      id=string (Required)
+                """)
+        )
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output - expect nothing as no devices set.
     handler._context.devices = {}
     mock_requests.return_value = client.get("/devices")
     unset_devices = runner.invoke(main, ["controller", "devices"])
-    assert unset_devices.output == "{'devices': []}\n"
+    assert unset_devices.output == ""
 
     # Put a device in handler.context manually.
     device = MyDevice("my-device")
@@ -120,8 +119,10 @@ def test_get_plans_and_devices(
     devices = runner.invoke(main, ["controller", "devices"])
 
     assert (
-        devices.output
-        == "{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
+        devices.output == dedent("""\
+            my-device
+                HasName
+            """)
     )
 
 

@@ -15,10 +15,10 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
+from blueapi.service import interface
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
-from .handler_base import BlueskyHandler
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -30,33 +30,33 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
-from .subprocess_handler import SubprocessHandler
+from .runner import Runner
 
 REST_API_VERSION = "0.0.5"
 
-HANDLER: BlueskyHandler | None = None
+RUNNER: Runner | None = None
 
 
-def get_handler() -> BlueskyHandler:
-    if HANDLER is None:
+def get_runner() -> Runner:
+    if RUNNER is None:
         raise ValueError()
-    return HANDLER
+    return RUNNER
 
 
-def setup_handler(config: ApplicationConfig | None = None):
-    global HANDLER
-    handler = SubprocessHandler(config)
-    handler.start()
+def setup_handler(config: ApplicationConfig | None = None, use_subprocess: bool = False):
+    global RUNNER
+    runner = Runner(config, use_subprocess)
+    runner.start()
 
-    HANDLER = handler
+    RUNNER = runner
 
 
 def teardown_handler():
-    global HANDLER
-    if HANDLER is None:
+    global RUNNER
+    if RUNNER is None:
         return
-    HANDLER.stop()
-    HANDLER = None
+    RUNNER.stop()
+    RUNNER = None
 
 
 @asynccontextmanager
@@ -86,7 +86,7 @@ async def on_key_error_404(_: Request, __: KeyError):
 
 @app.get("/environment", response_model=EnvironmentResponse)
 def get_environment(
-    handler: BlueskyHandler = Depends(get_handler),
+    handler: Runner = Depends(get_runner),
 ) -> EnvironmentResponse:
     """Get the current state of the environment, i.e. initialization state."""
     return handler.state
@@ -95,11 +95,11 @@ def get_environment(
 @app.delete("/environment", response_model=EnvironmentResponse)
 async def delete_environment(
     background_tasks: BackgroundTasks,
-    handler: BlueskyHandler = Depends(get_handler),
+    handler: Runner = Depends(get_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
 
-    def restart_handler(handler: BlueskyHandler):
+    def restart_handler(handler: Runner):
         handler.stop()
         handler.start()
 
@@ -109,33 +109,33 @@ async def delete_environment(
 
 
 @app.get("/plans", response_model=PlanResponse)
-def get_plans(handler: BlueskyHandler = Depends(get_handler)):
+def get_plans(handler: Runner = Depends(get_runner)):
     """Retrieve information about all available plans."""
-    return PlanResponse(plans=handler.plans)
+    return PlanResponse(plans=handler.run(interface.get_plans))
 
 
 @app.get(
     "/plans/{name}",
     response_model=PlanModel,
 )
-def get_plan_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)):
+def get_plan_by_name(name: str, handler: Runner = Depends(get_runner)):
     """Retrieve information about a plan by its (unique) name."""
-    return handler.get_plan(name)
+    return handler.run(interface.get_plan, [name])
 
 
 @app.get("/devices", response_model=DeviceResponse)
-def get_devices(handler: BlueskyHandler = Depends(get_handler)):
+def get_devices(handler: Runner = Depends(get_runner)):
     """Retrieve information about all available devices."""
-    return DeviceResponse(devices=handler.devices)
+    return DeviceResponse(devices=handler.run(interface.get_devices))
 
 
 @app.get(
     "/devices/{name}",
     response_model=DeviceModel,
 )
-def get_device_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)):
+def get_device_by_name(name: str, handler: Runner = Depends(get_runner)):
     """Retrieve information about a devices by its (unique) name."""
-    return handler.get_device(name)
+    return handler.run(interface.get_device, [name])
 
 
 example_task = Task(name="count", params={"detectors": ["x"]})
@@ -150,12 +150,12 @@ def submit_task(
     request: Request,
     response: Response,
     task: Task = Body(..., example=example_task),
-    handler: BlueskyHandler = Depends(get_handler),
+    handler: Runner = Depends(get_runner),
 ):
     """Submit a task to the worker."""
     try:
-        plan_model = handler.get_plan(task.name)
-        task_id: str = handler.submit_task(task)
+        plan_model = handler.run(interface.get_plan, [task.name])
+        task_id: str = handler.run(interface.submit_task, [task])
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
@@ -177,9 +177,11 @@ def submit_task(
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 def delete_submitted_task(
     task_id: str,
-    handler: BlueskyHandler = Depends(get_handler),
+    handler: Runner = Depends(get_runner),
 ) -> TaskResponse:
-    return TaskResponse(task_id=handler.clear_task(task_id))
+    return TaskResponse(
+        task_id=handler.run(interface.clear_task, [task_id])
+    )
 
 
 def validate_task_status(v: str) -> TaskStatusEnum:
@@ -192,7 +194,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 @app.get("/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
 def get_tasks(
     task_status: str | None = None,
-    handler: BlueskyHandler = Depends(get_handler),
+    handler: Runner = Depends(get_runner),
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
@@ -208,9 +210,11 @@ def get_tasks(
                 detail="Invalid status query parameter",
             ) from e
 
-        tasks = handler.get_tasks_by_status(desired_status)
+        tasks = handler.run(
+            interface.get_tasks_by_status, [desired_status]
+        )
     else:
-        tasks = handler.tasks
+        tasks = handler.run(interface.get_tasks)
     return TasksListResponse(tasks=tasks)
 
 
@@ -221,16 +225,16 @@ def get_tasks(
 )
 def set_active_task(
     task: WorkerTask,
-    handler: BlueskyHandler = Depends(get_handler),
+    handler: Runner = Depends(get_runner),
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
     This will return an error response if the worker is not idle."""
-    active_task = handler.active_task
+    active_task = handler.run(interface.get_active_task)
     if active_task is not None and not active_task.is_complete:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    handler.begin_task(task)
+    handler.run(interface.begin_task, [task])
     return task
 
 
@@ -240,18 +244,18 @@ def set_active_task(
 )
 def get_task(
     task_id: str,
-    handler: BlueskyHandler = Depends(get_handler),
+    handler: Runner = Depends(get_runner),
 ) -> TrackableTask:
     """Retrieve a task"""
-    task = handler.get_task_by_id(task_id)
+    task = handler.run(interface.get_task_by_id, [task_id])
     if task is None:
         raise KeyError
     return task
 
 
 @app.get("/worker/task")
-def get_active_task(handler: BlueskyHandler = Depends(get_handler)) -> WorkerTask:
-    active = handler.active_task
+def get_active_task(handler: Runner = Depends(get_runner)) -> WorkerTask:
+    active = handler.run(interface.get_active_task)
     if active is not None:
         return WorkerTask(task_id=active.task_id)
     else:
@@ -259,9 +263,9 @@ def get_active_task(handler: BlueskyHandler = Depends(get_handler)) -> WorkerTas
 
 
 @app.get("/worker/state")
-def get_state(handler: BlueskyHandler = Depends(get_handler)) -> WorkerState:
+def get_state(handler: Runner = Depends(get_runner)) -> WorkerState:
     """Get the State of the Worker"""
-    return handler.worker_state
+    return handler.run(interface.get_worker_state)
 
 
 # Map of current_state: allowed new_states
@@ -290,7 +294,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    handler: BlueskyHandler = Depends(get_handler),
+    handler: Runner = Depends(get_runner),
 ) -> WorkerState:
     """
     Request that the worker is put into a particular state.
@@ -309,28 +313,33 @@ def set_state(
         - If reason is set, the reason will be passed as the reason for the Run failure.
     - **All other transitions return 400: Bad Request**
     """
-    current_state = handler.worker_state
+    current_state = handler.run(interface.get_worker_state)
     new_state = state_change_request.new_state
     if (
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
         if new_state == WorkerState.PAUSED:
-            handler.pause_worker(defer=state_change_request.defer)
+            handler.run(
+                interface.pause_worker, [state_change_request.defer]
+            )
         elif new_state == WorkerState.RUNNING:
-            handler.resume_worker()
+            handler.run(interface.resume_worker)
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
             try:
-                handler.cancel_active_task(
-                    state_change_request.new_state is WorkerState.ABORTING,
-                    state_change_request.reason,
+                handler.run(
+                    interface.cancel_active_task,
+                    [
+                        state_change_request.new_state is WorkerState.ABORTING,
+                        state_change_request.reason,
+                    ],
                 )
             except TransitionError:
                 response.status_code = status.HTTP_400_BAD_REQUEST
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
 
-    return handler.worker_state
+    return handler.run(interface.get_worker_state)
 
 
 def start(config: ApplicationConfig):

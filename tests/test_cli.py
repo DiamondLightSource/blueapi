@@ -1,9 +1,11 @@
+import json
 from dataclasses import dataclass
+from io import StringIO
+from textwrap import dedent
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import responses
-from textwrap import dedent
 from click.testing import CliRunner
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
@@ -12,9 +14,16 @@ from requests.exceptions import ConnectionError
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.cli.event_bus_client import BlueskyRemoteError
+from blueapi.cli.format import OutputFormat
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
-from blueapi.service.model import EnvironmentResponse
+from blueapi.service.model import (
+    DeviceModel,
+    DeviceResponse,
+    EnvironmentResponse,
+    PlanModel,
+    PlanResponse,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -94,13 +103,11 @@ def test_get_plans_and_devices(
     mock_requests.return_value = client.get("/plans")
     plans = runner.invoke(main, ["controller", "plans"])
 
-    assert (
-        plans.output == dedent("""\
+    assert plans.output == dedent("""\
                 my-plan
                     Args
                       id=string (Required)
                 """)
-        )
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output - expect nothing as no devices set.
@@ -118,12 +125,10 @@ def test_get_plans_and_devices(
     mock_requests.return_value = client.get("/devices")
     devices = runner.invoke(main, ["controller", "devices"])
 
-    assert (
-        devices.output == dedent("""\
+    assert devices.output == dedent("""\
             my-device
                 HasName
             """)
-    )
 
 
 def test_invalid_config_path_handling(runner: CliRunner):
@@ -442,3 +447,139 @@ def test_error_handling(mock_config, exception, expected_exit_code, runner: CliR
             obj=mock_config,
         )
         assert result.exit_code == expected_exit_code
+
+
+def test_device_output_formatting():
+    """Test for alternative device output formats"""
+
+    device = MyDevice("my-device")
+
+    devices = DeviceResponse(devices=[DeviceModel.from_device(device)])
+
+    compact = dedent("""\
+                my-device
+                    HasName
+                """)
+
+    output = StringIO()
+    OutputFormat.COMPACT.display(devices, out=output)
+    assert output.getvalue() == compact
+
+    # json outputs valid json
+    output = StringIO()
+    OutputFormat.JSON.display(devices, out=output)
+    json_out = dedent("""\
+                [
+                  {
+                    "name": "my-device",
+                    "protocols": [
+                      "HasName"
+                    ]
+                  }
+                ]
+                """)
+    assert output.getvalue() == json_out
+    _ = json.loads(output.getvalue())
+
+    output = StringIO()
+    OutputFormat.FULL.display(devices, out=output)
+    full = dedent("""\
+            my-device
+                HasName
+            """)
+    assert output.getvalue() == full
+
+    output = StringIO()
+    OutputFormat.PPRINT.display(devices, out=output)
+    pretty = "[{'name': 'my-device', 'protocols': ['HasName']}]\n"
+    assert output.getvalue() == pretty
+
+
+def test_plan_output_formatting():
+    """Test for alternative plan output formats"""
+
+    # Put a plan in handler.context manually.
+    plan = Plan(
+        name="my-plan",
+        description=dedent("""\
+            Summary of description
+
+            Rest of description
+            """),
+        model=MyModel,
+    )
+    plans = PlanResponse(plans=[PlanModel.from_plan(plan)])
+
+    compact = dedent("""\
+                my-plan
+                    Summary of description
+                    Args
+                      id=string (Required)
+                """)
+
+    output = StringIO()
+    OutputFormat.COMPACT.display(plans, out=output)
+    assert output.getvalue() == compact
+
+    # json outputs valid json
+    output = StringIO()
+    OutputFormat.JSON.display(plans, out=output)
+    json_out = dedent("""\
+                [
+                  {
+                    "name": "my-plan",
+                    "description": "Summary of description\\n\\nRest of description\\n",
+                    "parameter_schema": {
+                      "title": "MyModel",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "title": "Id",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    }
+                  }
+                ]
+                """)
+    assert output.getvalue() == json_out
+    _ = json.loads(output.getvalue())
+
+    output = StringIO()
+    OutputFormat.FULL.display(plans, out=output)
+    full = dedent("""\
+            my-plan
+                Summary of description
+
+                Rest of description
+                Schema
+                    {
+                      "title": "MyModel",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "title": "Id",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    }
+            """)
+    assert output.getvalue() == full
+
+    output = StringIO()
+    OutputFormat.PPRINT.display(plans, out=output)
+    pretty = dedent("""\
+        [{'description': 'Summary of description\\n\\nRest of description\\n',
+          'name': 'my-plan',
+          'parameter_schema': {'properties': {'id': {'title': 'Id', 'type': 'string'}},
+                               'required': ['id'],
+                               'title': 'MyModel',
+                               'type': 'object'}}]
+        """)
+    assert output.getvalue() == pretty

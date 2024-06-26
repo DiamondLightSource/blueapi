@@ -1,6 +1,9 @@
+import builtins
 import enum
 import json
+import sys
 import textwrap
+from functools import partial
 from pprint import pprint
 from textwrap import dedent, indent
 
@@ -15,19 +18,21 @@ class OutputFormat(enum.Enum):
     COMPACT = enum.auto()
     PPRINT = enum.auto()
 
-    def display(self, obj):
+    def display(self, obj, out=None):
+        out = out or sys.stdout
         match self:
             case OutputFormat.FULL:
-                display_full(obj)
+                display_full(obj, out)
             case OutputFormat.COMPACT:
-                display_compact(obj)
+                display_compact(obj, out)
             case OutputFormat.JSON:
-                display_json(obj)
+                display_json(obj, out)
             case OutputFormat.PPRINT:
-                display_pprint(obj)
+                display_pprint(obj, out)
 
 
-def display_full(obj):
+def display_full(obj, stream):
+    print = partial(builtins.print, file=stream)
     match obj:
         case PlanResponse(plans=plans):
             for plan in plans:
@@ -46,7 +51,8 @@ def display_full(obj):
             FALLBACK(other)
 
 
-def display_json(obj):
+def display_json(obj, stream):
+    print = partial(builtins.print, file=stream)
     match obj:
         case PlanResponse(plans=plans):
             print(json.dumps([p.dict() for p in plans], indent=2))
@@ -56,7 +62,8 @@ def display_json(obj):
             print(json.dumps(obj))
 
 
-def display_compact(obj):
+def display_compact(obj, stream):
+    print = partial(builtins.print, file=stream)
     match obj:
         case PlanResponse(plans=plans):
             for plan in plans:
@@ -76,14 +83,14 @@ def display_compact(obj):
             FALLBACK(other)
 
 
-def display_pprint(obj):
+def display_pprint(obj, stream):
     match obj:
         case PlanResponse(plans=plans):
-            pprint([plan.dict() for plan in plans])
+            pprint([plan.dict() for plan in plans], stream=stream)
         case DeviceResponse(devices=devs):
-            pprint([dev.dict() for dev in devs])
+            pprint([dev.dict() for dev in devs], stream=stream)
         case _:
-            FALLBACK(obj)
+            FALLBACK(obj, stream)
 
 
 def format_for_name(name: str) -> OutputFormat:

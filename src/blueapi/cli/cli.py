@@ -12,7 +12,7 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.event_bus_client import BlueskyRemoteError, EventBusClient
-from blueapi.cli.format import OutputFormat, format_for_name
+from blueapi.cli.format import OutputFormat
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
@@ -90,6 +90,7 @@ def start_application(obj: dict):
 
 @main.group()
 @click.option(
+    "-o",
     "--output",
     type=click.Choice([o.name.lower() for o in OutputFormat]),
     default="compact",
@@ -104,7 +105,7 @@ def controller(ctx: click.Context, output: str) -> None:
 
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
-    ctx.obj["fmt"] = format_for_name(output)
+    ctx.obj["fmt"] = OutputFormat(output)
     ctx.obj["rest_client"] = BlueapiRestClient(config.api)
 
 

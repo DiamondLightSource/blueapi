@@ -489,11 +489,6 @@ def test_device_output_formatting():
             """)
     assert output.getvalue() == full
 
-    output = StringIO()
-    OutputFormat.PPRINT.display(devices, out=output)
-    pretty = "[{'name': 'my-device', 'protocols': ['HasName']}]\n"
-    assert output.getvalue() == pretty
-
 
 def test_plan_output_formatting():
     """Test for alternative plan output formats"""
@@ -571,15 +566,3 @@ def test_plan_output_formatting():
                     }
             """)
     assert output.getvalue() == full
-
-    output = StringIO()
-    OutputFormat.PPRINT.display(plans, out=output)
-    pretty = dedent("""\
-        [{'description': 'Summary of description\\n\\nRest of description\\n',
-          'name': 'my-plan',
-          'parameter_schema': {'properties': {'id': {'title': 'Id', 'type': 'string'}},
-                               'required': ['id'],
-                               'title': 'MyModel',
-                               'type': 'object'}}]
-        """)
-    assert output.getvalue() == pretty

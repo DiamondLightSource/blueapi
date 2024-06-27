@@ -7,16 +7,17 @@ from functools import partial
 from pprint import pprint
 from textwrap import dedent, indent
 
+from pydantic import BaseModel
+
 from blueapi.service.model import DeviceResponse, PlanResponse
 
 FALLBACK = pprint
 
 
-class OutputFormat(enum.Enum):
-    JSON = enum.auto()
-    FULL = enum.auto()
-    COMPACT = enum.auto()
-    PPRINT = enum.auto()
+class OutputFormat(str, enum.Enum):
+    JSON = "json"
+    FULL = "full"
+    COMPACT = "compact"
 
     def display(self, obj, out=None):
         out = out or sys.stdout
@@ -27,8 +28,6 @@ class OutputFormat(enum.Enum):
                 display_compact(obj, out)
             case OutputFormat.JSON:
                 display_json(obj, out)
-            case OutputFormat.PPRINT:
-                display_pprint(obj, out)
 
 
 def display_full(obj, stream):
@@ -58,6 +57,8 @@ def display_json(obj, stream):
             print(json.dumps([p.dict() for p in plans], indent=2))
         case DeviceResponse(devices=devices):
             print(json.dumps([d.dict() for d in devices], indent=2))
+        case BaseModel():
+            print(json.dumps(obj.dict(), indent=2))
         case _:
             print(json.dumps(obj))
 
@@ -81,30 +82,6 @@ def display_compact(obj, stream):
                 print(indent(textwrap.fill(", ".join(dev.protocols), 80), "    "))
         case other:
             FALLBACK(other)
-
-
-def display_pprint(obj, stream):
-    match obj:
-        case PlanResponse(plans=plans):
-            pprint([plan.dict() for plan in plans], stream=stream)
-        case DeviceResponse(devices=devs):
-            pprint([dev.dict() for dev in devs], stream=stream)
-        case _:
-            FALLBACK(obj, stream)
-
-
-def format_for_name(name: str) -> OutputFormat:
-    match name.lower():
-        case "json":
-            return OutputFormat.JSON
-        case "compact":
-            return OutputFormat.COMPACT
-        case "pprint":
-            return OutputFormat.PPRINT
-        case "full":
-            return OutputFormat.FULL
-        case name:
-            raise ValueError(f"Format '{name}' not recognised")
 
 
 def _describe_type(spec, required=False):

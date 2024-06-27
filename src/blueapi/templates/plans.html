@@ -2,7 +2,9 @@
 %}Available Plans{% endblock %} {% block content %}
 <ul>
   {% for plan in plans %}
-  <li>{{ plan.name }} - ${{ plan.price }}</li>
-  {% endfor %}
+  <li>
+    <a href="/plans/{{ plan.name }}">{{ plan.name }}</a>
+    - {{ plan.description}} {% endfor %}
+  </li>
 </ul>
 {% endblock %}

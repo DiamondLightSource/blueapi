@@ -13,7 +13,7 @@ from fastapi import (
     Response,
     status,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from super_state_machine.errors import TransitionError
@@ -134,9 +134,36 @@ def get_plans(
     "/plans/{name}",
     response_model=PlanModel,
 )
-def get_plan_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)):
+def get_plan_by_name(
+    request: Request,
+    name: str,
+    handler: BlueskyHandler = Depends(get_handler),
+    accept: Optional[str] = Header(None),
+):
     """Retrieve information about a plan by its (unique) name."""
-    return handler.get_plan(name)
+    try:
+        plan = handler.get_plan(name)
+        if "text/html" in accept:
+            return templates.TemplateResponse(
+                "plan_details.html", {"request": request, "plan": plan}
+            )
+        else:
+            return plan
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Plan {name} not found",
+        )
+
+
+@app.get("/plans/{name}/submit", response_class=HTMLResponse)
+async def get_plan_form(
+    request: Request, name: str, handler: BlueskyHandler = Depends(get_handler)
+):
+    plan = handler.get_plan(name)
+    return templates.TemplateResponse(
+        "plan_form.html", {"request": request, "plan": plan}
+    )
 
 
 @app.get("/devices", response_model=DeviceResponse)
@@ -169,7 +196,7 @@ def get_device_by_name(
         device = handler.get_device(name)
         if "text/html" in accept:
             return templates.TemplateResponse(
-                "device.html", {"request": request, "device": device}
+                "device_details.html", {"request": request, "device": device}
             )
         return device
     except KeyError:
@@ -182,6 +209,25 @@ def get_device_by_name(
 example_task = Task(name="count", params={"detectors": ["x"]})
 
 
+async def parse_task(
+    request: Request, handler: BlueskyHandler = Depends(get_handler)
+) -> Task:
+    # the first branch is if it's a form submission
+    if request.headers.get("Content-Type") == "application/x-www-form-urlencoded":
+        form_data = await request.form()
+        try:
+            # Assuming `Task` can be created from form data dictionary
+            return Task(name=form_data["name"], params=dict(form_data))
+        except ValidationError as e:
+            raise HTTPException(status_code=400, detail="Invalid task data from form.")
+    else:
+        # Assuming JSON Body
+        try:
+            return await request.json()
+        except ValidationError as e:
+            raise HTTPException(status_code=400, detail="Invalid JSON task data.")
+
+
 @app.post(
     "/tasks",
     response_model=TaskResponse,
@@ -190,7 +236,7 @@ example_task = Task(name="count", params={"detectors": ["x"]})
 def submit_task(
     request: Request,
     response: Response,
-    task: Task = Body(..., example=example_task),
+    task: Task = Depends(parse_task),
     handler: BlueskyHandler = Depends(get_handler),
 ):
     """Submit a task to the worker."""

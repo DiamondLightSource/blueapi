@@ -1,0 +1,7 @@
+{% extends "base.html" %} {% block title %}Plan Details{% endblock %} {% block
+header %}Plan: {{ plan.name }}{% endblock %} {% block content %}
+<h2>Description</h2>
+<p>{{ plan.description or "No description available." }}</p>
+<h2>Parameters - TODO</h2>
+
+{% endblock %}

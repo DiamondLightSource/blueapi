@@ -42,7 +42,7 @@ def test_scratch_install_installs_path(
     mock_process.returncode = 0
     mock_popen.return_value = mock_process
 
-    scratch_install(directory_path)
+    scratch_install(directory_path, timeout=1.0)
 
     mock_popen.assert_called_once_with(
         [
@@ -59,12 +59,12 @@ def test_scratch_install_installs_path(
 
 def test_scratch_install_fails_on_file(file_path: Path):
     with pytest.raises(KeyError):
-        scratch_install(file_path)
+        scratch_install(file_path, timeout=1.0)
 
 
 def test_scratch_install_fails_on_nonexistant_path(nonexistant_path: Path):
     with pytest.raises(KeyError):
-        scratch_install(nonexistant_path)
+        scratch_install(nonexistant_path, timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Popen")
@@ -79,7 +79,7 @@ def test_scratch_install_fails_on_non_zero_exit_code(
     mock_popen.return_value = mock_process
 
     with pytest.raises(RuntimeError):
-        scratch_install(directory_path)
+        scratch_install(directory_path, timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Repo")

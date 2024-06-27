@@ -1,3 +1,4 @@
+import json
 import os
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -14,6 +15,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from super_state_machine.errors import TransitionError
@@ -83,6 +85,13 @@ app = FastAPI(
     version=REST_API_VERSION,
 )
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("landing_page.html", {"request": request})
+
 
 @app.exception_handler(KeyError)
 async def on_key_error_404(_: Request, __: KeyError):
@@ -144,6 +153,8 @@ def get_plan_by_name(
     try:
         plan = handler.get_plan(name)
         if "text/html" in accept:
+            if isinstance(plan.parameter_schema, str):
+                plan.parameter_schema = json.loads(plan.parameter_schema)
             return templates.TemplateResponse(
                 "plan_details.html", {"request": request, "plan": plan}
             )

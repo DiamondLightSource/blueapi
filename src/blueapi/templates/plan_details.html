@@ -1,7 +1,23 @@
-{% extends "base.html" %} {% block title %}Plan Details{% endblock %} {% block
-header %}Plan: {{ plan.name }}{% endblock %} {% block content %}
+{% extends "base.html" %} {% block title %}Plan Details - {{ plan.name }}{%
+endblock %} {% block header %}Plan: {{ plan.name }}{% endblock %} {% block
+content %}
 <h2>Description</h2>
 <p>{{ plan.description or "No description available." }}</p>
-<h2>Parameters - TODO</h2>
-
+<h2>Submit Task for {{ plan.name }}</h2>
+<form action="/tasks" method="post">
+  <input type="hidden" name="name" value="{{ plan.name }}" />
+  {% for param, details in plan.parameter_schema.get('properties', {}).items()
+  %}
+  <label for="{{ param }}">{{ details.title or param }}:</label>
+  <input
+    type="{{ 'number' if details.type == 'integer' or details.type == 'float' else 'text' }}"
+    id="{{ param }}"
+    name="params[{{ param }}]"
+    placeholder="{{ details.description }}"
+    required
+  />
+  <br />
+  {% endfor %}
+  <button type="submit">Submit Task</button>
+</form>
 {% endblock %}

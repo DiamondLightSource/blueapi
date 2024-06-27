@@ -1,0 +1,36 @@
+{% extends "base.html" %} {% block title %}Welcome to BlueAPI{% endblock %} {%
+block header %}Explore the Universe of Automation{% endblock %} {% block content
+%}
+<div
+  class="hero"
+  style="
+    background-color: #282c34;
+    color: white;
+    padding: 20px;
+    text-align: center;
+  "
+>
+  <div
+    id="color-demo"
+    class="smooth"
+    style="color: blue; margin-top: 20px"
+    hx-get="/colors"
+    hx-swap="outerHTML"
+    hx-trigger="every 1s"
+  >
+    <h1>Welcome to BlueAPI</h1>
+  </div>
+  <p>Your gateway to managing plans and devices effortlessly.</p>
+  <div>
+    <img
+      src="/static/starship.jpg"
+      alt="Starship"
+      style="max-width: 300px; height: auto"
+    />
+    <div style="display: inline-block; padding-left: 20px; vertical-align: top">
+      <h2>A sky full of stars,</h2>
+      <p>Silently weaving through time -<br />Automation's grace.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

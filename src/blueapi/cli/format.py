@@ -1,3 +1,4 @@
+from _typeshed import SupportsWrite
 import builtins
 import enum
 import json
@@ -6,6 +7,7 @@ import textwrap
 from functools import partial
 from pprint import pprint
 from textwrap import dedent, indent
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -13,13 +15,15 @@ from blueapi.service.model import DeviceResponse, PlanResponse
 
 FALLBACK = pprint
 
+Stream = SupportsWrite[str] | None
+
 
 class OutputFormat(str, enum.Enum):
     JSON = "json"
     FULL = "full"
     COMPACT = "compact"
 
-    def display(self, obj, out=None):
+    def display(self, obj: Any, out: Stream = None):
         out = out or sys.stdout
         match self:
             case OutputFormat.FULL:
@@ -30,7 +34,7 @@ class OutputFormat(str, enum.Enum):
                 display_json(obj, out)
 
 
-def display_full(obj, stream):
+def display_full(obj: Any, stream: Stream):
     print = partial(builtins.print, file=stream)
     match obj:
         case PlanResponse(plans=plans):
@@ -50,7 +54,7 @@ def display_full(obj, stream):
             FALLBACK(other)
 
 
-def display_json(obj, stream):
+def display_json(obj: Any, stream: Stream):
     print = partial(builtins.print, file=stream)
     match obj:
         case PlanResponse(plans=plans):
@@ -63,7 +67,7 @@ def display_json(obj, stream):
             print(json.dumps(obj))
 
 
-def display_compact(obj, stream):
+def display_compact(obj: Any, stream: Stream):
     print = partial(builtins.print, file=stream)
     match obj:
         case PlanResponse(plans=plans):
@@ -84,7 +88,7 @@ def display_compact(obj, stream):
             FALLBACK(other)
 
 
-def _describe_type(spec, required=False):
+def _describe_type(spec: dict[Any, Any], required: bool = False):
     disp = ""
     match spec.get("type"):
         case None:

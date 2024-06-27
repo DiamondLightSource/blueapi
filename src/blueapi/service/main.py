@@ -167,16 +167,6 @@ def get_plan_by_name(
         )
 
 
-@app.get("/plans/{name}/submit", response_class=HTMLResponse)
-async def get_plan_form(
-    request: Request, name: str, handler: BlueskyHandler = Depends(get_handler)
-):
-    plan = handler.get_plan(name)
-    return templates.TemplateResponse(
-        "plan_form.html", {"request": request, "plan": plan}
-    )
-
-
 @app.get("/devices", response_model=DeviceResponse)
 def get_devices(
     request: Request,

@@ -31,20 +31,6 @@ LOGGER = logging.getLogger(__name__)
 DevicesDict = dict[str, Device]
 
 
-def bisect_devices_dict(input_dict: DevicesDict) -> tuple[DevicesDict, DevicesDict]:
-    lazy_dict = {}
-    non_lazy_dict = {}
-
-    for key, value in input_dict.items():
-        # Assuming 'lazy' is an attribute or a condition you can check
-        if hasattr(value, "lazy") and value.lazy:
-            lazy_dict[key] = value
-        else:
-            non_lazy_dict[key] = value
-
-    return (non_lazy_dict, lazy_dict)
-
-
 @dataclass
 class BlueskyContext:
     """
@@ -126,7 +112,7 @@ class BlueskyContext:
         devices, exceptions = make_all_devices(module, **kwargs)
 
         # for non-lazy devices, we instantiate them
-        early_devices, _ = bisect_devices_dict(devices)
+        early_devices = devices.items().filter(lambda x: not x.lazy)
 
         for device in early_devices.values():
             self.register_device(device)

@@ -8,7 +8,16 @@ from git import Repo
 from blueapi.config import ScratchConfig
 
 
-def setup_scratch(config: ScratchConfig) -> None:
+def setup_scratch(config: ScratchConfig, install_timeout: float = 300.0) -> None:
+    """
+    Set up the scratch area from the config. Clone all required repositories
+    if they are not cloned already. Install them into the scratch area.
+
+    Args:
+        config: Configuration for the scratch directory
+        install_timeout: Timeout for installing packages
+    """
+
     _validate_directory(config.root)
 
     logging.info(f"Setting up scratch area: {config.root}")
@@ -28,10 +37,16 @@ def setup_scratch(config: ScratchConfig) -> None:
             logging.exception(ex)
 
 
-def ensure_repo(
-    remote_url: str,
-    local_directory: Path,
-) -> None:
+def ensure_repo(remote_url: str, local_directory: Path) -> None:
+    """
+    Ensure that a repository is checked out for use in the scratch area.
+    Clone it if it isn't.
+
+    Args:
+        remote_url: Git remote URL
+        local_directory: Output path for cloning
+    """
+
     if not local_directory.exists():
         logging.info(f"Cloning {remote_url}")
         Repo.clone_from(remote_url, local_directory)
@@ -46,9 +61,21 @@ def ensure_repo(
         )
 
 
-def scratch_install(path: Path) -> None:
+def scratch_install(path: Path, timeout: float) -> None:
+    """
+    Install a scratch package. Make blueapi aware of a repository checked out in
+    the scratch area. Make it automatically follow code changes to that repository
+    (pending a restart). Do not install any of the package's dependencies as they
+    may conflict with each other.
+
+    Args:
+        path: Path to the checked out repository
+        timeout: Time to wait for for installation subprocess
+    """
+
     _validate_directory(path)
 
+    logging.info(f"Installing {path}")
     process = Popen(
         [
             "python",
@@ -60,7 +87,7 @@ def scratch_install(path: Path) -> None:
             str(path),
         ]
     )
-    process.wait(timeout=300.0)
+    process.wait(timeout=timeout)
     if process.returncode != 0:
         raise RuntimeError(f"Failed to install {path}: Exit Code: {process.returncode}")
 

@@ -1,17 +1,21 @@
+import os
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import (
     BackgroundTasks,
     Body,
     Depends,
     FastAPI,
+    Header,
     HTTPException,
     Request,
     Response,
     status,
 )
+from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
-from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
@@ -35,6 +39,10 @@ from .subprocess_handler import SubprocessHandler
 REST_API_VERSION = "0.0.5"
 
 HANDLER: BlueskyHandler | None = None
+
+print("Current working directory:", os.getcwd())
+templates = Jinja2Templates(directory="templates")
+print("templates", templates)
 
 
 def get_handler() -> BlueskyHandler:
@@ -109,8 +117,16 @@ async def delete_environment(
 
 
 @app.get("/plans", response_model=PlanResponse)
-def get_plans(handler: BlueskyHandler = Depends(get_handler)):
+def get_plans(
+    request: Request,
+    accept: Optional[str] = Header(None),
+    handler: BlueskyHandler = Depends(get_handler),
+):
     """Retrieve information about all available plans."""
+    if "text/html" in accept:
+        return templates.TemplateResponse(
+            "plans.html", {"request": request, "plans": handler.plans}
+        )
     return PlanResponse(plans=handler.plans)
 
 
@@ -124,18 +140,43 @@ def get_plan_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)):
 
 
 @app.get("/devices", response_model=DeviceResponse)
-def get_devices(handler: BlueskyHandler = Depends(get_handler)):
+def get_devices(
+    request: Request,
+    accept: Optional[str] = Header(None),
+    handler: BlueskyHandler = Depends(get_handler),
+):
     """Retrieve information about all available devices."""
-    return DeviceResponse(devices=handler.devices)
+    devices = handler.devices
+    if "text/html" in accept:
+        return templates.TemplateResponse(
+            "devices.html", {"request": request, "devices": devices}
+        )
+    return DeviceResponse(devices=devices)
 
 
 @app.get(
     "/devices/{name}",
     response_model=DeviceModel,
 )
-def get_device_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)):
+def get_device_by_name(
+    request: Request,
+    name: str,
+    handler: BlueskyHandler = Depends(get_handler),
+    accept: Optional[str] = Header(None),
+):
     """Retrieve information about a devices by its (unique) name."""
-    return handler.get_device(name)
+    try:
+        device = handler.get_device(name)
+        if "text/html" in accept:
+            return templates.TemplateResponse(
+                "device.html", {"request": request, "device": device}
+            )
+        return device
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Device {name} not found",
+        )
 
 
 example_task = Task(name="count", params={"detectors": ["x"]})

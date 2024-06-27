@@ -1,16 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plans</title>
-</head>
-<body>
-    <h1>Available Plans</h1>
-    <ul>
-        {% for plan in plans %}
-        <li>{{ plan.name }} - ${{ plan.price }}</li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
+{% extends "base.html" %} {% block title %}Plans{% endblock %} {% block header
+%}Available Plans{% endblock %} {% block content %}
+<ul>
+  {% for plan in plans %}
+  <li>{{ plan.name }} - ${{ plan.price }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

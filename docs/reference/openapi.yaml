@@ -269,6 +269,8 @@ paths:
       summary: Get Device By Name
   /environment:
     delete:
+      description: Delete the current environment, causing internal components to
+        be reloaded.
       operationId: delete_environment_environment_delete
       responses:
         '200':
@@ -279,6 +281,7 @@ paths:
           description: Successful Response
       summary: Delete Environment
     get:
+      description: Get the current state of the environment, i.e. initialization state.
       operationId: get_environment_environment_get
       responses:
         '200':
@@ -492,7 +495,11 @@ paths:
           description: Successful Response
       summary: Get Active Task
     put:
-      operationId: update_task_worker_task_put
+      description: 'Set a task to active status, the worker should begin it as soon
+        as possible.
+
+        This will return an error response if the worker is not idle.'
+      operationId: set_active_task_worker_task_put
       requestBody:
         content:
           application/json:
@@ -515,4 +522,4 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
-      summary: Update Task
+      summary: Set Active Task

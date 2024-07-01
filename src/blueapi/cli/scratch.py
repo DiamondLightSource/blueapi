@@ -7,8 +7,12 @@ from git import Repo
 
 from blueapi.config import ScratchConfig
 
+_DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
-def setup_scratch(config: ScratchConfig, install_timeout: float = 300.0) -> None:
+
+def setup_scratch(
+    config: ScratchConfig, install_timeout: float = _DEFAULT_INSTALL_TIMEOUT
+) -> None:
     """
     Set up the scratch area from the config. Clone all required repositories
     if they are not cloned already. Install them into the scratch area.
@@ -61,7 +65,7 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
         )
 
 
-def scratch_install(path: Path, timeout: float) -> None:
+def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
     """
     Install a scratch package. Make blueapi aware of a repository checked out in
     the scratch area. Make it automatically follow code changes to that repository

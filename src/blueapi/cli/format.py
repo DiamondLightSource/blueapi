@@ -1,4 +1,3 @@
-from _typeshed import SupportsWrite
 import builtins
 import enum
 import json
@@ -7,7 +6,7 @@ import textwrap
 from functools import partial
 from pprint import pprint
 from textwrap import dedent, indent
-from typing import Any
+from typing import Any, TextIO
 
 from pydantic import BaseModel
 
@@ -15,7 +14,7 @@ from blueapi.service.model import DeviceResponse, PlanResponse
 
 FALLBACK = pprint
 
-Stream = SupportsWrite[str] | None
+Stream = TextIO | None
 
 
 class OutputFormat(str, enum.Enum):

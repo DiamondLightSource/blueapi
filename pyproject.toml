@@ -17,12 +17,12 @@ dependencies = [
     "nslsii",
     "pyepics",
     "aioca",
-    "pydantic<2.0",
+    "pydantic<3.0",
     "stomp-py",
     "aiohttp",
     "PyYAML",
-    "click<8.1.4",
-    "fastapi[all]<0.99", # Later versions use a newer openapi schema, which is incompatible with swagger see https://github.com/swagger-api/swagger-codegen/issues/10446
+    "click<8.1.8",
+    "fastapi[all]<0.112", # Later versions use a newer openapi schema, which is incompatible with swagger see https://github.com/swagger-api/swagger-codegen/issues/10446
     "uvicorn",
     "requests",
     "dls-bluesky-core",  #requires ophyd-async
@@ -45,7 +45,7 @@ dev = [
     "pytest-asyncio",
     "responses",
     "ruff",
-    "sphinx-autobuild==2024.2.4", # Later versions have a clash with fastapi<0.99, remove pin when fastapi is a higher version
+    "sphinx-autobuild==2024.4.16", # Later versions have a clash with fastapi<0.99, remove pin when fastapi is a higher version
     "sphinx-copybutton",
     "sphinx-click",
     "sphinx-design",

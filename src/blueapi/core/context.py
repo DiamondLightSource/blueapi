@@ -112,9 +112,10 @@ class BlueskyContext:
         devices, exceptions = make_all_devices(module, **kwargs)
 
         # for non-lazy devices, we instantiate them
-        early_devices = devices.items().filter(lambda x: not x.lazy)
+        # eager_devices = devices.items().filter(lambda x: not x.lazy)
+        eager_devices = {k: v for k, v in devices.items() if not v.lazy}
 
-        for device in early_devices.values():
+        for device in eager_devices.values():
             self.register_device(device)
 
         # If exceptions have occurred, we log them but we do not make blueapi

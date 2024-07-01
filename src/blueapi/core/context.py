@@ -8,6 +8,7 @@ from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_
 
 from bluesky.run_engine import RunEngine
 from dodal.utils import make_all_devices
+from ophyd_async.core import Device as AsyncDevice
 from ophyd_async.core import NotConnected
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
@@ -28,7 +29,7 @@ from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
 
-DevicesDict = dict[str, Device]
+DevicesDict = dict[str, AsyncDevice]
 
 
 @dataclass
@@ -43,7 +44,7 @@ class BlueskyContext:
         default_factory=lambda: RunEngine(context_managers=[])
     )
     plans: dict[str, Plan] = field(default_factory=dict)
-    devices: dict[str, Device] = field(default_factory=dict)
+    devices: DevicesDict = field(default_factory=dict)
 
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
@@ -113,7 +114,10 @@ class BlueskyContext:
 
         # for non-lazy devices, we instantiate them
         # eager_devices = devices.items().filter(lambda x: not x.lazy)
-        eager_devices = {k: v for k, v in devices.items() if not v.lazy}
+        eager_devices = {
+            k: v for k, v in devices.items()
+            if not v.lazy
+            }
 
         for device in eager_devices.values():
             self.register_device(device)
@@ -154,7 +158,7 @@ class BlueskyContext:
         self.plan_functions[plan.__name__] = plan
         return plan
 
-    def register_device(self, device: Device, name: str | None = None) -> None:
+    def register_device(self, device: AsyncDevice, name: str | None = None) -> None:
         """
         Register an device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`

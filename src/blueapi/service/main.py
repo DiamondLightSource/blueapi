@@ -213,20 +213,29 @@ example_task = Task(name="count", params={"detectors": ["x"]})
 async def parse_task(
     request: Request, handler: BlueskyHandler = Depends(get_handler)
 ) -> Task:
-    # the first branch is if it's a form submission
+    # Check if the request is a form submission
     if request.headers.get("Content-Type") == "application/x-www-form-urlencoded":
         form_data = await request.form()
         try:
-            # Assuming `Task` can be created from form data dictionary
+            # Create Task from form data
             return Task(name=form_data["name"], params=dict(form_data))
         except ValidationError as e:
-            raise HTTPException(status_code=400, detail="Invalid task data from form.")
+            raise HTTPException(  # noqa: B904
+                status_code=400, detail=f"Invalid task data from form: {e.errors()}"
+            )
     else:
-        # Assuming JSON Body
+        # Assume JSON Body
         try:
-            return await request.json()
+            json_data = await request.json()
+            return Task(**json_data)
         except ValidationError as e:
-            raise HTTPException(status_code=400, detail="Invalid JSON task data.")
+            raise HTTPException(  # noqa: B904
+                status_code=400, detail=f"Invalid JSON task data: {e.errors()}"
+            )
+        except Exception as e:
+            raise HTTPException(  # noqa: B904
+                status_code=400, detail=f"Invalid JSON format: {str(e)}"
+            )
 
 
 @app.post(

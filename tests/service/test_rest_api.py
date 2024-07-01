@@ -448,7 +448,8 @@ def test_delete_running_task(
         )
 
     mockable_state_machine._worker.begin_task = start_task  # type: ignore
-    response = client.post("/tasks", json=_TASK.dict())
+    my_dict = _TASK.dict()
+    response = client.post("/tasks", json=my_dict)
     task_id = response.json()["task_id"]
 
     task_json = {"task_id": task_id}

@@ -149,7 +149,7 @@ def test_get_non_existant_plan_by_name(handler: Handler, client: TestClient) -> 
     response = client.get("/plans/my-plan")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": "Item not found"}
+    assert response.json() == {"detail": "Plan my-plan not found"}
 
 
 def test_get_devices(handler: Handler, client: TestClient) -> None:
@@ -194,7 +194,7 @@ def test_get_non_existant_device_by_name(handler: Handler, client: TestClient) -
     response = client.get("/devices/my-device")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": "Item not found"}
+    assert response.json() == {"detail": "Device my-device not found"}
 
 
 def test_create_task(handler: Handler, client: TestClient) -> None:

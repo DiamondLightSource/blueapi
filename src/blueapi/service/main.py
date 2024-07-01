@@ -85,7 +85,7 @@ app = FastAPI(
     version=REST_API_VERSION,
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="src/blueapi/static"), name="static")
 
 
 @app.get("/", response_class=HTMLResponse)

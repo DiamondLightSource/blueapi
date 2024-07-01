@@ -111,22 +111,6 @@ components:
       - new_state
       title: StateChangeRequest
       type: object
-    Task:
-      additionalProperties: false
-      description: Task that will run a plan
-      properties:
-        name:
-          description: Name of plan to run
-          title: Name
-          type: string
-        params:
-          description: Values for parameters to plan, if any
-          title: Params
-          type: object
-      required:
-      - name
-      title: Task
-      type: object
     TaskResponse:
       additionalProperties: false
       description: Acknowledgement that a task has started, includes its ID
@@ -230,10 +214,28 @@ info:
   version: 0.0.5
 openapi: 3.0.2
 paths:
+  /:
+    get:
+      operationId: read_root__get
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Successful Response
+      summary: Read Root
   /devices:
     get:
       description: Retrieve information about all available devices.
       operationId: get_devices_devices_get
+      parameters:
+      - in: header
+        name: accept
+        required: false
+        schema:
+          title: Accept
+          type: string
       responses:
         '200':
           content:
@@ -241,6 +243,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeviceResponse'
           description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
       summary: Get Devices
   /devices/{name}:
     get:
@@ -252,6 +260,12 @@ paths:
         required: true
         schema:
           title: Name
+          type: string
+      - in: header
+        name: accept
+        required: false
+        schema:
+          title: Accept
           type: string
       responses:
         '200':
@@ -295,6 +309,13 @@ paths:
     get:
       description: Retrieve information about all available plans.
       operationId: get_plans_plans_get
+      parameters:
+      - in: header
+        name: accept
+        required: false
+        schema:
+          title: Accept
+          type: string
       responses:
         '200':
           content:
@@ -302,6 +323,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlanResponse'
           description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
       summary: Get Plans
   /plans/{name}:
     get:
@@ -313,6 +340,12 @@ paths:
         required: true
         schema:
           title: Name
+          type: string
+      - in: header
+        name: accept
+        required: false
+        schema:
+          title: Accept
           type: string
       responses:
         '200':
@@ -358,17 +391,6 @@ paths:
     post:
       description: Submit a task to the worker.
       operationId: submit_task_tasks_post
-      requestBody:
-        content:
-          application/json:
-            example:
-              name: count
-              params:
-                detectors:
-                - x
-            schema:
-              $ref: '#/components/schemas/Task'
-        required: true
       responses:
         '201':
           content:
@@ -376,12 +398,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/TaskResponse'
           description: Successful Response
-        '422':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
       summary: Submit Task
   /tasks/{task_id}:
     delete:

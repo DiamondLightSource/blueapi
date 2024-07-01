@@ -92,8 +92,8 @@ def _describe_type(spec: dict[Any, Any], required: bool = False):
     match spec.get("type"):
         case None:
             if all_of := spec.get("allOf"):
-                items = (_describe_type(f, True) for f in all_of)
-                disp += f'({", ".join(items)})'
+                items = (_describe_type(f, False) for f in all_of)
+                disp += f'{" & ".join(items)}'
             else:
                 disp += "Any"
         case "array":

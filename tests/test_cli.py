@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 import json
 from dataclasses import dataclass
 from io import StringIO
@@ -66,6 +67,12 @@ def test_connection_error_caught_by_wrapper_func(mock_requests: Mock):
 
 class MyModel(BaseModel):
     id: str
+
+
+class ExtendedModel(BaseModel):
+    name: str
+    keys: list[int]
+    metadata: None | Mapping[str, str]
 
 
 @dataclass
@@ -501,7 +508,7 @@ def test_plan_output_formatting():
 
             Rest of description
             """),
-        model=MyModel,
+        model=ExtendedModel,
     )
     plans = PlanResponse(plans=[PlanModel.from_plan(plan)])
 
@@ -509,7 +516,9 @@ def test_plan_output_formatting():
                 my-plan
                     Summary of description
                     Args
-                      id=string (Required)
+                      name=string (Required)
+                      keys=[integer] (Required)
+                      metadata=object
                 """)
 
     output = StringIO()
@@ -525,16 +534,31 @@ def test_plan_output_formatting():
                     "name": "my-plan",
                     "description": "Summary of description\\n\\nRest of description\\n",
                     "parameter_schema": {
-                      "title": "MyModel",
+                      "title": "ExtendedModel",
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "title": "Id",
+                        "name": {
+                          "title": "Name",
                           "type": "string"
+                        },
+                        "keys": {
+                          "title": "Keys",
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "metadata": {
+                          "title": "Metadata",
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
                         }
                       },
                       "required": [
-                        "id"
+                        "name",
+                        "keys"
                       ]
                     }
                   }
@@ -552,17 +576,70 @@ def test_plan_output_formatting():
                 Rest of description
                 Schema
                     {
-                      "title": "MyModel",
+                      "title": "ExtendedModel",
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "title": "Id",
+                        "name": {
+                          "title": "Name",
                           "type": "string"
+                        },
+                        "keys": {
+                          "title": "Keys",
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "metadata": {
+                          "title": "Metadata",
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
                         }
                       },
                       "required": [
-                        "id"
+                        "name",
+                        "keys"
                       ]
                     }
             """)
     assert output.getvalue() == full
+
+
+def test_unknown_object_formatting():
+    demo = {"foo": 42, "bar": ["hello", "World"]}
+
+    output = StringIO()
+    OutputFormat.JSON.display(demo, output)
+    exp = """{"foo": 42, "bar": ["hello", "World"]}\n"""
+    assert exp == output.getvalue()
+
+    output = StringIO()
+    OutputFormat.COMPACT.display(demo, output)
+    exp = """{'bar': ['hello', 'World'], 'foo': 42}\n"""
+    assert exp == output.getvalue()
+
+    output = StringIO()
+    OutputFormat.FULL.display(demo, output)
+    assert exp == output.getvalue()
+
+
+def test_generic_base_model_formatting():
+    output = StringIO()
+    obj = ExtendedModel(name="foo", keys=[1, 2, 3], metadata={"fizz": "buzz"})
+    exp = dedent("""\
+            {
+              "name": "foo",
+              "keys": [
+                1,
+                2,
+                3
+              ],
+              "metadata": {
+                "fizz": "buzz"
+              }
+            }
+            """)
+    OutputFormat.JSON.display(obj, output)
+    assert exp == output.getvalue()

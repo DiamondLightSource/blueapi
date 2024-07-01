@@ -50,7 +50,7 @@ def display_full(obj: Any, stream: Stream):
                 for proto in dev.protocols:
                     print("    " + proto)
         case other:
-            FALLBACK(other)
+            FALLBACK(other, stream=stream)
 
 
 def display_json(obj: Any, stream: Stream):
@@ -84,7 +84,7 @@ def display_compact(obj: Any, stream: Stream):
                 print(dev.name)
                 print(indent(textwrap.fill(", ".join(dev.protocols), 80), "    "))
         case other:
-            FALLBACK(other)
+            FALLBACK(other, stream=stream)
 
 
 def _describe_type(spec: dict[Any, Any], required: bool = False):

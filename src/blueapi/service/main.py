@@ -43,7 +43,9 @@ def get_runner() -> Runner:
     return RUNNER
 
 
-def setup_handler(config: ApplicationConfig | None = None, use_subprocess: bool = False):
+def setup_handler(
+    config: ApplicationConfig | None = None, use_subprocess: bool = False
+):
     global RUNNER
     runner = Runner(config, use_subprocess)
     runner.start()
@@ -180,9 +182,7 @@ def delete_submitted_task(
     task_id: str,
     handler: Runner = Depends(get_runner),
 ) -> TaskResponse:
-    return TaskResponse(
-        task_id=handler.run(interface.clear_task, [task_id])
-    )
+    return TaskResponse(task_id=handler.run(interface.clear_task, [task_id]))
 
 
 def validate_task_status(v: str) -> TaskStatusEnum:
@@ -211,9 +211,7 @@ def get_tasks(
                 detail="Invalid status query parameter",
             ) from e
 
-        tasks = handler.run(
-            interface.get_tasks_by_status, [desired_status]
-        )
+        tasks = handler.run(interface.get_tasks_by_status, [desired_status])
     else:
         tasks = handler.run(interface.get_tasks)
     return TasksListResponse(tasks=tasks)
@@ -321,9 +319,7 @@ def set_state(
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
         if new_state == WorkerState.PAUSED:
-            handler.run(
-                interface.pause_worker, [state_change_request.defer]
-            )
+            handler.run(interface.pause_worker, [state_change_request.defer])
         elif new_state == WorkerState.RUNNING:
             handler.run(interface.resume_worker)
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:

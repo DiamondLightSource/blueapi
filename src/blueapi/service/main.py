@@ -10,6 +10,7 @@ from fastapi import (
     HTTPException,
     Request,
     Response,
+    UploadFile,
     status,
 )
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -215,8 +216,11 @@ async def parse_task(
     if request.headers.get("Content-Type") == "application/x-www-form-urlencoded":
         form_data = await request.form()
         try:
+            name = form_data["name"]
+            if isinstance(name, UploadFile):
+                raise HTTPException(status_code=400, detail="Name cannot be a file")
             # Create Task from form data
-            return Task(name=form_data["name"], params=dict(form_data))
+            return Task(name=name, params=dict(form_data))
         except ValidationError as e:
             raise HTTPException(  # noqa: B904
                 status_code=400, detail=f"Invalid task data from form: {e.errors()}"

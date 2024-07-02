@@ -34,4 +34,5 @@ RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip
 
 # change this entrypoint if it is not the same as the repo
 ENTRYPOINT ["/container-startup.sh"]
+RUN cd src/blueapi
 CMD ["serve"]

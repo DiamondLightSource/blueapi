@@ -27,6 +27,7 @@ class Runner:
     Responsible for dispatching calls required by the REST app.
     This is generally performed in a subprocess but can be run in-process for tests
     """
+
     _config: ApplicationConfig
     _subprocess: PoolClass | None
     _initialized: bool = False
@@ -34,9 +35,7 @@ class Runner:
     _use_subprocess: bool
 
     def __init__(
-        self,
-        config: ApplicationConfig | None = None,
-        use_subprocess: bool = True
+        self, config: ApplicationConfig | None = None, use_subprocess: bool = True
     ) -> None:
         self._config = config or ApplicationConfig()
         self._subprocess = None
@@ -83,8 +82,7 @@ class Runner:
         self.start()
         LOGGER.info("Context reloaded")
 
-    def run(self, function: Callable, arguments: Iterable | None = None
-    ) -> Any:
+    def run(self, function: Callable, arguments: Iterable | None = None) -> Any:
         if self._use_subprocess:
             return self._run_in_subprocess(function, arguments)
         else:

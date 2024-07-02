@@ -12,7 +12,16 @@ from fastapi.testclient import TestClient
 
 from fastapi import status
 
-from blueapi.service.model import DeviceModel, DeviceResponse, PlanModel
+
+from super_state_machine.errors import TransitionError
+from blueapi.service.model import (
+    DeviceModel,
+    DeviceResponse,
+    PlanModel,
+    StateChangeRequest,
+    WorkerTask,
+)
+from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
 from blueapi.service import main
 from fastapi.testclient import TestClient
@@ -22,11 +31,13 @@ from blueapi.worker.worker import TrackableTask
 
 @pytest.fixture
 def client() -> TestClient:
-    with patch("blueapi.service.runner.start_worker"):
-        with patch("blueapi.service.runner.stop_worker"):
-            main.setup_handler(use_subprocess=False)
-            yield TestClient(main.app)
-            main.teardown_handler()
+    with (
+        patch("blueapi.service.runner.start_worker"),
+        patch("blueapi.service.runner.stop_worker"),
+    ):
+        main.setup_handler(use_subprocess=False)
+        yield TestClient(main.app)
+        main.teardown_handler()
 
 
 @patch("blueapi.service.interface.get_plans")
@@ -175,7 +186,7 @@ def test_create_task_validation_error(
     )
 
     response = client.post("/tasks", json={"name": "my-plan"})
-    assert response.status_code == 422 
+    assert response.status_code == 422
     assert response.json() == {
         "detail": "\n"
         "        Input validation failed: id: field required,\n"
@@ -252,8 +263,8 @@ def test_get_tasks_by_status(
         ]
     }
 
-def test_get_tasks_by_status_invalid(client: TestClient
-) -> None:
+
+def test_get_tasks_by_status_invalid(client: TestClient) -> None:
     response = client.get("/tasks", params={"task_status": "AN_INVALID_STATUS"})
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -264,3 +275,240 @@ def test_delete_submitted_task(clear_task_mock: MagicMock, client: TestClient) -
     clear_task_mock.return_value = task_id
     response = client.delete(f"/tasks/{task_id}")
     assert response.json() == {"task_id": f"{task_id}"}
+
+
+@patch("blueapi.service.interface.begin_task")
+@patch("blueapi.service.interface.get_active_task")
+def test_set_active_task(
+    get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id = str(uuid.uuid4())
+    task = WorkerTask(task_id=task_id)
+
+    response = client.put("/worker/task", json=task.dict())
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"task_id": f"{task_id}"}
+
+
+@patch("blueapi.service.interface.begin_task")
+@patch("blueapi.service.interface.get_active_task")
+def test_set_active_task_active_task_complete(
+    get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id = str(uuid.uuid4())
+    task = WorkerTask(task_id=task_id)
+
+    get_active_task_mock.return_value = TrackableTask(
+        task_id="1",
+        task=Task(name="a_completed_task"),
+        is_complete=True,
+        is_pending=False,
+    )
+
+    response = client.put("/worker/task", json=task.dict())
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"task_id": f"{task_id}"}
+
+
+@patch("blueapi.service.interface.begin_task")
+@patch("blueapi.service.interface.get_active_task")
+def test_set_active_task_worker_already_running(
+    get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id = str(uuid.uuid4())
+    task = WorkerTask(task_id=task_id)
+
+    get_active_task_mock.return_value = TrackableTask(
+        task_id="1",
+        task=Task(name="a_running_task"),
+        is_complete=False,
+        is_pending=False,
+    )
+
+    response = client.put("/worker/task", json=task.dict())
+
+    assert response.status_code == status.HTTP_409_CONFLICT
+    assert response.json() == {"detail": "Worker already active"}
+
+
+@patch("blueapi.service.interface.get_task_by_id")
+def test_get_task(get_task_by_id: MagicMock, client: TestClient):
+    task_id = str(uuid.uuid4())
+    task = TrackableTask(
+        task_id=task_id,
+        task=Task(name="third_task"),
+    )
+
+    get_task_by_id.return_value = task
+
+    response = client.get(f"/tasks/{task_id}")
+    assert response.json() == {
+        "errors": [],
+        "is_complete": False,
+        "is_pending": True,
+        "task": {"name": "third_task", "params": {}},
+        "task_id": f"{task_id}",
+    }
+
+
+@patch("blueapi.service.interface.get_task_by_id")
+def test_get_task_error(get_task_by_id_mock: MagicMock, client: TestClient):
+    task_id = 567
+    get_task_by_id_mock.return_value = None
+
+    response = client.get(f"/tasks/{task_id}")
+    assert response.json() == {"detail": "Item not found"}
+
+
+@patch("blueapi.service.interface.get_active_task")
+def test_get_active_task(get_active_task_mock: MagicMock, client: TestClient):
+    task_id = str(uuid.uuid4())
+    task = TrackableTask(
+        task_id=task_id,
+        task=Task(name="third_task"),
+    )
+    get_active_task_mock.return_value = task
+
+    response = client.get("/worker/task")
+
+    assert response.json() == {"task_id": f"{task_id}"}
+
+
+@patch("blueapi.service.interface.get_active_task")
+def test_get_active_task_none(get_active_task_mock: MagicMock, client: TestClient):
+    get_active_task_mock.return_value = None
+
+    response = client.get("/worker/task")
+
+    assert response.json() == {"task_id": None}
+
+
+@patch("blueapi.service.interface.get_worker_state")
+def test_get_state(get_worker_state_mock: MagicMock, client: TestClient):
+    state = WorkerState.SUSPENDING
+    get_worker_state_mock.return_value = state
+
+    response = client.get("/worker/state")
+    assert response.json() == state
+
+
+@patch("blueapi.service.interface.pause_worker")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_running_to_paused(
+    get_worker_state_mock: MagicMock, pause_worker_mock: MagicMock, client: TestClient
+):
+    current_state = WorkerState.RUNNING
+    final_state = WorkerState.PAUSED
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state", json=StateChangeRequest(new_state=final_state).dict()
+    )
+
+    pause_worker_mock.assert_called_once_with(False)
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.resume_worker")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_paused_to_running(
+    get_worker_state_mock: MagicMock, resume_worker_mock: MagicMock, client: TestClient
+):
+    current_state = WorkerState.PAUSED
+    final_state = WorkerState.RUNNING
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state", json=StateChangeRequest(new_state=final_state).dict()
+    )
+
+    resume_worker_mock.assert_called_once()
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.cancel_active_task")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_running_to_aborting(
+    get_worker_state_mock: MagicMock,
+    cancel_active_task_mock: MagicMock,
+    client: TestClient,
+):
+    current_state = WorkerState.RUNNING
+    final_state = WorkerState.ABORTING
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state", json=StateChangeRequest(new_state=final_state).dict()
+    )
+
+    cancel_active_task_mock.assert_called_once_with(True, None)
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.cancel_active_task")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_running_to_stopping_including_reason(
+    get_worker_state_mock: MagicMock,
+    cancel_active_task_mock: MagicMock,
+    client: TestClient,
+):
+    current_state = WorkerState.RUNNING
+    final_state = WorkerState.STOPPING
+    reason = "blueapi is being stopped"
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state",
+        json=StateChangeRequest(new_state=final_state, reason=reason).dict(),
+    )
+
+    cancel_active_task_mock.assert_called_once_with(False, reason)
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.cancel_active_task")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_transition_error(
+    get_worker_state_mock: MagicMock,
+    cancel_active_task_mock: MagicMock,
+    client: TestClient,
+):
+    current_state = WorkerState.RUNNING
+    final_state = WorkerState.STOPPING
+
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    cancel_active_task_mock.side_effect = TransitionError()
+
+    response = client.put(
+        "/worker/state",
+        json=StateChangeRequest(new_state=final_state).dict(),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_invalid_transition(
+    get_worker_state_mock: MagicMock, client: TestClient
+):
+    current_state = WorkerState.STOPPING
+    requested_state = WorkerState.PAUSED
+    final_state = WorkerState.STOPPING
+
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state",
+        json=StateChangeRequest(new_state=requested_state).dict(),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json() == final_state

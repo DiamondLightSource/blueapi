@@ -83,7 +83,7 @@ app = FastAPI(
     version=REST_API_VERSION,
 )
 
-app.mount("/static", StaticFiles(directory="src/blueapi/static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -130,7 +130,7 @@ def get_plans(
     handler: BlueskyHandler = Depends(get_handler),
 ):
     """Retrieve information about all available plans."""
-    if "text/html" in accept:
+    if accept and "text/html" in accept:
         return templates.TemplateResponse(
             "plans.html", {"request": request, "plans": handler.plans}
         )
@@ -150,7 +150,7 @@ def get_plan_by_name(
     """Retrieve information about a plan by its (unique) name."""
     try:
         plan = handler.get_plan(name)
-        if "text/html" in accept:
+        if accept and "text/html" in accept:
             if isinstance(plan.parameter_schema, str):
                 plan.parameter_schema = json.loads(plan.parameter_schema)
             return templates.TemplateResponse(
@@ -173,7 +173,7 @@ def get_devices(
 ):
     """Retrieve information about all available devices."""
     devices = handler.devices
-    if "text/html" in accept:
+    if accept and "text/html" in accept:
         return templates.TemplateResponse(
             "devices.html", {"request": request, "devices": devices}
         )
@@ -193,7 +193,7 @@ def get_device_by_name(
     """Retrieve information about a devices by its (unique) name."""
     try:
         device = handler.get_device(name)
-        if "text/html" in accept:
+        if accept and "text/html" in accept:
             return templates.TemplateResponse(
                 "device_details.html", {"request": request, "device": device}
             )
@@ -432,7 +432,8 @@ def start(config: ApplicationConfig):
     import uvicorn
 
     app.state.config = config
-    uvicorn.run(app, host=config.api.host, port=config.api.port)
+    # uvicorn.run(app, host=config.api.host, port=config.api.port)
+    uvicorn.run(app, host="0.0.0.0", port=config.api.port)
 
 
 @app.middleware("http")

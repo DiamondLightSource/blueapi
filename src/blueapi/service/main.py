@@ -1,11 +1,9 @@
 import json
 import os
 from contextlib import asynccontextmanager
-from typing import Optional
 
 from fastapi import (
     BackgroundTasks,
-    Body,
     Depends,
     FastAPI,
     Header,
@@ -128,7 +126,7 @@ async def delete_environment(
 @app.get("/plans", response_model=PlanResponse)
 def get_plans(
     request: Request,
-    accept: Optional[str] = Header(None),
+    accept: str | None = Header(None),
     handler: BlueskyHandler = Depends(get_handler),
 ):
     """Retrieve information about all available plans."""
@@ -147,7 +145,7 @@ def get_plan_by_name(
     request: Request,
     name: str,
     handler: BlueskyHandler = Depends(get_handler),
-    accept: Optional[str] = Header(None),
+    accept: str | None = Header(None),
 ):
     """Retrieve information about a plan by its (unique) name."""
     try:
@@ -161,7 +159,7 @@ def get_plan_by_name(
         else:
             return plan
     except KeyError:
-        raise HTTPException(
+        return HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plan {name} not found",
         )
@@ -170,7 +168,7 @@ def get_plan_by_name(
 @app.get("/devices", response_model=DeviceResponse)
 def get_devices(
     request: Request,
-    accept: Optional[str] = Header(None),
+    accept: str | None = Header(None),
     handler: BlueskyHandler = Depends(get_handler),
 ):
     """Retrieve information about all available devices."""
@@ -190,7 +188,7 @@ def get_device_by_name(
     request: Request,
     name: str,
     handler: BlueskyHandler = Depends(get_handler),
-    accept: Optional[str] = Header(None),
+    accept: str | None = Header(None),
 ):
     """Retrieve information about a devices by its (unique) name."""
     try:
@@ -201,7 +199,7 @@ def get_device_by_name(
             )
         return device
     except KeyError:
-        raise HTTPException(
+        return HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Device {name} not found",
         )

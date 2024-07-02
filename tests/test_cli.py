@@ -1,5 +1,5 @@
-from collections.abc import Mapping
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from io import StringIO
 from textwrap import dedent

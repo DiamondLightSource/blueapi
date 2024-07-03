@@ -105,18 +105,7 @@ class ApplicationConfig(BlueapiBaseModel):
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
-    scratch: ScratchConfig | None = ScratchConfig(
-        repositories=[
-            ScratchRepository(
-                name="dodal",
-                remote_url="https://github.com/DiamondLightSource/dodal.git",
-            ),
-            ScratchRepository(
-                name="i22-bluesky",
-                remote_url="https://github.com/DiamondLightSource/i22-bluesky.git",
-            ),
-        ]
-    )
+    scratch: ScratchConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

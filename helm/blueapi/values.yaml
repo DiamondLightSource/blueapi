@@ -74,20 +74,15 @@ listener:
   enabled: true
   resources: {}
 
-scratch:
-  hostPath: "" # example: /usr/local/blueapi-software-scratch
-  containerPath: /blueapi-plugins/scratch
-
 # Additional envVars to mount to the pod as a String
-extraEnvVars: |
-  - name: SCRATCH_AREA
-    value: {{ .Values.scratch.containerPath }}
+extraEnvVars: []
   # - name: RABBITMQ_PASSWORD
   #   valueFrom:
   #     secretKeyRef:
   #       name: rabbitmq-password
   #       key: rabbitmq-password
 
+# Config for the worker goes here, will be mounted into a config file
 worker:
   api:
     host: 0.0.0.0 # Allow non-loopback traffic
@@ -108,8 +103,13 @@ worker:
       passcode: guest
     host: rabbitmq
     port: 61613
-  scratch:
-    repos:
-      - name: "dodal"
-        remote_url: https://github.com/DiamondLightSource/dodal.git
-# Config for the worker goes here, will be mounted into a config file
+  # Uncomment this to enable the scratch directory
+  # scratch:
+  #  root: /blueapi-plugins/scratch
+  #   repositories: []
+  #     - name: "dodal"
+  #       remote_url: https://github.com/DiamondLightSource/dodal.git
+
+# Mount path for scratch area from host machine, setting 
+# this effectively enables scratch area management
+scratchHostPath: "" # example: /usr/local/blueapi-software-scratch

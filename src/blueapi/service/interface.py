@@ -27,15 +27,24 @@ class _Singleton:
     initialized = False
 
 
-def start_worker(config: ApplicationConfig) -> None:
+def start_worker(
+    config: ApplicationConfig,
+    bluesky_context: BlueskyContext = None,
+    worker: TaskWorker = None,
+) -> None:
     """Creates and starts a worker with supplied config"""
     if _Singleton.initialized:
         raise Exception("Worker is already running. To reload call stop first")
-    _Singleton.context = BlueskyContext()
-    _Singleton.context.with_config(config.env)
-    _Singleton.worker = TaskWorker(
-        _Singleton.context, broadcast_statuses=config.env.events.broadcast_status_events
-    )
+    _Singleton.context = bluesky_context
+    if _Singleton.context is None:
+        _Singleton.context = BlueskyContext()
+        _Singleton.context.with_config(config.env)
+    _Singleton.worker = worker
+    if _Singleton.worker is None:
+        _Singleton.worker = TaskWorker(
+            _Singleton.context,
+            broadcast_statuses=config.env.events.broadcast_status_events,
+        )
     if config.stomp is not None:
         _Singleton.messaging_template = StompMessagingTemplate.autoconfigured(
             config.stomp
@@ -164,21 +173,21 @@ def resume_worker() -> None:
     _Singleton.worker.resume()
 
 
-def cancel_active_task(failure: bool, reason: str | None):
+def cancel_active_task(failure: bool, reason: str | None) -> str:
     """Remove the currently active task from the worker if there is one
     Returns the task_id of the active task"""
     _ensure_worker_started()
-    _Singleton.worker.cancel_active_task(failure, reason)
+    return _Singleton.worker.cancel_active_task(failure, reason)
 
 
-def get_tasks(self) -> list[TrackableTask]:
+def get_tasks() -> list[TrackableTask]:
     """Return a list of all tasks on the worker,
     any one of which can be triggered with begin_task"""
     _ensure_worker_started()
     return _Singleton.worker.get_tasks()
 
 
-def get_task_by_id(self, task_id: str) -> TrackableTask | None:
+def get_task_by_id(task_id: str) -> TrackableTask | None:
     """Returns a task matching the task ID supplied,
     if the worker knows of it"""
     _ensure_worker_started()

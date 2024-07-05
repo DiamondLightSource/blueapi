@@ -1,4 +1,5 @@
 import os
+import stat
 import uuid
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -104,6 +105,29 @@ def test_repo_cloned_if_not_found_locally(
     )
 
 
+@patch("blueapi.cli.scratch.Repo")
+def test_repo_cloned_with_correct_umask(
+    mock_repo: Mock,
+    directory_path: Path,
+):
+    repo_root = directory_path / "foo"
+    file_path = repo_root / "a"
+
+    def write_repo_files():
+        repo_root.mkdir()
+        with file_path.open("w") as stream:
+            stream.write("foo")
+
+    mock_repo.clone_from.side_effect = lambda url, path: write_repo_files()
+
+    ensure_repo("http://example.com/foo.git", repo_root)
+    assert file_path.exists()
+    assert file_path.is_file()
+    st = os.stat(file_path)
+    # For some reason the mode has two extra bytes at the front
+    assert (st.st_mode & 0x00FF) & stat.S_IWGRP
+
+
 def test_repo_discovery_errors_if_file_found_with_repo_name(file_path: Path):
     with pytest.raises(KeyError):
         ensure_repo("http://example.com/foo.git", file_path)
@@ -123,19 +147,6 @@ def test_setup_scratch_fails_on_non_directory_root(
     config = ScratchConfig(root=file_path, repositories=[])
     with pytest.raises(KeyError):
         setup_scratch(config)
-
-
-@patch("blueapi.cli.scratch.os.umask")
-def test_setup_scratch_sets_up_umask(
-    mock_umask: Mock,
-    directory_path: Path,
-):
-    config = ScratchConfig(
-        root=directory_path,
-        repositories=[],
-    )
-    setup_scratch(config)
-    mock_umask.assert_called_once_with(0o002)
 
 
 @patch("blueapi.cli.scratch.ensure_repo")

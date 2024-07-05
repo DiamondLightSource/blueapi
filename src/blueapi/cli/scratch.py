@@ -1,5 +1,6 @@
 import logging
 import os
+import stat
 from pathlib import Path
 from subprocess import Popen
 
@@ -26,14 +27,11 @@ def setup_scratch(
 
     logging.info(f"Setting up scratch area: {config.root}")
 
-    # Set umask to DLS standard
-    os.umask(0o002)
-
     for repo in config.repositories:
         try:
             local_directory = config.root / repo.name
             ensure_repo(repo.remote_url, local_directory)
-            scratch_install(local_directory)
+            scratch_install(local_directory, timeout=install_timeout)
         except Exception as ex:
             logging.error(
                 f"An error occurred trying to set up {repo.name} in the scratch area"
@@ -50,6 +48,9 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
         remote_url: Git remote URL
         local_directory: Output path for cloning
     """
+
+    # Set umask to DLS standard
+    os.umask(stat.S_IWOTH)
 
     if not local_directory.exists():
         logging.info(f"Cloning {remote_url}")
@@ -78,6 +79,9 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
     """
 
     _validate_directory(path)
+
+    # Set umask to DLS standard
+    os.umask(stat.S_IWOTH)
 
     logging.info(f"Installing {path}")
     process = Popen(

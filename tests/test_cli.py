@@ -1,4 +1,8 @@
+import json
+from collections.abc import Mapping
 from dataclasses import dataclass
+from io import StringIO
+from textwrap import dedent
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -11,9 +15,16 @@ from requests.exceptions import ConnectionError
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.cli.event_bus_client import BlueskyRemoteError
+from blueapi.cli.format import OutputFormat
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
-from blueapi.service.model import EnvironmentResponse
+from blueapi.service.model import (
+    DeviceModel,
+    DeviceResponse,
+    EnvironmentResponse,
+    PlanModel,
+    PlanResponse,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -58,6 +69,12 @@ class MyModel(BaseModel):
     id: str
 
 
+class ExtendedModel(BaseModel):
+    name: str
+    keys: list[int]
+    metadata: None | Mapping[str, str]
+
+
 @dataclass
 class MyDevice:
     name: str
@@ -93,22 +110,18 @@ def test_get_plans_and_devices(
     mock_requests.return_value = client.get("/plans")
     plans = runner.invoke(main, ["controller", "plans"])
 
-    assert (
-        plans.output == "{'plans': [{'description': None,\n"
-        "            'name': 'my-plan',\n"
-        "            'parameter_schema': {'properties': {'id': {'title': 'Id',\n"
-        "                                                       'type': 'string'}},\n"
-        "                                 'required': ['id'],\n"
-        "                                 'title': 'MyModel',\n"
-        "                                 'type': 'object'}}]}\n"
-    )
+    assert plans.output == dedent("""\
+                my-plan
+                    Args
+                      id=string (Required)
+                """)
 
     # Setup requests.get call to return the output of the FastAPI call for devices.
     # Call the CLI function and check the output - expect nothing as no devices set.
     handler._context.devices = {}
     mock_requests.return_value = client.get("/devices")
     unset_devices = runner.invoke(main, ["controller", "devices"])
-    assert unset_devices.output == "{'devices': []}\n"
+    assert unset_devices.output == ""
 
     # Put a device in handler.context manually.
     device = MyDevice("my-device")
@@ -119,10 +132,10 @@ def test_get_plans_and_devices(
     mock_requests.return_value = client.get("/devices")
     devices = runner.invoke(main, ["controller", "devices"])
 
-    assert (
-        devices.output
-        == "{'devices': [{'name': 'my-device', 'protocols': ['HasName']}]}\n"
-    )
+    assert devices.output == dedent("""\
+            my-device
+                HasName
+            """)
 
 
 def test_invalid_config_path_handling(runner: CliRunner):
@@ -441,3 +454,192 @@ def test_error_handling(mock_config, exception, expected_exit_code, runner: CliR
             obj=mock_config,
         )
         assert result.exit_code == expected_exit_code
+
+
+def test_device_output_formatting():
+    """Test for alternative device output formats"""
+
+    device = MyDevice("my-device")
+
+    devices = DeviceResponse(devices=[DeviceModel.from_device(device)])
+
+    compact = dedent("""\
+                my-device
+                    HasName
+                """)
+
+    output = StringIO()
+    OutputFormat.COMPACT.display(devices, out=output)
+    assert output.getvalue() == compact
+
+    # json outputs valid json
+    output = StringIO()
+    OutputFormat.JSON.display(devices, out=output)
+    json_out = dedent("""\
+                [
+                  {
+                    "name": "my-device",
+                    "protocols": [
+                      "HasName"
+                    ]
+                  }
+                ]
+                """)
+    assert output.getvalue() == json_out
+    _ = json.loads(output.getvalue())
+
+    output = StringIO()
+    OutputFormat.FULL.display(devices, out=output)
+    full = dedent("""\
+            my-device
+                HasName
+            """)
+    assert output.getvalue() == full
+
+
+def test_plan_output_formatting():
+    """Test for alternative plan output formats"""
+
+    # Put a plan in handler.context manually.
+    plan = Plan(
+        name="my-plan",
+        description=dedent("""\
+            Summary of description
+
+            Rest of description
+            """),
+        model=ExtendedModel,
+    )
+    plans = PlanResponse(plans=[PlanModel.from_plan(plan)])
+
+    compact = dedent("""\
+                my-plan
+                    Summary of description
+                    Args
+                      name=string (Required)
+                      keys=[integer] (Required)
+                      metadata=object
+                """)
+
+    output = StringIO()
+    OutputFormat.COMPACT.display(plans, out=output)
+    assert output.getvalue() == compact
+
+    # json outputs valid json
+    output = StringIO()
+    OutputFormat.JSON.display(plans, out=output)
+    json_out = dedent("""\
+                [
+                  {
+                    "name": "my-plan",
+                    "description": "Summary of description\\n\\nRest of description\\n",
+                    "parameter_schema": {
+                      "title": "ExtendedModel",
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "keys": {
+                          "title": "Keys",
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "metadata": {
+                          "title": "Metadata",
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "keys"
+                      ]
+                    }
+                  }
+                ]
+                """)
+    assert output.getvalue() == json_out
+    _ = json.loads(output.getvalue())
+
+    output = StringIO()
+    OutputFormat.FULL.display(plans, out=output)
+    full = dedent("""\
+            my-plan
+                Summary of description
+
+                Rest of description
+                Schema
+                    {
+                      "title": "ExtendedModel",
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "keys": {
+                          "title": "Keys",
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "metadata": {
+                          "title": "Metadata",
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "keys"
+                      ]
+                    }
+            """)
+    assert output.getvalue() == full
+
+
+def test_unknown_object_formatting():
+    demo = {"foo": 42, "bar": ["hello", "World"]}
+
+    output = StringIO()
+    OutputFormat.JSON.display(demo, output)
+    exp = """{"foo": 42, "bar": ["hello", "World"]}\n"""
+    assert exp == output.getvalue()
+
+    output = StringIO()
+    OutputFormat.COMPACT.display(demo, output)
+    exp = """{'bar': ['hello', 'World'], 'foo': 42}\n"""
+    assert exp == output.getvalue()
+
+    output = StringIO()
+    OutputFormat.FULL.display(demo, output)
+    assert exp == output.getvalue()
+
+
+def test_generic_base_model_formatting():
+    output = StringIO()
+    obj = ExtendedModel(name="foo", keys=[1, 2, 3], metadata={"fizz": "buzz"})
+    exp = dedent("""\
+            {
+              "name": "foo",
+              "keys": [
+                1,
+                2,
+                3
+              ],
+              "metadata": {
+                "fizz": "buzz"
+              }
+            }
+            """)
+    OutputFormat.JSON.display(obj, output)
+    assert exp == output.getvalue()

@@ -12,6 +12,7 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__
 from blueapi.cli.event_bus_client import BlueskyRemoteError, EventBusClient
+from blueapi.cli.format import OutputFormat
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
@@ -88,8 +89,14 @@ def start_application(obj: dict):
 
 
 @main.group()
+@click.option(
+    "-o",
+    "--output",
+    type=click.Choice([o.name.lower() for o in OutputFormat]),
+    default="compact",
+)
 @click.pass_context
-def controller(ctx: click.Context) -> None:
+def controller(ctx: click.Context, output: str) -> None:
     """Client utility for controlling and introspecting the worker"""
 
     if ctx.invoked_subcommand is None:
@@ -98,6 +105,7 @@ def controller(ctx: click.Context) -> None:
 
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
+    ctx.obj["fmt"] = OutputFormat(output)
     ctx.obj["rest_client"] = BlueapiRestClient(config.api)
 
 
@@ -118,7 +126,7 @@ def check_connection(func):
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_plans().dict())
+    obj["fmt"].display(client.get_plans())
 
 
 @controller.command(name="devices")
@@ -127,7 +135,7 @@ def get_plans(obj: dict) -> None:
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_devices().dict())
+    obj["fmt"].display(client.get_devices())
 
 
 @controller.command(name="listen")
@@ -230,7 +238,7 @@ def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
     client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_state())
+    print(client.get_state().name)
 
 
 @controller.command(name="pause")

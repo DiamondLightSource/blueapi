@@ -10,11 +10,22 @@ from typing import Any, TextIO
 
 from pydantic import BaseModel
 
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import DeviceResponse, PlanResponse
+from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 FALLBACK = pprint
+NL = "\n"
 
 Stream = TextIO | None
+
+
+def fmt_dict(t: dict[str, Any] | Any, ind: int = 1) -> str:
+    """Format a (possibly nested) dict into a human readable tree"""
+    if not isinstance(t, dict):
+        return t
+    pre = " " * (ind * 4)
+    return NL + NL.join(f"{pre}{k}: {fmt_dict(v, ind+1)}" for k, v in t.items() if v)
 
 
 class OutputFormat(str, enum.Enum):
@@ -49,6 +60,15 @@ def display_full(obj: Any, stream: Stream):
                 print(dev.name)
                 for proto in dev.protocols:
                     print("    " + proto)
+        case DataEvent(name=name, doc=doc):
+            print(f"{name.title()}: {fmt_dict(doc)}")
+        case WorkerEvent(state=state, task_status=task):
+            print(f"WorkerEvent: {state}{fmt_dict(task.model_dump() if task else {})}")
+        case ProgressEvent():
+            print(f"Progress:{fmt_dict(obj.model_dump())}")
+        case BaseModel():
+            print(obj.__class__.__name__, end='')
+            print(fmt_dict(obj.model_dump()))
         case other:
             FALLBACK(other, stream=stream)
 
@@ -61,7 +81,7 @@ def display_json(obj: Any, stream: Stream):
         case DeviceResponse(devices=devices):
             print(json.dumps([d.model_dump() for d in devices], indent=2))
         case BaseModel():
-            print(json.dumps(obj.model_dump(), indent=2))
+            print(json.dumps(obj.model_dump()))
         case _:
             print(json.dumps(obj))
 
@@ -83,6 +103,13 @@ def display_compact(obj: Any, stream: Stream):
             for dev in devices:
                 print(dev.name)
                 print(indent(textwrap.fill(", ".join(dev.protocols), 80), "    "))
+        case DataEvent(name=name):
+            print(f"Data Event: {name}")
+        case WorkerEvent(state=state):
+            print(f"Worker state: {state}")
+        case ProgressEvent(statuses=stats):
+            prog = max(100 * (s.percentage or 0)  for s in stats.values()) or "???"
+            print(f"Progress: {prog}%")
         case other:
             FALLBACK(other, stream=stream)
 

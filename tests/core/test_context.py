@@ -281,14 +281,14 @@ def test_add_devices_and_plans_from_modules_with_config(
 
 def test_function_spec(empty_context: BlueskyContext) -> None:
     spec = empty_context._type_spec_for_function(has_some_params)
-    assert spec["foo"][0] == int
+    assert spec["foo"][0] is int
     assert spec["foo"][1].default_factory == DefaultFactory(42)
-    assert spec["bar"][0] == str
+    assert spec["bar"][0] is str
     assert spec["bar"][1].default_factory == DefaultFactory("bar")
 
 
 def test_basic_type_conversion(empty_context: BlueskyContext) -> None:
-    assert empty_context._convert_type(int) == int
+    assert empty_context._convert_type(int) is int
     assert empty_context._convert_type(dict[str, int]) == dict[str, int]
 
 

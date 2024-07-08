@@ -169,7 +169,7 @@ def test_setup_scratch_iterates_repos(
             ),
         ],
     )
-    setup_scratch(config)
+    setup_scratch(config, install_timeout=120.0)
 
     mock_ensure_repo.assert_has_calls(
         [
@@ -180,8 +180,8 @@ def test_setup_scratch_iterates_repos(
 
     mock_scratch_install.assert_has_calls(
         [
-            call(directory_path / "foo"),
-            call(directory_path / "bar"),
+            call(directory_path / "foo", timeout=120.0),
+            call(directory_path / "bar", timeout=120.0),
         ]
     )
 
@@ -210,21 +210,6 @@ def test_setup_scratch_continues_after_failure(
             ),
         ],
     )
-    setup_scratch(config)
-
     mock_ensure_repo.side_effect = [None, RuntimeError("bar"), None]
-    mock_ensure_repo.assert_has_calls(
-        [
-            call("http://example.com/foo.git", directory_path / "foo"),
-            call("http://example.com/bar.git", directory_path / "bar"),
-            call("http://example.com/baz.git", directory_path / "baz"),
-        ]
-    )
-
-    mock_scratch_install.assert_has_calls(
-        [
-            call(directory_path / "foo"),
-            call(directory_path / "bar"),
-            call(directory_path / "baz"),
-        ]
-    )
+    with pytest.raises(RuntimeError, match="bar"):
+        setup_scratch(config)

@@ -28,15 +28,9 @@ def setup_scratch(
     logging.info(f"Setting up scratch area: {config.root}")
 
     for repo in config.repositories:
-        try:
-            local_directory = config.root / repo.name
-            ensure_repo(repo.remote_url, local_directory)
-            scratch_install(local_directory, timeout=install_timeout)
-        except Exception as ex:
-            logging.error(
-                f"An error occurred trying to set up {repo.name} in the scratch area"
-            )
-            logging.exception(ex)
+        local_directory = config.root / repo.name
+        ensure_repo(repo.remote_url, local_directory)
+        scratch_install(local_directory, timeout=install_timeout)
 
 
 def ensure_repo(remote_url: str, local_directory: Path) -> None:

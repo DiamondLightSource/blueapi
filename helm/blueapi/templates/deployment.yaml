@@ -56,6 +56,7 @@ spec:
           - |
             echo "Setting up scratch area"
             blueapi -c /config/config.yaml setup-scratch
+            if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
             echo "Exporting venv as artefact"
             cp -r /venv/* /artefacts
         volumeMounts:

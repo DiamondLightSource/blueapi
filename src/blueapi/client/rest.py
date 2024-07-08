@@ -17,7 +17,7 @@ from blueapi.service.model import (
 )
 from blueapi.worker import Task, TrackableTask, WorkerState
 
-from .event_bus_client import BlueskyRemoteError
+from .event_bus import BlueskyRemoteError
 
 T = TypeVar("T")
 
@@ -132,7 +132,7 @@ class BlueapiRestClient:
     def get_environment(self) -> EnvironmentResponse:
         return self._request_and_deserialize("/environment", EnvironmentResponse)
 
-    def reload_environment(self) -> EnvironmentResponse:
+    def delete_environment(self) -> EnvironmentResponse:
         return self._request_and_deserialize(
             "/environment", EnvironmentResponse, method="DELETE"
         )

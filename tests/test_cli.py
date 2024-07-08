@@ -15,17 +15,13 @@ from responses import matchers
 
 from blueapi import __version__
 from blueapi.cli.cli import main
-from blueapi.cli.event_bus_client import BlueskyRemoteError
 from blueapi.cli.format import OutputFormat
+from blueapi.client.event_bus import BlueskyRemoteError
 from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.model import (
-    DeviceModel,
-    DeviceResponse,
-    EnvironmentResponse,
-    PlanModel,
-    PlanResponse,
-)
+from blueapi.service.model import (DeviceModel, DeviceResponse,
+                                   EnvironmentResponse, PlanModel,
+                                   PlanResponse)
 
 
 @pytest.fixture
@@ -232,7 +228,7 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
         json=EnvironmentResponse(initialized=False).dict(),
     )
     # Add responses for each polling attempt, all indicating not initialized
-    for _ in range(max_polling_count):
+    for _ in range(10):
         responses.add(
             responses.GET,
             "http://localhost:8000/environment",
@@ -241,15 +237,16 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
         )
 
     # Run the command that should interact with these endpoints
-    result = runner.invoke(main, ["controller", "env", "-r"])
+    result = runner.invoke(main, ["controller", "env", "-r", "-t", "0.1"])
     if result.exception is not None:
         assert isinstance(result.exception, TimeoutError), "Expected a TimeoutError"
-        assert result.exception.args[0] == "Environment initialization timed out."
+        assert (
+            result.exception.args[0]
+            == "Failed to reload the environment within 0.1 seconds, "
+            "a server restart is recommended"
+        )
     else:
         raise AssertionError("Expected an exception but got None")
-
-    # Check if the endpoints were hit as expected
-    assert len(responses.calls) == max_polling_count + 1  # +1 for the DELETE call
 
     # First call should be DELETE
     assert responses.calls[0].request.method == "DELETE"
@@ -309,7 +306,9 @@ def test_env_reload_server_side_error(runner: CliRunner):
 )
 def test_error_handling(exception, expected_exit_code, runner: CliRunner):
     # Patching the create_task method to raise different exceptions
-    with patch("blueapi.cli.rest.BlueapiRestClient.create_task", side_effect=exception):
+    with patch(
+        "blueapi.client.rest.BlueapiRestClient.create_task", side_effect=exception
+    ):
         result = runner.invoke(
             main,
             [

@@ -16,7 +16,7 @@ from responses import matchers
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.cli.format import OutputFormat
-from blueapi.client.event_bus import BlueskyRemoteError
+from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.model import (DeviceModel, DeviceResponse,
@@ -300,7 +300,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
     "exception, expected_exit_code",
     [
         (ValidationError("Invalid parameters", BaseModel), 1),
-        (BlueskyRemoteError("Server error"), 1),
+        (BlueskyRemoteControlError("Server error"), 1),
         (ValueError("Error parsing parameters"), 1),
     ],
 )

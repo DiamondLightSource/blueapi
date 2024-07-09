@@ -16,8 +16,8 @@ from blueapi.service.model import (
 from blueapi.worker import Task, TrackableTask, WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 
-from .event_bus import AnyEvent, BlueskyRemoteError, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient
+from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
+from .rest import BlueapiRestClient, BlueskyRemoteControlError
 
 
 class BlueapiClient:
@@ -194,9 +194,13 @@ class BlueapiClient:
                 if isinstance(event, WorkerEvent) and (
                     (event.is_complete()) and (ctx.correlation_id == task_id)
                 ):
-                    if len(event.errors) > 0:
+                    if event.task_status is not None and event.task_status.task_failed:
                         complete.set_exception(
-                            BlueskyRemoteError("\n".join(event.errors))
+                            BlueskyStreamingError(
+                                "\n".join(event.errors)
+                                if len(event.errors) > 0
+                                else "Unknown error"
+                            )
                         )
                     else:
                         complete.set_result(event)
@@ -223,7 +227,7 @@ class BlueapiClient:
         if worker_response.task_id == response.task_id:
             return response
         else:
-            raise BlueskyRemoteError(
+            raise BlueskyRemoteControlError(
                 f"Tried to create and start task {response.task_id} "
                 f"but {worker_response.task_id} was started instead"
             )
@@ -334,7 +338,9 @@ class BlueapiClient:
         try:
             status = self._rest.delete_environment()
         except Exception as e:
-            raise BlueskyRemoteError("Failed to tear down the environment") from e
+            raise BlueskyRemoteControlError(
+                "Failed to tear down the environment"
+            ) from e
         return self._wait_for_reload(
             status,
             timeout,
@@ -355,7 +361,7 @@ class BlueapiClient:
             # Poll until the environment is restarted or the timeout is reached
             status = self._rest.get_environment()
             if status.error_message is not None:
-                raise BlueskyRemoteError(status.error_message)
+                raise BlueskyRemoteControlError(status.error_message)
             elif status.initialized:
                 return status
             time.sleep(polling_interval)

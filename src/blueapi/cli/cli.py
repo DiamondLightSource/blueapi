@@ -12,7 +12,8 @@ from requests.exceptions import ConnectionError
 from blueapi import __version__
 from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
-from blueapi.client.event_bus import AnyEvent, BlueskyRemoteError, EventBusClient
+from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
+from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
@@ -204,7 +205,7 @@ def run_plan(
     except ValidationError as e:
         pprint(f"failed to validate the task parameters, {task_id}, error: {e}")
         return
-    except BlueskyRemoteError as e:
+    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
         pprint(f"server error with this message: {e}")
         return
     except ValueError:

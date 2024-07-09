@@ -22,3 +22,6 @@ updates:
       dev-dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "pydantic"
+        versions: [">=2.0"]

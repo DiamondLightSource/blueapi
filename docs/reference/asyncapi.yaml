@@ -291,3 +291,4 @@ components:
           description: Estimated time remaining until operation completion, if known
           type: number
           format: float
+

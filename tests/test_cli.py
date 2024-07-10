@@ -2,6 +2,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from io import StringIO
+from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock, Mock, patch
 
@@ -16,6 +17,7 @@ from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.cli.event_bus_client import BlueskyRemoteError
 from blueapi.cli.format import OutputFormat
+from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.handler import Handler, teardown_handler
 from blueapi.service.model import (
@@ -643,3 +645,24 @@ def test_generic_base_model_formatting():
             """)
     OutputFormat.JSON.display(obj, output)
     assert exp == output.getvalue()
+
+
+@patch("blueapi.cli.cli.setup_scratch")
+def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliRunner):
+    expected_config = ScratchConfig(
+        root=Path("/tmp"),
+        repositories=[
+            ScratchRepository(
+                name="dodal",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+            )
+        ],
+    )
+
+    result = runner.invoke(
+        main,
+        ["-c", "tests/example_yaml/scratch.yaml", "setup-scratch"],
+        input="\n",
+    )
+    assert result.exit_code == 0
+    mock_setup_scratch.assert_called_once_with(expected_config)

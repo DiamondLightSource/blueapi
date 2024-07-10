@@ -85,6 +85,16 @@ class RestConfig(BlueapiBaseModel):
     protocol: str = "http"
 
 
+class ScratchRepository(BlueapiBaseModel):
+    name: str = "example"
+    remote_url: str = "https://github.com/example/example.git"
+
+
+class ScratchConfig(BlueapiBaseModel):
+    root: Path = Path("/tmp/scratch/blueapi")
+    repositories: list[ScratchRepository] = Field(default_factory=list)
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -95,6 +105,7 @@ class ApplicationConfig(BlueapiBaseModel):
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
+    scratch: ScratchConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

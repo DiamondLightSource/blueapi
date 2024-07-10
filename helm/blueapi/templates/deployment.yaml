@@ -35,11 +35,39 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-config
-      {{- if .Values.scratch.hostPath }}
+      {{- if .Values.scratchHostPath }}
       - name: scratch-host
         hostPath:
-          path: {{ .Values.scratch.hostPath }}
+          path: {{ .Values.scratchHostPath }}
           type: Directory
+      - name: venv
+        emptyDir:
+          sizeLimit: 5Gi
+      {{- end }}
+      initContainers:
+      {{- if .Values.scratchHostPath }}
+      - name: setup-scratch
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        command: [/bin/sh, -c]
+        args:
+          - |
+            echo "Setting up scratch area"
+            blueapi -c /config/config.yaml setup-scratch
+            if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
+            echo "Exporting venv as artefact"
+            cp -r /venv/* /artefacts
+        volumeMounts:
+          - name: worker-config
+            mountPath: "/config"
+            readOnly: true
+          - name: scratch-host
+            mountPath: {{ .Values.worker.scratch.root }}
+            mountPropagation: HostToContainer
+          - name: venv
+            mountPath: /artefacts
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
@@ -53,19 +81,21 @@ spec:
             - name: worker-config
               mountPath: "/config"
               readOnly: true
-            {{- if .Values.scratch.hostPath }}
+            {{- if .Values.scratchHostPath }}
             - name: scratch-host
-              mountPath: {{ .Values.scratch.containerPath }}
+              mountPath: {{ .Values.worker.scratch.root }}
               mountPropagation: HostToContainer
+            - name: venv
+              mountPath: /venv
             {{- end }}
           args:
             - "-c"
             - "/config/config.yaml"
             - "serve"
+          {{- with .Values.extraEnvVars }}
           env:
-            {{- if .Values.extraEnvVars }}
             {{- tpl .Values.extraEnvVars . | nindent 10 }}
-            {{- end }}
+          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

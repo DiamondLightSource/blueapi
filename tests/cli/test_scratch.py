@@ -124,7 +124,6 @@ def test_repo_cloned_with_correct_umask(
     assert file_path.exists()
     assert file_path.is_file()
     st = os.stat(file_path)
-    # For some reason the mode has two extra bytes at the front
     assert st.st_mode & stat.S_IWGRP
 
 

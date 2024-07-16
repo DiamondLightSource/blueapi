@@ -44,7 +44,8 @@ def get_runner() -> Runner:
 
 
 def setup_handler(
-    config: ApplicationConfig | None = None, use_subprocess: bool = False
+    config: ApplicationConfig | None = None,
+    use_subprocess: bool = False,
 ):
     global RUNNER
     runner = Runner(config, use_subprocess)
@@ -63,9 +64,8 @@ def teardown_handler():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa")
     config: ApplicationConfig = app.state.config
-    setup_handler(config)
+    setup_handler(config, use_subprocess=True)
     yield
     teardown_handler()
 
@@ -98,16 +98,12 @@ def get_environment(
 @app.delete("/environment", response_model=EnvironmentResponse)
 async def delete_environment(
     background_tasks: BackgroundTasks,
-    handler: Runner = Depends(get_runner),
+    runner: Runner = Depends(get_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
 
-    def restart_handler(handler: Runner):
-        handler.stop()
-        handler.start()
-
-    if handler.state.initialized or handler.state.error_message is not None:
-        background_tasks.add_task(restart_handler, handler)
+    if runner.state.initialized or runner.state.error_message is not None:
+        background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
 
 

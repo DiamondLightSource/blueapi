@@ -79,11 +79,86 @@ def test_get_plan_by_name(get_plan_mock: MagicMock, client: TestClient) -> None:
     }
 
 
-@patch("blueapi.service.interface.get_plan")
-def test_get_non_existant_plan_by_name(
-    get_plan_mock: MagicMock, client: TestClient
-) -> None:
-    get_plan_mock.side_effect = KeyError("my-plan")
+def test_get_plan_with_device_reference(handler: Handler, client: TestClient) -> None:
+    response = client.get("/plans/count")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert (
+        response.json()
+        == {
+            "description": "\n"
+            "    Take `n` readings from a device\n"
+            "\n"
+            "    Args:\n"
+            "        detectors (Set[Readable]): Readable devices to read\n"
+            "        num (int, optional): Number of readings to take. "
+            "Defaults to 1.\n"
+            "        delay (Optional[Union[float, List[float]]], "
+            "optional): Delay between readings.\n"
+            "                                                               "
+            "Defaults to None.\n"
+            "        metadata (Optional[Mapping[str, Any]], optional): "
+            "Key-value metadata to include\n"
+            "                                                          in "
+            "exported data.\n"
+            "                                                          "
+            "Defaults to None.\n"
+            "\n"
+            "    Returns:\n"
+            "        MsgGenerator: _description_\n"
+            "\n"
+            "    Yields:\n"
+            "        Iterator[MsgGenerator]: _description_\n"
+            "    ",
+            "name": "count",
+            "schema": {
+                "additionalProperties": False,
+                "properties": {
+                    "delay": {
+                        "anyOf": [
+                            {"type": "number"},
+                            {"items": {"type": "number"}, "type": "array"},
+                        ],
+                        "title": "Delay",
+                    },
+                    "detectors": {
+                        "items": {"type": "bluesky.protocols.Readable"},
+                        "title": "Detectors",
+                        "type": "array",
+                        "uniqueItems": True,
+                    },
+                    "metadata": {"title": "Metadata", "type": "object"},
+                    "num": {"title": "Num", "type": "integer"},
+                },
+                "required": ["detectors"],
+                "title": "count",
+                "type": "object",
+            },
+        }
+        != {
+            "name": "count",
+            "properties": {
+                "delay": {
+                    "anyOf": [
+                        {"type": "number"},
+                        {"items": {"type": "number"}, "type": "array"},
+                    ],
+                    "title": "Delay",
+                },
+                "detectors": {
+                    "items": {"type": "bluesky.protocols.Readable"},
+                    "title": "Detectors",
+                    "type": "array",
+                },
+                "metadata": {"title": "Metadata", "type": "object"},
+                "num": {"title": "Num", "type": "integer"},
+            },
+            "required": ["detectors"],
+        }
+    )
+
+
+def test_get_non_existant_plan_by_name(handler: Handler, client: TestClient) -> None:
     response = client.get("/plans/my-plan")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND

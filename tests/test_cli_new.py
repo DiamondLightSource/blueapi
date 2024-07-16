@@ -1,15 +1,17 @@
 from dataclasses import dataclass
 from unittest.mock import Mock, patch
-from click.testing import CliRunner
-from pydantic import BaseModel
+
 import pytest
 import requests
 import responses
+from click.testing import CliRunner
+from pydantic import BaseModel
+from responses import matchers
+
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.model import DeviceModel, DeviceResponse, PlanModel, PlanResponse
-from responses import matchers
 
 
 @pytest.fixture
@@ -89,14 +91,13 @@ def test_invalid_config_path_handling(runner: CliRunner):
 
 @responses.activate
 def test_submit_plan(runner: CliRunner):
-    body_data = {'name': 'sleep', 'params': {'time': 5}}
+    body_data = {"name": "sleep", "params": {"time": 5}}
 
     response = responses.post(
         url="http://a.fake.host:12345/tasks",
         match=matchers.json_params_matcher(body_data, strict_match=False),
-        content_type="application/json"
+        content_type="application/json",
     )
-
 
     config_path = "tests/example_yaml/rest_config.yaml"
     runner.invoke(
@@ -113,7 +114,7 @@ def test_nau():
         body="one",
         match=[
             matchers.json_params_matcher({"page": {"name": "first", "type": "json"}})
-        ], 
+        ],
     )
     resp = requests.request(
         "POST",
@@ -123,5 +124,3 @@ def test_nau():
     )
 
     assert r.call_count == 2
-
-

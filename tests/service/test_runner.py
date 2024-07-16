@@ -1,5 +1,7 @@
 from unittest import mock
+
 import pytest
+
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
 from blueapi.service.runner import Runner, RunnerNotStartedError

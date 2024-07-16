@@ -4,7 +4,7 @@ import pytest
 
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
-from blueapi.service.runner import Runner, RunnerNotStartedError
+from blueapi.service.runner import InvalidRunnerStateError, Runner
 
 
 def test_initialize():
@@ -29,7 +29,7 @@ def test_reload():
 
 def test_raises_if_not_started():
     sp_handler = Runner()
-    with pytest.raises(RunnerNotStartedError):
+    with pytest.raises(InvalidRunnerStateError):
         assert sp_handler.run(interface.get_plans) is None
 
 

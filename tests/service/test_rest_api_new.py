@@ -24,13 +24,13 @@ from blueapi.worker.worker import TrackableTask
 
 @pytest.fixture
 def client() -> TestClient:
-    with (
-        patch("blueapi.service.runner.start_worker"),
-        patch("blueapi.service.runner.stop_worker"),
-    ):
-        main.setup_handler(use_subprocess=False)
-        yield TestClient(main.app)
-        main.teardown_handler()
+ #   with (
+ #       patch("blueapi.service.runner.worker"),
+        #patch("blueapi.service.runner.stop_worker"),
+  #  ):
+    main.setup_handler(use_subprocess=False)
+    yield TestClient(main.app)
+    main.teardown_handler()
 
 
 @patch("blueapi.service.interface.get_plans")

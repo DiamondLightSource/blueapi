@@ -1,16 +1,15 @@
-from dataclasses import dataclass
-from typing import Dict
-from unittest.mock import MagicMock, patch
 import uuid
-import pytest
-from blueapi.config import ApplicationConfig, StompConfig
-from blueapi.core.context import BlueskyContext
-from blueapi.service import interface
+from dataclasses import dataclass
+from unittest.mock import MagicMock, patch
 
-from blueapi.core import MsgGenerator
-from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
+import pytest
 from ophyd.sim import SynAxis
 
+from blueapi.config import ApplicationConfig, StompConfig
+from blueapi.core import MsgGenerator
+from blueapi.core.context import BlueskyContext
+from blueapi.service import interface
+from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask

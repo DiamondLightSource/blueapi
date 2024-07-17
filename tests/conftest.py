@@ -1,15 +1,9 @@
 import asyncio
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
-from collections.abc import Iterator
-from unittest.mock import MagicMock
-
 import pytest
 from bluesky import RunEngine
-from bluesky.run_engine import RunEngineStateMachine, TransitionError
-
-
-from blueapi.core import BlueskyContext
+from bluesky.run_engine import TransitionError
 
 
 def pytest_addoption(parser):

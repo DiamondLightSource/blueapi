@@ -96,7 +96,7 @@ class Runner:
         if arguments is None:
             arguments = []
         if self._subprocess is None:
-            raise HandlerNotStartedError("Subprocess handler has not been started")
+            raise RunnerNotStartedError("Subprocess handler has not been started")
         return self._subprocess.apply(function, arguments)
 
     @property
@@ -107,6 +107,6 @@ class Runner:
         )
 
 
-class HandlerNotStartedError(Exception):
+class RunnerNotStartedError(Exception):
     def __init__(self, message):
         super().__init__(message)

@@ -1,31 +1,24 @@
+import uuid
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
-import uuid
+
+import pytest
+from fastapi import status
+from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
 from pydantic.error_wrappers import ErrorWrapper
-import pytest
-from blueapi.core.bluesky_types import Plan
-from blueapi.service import interface
-
-from dls_bluesky_core.plans import count
-from fastapi.testclient import TestClient
-
-from fastapi import status
-
-
 from super_state_machine.errors import TransitionError
+
+from blueapi.core.bluesky_types import Plan
+from blueapi.service import main
 from blueapi.service.model import (
     DeviceModel,
-    DeviceResponse,
     PlanModel,
     StateChangeRequest,
     WorkerTask,
 )
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
-from blueapi.service import main
-from fastapi.testclient import TestClient
-
 from blueapi.worker.worker import TrackableTask
 
 

@@ -9,18 +9,24 @@ from pydantic import BaseModel, ValidationError
 from pydantic.error_wrappers import ErrorWrapper
 from super_state_machine.errors import TransitionError
 
+from blueapi.config import ApplicationConfig, EnvironmentConfig
 from blueapi.core.bluesky_types import Plan
-from blueapi.service import main
-from blueapi.service.model import (
+from blueapi.service.rest import main
+from blueapi.service.worker.model import (
     DeviceModel,
     PlanModel,
     StateChangeRequest,
     WorkerTask,
 )
+from blueapi.service.worker.runner import WorkerProcessDispatcher
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
+from blueapi.service.worker.main import set_config
 from blueapi.worker.worker import TrackableTask
 
+
+def non_sub_handler():
+    return WorkerProcessDispatcher(ApplicationConfig(env=EnvironmentConfig(sources=[])), False )
 
 @pytest.fixture
 def client() -> TestClient:
@@ -28,12 +34,14 @@ def client() -> TestClient:
  #       patch("blueapi.service.runner.worker"),
         #patch("blueapi.service.runner.stop_worker"),
   #  ):
+    #set_config()    
     main.setup_handler(use_subprocess=False)
+    main.app.dependency_overrides["get_handler"] = non_sub_handler
     yield TestClient(main.app)
     main.teardown_handler()
 
 
-@patch("blueapi.service.interface.get_plans")
+@patch("blueapi.service.worker.main.get_plans")
 def test_get_plans(get_plans_mock: MagicMock, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
@@ -60,7 +68,7 @@ def test_get_plans(get_plans_mock: MagicMock, client: TestClient) -> None:
     }
 
 
-@patch("blueapi.service.interface.get_plan")
+@patch("blueapi.service.worker.main.get_plan")
 def test_get_plan_by_name(get_plan_mock: MagicMock, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
@@ -84,7 +92,7 @@ def test_get_plan_by_name(get_plan_mock: MagicMock, client: TestClient) -> None:
     }
 
 
-@patch("blueapi.service.interface.get_plan")
+@patch("blueapi.service.worker.main.get_plan")
 def test_get_non_existant_plan_by_name(
     get_plan_mock: MagicMock, client: TestClient
 ) -> None:
@@ -95,7 +103,7 @@ def test_get_non_existant_plan_by_name(
     assert response.json() == {"detail": "Item not found"}
 
 
-@patch("blueapi.service.interface.get_devices")
+@patch("blueapi.service.worker.main.get_devices")
 def test_get_devices(get_devices_mock: MagicMock, client: TestClient) -> None:
     @dataclass
     class MyDevice:
@@ -117,7 +125,7 @@ def test_get_devices(get_devices_mock: MagicMock, client: TestClient) -> None:
     }
 
 
-@patch("blueapi.service.interface.get_device")
+@patch("blueapi.service.worker.main.get_device")
 def test_get_device_by_name(get_device_mock: MagicMock, client: TestClient) -> None:
     @dataclass
     class MyDevice:
@@ -136,7 +144,7 @@ def test_get_device_by_name(get_device_mock: MagicMock, client: TestClient) -> N
     }
 
 
-@patch("blueapi.service.interface.get_device")
+@patch("blueapi.service.worker.main.get_device")
 def test_get_non_existent_device_by_name(
     get_device_mock: MagicMock, client: TestClient
 ) -> None:
@@ -147,8 +155,8 @@ def test_get_non_existent_device_by_name(
     assert response.json() == {"detail": "Item not found"}
 
 
-@patch("blueapi.service.interface.submit_task")
-@patch("blueapi.service.interface.get_plan")
+@patch("blueapi.service.worker.main.submit_task")
+@patch("blueapi.service.worker.main.get_plan")
 def test_create_task(
     get_plan_mock: MagicMock, submit_task_mock: MagicMock, client: TestClient
 ) -> None:
@@ -163,8 +171,8 @@ def test_create_task(
     assert response.json() == {"task_id": task_id}
 
 
-@patch("blueapi.service.interface.submit_task")
-@patch("blueapi.service.interface.get_plan")
+@patch("blueapi.service.worker.main.submit_task")
+@patch("blueapi.service.worker.main.get_plan")
 def test_create_task_validation_error(
     get_plan_mock: MagicMock, submit_task_mock: MagicMock, client: TestClient
 ) -> None:
@@ -191,7 +199,7 @@ def test_create_task_validation_error(
     }
 
 
-@patch("blueapi.service.interface.get_tasks")
+@patch("blueapi.service.worker.main.get_tasks")
 def test_get_tasks(get_tasks_mock: MagicMock, client: TestClient) -> None:
     tasks = [
         TrackableTask(task_id="0", task=Task(name="sleep", params={"time": 0.0})),
@@ -228,7 +236,7 @@ def test_get_tasks(get_tasks_mock: MagicMock, client: TestClient) -> None:
     }
 
 
-@patch("blueapi.service.interface.get_tasks_by_status")
+@patch("blueapi.service.worker.main.get_tasks_by_status")
 def test_get_tasks_by_status(
     get_tasks_by_status_mock: MagicMock, client: TestClient
 ) -> None:
@@ -262,7 +270,7 @@ def test_get_tasks_by_status_invalid(client: TestClient) -> None:
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-@patch("blueapi.service.interface.clear_task")
+@patch("blueapi.service.worker.main.clear_task")
 def test_delete_submitted_task(clear_task_mock: MagicMock, client: TestClient) -> None:
     task_id = str(uuid.uuid4())
     clear_task_mock.return_value = task_id
@@ -270,8 +278,8 @@ def test_delete_submitted_task(clear_task_mock: MagicMock, client: TestClient) -
     assert response.json() == {"task_id": f"{task_id}"}
 
 
-@patch("blueapi.service.interface.begin_task")
-@patch("blueapi.service.interface.get_active_task")
+@patch("blueapi.service.worker.main.begin_task")
+@patch("blueapi.service.worker.main.get_active_task")
 def test_set_active_task(
     get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
 ) -> None:
@@ -284,8 +292,8 @@ def test_set_active_task(
     assert response.json() == {"task_id": f"{task_id}"}
 
 
-@patch("blueapi.service.interface.begin_task")
-@patch("blueapi.service.interface.get_active_task")
+@patch("blueapi.service.worker.main.begin_task")
+@patch("blueapi.service.worker.main.get_active_task")
 def test_set_active_task_active_task_complete(
     get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
 ) -> None:
@@ -305,8 +313,8 @@ def test_set_active_task_active_task_complete(
     assert response.json() == {"task_id": f"{task_id}"}
 
 
-@patch("blueapi.service.interface.begin_task")
-@patch("blueapi.service.interface.get_active_task")
+@patch("blueapi.service.worker.main.begin_task")
+@patch("blueapi.service.worker.main.get_active_task")
 def test_set_active_task_worker_already_running(
     get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
 ) -> None:
@@ -326,7 +334,7 @@ def test_set_active_task_worker_already_running(
     assert response.json() == {"detail": "Worker already active"}
 
 
-@patch("blueapi.service.interface.get_task_by_id")
+@patch("blueapi.service.worker.main.get_task_by_id")
 def test_get_task(get_task_by_id: MagicMock, client: TestClient):
     task_id = str(uuid.uuid4())
     task = TrackableTask(
@@ -346,7 +354,7 @@ def test_get_task(get_task_by_id: MagicMock, client: TestClient):
     }
 
 
-@patch("blueapi.service.interface.get_task_by_id")
+@patch("blueapi.service.worker.main.get_task_by_id")
 def test_get_task_error(get_task_by_id_mock: MagicMock, client: TestClient):
     task_id = 567
     get_task_by_id_mock.return_value = None
@@ -355,7 +363,7 @@ def test_get_task_error(get_task_by_id_mock: MagicMock, client: TestClient):
     assert response.json() == {"detail": "Item not found"}
 
 
-@patch("blueapi.service.interface.get_active_task")
+@patch("blueapi.service.worker.main.get_active_task")
 def test_get_active_task(get_active_task_mock: MagicMock, client: TestClient):
     task_id = str(uuid.uuid4())
     task = TrackableTask(
@@ -369,7 +377,7 @@ def test_get_active_task(get_active_task_mock: MagicMock, client: TestClient):
     assert response.json() == {"task_id": f"{task_id}"}
 
 
-@patch("blueapi.service.interface.get_active_task")
+@patch("blueapi.service.worker.main.get_active_task")
 def test_get_active_task_none(get_active_task_mock: MagicMock, client: TestClient):
     get_active_task_mock.return_value = None
 
@@ -378,7 +386,7 @@ def test_get_active_task_none(get_active_task_mock: MagicMock, client: TestClien
     assert response.json() == {"task_id": None}
 
 
-@patch("blueapi.service.interface.get_worker_state")
+@patch("blueapi.service.worker.main.get_worker_state")
 def test_get_state(get_worker_state_mock: MagicMock, client: TestClient):
     state = WorkerState.SUSPENDING
     get_worker_state_mock.return_value = state
@@ -387,8 +395,8 @@ def test_get_state(get_worker_state_mock: MagicMock, client: TestClient):
     assert response.json() == state
 
 
-@patch("blueapi.service.interface.pause_worker")
-@patch("blueapi.service.interface.get_worker_state")
+@patch("blueapi.service.worker.main.pause_worker")
+@patch("blueapi.service.worker.main.get_worker_state")
 def test_set_state_running_to_paused(
     get_worker_state_mock: MagicMock, pause_worker_mock: MagicMock, client: TestClient
 ):
@@ -405,8 +413,8 @@ def test_set_state_running_to_paused(
     assert response.json() == final_state
 
 
-@patch("blueapi.service.interface.resume_worker")
-@patch("blueapi.service.interface.get_worker_state")
+@patch("blueapi.service.worker.main.resume_worker")
+@patch("blueapi.service.worker.main.get_worker_state")
 def test_set_state_paused_to_running(
     get_worker_state_mock: MagicMock, resume_worker_mock: MagicMock, client: TestClient
 ):
@@ -423,8 +431,8 @@ def test_set_state_paused_to_running(
     assert response.json() == final_state
 
 
-@patch("blueapi.service.interface.cancel_active_task")
-@patch("blueapi.service.interface.get_worker_state")
+@patch("blueapi.service.worker.main.cancel_active_task")
+@patch("blueapi.service.worker.main.get_worker_state")
 def test_set_state_running_to_aborting(
     get_worker_state_mock: MagicMock,
     cancel_active_task_mock: MagicMock,
@@ -443,8 +451,8 @@ def test_set_state_running_to_aborting(
     assert response.json() == final_state
 
 
-@patch("blueapi.service.interface.cancel_active_task")
-@patch("blueapi.service.interface.get_worker_state")
+@patch("blueapi.service.worker.main.cancel_active_task")
+@patch("blueapi.service.worker.main.get_worker_state")
 def test_set_state_running_to_stopping_including_reason(
     get_worker_state_mock: MagicMock,
     cancel_active_task_mock: MagicMock,
@@ -465,8 +473,8 @@ def test_set_state_running_to_stopping_including_reason(
     assert response.json() == final_state
 
 
-@patch("blueapi.service.interface.cancel_active_task")
-@patch("blueapi.service.interface.get_worker_state")
+@patch("blueapi.service.worker.main.cancel_active_task")
+@patch("blueapi.service.worker.main.get_worker_state")
 def test_set_state_transition_error(
     get_worker_state_mock: MagicMock,
     cancel_active_task_mock: MagicMock,
@@ -488,7 +496,7 @@ def test_set_state_transition_error(
     assert response.json() == final_state
 
 
-@patch("blueapi.service.interface.get_worker_state")
+@patch("blueapi.service.worker.main.get_worker_state")
 def test_set_state_invalid_transition(
     get_worker_state_mock: MagicMock, client: TestClient
 ):

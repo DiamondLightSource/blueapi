@@ -6,7 +6,7 @@ import requests
 from pydantic import parse_obj_as
 
 from blueapi.config import RestConfig
-from blueapi.service.model import (
+from blueapi.service.worker.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,

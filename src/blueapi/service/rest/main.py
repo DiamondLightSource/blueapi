@@ -15,11 +15,26 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
-from blueapi.service import interface
+from blueapi.service.worker.main import (
+    get_plans,
+    get_plan,
+    get_devices,
+    get_device,
+    submit_task,
+    clear_task,
+    get_tasks_by_status,
+    get_tasks,
+    get_worker_state,
+    cancel_active_task,
+    get_task_by_id,
+    begin_task,
+    pause_worker,
+    resume_worker,
+)
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
-from .model import (
+from blueapi.service.worker.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
@@ -30,14 +45,14 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
-from .runner import Runner
+from blueapi.service.worker.runner import WorkerProcessDispatcher
 
 REST_API_VERSION = "0.0.5"
 
-RUNNER: Runner | None = None
+RUNNER: WorkerProcessDispatcher | None = None
 
 
-def get_runner() -> Runner:
+def get_runner() -> WorkerProcessDispatcher:
     if RUNNER is None:
         raise ValueError()
     return RUNNER
@@ -48,7 +63,7 @@ def setup_handler(
     use_subprocess: bool = False,
 ):
     global RUNNER
-    runner = Runner(config, use_subprocess)
+    runner = WorkerProcessDispatcher(config, use_subprocess)
     runner.start()
 
     RUNNER = runner
@@ -88,7 +103,7 @@ async def on_key_error_404(_: Request, __: KeyError):
 
 @app.get("/environment", response_model=EnvironmentResponse)
 def get_environment(
-    handler: Runner = Depends(get_runner),
+    handler: WorkerProcessDispatcher = Depends(get_runner),
 ) -> EnvironmentResponse:
     """Get the current state of the environment, i.e. initialization state."""
     return handler.state
@@ -97,7 +112,7 @@ def get_environment(
 @app.delete("/environment", response_model=EnvironmentResponse)
 async def delete_environment(
     background_tasks: BackgroundTasks,
-    runner: Runner = Depends(get_runner),
+    runner: WorkerProcessDispatcher = Depends(get_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
 
@@ -107,33 +122,35 @@ async def delete_environment(
 
 
 @app.get("/plans", response_model=PlanResponse)
-def get_plans(handler: Runner = Depends(get_runner)):
+def get_plans(handler: WorkerProcessDispatcher = Depends(get_runner)):
     """Retrieve information about all available plans."""
-    return PlanResponse(plans=handler.run(interface.get_plans))
+    return PlanResponse(plans=handler.run(get_plans))
 
 
 @app.get(
     "/plans/{name}",
     response_model=PlanModel,
 )
-def get_plan_by_name(name: str, handler: Runner = Depends(get_runner)):
+def get_plan_by_name(name: str, handler: WorkerProcessDispatcher = Depends(get_runner)):
     """Retrieve information about a plan by its (unique) name."""
-    return handler.run(interface.get_plan, [name])
+    return handler.run(get_plan, [name])
 
 
 @app.get("/devices", response_model=DeviceResponse)
-def get_devices(handler: Runner = Depends(get_runner)):
+def get_devices(handler: WorkerProcessDispatcher = Depends(get_runner)):
     """Retrieve information about all available devices."""
-    return DeviceResponse(devices=handler.run(interface.get_devices))
+    return DeviceResponse(devices=handler.run(get_devices))
 
 
 @app.get(
     "/devices/{name}",
     response_model=DeviceModel,
 )
-def get_device_by_name(name: str, handler: Runner = Depends(get_runner)):
+def get_device_by_name(
+    name: str, handler: WorkerProcessDispatcher = Depends(get_runner)
+):
     """Retrieve information about a devices by its (unique) name."""
-    return handler.run(interface.get_device, [name])
+    return handler.run(get_device, [name])
 
 
 example_task = Task(name="count", params={"detectors": ["x"]})
@@ -148,12 +165,12 @@ def submit_task(
     request: Request,
     response: Response,
     task: Task = Body(..., example=example_task),
-    handler: Runner = Depends(get_runner),
+    handler: WorkerProcessDispatcher = Depends(get_runner),
 ):
     """Submit a task to the worker."""
     try:
-        plan_model = handler.run(interface.get_plan, [task.name])
-        task_id: str = handler.run(interface.submit_task, [task])
+        plan_model = handler.run(get_plan, [task.name])
+        task_id: str = handler.run(submit_task, [task])
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
@@ -175,9 +192,9 @@ def submit_task(
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 def delete_submitted_task(
     task_id: str,
-    handler: Runner = Depends(get_runner),
+    handler: WorkerProcessDispatcher = Depends(get_runner),
 ) -> TaskResponse:
-    return TaskResponse(task_id=handler.run(interface.clear_task, [task_id]))
+    return TaskResponse(task_id=handler.run(clear_task, [task_id]))
 
 
 def validate_task_status(v: str) -> TaskStatusEnum:
@@ -190,7 +207,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 @app.get("/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
 def get_tasks(
     task_status: str | None = None,
-    handler: Runner = Depends(get_runner),
+    handler: WorkerProcessDispatcher = Depends(get_runner),
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
@@ -206,9 +223,9 @@ def get_tasks(
                 detail="Invalid status query parameter",
             ) from e
 
-        tasks = handler.run(interface.get_tasks_by_status, [desired_status])
+        tasks = handler.run(get_tasks_by_status, [desired_status])
     else:
-        tasks = handler.run(interface.get_tasks)
+        tasks = handler.run(get_tasks)
     return TasksListResponse(tasks=tasks)
 
 
@@ -219,16 +236,16 @@ def get_tasks(
 )
 def set_active_task(
     task: WorkerTask,
-    handler: Runner = Depends(get_runner),
+    handler: WorkerProcessDispatcher = Depends(get_runner),
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
     This will return an error response if the worker is not idle."""
-    active_task = handler.run(interface.get_active_task)
+    active_task = handler.run(get_active_task)
     if active_task is not None and not active_task.is_complete:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    handler.run(interface.begin_task, [task])
+    handler.run(begin_task, [task])
     return task
 
 
@@ -238,18 +255,20 @@ def set_active_task(
 )
 def get_task(
     task_id: str,
-    handler: Runner = Depends(get_runner),
+    handler: WorkerProcessDispatcher = Depends(get_runner),
 ) -> TrackableTask:
     """Retrieve a task"""
-    task = handler.run(interface.get_task_by_id, [task_id])
+    task = handler.run(get_task_by_id, [task_id])
     if task is None:
         raise KeyError
     return task
 
 
 @app.get("/worker/task")
-def get_active_task(handler: Runner = Depends(get_runner)) -> WorkerTask:
-    active = handler.run(interface.get_active_task)
+def get_active_task(
+    handler: WorkerProcessDispatcher = Depends(get_runner),
+) -> WorkerTask:
+    active = handler.run(get_active_task)
     if active is not None:
         return WorkerTask(task_id=active.task_id)
     else:
@@ -257,9 +276,9 @@ def get_active_task(handler: Runner = Depends(get_runner)) -> WorkerTask:
 
 
 @app.get("/worker/state")
-def get_state(handler: Runner = Depends(get_runner)) -> WorkerState:
+def get_state(handler: WorkerProcessDispatcher = Depends(get_runner)) -> WorkerState:
     """Get the State of the Worker"""
-    return handler.run(interface.get_worker_state)
+    return handler.run(get_worker_state)
 
 
 # Map of current_state: allowed new_states
@@ -288,7 +307,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    handler: Runner = Depends(get_runner),
+    handler: WorkerProcessDispatcher = Depends(get_runner),
 ) -> WorkerState:
     """
     Request that the worker is put into a particular state.
@@ -307,20 +326,20 @@ def set_state(
         - If reason is set, the reason will be passed as the reason for the Run failure.
     - **All other transitions return 400: Bad Request**
     """
-    current_state = handler.run(interface.get_worker_state)
+    current_state = handler.run(get_worker_state)
     new_state = state_change_request.new_state
     if (
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
         if new_state == WorkerState.PAUSED:
-            handler.run(interface.pause_worker, [state_change_request.defer])
+            handler.run(pause_worker, [state_change_request.defer])
         elif new_state == WorkerState.RUNNING:
-            handler.run(interface.resume_worker)
+            handler.run(resume_worker)
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
             try:
                 handler.run(
-                    interface.cancel_active_task,
+                    cancel_active_task,
                     [
                         state_change_request.new_state is WorkerState.ABORTING,
                         state_change_request.reason,
@@ -331,7 +350,7 @@ def set_state(
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
 
-    return handler.run(interface.get_worker_state)
+    return handler.run(get_worker_state)
 
 
 def start(config: ApplicationConfig):

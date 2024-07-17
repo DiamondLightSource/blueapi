@@ -6,8 +6,8 @@ from multiprocessing.pool import Pool as PoolClass
 from typing import Any
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.interface import setup, teardown
-from blueapi.service.model import EnvironmentResponse
+from blueapi.service.worker.main import setup, teardown
+from blueapi.service.worker.model import EnvironmentResponse
 
 # The default multiprocessing start method is fork
 set_start_method("spawn", force=True)
@@ -20,7 +20,7 @@ def _init_worker():
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
-class Runner:
+class WorkerProcessDispatcher:
     """
     Responsible for dispatching calls required by the REST app.
     This is generally performed in a subprocess but can be run in-process for tests

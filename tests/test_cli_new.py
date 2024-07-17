@@ -11,7 +11,7 @@ from responses import matchers
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.model import DeviceModel, DeviceResponse, PlanModel, PlanResponse
+from blueapi.service.worker.model import DeviceModel, DeviceResponse, PlanModel, PlanResponse
 
 
 @pytest.fixture

@@ -30,9 +30,8 @@ class Runner:
 
     _config: ApplicationConfig
     _subprocess: PoolClass | None
-    _initialized: bool = False
-    _error_message: str | None = None
     _use_subprocess: bool
+    _state: EnvironmentResponse
 
     def __init__(
         self, config: ApplicationConfig | None = None, use_subprocess: bool = True
@@ -40,6 +39,7 @@ class Runner:
         self._config = config or ApplicationConfig()
         self._subprocess = None
         self._use_subprocess = use_subprocess
+        self._state = EnvironmentResponse(initialized=False, error_message="")
 
     def start(self):
         if self._subprocess is None and self._use_subprocess:
@@ -47,34 +47,28 @@ class Runner:
             self._subprocess.apply(
                 logging.basicConfig, kwds={"level": self._config.logging.level}
             )
-            try:
-                self._subprocess.apply(start_worker, [self._config])
-            except Exception as e:
-                self._error_message = f"Error configuring blueapi: {e}"
-                LOGGER.exception(self._error_message)
-                return
-            self._initialized = True
-        if not self._use_subprocess:
-            try:
-                start_worker(self._config)
-            except Exception as e:
-                self._error_message = f"Error configuring blueapi: {e}"
-                LOGGER.exception(self._error_message)
-                return
-            self._initialized = True
+        try:
+            self.run(start_worker, [self._config])
+        except Exception as e:
+            self._state = EnvironmentResponse(
+                initialized=False, error_message=f"Error configuring blueapi: {e}"
+            )
+            LOGGER.exception(self._state.error_message)
+            return
+        self._state = EnvironmentResponse(initialized=True, error_message="")
 
     def stop(self):
         if self._subprocess is not None:
-            self._initialized = False
+            self._state = EnvironmentResponse(initialized=False, error_message="")
             self._subprocess.apply(stop_worker)
             self._subprocess.close()
             self._subprocess.join()
-            self._error_message = None
             self._subprocess = None
-        if (not self._use_subprocess) and (self._initialized or self._error_message):
-            self._initialized = False
+        if (not self._use_subprocess) and (
+            self._state.initialized or self._state.error_message
+        ):
+            self._state = EnvironmentResponse(initialized=False, error_message="")
             stop_worker()
-            self._error_message = None
 
     def reload_context(self):
         """Reload the subprocess to account for any changes in python modules"""
@@ -83,28 +77,20 @@ class Runner:
         LOGGER.info("Context reloaded")
 
     def run(self, function: Callable, arguments: Iterable | None = None) -> Any:
+        arguments = arguments or []
         if self._use_subprocess:
             return self._run_in_subprocess(function, arguments)
         else:
-            if arguments is None:
-                arguments = []
             return function(*arguments)
 
-    def _run_in_subprocess(
-        self, function: Callable, arguments: Iterable | None = None
-    ) -> Any:
-        if arguments is None:
-            arguments = []
+    def _run_in_subprocess(self, function: Callable, arguments: Iterable) -> Any:
         if self._subprocess is None:
             raise RunnerNotStartedError("Subprocess handler has not been started")
         return self._subprocess.apply(function, arguments)
 
     @property
     def state(self) -> EnvironmentResponse:
-        return EnvironmentResponse(
-            initialized=self._initialized,
-            error_message=self._error_message,
-        )
+        return self._state
 
 
 class RunnerNotStartedError(Exception):

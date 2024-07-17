@@ -27,29 +27,26 @@ def test_reload():
     sp_handler.stop()
 
 
-def test_raises_if_not_started():
+def test_raises_if_used_before_started():
     sp_handler = Runner()
     with pytest.raises(RunnerNotStartedError):
         assert sp_handler.run(interface.get_plans) is None
 
 
-@pytest.mark.skip
 def test_error_on_handler_setup():
-    sp_handler = Runner()
+    runner = Runner(use_subprocess=False)
     expected_state = EnvironmentResponse(
         initialized=False,
-        error_message="Error configuring blueapi: Can't pickle "
-        f"{interface.start_worker}: it's not the same object as "
-        "blueapi.service.interface.start_worker",
+        error_message="Error configuring blueapi: Intentional start_worker exception",
     )
 
-    # Using a mock for setup_handler causes a failure as the mock is not pickleable
-    # An exception is set on the mock too but this is never reached
     with mock.patch(
-        "blueapi.service.interface.start_worker",
-        side_effect=Exception("Mock start_worker exception"),
+        "blueapi.service.runner.start_worker",
+        side_effect=Exception("Intentional start_worker exception"),
     ):
-        sp_handler.reload_context()
-        state = sp_handler.state
+        # Calling reload here instead of start also indirectly
+        # tests that stop() doesn't raise if there is no error message
+        # and the runner is not yet initialised
+        runner.reload_context()
+        state = runner.state
         assert state == expected_state
-    sp_handler.stop()

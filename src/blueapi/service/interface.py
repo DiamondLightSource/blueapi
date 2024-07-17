@@ -20,6 +20,10 @@ from blueapi.worker.worker import TrackableTask, Worker
 context and worker"""
 
 
+class InitialisationException(Exception):
+    pass
+
+
 class _Singleton:
     context: BlueskyContext
     worker: Worker
@@ -34,7 +38,9 @@ def start_worker(
 ) -> None:
     """Creates and starts a worker with supplied config"""
     if _Singleton.initialized:
-        raise Exception("Worker is already running. To reload call stop first")
+        raise InitialisationException(
+            "Worker is already running. To reload call stop first"
+        )
     _Singleton.context = bluesky_context
     if _Singleton.context is None:
         _Singleton.context = BlueskyContext()
@@ -83,7 +89,9 @@ def _publish_event_stream(stream: EventStream, destination: str) -> None:
 
 def stop_worker() -> None:
     if not _Singleton.initialized:
-        raise Exception("Cannot stop worker as it hasn't been started yet")
+        raise InitialisationException(
+            "Cannot stop worker as it hasn't been started yet"
+        )
     _Singleton.initialized = False
     _Singleton.worker.stop()
     if (
@@ -202,4 +210,4 @@ def get_state() -> bool:
 def _ensure_worker_started() -> None:
     if _Singleton.initialized:
         return
-    raise Exception("Worker must be stared before it is used")
+    raise InitialisationException("Worker must be stared before it is used")

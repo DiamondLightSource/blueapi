@@ -28,19 +28,19 @@ def ensure_worker_stopped():
 
 def test_start_worker_raises_if_already_started():
     interface.start_worker(ApplicationConfig())
-    with pytest.raises(Exception):
+    with pytest.raises(interface.InitialisationException):
         interface.start_worker(ApplicationConfig())
 
 
 def test_stop_worker_raises_if_already_started():
     interface.start_worker(ApplicationConfig())
     interface.stop_worker()
-    with pytest.raises(Exception):
+    with pytest.raises(interface.InitialisationException):
         interface.stop_worker()
 
 
 def test_exception_if_used_before_started():
-    with pytest.raises(Exception):
+    with pytest.raises(interface.InitialisationException):
         interface.get_active_task()
 
 
@@ -287,7 +287,6 @@ def test_get_tasks(get_tasks_mock: MagicMock):
 def test_get_task_by_id():
     context = BlueskyContext()
     context.plan(my_plan)
-    task = Task(name="my_plan")
     interface.start_worker(ApplicationConfig(), bluesky_context=context)
 
     task_id = interface.submit_task(Task(name="my_plan"))

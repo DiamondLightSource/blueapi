@@ -119,7 +119,7 @@ def test_this_is_weird_and_not_matching_as_expected():
             matchers.json_params_matcher({"page": {"name": "first", "type": "json"}})
         ],
     )
-    resp = requests.request(
+    resp = requests.request(  # noqa
         "POST",
         "http://example.com/",
         headers={"Content-Type": "application/json"},

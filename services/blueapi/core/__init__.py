@@ -11,7 +11,7 @@ from .bluesky_types import (
     is_bluesky_plan_generator,
 )
 from .blueapi_context import BlueskyContext
-from .event import EventPublisher, EventStream
+from .blueaapi_event import EventPublisher, EventStream
 
 __all__ = [
     "Plan",

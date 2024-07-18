@@ -7,7 +7,12 @@ from queue import Full, Queue
 from threading import Event, RLock
 from typing import Any
 
+from collections.abc import Mapping
+from super_state_machine.extras import PropertyMachine, ProxyString
+
+
 from bluesky.protocols import Status
+from pydantic import BaseModel
 from super_state_machine.errors import TransitionError
 
 from blueapi.core import (
@@ -17,20 +22,31 @@ from blueapi.core import (
     EventStream,
     WatchableStatus,
 )
+from services.generated.services.proto.worker_pb2 import ProgressEvent, StatusView, Task, TaskStatus, TaskStatusEnum, TrackableTask, WorkerEvent, WorkerState
 
-from .event import (
-    ProgressEvent,
-    RawRunEngineState,
-    StatusView,
-    TaskStatus,
-    TaskStatusEnum,
-    WorkerEvent,
-    WorkerState,
-)
-from .task import Task
-from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
+
+# The RunEngine can return any of these three types as its state
+RawRunEngineState = type[PropertyMachine | ProxyString | str]
+
+
+def lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:
+    """
+    Checks plan parameters against context
+
+    Args:
+        ctx: Context holding plans and devices
+        plan: Plan object including schema
+        params: Parameter values to be validated against schema
+
+    Returns:
+        Mapping[str, Any]: _description_
+    """
+
+    plan = ctx.plans[task.name]
+    model = plan.model
+    return model.parse_obj(task.params)
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
 
@@ -150,7 +166,7 @@ class TaskWorker():
             raise KeyError(f"No pending task with ID {task_id}")
 
     def submit_task(self, task: Task) -> str:
-        task.prepare_params(self._ctx)  # Will raise if parameters are invalid
+        lookup_params(self.ctx, task ) # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         trackable_task = TrackableTask(task_id=task_id, task=task)
         self._tasks[task_id] = trackable_task
@@ -254,6 +270,10 @@ class TaskWorker():
                 self._current = next_task  # Informing mypy that the task is not None
                 self._current.is_pending = False
                 self._current.task.do_task(self._ctx)
+                LOGGER.info(f"Asked to run plan {self._current.task.name} with {self._current.task.params}")
+                func = self.ctx.plan_functions[self._current.task.name]
+                prepared_params=lookup_params(self.ctx, self._current.task)
+                self.ctx.run_engine(func(**prepared_params.dict()))
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't

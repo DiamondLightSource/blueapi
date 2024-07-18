@@ -28,6 +28,7 @@ dependencies = [
     "dls-bluesky-core",    #requires ophyd-async
     "dls-dodal>=1.24.0",
     "super-state-machine", # See GH issue 553
+    "grpcio-tools",
     "GitPython",
 ]
 dynamic = ["version"]
@@ -61,7 +62,8 @@ dev = [
 ]
 
 [project.scripts]
-blueapi = "blueapi.cli:main"
+blueapi = "services.bluecli:main"
+generate_worker= "python -m grpc_tools.protoc -I. --python_out=../generated --pyi_out=../generated --grpc_python_out=../generated worker.proto"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/blueapi"
@@ -72,7 +74,7 @@ name = "Callum Forrester"
 
 
 [tool.setuptools_scm]
-write_to = "src/blueapi/_version.py"
+write_to = "services/_version.py"
 
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules

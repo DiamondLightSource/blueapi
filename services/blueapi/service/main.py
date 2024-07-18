@@ -15,8 +15,7 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
-from services.blueworker.core.event import WorkerState
-from services.blueworker.worker.task import Task
+from services.generated.services.proto.worker_pb2 import TaskStatusEnum, TrackableTask, WorkerState
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -28,7 +27,7 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
-from services.blueapi._version import version
+from services._version import version
 
 
 @asynccontextmanager
@@ -313,5 +312,5 @@ def start(config: ApplicationConfig):
 @app.middleware("http")
 async def add_api_version_header(request: Request, call_next):
     response = await call_next(request)
-    response.headers["X-API-Version"] = REST_API_VERSION
+    response.headers["X-API-Version"] = version
     return response

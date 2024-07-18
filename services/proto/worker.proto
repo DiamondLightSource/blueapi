@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+// Enum definitions
+enum TaskStatusEnum {
+  PENDING = 0;
+  COMPLETE = 1;
+  ERROR = 2;
+  RUNNING = 3;
+}
+
+enum WorkerState {
+  IDLE = 0;
+  BUSY = 1;
+  PAUSING = 2;
+  PAUSED = 3;
+  HALTING = 4;
+  STOPPING = 5;
+  ABORTING = 6;
+  SUSPENDING = 7;
+  PANICKED = 8;
+  UNKNOWN = 9;
+}
+
+// Message definitions
+message WorkerStateMessage {
+  WorkerState state = 1;
+}
+
+message StatusView {
+  // A snapshot of a Status of an operation, optionally representing progress
+ 
+  // human readable name indicating what this status describes
+  string display_name = 1;
+  // current value of the operation in progress, if known
+  float current = 2;
+  // initial value of operation progress, if known
+  float initial = 3;
+  // target value of the progressing operation, if known
+  float target = 4;
+  // Units of progress
+  string unit = 5;
+  // SEnsible precision of progress to display
+  int32 precision = 6;
+  // whether the operation this status describes is complete
+  bool done = 7;
+  // percentage of status completion, if known
+  float percentage = 8;
+  // time elapsed since operation started, if known
+  float time_elapsed = 9;
+  // estimated time remaining until the operation is complete, if known
+  float time_remaining = 10;
+}
+
+message ProgressEvent {
+  // Event describing the progress of processes within a running task, such as moving motors and exposing detectors.
+  string task_id = 1;
+  map<string, StatusView> statuses = 2;
+}
+
+message TaskStatus {
+  // status of a task the worker is running
+  string task_id = 1;
+  bool task_complete = 2;
+  bool task_failed = 3;
+}
+
+message WorkerEvent {
+  // Event describing the state of the worker and any tasks it's running.  Includes error and warning information.
+  WorkerStateMessage state = 1;
+  TaskStatus task_status = 2;
+  repeated string errors = 3;
+  repeated string warnings = 4;
+}
+
+message TrackableTask {
+  // A representation of a task that the worker recognizes
+  string task_id = 1;
+  string task = 2;  // Assuming T is represented as a string
+  bool is_complete = 3;
+  bool is_pending = 4;
+  repeated string errors = 5;
+}
+
+message StateChangeRequest {
+  bool defer = 1;
+  WorkerState new_state = 2;
+  string reason = 3;
+}
+
+message Task {
+  string name = 1;
+  map<string, string> params = 2;
+}
+
+message TaskResponse {
+  string task_id = 1;
+}
+
+message TasksListResponse {
+  repeated TrackableTask tasks = 1;
+}
+
+message ValidationError {
+  repeated string loc = 1;
+  string msg = 2;
+  string type = 3;
+}
+
+message WorkerTask {
+  string task_id = 1;
+}
+
+
+service WorkerService {
+    // Get the state of the worker.
+    rpc GetWorkerState(google.protobuf.Empty) returns (WorkerStateMessage) {}
+    
+    // Change the state of the worker.
+    rpc SetWorkerState(StateChangeRequest) returns (WorkerStateMessage) {}
+    
+    // Submit a task to the worker.
+    rpc SubmitTask(Task) returns (TaskResponse) {}
+    
+    // Get a list of tasks.
+    rpc GetTasks(google.protobuf.Empty) returns (TasksListResponse) {}
+    
+    // Get the active task of the worker.
+    rpc GetActiveTask(google.protobuf.Empty) returns (WorkerTask) {}
+    
+    // Set a task as active.
+    rpc SetActiveTask(WorkerTask) returns (WorkerTask) {}
+    
+    // Get events from the worker.
+    rpc GetWorkerEvent(google.protobuf.Empty) returns (WorkerEvent) {}
+}

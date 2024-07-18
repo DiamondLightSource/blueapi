@@ -1,4 +1,4 @@
-from .event import ProgressEvent, StatusView, TaskStatus, WorkerEvent, WorkerState
+from .worker_event import ProgressEvent, StatusView, TaskStatus, WorkerEvent, WorkerState
 from .task_worker import TaskWorker
 from .task import Task
 from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError

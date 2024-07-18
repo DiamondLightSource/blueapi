@@ -11,11 +11,8 @@ from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
-from blueapi.bluecli.event_bus_client import BlueskyRemoteError, EventBusClient
-from blueapi.bluecli.format import OutputFormat
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
-from blueapi.messaging import MessageContext
 from services.blueapi.core.stomp_client import StompMessagingTemplate
 from blueapi.service.main import start
 from blueapi.service.model import WorkerTask
@@ -25,6 +22,10 @@ from services.blueapi.service.openapi_schema_control import (
     print_schema_as_yaml,
     write_schema_as_yaml,
 )
+from services.bluecli.event_bus_client import BlueskyRemoteError, EventBusClient
+from services.bluecli.format import OutputFormat
+from services.bluecommon.context import MessageContext
+from services.generated.services.proto.worker_pb2 import ProgressEvent, Task, WorkerEvent, WorkerState
 
 from .rest_client import BlueapiRestClient
 from .scratch import setup_scratch

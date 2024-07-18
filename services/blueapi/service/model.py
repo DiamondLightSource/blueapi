@@ -5,9 +5,7 @@ from bluesky.protocols import HasName
 from pydantic import Field
 
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
-from blueapi.utils import BlueapiBaseModel
-from blueapi.worker import Worker, WorkerState
-from blueapi.worker.worker import TrackableTask
+from services.blueapi.core.base_model import BlueapiBaseModel
 
 _UNKNOWN_NAME = "UNKNOWN"
 
@@ -39,7 +37,7 @@ class TasksListResponse(BlueapiBaseModel):
     Diagnostic information on the tasks
     """
 
-    tasks: list[TrackableTask] = Field(description="List of tasks")
+    tasks: list[TrackableTask] = Field(descckription="List of tasks")
 
 
 class DeviceRequest(BlueapiBaseModel):

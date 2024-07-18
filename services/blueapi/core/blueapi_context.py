@@ -6,7 +6,6 @@ from inspect import Parameter, signature
 from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
-from bluesky.run_engine import RunEngine
 from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
 from pydantic import create_model
@@ -37,9 +36,6 @@ class BlueapiContext:
     The context holds the RunEngine and any plans/devices that you may want to use.
     """
 
-    run_engine: RunEngine = field(
-        default_factory=lambda: RunEngine(context_managers=[])
-    )
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)

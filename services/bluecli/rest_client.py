@@ -1,6 +1,6 @@
 from collections.abc import Callable, Mapping
 from http import HTTPStatus
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal, TypeVar, Union
 
 import requests
 from pydantic import parse_obj_as
@@ -15,8 +15,7 @@ from blueapi.service.model import (
     TaskResponse,
     WorkerTask,
 )
-from services.blueworker.core.event import WorkerState
-from services.blueworker.worker.task import Task, TrackableTask
+from services.generated.services.proto.worker_pb2 import Task, TrackableTask, WorkerState
 
 from .event_bus_client import BlueskyRemoteError
 
@@ -59,7 +58,7 @@ class BlueapiRestClient:
 
     def set_state(
         self,
-        state: Literal[WorkerState.RUNNING, WorkerState.PAUSED],
+        state: Union[WorkerState.RUNNING, WorkerState.PAUSED],
         defer: bool | None = False,
     ):
         return self._request_and_deserialize(
@@ -69,8 +68,8 @@ class BlueapiRestClient:
             data={"new_state": state, "defer": defer},
         )
 
-    def get_task(self, task_id: str) -> TrackableTask[Task]:
-        return self._request_and_deserialize(f"/tasks/{task_id}", TrackableTask[Task])
+    def get_task(self, task_id: str) -> TrackableTask:
+        return self._request_and_deserialize(f"/tasks/{task_id}", TrackableTask)
 
     def get_active_task(self) -> WorkerTask:
         return self._request_and_deserialize("/worker/task", WorkerTask)
@@ -98,7 +97,7 @@ class BlueapiRestClient:
 
     def cancel_current_task(
         self,
-        state: Literal[WorkerState.ABORTING, WorkerState.STOPPING],
+        state: Union[WorkerState.ABORTING, WorkerState.STOPPING],
         reason: str | None = None,
     ):
         return self._request_and_deserialize(

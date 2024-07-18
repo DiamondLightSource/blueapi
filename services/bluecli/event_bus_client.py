@@ -6,7 +6,7 @@ from bluesky.callbacks.best_effort import BestEffortCallback
 from blueapi.core import DataEvent
 from services.blueapi.core.stomp_client import StompClient
 from services.bluecommon.context import MessageContext
-from services.blueworker.core.event import ProgressEvent, WorkerEvent
+from services.generated.services.proto.worker_pb2 import ProgressEvent, WorkerEvent
 
 from .updates import CliEventRenderer
 

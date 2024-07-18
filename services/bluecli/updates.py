@@ -3,7 +3,8 @@ from collections.abc import Mapping
 
 from tqdm import tqdm
 
-from services.blueworker.worker.event import ProgressEvent, StatusView, WorkerEvent
+from services.generated.services.proto.worker_pb2 import ProgressEvent, StatusView, WorkerEvent
+
 
 
 _BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"

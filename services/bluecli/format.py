@@ -10,7 +10,7 @@ from typing import Any, TextIO
 
 from pydantic import BaseModel
 
-from blueapi.service.model import DeviceResponse, PlanResponse
+from services.blueapi.model import DeviceResponse, PlanResponse
 
 FALLBACK = pprint
 
@@ -87,20 +87,16 @@ def display_compact(obj: Any, stream: Stream):
             FALLBACK(other, stream=stream)
 
 
-def _describe_type(spec: dict[Any, Any], required: bool = False):
-    disp = ""
-    match spec.get("type"):
-        case None:
-            if all_of := spec.get("allOf"):
-                items = (_describe_type(f, False) for f in all_of)
-                disp += f'{" & ".join(items)}'
-            else:
-                disp += "Any"
-        case "array":
-            element = spec.get("items", {}).get("type", "Any")
-            disp += f"[{element}]"
-        case other:
-            disp += other
-    if required:
-        disp += " (Required)"
-    return disp
+def _describe_type(spec: dict, required: bool = False) -> str:
+    if "type" not in spec:
+        if "allOf" in spec:
+            items = [_describe_type(f) for f in spec["allOf"]]
+            return " & ".join(items)
+        else:
+            return "Any"
+
+    if spec["type"] == "array":
+        element_type = spec["items"]["type"] if "items" in spec else "Any"
+        return f"[{element_type}]"
+
+    return spec["type"] + (" (Required)" if required else "")

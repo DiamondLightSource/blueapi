@@ -1,11 +1,12 @@
 import itertools
 from collections.abc import Mapping
 
+from services.generated.services.proto.worker_pb2 import (
+    ProgressEvent,
+    StatusView,
+    WorkerEvent,
+)
 from tqdm import tqdm
-
-from services.generated.services.proto.worker_pb2 import ProgressEvent, StatusView, WorkerEvent
-
-
 
 _BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"
 

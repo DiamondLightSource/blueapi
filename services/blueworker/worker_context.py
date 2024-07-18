@@ -6,24 +6,24 @@ from inspect import Parameter, signature
 from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
+from blueapi.config import EnvironmentConfig, SourceKind
 from bluesky.run_engine import RunEngine
+from dls_bluesky_core.core import PlanGenerator
 from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
 from pydantic import create_model
 from pydantic.fields import FieldInfo, ModelField
-
-from blueapi.config import EnvironmentConfig, SourceKind
-from services.blueapi.core.base_model import BlueapiPlanModelConfig
-
-from ...bluecommon.bluesky_types import (
+from services.blueapi.base_model import BlueapiPlanModelConfig
+from services.bluecommon.bluesky_types import (
     BLUESKY_PROTOCOLS,
     Device,
     HasName,
     Plan,
-    PlanGenerator,
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )
+from services.blueworker.worker_modules import load_module_all
+
 from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)

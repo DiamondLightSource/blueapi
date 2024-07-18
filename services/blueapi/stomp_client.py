@@ -10,18 +10,13 @@ from threading import Event
 from typing import Any
 
 import stomp
-from pydantic import parse_obj_as
+from pydantic import BaseModel, parse_obj_as
+from services.bluecommon.context import MessageContext
+from services.bluecommon.thread_exception import handle_all_exceptions
 from stomp.exception import ConnectFailedException
 from stomp.utils import Frame
 
 from blueapi.config import BasicAuthentication, StompConfig
-
-from typing import Any
-
-from pydantic import BaseModel
-
-from services.bluecommon.context import MessageContext
-from services.bluecommon.thread_exception import handle_all_exceptions
 
 
 def serialize(obj: Any) -> Any:
@@ -45,10 +40,13 @@ def serialize(obj: Any) -> Any:
         return serialize(obj.__pydantic_model__)
     else:
         return obj
+
+
 MessageListener = Callable[[MessageContext, Any], None]
 LOGGER = logging.getLogger(__name__)
 
 CORRELATION_ID_HEADER = "correlation-id"
+
 
 def determine_deserialization_type(
     listener: MessageListener, default: type = str
@@ -73,7 +71,8 @@ def determine_deserialization_type(
     else:
         return default
 
-class StompDestinationProvider():
+
+class StompDestinationProvider:
     """
     Destination provider for stomp, stateless so just
     uses naming conventions
@@ -111,7 +110,8 @@ class Subscription:
     destination: str
     callback: Callable[[Frame], None]
 
-class StompClient():
+
+class StompClient:
     """
     StompClient for use with ActiveMQ.
     """
@@ -147,7 +147,7 @@ class StompClient():
         self._subscriptions = {}
 
     @classmethod
-    def autoconfigured(cls, config: StompConfig) -> MessagingTemplate:
+    def autoconfigured(cls, config: StompConfig):
         return cls(
             stomp.Connection(
                 [(config.host, config.port)],

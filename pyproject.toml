@@ -62,7 +62,9 @@ dev = [
 ]
 
 [project.scripts]
+# todo add all the entrypoints
 blueapi = "services.bluecli:main"
+blueworker= "services.blueworker:main"
 generate_worker= "python -m grpc_tools.protoc -I. --python_out=../generated --pyi_out=../generated --grpc_python_out=../generated worker.proto"
 
 [project.urls]

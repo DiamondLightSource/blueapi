@@ -6,8 +6,8 @@ from typing import Any, Generic, Literal, TypeVar
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, parse_obj_as, validator
-
-from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+from services.blueapi.base_model import BlueapiBaseModel
+from services.blueworker.config import InvalidConfigError
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 

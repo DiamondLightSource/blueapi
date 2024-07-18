@@ -27,8 +27,7 @@ from bluesky.protocols import (
 from dls_bluesky_core.core import MsgGenerator, PlanGenerator
 from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel, Field
-
-from blueapi.utils import BlueapiBaseModel
+from services.blueapi.base_model import BlueapiBaseModel
 
 PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
 

@@ -1,21 +1,24 @@
 from collections.abc import Callable, Mapping
 from http import HTTPStatus
-from typing import Any, Literal, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 import requests
-from pydantic import parse_obj_as
-
 from blueapi.config import RestConfig
-from blueapi.service.model import (
+from pydantic import parse_obj_as
+from services.blueapi.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+)
+from services.generated.services.proto.worker_pb2 import (
+    Task,
     TaskResponse,
+    TrackableTask,
+    WorkerState,
     WorkerTask,
 )
-from services.generated.services.proto.worker_pb2 import Task, TrackableTask, WorkerState
 
 from .event_bus_client import BlueskyRemoteError
 
@@ -58,7 +61,7 @@ class BlueapiRestClient:
 
     def set_state(
         self,
-        state: Union[WorkerState.RUNNING, WorkerState.PAUSED],
+        state: WorkerState.RUNNING | WorkerState.PAUSED,
         defer: bool | None = False,
     ):
         return self._request_and_deserialize(
@@ -97,7 +100,7 @@ class BlueapiRestClient:
 
     def cancel_current_task(
         self,
-        state: Union[WorkerState.ABORTING, WorkerState.STOPPING],
+        state: WorkerState.ABORTING | WorkerState.STOPPING,
         reason: str | None = None,
     ):
         return self._request_and_deserialize(

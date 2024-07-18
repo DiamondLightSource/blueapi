@@ -7,25 +7,29 @@ from pprint import pprint
 from time import sleep
 
 import click
-from pydantic import ValidationError
-from requests.exceptions import ConnectionError
-
 from blueapi import __version__
 from blueapi.config import ApplicationConfig, ConfigLoader
-from blueapi.core import DataEvent
-from services.blueapi.core.stomp_client import StompMessagingTemplate
-from blueapi.service.main import start
-from blueapi.service.model import WorkerTask
-from services.blueapi.service.openapi_schema_control import (
+from pydantic import ValidationError
+from requests.exceptions import ConnectionError
+from services.blueapi.main import start
+from services.blueapi.openapi_schema_control import (
     DOCS_SCHEMA_LOCATION,
     generate_schema,
     print_schema_as_yaml,
     write_schema_as_yaml,
 )
+from services.blueapi.stomp_client import StompClient
 from services.bluecli.event_bus_client import BlueskyRemoteError, EventBusClient
 from services.bluecli.format import OutputFormat
+from services.bluecommon.bluesky_types import DataEvent
 from services.bluecommon.context import MessageContext
-from services.generated.services.proto.worker_pb2 import ProgressEvent, Task, WorkerEvent, WorkerState
+from services.generated.services.proto.worker_pb2 import (
+    ProgressEvent,
+    Task,
+    WorkerEvent,
+    WorkerState,
+    WorkerTask,
+)
 
 from .rest_client import BlueapiRestClient
 from .scratch import setup_scratch
@@ -147,7 +151,7 @@ def listen_to_events(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     if config.stomp is not None:
         event_bus_client = EventBusClient(
-            StompMessagingTemplate.autoconfigured(config.stomp)
+            StompClient.autoconfigured(config.stomp)
         )
     else:
         raise RuntimeError("Message bus needs to be configured")
@@ -189,7 +193,7 @@ def run_plan(
 
     logger = logging.getLogger(__name__)
     if config.stomp is not None:
-        stomp_client = StompMessagingTemplate.autoconfigured(config.stomp)
+        stomp_client = StompClient.autoconfigured(config.stomp)
     else:
         raise RuntimeError(
             "Cannot run plans without Stomp configuration to track progress"

@@ -4,8 +4,10 @@ from typing import Any
 from bluesky.protocols import HasName
 from pydantic import Field
 
-from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
-from services.blueapi.core.base_model import BlueapiBaseModel
+from services.blueapi.base_model import BlueapiBaseModel
+from services.bluecommon.bluesky_types import BLUESKY_PROTOCOLS, Device
+from services.blueworker.task_worker import TaskWorker
+from services.generated.services.proto.worker_pb2 import TrackableTask, WorkerState
 
 _UNKNOWN_NAME = "UNKNOWN"
 
@@ -110,14 +112,6 @@ class WorkerTask(BlueapiBaseModel):
     task_id: str | None = Field(
         description="The ID of the current task, None if the worker is idle"
     )
-
-    @classmethod
-    def of_worker(cls, worker: Worker) -> "WorkerTask":
-        active = worker.get_active_task()
-        if active is not None:
-            return WorkerTask(task_id=active.task_id)
-        else:
-            return WorkerTask(task_id=None)
 
 
 class StateChangeRequest(BlueapiBaseModel):

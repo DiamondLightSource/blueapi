@@ -7,23 +7,23 @@ from queue import Full, Queue
 from threading import Event, RLock
 from typing import Any
 
-from collections.abc import Mapping
-from super_state_machine.extras import PropertyMachine, ProxyString
-
-
 from bluesky.protocols import Status
 from pydantic import BaseModel
-from super_state_machine.errors import TransitionError
-
-from blueapi.core import (
-    BlueskyContext,
-    DataEvent,
-    EventPublisher,
-    EventStream,
-    WatchableStatus,
+from services.bluecommon.blueapi_event import EventPublisher, EventStream
+from services.bluecommon.bluesky_types import DataEvent, WatchableStatus
+from services.blueworker.worker_context import WorkerContext
+from services.generated.services.proto.worker_pb2 import (
+    ProgressEvent,
+    StatusView,
+    Task,
+    TaskStatus,
+    TaskStatusEnum,
+    TrackableTask,
+    WorkerEvent,
+    WorkerState,
 )
-from services.generated.services.proto.worker_pb2 import ProgressEvent, StatusView, Task, TaskStatus, TaskStatusEnum, TrackableTask, WorkerEvent, WorkerState
-
+from super_state_machine.errors import TransitionError
+from super_state_machine.extras import PropertyMachine, ProxyString
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 RawRunEngineState = type[PropertyMachine | ProxyString | str]
 
 
-def lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:
+def lookup_params(ctx: WorkerContext, task: Task) -> BaseModel:
     """
     Checks plan parameters against context
 
@@ -48,7 +48,9 @@ def lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:
     model = plan.model
     return model.parse_obj(task.params)
 
+
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
+
 
 class WorkerBusyError(Exception):
     def __init__(self, message):
@@ -59,9 +61,10 @@ class WorkerAlreadyStartedError(Exception):
     def __init__(self, message):
         super().__init__(message)
 
-class TaskWorker():
+
+class TaskWorker:
     """
-    Worker wrapping BlueskyContext that can work in its own thread/process
+    Worker wrapping WorkerContext that can work in its own thread/process
 
     Args:
         ctx: Context to work with
@@ -69,7 +72,7 @@ class TaskWorker():
             graceful shutdown before raising an exception. Defaults to 30.0.
     """
 
-    _ctx: BlueskyContext
+    _ctx: WorkerContext
     _start_stop_timeout: float
 
     _tasks: dict[str, TrackableTask]
@@ -91,7 +94,7 @@ class TaskWorker():
 
     def __init__(
         self,
-        ctx: BlueskyContext,
+        ctx: WorkerContext,
         start_stop_timeout: float = DEFAULT_START_STOP_TIMEOUT,
         broadcast_statuses: bool = True,
     ) -> None:
@@ -166,7 +169,7 @@ class TaskWorker():
             raise KeyError(f"No pending task with ID {task_id}")
 
     def submit_task(self, task: Task) -> str:
-        lookup_params(self.ctx, task ) # Will raise if parameters are invalid
+        lookup_params(self.ctx, task)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         trackable_task = TrackableTask(task_id=task_id, task=task)
         self._tasks[task_id] = trackable_task
@@ -269,10 +272,12 @@ class TaskWorker():
                 LOGGER.info(f"Got new task: {next_task}")
                 self._current = next_task  # Informing mypy that the task is not None
                 self._current.is_pending = False
-                self._current.task.do_task(self._ctx)
-                LOGGER.info(f"Asked to run plan {self._current.task.name} with {self._current.task.params}")
-                func = self.ctx.plan_functions[self._current.task.name]
-                prepared_params=lookup_params(self.ctx, self._current.task)
+                name = self._current.task.name
+                LOGGER.info(
+                    f"Asked to run plan {name} with {self._current.task.params}"
+                )
+                func = self.ctx.plan_functions[name]
+                prepared_params = lookup_params(self.ctx, self._current.task)
                 self.ctx.run_engine(func(**prepared_params.dict()))
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.

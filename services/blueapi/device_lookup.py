@@ -1,6 +1,6 @@
 from typing import Any, TypeVar
 
-from .bluesky_types import Device, is_bluesky_compatible_device
+from services.bluecommon.bluesky_types import Device, is_bluesky_compatible_device
 
 #: Device obeying Bluesky protocols
 D = TypeVar("D", bound=Device)

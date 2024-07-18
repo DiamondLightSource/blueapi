@@ -67,7 +67,7 @@ def display_full(obj: Any, stream: Stream):
         case ProgressEvent():
             print(f"Progress:{fmt_dict(obj.model_dump())}")
         case BaseModel():
-            print(obj.__class__.__name__, end='')
+            print(obj.__class__.__name__, end="")
             print(fmt_dict(obj.model_dump()))
         case other:
             FALLBACK(other, stream=stream)
@@ -108,7 +108,7 @@ def display_compact(obj: Any, stream: Stream):
         case WorkerEvent(state=state):
             print(f"Worker state: {state}")
         case ProgressEvent(statuses=stats):
-            prog = max(100 * (s.percentage or 0)  for s in stats.values()) or "???"
+            prog = max(100 * (s.percentage or 0) for s in stats.values()) or "???"
             print(f"Progress: {prog}%")
         case other:
             FALLBACK(other, stream=stream)

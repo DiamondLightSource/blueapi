@@ -9,7 +9,6 @@ from textwrap import dedent, indent
 from typing import Any, TextIO
 
 from pydantic import BaseModel
-
 from services.blueapi.model import DeviceResponse, PlanResponse
 
 FALLBACK = pprint

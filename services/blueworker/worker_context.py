@@ -6,7 +6,6 @@ from inspect import Parameter, signature
 from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
-from blueapi.config import EnvironmentConfig, SourceKind
 from bluesky.run_engine import RunEngine
 from dls_bluesky_core.core import PlanGenerator
 from dodal.utils import make_all_devices
@@ -23,6 +22,8 @@ from services.bluecommon.bluesky_types import (
     is_bluesky_plan_generator,
 )
 from services.blueworker.worker_modules import load_module_all
+
+from blueapi.config import EnvironmentConfig, SourceKind
 
 from .device_lookup import find_component
 

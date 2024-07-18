@@ -4,8 +4,9 @@ import stat
 from pathlib import Path
 from subprocess import Popen
 
-from blueapi.config import ScratchConfig
 from git import Repo
+
+from blueapi.config import ScratchConfig
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 

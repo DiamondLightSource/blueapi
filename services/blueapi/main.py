@@ -11,11 +11,17 @@ from fastapi import (
     status,
 )
 from pydantic import ValidationError
+from services._version import version
+from services.generated.services.proto.worker_pb2 import (
+    TaskStatusEnum,
+    TrackableTask,
+    WorkerState,
+)
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
-from services.generated.services.proto.worker_pb2 import TaskStatusEnum, TrackableTask, WorkerState
+
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -27,7 +33,6 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
-from services._version import version
 
 
 @asynccontextmanager

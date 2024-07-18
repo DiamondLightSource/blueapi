@@ -3,10 +3,8 @@ from typing import Any
 
 from bluesky.protocols import HasName
 from pydantic import Field
-
 from services.blueapi.base_model import BlueapiBaseModel
 from services.bluecommon.bluesky_types import BLUESKY_PROTOCOLS, Device
-from services.blueworker.task_worker import TaskWorker
 from services.generated.services.proto.worker_pb2 import TrackableTask, WorkerState
 
 _UNKNOWN_NAME = "UNKNOWN"

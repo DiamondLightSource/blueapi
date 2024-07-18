@@ -7,8 +7,6 @@ from pprint import pprint
 from time import sleep
 
 import click
-from blueapi import __version__
-from blueapi.config import ApplicationConfig, ConfigLoader
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 from services.blueapi.main import start
@@ -30,6 +28,9 @@ from services.generated.services.proto.worker_pb2 import (
     WorkerState,
     WorkerTask,
 )
+
+from blueapi import __version__
+from blueapi.config import ApplicationConfig, ConfigLoader
 
 from .rest_client import BlueapiRestClient
 from .scratch import setup_scratch
@@ -150,9 +151,7 @@ def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
     if config.stomp is not None:
-        event_bus_client = EventBusClient(
-            StompClient.autoconfigured(config.stomp)
-        )
+        event_bus_client = EventBusClient(StompClient.autoconfigured(config.stomp))
     else:
         raise RuntimeError("Message bus needs to be configured")
 

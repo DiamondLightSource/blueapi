@@ -1,9 +1,8 @@
 from collections.abc import Callable, Mapping
 from http import HTTPStatus
-from typing import Any, TypeVar, Union
+from typing import Any, TypeVar
 
 import requests
-from blueapi.config import RestConfig
 from pydantic import parse_obj_as
 from services.blueapi.model import (
     DeviceModel,
@@ -19,6 +18,8 @@ from services.generated.services.proto.worker_pb2 import (
     WorkerState,
     WorkerTask,
 )
+
+from blueapi.config import RestConfig
 
 from .event_bus_client import BlueskyRemoteError
 

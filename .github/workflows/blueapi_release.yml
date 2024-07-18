@@ -1,0 +1,21 @@
+name: CI/CD for Service1
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'service1/**'
+      - 'Dockerfile.base'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Build Docker image
+        run: docker build -f service1/Dockerfile -t myregistry.com/service1:${{ github.sha }} .
+
+      - name: Push Docker image to Registry
+        run: docker push myregistry.com/service1:${{ github.sha }}

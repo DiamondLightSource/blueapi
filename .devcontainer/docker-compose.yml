@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  service1:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    volumes:
+      - .:/workspace/service1
+    environment:
+      PYTHONPATH: /workspace/service1
+    command: /bin/bash -c "pip install -r service1/requirements.txt && /container-startup.sh"
+
+  service2:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    volumes:
+      - .:/workspace/service2
+    environment:
+      PYTHONPATH: /workspace/service2
+    command: /bin/bash -c "pip install -r service2/requirements.txt && /container-startup.sh"

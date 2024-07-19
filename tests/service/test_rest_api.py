@@ -78,7 +78,7 @@ def test_get_plan_with_device_reference(handler: Handler, client: TestClient) ->
             "    Take `n` readings from a device\n"
             "\n"
             "    Args:\n"
-            "        detectors (List[Readable]): Readable devices to read\n"
+            "        detectors (Set[Readable]): Readable devices to read\n"
             "        num (int, optional): Number of readings to take. "
             "Defaults to 1.\n"
             "        delay (Optional[Union[float, List[float]]], "
@@ -113,6 +113,7 @@ def test_get_plan_with_device_reference(handler: Handler, client: TestClient) ->
                         "items": {"type": "bluesky.protocols.Readable"},
                         "title": "Detectors",
                         "type": "array",
+                        "uniqueItems": True,
                     },
                     "metadata": {"title": "Metadata", "type": "object"},
                     "num": {"title": "Num", "type": "integer"},

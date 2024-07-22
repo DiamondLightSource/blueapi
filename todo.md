@@ -8,3 +8,5 @@
 - [ ] all handler references should be replaced by the grpc client OR just the refernce to the context
 - [ ] move some blueworker config types to proto
 - [ ] even the same dockerfile, just different entrypoints
+- [ ] make the new context private https://github.com/DiamondLightSource/blueapi/pull/174/files
+

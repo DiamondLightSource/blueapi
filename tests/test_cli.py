@@ -19,9 +19,13 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.model import (DeviceModel, DeviceResponse,
-                                   EnvironmentResponse, PlanModel,
-                                   PlanResponse)
+from blueapi.service.model import (
+    DeviceModel,
+    DeviceResponse,
+    EnvironmentResponse,
+    PlanModel,
+    PlanResponse,
+)
 
 
 @pytest.fixture
@@ -228,7 +232,7 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
         json=EnvironmentResponse(initialized=False).dict(),
     )
     # Add responses for each polling attempt, all indicating not initialized
-    for _ in range(10):
+    for _ in range(max_polling_count):
         responses.add(
             responses.GET,
             "http://localhost:8000/environment",
@@ -277,7 +281,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
 
     result = runner.invoke(main, ["controller", "env", "-r"])
     assert isinstance(
-        result.exception, BlueskyRemoteError
+        result.exception, BlueskyRemoteControlError
     ), "Expected a BlueskyRemoteError from cli runner"
     assert result.exception.args[0] == "Failed to reload the environment"
 

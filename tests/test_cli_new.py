@@ -1,15 +1,23 @@
 from dataclasses import dataclass
+from io import StringIO
+import json
+from pathlib import Path
+from textwrap import dedent
+from typing import Mapping
 from unittest.mock import Mock, patch
 
 import pytest
 import responses
 from click.testing import CliRunner
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from requests.exceptions import ConnectionError
 from responses import matchers
 
 from blueapi import __version__
 from blueapi.cli.cli import main
+from blueapi.cli.event_bus_client import BlueskyRemoteError
+from blueapi.cli.format import OutputFormat
+from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.model import (
     DeviceModel,
@@ -215,9 +223,7 @@ initialized=True error_message=None
 
 @responses.activate
 @patch("blueapi.cli.cli.sleep", return_value=None)
-def test_env_timeout(
-    mock_sleep: Mock,   runner: CliRunner
-):
+def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     max_polling_count = 10  # Assuming this is your max polling count in the command
 
     # Setup mocked responses for the REST endpoints
@@ -257,8 +263,281 @@ def test_env_timeout(
         assert call.request.url == "http://localhost:8000/environment"
 
     # Check the output for the timeout message
-    assert result.output == "Reloading the environment...\ninitialized=False error_message=None\n" + "Waiting for environment to initialize...\n"*10
+    assert (
+        result.output
+        == "Reloading the environment...\ninitialized=False error_message=None\n"
+        + "Waiting for environment to initialize...\n" * 10
+    )
     assert (
         result.exit_code == 1
     )  # Assuming your command exits successfully even on timeout for simplicity
 
+
+@responses.activate
+def test_env_reload_server_side_error(runner: CliRunner):
+    # Setup mocked error response from the server
+    responses.add(
+        responses.DELETE, "http://localhost:8000/environment", status=500, json={}
+    )
+
+    result = runner.invoke(main, ["controller", "env", "-r"])
+    assert isinstance(
+        result.exception, BlueskyRemoteError
+    ), "Expected a BlueskyRemoteError from cli runner"
+    assert result.exception.args[0] == "Failed to reload the environment"
+
+    # Check if the endpoints were hit as expected
+    assert len(responses.calls) == 1  # +1 for the DELETE call
+
+    # Only call should be DELETE
+    assert responses.calls[0].request.method == "DELETE"
+    assert responses.calls[0].request.url == "http://localhost:8000/environment"
+
+    # Check the output for the timeout message
+    # TODO this seems wrong but this is the current behaviour
+    # There should be an error message
+    assert result.output == "Reloading the environment...\n"
+
+    assert result.exit_code == 1
+
+
+@pytest.mark.parametrize(
+    "exception, expected_exit_code",
+    [
+        (ValidationError("Invalid parameters", BaseModel), 1),
+        (BlueskyRemoteError("Server error"), 1),
+        (ValueError("Error parsing parameters"), 1),
+    ],
+)
+def test_error_handling(exception, expected_exit_code, runner: CliRunner):
+    # Patching the create_task method to raise different exceptions
+    with patch("blueapi.cli.rest.BlueapiRestClient.create_task", side_effect=exception):
+        result = runner.invoke(
+            main,
+            [
+                "-c",
+                "tests/example_yaml/valid_stomp_config.yaml",
+                "controller",
+                "run",
+                "sleep",
+                "'{\"time\": 5}'",
+            ],
+            input="\n",
+        )
+        assert result.exit_code == expected_exit_code
+
+
+def test_device_output_formatting():
+    """Test for alternative device output formats"""
+
+    device = MyDevice("my-device")
+
+    devices = DeviceResponse(devices=[DeviceModel.from_device(device)])
+
+    compact = dedent("""\
+                my-device
+                    HasName
+                """)
+
+    output = StringIO()
+    OutputFormat.COMPACT.display(devices, out=output)
+    assert output.getvalue() == compact
+
+    # json outputs valid json
+    output = StringIO()
+    OutputFormat.JSON.display(devices, out=output)
+    json_out = dedent("""\
+                [
+                  {
+                    "name": "my-device",
+                    "protocols": [
+                      "HasName"
+                    ]
+                  }
+                ]
+                """)
+    assert output.getvalue() == json_out
+    _ = json.loads(output.getvalue())
+
+    output = StringIO()
+    OutputFormat.FULL.display(devices, out=output)
+    full = dedent("""\
+            my-device
+                HasName
+            """)
+    assert output.getvalue() == full
+
+
+class ExtendedModel(BaseModel):
+    name: str
+    keys: list[int]
+    metadata: None | Mapping[str, str]
+
+
+def test_plan_output_formatting():
+    """Test for alternative plan output formats"""
+
+    # Put a plan in handler.context manually.
+    plan = Plan(
+        name="my-plan",
+        description=dedent("""\
+            Summary of description
+
+            Rest of description
+            """),
+        model=ExtendedModel,
+    )
+    plans = PlanResponse(plans=[PlanModel.from_plan(plan)])
+
+    compact = dedent("""\
+                my-plan
+                    Summary of description
+                    Args
+                      name=string (Required)
+                      keys=[integer] (Required)
+                      metadata=object
+                """)
+
+    output = StringIO()
+    OutputFormat.COMPACT.display(plans, out=output)
+    assert output.getvalue() == compact
+
+    # json outputs valid json
+    output = StringIO()
+    OutputFormat.JSON.display(plans, out=output)
+    json_out = dedent("""\
+                [
+                  {
+                    "name": "my-plan",
+                    "description": "Summary of description\\n\\nRest of description\\n",
+                    "parameter_schema": {
+                      "title": "ExtendedModel",
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "keys": {
+                          "title": "Keys",
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "metadata": {
+                          "title": "Metadata",
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "keys"
+                      ]
+                    }
+                  }
+                ]
+                """)
+    assert output.getvalue() == json_out
+    _ = json.loads(output.getvalue())
+
+    output = StringIO()
+    OutputFormat.FULL.display(plans, out=output)
+    full = dedent("""\
+            my-plan
+                Summary of description
+
+                Rest of description
+                Schema
+                    {
+                      "title": "ExtendedModel",
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "keys": {
+                          "title": "Keys",
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        },
+                        "metadata": {
+                          "title": "Metadata",
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "keys"
+                      ]
+                    }
+            """)
+    assert output.getvalue() == full
+
+
+def test_unknown_object_formatting():
+    demo = {"foo": 42, "bar": ["hello", "World"]}
+
+    output = StringIO()
+    OutputFormat.JSON.display(demo, output)
+    exp = """{"foo": 42, "bar": ["hello", "World"]}\n"""
+    assert exp == output.getvalue()
+
+    output = StringIO()
+    OutputFormat.COMPACT.display(demo, output)
+    exp = """{'bar': ['hello', 'World'], 'foo': 42}\n"""
+    assert exp == output.getvalue()
+
+    output = StringIO()
+    OutputFormat.FULL.display(demo, output)
+    assert exp == output.getvalue()
+
+
+def test_generic_base_model_formatting():
+    output = StringIO()
+    obj = ExtendedModel(name="foo", keys=[1, 2, 3], metadata={"fizz": "buzz"})
+    exp = dedent("""\
+            {
+              "name": "foo",
+              "keys": [
+                1,
+                2,
+                3
+              ],
+              "metadata": {
+                "fizz": "buzz"
+              }
+            }
+            """)
+    OutputFormat.JSON.display(obj, output)
+    assert exp == output.getvalue()
+
+
+@patch("blueapi.cli.cli.setup_scratch")
+def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliRunner):
+    expected_config = ScratchConfig(
+        root=Path("/tmp"),
+        repositories=[
+            ScratchRepository(
+                name="dodal",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+            )
+        ],
+    )
+
+    result = runner.invoke(
+        main,
+        ["-c", "tests/example_yaml/scratch.yaml", "setup-scratch"],
+        input="\n",
+    )
+    assert result.exit_code == 0
+    mock_setup_scratch.assert_called_once_with(expected_config)

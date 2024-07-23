@@ -1,31 +1,47 @@
-import json
+import uuid
+from collections.abc import Iterator
 from dataclasses import dataclass
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from bluesky.run_engine import RunEngineStateMachine
 from fastapi import status
 from fastapi.testclient import TestClient
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
+from pydantic.error_wrappers import ErrorWrapper
+from super_state_machine.errors import TransitionError
 
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.handler import Handler
-from blueapi.service.main import get_handler, setup_handler, teardown_handler
-from blueapi.service.model import WorkerTask
+from blueapi.service import main
+from blueapi.service.model import (
+    DeviceModel,
+    PlanModel,
+    StateChangeRequest,
+    WorkerTask,
+)
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask
 
-_TASK = Task(name="count", params={"detectors": ["x"]})
+
+@pytest.fixture
+def client() -> Iterator[TestClient]:
+    with (
+        patch("blueapi.service.runner.start_worker"),
+        patch("blueapi.service.runner.stop_worker"),
+    ):
+        main.setup_runner(use_subprocess=False)
+        yield TestClient(main.app)
+        main.teardown_runner()
 
 
-def test_get_plans(handler: Handler, client: TestClient) -> None:
+@patch("blueapi.service.interface.get_plans")
+def test_get_plans(get_plans_mock: MagicMock, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
 
     plan = Plan(name="my-plan", model=MyModel)
+    get_plans_mock.return_value = [PlanModel.from_plan(plan)]
 
-    handler._context.plans = {"my-plan": plan}
     response = client.get("/plans")
 
     assert response.status_code == status.HTTP_200_OK
@@ -45,15 +61,17 @@ def test_get_plans(handler: Handler, client: TestClient) -> None:
     }
 
 
-def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
+@patch("blueapi.service.interface.get_plan")
+def test_get_plan_by_name(get_plan_mock: MagicMock, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
 
     plan = Plan(name="my-plan", model=MyModel)
+    get_plan_mock.return_value = PlanModel.from_plan(plan)
 
-    handler._context.plans = {"my-plan": plan}
     response = client.get("/plans/my-plan")
 
+    get_plan_mock.assert_called_once_with("my-plan")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "description": None,
@@ -67,99 +85,26 @@ def test_get_plan_by_name(handler: Handler, client: TestClient) -> None:
     }
 
 
-def test_get_plan_with_device_reference(handler: Handler, client: TestClient) -> None:
-    response = client.get("/plans/count")
-
-    assert response.status_code == status.HTTP_200_OK
-    assert (
-        response.json()
-        == {
-            "description": "\n"
-            "    Take `n` readings from a device\n"
-            "\n"
-            "    Args:\n"
-            "        detectors (List[Readable]): Readable devices to read\n"
-            "        num (int, optional): Number of readings to take. "
-            "Defaults to 1.\n"
-            "        delay (Optional[Union[float, List[float]]], "
-            "optional): Delay between readings.\n"
-            "                                                               "
-            "Defaults to None.\n"
-            "        metadata (Optional[Mapping[str, Any]], optional): "
-            "Key-value metadata to include\n"
-            "                                                          in "
-            "exported data.\n"
-            "                                                          "
-            "Defaults to None.\n"
-            "\n"
-            "    Returns:\n"
-            "        MsgGenerator: _description_\n"
-            "\n"
-            "    Yields:\n"
-            "        Iterator[MsgGenerator]: _description_\n"
-            "    ",
-            "name": "count",
-            "schema": {
-                "additionalProperties": False,
-                "properties": {
-                    "delay": {
-                        "anyOf": [
-                            {"type": "number"},
-                            {"items": {"type": "number"}, "type": "array"},
-                        ],
-                        "title": "Delay",
-                    },
-                    "detectors": {
-                        "items": {"type": "bluesky.protocols.Readable"},
-                        "title": "Detectors",
-                        "type": "array",
-                    },
-                    "metadata": {"title": "Metadata", "type": "object"},
-                    "num": {"title": "Num", "type": "integer"},
-                },
-                "required": ["detectors"],
-                "title": "count",
-                "type": "object",
-            },
-        }
-        != {
-            "name": "count",
-            "properties": {
-                "delay": {
-                    "anyOf": [
-                        {"type": "number"},
-                        {"items": {"type": "number"}, "type": "array"},
-                    ],
-                    "title": "Delay",
-                },
-                "detectors": {
-                    "items": {"type": "bluesky.protocols.Readable"},
-                    "title": "Detectors",
-                    "type": "array",
-                },
-                "metadata": {"title": "Metadata", "type": "object"},
-                "num": {"title": "Num", "type": "integer"},
-            },
-            "required": ["detectors"],
-        }
-    )
-
-
-def test_get_non_existant_plan_by_name(handler: Handler, client: TestClient) -> None:
+@patch("blueapi.service.interface.get_plan")
+def test_get_non_existant_plan_by_name(
+    get_plan_mock: MagicMock, client: TestClient
+) -> None:
+    get_plan_mock.side_effect = KeyError("my-plan")
     response = client.get("/plans/my-plan")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "Item not found"}
 
 
-def test_get_devices(handler: Handler, client: TestClient) -> None:
+@patch("blueapi.service.interface.get_devices")
+def test_get_devices(get_devices_mock: MagicMock, client: TestClient) -> None:
     @dataclass
     class MyDevice:
         name: str
 
     device = MyDevice("my-device")
+    get_devices_mock.return_value = [DeviceModel.from_device(device)]
 
-    handler._context.devices = {"my-device": device}
     response = client.get("/devices")
 
     assert response.status_code == status.HTTP_200_OK
@@ -173,16 +118,18 @@ def test_get_devices(handler: Handler, client: TestClient) -> None:
     }
 
 
-def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
+@patch("blueapi.service.interface.get_device")
+def test_get_device_by_name(get_device_mock: MagicMock, client: TestClient) -> None:
     @dataclass
     class MyDevice:
         name: str
 
     device = MyDevice("my-device")
 
-    handler._context.devices = {"my-device": device}
+    get_device_mock.return_value = DeviceModel.from_device(device)
     response = client.get("/devices/my-device")
 
+    get_device_mock.assert_called_once_with("my-device")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "name": "my-device",
@@ -190,388 +137,427 @@ def test_get_device_by_name(handler: Handler, client: TestClient) -> None:
     }
 
 
-def test_get_non_existant_device_by_name(handler: Handler, client: TestClient) -> None:
+@patch("blueapi.service.interface.get_device")
+def test_get_non_existent_device_by_name(
+    get_device_mock: MagicMock, client: TestClient
+) -> None:
+    get_device_mock.side_effect = KeyError("my-device")
     response = client.get("/devices/my-device")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "Item not found"}
 
 
-def test_create_task(handler: Handler, client: TestClient) -> None:
-    response = client.post("/tasks", json=_TASK.dict())
-    task_id = response.json()["task_id"]
-
-    t = handler.get_task_by_id(task_id)
-    assert t is not None
-    assert t.task == _TASK
-
-
-def test_put_plan_begins_task(handler: Handler, client: TestClient) -> None:
-    handler.start()
-    response = client.post("/tasks", json=_TASK.dict())
-    task_id = response.json()["task_id"]
-
-    task_json = {"task_id": task_id}
-    client.put("/worker/task", json=task_json)
-
-    resp = client.get("/worker/task")
-    assert resp.status_code == 200
-    active_task = WorkerTask(**resp.json())
-    assert active_task is not None
-    assert active_task.task_id == task_id
-    handler.stop()
-
-
-def test_worker_task_is_none_on_startup(handler: Handler, client: TestClient) -> None:
-    handler.start()
-    resp = client.get("/worker/task")
-    assert resp.status_code == 200
-    active_task = WorkerTask(**resp.json())
-    assert active_task.task_id is None
-    handler.stop()
-
-
-def test_get_worker_task(handler: Handler, client: TestClient) -> None:
-    handler.start()
-    response = client.post("/tasks", json=_TASK.dict())
-    task_id = response.json()["task_id"]
-
-    task_json = {"task_id": task_id}
-    client.put("/worker/task", json=task_json)
-
-    active_task = handler.active_task
-    assert active_task is not None
-    assert active_task.task_id == task_id
-    handler.stop()
-
-
-def test_put_plan_with_unknown_plan_name_fails(
-    handler: Handler, client: TestClient
+@patch("blueapi.service.interface.submit_task")
+@patch("blueapi.service.interface.get_plan")
+def test_create_task(
+    get_plan_mock: MagicMock, submit_task_mock: MagicMock, client: TestClient
 ) -> None:
-    task_name = "foo"
-    task_params = {"detectors": ["x"]}
-    task_json = {"name": task_name, "params": task_params}
+    task = Task(name="count", params={"detectors": ["x"]})
+    task_id = str(uuid.uuid4())
 
-    response = client.post("/tasks", json=task_json)
+    submit_task_mock.return_value = task_id
 
-    assert not handler.tasks
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    response = client.post("/tasks", json=task.dict())
 
-
-def test_get_plan_returns_posted_plan(handler: Handler, client: TestClient) -> None:
-    handler.start()
-    post_response = client.post("/tasks", json=_TASK.dict())
-    task_id = post_response.json()["task_id"]
-
-    str_map = json.load(client.get(f"/tasks/{task_id}"))  # type: ignore
-
-    assert str_map["task_id"] == task_id
-    assert str_map["task"] == _TASK.dict()
+    submit_task_mock.assert_called_once_with(task)
+    assert response.json() == {"task_id": task_id}
 
 
-def test_get_non_existant_plan_by_id(handler: Handler, client: TestClient) -> None:
-    response = client.get("/tasks/foo")
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": "Item not found"}
-
-
-def test_put_plan_with_bad_params_fails(handler: Handler, client: TestClient) -> None:
-    task_name = "count"
-    task_params = {"motors": ["x"]}
-    task_json = {"name": task_name, "params": task_params}
-
-    response = client.post("/tasks", json=task_json)
-
-    assert not handler.tasks
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-
-
-def test_get_state_updates(handler: Handler, client: TestClient) -> None:
-    assert client.get("/worker/state").text == f'"{WorkerState.IDLE.name}"'
-    handler._worker._on_state_change(  # type: ignore
-        RunEngineStateMachine.States.RUNNING
-    )
-    assert client.get("/worker/state").text == f'"{WorkerState.RUNNING.name}"'
-
-
-@pytest.fixture
-def mockable_state_machine(handler: Handler):
-    def set_state(state: RunEngineStateMachine.States):
-        handler._context.run_engine.state = state  # type: ignore
-        handler._worker._on_state_change(state)  # type: ignore
-
-    def pause(_: bool):
-        set_state(RunEngineStateMachine.States.PAUSED)
-
-    def run():
-        set_state(RunEngineStateMachine.States.RUNNING)
-
-    mock_pause = handler._context.run_engine.request_pause = MagicMock()  # type: ignore
-    mock_pause.side_effect = pause
-    mock_resume = handler._context.run_engine.resume = MagicMock()  # type: ignore
-    mock_resume.side_effect = run
-    yield handler
-
-
-def test_running_while_idle_denied(
-    mockable_state_machine: Handler, client: TestClient
+@patch("blueapi.service.interface.submit_task")
+@patch("blueapi.service.interface.get_plan")
+def test_create_task_validation_error(
+    get_plan_mock: MagicMock, submit_task_mock: MagicMock, client: TestClient
 ) -> None:
-    re = mockable_state_machine._context.run_engine
+    class MyModel(BaseModel):
+        id: str
 
-    assert client.get("/worker/state").text == f'"{WorkerState.IDLE.name}"'
-    response = client.put("/worker/state", json={"new_state": WorkerState.RUNNING.name})
-    assert response.status_code is status.HTTP_400_BAD_REQUEST
-    assert response.text == f'"{WorkerState.IDLE.name}"'
-    assert not re.request_pause.called  # type: ignore
-    assert not re.resume.called  # type: ignore
-    assert client.get("/worker/state").text == f'"{WorkerState.IDLE.name}"'
+    plan = Plan(name="my-plan", model=MyModel)
+    get_plan_mock.return_value = PlanModel.from_plan(plan)
 
-
-def test_pausing_while_idle_denied(
-    mockable_state_machine: Handler, client: TestClient
-) -> None:
-    re = mockable_state_machine._context.run_engine
-
-    assert client.get("/worker/state").text == f'"{WorkerState.IDLE.name}"'
-    response = client.put("/worker/state", json={"new_state": WorkerState.PAUSED.name})
-    assert response.status_code is status.HTTP_400_BAD_REQUEST
-    assert response.text == f'"{WorkerState.IDLE.name}"'
-    assert not re.request_pause.called  # type: ignore
-    assert not re.resume.called  # type: ignore
-    assert client.get("/worker/state").text == f'"{WorkerState.IDLE.name}"'
-
-
-@pytest.mark.parametrize("defer", [True, False, None])
-def test_calls_pause_if_running(
-    mockable_state_machine: Handler, client: TestClient, defer: bool | None
-) -> None:
-    re = mockable_state_machine._context.run_engine
-    mockable_state_machine._worker._on_state_change(  # type: ignore
-        RunEngineStateMachine.States.RUNNING
+    submit_task_mock.side_effect = ValidationError(
+        [ErrorWrapper(ValueError("field required"), "id")], PlanModel
     )
 
-    assert client.get("/worker/state").text == f'"{WorkerState.RUNNING.name}"'
-    response = client.put(
-        "/worker/state", json={"new_state": WorkerState.PAUSED.name, "defer": defer}
-    )
-    assert response.status_code is status.HTTP_202_ACCEPTED
-    assert response.text == f'"{WorkerState.PAUSED.name}"'
-    assert re.request_pause.called  # type: ignore
-    re.request_pause.assert_called_with(defer)  # type: ignore
-    assert not re.resume.called  # type: ignore
-    assert client.get("/worker/state").text == f'"{WorkerState.PAUSED.name}"'
-
-
-def test_pause_and_resume(mockable_state_machine: Handler, client: TestClient) -> None:
-    re = mockable_state_machine._context.run_engine
-    mockable_state_machine._worker._on_state_change(  # type: ignore
-        RunEngineStateMachine.States.RUNNING
-    )
-
-    assert client.get("/worker/state").text == f'"{WorkerState.RUNNING.name}"'
-    response = client.put("/worker/state", json={"new_state": WorkerState.PAUSED.name})
-    assert response.status_code is status.HTTP_202_ACCEPTED
-    assert response.text == f'"{WorkerState.PAUSED.name}"'
-    assert re.request_pause.call_count == 1  # type: ignore
-    assert not re.resume.called  # type: ignore
-    assert client.get("/worker/state").text == f'"{WorkerState.PAUSED.name}"'
-
-    response = client.put("/worker/state", json={"new_state": WorkerState.RUNNING.name})
-    assert response.status_code is status.HTTP_202_ACCEPTED
-    assert response.text == f'"{WorkerState.RUNNING.name}"'
-    assert re.request_pause.call_count == 1  # type: ignore
-    assert re.resume.call_count == 1  # type: ignore
-    assert client.get("/worker/state").text == f'"{WorkerState.RUNNING.name}"'
-
-
-def test_clear_pending_task_no_longer_pending(handler: Handler, client: TestClient):
-    response = client.post("/tasks", json=_TASK.dict())
-    task_id = response.json()["task_id"]
-
-    t = handler.get_task_by_id(task_id)
-    assert t is not None
-    assert t.task == _TASK
-
-    delete_response = client.delete(f"/tasks/{task_id}")
-    assert delete_response.status_code is status.HTTP_200_OK
-    assert not handler.tasks
-    assert handler.get_task_by_id(task_id) is None
-
-
-def test_clear_not_pending_task_not_found(handler: Handler, client: TestClient):
-    response = client.post("/tasks", json=_TASK.dict())
-    task_id = response.json()["task_id"]
-
-    pending = handler.get_task_by_id(task_id)
-    assert pending is not None
-    assert pending.task == _TASK
-
-    delete_response = client.delete("/tasks/wrong-task-id")
-    assert delete_response.status_code is status.HTTP_404_NOT_FOUND
-    pending = handler.get_task_by_id(task_id)
-    assert pending is not None
-    assert pending.task == _TASK
-
-
-def test_clear_when_empty(handler: Handler, client: TestClient):
-    pending = handler.tasks
-    assert not pending
-
-    delete_response = client.delete("/tasks/wrong-task-id")
-    assert delete_response.status_code is status.HTTP_404_NOT_FOUND
-    assert not handler.tasks
-
-
-@pytest.mark.parametrize(
-    "worker_state,stops,aborts",
-    [(WorkerState.STOPPING, 1, 0), (WorkerState.ABORTING, 0, 1)],
-)
-def test_delete_running_task(
-    mockable_state_machine: Handler,
-    client: TestClient,
-    worker_state: WorkerState,
-    stops: int,
-    aborts: int,
-):
-    stop = mockable_state_machine._context.run_engine.stop = MagicMock()  # type: ignore
-    abort = mockable_state_machine._context.run_engine.abort = (  # type: ignore
-        MagicMock()
-    )
-
-    def start_task(_: str):
-        mockable_state_machine._worker._current = (  # type: ignore
-            mockable_state_machine._worker.get_task_by_id(task_id)
-        )
-        mockable_state_machine._worker._on_state_change(  # type: ignore
-            RunEngineStateMachine.States.RUNNING
-        )
-
-    mockable_state_machine._worker.begin_task = start_task  # type: ignore
-    response = client.post("/tasks", json=_TASK.dict())
-    task_id = response.json()["task_id"]
-
-    task_json = {"task_id": task_id}
-    client.put("/worker/task", json=task_json)
-
-    active_task = mockable_state_machine.active_task
-    assert active_task is not None
-    assert active_task.task_id == task_id
-
-    response = client.put("/worker/state", json={"new_state": worker_state.name})
-    assert response.status_code is status.HTTP_202_ACCEPTED
-    assert stop.call_count is stops
-    assert abort.call_count is aborts
-
-
-def test_reason_passed_to_abort(mockable_state_machine: Handler, client: TestClient):
-    abort = mockable_state_machine._context.run_engine.abort = (  # type: ignore
-        MagicMock()
-    )
-
-    def start_task(_: str):
-        mockable_state_machine._worker._current = (  # type: ignore
-            mockable_state_machine._worker.get_task_by_id(task_id)
-        )
-        mockable_state_machine._worker._on_state_change(  # type: ignore
-            RunEngineStateMachine.States.RUNNING
-        )
-
-    mockable_state_machine._worker.begin_task = start_task  # type: ignore
-    response = client.post("/tasks", json=_TASK.dict())
-    task_id = response.json()["task_id"]
-
-    task_json = {"task_id": task_id}
-    client.put("/worker/task", json=task_json)
-
-    active_task = mockable_state_machine._worker.get_active_task()
-    assert active_task is not None
-    assert active_task.task_id == task_id
-
-    response = client.put(
-        "/worker/state", json={"new_state": WorkerState.ABORTING.name, "reason": "foo"}
-    )
-    assert response.status_code is status.HTTP_202_ACCEPTED
-    assert abort.call_args == call("foo")
-
-
-@pytest.mark.parametrize(
-    "worker_state",
-    [WorkerState.ABORTING, WorkerState.STOPPING],
-)
-def test_current_complete_returns_400(
-    mockable_state_machine: Handler, client: TestClient, worker_state: WorkerState
-):
-    mockable_state_machine._worker._current = MagicMock()  # type: ignore
-    mockable_state_machine._worker._current.is_complete = True  # type: ignore
-
-    # As _current.is_complete, necessarily state of run_engine is IDLE
-    response = client.put(
-        "/worker/state", json={"new_state": WorkerState.ABORTING.name, "reason": "foo"}
-    )
-    assert response.status_code is status.HTTP_400_BAD_REQUEST
-
-
-def test_get_environment(handler: Handler, client: TestClient) -> None:
-    assert client.get("/environment").json() == {
-        "initialized": False,
-        "error_message": None,
+    response = client.post("/tasks", json={"name": "my-plan"})
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "\n"
+        "        Input validation failed: id: field required,\n"
+        "        suppplied params {},\n"
+        "        do not match the expected params: {'title': 'MyModel', "
+        "'type': 'object', 'properties': {'id': {'title': 'Id', 'type': "
+        "'string'}}, 'required': ['id']}\n"
+        "        "
     }
 
 
-def test_delete_environment(handler: Handler, client: TestClient) -> None:
-    handler._initialized = True
-    assert client.delete("/environment").status_code is status.HTTP_200_OK
+@patch("blueapi.service.interface.begin_task")
+@patch("blueapi.service.interface.get_active_task")
+def test_put_plan_begins_task(
+    get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id = "04cd9aa6-b902-414b-ae4b-49ea4200e957"
+
+    # Set to idle
+    get_active_task_mock.return_value = None
+    begin_task_mock.return_value = WorkerTask(task_id=task_id)
+
+    resp = client.put("/worker/task", json={"task_id": task_id})
+
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.json() == {"task_id": task_id}
 
 
-def test_teardown_handler():
-    setup_handler()
-    assert get_handler() is not None
-    teardown_handler()
-    with pytest.raises(ValueError):
-        get_handler()
+@patch("blueapi.service.interface.get_active_task")
+def test_put_plan_fails_if_not_idle(
+    get_active_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id_current = "260f7de3-b608-4cdc-a66c-257e95809792"
+    task_id_new = "07e98d68-21b5-4ad7-ac34-08b2cb992d42"
+
+    # Set to non idle
+    get_active_task_mock.return_value = TrackableTask(
+        task=None, task_id=task_id_current, is_complete=False
+    )
+
+    resp = client.put("/worker/task", json={"task_id": task_id_new})
+
+    assert resp.status_code == status.HTTP_409_CONFLICT
+    assert resp.json() == {"detail": "Worker already active"}
 
 
-def test_teardown_handler_does_not_raise():
-    assert teardown_handler() is None
+@patch("blueapi.service.interface.get_tasks")
+def test_get_tasks(get_tasks_mock: MagicMock, client: TestClient) -> None:
+    tasks = [
+        TrackableTask(task_id="0", task=Task(name="sleep", params={"time": 0.0})),
+        TrackableTask(
+            task_id="1",
+            task=Task(name="first_task"),
+            is_complete=False,
+            is_pending=True,
+        ),
+    ]
+
+    get_tasks_mock.return_value = tasks
+
+    response = client.get("/tasks")
+    assert response.status_code == status.HTTP_200_OK
+
+    assert response.json() == {
+        "tasks": [
+            {
+                "errors": [],
+                "is_complete": False,
+                "is_pending": True,
+                "task": {"name": "sleep", "params": {"time": 0.0}},
+                "task_id": "0",
+            },
+            {
+                "errors": [],
+                "is_complete": False,
+                "is_pending": True,
+                "task": {"name": "first_task", "params": {}},
+                "task_id": "1",
+            },
+        ]
+    }
 
 
-tasks_data = [
-    TrackableTask(
-        task_id="1", task=Task(name="first_task"), is_complete=False, is_pending=False
-    ),
-    TrackableTask(
-        task_id="2", task=Task(name="first_task"), is_complete=False, is_pending=True
-    ),
-]
+@patch("blueapi.service.interface.get_tasks_by_status")
+def test_get_tasks_by_status(
+    get_tasks_by_status_mock: MagicMock, client: TestClient
+) -> None:
+    tasks = [
+        TrackableTask(
+            task_id="3",
+            task=Task(name="third_task"),
+            is_complete=True,
+            is_pending=False,
+        ),
+    ]
+
+    get_tasks_by_status_mock.return_value = tasks
+
+    response = client.get("/tasks", params={"task_status": "PENDING"})
+    assert response.json() == {
+        "tasks": [
+            {
+                "errors": [],
+                "is_complete": True,
+                "is_pending": False,
+                "task": {"name": "third_task", "params": {}},
+                "task_id": "3",
+            }
+        ]
+    }
 
 
-def test_get_unstarted_tasks(handler: Handler, client: TestClient):
-    # handler.tasks = tasks_data  # overriding the property
-    with patch.object(handler._worker, "get_tasks_by_status", return_value=tasks_data):
-        response = client.get("/tasks/?task_status=pending")
-        assert response.status_code == 200
-        r = response.json()
-        assert len(r) == 1  # As per our mock data, only 1 task should be 'unstarted'
-        assert (
-            r["tasks"][0]["task_id"] == "1"
-        )  # Check that the correct task ID is returned
+def test_get_tasks_by_status_invalid(client: TestClient) -> None:
+    response = client.get("/tasks", params={"task_status": "AN_INVALID_STATUS"})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_get_tasks_bad_status(handler: Handler, client: TestClient):
-    with patch.object(handler._worker, "get_tasks_by_status", return_value=tasks_data):
-        response = client.get("/tasks/?task_status=invalid")
-        assert response.status_code == 400
-        assert "Invalid status query parameter" in response.json()["detail"]
+@patch("blueapi.service.interface.clear_task")
+def test_delete_submitted_task(clear_task_mock: MagicMock, client: TestClient) -> None:
+    task_id = str(uuid.uuid4())
+    clear_task_mock.return_value = task_id
+    response = client.delete(f"/tasks/{task_id}")
+    assert response.json() == {"task_id": f"{task_id}"}
 
 
-def test_get_just_all_tasks(handler: Handler, client: TestClient):
-    with patch.object(handler._worker, "get_tasks", return_value=tasks_data):
-        response = client.get("/tasks")
-        assert response.status_code == 200
-        r = response.json()
-        response_tasks = r["tasks"]
-        assert len(response_tasks) == 2
-        assert (
-            response_tasks[0]["task_id"] == "1"
-        )  # Check that the correct task ID is returned
+@patch("blueapi.service.interface.begin_task")
+@patch("blueapi.service.interface.get_active_task")
+def test_set_active_task(
+    get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id = str(uuid.uuid4())
+    task = WorkerTask(task_id=task_id)
+
+    response = client.put("/worker/task", json=task.dict())
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"task_id": f"{task_id}"}
+
+
+@patch("blueapi.service.interface.begin_task")
+@patch("blueapi.service.interface.get_active_task")
+def test_set_active_task_active_task_complete(
+    get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id = str(uuid.uuid4())
+    task = WorkerTask(task_id=task_id)
+
+    get_active_task_mock.return_value = TrackableTask(
+        task_id="1",
+        task=Task(name="a_completed_task"),
+        is_complete=True,
+        is_pending=False,
+    )
+
+    response = client.put("/worker/task", json=task.dict())
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"task_id": f"{task_id}"}
+
+
+@patch("blueapi.service.interface.begin_task")
+@patch("blueapi.service.interface.get_active_task")
+def test_set_active_task_worker_already_running(
+    get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id = str(uuid.uuid4())
+    task = WorkerTask(task_id=task_id)
+
+    get_active_task_mock.return_value = TrackableTask(
+        task_id="1",
+        task=Task(name="a_running_task"),
+        is_complete=False,
+        is_pending=False,
+    )
+
+    response = client.put("/worker/task", json=task.dict())
+
+    assert response.status_code == status.HTTP_409_CONFLICT
+    assert response.json() == {"detail": "Worker already active"}
+
+
+@patch("blueapi.service.interface.get_task_by_id")
+def test_get_task(get_task_by_id: MagicMock, client: TestClient):
+    task_id = str(uuid.uuid4())
+    task = TrackableTask(
+        task_id=task_id,
+        task=Task(name="third_task"),
+    )
+
+    get_task_by_id.return_value = task
+
+    response = client.get(f"/tasks/{task_id}")
+    assert response.json() == {
+        "errors": [],
+        "is_complete": False,
+        "is_pending": True,
+        "task": {"name": "third_task", "params": {}},
+        "task_id": f"{task_id}",
+    }
+
+
+@patch("blueapi.service.interface.get_task_by_id")
+def test_get_task_error(get_task_by_id_mock: MagicMock, client: TestClient):
+    task_id = 567
+    get_task_by_id_mock.return_value = None
+
+    response = client.get(f"/tasks/{task_id}")
+    assert response.json() == {"detail": "Item not found"}
+
+
+@patch("blueapi.service.interface.get_active_task")
+def test_get_active_task(get_active_task_mock: MagicMock, client: TestClient):
+    task_id = str(uuid.uuid4())
+    task = TrackableTask(
+        task_id=task_id,
+        task=Task(name="third_task"),
+    )
+    get_active_task_mock.return_value = task
+
+    response = client.get("/worker/task")
+
+    assert response.json() == {"task_id": f"{task_id}"}
+
+
+@patch("blueapi.service.interface.get_active_task")
+def test_get_active_task_none(get_active_task_mock: MagicMock, client: TestClient):
+    get_active_task_mock.return_value = None
+
+    response = client.get("/worker/task")
+
+    assert response.json() == {"task_id": None}
+
+
+@patch("blueapi.service.interface.get_worker_state")
+def test_get_state(get_worker_state_mock: MagicMock, client: TestClient):
+    state = WorkerState.SUSPENDING
+    get_worker_state_mock.return_value = state
+
+    response = client.get("/worker/state")
+    assert response.json() == state
+
+
+@patch("blueapi.service.interface.pause_worker")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_running_to_paused(
+    get_worker_state_mock: MagicMock, pause_worker_mock: MagicMock, client: TestClient
+):
+    current_state = WorkerState.RUNNING
+    final_state = WorkerState.PAUSED
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state", json=StateChangeRequest(new_state=final_state).dict()
+    )
+
+    pause_worker_mock.assert_called_once_with(False)
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.resume_worker")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_paused_to_running(
+    get_worker_state_mock: MagicMock, resume_worker_mock: MagicMock, client: TestClient
+):
+    current_state = WorkerState.PAUSED
+    final_state = WorkerState.RUNNING
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state", json=StateChangeRequest(new_state=final_state).dict()
+    )
+
+    resume_worker_mock.assert_called_once()
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.cancel_active_task")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_running_to_aborting(
+    get_worker_state_mock: MagicMock,
+    cancel_active_task_mock: MagicMock,
+    client: TestClient,
+):
+    current_state = WorkerState.RUNNING
+    final_state = WorkerState.ABORTING
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state", json=StateChangeRequest(new_state=final_state).dict()
+    )
+
+    cancel_active_task_mock.assert_called_once_with(True, None)
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.cancel_active_task")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_running_to_stopping_including_reason(
+    get_worker_state_mock: MagicMock,
+    cancel_active_task_mock: MagicMock,
+    client: TestClient,
+):
+    current_state = WorkerState.RUNNING
+    final_state = WorkerState.STOPPING
+    reason = "blueapi is being stopped"
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state",
+        json=StateChangeRequest(new_state=final_state, reason=reason).dict(),
+    )
+
+    cancel_active_task_mock.assert_called_once_with(False, reason)
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.cancel_active_task")
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_transition_error(
+    get_worker_state_mock: MagicMock,
+    cancel_active_task_mock: MagicMock,
+    client: TestClient,
+):
+    current_state = WorkerState.RUNNING
+    final_state = WorkerState.STOPPING
+
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    cancel_active_task_mock.side_effect = TransitionError()
+
+    response = client.put(
+        "/worker/state",
+        json=StateChangeRequest(new_state=final_state).dict(),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json() == final_state
+
+
+@patch("blueapi.service.interface.get_worker_state")
+def test_set_state_invalid_transition(
+    get_worker_state_mock: MagicMock, client: TestClient
+):
+    current_state = WorkerState.STOPPING
+    requested_state = WorkerState.PAUSED
+    final_state = WorkerState.STOPPING
+
+    get_worker_state_mock.side_effect = [current_state, final_state]
+
+    response = client.put(
+        "/worker/state",
+        json=StateChangeRequest(new_state=requested_state).dict(),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json() == final_state
+
+
+def test_get_environment_idle(client: TestClient) -> None:
+    assert client.get("/environment").json() == {
+        "initialized": True,
+        "error_message": "",
+    }
+
+
+def test_delete_environment(client: TestClient) -> None:
+    response = client.delete("/environment")
+    assert response.status_code is status.HTTP_200_OK
+
+
+@patch("blueapi.service.runner.Pool")
+def test_subprocess_enabled_by_default(mp_pool_mock: MagicMock):
+    """Ensure that in the default rest app a subprocess runner is used"""
+    main.setup_runner()
+    mp_pool_mock.assert_called_once()
+    main.teardown_runner()

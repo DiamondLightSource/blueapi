@@ -4,14 +4,14 @@ from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from textwrap import dedent
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 import responses
 from click.testing import CliRunner
-from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
 from requests.exceptions import ConnectionError
+from responses import matchers
 
 from blueapi import __version__
 from blueapi.cli.cli import main
@@ -19,7 +19,6 @@ from blueapi.cli.event_bus_client import BlueskyRemoteError
 from blueapi.cli.format import OutputFormat
 from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.handler import Handler, teardown_handler
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -29,13 +28,6 @@ from blueapi.service.model import (
 )
 
 
-@pytest.fixture(autouse=True)
-def ensure_handler_teardown(request):
-    yield
-    if "handler" in request.keywords:
-        teardown_handler()
-
-
 @pytest.fixture
 def runner():
     return CliRunner()
@@ -43,7 +35,6 @@ def runner():
 
 def test_cli_version(runner: CliRunner):
     result = runner.invoke(main, ["--version"])
-
     assert result.stdout == f"blueapi, version {__version__}\n"
 
 
@@ -56,25 +47,17 @@ def test_main_no_params():
 
 
 @patch("requests.request")
-def test_connection_error_caught_by_wrapper_func(mock_requests: Mock):
+def test_connection_error_caught_by_wrapper_func(
+    mock_requests: Mock, runner: CliRunner
+):
     mock_requests.side_effect = ConnectionError()
-    runner = CliRunner()
     result = runner.invoke(main, ["controller", "plans"])
 
     assert result.stdout == "Failed to establish connection to FastAPI server.\n"
 
 
-# Some CLI commands require the rest api to be running...
-
-
 class MyModel(BaseModel):
     id: str
-
-
-class ExtendedModel(BaseModel):
-    name: str
-    keys: list[int]
-    metadata: None | Mapping[str, str]
 
 
 @dataclass
@@ -82,62 +65,36 @@ class MyDevice:
     name: str
 
 
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-@patch("requests.request")
-def test_get_plans_and_devices(
-    mock_requests: Mock,
-    mock_handler: Mock,
-    handler: Handler,
-    client: TestClient,
-    runner: CliRunner,
-):
-    """Integration test to test get_plans and get_devices."""
-
-    # needed so that the handler is instantiated as MockHandler() instead of Handler().
-    mock_handler.side_effect = Mock(return_value=handler)
-
-    # Setup the (Mock)Handler.
-    with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(main, ["serve"])
-
-    assert result.exit_code == 0
-
-    # Put a plan in handler.context manually.
+@responses.activate
+def test_get_plans(runner: CliRunner):
     plan = Plan(name="my-plan", model=MyModel)
-    handler._context.plans = {"my-plan": plan}
 
-    # Setup requests.get call to return the output of the FastAPI call for plans.
-    # Call the CLI function and check the output.
-    mock_requests.return_value = client.get("/plans")
+    response = responses.add(
+        responses.GET,
+        "http://localhost:8000/plans",
+        json=PlanResponse(plans=[PlanModel.from_plan(plan)]).dict(),
+        status=200,
+    )
+
     plans = runner.invoke(main, ["controller", "plans"])
+    assert response.call_count == 1
+    assert plans.output == "my-plan\n    Args\n      id=string (Required)\n"
 
-    assert plans.output == dedent("""\
-                my-plan
-                    Args
-                      id=string (Required)
-                """)
 
-    # Setup requests.get call to return the output of the FastAPI call for devices.
-    # Call the CLI function and check the output - expect nothing as no devices set.
-    handler._context.devices = {}
-    mock_requests.return_value = client.get("/devices")
-    unset_devices = runner.invoke(main, ["controller", "devices"])
-    assert unset_devices.output == ""
+@responses.activate
+def test_get_devices(runner: CliRunner):
+    device = MyDevice(name="my-device")
 
-    # Put a device in handler.context manually.
-    device = MyDevice("my-device")
-    handler._context.devices = {"my-device": device}
+    response = responses.add(
+        responses.GET,
+        "http://localhost:8000/devices",
+        json=DeviceResponse(devices=[DeviceModel.from_device(device)]).dict(),
+        status=200,
+    )
 
-    # Setup requests.get call to return the output of the FastAPI call for devices.
-    # Call the CLI function and check the output.
-    mock_requests.return_value = client.get("/devices")
-    devices = runner.invoke(main, ["controller", "devices"])
-
-    assert devices.output == dedent("""\
-            my-device
-                HasName
-            """)
+    plans = runner.invoke(main, ["controller", "devices"])
+    assert response.call_count == 1
+    assert plans.output == "my-device\n    HasName\n"
 
 
 def test_invalid_config_path_handling(runner: CliRunner):
@@ -146,55 +103,35 @@ def test_invalid_config_path_handling(runner: CliRunner):
     assert result.exit_code == 1
 
 
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-@patch("requests.request")
-def test_config_passed_down_to_command_children(
-    mock_requests: Mock,
-    mock_handler: Mock,
-    handler: Handler,
-    runner: CliRunner,
-):
-    mock_handler.side_effect = Mock(return_value=handler)
+@responses.activate
+def test_submit_plan(runner: CliRunner):
+    body_data = {"name": "sleep", "params": {"time": 5}}
+
+    response = responses.post(
+        url="http://a.fake.host:12345/tasks",
+        match=[matchers.json_params_matcher(body_data)],
+    )
+
     config_path = "tests/example_yaml/rest_config.yaml"
-
-    with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(main, ["-c", config_path, "serve"])
-
-    assert result.exit_code == 0
-
-    mock_requests.return_value = Mock()
-
     runner.invoke(
         main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
     )
 
-    assert mock_requests.call_args[0] == (
-        "POST",
-        "http://a.fake.host:12345/tasks",
-    )
-    assert mock_requests.call_args[1] == {
-        "json": {
-            "name": "sleep",
-            "params": {"time": 5},
-        }
-    }
+    assert response.call_count == 1
 
 
 def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
-    assert (
-        isinstance(result.exception, RuntimeError)
-        and str(result.exception) == "Message bus needs to be configured"
-    )
+    assert isinstance(result.exception, RuntimeError)
+    assert str(result.exception) == "Message bus needs to be configured"
 
 
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert result.exit_code == 1
+    assert isinstance(result.exception, RuntimeError)
     assert (
-        isinstance(result.exception, RuntimeError)
-        and str(result.exception)
+        str(result.exception)
         == "Cannot run plans without Stomp configuration to track progress"
     )
 
@@ -211,116 +148,56 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
         ],
         input="\n",
     )
+    assert (
+        result.output
+        == "Subscribing to all bluesky events from localhost:61613\nPress enter to exit"
+    )
     assert result.exit_code == 0
 
 
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-@patch("requests.request")
+@responses.activate
 def test_get_env(
-    mock_requests: Mock,
-    mock_handler: Mock,
-    handler: Handler,
-    client: TestClient,
     runner: CliRunner,
 ):
-    with patch("uvicorn.run", side_effect=None):
-        result = runner.invoke(main, ["serve"])
-
-    assert result.exit_code == 0
-
-    mock_requests.return_value = Mock()
-
-    runner.invoke(main, ["controller", "env"])
-
-    assert mock_requests.call_args[0] == (
-        "GET",
+    responses.add(
+        responses.GET,
         "http://localhost:8000/environment",
+        json=EnvironmentResponse(initialized=True).dict(),
+        status=200,
     )
 
+    env = runner.invoke(main, ["controller", "env"])
+    assert env.output == "initialized=True error_message=None\n"
 
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-@patch("blueapi.cli.rest.BlueapiRestClient.get_environment")
-@patch("blueapi.cli.rest.BlueapiRestClient.reload_environment")
+
+@responses.activate(assert_all_requests_are_fired=True)
 @patch("blueapi.cli.cli.sleep", return_value=None)
 def test_reset_env_client_behavior(
-    mock_sleep: MagicMock,
-    mock_reload_environment: Mock,
-    mock_get_environment: Mock,
-    mock_handler: Mock,
-    handler: Handler,
-    client: TestClient,
+    mock_sleep: Mock,
     runner: CliRunner,
 ):
-    # Configure the mock_requests to simulate different responses
-    # First two calls return not initialized, followed by an initialized response
-    mock_get_environment.side_effect = [
-        EnvironmentResponse(initialized=False),  # not initialized
-        EnvironmentResponse(initialized=False),  # not initialized
-        EnvironmentResponse(initialized=True),  # finally initalized
-    ]
-    mock_reload_environment.return_value = "Environment reload initiated."
+    responses.add(
+        responses.DELETE,
+        "http://localhost:8000/environment",
+        json=EnvironmentResponse(initialized=False).dict(),
+        status=200,
+    )
 
-    with patch("uvicorn.run", side_effect=None):
-        serve_result = runner.invoke(main, ["serve"])
+    env_state = [False, False, True]
 
-    assert serve_result.exit_code == 0
+    for state in env_state:
+        responses.add(
+            responses.GET,
+            "http://localhost:8000/environment",
+            json=EnvironmentResponse(initialized=state).dict(),
+            status=200,
+        )
 
     # Invoke the CLI command that would trigger the environment initialization check
     reload_result = runner.invoke(main, ["controller", "env", "-r"])
 
-    assert mock_get_environment.call_count == 3
-
     # Verify if sleep was called between polling iterations
     assert mock_sleep.call_count == 2  # Since the last check doesn't require a sleep
-
-    # Check if the final environment status is printed correctly
-    # assert "Environment is initialized." in result.output
-    assert (
-        reload_result.output
-        == "Reloading the environment...\nEnvironment reload initiated.\nWaiting for environment to initialize...\nWaiting for environment to initialize...\nEnvironment is initialized.\ninitialized=True error_message=None\n"  # noqa: E501
-    )
-
-
-@responses.activate
-@pytest.mark.handler
-@patch("blueapi.service.handler.Handler")
-@patch("blueapi.cli.cli.sleep", return_value=None)
-def test_env_endpoint_interaction(
-    mock_sleep: MagicMock, mock_handler: Mock, handler: Handler, runner: CliRunner
-):
-    # Setup mocked responses for the REST endpoints
-    responses.add(
-        responses.DELETE,
-        "http://localhost:8000/environment",
-        status=200,
-        json=EnvironmentResponse(initialized=False).dict(),
-    )
-    responses.add(
-        responses.GET,
-        "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=False).dict(),
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=False).dict(),
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        "http://localhost:8000/environment",
-        status=200,
-        json=EnvironmentResponse(initialized=True).dict(),
-    )
-
-    # Run the command that should interact with these endpoints
-    result = runner.invoke(main, ["controller", "env", "-r"])
-
-    # Check if the endpoints were hit as expected
-    assert len(responses.calls) == 4  # Ensures that all expected calls were made
 
     for index, call in enumerate(responses.calls):
         if index == 0:
@@ -330,18 +207,21 @@ def test_env_endpoint_interaction(
             assert call.request.method == "GET"
             assert call.request.url == "http://localhost:8000/environment"
 
-    # Check other assertions as needed, e.g., output or exit codes
-    assert result.exit_code == 0
-    assert "Environment is initialized." in result.output
+    # Check if the final environment status is printed correctly
+    # assert "Environment is initialized." in result.output
+    assert reload_result.output == dedent("""\
+                Reloading the environment...
+                initialized=False error_message=None
+                Waiting for environment to initialize...
+                Waiting for environment to initialize...
+                Environment is initialized.
+                initialized=True error_message=None
+                """)
 
 
-@pytest.mark.handler
 @responses.activate
-@patch("blueapi.service.handler.Handler")
 @patch("blueapi.cli.cli.sleep", return_value=None)
-def test_env_timeout(
-    mock_sleep: MagicMock, mock_handler: Mock, handler: Handler, runner: CliRunner
-):
+def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     max_polling_count = 10  # Assuming this is your max polling count in the command
 
     # Setup mocked responses for the REST endpoints
@@ -382,33 +262,27 @@ def test_env_timeout(
 
     # Check the output for the timeout message
     assert (
+        result.output
+        == "Reloading the environment...\ninitialized=False error_message=None\n"
+        + "Waiting for environment to initialize...\n" * 10
+    )
+    assert (
         result.exit_code == 1
     )  # Assuming your command exits successfully even on timeout for simplicity
 
 
-@pytest.mark.handler
 @responses.activate
-@patch("blueapi.service.handler.Handler")
-@patch("blueapi.cli.cli.sleep", return_value=None)
-def test_env_reload_server_side_error(
-    mock_sleep: MagicMock, mock_handler: Mock, handler: Handler, runner: CliRunner
-):
+def test_env_reload_server_side_error(runner: CliRunner):
     # Setup mocked error response from the server
     responses.add(
-        responses.DELETE,
-        "http://localhost:8000/environment",
-        status=500,
-        json={},
+        responses.DELETE, "http://localhost:8000/environment", status=500, json={}
     )
-    # Run the command that should interact with these endpoints
+
     result = runner.invoke(main, ["controller", "env", "-r"])
-    if result.exception is not None:
-        assert isinstance(
-            result.exception, BlueskyRemoteError
-        ), "Expected a BlueskyRemoteError"
-        assert result.exception.args[0] == "Failed to reload the environment"
-    else:
-        raise AssertionError("Expected an exception but got None")
+    assert isinstance(
+        result.exception, BlueskyRemoteError
+    ), "Expected a BlueskyRemoteError from cli runner"
+    assert result.exception.args[0] == "Failed to reload the environment"
 
     # Check if the endpoints were hit as expected
     assert len(responses.calls) == 1  # +1 for the DELETE call
@@ -418,17 +292,11 @@ def test_env_reload_server_side_error(
     assert responses.calls[0].request.url == "http://localhost:8000/environment"
 
     # Check the output for the timeout message
-    assert (
-        result.exit_code == 1
-    )  # Assuming your command exits successfully even on timeout for simplicity
+    # TODO this seems wrong but this is the current behaviour
+    # There should be an error message
+    assert result.output == "Reloading the environment...\n"
 
-
-@pytest.fixture
-def mock_config():
-    # Mock configuration setup
-    config = {"stomp": MagicMock()}
-    rest_client = MagicMock()
-    return {"config": config, "rest_client": rest_client}
+    assert result.exit_code == 1
 
 
 @pytest.mark.parametrize(
@@ -439,7 +307,7 @@ def mock_config():
         (ValueError("Error parsing parameters"), 1),
     ],
 )
-def test_error_handling(mock_config, exception, expected_exit_code, runner: CliRunner):
+def test_error_handling(exception, expected_exit_code, runner: CliRunner):
     # Patching the create_task method to raise different exceptions
     with patch("blueapi.cli.rest.BlueapiRestClient.create_task", side_effect=exception):
         result = runner.invoke(
@@ -453,7 +321,6 @@ def test_error_handling(mock_config, exception, expected_exit_code, runner: CliR
                 "'{\"time\": 5}'",
             ],
             input="\n",
-            obj=mock_config,
         )
         assert result.exit_code == expected_exit_code
 
@@ -499,10 +366,15 @@ def test_device_output_formatting():
     assert output.getvalue() == full
 
 
+class ExtendedModel(BaseModel):
+    name: str
+    keys: list[int]
+    metadata: None | Mapping[str, str]
+
+
 def test_plan_output_formatting():
     """Test for alternative plan output formats"""
 
-    # Put a plan in handler.context manually.
     plan = Plan(
         name="my-plan",
         description=dedent("""\

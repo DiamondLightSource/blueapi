@@ -10,7 +10,7 @@ from typing import Any, TextIO
 
 from pydantic import BaseModel
 
-from blueapi.service.model import DeviceResponse, PlanResponse
+from blueapi.service.worker.model import DeviceResponse, PlanResponse
 
 FALLBACK = pprint
 

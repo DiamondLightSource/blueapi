@@ -15,11 +15,11 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
-from blueapi.service import interface
+from blueapi.service.worker import main
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
-from .model import (
+from blueapi.service.worker.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
@@ -30,7 +30,7 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
-from .runner import WorkerDispatcher
+from blueapi.service.worker.runner import WorkerDispatcher
 
 REST_API_VERSION = "0.0.5"
 

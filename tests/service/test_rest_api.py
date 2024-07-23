@@ -11,8 +11,8 @@ from pydantic.error_wrappers import ErrorWrapper
 from super_state_machine.errors import TransitionError
 
 from blueapi.core.bluesky_types import Plan
-from blueapi.service import main
-from blueapi.service.model import (
+from blueapi.service.rest import main
+from blueapi.service.worker.model import (
     DeviceModel,
     PlanModel,
     StateChangeRequest,

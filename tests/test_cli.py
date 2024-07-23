@@ -19,7 +19,7 @@ from blueapi.cli.event_bus_client import BlueskyRemoteError
 from blueapi.cli.format import OutputFormat
 from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.model import (
+from blueapi.service.worker.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,

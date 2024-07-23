@@ -6,8 +6,8 @@ from multiprocessing.pool import Pool as PoolClass
 from typing import Any
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.interface import InitialisationException, start_worker, stop_worker
-from blueapi.service.model import (
+from blueapi.service.worker.main import InitialisationException, start_worker, stop_worker
+from blueapi.service.worker.model import (
     EnvironmentResponse,
 )
 

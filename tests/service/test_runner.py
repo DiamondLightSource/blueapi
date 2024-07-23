@@ -3,9 +3,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from blueapi.service import interface
-from blueapi.service.model import EnvironmentResponse
-from blueapi.service.runner import RunnerNotStartedError, WorkerDispatcher
+from blueapi.service.worker import main
+from blueapi.service.worker.model import EnvironmentResponse
+from blueapi.service.worker.runner import RunnerNotStartedError, WorkerDispatcher
 
 
 def test_initialize():

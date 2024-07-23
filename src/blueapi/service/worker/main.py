@@ -6,7 +6,7 @@ from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.messaging.base import MessagingTemplate
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
-from blueapi.service.model import (
+from blueapi.service.worker.model import (
     DeviceModel,
     PlanModel,
     WorkerTask,

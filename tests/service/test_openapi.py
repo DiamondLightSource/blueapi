@@ -4,12 +4,12 @@ from unittest.mock import Mock, PropertyMock
 import pytest
 import yaml
 
-from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
+from blueapi.service.rest.openapi import DOCS_SCHEMA_LOCATION, generate_schema
 
 
 @mock.patch("blueapi.service.openapi.app")
 def test_generate_schema(mock_app: Mock) -> None:
-    from blueapi.service.main import app
+    from blueapi.service.rest.main import app
 
     title = PropertyMock(return_value="title")
     version = PropertyMock(return_value=app.version)

@@ -17,9 +17,9 @@ from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
-from blueapi.service.main import start
-from blueapi.service.model import WorkerTask
-from blueapi.service.openapi import (
+from blueapi.service.rest.main import start
+from blueapi.service.worker.model import WorkerTask
+from blueapi.service.rest.openapi import (
     DOCS_SCHEMA_LOCATION,
     generate_schema,
     print_schema_as_yaml,

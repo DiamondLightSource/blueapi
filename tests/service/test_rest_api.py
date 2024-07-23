@@ -192,6 +192,41 @@ def test_create_task_validation_error(
     }
 
 
+@patch("blueapi.service.interface.begin_task")
+@patch("blueapi.service.interface.get_active_task")
+def test_put_plan_begins_task(
+    get_active_task_mock: MagicMock, begin_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id = "04cd9aa6-b902-414b-ae4b-49ea4200e957"
+
+    # Set to idle
+    get_active_task_mock.return_value = None
+    begin_task_mock.return_value = WorkerTask(task_id=task_id)
+
+    resp = client.put("/worker/task", json={"task_id": task_id})
+
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.json() == {"task_id": task_id}
+
+
+@patch("blueapi.service.interface.get_active_task")
+def test_put_plan_fails_if_not_idle(
+    get_active_task_mock: MagicMock, client: TestClient
+) -> None:
+    task_id_current = "260f7de3-b608-4cdc-a66c-257e95809792"
+    task_id_new = "07e98d68-21b5-4ad7-ac34-08b2cb992d42"
+
+    # Set to non idle
+    get_active_task_mock.return_value = TrackableTask(
+        task=None, task_id=task_id_current, is_complete=False
+    )
+
+    resp = client.put("/worker/task", json={"task_id": task_id_new})
+
+    assert resp.status_code == status.HTTP_409_CONFLICT
+    assert resp.json() == {"detail": "Worker already active"}
+
+
 @patch("blueapi.service.interface.get_tasks")
 def test_get_tasks(get_tasks_mock: MagicMock, client: TestClient) -> None:
     tasks = [
@@ -506,3 +541,15 @@ def test_set_state_invalid_transition(
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json() == final_state
+
+
+def test_get_environment_idle(client: TestClient) -> None:
+    assert client.get("/environment").json() == {
+        "initialized": True,
+        "error_message": "",
+    }
+
+
+def test_delete_environment(client: TestClient) -> None:
+    response = client.delete("/environment")
+    assert response.status_code is status.HTTP_200_OK

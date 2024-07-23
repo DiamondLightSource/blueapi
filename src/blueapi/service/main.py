@@ -44,7 +44,7 @@ def _runner() -> WorkerDispatcher:
     return RUNNER
 
 
-def setup_runner(config: ApplicationConfig | None = None, use_subprocess: bool = False):
+def setup_runner(config: ApplicationConfig | None = None, use_subprocess: bool = True):
     global RUNNER
     runner = WorkerDispatcher(config, use_subprocess)
     runner.start()

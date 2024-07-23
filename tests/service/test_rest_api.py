@@ -553,3 +553,11 @@ def test_get_environment_idle(client: TestClient) -> None:
 def test_delete_environment(client: TestClient) -> None:
     response = client.delete("/environment")
     assert response.status_code is status.HTTP_200_OK
+
+
+@patch("blueapi.service.runner.Pool")
+def test_subprocess_enabled_by_default(mp_pool_mock: MagicMock):
+    """Ensure that in the default rest app a subprocess runner is used"""
+    main.setup_runner()
+    mp_pool_mock.assert_called_once()
+    main.teardown_runner()

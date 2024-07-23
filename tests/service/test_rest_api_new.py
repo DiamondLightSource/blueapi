@@ -28,9 +28,9 @@ def client() -> TestClient:
         patch("blueapi.service.runner.start_worker"),
         patch("blueapi.service.runner.stop_worker"),
     ):
-        main.setup_handler(use_subprocess=False)
+        main.setup_runner(use_subprocess=False)
         yield TestClient(main.app)
-        main.teardown_handler()
+        main.teardown_runner()
 
 
 @patch("blueapi.service.interface.get_plans")

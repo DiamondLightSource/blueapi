@@ -85,7 +85,7 @@ class Runner:
 
     def _run_in_subprocess(self, function: Callable, arguments: Iterable) -> Any:
         if self._subprocess is None:
-            raise RunnerNotStartedError("Subprocess handler has not been started")
+            raise RunnerNotStartedError("Subprocess runner has not been started")
         return self._subprocess.apply(function, arguments)
 
     @property

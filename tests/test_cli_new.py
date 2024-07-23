@@ -377,7 +377,6 @@ class ExtendedModel(BaseModel):
 def test_plan_output_formatting():
     """Test for alternative plan output formats"""
 
-    # Put a plan in handler.context manually.
     plan = Plan(
         name="my-plan",
         description=dedent("""\

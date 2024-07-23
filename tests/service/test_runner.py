@@ -8,32 +8,32 @@ from blueapi.service.runner import Runner, RunnerNotStartedError
 
 
 def test_initialize():
-    sp_handler = Runner()
-    assert not sp_handler.state.initialized
-    sp_handler.start()
-    assert sp_handler.state.initialized
-    # Run a single call to the handler for coverage of dispatch to subprocess
-    assert sp_handler.run(interface.get_state)
-    sp_handler.stop()
-    assert not sp_handler.state.initialized
+    runner = Runner()
+    assert not runner.state.initialized
+    runner.start()
+    assert runner.state.initialized
+    # Run a single call to the runner for coverage of dispatch to subprocess
+    assert runner.run(interface.get_state)
+    runner.stop()
+    assert not runner.state.initialized
 
 
 def test_reload():
-    sp_handler = Runner()
-    sp_handler.start()
-    assert sp_handler.state.initialized
-    sp_handler.reload_context()
-    assert sp_handler.state.initialized
-    sp_handler.stop()
+    runner = Runner()
+    runner.start()
+    assert runner.state.initialized
+    runner.reload_context()
+    assert runner.state.initialized
+    runner.stop()
 
 
 def test_raises_if_used_before_started():
-    sp_handler = Runner()
+    runner = Runner()
     with pytest.raises(RunnerNotStartedError):
-        assert sp_handler.run(interface.get_plans) is None
+        assert runner.run(interface.get_plans) is None
 
 
-def test_error_on_handler_setup():
+def test_error_on_runner_setup():
     runner = Runner(use_subprocess=False)
     expected_state = EnvironmentResponse(
         initialized=False,

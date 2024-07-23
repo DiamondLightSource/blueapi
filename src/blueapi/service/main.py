@@ -38,16 +38,13 @@ RUNNER: Runner | None = None
 
 
 def _runner() -> Runner:
-    """Intended to be used only with FastAPI Depends
-    """
+    """Intended to be used only with FastAPI Depends"""
     if RUNNER is None:
         raise ValueError()
     return RUNNER
 
 
-def setup_runner(
-    config: ApplicationConfig | None = None, use_subprocess: bool = False
-):
+def setup_runner(config: ApplicationConfig | None = None, use_subprocess: bool = False):
     global RUNNER
     runner = Runner(config, use_subprocess)
     runner.start()

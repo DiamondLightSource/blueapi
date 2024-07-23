@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Iterator
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 
@@ -23,7 +24,7 @@ from blueapi.worker.worker import TrackableTask
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client() -> Iterator[TestClient]:
     with (
         patch("blueapi.service.runner.start_worker"),
         patch("blueapi.service.runner.stop_worker"),

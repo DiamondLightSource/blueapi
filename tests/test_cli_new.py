@@ -1,9 +1,9 @@
+import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from io import StringIO
-import json
 from pathlib import Path
 from textwrap import dedent
-from typing import Mapping
 from unittest.mock import Mock, patch
 
 import pytest
@@ -159,7 +159,7 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
 def test_get_env(
     runner: CliRunner,
 ):
-    response = responses.add(
+    responses.add(
         responses.GET,
         "http://localhost:8000/environment",
         json=EnvironmentResponse(initialized=True).dict(),

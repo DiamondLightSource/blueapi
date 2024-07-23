@@ -33,24 +33,27 @@ class _Singleton:
 
 def start_worker(
     config: ApplicationConfig,
-    bluesky_context: BlueskyContext = None,
-    worker: TaskWorker = None,
+    bluesky_context: BlueskyContext | None = None,
+    worker: TaskWorker | None = None,
 ) -> None:
     """Creates and starts a worker with supplied config"""
     if _Singleton.initialized:
         raise InitialisationException(
             "Worker is already running. To reload call stop first"
         )
-    _Singleton.context = bluesky_context
-    if _Singleton.context is None:
+    if bluesky_context is None:
         _Singleton.context = BlueskyContext()
         _Singleton.context.with_config(config.env)
-    _Singleton.worker = worker
-    if _Singleton.worker is None:
+    else:
+        _Singleton.context = bluesky_context
+
+    if worker is None:
         _Singleton.worker = TaskWorker(
             _Singleton.context,
             broadcast_statuses=config.env.events.broadcast_status_events,
         )
+    else:
+        _Singleton.worker = worker
     if config.stomp is not None:
         _Singleton.messaging_template = StompMessagingTemplate.autoconfigured(
             config.stomp
@@ -99,9 +102,6 @@ def stop_worker() -> None:
         and _Singleton.messaging_template.is_connected()
     ):
         _Singleton.messaging_template.disconnect()
-    _Singleton.worker = None
-    _Singleton.context = None
-    _Singleton.messaging_template = None
 
 
 def get_plans() -> list[PlanModel]:

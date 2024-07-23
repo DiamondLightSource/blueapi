@@ -199,7 +199,7 @@ def test_begin_task(worker_mock: MagicMock):
 @patch("blueapi.service.interface.TaskWorker.begin_task")
 def test_begin_task_no_task_id(worker_mock: MagicMock):
     interface.start_worker(ApplicationConfig())
-    task = WorkerTask()
+    task = WorkerTask(task_id=None)
     returned_task = interface.begin_task(task)
     assert task == returned_task
     worker_mock.assert_not_called()

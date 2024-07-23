@@ -209,16 +209,14 @@ def test_reset_env_client_behavior(
 
     # Check if the final environment status is printed correctly
     # assert "Environment is initialized." in result.output
-    assert (
-        reload_result.output
-        == """Reloading the environment...
-initialized=False error_message=None
-Waiting for environment to initialize...
-Waiting for environment to initialize...
-Environment is initialized.
-initialized=True error_message=None
-"""
-    )
+    assert reload_result.output == dedent("""\
+                Reloading the environment...
+                initialized=False error_message=None
+                Waiting for environment to initialize...
+                Waiting for environment to initialize...
+                Environment is initialized.
+                initialized=True error_message=None
+                """)
 
 
 @responses.activate

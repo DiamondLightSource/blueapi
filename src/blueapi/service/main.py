@@ -30,14 +30,14 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
-from .runner import Runner
+from .runner import WorkerDispatcher
 
 REST_API_VERSION = "0.0.5"
 
-RUNNER: Runner | None = None
+RUNNER: WorkerDispatcher | None = None
 
 
-def _runner() -> Runner:
+def _runner() -> WorkerDispatcher:
     """Intended to be used only with FastAPI Depends"""
     if RUNNER is None:
         raise ValueError()
@@ -46,7 +46,7 @@ def _runner() -> Runner:
 
 def setup_runner(config: ApplicationConfig | None = None, use_subprocess: bool = False):
     global RUNNER
-    runner = Runner(config, use_subprocess)
+    runner = WorkerDispatcher(config, use_subprocess)
     runner.start()
 
     RUNNER = runner
@@ -87,7 +87,7 @@ async def on_key_error_404(_: Request, __: KeyError):
 
 @app.get("/environment", response_model=EnvironmentResponse)
 def get_environment(
-    runner: Runner = Depends(_runner),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
     """Get the current state of the environment, i.e. initialization state."""
     return runner.state
@@ -96,11 +96,11 @@ def get_environment(
 @app.delete("/environment", response_model=EnvironmentResponse)
 async def delete_environment(
     background_tasks: BackgroundTasks,
-    runner: Runner = Depends(_runner),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
 
-    def restart_runner(runner: Runner):
+    def restart_runner(runner: WorkerDispatcher):
         runner.stop()
         runner.start()
 
@@ -110,7 +110,7 @@ async def delete_environment(
 
 
 @app.get("/plans", response_model=PlanResponse)
-def get_plans(runner: Runner = Depends(_runner)):
+def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available plans."""
     return PlanResponse(plans=runner.run(interface.get_plans))
 
@@ -119,13 +119,13 @@ def get_plans(runner: Runner = Depends(_runner)):
     "/plans/{name}",
     response_model=PlanModel,
 )
-def get_plan_by_name(name: str, runner: Runner = Depends(_runner)):
+def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a plan by its (unique) name."""
     return runner.run(interface.get_plan, [name])
 
 
 @app.get("/devices", response_model=DeviceResponse)
-def get_devices(runner: Runner = Depends(_runner)):
+def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available devices."""
     return DeviceResponse(devices=runner.run(interface.get_devices))
 
@@ -134,7 +134,7 @@ def get_devices(runner: Runner = Depends(_runner)):
     "/devices/{name}",
     response_model=DeviceModel,
 )
-def get_device_by_name(name: str, runner: Runner = Depends(_runner)):
+def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a devices by its (unique) name."""
     return runner.run(interface.get_device, [name])
 
@@ -151,7 +151,7 @@ def submit_task(
     request: Request,
     response: Response,
     task: Task = Body(..., example=example_task),
-    runner: Runner = Depends(_runner),
+    runner: WorkerDispatcher = Depends(_runner),
 ):
     """Submit a task to the worker."""
     try:
@@ -178,7 +178,7 @@ def submit_task(
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 def delete_submitted_task(
     task_id: str,
-    runner: Runner = Depends(_runner),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> TaskResponse:
     return TaskResponse(task_id=runner.run(interface.clear_task, [task_id]))
 
@@ -193,7 +193,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 @app.get("/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
 def get_tasks(
     task_status: str | None = None,
-    runner: Runner = Depends(_runner),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
@@ -222,7 +222,7 @@ def get_tasks(
 )
 def set_active_task(
     task: WorkerTask,
-    runner: Runner = Depends(_runner),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
     This will return an error response if the worker is not idle."""
@@ -241,7 +241,7 @@ def set_active_task(
 )
 def get_task(
     task_id: str,
-    runner: Runner = Depends(_runner),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> TrackableTask:
     """Retrieve a task"""
     task = runner.run(interface.get_task_by_id, [task_id])
@@ -251,7 +251,7 @@ def get_task(
 
 
 @app.get("/worker/task")
-def get_active_task(runner: Runner = Depends(_runner)) -> WorkerTask:
+def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
     active = runner.run(interface.get_active_task)
     if active is not None:
         return WorkerTask(task_id=active.task_id)
@@ -260,7 +260,7 @@ def get_active_task(runner: Runner = Depends(_runner)) -> WorkerTask:
 
 
 @app.get("/worker/state")
-def get_state(runner: Runner = Depends(_runner)) -> WorkerState:
+def get_state(runner: WorkerDispatcher = Depends(_runner)) -> WorkerState:
     """Get the State of the Worker"""
     return runner.run(interface.get_worker_state)
 
@@ -291,7 +291,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    runner: Runner = Depends(_runner),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerState:
     """
     Request that the worker is put into a particular state.

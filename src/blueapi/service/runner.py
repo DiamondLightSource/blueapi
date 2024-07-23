@@ -22,7 +22,7 @@ def _init_worker():
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
-class Runner:
+class WorkerDispatcher:
     """
     Responsible for dispatching calls required by the REST app.
     This is generally performed in a subprocess but can be run in-process for tests

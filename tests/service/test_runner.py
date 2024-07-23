@@ -4,11 +4,11 @@ import pytest
 
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
-from blueapi.service.runner import Runner, RunnerNotStartedError
+from blueapi.service.runner import RunnerNotStartedError, WorkerDispatcher
 
 
 def test_initialize():
-    runner = Runner()
+    runner = WorkerDispatcher()
     assert not runner.state.initialized
     runner.start()
     assert runner.state.initialized
@@ -19,7 +19,7 @@ def test_initialize():
 
 
 def test_reload():
-    runner = Runner()
+    runner = WorkerDispatcher()
     runner.start()
     assert runner.state.initialized
     runner.reload_context()
@@ -28,13 +28,13 @@ def test_reload():
 
 
 def test_raises_if_used_before_started():
-    runner = Runner()
+    runner = WorkerDispatcher()
     with pytest.raises(RunnerNotStartedError):
         assert runner.run(interface.get_plans) is None
 
 
 def test_error_on_runner_setup():
-    runner = Runner(use_subprocess=False)
+    runner = WorkerDispatcher(use_subprocess=False)
     expected_state = EnvironmentResponse(
         initialized=False,
         error_message="Error configuring blueapi: Intentional start_worker exception",

@@ -6,7 +6,7 @@ from multiprocessing.pool import Pool as PoolClass
 from typing import Any
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.interface import start_worker, stop_worker
+from blueapi.service.interface import InitialisationException, start_worker, stop_worker
 from blueapi.service.model import (
     EnvironmentResponse,
 )
@@ -60,7 +60,11 @@ class WorkerDispatcher:
     def stop(self):
         if self._subprocess is not None:
             self._state = EnvironmentResponse(initialized=False, error_message="")
-            self._subprocess.apply(stop_worker)
+            try:
+                self._subprocess.apply(stop_worker)
+            except InitialisationException:
+                # There was an error initialising
+                pass
             self._subprocess.close()
             self._subprocess.join()
             self._subprocess = None

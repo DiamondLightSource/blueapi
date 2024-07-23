@@ -1,4 +1,5 @@
 from unittest import mock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -50,3 +51,24 @@ def test_error_on_runner_setup():
         runner.reload_context()
         state = runner.state
         assert state == expected_state
+
+
+def start_worker_mock():
+    yield SyntaxError("invalid syntax")
+    yield None
+
+
+@patch("blueapi.service.runner.Pool")
+def test_can_reload_after_an_error(pool_mock: MagicMock):
+    another_mock = MagicMock()
+
+    pool_mock.return_value = another_mock
+
+    another_mock.apply.side_effect = [None, SyntaxError("invalid code"), None]
+
+    runner = WorkerDispatcher(use_subprocess=True)
+    runner.start()
+
+    assert runner.state == EnvironmentResponse(
+        error_message="Error configuring blueapi: invalid code", initialized=False
+    )

@@ -1,13 +1,15 @@
 import logging
 import uuid
 from collections.abc import Iterable, Mapping
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
 from queue import Full, Queue
 from threading import Event, RLock
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from bluesky.protocols import Status
+from pydantic import Field
 from super_state_machine.errors import TransitionError
 
 from blueapi.core import (
@@ -17,6 +19,9 @@ from blueapi.core import (
     EventStream,
     WatchableStatus,
 )
+from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
+from blueapi.utils.base_model import BlueapiBaseModel
+from blueapi.utils.thread_exception import handle_all_exceptions
 
 from .event import (
     ProgressEvent,
@@ -27,17 +32,29 @@ from .event import (
     WorkerEvent,
     WorkerState,
 )
-from .multithread import run_worker_in_own_thread
 from .task import Task
-from .worker import TrackableTask, Worker
 from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
 
+T = TypeVar("T")
 
-class TaskWorker(Worker[Task]):
+
+class TrackableTask(BlueapiBaseModel, Generic[T]):
+    """
+    A representation of a task that the worker recognizes
+    """
+
+    task_id: str
+    task: T
+    is_complete: bool = False
+    is_pending: bool = True
+    errors: list[str] = Field(default_factory=list)
+
+
+class TaskWorker:
     """
     Worker wrapping BlueskyContext that can work in its own thread/process
 
@@ -412,3 +429,41 @@ class KillSignal:
     """
 
     ...
+
+
+def run_worker_in_own_thread(
+    worker: TaskWorker, executor: ThreadPoolExecutor | None = None
+) -> Future:
+    """
+    Helper function, make a worker run in a new thread managed by a ThreadPoolExecutor
+
+    Args:
+        worker (TaskWorker): The worker to run
+        executor (Optional[ThreadPoolExecutor], optional): The executor to manage the
+                                                           thread, defaults to None in
+                                                           which case a new one is
+                                                           created
+
+    Returns:
+        Future: Future representing worker stopping
+    """
+
+    if executor is None:
+        executor = ThreadPoolExecutor(1, "run-engine-worker")
+    return executor.submit(_run_worker_thread, worker)
+
+
+@handle_all_exceptions
+def _run_worker_thread(worker: TaskWorker) -> None:
+    """
+    Helper function, run a worker forever, includes support for
+    printing exceptions to stdout from a non-main thread.
+
+    Args:
+        worker (TaskWorker): The worker to run
+    """
+
+    LOGGER.info("Setting up event loop")
+    configure_bluesky_event_loop()
+    LOGGER.info("Worker starting")
+    worker.run()

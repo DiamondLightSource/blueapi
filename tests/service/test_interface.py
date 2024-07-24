@@ -12,7 +12,7 @@ from blueapi.service import interface
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
-from blueapi.worker.worker import TrackableTask
+from blueapi.worker.task_worker import TrackableTask
 
 
 @pytest.fixture(autouse=True)

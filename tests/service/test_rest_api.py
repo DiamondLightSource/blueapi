@@ -15,7 +15,7 @@ from blueapi.service import main
 from blueapi.service.model import DeviceModel, PlanModel, StateChangeRequest, WorkerTask
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
-from blueapi.worker.worker import TrackableTask
+from blueapi.worker.task_worker import TrackableTask
 
 
 @pytest.fixture

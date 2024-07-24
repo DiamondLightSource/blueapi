@@ -4,19 +4,14 @@ from concurrent.futures import Future
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.messaging import MessageContext, StompMessagingTemplate
-from blueapi.service.model import (
-    DeviceModel,
-    DeviceResponse,
-    EnvironmentResponse,
-    PlanModel,
-    PlanResponse,
-    TaskResponse,
-    WorkerTask,
-)
+from blueapi.service.model import (DeviceModel, DeviceResponse,
+                                   EnvironmentResponse, PlanModel,
+                                   PlanResponse, TaskResponse, WorkerTask)
 from blueapi.worker import Task, TrackableTask, WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 
-from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
+from .event_bus import (AnyEvent, BlueskyStreamingError, EventBusClient,
+                        OnAnyEvent)
 from .rest import BlueapiRestClient, BlueskyRemoteControlError
 
 
@@ -361,7 +356,7 @@ class BlueapiClient:
             # Poll until the environment is restarted or the timeout is reached
             status = self._rest.get_environment()
             if status.error_message is not None:
-                raise BlueskyRemoteControlError(status.error_message)
+                raise BlueskyRemoteControlError(f"Error reloading environment: {status.error_message}")
             elif status.initialized:
                 return status
             time.sleep(polling_interval)

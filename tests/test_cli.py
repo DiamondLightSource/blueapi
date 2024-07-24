@@ -19,13 +19,9 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.model import (
-    DeviceModel,
-    DeviceResponse,
-    EnvironmentResponse,
-    PlanModel,
-    PlanResponse,
-)
+from blueapi.service.model import (DeviceModel, DeviceResponse,
+                                   EnvironmentResponse, PlanModel,
+                                   PlanResponse)
 
 
 @pytest.fixture
@@ -171,7 +167,7 @@ def test_get_env(
 
 
 @responses.activate(assert_all_requests_are_fired=True)
-@patch("blueapi.cli.cli.sleep", return_value=None)
+@patch("blueapi.client.client.time.sleep", return_value=None)
 def test_reset_env_client_behavior(
     mock_sleep: Mock,
     runner: CliRunner,
@@ -210,20 +206,15 @@ def test_reset_env_client_behavior(
     # Check if the final environment status is printed correctly
     # assert "Environment is initialized." in result.output
     assert reload_result.output == dedent("""\
-                Reloading the environment...
-                initialized=False error_message=None
-                Waiting for environment to initialize...
-                Waiting for environment to initialize...
-                Environment is initialized.
+                Reloading environment
+                Environment is initialized
                 initialized=True error_message=None
                 """)
 
 
 @responses.activate
-@patch("blueapi.cli.cli.sleep", return_value=None)
+@patch("blueapi.client.client.time.sleep", return_value=None)
 def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
-    max_polling_count = 10  # Assuming this is your max polling count in the command
-
     # Setup mocked responses for the REST endpoints
     responses.add(
         responses.DELETE,
@@ -232,13 +223,12 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
         json=EnvironmentResponse(initialized=False).dict(),
     )
     # Add responses for each polling attempt, all indicating not initialized
-    for _ in range(max_polling_count):
-        responses.add(
-            responses.GET,
-            "http://localhost:8000/environment",
-            json=EnvironmentResponse(initialized=False).dict(),
-            status=200,
-        )
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/environment",
+        json=EnvironmentResponse(initialized=False).dict(),
+        status=200,
+    )
 
     # Run the command that should interact with these endpoints
     result = runner.invoke(main, ["controller", "env", "-r", "-t", "0.1"])
@@ -264,8 +254,7 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     # Check the output for the timeout message
     assert (
         result.output
-        == "Reloading the environment...\ninitialized=False error_message=None\n"
-        + "Waiting for environment to initialize...\n" * 10
+        == "Reloading environment\n"
     )
     assert (
         result.exit_code == 1
@@ -283,7 +272,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
     assert isinstance(
         result.exception, BlueskyRemoteControlError
     ), "Expected a BlueskyRemoteError from cli runner"
-    assert result.exception.args[0] == "Failed to reload the environment"
+    assert result.exception.args[0] == "Failed to tear down the environment"
 
     # Check if the endpoints were hit as expected
     assert len(responses.calls) == 1  # +1 for the DELETE call
@@ -295,7 +284,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
     # Check the output for the timeout message
     # TODO this seems wrong but this is the current behaviour
     # There should be an error message
-    assert result.output == "Reloading the environment...\n"
+    assert result.output == "Reloading environment\n"
 
     assert result.exit_code == 1
 

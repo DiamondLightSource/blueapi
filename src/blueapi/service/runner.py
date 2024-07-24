@@ -6,7 +6,8 @@ from multiprocessing.pool import Pool as PoolClass
 from typing import Any
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.interface import InitialisationException, start_worker, stop_worker
+from blueapi.service.interface import (InitialisationException, start_worker,
+                                       stop_worker)
 from blueapi.service.model import EnvironmentResponse
 
 # The default multiprocessing start method is fork

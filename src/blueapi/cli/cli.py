@@ -12,19 +12,17 @@ from requests.exceptions import ConnectionError
 from blueapi import __version__
 from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
-from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
+from blueapi.client.event_bus import (AnyEvent, BlueskyStreamingError,
+                                      EventBusClient)
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
 from blueapi.messaging import MessageContext
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
-from blueapi.service.openapi import (
-    DOCS_SCHEMA_LOCATION,
-    generate_schema,
-    print_schema_as_yaml,
-    write_schema_as_yaml,
-)
+from blueapi.service.openapi import (DOCS_SCHEMA_LOCATION, generate_schema,
+                                     print_schema_as_yaml,
+                                     write_schema_as_yaml)
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
@@ -280,7 +278,6 @@ def stop(obj: dict) -> None:
     "-r",
     "--reload",
     is_flag=True,
-    type=bool,
     help="Reload the current environment",
     default=False,
 )
@@ -294,7 +291,7 @@ def stop(obj: dict) -> None:
 @click.pass_obj
 def env(
     obj: dict,
-    reload: bool | None,
+    reload: bool,
     timeout: float | None,
 ) -> None:
     """

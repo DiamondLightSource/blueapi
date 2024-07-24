@@ -8,7 +8,6 @@ from threading import Event, RLock
 from typing import Any
 
 from bluesky.protocols import Status
-from pydantic import BaseModel
 from services.bluecommon.blueapi_event import EventPublisher, EventStream
 from services.bluecommon.bluesky_types import DataEvent, WatchableStatus
 from services.blueworker.worker_context import WorkerContext
@@ -29,24 +28,6 @@ LOGGER = logging.getLogger(__name__)
 
 # The RunEngine can return any of these three types as its state
 RawRunEngineState = type[PropertyMachine | ProxyString | str]
-
-
-def lookup_params(ctx: WorkerContext, task: Task) -> BaseModel:
-    """
-    Checks plan parameters against context
-
-    Args:
-        ctx: Context holding plans and devices
-        plan: Plan object including schema
-        params: Parameter values to be validated against schema
-
-    Returns:
-        Mapping[str, Any]: _description_
-    """
-
-    plan = ctx.plans[task.name]
-    model = plan.model
-    return model.parse_obj(task.params)
 
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
@@ -169,7 +150,7 @@ class TaskWorker:
             raise KeyError(f"No pending task with ID {task_id}")
 
     def submit_task(self, task: Task) -> str:
-        lookup_params(self.ctx, task)  # Will raise if parameters are invalid
+        # todo add warning for tasks without valid params. need to use proto
         task_id: str = str(uuid.uuid4())
         trackable_task = TrackableTask(task_id=task_id, task=task)
         self._tasks[task_id] = trackable_task
@@ -277,7 +258,9 @@ class TaskWorker:
                     f"Asked to run plan {name} with {self._current.task.params}"
                 )
                 func = self.ctx.plan_functions[name]
-                prepared_params = lookup_params(self.ctx, self._current.task)
+                # todo remove the transofrmation to dict, it's from proto now
+                # prepared_params = lookup_params(self.ctx, self._current.task)
+                prepared_params = self._current.task.params
                 self.ctx.run_engine(func(**prepared_params.dict()))
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.

@@ -1,11 +1,9 @@
-import os
 from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
 from typing import Any, Generic, Literal, TypeVar
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, parse_obj_as, validator
 from services.blueapi.base_model import BlueapiBaseModel
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -16,43 +14,15 @@ class InvalidConfigError(Exception):
         super().__init__(message)
 
 
-class SourceKind(str, Enum):
+class ImportedModuleKind(str, Enum):
     PLAN_FUNCTIONS = "planFunctions"
     DEVICE_FUNCTIONS = "deviceFunctions"
     DODAL = "dodal"
 
 
-class Source(BaseModel):
-    kind: SourceKind
-    module: Path | str
-
-
-class BasicAuthentication(BaseModel):
-    """
-    Log in details for when a server uses authentication.
-    If username or passcode match exactly the regex ^\\${(.*)}$
-    they attempt to replace with an environment variable of the same.
-    i.e. ${foo} or ${FOO} are replaced with the value of FOO
-    """
-
-    username: str = "guest"
-    passcode: str = "guest"
-
-    @validator("username", "passcode")
-    def get_from_env(cls, v: str):
-        if v.startswith("${") and v.endswith("}"):
-            return os.environ[v.removeprefix("${").removesuffix("}").upper()]
-        return v
-
-
-class StompConfig(BaseModel):
-    """
-    Config for connecting to stomp broker
-    """
-
-    host: str = "localhost"
-    port: int = 61613
-    auth: BasicAuthentication | None = None
+class ImportedModule(BaseModel):
+    kind: ImportedModuleKind
+    modulePath: Path | str
 
 
 class WorkerEventConfig(BlueapiBaseModel):
@@ -68,13 +38,21 @@ class EnvironmentConfig(BlueapiBaseModel):
     Config for the RunEngine environment
     """
 
-    sources: list[Source] = [
-        Source(
-            kind=SourceKind.DEVICE_FUNCTIONS, module="blueapi.startup.example_devices"
+    sources: list[ImportedModule] = [
+        ImportedModule(
+            kind=ImportedModuleKind.DEVICE_FUNCTIONS,
+            module="blueapi.startup.example_devices",
         ),
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="blueapi.startup.example_plans"),
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.plans"),
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
+        ImportedModule(
+            kind=ImportedModuleKind.PLAN_FUNCTIONS,
+            module="blueapi.startup.example_plans",
+        ),
+        ImportedModule(
+            kind=ImportedModuleKind.PLAN_FUNCTIONS, module="dls_bluesky_core.plans"
+        ),
+        ImportedModule(
+            kind=ImportedModuleKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"
+        ),
     ]
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
 
@@ -105,7 +83,6 @@ class ApplicationConfig(BlueapiBaseModel):
     config tree.
     """
 
-    stomp: StompConfig | None = None
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
@@ -114,8 +91,7 @@ class ApplicationConfig(BlueapiBaseModel):
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):
             return (
-                (self.stomp == other.stomp)
-                & (self.env == other.env)
+                (self.env == other.env)
                 & (self.logging == other.logging)
                 & (self.api == other.api)
             )

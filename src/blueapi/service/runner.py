@@ -6,10 +6,9 @@ from multiprocessing.pool import Pool as PoolClass
 from typing import Any
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.interface import InitialisationException, start_worker, stop_worker
-from blueapi.service.model import (
-    EnvironmentResponse,
-)
+from blueapi.service.interface import (InitialisationException, start_worker,
+                                       stop_worker)
+from blueapi.service.model import EnvironmentResponse
 
 # The default multiprocessing start method is fork
 set_start_method("spawn", force=True)
@@ -39,7 +38,7 @@ class WorkerDispatcher:
         self._config = config or ApplicationConfig()
         self._subprocess = None
         self._use_subprocess = use_subprocess
-        self._state = EnvironmentResponse(initialized=False, error_message="")
+        self._state = EnvironmentResponse(initialized=False)
 
     def start(self):
         if self._subprocess is None and self._use_subprocess:
@@ -55,11 +54,11 @@ class WorkerDispatcher:
             )
             LOGGER.exception(self._state.error_message)
             return
-        self._state = EnvironmentResponse(initialized=True, error_message="")
+        self._state = EnvironmentResponse(initialized=True)
 
     def stop(self):
         if self._subprocess is not None:
-            self._state = EnvironmentResponse(initialized=False, error_message="")
+            self._state = EnvironmentResponse(initialized=False)
             try:
                 self._subprocess.apply(stop_worker)
             except InitialisationException:
@@ -71,7 +70,7 @@ class WorkerDispatcher:
         if (not self._use_subprocess) and (
             self._state.initialized or self._state.error_message
         ):
-            self._state = EnvironmentResponse(initialized=False, error_message="")
+            self._state = EnvironmentResponse(initialized=False)
             stop_worker()
 
     def reload_context(self):

@@ -145,5 +145,7 @@ class EnvironmentResponse(BlueapiBaseModel):
 
     initialized: bool = Field(description="blueapi context initialized")
     error_message: str | None = Field(
-        default=None, description="If present - error loading context"
+        default=None,
+        description="If present - error loading context",
+        min_length=1,
     )

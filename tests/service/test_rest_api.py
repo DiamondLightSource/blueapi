@@ -12,12 +12,8 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.core.bluesky_types import Plan
 from blueapi.service import main
-from blueapi.service.model import (
-    DeviceModel,
-    PlanModel,
-    StateChangeRequest,
-    WorkerTask,
-)
+from blueapi.service.model import (DeviceModel, PlanModel, StateChangeRequest,
+                                   WorkerTask)
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.worker import TrackableTask
@@ -546,7 +542,7 @@ def test_set_state_invalid_transition(
 def test_get_environment_idle(client: TestClient) -> None:
     assert client.get("/environment").json() == {
         "initialized": True,
-        "error_message": "",
+        "error_message": None,
     }
 
 

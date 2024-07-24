@@ -61,14 +61,29 @@ def start_worker_mock():
 @patch("blueapi.service.runner.Pool")
 def test_can_reload_after_an_error(pool_mock: MagicMock):
     another_mock = MagicMock()
-
     pool_mock.return_value = another_mock
 
-    another_mock.apply.side_effect = [None, SyntaxError("invalid code"), None]
+    # This test ensures the subprocess worker can be reloaded
+    # after failing to initialise
+
+    # all calls to subprocess (poll::apply) are mocked
+    subprocess_calls_return_values = [
+        None,  # logging setup
+        SyntaxError("invalid code"),  # start_worker
+        None,  # stop_worker
+        None,  # logging_setup
+        None,  # start_worker
+    ]
+
+    another_mock.apply.side_effect = subprocess_calls_return_values
 
     runner = WorkerDispatcher(use_subprocess=True)
     runner.start()
 
     assert runner.state == EnvironmentResponse(
-        error_message="Error configuring blueapi: invalid code", initialized=False
+        initialized=False, error_message="Error configuring blueapi: invalid code"
     )
+
+    runner.reload_context()
+
+    assert runner.state == EnvironmentResponse(initialized=True, error_message="")

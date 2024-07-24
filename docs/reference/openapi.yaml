@@ -39,6 +39,7 @@ components:
       properties:
         error_message:
           description: If present - error loading context
+          minLength: 1
           title: Error Message
           type: string
         initialized:

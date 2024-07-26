@@ -86,4 +86,4 @@ def test_can_reload_after_an_error(pool_mock: MagicMock):
 
     runner.reload_context()
 
-    assert runner.state == EnvironmentResponse(initialized=True, error_message="")
+    assert runner.state == EnvironmentResponse(initialized=True, error_message=None)

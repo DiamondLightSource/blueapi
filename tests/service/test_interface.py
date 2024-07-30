@@ -61,8 +61,6 @@ def my_second_plan(repeats: int) -> MsgGenerator:
     yield from {}
 
 
-# @patch("blueapi.service.interface.BlueskyContext.plans", create=True)
-# def test_get_plans(context_plans_mock: MagicMock):
 def test_get_plans():
     context = BlueskyContext()
     context.plan(my_plan)

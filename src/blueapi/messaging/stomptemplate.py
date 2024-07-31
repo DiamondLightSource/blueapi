@@ -136,7 +136,7 @@ class StompMessagingTemplate(MessagingTemplate):
         on_reply: MessageListener | None = None,
         correlation_id: str | None = None,
     ) -> None:
-        LOGGER.info(f"SENDING {message} to {destination}")
+        LOGGER.info(f"SENDING {message!r} to {destination}")
 
         headers: dict[str, Any] = {"JMSType": "TextMessage"}
         if on_reply is not None:

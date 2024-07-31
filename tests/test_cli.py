@@ -19,9 +19,13 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.model import (DeviceModel, DeviceResponse,
-                                   EnvironmentResponse, PlanModel,
-                                   PlanResponse)
+from blueapi.service.model import (
+    DeviceModel,
+    DeviceResponse,
+    EnvironmentResponse,
+    PlanModel,
+    PlanResponse,
+)
 
 
 @pytest.fixture
@@ -252,10 +256,7 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
         assert call.request.url == "http://localhost:8000/environment"
 
     # Check the output for the timeout message
-    assert (
-        result.output
-        == "Reloading environment\n"
-    )
+    assert result.output == "Reloading environment\n"
     assert (
         result.exit_code == 1
     )  # Assuming your command exits successfully even on timeout for simplicity

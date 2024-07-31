@@ -1,7 +1,15 @@
 from contextlib import asynccontextmanager
 
-from fastapi import (BackgroundTasks, Body, Depends, FastAPI, HTTPException,
-                     Request, Response, status)
+from fastapi import (
+    BackgroundTasks,
+    Body,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -11,9 +19,17 @@ from blueapi.service import interface
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
-from .model import (DeviceModel, DeviceResponse, EnvironmentResponse,
-                    PlanModel, PlanResponse, StateChangeRequest, TaskResponse,
-                    TasksListResponse, WorkerTask)
+from .model import (
+    DeviceModel,
+    DeviceResponse,
+    EnvironmentResponse,
+    PlanModel,
+    PlanResponse,
+    StateChangeRequest,
+    TaskResponse,
+    TasksListResponse,
+    WorkerTask,
+)
 from .runner import WorkerDispatcher
 
 REST_API_VERSION = "0.0.5"

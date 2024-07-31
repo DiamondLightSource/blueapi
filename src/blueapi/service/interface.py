@@ -38,7 +38,7 @@ def context() -> BlueskyContext:
 
 
 @lru_cache
-def worker() -> Worker:
+def worker() -> TaskWorker:
     worker = TaskWorker(
         context(),
         broadcast_statuses=config().env.events.broadcast_status_events,

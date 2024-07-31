@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from threading import Event
 from typing import Any
 
+import orjson
 import stomp
 from pydantic import parse_obj_as
 from stomp.exception import ConnectFailedException
@@ -122,17 +123,20 @@ class StompMessagingTemplate(MessagingTemplate):
         correlation_id: str | None = None,
     ) -> None:
         self._send_str(
-            destination, json.dumps(serialize(obj)), on_reply, correlation_id
+            destination,
+            orjson.dumps(serialize(obj), option=orjson.OPT_SERIALIZE_NUMPY),
+            on_reply,
+            correlation_id,
         )
 
     def _send_str(
         self,
         destination: str,
-        message: str,
+        message: bytes,
         on_reply: MessageListener | None = None,
         correlation_id: str | None = None,
     ) -> None:
-        LOGGER.info(f"SENDING {message} to {destination}")
+        LOGGER.info(f"SENDING {message!r} to {destination}")
 
         headers: dict[str, Any] = {"JMSType": "TextMessage"}
         if on_reply is not None:

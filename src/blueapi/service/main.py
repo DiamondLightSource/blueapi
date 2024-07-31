@@ -100,12 +100,8 @@ async def delete_environment(
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
 
-    def restart_runner(runner: WorkerDispatcher):
-        runner.stop()
-        runner.start()
-
     if runner.state.initialized or runner.state.error_message is not None:
-        background_tasks.add_task(restart_runner, runner)
+        background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
 
 

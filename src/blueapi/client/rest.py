@@ -1,5 +1,4 @@
 from collections.abc import Callable, Mapping
-from http import HTTPStatus
 from typing import Any, Literal, TypeVar
 
 import requests
@@ -17,22 +16,22 @@ from blueapi.service.model import (
 )
 from blueapi.worker import Task, TrackableTask, WorkerState
 
-from .event_bus_client import BlueskyRemoteError
-
 T = TypeVar("T")
 
 
-def get_status_message(code: int) -> str:
-    """Returns the standard description for a given HTTP status code."""
-    try:
-        message = HTTPStatus(code).phrase
-        return message
-    except ValueError:
-        return "Unknown Status Code"
+class BlueskyRemoteControlError(Exception):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
-def _is_exception(response: requests.Response) -> bool:
-    return response.status_code >= 400
+def _exception(response: requests.Response) -> Exception | None:
+    code = response.status_code
+    if code < 400:
+        return None
+    elif code == 404:
+        return KeyError(str(response.json()))
+    else:
+        return BlueskyRemoteControlError(str(response))
 
 
 class BlueapiRestClient:
@@ -107,32 +106,33 @@ class BlueapiRestClient:
             data={"new_state": state, "reason": reason},
         )
 
+    def get_environment(self) -> EnvironmentResponse:
+        return self._request_and_deserialize("/environment", EnvironmentResponse)
+
+    def delete_environment(self) -> EnvironmentResponse:
+        return self._request_and_deserialize(
+            "/environment", EnvironmentResponse, method="DELETE"
+        )
+
     def _request_and_deserialize(
         self,
         suffix: str,
         target_type: type[T],
         data: Mapping[str, Any] | None = None,
         method="GET",
-        raise_if: Callable[[requests.Response], bool] = _is_exception,
+        get_exception: Callable[[requests.Response], Exception | None] = _exception,
     ) -> T:
         url = self._url(suffix)
         if data:
             response = requests.request(method, url, json=data)
         else:
             response = requests.request(method, url)
-        if raise_if(response):
-            raise BlueskyRemoteError(str(response))
+        exception = get_exception(response)
+        if exception is not None:
+            raise exception
         deserialized = parse_obj_as(target_type, response.json())
         return deserialized
 
     def _url(self, suffix: str) -> str:
         base_url = f"{self._config.protocol}://{self._config.host}:{self._config.port}"
         return f"{base_url}{suffix}"
-
-    def get_environment(self) -> EnvironmentResponse:
-        return self._request_and_deserialize("/environment", EnvironmentResponse)
-
-    def reload_environment(self) -> EnvironmentResponse:
-        return self._request_and_deserialize(
-            "/environment", EnvironmentResponse, method="DELETE"
-        )

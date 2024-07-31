@@ -6,7 +6,10 @@ from multiprocessing.pool import Pool as PoolClass
 from typing import Any
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.interface import InitialisationException, start_worker, stop_worker
+from blueapi.service.interface import (
+    setup,
+    teardown,
+)
 from blueapi.service.model import EnvironmentResponse
 
 # The default multiprocessing start method is fork
@@ -32,51 +35,52 @@ class WorkerDispatcher:
     _state: EnvironmentResponse
 
     def __init__(
-        self, config: ApplicationConfig | None = None, use_subprocess: bool = True
+        self,
+        config: ApplicationConfig | None = None,
+        use_subprocess: bool = True,
     ) -> None:
         self._config = config or ApplicationConfig()
         self._subprocess = None
         self._use_subprocess = use_subprocess
-        self._state = EnvironmentResponse(initialized=False)
+        self._state = EnvironmentResponse(
+            initialized=False,
+        )
 
-    def start(self):
-        if self._subprocess is None and self._use_subprocess:
-            self._subprocess = Pool(initializer=_init_worker, processes=1)
-            self._subprocess.apply(
-                logging.basicConfig, kwds={"level": self._config.logging.level}
-            )
-        try:
-            self.run(start_worker, [self._config])
-        except Exception as e:
-            self._state = EnvironmentResponse(
-                initialized=False, error_message=f"Error configuring blueapi: {e}"
-            )
-            LOGGER.exception(self._state.error_message)
-            return
-        self._state = EnvironmentResponse(initialized=True)
-
-    def stop(self):
-        if self._subprocess is not None:
-            self._state = EnvironmentResponse(initialized=False)
-            try:
-                self._subprocess.apply(stop_worker)
-            except InitialisationException:
-                # There was an error initialising
-                pass
-            self._subprocess.close()
-            self._subprocess.join()
-            self._subprocess = None
-        if (not self._use_subprocess) and (
-            self._state.initialized or self._state.error_message
-        ):
-            self._state = EnvironmentResponse(initialized=False)
-            stop_worker()
-
-    def reload_context(self):
+    def reload(self):
         """Reload the subprocess to account for any changes in python modules"""
         self.stop()
         self.start()
-        LOGGER.info("Context reloaded")
+        LOGGER.info("Runner reloaded")
+
+    def start(self):
+        try:
+            if self._use_subprocess:
+                self._subprocess = Pool(initializer=_init_worker, processes=1)
+            self.run(setup, [self._config])
+            self._state = EnvironmentResponse(initialized=True)
+        except Exception as e:
+            self._state = EnvironmentResponse(
+                initialized=False,
+                error_message=str(e),
+            )
+            LOGGER.exception(e)
+
+    def stop(self):
+        try:
+            self.run(teardown)
+            if self._subprocess is not None:
+                self._subprocess.close()
+                self._subprocess.join()
+            self._state = EnvironmentResponse(
+                initialized=False,
+                error_message=self._state.error_message,
+            )
+        except Exception as e:
+            self._state = EnvironmentResponse(
+                initialized=False,
+                error_message=str(e),
+            )
+            LOGGER.exception(e)
 
     def run(self, function: Callable, arguments: Iterable | None = None) -> Any:
         arguments = arguments or []
@@ -85,9 +89,13 @@ class WorkerDispatcher:
         else:
             return function(*arguments)
 
-    def _run_in_subprocess(self, function: Callable, arguments: Iterable) -> Any:
+    def _run_in_subprocess(
+        self,
+        function: Callable,
+        arguments: Iterable,
+    ) -> Any:
         if self._subprocess is None:
-            raise RunnerNotStartedError("Subprocess runner has not been started")
+            raise InvalidRunnerStateError("Subprocess runner has not been started")
         return self._subprocess.apply(function, arguments)
 
     @property
@@ -95,6 +103,6 @@ class WorkerDispatcher:
         return self._state
 
 
-class RunnerNotStartedError(Exception):
+class InvalidRunnerStateError(Exception):
     def __init__(self, message):
         super().__init__(message)

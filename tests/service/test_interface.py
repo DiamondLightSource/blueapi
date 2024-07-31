@@ -22,33 +22,7 @@ def ensure_worker_stopped():
     of an assertion error. The start_worker method is not managed by a fixture
     as some of the tests require it to be customised."""
     yield
-    if interface.get_state():
-        interface.stop_worker()
-
-
-def test_start_worker_raises_if_already_started():
-    interface.start_worker(ApplicationConfig())
-    with pytest.raises(interface.InitialisationException):
-        interface.start_worker(ApplicationConfig())
-
-
-def test_stop_worker_raises_if_already_started():
-    interface.start_worker(ApplicationConfig())
-    interface.stop_worker()
-    with pytest.raises(interface.InitialisationException):
-        interface.stop_worker()
-
-
-def test_exception_if_used_before_started():
-    with pytest.raises(interface.InitialisationException):
-        interface.get_active_task()
-
-
-def test_stomp_config():
-    stomp_config = StompConfig()
-    config = ApplicationConfig()
-    config.stomp = stomp_config
-    interface.start_worker(config)
+    interface.teardown()
 
 
 def my_plan() -> MsgGenerator:
@@ -61,17 +35,18 @@ def my_second_plan(repeats: int) -> MsgGenerator:
     yield from {}
 
 
-def test_get_plans():
+@patch("blueapi.service.interface.context")
+def test_get_plans(context_mock: MagicMock):
     context = BlueskyContext()
     context.plan(my_plan)
     context.plan(my_second_plan)
-    interface.start_worker(ApplicationConfig(), bluesky_context=context)
+    context_mock.return_value = context
 
     assert interface.get_plans() == [
         PlanModel(
             name="my_plan",
             description="My plan does cool stuff.",
-            parameter_schema={
+            schema={
                 "title": "my_plan",
                 "type": "object",
                 "properties": {},
@@ -81,7 +56,7 @@ def test_get_plans():
         PlanModel(
             name="my_second_plan",
             description="Plan B.",
-            parameter_schema={
+            schema={
                 "title": "my_second_plan",
                 "type": "object",
                 "properties": {"repeats": {"title": "Repeats", "type": "integer"}},
@@ -92,16 +67,17 @@ def test_get_plans():
     ]
 
 
-def test_get_plan():
+@patch("blueapi.service.interface.context")
+def test_get_plan(context_mock: MagicMock):
     context = BlueskyContext()
     context.plan(my_plan)
     context.plan(my_second_plan)
-    interface.start_worker(ApplicationConfig(), bluesky_context=context)
+    context_mock.return_value = context
 
     assert interface.get_plan("my_plan") == PlanModel(
         name="my_plan",
         description="My plan does cool stuff.",
-        parameter_schema={
+        schema={
             "title": "my_plan",
             "type": "object",
             "properties": {},
@@ -118,11 +94,12 @@ class MyDevice:
     name: str
 
 
-def test_get_devices():
+@patch("blueapi.service.interface.context")
+def test_get_devices(context_mock: MagicMock):
     context = BlueskyContext()
     context.device(MyDevice(name="my_device"))
     context.device(SynAxis(name="my_axis"))
-    interface.start_worker(ApplicationConfig(), bluesky_context=context)
+    context_mock.return_value = context
 
     assert interface.get_devices() == [
         DeviceModel(name="my_device", protocols=["HasName"]),
@@ -146,10 +123,12 @@ def test_get_devices():
     ]
 
 
-def test_get_device():
+@patch("blueapi.service.interface.context")
+def test_get_device(context_mock: MagicMock):
     context = BlueskyContext()
     context.device(MyDevice(name="my_device"))
-    interface.start_worker(ApplicationConfig(), bluesky_context=context)
+    context_mock.return_value = context
+
     assert interface.get_device("my_device") == DeviceModel(
         name="my_device", protocols=["HasName"]
     )
@@ -158,11 +137,12 @@ def test_get_device():
         assert interface.get_device("non_existing_device")
 
 
-def test_submit_task():
+@patch("blueapi.service.interface.context")
+def test_submit_task(context_mock: MagicMock):
     context = BlueskyContext()
     context.plan(my_plan)
     task = Task(name="my_plan")
-    interface.start_worker(ApplicationConfig(), bluesky_context=context)
+    context_mock.return_value = context
     mock_uuid_value = "8dfbb9c2-7a15-47b6-bea8-b6b77c31d3d9"
     with patch.object(uuid, "uuid4") as uuid_mock:
         uuid_mock.return_value = uuid.UUID(mock_uuid_value)
@@ -170,11 +150,12 @@ def test_submit_task():
     assert task_uuid == mock_uuid_value
 
 
-def test_clear_task():
+@patch("blueapi.service.interface.context")
+def test_clear_task(context_mock: MagicMock):
     context = BlueskyContext()
     context.plan(my_plan)
     task = Task(name="my_plan")
-    interface.start_worker(ApplicationConfig(), bluesky_context=context)
+    context_mock.return_value = context
     mock_uuid_value = "3d858a62-b40a-400f-82af-8d2603a4e59a"
     with patch.object(uuid, "uuid4") as uuid_mock:
         uuid_mock.return_value = uuid.UUID(mock_uuid_value)
@@ -186,7 +167,6 @@ def test_clear_task():
 
 @patch("blueapi.service.interface.TaskWorker.begin_task")
 def test_begin_task(worker_mock: MagicMock):
-    interface.start_worker(ApplicationConfig())
     uuid_value = "350043fd-597e-41a7-9a92-5d5478232cf7"
     task = WorkerTask(task_id=uuid_value)
     returned_task = interface.begin_task(task)
@@ -196,7 +176,6 @@ def test_begin_task(worker_mock: MagicMock):
 
 @patch("blueapi.service.interface.TaskWorker.begin_task")
 def test_begin_task_no_task_id(worker_mock: MagicMock):
-    interface.start_worker(ApplicationConfig())
     task = WorkerTask(task_id=None)
     returned_task = interface.begin_task(task)
     assert task == returned_task
@@ -219,8 +198,6 @@ def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
 
     get_tasks_by_status_mock.side_effect = mock_tasks_by_status
 
-    interface.start_worker(ApplicationConfig())
-
     assert interface.get_tasks_by_status(TaskStatusEnum.PENDING) == [
         pending_task1,
         pending_task2,
@@ -230,18 +207,15 @@ def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
 
 
 def test_get_active_task():
-    interface.start_worker(ApplicationConfig())
     assert interface.get_active_task() is None
 
 
 def test_get_worker_state():
-    interface.start_worker(ApplicationConfig())
     assert interface.get_worker_state() == WorkerState.IDLE
 
 
 @patch("blueapi.service.interface.TaskWorker.pause")
 def test_pause_worker(pause_worker_mock: MagicMock):
-    interface.start_worker(ApplicationConfig())
     interface.pause_worker(False)
     pause_worker_mock.assert_called_once_with(False)
 
@@ -252,14 +226,12 @@ def test_pause_worker(pause_worker_mock: MagicMock):
 
 @patch("blueapi.service.interface.TaskWorker.resume")
 def test_resume_worker(resume_worker_mock: MagicMock):
-    interface.start_worker(ApplicationConfig())
     interface.resume_worker()
     resume_worker_mock.assert_called_once()
 
 
 @patch("blueapi.service.interface.TaskWorker.cancel_active_task")
 def test_cancel_active_task(cancel_active_task_mock: MagicMock):
-    interface.start_worker(ApplicationConfig())
     fail = True
     reason = "End of session"
     task_id = "789"
@@ -277,15 +249,14 @@ def test_get_tasks(get_tasks_mock: MagicMock):
     ]
     get_tasks_mock.return_value = tasks
 
-    interface.start_worker(ApplicationConfig())
-
     assert interface.get_tasks() == tasks
 
 
-def test_get_task_by_id():
+@patch("blueapi.service.interface.context")
+def test_get_task_by_id(context_mock: MagicMock):
     context = BlueskyContext()
     context.plan(my_plan)
-    interface.start_worker(ApplicationConfig(), bluesky_context=context)
+    context_mock.return_value = context
 
     task_id = interface.submit_task(Task(name="my_plan"))
 
@@ -296,3 +267,9 @@ def test_get_task_by_id():
         is_pending=True,
         errors=[],
     )
+
+
+@pytest.mark.stomp
+def test_stomp_config():
+    interface.set_config(ApplicationConfig(stomp=StompConfig()))
+    assert interface.messaging_template() is not None

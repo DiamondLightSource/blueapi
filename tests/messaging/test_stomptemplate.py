@@ -5,6 +5,7 @@ from queue import Queue
 from typing import Any
 from unittest.mock import ANY, MagicMock, call, patch
 
+import numpy as np
 import pytest
 from pydantic import BaseModel, BaseSettings, Field
 from stomp import Connection
@@ -148,7 +149,12 @@ class Foo(BaseModel):
 @pytest.mark.stomp
 @pytest.mark.parametrize(
     "message,message_type",
-    [("test", str), (1, int), (Foo(a=1, b="test"), Foo)],
+    [
+        ("test", str),
+        (1, int),
+        (Foo(a=1, b="test"), Foo),
+        (np.array([1, 2, 3]), list),
+    ],
 )
 def test_deserialization(
     template: MessagingTemplate, test_queue: str, message: Any, message_type: type
@@ -163,6 +169,8 @@ def test_deserialization(
     reply = template.send_and_receive(test_queue, message, message_type).result(
         timeout=_TIMEOUT
     )
+    if type(message) == np.ndarray:
+        message = message.tolist()
     assert reply == message
 
 

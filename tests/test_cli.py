@@ -15,8 +15,8 @@ from responses import matchers
 
 from blueapi import __version__
 from blueapi.cli.cli import main
-from blueapi.cli.event_bus_client import BlueskyRemoteError
 from blueapi.cli.format import OutputFormat
+from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.model import (
@@ -171,7 +171,7 @@ def test_get_env(
 
 
 @responses.activate(assert_all_requests_are_fired=True)
-@patch("blueapi.cli.cli.sleep", return_value=None)
+@patch("blueapi.client.client.time.sleep", return_value=None)
 def test_reset_env_client_behavior(
     mock_sleep: Mock,
     runner: CliRunner,
@@ -210,20 +210,15 @@ def test_reset_env_client_behavior(
     # Check if the final environment status is printed correctly
     # assert "Environment is initialized." in result.output
     assert reload_result.output == dedent("""\
-                Reloading the environment...
-                initialized=False error_message=None
-                Waiting for environment to initialize...
-                Waiting for environment to initialize...
-                Environment is initialized.
+                Reloading environment
+                Environment is initialized
                 initialized=True error_message=None
                 """)
 
 
 @responses.activate
-@patch("blueapi.cli.cli.sleep", return_value=None)
+@patch("blueapi.client.client.time.sleep", return_value=None)
 def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
-    max_polling_count = 10  # Assuming this is your max polling count in the command
-
     # Setup mocked responses for the REST endpoints
     responses.add(
         responses.DELETE,
@@ -232,24 +227,24 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
         json=EnvironmentResponse(initialized=False).dict(),
     )
     # Add responses for each polling attempt, all indicating not initialized
-    for _ in range(max_polling_count):
-        responses.add(
-            responses.GET,
-            "http://localhost:8000/environment",
-            json=EnvironmentResponse(initialized=False).dict(),
-            status=200,
-        )
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/environment",
+        json=EnvironmentResponse(initialized=False).dict(),
+        status=200,
+    )
 
     # Run the command that should interact with these endpoints
-    result = runner.invoke(main, ["controller", "env", "-r"])
+    result = runner.invoke(main, ["controller", "env", "-r", "-t", "0.1"])
     if result.exception is not None:
         assert isinstance(result.exception, TimeoutError), "Expected a TimeoutError"
-        assert result.exception.args[0] == "Environment initialization timed out."
+        assert (
+            result.exception.args[0]
+            == "Failed to reload the environment within 0.1 seconds, "
+            "a server restart is recommended"
+        )
     else:
         raise AssertionError("Expected an exception but got None")
-
-    # Check if the endpoints were hit as expected
-    assert len(responses.calls) == max_polling_count + 1  # +1 for the DELETE call
 
     # First call should be DELETE
     assert responses.calls[0].request.method == "DELETE"
@@ -261,11 +256,7 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
         assert call.request.url == "http://localhost:8000/environment"
 
     # Check the output for the timeout message
-    assert (
-        result.output
-        == "Reloading the environment...\ninitialized=False error_message=None\n"
-        + "Waiting for environment to initialize...\n" * 10
-    )
+    assert result.output == "Reloading environment\n"
     assert (
         result.exit_code == 1
     )  # Assuming your command exits successfully even on timeout for simplicity
@@ -280,9 +271,9 @@ def test_env_reload_server_side_error(runner: CliRunner):
 
     result = runner.invoke(main, ["controller", "env", "-r"])
     assert isinstance(
-        result.exception, BlueskyRemoteError
+        result.exception, BlueskyRemoteControlError
     ), "Expected a BlueskyRemoteError from cli runner"
-    assert result.exception.args[0] == "Failed to reload the environment"
+    assert result.exception.args[0] == "Failed to tear down the environment"
 
     # Check if the endpoints were hit as expected
     assert len(responses.calls) == 1  # +1 for the DELETE call
@@ -294,7 +285,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
     # Check the output for the timeout message
     # TODO this seems wrong but this is the current behaviour
     # There should be an error message
-    assert result.output == "Reloading the environment...\n"
+    assert result.output == "Reloading environment\n"
 
     assert result.exit_code == 1
 
@@ -303,13 +294,15 @@ def test_env_reload_server_side_error(runner: CliRunner):
     "exception, expected_exit_code",
     [
         (ValidationError("Invalid parameters", BaseModel), 1),
-        (BlueskyRemoteError("Server error"), 1),
+        (BlueskyRemoteControlError("Server error"), 1),
         (ValueError("Error parsing parameters"), 1),
     ],
 )
 def test_error_handling(exception, expected_exit_code, runner: CliRunner):
     # Patching the create_task method to raise different exceptions
-    with patch("blueapi.cli.rest.BlueapiRestClient.create_task", side_effect=exception):
+    with patch(
+        "blueapi.client.rest.BlueapiRestClient.create_task", side_effect=exception
+    ):
         result = runner.invoke(
             main,
             [

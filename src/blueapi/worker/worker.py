@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import Field
 
@@ -17,6 +17,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
     """
 
     task_id: str
+    request_id: str = ""
     task: T
     is_complete: bool = False
     is_pending: bool = True
@@ -30,7 +31,7 @@ class Worker(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def get_tasks(self) -> list[TrackableTask[T]]:
+    def get_tasks(self, carr: dict[str, Any] = None) -> list[TrackableTask[T]]:
         """
         Return a list of all tasks on the worker,
         any one of which can be triggered with begin_task.
@@ -40,7 +41,9 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def get_task_by_id(self, task_id: str) -> TrackableTask[T] | None:
+    def get_task_by_id(
+        self, task_id: str, carr: dict[str, Any] = None
+    ) -> TrackableTask[T] | None:
         """
         Returns a task matching the task ID supplied,
         if the worker knows of it.
@@ -53,7 +56,7 @@ class Worker(ABC, Generic[T]):
                 None if the task ID is unknown to the worker.
         """
 
-    def get_active_task(self) -> TrackableTask[T] | None:
+    def get_active_task(self, carr: dict[str, Any] = None) -> TrackableTask[T] | None:
         """
         Returns the task the worker is currently running
 
@@ -63,7 +66,7 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def clear_task(self, task_id: str) -> str:
+    def clear_task(self, task_id: str, carr: dict[str, Any] = None) -> str:
         """
         Remove a task from the worker
 
@@ -78,6 +81,7 @@ class Worker(ABC, Generic[T]):
         self,
         failure: bool = False,
         reason: str | None = None,
+        carr: dict[str, Any] = None,
     ) -> str:
         """
         Remove the currently active task from the worker if there is one
@@ -85,7 +89,7 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def begin_task(self, task_id: str) -> None:
+    def begin_task(self, task_id: str, carr: dict[str, Any] = None) -> None:
         """
         Trigger a pending task. Will fail if the worker is busy.
 
@@ -97,7 +101,7 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def submit_task(self, task: T) -> str:
+    def submit_task(self, task: T, carr: dict[str, Any] = None) -> str:
         """
         Submit a task to be run on begin_task
 
@@ -108,7 +112,9 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
+    def get_tasks_by_status(
+        self, status: TaskStatusEnum, carr: dict[str, Any] = None
+    ) -> list[TrackableTask]:
         """
         Retrieve a list of tasks based on their status.
         Args:
@@ -137,13 +143,13 @@ class Worker(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def pause(self, defer=False) -> None:
+    def pause(self, defer=False, carr: dict[str, Any] = None) -> None:
         """
         Command the worker to pause.
         """
 
     @abstractmethod
-    def resume(self) -> None:
+    def resume(self, carr: dict[str, Any] = None) -> None:
         """
         Command the worker to resume
         """

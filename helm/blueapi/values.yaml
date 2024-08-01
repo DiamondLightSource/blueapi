@@ -75,12 +75,33 @@ listener:
   resources: {}
 
 # Additional envVars to mount to the pod as a String
-extraEnvVars: []
+extraEnvVars: |
+  - name: OTEL_EXPORTER_OTLP_TRACES_PROTOCOL
+    value: {{ .Values.jaeger.otlp.protocol }}
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "{{ .Values.jaeger.otlp.host }}:{{ .Values.jaeger.otlp.port }}"
+  - name: OTEL_EXPORTER_OTLP_INSECURE
+    value: "{{ .Values.jaeger.otlp.insecure }}"
+  - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST
+    value: {{ .Values.jaeger.otlp.request.headers }}
+  - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE
+    value: {{ .Values.jaeger.otlp.response.headers }}
   # - name: RABBITMQ_PASSWORD
   #   valueFrom:
   #     secretKeyRef:
   #       name: rabbitmq-password
   #       key: rabbitmq-password
+
+jaeger:
+  otlp:
+    protocol: http/protobuf
+    insecure: true
+    host: http://localhost
+    port: 4318
+    request:
+      headers: ".*"
+    response:
+      headers: ".*"
 
 # Config for the worker goes here, will be mounted into a config file
 worker:
@@ -110,6 +131,6 @@ worker:
   #     - name: "dodal"
   #       remote_url: https://github.com/DiamondLightSource/dodal.git
 
-# Mount path for scratch area from host machine, setting 
+# Mount path for scratch area from host machine, setting
 # this effectively enables scratch area management
 scratchHostPath: "" # example: /usr/local/blueapi-software-scratch

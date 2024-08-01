@@ -10,6 +10,7 @@ from fastapi import (
     Response,
     status,
 )
+from observability_utils import instrument_fastapi_app
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -75,6 +76,11 @@ app = FastAPI(
     lifespan=lifespan,
     version=REST_API_VERSION,
 )
+
+instrument_fastapi_app(app, "blueapi")
+"""
+Set up basic automated instrumentation for the FastAPI app.
+"""
 
 
 @app.exception_handler(KeyError)

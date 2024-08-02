@@ -1,15 +1,13 @@
 import logging
 import signal
 from collections.abc import Callable, Iterable
+from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
 from typing import Any
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.interface import (
-    setup,
-    teardown,
-)
+from blueapi.service.interface import setup, teardown
 from blueapi.service.model import EnvironmentResponse
 
 # The default multiprocessing start method is fork
@@ -96,7 +94,7 @@ class WorkerDispatcher:
     ) -> Any:
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
-        return self._subprocess.apply(function, arguments)
+        return self._subprocess.apply(_rpc, [function.__module__, function.__name__] + arguments)
 
     @property
     def state(self) -> EnvironmentResponse:
@@ -106,3 +104,22 @@ class WorkerDispatcher:
 class InvalidRunnerStateError(Exception):
     def __init__(self, message):
         super().__init__(message)
+
+
+class RpcErrpr(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+def _rpc(module_name: str, function_name: str, *args):
+    mod = import_module(module_name)
+    function = mod.__dict__.get(function_name)
+    _validate_function(function)
+    return function(*args)
+
+
+def _validate_function(function: Any) -> None:
+    if function is None:
+        raise RpcErrpr(f"{function}: No such function in subprocess API")
+    elif not callable(function):
+        raise RpcErrpr(f"{function}: Object in subprocess is not a function")

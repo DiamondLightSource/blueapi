@@ -17,8 +17,6 @@ from observability_utils import (
     get_tracer,
     setup_tracing,
 )
-from opentelemetry.context import attach
-from opentelemetry.propagate import get_global_textmap
 from super_state_machine.errors import TransitionError
 
 from blueapi.core import (
@@ -112,7 +110,7 @@ class TaskWorker(Worker[Task]):
         setup_tracing("BlueAPIWorker")
 
     @TRACER.start_as_current_span("clear_task", kind=SpanKind.SERVER)
-    def clear_task(self, task_id: str, carr: dict[str, Any] = None) -> str:
+    def clear_task(self, task_id: str) -> str:
         task = self._tasks.pop(task_id)
         return task.task_id
 
@@ -121,7 +119,6 @@ class TaskWorker(Worker[Task]):
         self,
         failure: bool = False,
         reason: str | None = None,
-        carr: dict[str, Any] = None,
     ) -> str:
         if self._current is None:
             # Persuades mypy that self._current is not None
@@ -134,19 +131,15 @@ class TaskWorker(Worker[Task]):
         return self._current.task_id
 
     @TRACER.start_as_current_span("get_tasks", kind=SpanKind.SERVER)
-    def get_tasks(self, carr: dict[str, Any] = None) -> list[TrackableTask]:
+    def get_tasks(self) -> list[TrackableTask]:
         return list(self._tasks.values())
 
     @TRACER.start_as_current_span("get_task_by_id", kind=SpanKind.SERVER)
-    def get_task_by_id(
-        self, task_id: str, carr: dict[str, Any] = None
-    ) -> TrackableTask | None:
+    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         return self._tasks.get(task_id)
 
     @TRACER.start_as_current_span("get_tasks_by_status", kind=SpanKind.SERVER)
-    def get_tasks_by_status(
-        self, status: TaskStatusEnum, carr: dict[str, Any] = None
-    ) -> list[TrackableTask]:
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
         if status == TaskStatusEnum.RUNNING:
             return [
                 task
@@ -160,14 +153,11 @@ class TaskWorker(Worker[Task]):
         return []
 
     @TRACER.start_as_current_span("get_active_task", kind=SpanKind.SERVER)
-    def get_active_task(
-        self, carr: dict[str, Any] = None
-    ) -> TrackableTask[Task] | None:
+    def get_active_task(self) -> TrackableTask[Task] | None:
         return self._current
 
     @TRACER.start_as_current_span("begin_task", kind=SpanKind.SERVER)
-    def begin_task(self, task_id: str, carr: dict[str, Any] = None) -> None:
-        self.retrieve_observability_context(carr)
+    def begin_task(self, task_id: str) -> None:
         task = self._tasks.get(task_id)
         if task is not None:
             self._submit_trackable_task(task)
@@ -175,8 +165,7 @@ class TaskWorker(Worker[Task]):
             raise KeyError(f"No pending task with ID {task_id}")
 
     @TRACER.start_as_current_span("submit_task", kind=SpanKind.SERVER)
-    def submit_task(self, task: Task, carr: dict[str, Any] = None) -> str:
-        self.retrieve_observability_context(carr)
+    def submit_task(self, task: Task) -> str:
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         get_current_span().set_attributes(
@@ -189,10 +178,7 @@ class TaskWorker(Worker[Task]):
         return task_id
 
     @TRACER.start_as_current_span("_submit_trackable_task", kind=SpanKind.SERVER)
-    def _submit_trackable_task(
-        self, trackable_task: TrackableTask, carr: dict[str, Any] = None
-    ) -> None:
-        self.retrieve_observability_context(carr)
+    def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
         if self.state is not WorkerState.IDLE:
             raise WorkerBusyError(f"Worker is in state {self.state}")
 
@@ -279,14 +265,12 @@ class TaskWorker(Worker[Task]):
         self._stopped.set()
 
     @TRACER.start_as_current_span("pause", kind=SpanKind.SERVER)
-    def pause(self, defer=False, carr: dict[str, Any] = None):
-        self.retrieve_observability_context(carr)
+    def pause(self, defer=False):
         LOGGER.info("Requesting to pause the worker")
         self._ctx.run_engine.request_pause(defer)
 
     @TRACER.start_as_current_span("resume", kind=SpanKind.SERVER)
-    def resume(self, carr: dict[str, Any] = None):
-        self.retrieve_observability_context(carr)
+    def resume(self):
         LOGGER.info("Requesting to resume the worker")
         self._ctx.run_engine.resume()
 
@@ -480,9 +464,6 @@ class TaskWorker(Worker[Task]):
                 ),
                 self._current.task_id,
             )
-
-    def retrieve_observability_context(self, carr: dict[str, Any]):
-        attach(get_global_textmap().extract(carr))
 
 
 @dataclass

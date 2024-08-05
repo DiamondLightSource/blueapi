@@ -1,10 +1,14 @@
+import functools
 import logging
+from _collections_abc import Callable
 from collections.abc import Mapping
 from functools import lru_cache
-from typing import Any
+from typing import Any, Concatenate, TypeVar
 
-from observability_utils import SpanKind, get_tracer
+from observability_utils import get_tracer
+from opentelemetry.context import attach
 from opentelemetry.propagate import get_global_textmap
+from typing_extensions import ParamSpec
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.context import BlueskyContext
@@ -21,9 +25,25 @@ from blueapi.worker.worker import TrackableTask, Worker
 context and worker"""
 
 TRACER = get_tracer("interface")
+PROP_KEY = "carrier"
 
 
 _CONFIG: ApplicationConfig = ApplicationConfig()
+
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+def use_propagated_context(
+    func: Callable[P, T],
+) -> Callable[Concatenate[dict[str, Any], P], T]:
+    @functools.wraps(func)
+    def wrapper(carrier: dict[str, Any], *args: P.args, **kwargs: P.kwargs) -> T:
+        ctx = get_global_textmap().extract(carrier)
+        attach(ctx)
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 def config() -> ApplicationConfig:
@@ -75,6 +95,7 @@ def messaging_template() -> MessagingTemplate | None:
         return None
 
 
+@use_propagated_context
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
 
@@ -109,105 +130,97 @@ def _publish_event_stream(stream: EventStream, destination: str) -> None:
     stream.subscribe(forward_message)
 
 
-@TRACER.start_as_current_span("get_plans", kind=SpanKind.SERVER)
+@use_propagated_context
 def get_plans() -> list[PlanModel]:
     """Get all available plans in the BlueskyContext"""
     return [PlanModel.from_plan(plan) for plan in context().plans.values()]
 
 
-@TRACER.start_as_current_span("get_plan", kind=SpanKind.SERVER)
+@use_propagated_context
 def get_plan(name: str) -> PlanModel:
     """Get plan by name from the BlueskyContext"""
     return PlanModel.from_plan(context().plans[name])
 
 
-@TRACER.start_as_current_span("get_devices", kind=SpanKind.SERVER)
+@use_propagated_context
 def get_devices() -> list[DeviceModel]:
     """Get all available devices in the BlueskyContext"""
     return [DeviceModel.from_device(device) for device in context().devices.values()]
 
 
-@TRACER.start_as_current_span("get_device", kind=SpanKind.SERVER)
+@use_propagated_context
 def get_device(name: str) -> DeviceModel:
     """Retrieve device by name from the BlueskyContext"""
     return DeviceModel.from_device(context().devices[name])
 
 
-@TRACER.start_as_current_span("submit_task", kind=SpanKind.SERVER)
+@use_propagated_context
 def submit_task(task: Task) -> str:
     """Submit a task to be run on begin_task"""
-    return worker().submit_task(task, propagate_observability_context())
+    return worker().submit_task(task)
 
 
-@TRACER.start_as_current_span("clear_task", kind=SpanKind.SERVER)
+@use_propagated_context
 def clear_task(task_id: str) -> str:
     """Remove a task from the worker"""
-    return worker().clear_task(task_id, propagate_observability_context())
+    return worker().clear_task(task_id)
 
 
-@TRACER.start_as_current_span("begin_task", kind=SpanKind.SERVER)
+@use_propagated_context
 def begin_task(task: WorkerTask) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
     if task.task_id is not None:
-        worker().begin_task(task.task_id, propagate_observability_context())
+        worker().begin_task(task.task_id)
     return task
 
 
-@TRACER.start_as_current_span("get_task_by_status", kind=SpanKind.SERVER)
+@use_propagated_context
 def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
     """Retrieve a list of tasks based on their status."""
-    return worker().get_tasks_by_status(
-        status, propagate_observability_context()
-    )
+    return worker().get_tasks_by_status(status)
 
 
-@TRACER.start_as_current_span("get_active_task", kind=SpanKind.SERVER)
+@use_propagated_context
 def get_active_task() -> TrackableTask | None:
     """Task the worker is currently running"""
-    return worker().get_active_task(propagate_observability_context())
+    return worker().get_active_task()
 
 
-@TRACER.start_as_current_span("get_worker_state", kind=SpanKind.SERVER)
+@use_propagated_context
 def get_worker_state() -> WorkerState:
     """State of the worker"""
     return worker().state
 
 
-@TRACER.start_as_current_span("pause_worker", kind=SpanKind.SERVER)
+@use_propagated_context
 def pause_worker(defer: bool | None) -> None:
     """Command the worker to pause"""
-    worker().pause(defer, propagate_observability_context())
+    worker().pause(defer)
 
 
-@TRACER.start_as_current_span("resume_worker", kind=SpanKind.SERVER)
+@use_propagated_context
 def resume_worker() -> None:
     """Command the worker to resume"""
-    worker().resume(propagate_observability_context())
+    worker().resume()
 
 
-@TRACER.start_as_current_span("cancel_active_task", kind=SpanKind.SERVER)
+@use_propagated_context
 def cancel_active_task(failure: bool, reason: str | None) -> str:
     """Remove the currently active task from the worker if there is one
     Returns the task_id of the active task"""
     return worker().cancel_active_task(failure, reason)
 
 
-@TRACER.start_as_current_span("get_tasks", kind=SpanKind.SERVER)
+@use_propagated_context
 def get_tasks() -> list[TrackableTask]:
     """Return a list of all tasks on the worker,
     any one of which can be triggered with begin_task"""
+
     return worker().get_tasks()
 
 
-@TRACER.start_as_current_span("get_task_by_id", kind=SpanKind.SERVER)
+@use_propagated_context
 def get_task_by_id(task_id: str) -> TrackableTask | None:
     """Returns a task matching the task ID supplied,
     if the worker knows of it"""
     return worker().get_task_by_id(task_id)
-
-def propagate_observability_context() -> dict[str, Any]:
-    carr = {}
-    tm = get_global_textmap()
-
-    tm.inject(carr)
-    return carr

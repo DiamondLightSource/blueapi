@@ -1,9 +1,13 @@
 import logging
 import signal
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
+from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any
+from typing import Any, TypeVar
+
+from opentelemetry.propagate import get_global_textmap
+from typing_extensions import ParamSpec
 
 from blueapi.config import ApplicationConfig
 from blueapi.service.interface import (
@@ -16,6 +20,15 @@ from blueapi.service.model import EnvironmentResponse
 set_start_method("spawn", force=True)
 
 LOGGER = logging.getLogger(__name__)
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def get_context_propagator() -> dict[str, Any]:
+    carr = {}
+    get_global_textmap().inject(carr)
+    return carr
 
 
 def _init_worker():
@@ -82,21 +95,31 @@ class WorkerDispatcher:
             )
             LOGGER.exception(e)
 
-    def run(self, function: Callable, arguments: Iterable | None = None) -> Any:
-        arguments = arguments or []
+    def run(
+        self,
+        function: Callable[P, T],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> T:
         if self._use_subprocess:
-            return self._run_in_subprocess(function, arguments)
+            return self._run_in_subprocess(function, *args, **kwargs)
         else:
-            return function(*arguments)
+            return function(*args, **kwargs)
 
     def _run_in_subprocess(
         self,
-        function: Callable,
-        arguments: Iterable,
-    ) -> Any:
+        function: Callable[P, T],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> T:
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
-        return self._subprocess.apply(function, arguments)
+        # return self._subprocess.apply(function, arguments)
+        return self._subprocess.apply(
+            _rpc,
+            (function.__module__, function.__name__, get_context_propagator(), *args),
+            kwargs,
+        )
 
     @property
     def state(self) -> EnvironmentResponse:
@@ -106,3 +129,22 @@ class WorkerDispatcher:
 class InvalidRunnerStateError(Exception):
     def __init__(self, message):
         super().__init__(message)
+
+
+class RpcErrpr(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+def _rpc(module_name: str, function_name: str, *args: P.args, **kwargs: P.kwargs) -> T:
+    mod = import_module(module_name)
+    function: Callable[P, T] = mod.__dict__.get(function_name)
+    _validate_function(function_name, function)
+    return function(*args, **kwargs)
+
+
+def _validate_function(name: str, function: Any) -> None:
+    if function is None:
+        raise RpcErrpr(f"{name}: No such function in subprocess API")
+    elif not callable(function):
+        raise RpcErrpr(f"{name}: {function}: Object in subprocess is not a function")

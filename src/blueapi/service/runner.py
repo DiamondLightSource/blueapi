@@ -97,6 +97,10 @@ class WorkerDispatcher:
     ) -> T:
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
+        if not (hasattr(function, "__name__") and hasattr(function, "__module__")):
+            raise RpcError(
+                f"Target {function} is not valid target for running in subprocess"
+            )
         return self._subprocess.apply(
             _rpc, (function.__module__, function.__name__, *args), kwargs
         )
@@ -111,9 +115,7 @@ class InvalidRunnerStateError(Exception):
         super().__init__(message)
 
 
-class RpcErrpr(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+class RpcError(Exception): ...
 
 
 def _rpc(
@@ -121,14 +123,14 @@ def _rpc(
 ) -> Any:
     mod = import_module(module_name)
     func: Callable[P, T] = _validate_function(
-        mod.__dict__.get(function_name), function_name
+        mod.__dict__.get(function_name, None), function_name
     )
     return func(*args, **kwargs)
 
 
 def _validate_function(func: Any, function_name: str) -> Callable:
     if func is None:
-        raise RpcErrpr(f"{function_name}: No such function in subprocess API")
+        raise RpcError(f"{function_name}: No such function in subprocess API")
     elif not callable(func):
-        raise RpcErrpr(f"{func}: Object in subprocess is not a function")
+        raise RpcError(f"{function_name}: Object in subprocess is not a function")
     return func

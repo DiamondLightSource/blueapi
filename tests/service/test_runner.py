@@ -5,11 +5,31 @@ import pytest
 
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
-from blueapi.service.runner import InvalidRunnerStateError, WorkerDispatcher
+from blueapi.service.runner import (
+    InvalidRunnerStateError,
+    RpcError,
+    WorkerDispatcher,
+)
 
 
-def test_initialize():
-    runner = WorkerDispatcher()
+@pytest.fixture
+def local_runner():
+    return WorkerDispatcher(use_subprocess=False)
+
+
+@pytest.fixture
+def runner():
+    return WorkerDispatcher()
+
+
+@pytest.fixture
+def started_runner(runner: WorkerDispatcher):
+    runner.start()
+    yield runner
+    runner.stop()
+
+
+def test_initialize(runner: WorkerDispatcher):
     assert not runner.state.initialized
     runner.start()
     assert runner.state.initialized
@@ -19,8 +39,7 @@ def test_initialize():
     assert not runner.state.initialized
 
 
-def test_reload():
-    runner = WorkerDispatcher()
+def test_reload(runner: WorkerDispatcher):
     runner.start()
     assert runner.state.initialized
     runner.reload()
@@ -28,14 +47,12 @@ def test_reload():
     runner.stop()
 
 
-def test_raises_if_used_before_started():
-    runner = WorkerDispatcher()
+def test_raises_if_used_before_started(runner: WorkerDispatcher):
     with pytest.raises(InvalidRunnerStateError):
         runner.run(interface.get_plans)
 
 
-def test_error_on_runner_setup():
-    runner = WorkerDispatcher(use_subprocess=False)
+def test_error_on_runner_setup(local_runner: WorkerDispatcher):
     expected_state = EnvironmentResponse(
         initialized=False,
         error_message="Intentional start_worker exception",
@@ -48,8 +65,8 @@ def test_error_on_runner_setup():
         # Calling reload here instead of start also indirectly
         # tests that stop() doesn't raise if there is no error message
         # and the runner is not yet initialised
-        runner.reload()
-        state = runner.state
+        local_runner.reload()
+        state = local_runner.state
         assert state == expected_state
 
 
@@ -85,3 +102,35 @@ def test_can_reload_after_an_error(pool_mock: MagicMock):
     runner.reload()
 
     assert runner.state == EnvironmentResponse(initialized=True, error_message=None)
+
+
+def test_clear_message_for_not_found(started_runner: WorkerDispatcher):
+    from tests.core.fake_device_module import fake_motor_y
+
+    # Change in this process not reflected in subprocess
+    fake_motor_y.__name__ = "not_exported"
+
+    with pytest.raises(
+        RpcError, match="not_exported: No such function in subprocess API"
+    ):
+        started_runner.run(fake_motor_y)
+
+
+def test_clear_message_for_non_function(started_runner: WorkerDispatcher):
+    from tests.core.fake_device_module import FOO
+
+    with pytest.raises(
+        RpcError,
+        match="Target <NonCallableMock id='[0-9]+'> is not valid target for running in subprocess",
+    ):
+        started_runner.run(FOO)
+
+
+def test_clear_message_for_invalid_function(started_runner: WorkerDispatcher):
+    from tests.core.fake_device_module import BAR
+
+    with pytest.raises(
+        RpcError,
+        match="BAR: No such function in subprocess API",
+    ):
+        started_runner.run(BAR)

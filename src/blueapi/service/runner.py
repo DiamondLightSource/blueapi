@@ -4,16 +4,14 @@ from collections.abc import Callable
 from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any, TypeVar
+from typing import Any, Concatenate, ParamSpec, TypeVar
 
 from opentelemetry.propagate import get_global_textmap
-from typing_extensions import ParamSpec
 
 from blueapi.config import ApplicationConfig
 from blueapi.service.interface import (
     setup,
     teardown,
-    use_propagated_context,
 )
 from blueapi.service.model import EnvironmentResponse
 
@@ -109,7 +107,7 @@ class WorkerDispatcher:
 
     def _run_in_subprocess(
         self,
-        function: Callable[P, T],
+        function: Callable[Concatenate[dict[str, Any], P], T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
@@ -140,7 +138,7 @@ def _rpc(module_name: str, function_name: str, args, kwargs) -> T:
     mod = import_module(module_name)
     function = mod.__dict__.get(function_name)
     _validate_function(function_name, function)
-    return use_propagated_context(function)(*args, **kwargs)
+    return function(*args, **kwargs)
 
 
 def _validate_function(name: str, function: Any) -> None:

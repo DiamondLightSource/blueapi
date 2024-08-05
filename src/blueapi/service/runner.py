@@ -13,6 +13,7 @@ from blueapi.config import ApplicationConfig
 from blueapi.service.interface import (
     setup,
     teardown,
+    use_propagated_context,
 )
 from blueapi.service.model import EnvironmentResponse
 
@@ -114,7 +115,6 @@ class WorkerDispatcher:
     ) -> T:
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
-        # return self._subprocess.apply(function, arguments)
         return self._subprocess.apply(
             _rpc,
             (function.__module__, function.__name__, get_context_propagator(), *args),
@@ -136,11 +136,11 @@ class RpcErrpr(Exception):
         super().__init__(message)
 
 
-def _rpc(module_name: str, function_name: str, *args: P.args, **kwargs: P.kwargs) -> T:
+def _rpc(module_name: str, function_name: str, args, kwargs) -> T:
     mod = import_module(module_name)
-    function: Callable[P, T] = mod.__dict__.get(function_name)
+    function = mod.__dict__.get(function_name)
     _validate_function(function_name, function)
-    return function(*args, **kwargs)
+    return use_propagated_context(function)(*args, **kwargs)
 
 
 def _validate_function(name: str, function: Any) -> None:

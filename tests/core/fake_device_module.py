@@ -2,10 +2,6 @@ from unittest.mock import MagicMock, NonCallableMock
 
 from ophyd import EpicsMotor
 
-FOO = NonCallableMock()
-BAR = NonCallableMock()
-BAR.__name__ = "BAR"
-
 
 def fake_motor_bundle_b(
     fake_motor_x: EpicsMotor,
@@ -33,3 +29,9 @@ def _mock_with_name(name: str) -> MagicMock:
     mock = MagicMock()
     mock.name = name
     return mock
+
+
+FOO = NonCallableMock()
+BAR = NonCallableMock()
+BAR.__name__ = "BAR"
+BAR.__module__ = fake_motor_bundle_a.__module__

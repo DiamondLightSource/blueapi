@@ -131,6 +131,6 @@ def test_clear_message_for_invalid_function(started_runner: WorkerDispatcher):
 
     with pytest.raises(
         RpcError,
-        match="BAR: No such function in subprocess API",
+        match="BAR: Object in subprocess is not a function",
     ):
         started_runner.run(BAR)

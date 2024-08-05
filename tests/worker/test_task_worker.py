@@ -17,7 +17,6 @@ from blueapi.worker import (
     TaskStatus,
     TaskWorker,
     TrackableTask,
-    Worker,
     WorkerAlreadyStartedError,
     WorkerBusyError,
     WorkerEvent,
@@ -72,53 +71,53 @@ def context(fake_device: FakeDevice) -> BlueskyContext:
 
 
 @pytest.fixture
-def inert_worker(context: BlueskyContext) -> Worker[Task]:
+def inert_worker(context: BlueskyContext) -> TaskWorker:
     return TaskWorker(context, start_stop_timeout=2.0)
 
 
 @pytest.fixture
-def worker(inert_worker: Worker[Task]) -> Iterable[Worker[Task]]:
+def worker(inert_worker: TaskWorker) -> Iterable[TaskWorker]:
     inert_worker.start()
     yield inert_worker
     inert_worker.stop()
 
 
-def test_stop_doesnt_hang(inert_worker: Worker) -> None:
+def test_stop_doesnt_hang(inert_worker: TaskWorker) -> None:
     inert_worker.start()
     inert_worker.stop()
 
 
-def test_stop_is_idempontent_if_worker_not_started(inert_worker: Worker) -> None:
+def test_stop_is_idempontent_if_worker_not_started(inert_worker: TaskWorker) -> None:
     inert_worker.stop()
 
 
-def test_multi_stop(inert_worker: Worker) -> None:
+def test_multi_stop(inert_worker: TaskWorker) -> None:
     inert_worker.start()
     inert_worker.stop()
     inert_worker.stop()
 
 
-def test_restart(inert_worker: Worker) -> None:
+def test_restart(inert_worker: TaskWorker) -> None:
     inert_worker.start()
     inert_worker.stop()
     inert_worker.start()
     inert_worker.stop()
 
 
-def test_multi_start(inert_worker: Worker) -> None:
+def test_multi_start(inert_worker: TaskWorker) -> None:
     inert_worker.start()
     with pytest.raises(WorkerAlreadyStartedError):
         inert_worker.start()
     inert_worker.stop()
 
 
-def test_submit_task(worker: Worker) -> None:
+def test_submit_task(worker: TaskWorker) -> None:
     assert worker.get_tasks() == []
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
 
 
-def test_submit_multiple_tasks(worker: Worker) -> None:
+def test_submit_multiple_tasks(worker: TaskWorker) -> None:
     assert worker.get_tasks() == []
     task_id_1 = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_tasks() == [TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK)]
@@ -129,13 +128,13 @@ def test_submit_multiple_tasks(worker: Worker) -> None:
     ]
 
 
-def test_stop_with_task_pending(inert_worker: Worker) -> None:
+def test_stop_with_task_pending(inert_worker: TaskWorker) -> None:
     inert_worker.start()
     inert_worker.submit_task(_SIMPLE_TASK)
     inert_worker.stop()
 
 
-def test_restart_leaves_task_pending(worker: Worker) -> None:
+def test_restart_leaves_task_pending(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
     worker.stop()
@@ -143,7 +142,7 @@ def test_restart_leaves_task_pending(worker: Worker) -> None:
     assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
 
 
-def test_submit_before_start_pending(inert_worker: Worker) -> None:
+def test_submit_before_start_pending(inert_worker: TaskWorker) -> None:
     task_id = inert_worker.submit_task(_SIMPLE_TASK)
     inert_worker.start()
     assert inert_worker.get_tasks() == [
@@ -155,20 +154,20 @@ def test_submit_before_start_pending(inert_worker: Worker) -> None:
     ]
 
 
-def test_clear_task(worker: Worker) -> None:
+def test_clear_task(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
     assert worker.clear_task(task_id)
     assert worker.get_tasks() == []
 
 
-def test_clear_nonexistant_task(worker: Worker) -> None:
+def test_clear_nonexistant_task(worker: TaskWorker) -> None:
     with pytest.raises(KeyError):
         worker.clear_task("foo")
 
 
 def test_does_not_allow_simultaneous_running_tasks(
-    worker: Worker,
+    worker: TaskWorker,
     fake_device: FakeDevice,
 ) -> None:
     task_ids = [
@@ -181,7 +180,7 @@ def test_does_not_allow_simultaneous_running_tasks(
     fake_device.event.set()
 
 
-def test_begin_task_blocks_until_current_task_set(worker: Worker) -> None:
+def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_active_task() is None
     worker.begin_task(task_id)
@@ -190,7 +189,7 @@ def test_begin_task_blocks_until_current_task_set(worker: Worker) -> None:
     assert active_task.task == _SIMPLE_TASK
 
 
-def test_plan_failure_recorded_in_active_task(worker: Worker) -> None:
+def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_FAILING_TASK)
     events_future: Future[list[WorkerEvent]] = take_events(
         worker.worker_events,
@@ -208,7 +207,7 @@ def test_plan_failure_recorded_in_active_task(worker: Worker) -> None:
 
 
 @pytest.mark.parametrize("num_runs", [0, 1, 2])
-def test_produces_worker_events(worker: Worker, num_runs: int) -> None:
+def test_produces_worker_events(worker: TaskWorker, num_runs: int) -> None:
     task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
     event_sequences = [_sleep_events(task_id) for task_id in task_ids]
 
@@ -245,7 +244,7 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
     ]
 
 
-def test_no_additional_progress_events_after_complete(worker: Worker):
+def test_no_additional_progress_events_after_complete(worker: TaskWorker):
     """
     See https://github.com/bluesky/ophyd/issues/1115
     """
@@ -266,7 +265,7 @@ def test_no_additional_progress_events_after_complete(worker: Worker):
 
 
 @patch("queue.Queue.put_nowait")
-def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: Worker):
+def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: TaskWorker):
     def raise_full(item):
         raise Full()
 
@@ -283,14 +282,14 @@ def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: Worker
 
 def assert_run_produces_worker_events(
     expected_events: list[WorkerEvent],
-    worker: Worker,
+    worker: TaskWorker,
     task_id: str,
 ) -> None:
     assert begin_task_and_wait_until_complete(worker, task_id) == expected_events
 
 
 def begin_task_and_wait_until_complete(
-    worker: Worker,
+    worker: TaskWorker,
     task_id: str,
     timeout: float = 5.0,
 ) -> list[WorkerEvent]:
@@ -308,7 +307,7 @@ def begin_task_and_wait_until_complete(
 #
 
 
-def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
+def test_worker_and_data_events_produce_in_order(worker: TaskWorker) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [
             WorkerEvent(
@@ -346,7 +345,7 @@ def test_worker_and_data_events_produce_in_order(worker: Worker) -> None:
 
 def assert_running_count_plan_produces_ordered_worker_and_data_events(
     expected_events: list[WorkerEvent | DataEvent],
-    worker: Worker,
+    worker: TaskWorker,
     task: Task | None = None,
     timeout: float = 5.0,
 ) -> None:

@@ -10,9 +10,8 @@ from blueapi.messaging.base import MessagingTemplate
 from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
-from blueapi.worker.reworker import TaskWorker
 from blueapi.worker.task import Task
-from blueapi.worker.worker import TrackableTask, Worker
+from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
 """This module provides interface between web application and underlying Bluesky
 context and worker"""
@@ -39,7 +38,7 @@ def context() -> BlueskyContext:
 
 
 @lru_cache
-def worker() -> Worker:
+def worker() -> TaskWorker:
     worker = TaskWorker(
         context(),
         broadcast_statuses=config().env.events.broadcast_status_events,

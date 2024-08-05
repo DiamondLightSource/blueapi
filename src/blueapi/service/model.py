@@ -6,8 +6,8 @@ from pydantic import Field
 
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 from blueapi.utils import BlueapiBaseModel
-from blueapi.worker import Worker, WorkerState
-from blueapi.worker.worker import TrackableTask
+from blueapi.worker import WorkerState
+from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
 _UNKNOWN_NAME = "UNKNOWN"
 
@@ -114,7 +114,7 @@ class WorkerTask(BlueapiBaseModel):
     )
 
     @classmethod
-    def of_worker(cls, worker: Worker) -> "WorkerTask":
+    def of_worker(cls, worker: TaskWorker) -> "WorkerTask":
         active = worker.get_active_task()
         if active is not None:
             return WorkerTask(task_id=active.task_id)

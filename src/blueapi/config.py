@@ -31,8 +31,8 @@ class BasicAuthentication(BaseModel):
     i.e. ${foo} or ${FOO} are replaced with the value of FOO
     """
 
-    username: str = "guest"
-    passcode: str = "guest"
+    username: str = "test"  # "guest"
+    passcode: str = "test"  # "guest"
 
     @validator("username", "passcode")
     def get_from_env(cls, v: str):

@@ -7,6 +7,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import numpy as np
 import pytest
+from observability_utils import set_console_exporter
 from pydantic import BaseModel, BaseSettings, Field
 from stomp import Connection
 from stomp.exception import ConnectFailedException, NotConnectedException
@@ -20,6 +21,7 @@ _COUNT = itertools.count()
 
 class StompTestingSettings(BaseSettings):
     blueapi_test_stomp_ports: list[int] = Field(default=[61613])
+    set_console_exporter()
 
     def test_stomp_configs(self) -> Iterable[StompConfig]:
         for port in self.blueapi_test_stomp_ports:

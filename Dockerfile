@@ -12,6 +12,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /venv
 ENV PATH=/venv/bin:$PATH
 
+# enable opentelemetry support
+ENV OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=http/protobuf
+ENV OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
+ENV OTEL_EXPORTER_OTLP_INSECURE=true
+ENV OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST=".*"
+ENV OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE=".*"
+
 # The build stage installs the context into the venv
 FROM developer as build
 COPY . /context

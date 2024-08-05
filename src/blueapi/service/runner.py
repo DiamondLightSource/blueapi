@@ -96,7 +96,7 @@ class WorkerDispatcher:
 
     def run(
         self,
-        function: Callable[P, T],
+        function: Callable[Concatenate[dict[str, Any], P], T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:

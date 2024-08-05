@@ -121,7 +121,7 @@ def test_clear_message_for_non_function(started_runner: WorkerDispatcher):
 
     with pytest.raises(
         RpcError,
-        match="Target <NonCallableMock id='[0-9]+'> is not valid target for running in subprocess",
+        match="Target <NonCallableMock id='[0-9]+'> invalid for running in subprocess",
     ):
         started_runner.run(FOO)
 

@@ -98,9 +98,7 @@ class WorkerDispatcher:
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
         if not (hasattr(function, "__name__") and hasattr(function, "__module__")):
-            raise RpcError(
-                f"Target {function} is not valid target for running in subprocess"
-            )
+            raise RpcError(f"Target {function} invalid for running in subprocess")
         return self._subprocess.apply(
             _rpc, (function.__module__, function.__name__, *args), kwargs
         )

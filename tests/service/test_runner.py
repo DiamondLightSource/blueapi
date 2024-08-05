@@ -31,7 +31,7 @@ def test_reload():
 def test_raises_if_used_before_started():
     runner = WorkerDispatcher()
     with pytest.raises(InvalidRunnerStateError):
-        assert runner.run(interface.get_plans) is None
+        runner.run(interface.get_plans)
 
 
 def test_error_on_runner_setup():

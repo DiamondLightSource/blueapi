@@ -1,10 +1,10 @@
 import logging
 import signal
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any
+from typing import Any, ParamSpec, TypeVar
 
 from blueapi.config import ApplicationConfig
 from blueapi.service.interface import setup, teardown
@@ -14,6 +14,9 @@ from blueapi.service.model import EnvironmentResponse
 set_start_method("spawn", force=True)
 
 LOGGER = logging.getLogger(__name__)
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 def _init_worker():
@@ -54,7 +57,7 @@ class WorkerDispatcher:
         try:
             if self._use_subprocess:
                 self._subprocess = Pool(initializer=_init_worker, processes=1)
-            self.run(setup, [self._config])
+            self.run(setup, self._config)
             self._state = EnvironmentResponse(initialized=True)
         except Exception as e:
             self._state = EnvironmentResponse(
@@ -80,21 +83,23 @@ class WorkerDispatcher:
             )
             LOGGER.exception(e)
 
-    def run(self, function: Callable, arguments: Iterable | None = None) -> Any:
-        arguments = arguments or []
+    def run(self, function: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         if self._use_subprocess:
-            return self._run_in_subprocess(function, arguments)
+            return self._run_in_subprocess(function, *args, **kwargs)
         else:
-            return function(*arguments)
+            return function(*args, **kwargs)
 
     def _run_in_subprocess(
         self,
-        function: Callable,
-        arguments: Iterable,
-    ) -> Any:
+        function: Callable[P, T],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> T:
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
-        return self._subprocess.apply(_rpc, [function.__module__, function.__name__] + arguments)
+        return self._subprocess.apply(
+            _rpc, (function.__module__, function.__name__, *args), kwargs
+        )
 
     @property
     def state(self) -> EnvironmentResponse:
@@ -111,15 +116,19 @@ class RpcErrpr(Exception):
         super().__init__(message)
 
 
-def _rpc(module_name: str, function_name: str, *args):
+def _rpc(
+    module_name: str, function_name: str, *args: P.args, **kwargs: P.kwargs
+) -> Any:
     mod = import_module(module_name)
-    function = mod.__dict__.get(function_name)
-    _validate_function(function)
-    return function(*args)
+    func: Callable[P, T] = _validate_function(
+        mod.__dict__.get(function_name), function_name
+    )
+    return func(*args, **kwargs)
 
 
-def _validate_function(function: Any) -> None:
-    if function is None:
-        raise RpcErrpr(f"{function}: No such function in subprocess API")
-    elif not callable(function):
-        raise RpcErrpr(f"{function}: Object in subprocess is not a function")
+def _validate_function(func: Any, function_name: str) -> Callable:
+    if func is None:
+        raise RpcErrpr(f"{function_name}: No such function in subprocess API")
+    elif not callable(func):
+        raise RpcErrpr(f"{func}: Object in subprocess is not a function")
+    return func

@@ -2,12 +2,12 @@ from collections.abc import Callable
 from unittest.mock import MagicMock, Mock, call
 
 import pytest
+from bluesky_stomp.messaging import MessageContext
 
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
 from blueapi.core import DataEvent
-from blueapi.messaging.context import MessageContext
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,

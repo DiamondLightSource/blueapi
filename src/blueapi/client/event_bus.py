@@ -1,7 +1,8 @@
 from collections.abc import Callable
 
+from bluesky_stomp.messaging import MessageContext, MessagingTemplate
+
 from blueapi.core import DataEvent
-from blueapi.messaging import MessageContext, MessagingTemplate
 from blueapi.worker import ProgressEvent, WorkerEvent
 
 

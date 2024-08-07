@@ -3,11 +3,12 @@ from collections.abc import Mapping
 from functools import lru_cache
 from typing import Any
 
+from bluesky_stomp.messaging import MessagingTemplate
+from stomp import ConnectFailedException
+
 from blueapi.config import ApplicationConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
-from blueapi.messaging.base import MessagingTemplate
-from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
@@ -51,7 +52,7 @@ def worker() -> TaskWorker:
 def messaging_template() -> MessagingTemplate | None:
     stomp_config = config().stomp
     if stomp_config is not None:
-        template = StompMessagingTemplate.autoconfigured(stomp_config)
+        template = MessagingTemplate.autoconfigured(stomp_config)
 
         task_worker = worker()
         event_topic = template.destinations.topic("public.worker.event")
@@ -63,8 +64,12 @@ def messaging_template() -> MessagingTemplate | None:
                 task_worker.data_events: event_topic,
             }
         )
-        template.connect()
-        return template
+        try:
+            template.connect()
+            return template
+        except ConnectFailedException as ex:
+            logging.exception(msg="Failed to connect to message bus", exc_info=ex)
+            return None
     else:
         return None
 

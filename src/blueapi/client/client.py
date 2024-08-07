@@ -1,9 +1,10 @@
 import time
 from concurrent.futures import Future
 
+from bluesky_stomp.messaging import MessageContext, MessagingTemplate
+
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.messaging import MessageContext, StompMessagingTemplate
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -38,7 +39,7 @@ class BlueapiClient:
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest = BlueapiRestClient(config.api)
         if config.stomp is not None:
-            template = StompMessagingTemplate.autoconfigured(config.stomp)
+            template = MessagingTemplate.autoconfigured(config.stomp)
             events = EventBusClient(template)
         else:
             events = None

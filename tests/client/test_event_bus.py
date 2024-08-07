@@ -1,9 +1,9 @@
 from unittest.mock import ANY, Mock
 
 import pytest
+from bluesky_stomp.messaging import MessagingTemplate
 
 from blueapi.client.event_bus import BlueskyStreamingError, EventBusClient
-from blueapi.messaging import MessagingTemplate
 
 
 @pytest.fixture

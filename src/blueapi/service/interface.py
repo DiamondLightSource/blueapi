@@ -4,6 +4,7 @@ from functools import lru_cache
 from typing import Any
 
 from bluesky_stomp.messaging import MessagingTemplate
+from stomp import ConnectFailedException
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.context import BlueskyContext
@@ -63,8 +64,12 @@ def messaging_template() -> MessagingTemplate | None:
                 task_worker.data_events: event_topic,
             }
         )
-        template.connect()
-        return template
+        try:
+            template.connect()
+            return template
+        except ConnectFailedException as ex:
+            logging.exception(msg="Failed to connect to message bus", exc_info=ex)
+            return None
     else:
         return None
 

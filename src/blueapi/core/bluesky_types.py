@@ -1,6 +1,11 @@
 import inspect
-from collections.abc import Callable, Generator, Mapping
-from typing import Any, Protocol, get_type_hints, runtime_checkable
+from collections.abc import Callable, Mapping
+from typing import (
+    Any,
+    Protocol,
+    get_type_hints,
+    runtime_checkable,
+)
 
 from bluesky.protocols import (
     Checkable,
@@ -19,18 +24,13 @@ from bluesky.protocols import (
     Triggerable,
     WritesExternalAssets,
 )
-from bluesky.utils import Msg
+from dls_bluesky_core.core import MsgGenerator, PlanGenerator
 from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel, Field
 
 from blueapi.utils import BlueapiBaseModel
 
-#  'A true "plan", usually the output of a generator function'
-MsgGenerator = Generator[Msg, Any, None]
-#  'A function that generates a plan'
-PlanGenerator = Callable[..., MsgGenerator]
 PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
-
 
 #: An object that encapsulates the device to do useful things to produce
 # data (e.g. move and read)

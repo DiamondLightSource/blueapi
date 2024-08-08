@@ -7,7 +7,6 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
-from pydantic.error_wrappers import ErrorWrapper
 from super_state_machine.errors import TransitionError
 
 from blueapi.core.bluesky_types import Plan
@@ -169,8 +168,9 @@ def test_create_task_validation_error(
     plan = Plan(name="my-plan", model=MyModel)
     get_plan_mock.return_value = PlanModel.from_plan(plan)
 
-    submit_task_mock.side_effect = ValidationError(
-        [ErrorWrapper(ValueError("field required"), "id")], PlanModel
+    submit_task_mock.side_effect = ValidationError.from_exception_data(
+        "id",
+        [ValueError("field required")],
     )
 
     response = client.post("/tasks", json={"name": "my-plan"})

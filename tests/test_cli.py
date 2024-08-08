@@ -60,6 +60,12 @@ class MyModel(BaseModel):
     id: str
 
 
+class ExtendedModel(BaseModel):
+    name: str
+    keys: list[int]
+    metadata: None | Mapping[str, str] = None
+
+
 @dataclass
 class MyDevice:
     name: str
@@ -293,7 +299,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
 @pytest.mark.parametrize(
     "exception, expected_exit_code",
     [
-        (ValidationError("Invalid parameters", BaseModel), 1),
+        (ValidationError.from_exception_data(title="Base model", line_errors=[]), 1),
         (BlueskyRemoteControlError("Server error"), 1),
         (ValueError("Error parsing parameters"), 1),
     ],
@@ -396,40 +402,48 @@ def test_plan_output_formatting():
     output = StringIO()
     OutputFormat.JSON.display(plans, out=output)
     json_out = dedent("""\
-                [
-                  {
-                    "name": "my-plan",
-                    "description": "Summary of description\\n\\nRest of description\\n",
-                    "parameter_schema": {
-                      "title": "ExtendedModel",
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "title": "Name",
-                          "type": "string"
-                        },
-                        "keys": {
-                          "title": "Keys",
-                          "type": "array",
-                          "items": {
-                            "type": "integer"
-                          }
-                        },
-                        "metadata": {
-                          "title": "Metadata",
-                          "type": "object",
+            [
+              {
+                "name": "my-plan",
+                "description": "Summary of description\\n\\nRest of description\\n",
+                "parameter_schema": {
+                  "properties": {
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "keys": {
+                      "items": {
+                        "type": "integer"
+                      },
+                      "title": "Keys",
+                      "type": "array"
+                    },
+                    "metadata": {
+                      "anyOf": [
+                        {
                           "additionalProperties": {
                             "type": "string"
-                          }
+                          },
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
                         }
-                      },
-                      "required": [
-                        "name",
-                        "keys"
-                      ]
+                      ],
+                      "default": null,
+                      "title": "Metadata"
                     }
-                  }
-                ]
+                  },
+                  "required": [
+                    "name",
+                    "keys"
+                  ],
+                  "title": "ExtendedModel",
+                  "type": "object"
+                }
+              }
+            ]
                 """)
     assert output.getvalue() == json_out
     _ = json.loads(output.getvalue())
@@ -437,39 +451,47 @@ def test_plan_output_formatting():
     output = StringIO()
     OutputFormat.FULL.display(plans, out=output)
     full = dedent("""\
-            my-plan
-                Summary of description
+        my-plan
+            Summary of description
 
-                Rest of description
-                Schema
-                    {
-                      "title": "ExtendedModel",
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "title": "Name",
-                          "type": "string"
-                        },
-                        "keys": {
-                          "title": "Keys",
-                          "type": "array",
-                          "items": {
-                            "type": "integer"
-                          }
-                        },
-                        "metadata": {
-                          "title": "Metadata",
-                          "type": "object",
+            Rest of description
+            Schema
+                {
+                  "properties": {
+                    "name": {
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "keys": {
+                      "items": {
+                        "type": "integer"
+                      },
+                      "title": "Keys",
+                      "type": "array"
+                    },
+                    "metadata": {
+                      "anyOf": [
+                        {
                           "additionalProperties": {
                             "type": "string"
-                          }
+                          },
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
                         }
-                      },
-                      "required": [
-                        "name",
-                        "keys"
-                      ]
+                      ],
+                      "default": null,
+                      "title": "Metadata"
                     }
+                  },
+                  "required": [
+                    "name",
+                    "keys"
+                  ],
+                  "title": "ExtendedModel",
+                  "type": "object"
+                }
             """)
     assert output.getvalue() == full
 

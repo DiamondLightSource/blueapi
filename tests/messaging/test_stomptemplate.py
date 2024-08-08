@@ -7,7 +7,8 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import numpy as np
 import pytest
-from pydantic import BaseModel, BaseSettings, Field
+from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings
 from stomp import Connection
 from stomp.exception import ConnectFailedException, NotConnectedException
 

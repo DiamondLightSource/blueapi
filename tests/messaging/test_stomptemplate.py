@@ -169,7 +169,7 @@ def test_deserialization(
     reply = template.send_and_receive(test_queue, message, message_type).result(
         timeout=_TIMEOUT
     )
-    if type(message) == np.ndarray:
+    if type(message) is np.ndarray:
         message = message.tolist()
     assert reply == message
 

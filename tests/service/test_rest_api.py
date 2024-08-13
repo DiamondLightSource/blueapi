@@ -7,6 +7,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
+from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError
 
 from blueapi.core.bluesky_types import Plan
@@ -167,22 +168,24 @@ def test_create_task_validation_error(
 
     plan = Plan(name="my-plan", model=MyModel)
     get_plan_mock.return_value = PlanModel.from_plan(plan)
-
     submit_task_mock.side_effect = ValidationError.from_exception_data(
-        "id",
-        [ValueError("field required")],
+        title="ValueError",
+        line_errors=[
+            InitErrorDetails(
+                type="missing", loc=("id",), msg="value is required for Identifier"
+            )  # type: ignore
+        ],
     )
-
     response = client.post("/tasks", json={"name": "my-plan"})
     assert response.status_code == 422
     assert response.json() == {
-        "detail": "\n"
-        "        Input validation failed: id: field required,\n"
-        "        suppplied params {},\n"
-        "        do not match the expected params: {'title': 'MyModel', "
-        "'type': 'object', 'properties': {'id': {'title': 'Id', 'type': "
-        "'string'}}, 'required': ['id']}\n"
-        "        "
+        "detail": (
+            "\n        Input validation failed: id: Field required,\n"
+            "        suppplied params {},\n"
+            "        do not match the expected params: {'properties': {'id': "
+            "{'title': 'Id', 'type': 'string'}}, 'required': ['id'], 'title': "
+            "'MyModel', 'type': 'object'}\n        "
+        )
     }
 
 

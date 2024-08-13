@@ -75,7 +75,7 @@ class PlanModel(BlueapiBaseModel):
     def from_plan(cls, plan: Plan) -> "PlanModel":
         return cls(
             name=plan.name,
-            schema=plan.model.schema(),
+            schema=plan.model.model_json_schema(),
             description=plan.description,
         )
 

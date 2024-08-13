@@ -365,12 +365,6 @@ def test_device_output_formatting():
     assert output.getvalue() == full
 
 
-class ExtendedModel(BaseModel):
-    name: str
-    keys: list[int]
-    metadata: None | Mapping[str, str]
-
-
 def test_plan_output_formatting():
     """Test for alternative plan output formats"""
 

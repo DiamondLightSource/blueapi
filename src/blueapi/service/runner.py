@@ -1,3 +1,4 @@
+import inspect
 import logging
 import signal
 from collections.abc import Callable
@@ -98,9 +99,23 @@ class WorkerDispatcher:
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
         if not (hasattr(function, "__name__") and hasattr(function, "__module__")):
-            raise RpcError(f"Target {function} invalid for running in subprocess")
+            raise RpcError(f"{function} is anonymous, cannot be run in subprocess")
+        if not callable(function):
+            raise RpcError(f"{function} is not Callable, cannot be run in subprocess")
+        try:
+            return_type = inspect.signature(function).return_annotation
+        except TypeError:
+            return_type = None
+
         return self._subprocess.apply(
-            _rpc, (function.__module__, function.__name__, *args), kwargs
+            _rpc,
+            (
+                function.__module__,
+                function.__name__,
+                return_type,
+                *args,
+            ),
+            kwargs,
         )
 
     @property
@@ -117,13 +132,24 @@ class RpcError(Exception): ...
 
 
 def _rpc(
-    module_name: str, function_name: str, *args: P.args, **kwargs: P.kwargs
-) -> Any:
+    module_name: str,
+    function_name: str,
+    expected_type: type[T] | None,
+    *args: Any,
+    **kwargs: Any,
+) -> T:
     mod = import_module(module_name)
     func: Callable[P, T] = _validate_function(
         mod.__dict__.get(function_name, None), function_name
     )
-    return func(*args, **kwargs)
+    value = func(*args, **kwargs)
+    if expected_type is None or isinstance(value, expected_type):
+        return value
+    else:
+        raise TypeError(
+            f"{function_name} returned value of type {type(value)}"
+            + f" which is incompatible with expected {expected_type}"
+        )
 
 
 def _validate_function(func: Any, function_name: str) -> Callable:

@@ -104,9 +104,10 @@ def test_can_reload_after_an_error(pool_mock: MagicMock):
     assert runner.state == EnvironmentResponse(initialized=True, error_message=None)
 
 
-def test_clear_message_for_not_found(started_runner: WorkerDispatcher):
+def test_function_not_findable_on_subprocess(started_runner: WorkerDispatcher):
     from tests.core.fake_device_module import fake_motor_y
 
+    # Valid target on main but not sub process
     # Change in this process not reflected in subprocess
     fake_motor_y.__name__ = "not_exported"
 
@@ -116,21 +117,47 @@ def test_clear_message_for_not_found(started_runner: WorkerDispatcher):
         started_runner.run(fake_motor_y)
 
 
-def test_clear_message_for_non_function(started_runner: WorkerDispatcher):
-    from tests.core.fake_device_module import FOO
+def test_non_callable_excepts_in_main_process(started_runner: WorkerDispatcher):
+    # Not a valid target on main or sub process
+    from tests.core.fake_device_module import fetchable_non_callable
 
     with pytest.raises(
         RpcError,
-        match="Target <NonCallableMock id='[0-9]+'> invalid for running in subprocess",
+        match="<NonCallableMock id='[0-9]+'> is not Callable, "
+        + "cannot be run in subprocess",
     ):
-        started_runner.run(FOO)
+        started_runner.run(fetchable_non_callable)
 
 
-def test_clear_message_for_invalid_function(started_runner: WorkerDispatcher):
-    from tests.core.fake_device_module import BAR
+def test_non_callable_excepts_in_sub_process(started_runner: WorkerDispatcher):
+    # Valid target on main but finds non-callable in sub process
+    from tests.core.fake_device_module import fetchable_callable, fetchable_non_callable
+
+    fetchable_callable.__name__ = fetchable_non_callable.__name__
 
     with pytest.raises(
         RpcError,
-        match="BAR: Object in subprocess is not a function",
+        match="fetchable_non_callable: Object in subprocess is not a function",
     ):
-        started_runner.run(BAR)
+        started_runner.run(fetchable_callable)
+
+
+def test_clear_message_for_anonymous_function(started_runner: WorkerDispatcher):
+    non_fetchable_callable = MagicMock()
+
+    with pytest.raises(
+        RpcError,
+        match="<MagicMock id='[0-9]+'> is anonymous, cannot be run in subprocess",
+    ):
+        started_runner.run(non_fetchable_callable)
+
+
+def test_clear_message_for_wrong_return(started_runner: WorkerDispatcher):
+    from tests.core.fake_device_module import wrong_return_type
+
+    with pytest.raises(
+        TypeError,
+        match="wrong_return_type returned value of type <class 'str'>"
+        + " which is incompatible with expected <class 'int'>",
+    ):
+        started_runner.run(wrong_return_type)

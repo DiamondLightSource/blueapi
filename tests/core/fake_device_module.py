@@ -26,12 +26,17 @@ def fake_motor_bundle_a(
 
 
 def _mock_with_name(name: str) -> MagicMock:
-    mock = MagicMock()
-    mock.name = name
-    return mock
+    return MagicMock(name=name)
 
 
-FOO = NonCallableMock()
-BAR = NonCallableMock()
-BAR.__name__ = "BAR"
-BAR.__module__ = fake_motor_bundle_a.__module__
+def wrong_return_type() -> int:
+    return "0"  # type: ignore
+
+
+fetchable_non_callable = NonCallableMock()
+fetchable_callable = MagicMock(return_value="string")
+
+fetchable_non_callable.__name__ = "fetchable_non_callable"
+fetchable_non_callable.__module__ = fake_motor_bundle_a.__module__
+fetchable_callable.__name__ = "fetchable_callable"
+fetchable_callable.__module__ = fake_motor_bundle_a.__module__

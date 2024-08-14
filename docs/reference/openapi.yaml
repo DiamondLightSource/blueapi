@@ -39,10 +39,10 @@ components:
       properties:
         error_message:
           anyOf:
-          - type: string
+          - minLength: 1
+            type: string
           - type: 'null'
           description: If present - error loading context
-          minLength: 1
           title: Error Message
         initialized:
           description: blueapi context initialized

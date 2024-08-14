@@ -36,7 +36,6 @@ def test_generate_schema(mock_app: Mock) -> None:
     }
 
 
-@pytest.mark.xfail(reason="Causes too much log crap!")
 @pytest.mark.skipif(
     not DOCS_SCHEMA_LOCATION.exists(),
     reason="If the schema file does not exist, the test is being run"

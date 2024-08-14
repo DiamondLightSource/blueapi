@@ -60,12 +60,6 @@ class MyModel(BaseModel):
     id: str
 
 
-class ExtendedModel(BaseModel):
-    name: str
-    keys: list[int]
-    metadata: None | Mapping[str, str] = None
-
-
 @dataclass
 class MyDevice:
     name: str
@@ -363,6 +357,12 @@ def test_device_output_formatting():
                 HasName
             """)
     assert output.getvalue() == full
+
+
+class ExtendedModel(BaseModel):
+    name: str
+    keys: list[int]
+    metadata: None | Mapping[str, str] = None
 
 
 def test_plan_output_formatting():

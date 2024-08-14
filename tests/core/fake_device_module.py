@@ -26,7 +26,10 @@ def fake_motor_bundle_a(
 
 
 def _mock_with_name(name: str) -> MagicMock:
-    return MagicMock(name=name)
+    # mock.name must return str, cannot MagicMock(name=name)
+    mock = MagicMock()
+    mock.name = name
+    return mock
 
 
 def wrong_return_type() -> int:

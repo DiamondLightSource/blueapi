@@ -116,7 +116,7 @@ def get_plans(runner: WorkerDispatcher = Depends(_runner)):
 )
 def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a plan by its (unique) name."""
-    return runner.run(interface.get_plan, [name])
+    return runner.run(interface.get_plan, name)
 
 
 @app.get("/devices", response_model=DeviceResponse)
@@ -131,7 +131,7 @@ def get_devices(runner: WorkerDispatcher = Depends(_runner)):
 )
 def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a devices by its (unique) name."""
-    return runner.run(interface.get_device, [name])
+    return runner.run(interface.get_device, name)
 
 
 example_task = Task(name="count", params={"detectors": ["x"]})
@@ -150,8 +150,8 @@ def submit_task(
 ):
     """Submit a task to the worker."""
     try:
-        plan_model = runner.run(interface.get_plan, [task.name])
-        task_id: str = runner.run(interface.submit_task, [task])
+        plan_model = runner.run(interface.get_plan, task.name)
+        task_id: str = runner.run(interface.submit_task, task)
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
@@ -175,7 +175,7 @@ def delete_submitted_task(
     task_id: str,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> TaskResponse:
-    return TaskResponse(task_id=runner.run(interface.clear_task, [task_id]))
+    return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
 def validate_task_status(v: str) -> TaskStatusEnum:
@@ -204,7 +204,7 @@ def get_tasks(
                 detail="Invalid status query parameter",
             ) from e
 
-        tasks = runner.run(interface.get_tasks_by_status, [desired_status])
+        tasks = runner.run(interface.get_tasks_by_status, desired_status)
     else:
         tasks = runner.run(interface.get_tasks)
     return TasksListResponse(tasks=tasks)
@@ -226,7 +226,7 @@ def set_active_task(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    runner.run(interface.begin_task, [task])
+    runner.run(interface.begin_task, task)
     return task
 
 
@@ -239,7 +239,7 @@ def get_task(
     runner: WorkerDispatcher = Depends(_runner),
 ) -> TrackableTask:
     """Retrieve a task"""
-    task = runner.run(interface.get_task_by_id, [task_id])
+    task = runner.run(interface.get_task_by_id, task_id)
     if task is None:
         raise KeyError
     return task
@@ -312,17 +312,15 @@ def set_state(
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
         if new_state == WorkerState.PAUSED:
-            runner.run(interface.pause_worker, [state_change_request.defer])
+            runner.run(interface.pause_worker, state_change_request.defer)
         elif new_state == WorkerState.RUNNING:
             runner.run(interface.resume_worker)
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
             try:
                 runner.run(
                     interface.cancel_active_task,
-                    [
-                        state_change_request.new_state is WorkerState.ABORTING,
-                        state_change_request.reason,
-                    ],
+                    state_change_request.new_state is WorkerState.ABORTING,
+                    state_change_request.reason,
                 )
             except TransitionError:
                 response.status_code = status.HTTP_400_BAD_REQUEST

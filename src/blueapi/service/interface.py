@@ -1,14 +1,9 @@
-import functools
 import logging
-from _collections_abc import Callable
 from collections.abc import Mapping
 from functools import lru_cache
-from typing import Any, Concatenate, TypeVar
+from typing import Any
 
-from observability_utils import get_tracer
-from opentelemetry.context import attach
-from opentelemetry.propagate import get_global_textmap
-from typing_extensions import ParamSpec
+from observability_utils.tracing import get_tracer, use_propagated_context
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.context import BlueskyContext
@@ -29,21 +24,6 @@ PROP_KEY = "carrier"
 
 
 _CONFIG: ApplicationConfig = ApplicationConfig()
-
-T = TypeVar("T")
-P = ParamSpec("P")
-
-
-def use_propagated_context(
-    func: Callable[P, T],
-) -> Callable[Concatenate[dict[str, Any], P], T]:
-    @functools.wraps(func)
-    def wrapper(carrier: dict[str, Any], *args: P.args, **kwargs: P.kwargs) -> T:
-        ctx = get_global_textmap().extract(carrier)
-        attach(ctx)
-        return func(*args, **kwargs)
-
-    return wrapper
 
 
 def config() -> ApplicationConfig:
@@ -108,6 +88,7 @@ def setup(config: ApplicationConfig) -> None:
     messaging_template()
 
 
+@use_propagated_context
 def teardown() -> None:
     worker().stop()
     if (template := messaging_template()) is not None:

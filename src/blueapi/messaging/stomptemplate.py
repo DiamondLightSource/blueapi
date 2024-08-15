@@ -10,14 +10,16 @@ from typing import Any
 
 import orjson
 import stomp
-from observability_utils import (
-    SpanKind,
-    get_current_span,
+from observability_utils.tracing import (
+    add_span_attributes,
     get_tracer,
     propagate_context_in_stomp_headers,
     retrieve_context_from_stomp_headers,
-    set_baggage,
+    start_as_current_span,
 )
+from opentelemetry.baggage import set_baggage
+from opentelemetry.context import Context
+from opentelemetry.trace import SpanKind, get_current_span
 from pydantic import parse_obj_as
 from stomp.exception import ConnectFailedException
 from stomp.utils import Frame
@@ -90,6 +92,7 @@ class StompMessagingTemplate(MessagingTemplate):
     _subscriptions: dict[str, Subscription]
     _pending_subscriptions: set[str]
     _disconnected: Event
+    _context_register: dict[str, Context]
 
     # Stateless implementation means attribute can be static
     _destination_provider: DestinationProvider = StompDestinationProvider()
@@ -111,6 +114,7 @@ class StompMessagingTemplate(MessagingTemplate):
         self._conn.set_listener("", self._listener)
 
         self._subscriptions = {}
+        self._context_register = {}
 
     @classmethod
     def autoconfigured(cls, config: StompConfig) -> MessagingTemplate:
@@ -126,7 +130,7 @@ class StompMessagingTemplate(MessagingTemplate):
     def destinations(self) -> DestinationProvider:
         return self._destination_provider
 
-    @TRACER.start_as_current_span("send", kind=SpanKind.PRODUCER)
+    @start_as_current_span(TRACER, "destination", "obj", "correlation_id")
     def send(
         self,
         destination: str,
@@ -141,7 +145,7 @@ class StompMessagingTemplate(MessagingTemplate):
             correlation_id,
         )
 
-    @TRACER.start_as_current_span(name="_send_str", kind=SpanKind.PRODUCER)
+    @start_as_current_span(TRACER, "destination", "message", "correlation_id")
     def _send_str(
         self,
         destination: str,
@@ -150,9 +154,6 @@ class StompMessagingTemplate(MessagingTemplate):
         correlation_id: str | None = None,
     ) -> None:
         LOGGER.info(f"SENDING {message} to {destination}")
-        get_current_span().set_attributes(
-            {"Destination": destination, "Message": message}
-        )
         headers: dict[str, Any] = {"JMSType": "TextMessage"}
         if on_reply is not None:
             reply_queue_name = self.destinations.temporary_queue(str(uuid.uuid1()))
@@ -169,7 +170,7 @@ class StompMessagingTemplate(MessagingTemplate):
             also be included """
         self._conn.send(headers=headers, body=message, destination=destination)
 
-    @TRACER.start_as_current_span("subscribe", kind=SpanKind.CONSUMER)
+    @start_as_current_span(TRACER, "destination")
     def subscribe(self, destination: str, callback: MessageListener) -> None:
         LOGGER.debug(f"New subscription to {destination}")
         obj_type = determine_deserialization_type(callback, default=str)
@@ -194,11 +195,9 @@ class StompMessagingTemplate(MessagingTemplate):
         # If we're connected, subscribe immediately, otherwise the subscription is
         # deferred until connection.
         self._ensure_subscribed([sub_id])
-        get_current_span().set_attributes(
-            {"Desination": destination, "Subscription Id": sub_id}
-        )
+        add_span_attributes({"sub_id": sub_id})
 
-    @TRACER.start_as_current_span("connect", kind=SpanKind.CLIENT)
+    @start_as_current_span(TRACER)
     def connect(self) -> None:
         if self._conn.is_connected():
             return
@@ -207,7 +206,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
         def finished_connecting(_: Frame):
             connected.set()
-            get_current_span().add_event("Connected")
+            # get_current_span().add_event("Connected")
 
         self._listener.on_connected = finished_connecting
         self._listener.on_disconnected = self._on_disconnected
@@ -226,7 +225,7 @@ class StompMessagingTemplate(MessagingTemplate):
 
         self._ensure_subscribed()
 
-    @TRACER.start_as_current_span("_ensure_subscribed", kind=SpanKind.CLIENT)
+    # @start_as_current_span(TRACER, "sub_ids")
     def _ensure_subscribed(self, sub_ids: list[str] | None = None) -> None:
         # We must defer subscription until after connection, because stomp literally
         # sends a SUB to the broker. But it still nice to be able to call subscribe
@@ -237,7 +236,7 @@ class StompMessagingTemplate(MessagingTemplate):
                 LOGGER.info(f"Subscribing to {sub.destination}")
                 self._conn.subscribe(destination=sub.destination, id=sub_id, ack="auto")
 
-    @TRACER.start_as_current_span("disconnect", kind=SpanKind.CLIENT)
+    @start_as_current_span(TRACER)
     def disconnect(self) -> None:
         LOGGER.info("Disconnecting...")
         if not self.is_connected():
@@ -252,11 +251,13 @@ class StompMessagingTemplate(MessagingTemplate):
         self._listener.on_disconnected = None
 
     @handle_all_exceptions
+    @start_as_current_span(TRACER)
     def _on_disconnected(self) -> None:
         LOGGER.warn(
             "Stomp connection lost, will attempt reconnection with "
             f"policy {self._reconnect_policy}"
         )
+        get_current_span().add_event("Disconnected")
         time.sleep(self._reconnect_policy.initial_delay)
         while not self._conn.is_connected():
             try:
@@ -268,15 +269,15 @@ class StompMessagingTemplate(MessagingTemplate):
     @handle_all_exceptions
     def _on_message(self, frame: Frame) -> None:
         LOGGER.info(f"Received {frame}")
-        sub_id = frame.headers.get("subscription")
-        sub = self._subscriptions.get(sub_id)
+        # sub_id = frame.headers.get("subscription")
+        # sub = self._subscriptions.get(sub_id)
         with TRACER.start_as_current_span(
             "_on_message", retrieve_context_from_stomp_headers(frame), SpanKind.CONSUMER
         ):
             """Initialise a span, retrieving the sender's span context from the STOMP
             headers which will be used as our parent context ensuring that this span
             forms part of the sender's trace."""
-            get_current_span().set_attributes({"Frame": frame})
+            get_current_span().set_attributes({"Frame": str(frame)})
             sub_id = frame.headers.get("subscription")
             sub = self._subscriptions.get(sub_id)
             if sub is not None:

@@ -40,7 +40,7 @@
         "--security-opt=label=disable"
     ],
     "mounts": [
-        "source=/scratch/venv/observability-utils,target=/scratch/venv/observability-utils,type=bind,consistency=cached"
+        "source=/scratch/athena/observability-utils,target=/scratch/athena/observability-utils,type=bind,consistency=cached"
     ],
     // Mount the parent as /workspaces so we can pip install peers as editable
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",

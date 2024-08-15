@@ -48,7 +48,7 @@ class StompConfig(BaseModel):
 
     host: str = "localhost"
     port: int = 61613
-    auth: BasicAuthentication | None = None
+    auth: BasicAuthentication | None = BasicAuthentication()
 
 
 class WorkerEventConfig(BlueapiBaseModel):
@@ -101,7 +101,7 @@ class ApplicationConfig(BlueapiBaseModel):
     config tree.
     """
 
-    stomp: StompConfig | None = None
+    stomp: StompConfig | None = StompConfig()
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)

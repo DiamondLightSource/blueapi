@@ -6,6 +6,7 @@ from pprint import pprint
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
+from observability_utils.tracing import setup_tracing
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
@@ -84,6 +85,8 @@ def schema(output: Path | None = None, update: bool = False) -> None:
 @click.pass_obj
 def start_application(obj: dict):
     """Run a worker that accepts plans to run"""
+
+    setup_tracing("BlueAPI")  # initialise TracerProvider for server app
     config: ApplicationConfig = obj["config"]
 
     start(config)
@@ -100,6 +103,7 @@ def start_application(obj: dict):
 def controller(ctx: click.Context, output: str) -> None:
     """Client utility for controlling and introspecting the worker"""
 
+    setup_tracing("BlueAPICLI")  # initialise TracerProvider for controller app
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return

@@ -4,10 +4,14 @@ from collections.abc import Callable
 from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any, TypeVar
+from typing import Any, Concatenate, ParamSpec, TypeVar
 
-from opentelemetry.propagate import get_global_textmap
-from typing_extensions import ParamSpec
+from observability_utils.tracing import (
+    add_span_attributes,
+    get_context_propagator,
+    get_tracer,
+    start_as_current_span,
+)
 
 from blueapi.config import ApplicationConfig
 from blueapi.service.interface import (
@@ -20,15 +24,10 @@ from blueapi.service.model import EnvironmentResponse
 set_start_method("spawn", force=True)
 
 LOGGER = logging.getLogger(__name__)
+TRACER = get_tracer("interface")
 
 P = ParamSpec("P")
 T = TypeVar("T")
-
-
-def get_context_propagator() -> dict[str, Any]:
-    carr = {}
-    get_global_textmap().inject(carr)
-    return carr
 
 
 def _init_worker():
@@ -59,17 +58,22 @@ class WorkerDispatcher:
             initialized=False,
         )
 
+    @start_as_current_span(TRACER)
     def reload(self):
         """Reload the subprocess to account for any changes in python modules"""
         self.stop()
         self.start()
         LOGGER.info("Runner reloaded")
 
+    @start_as_current_span(TRACER)
     def start(self):
+        add_span_attributes(
+            {"_use_subprocess": self._use_subprocess, "_config": self._config}
+        )
         try:
             if self._use_subprocess:
                 self._subprocess = Pool(initializer=_init_worker, processes=1)
-            self.run(setup, [self._config])
+            self.run(setup, self._config)
             self._state = EnvironmentResponse(initialized=True)
         except Exception as e:
             self._state = EnvironmentResponse(
@@ -78,6 +82,7 @@ class WorkerDispatcher:
             )
             LOGGER.exception(e)
 
+    @start_as_current_span(TRACER)
     def stop(self):
         try:
             self.run(teardown)
@@ -95,29 +100,38 @@ class WorkerDispatcher:
             )
             LOGGER.exception(e)
 
+    @start_as_current_span(TRACER, "function", "args", "kwargs")
     def run(
         self,
-        function: Callable[P, T],
+        function: Callable[Concatenate[dict[str, Any], P], T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
+        """Calls the supplied function, which is modified to accept a dict as it's new
+        first param, before being passed to the subprocess runner, or just run in place.
+        """
+        add_span_attributes({"use_subprocess": self._use_subprocess})
         if self._use_subprocess:
             return self._run_in_subprocess(function, *args, **kwargs)
         else:
-            return function(*args, **kwargs)
+            return function(get_context_propagator(), *args, **kwargs)
 
+    @start_as_current_span(TRACER, "function", "args", "kwargs")
     def _run_in_subprocess(
         self,
         function: Callable[P, T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
+        """Call the supplied function, prepending its parameter list with the current
+        Span ID from the observability context, if one exists. this will allow functions
+        decorated with @use_propagated_context to use the corresponding span as their
+        parent span."""
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
-        # return self._subprocess.apply(function, arguments)
         return self._subprocess.apply(
             _rpc,
-            (function.__module__, function.__name__, get_context_propagator(), *args),
+            (function.__module__, function.__name__, (get_context_propagator(), *args)),
             kwargs,
         )
 
@@ -136,9 +150,9 @@ class RpcErrpr(Exception):
         super().__init__(message)
 
 
-def _rpc(module_name: str, function_name: str, *args: P.args, **kwargs: P.kwargs) -> T:
+def _rpc(module_name: str, function_name: str, args, **kwargs) -> T:
     mod = import_module(module_name)
-    function: Callable[P, T] = mod.__dict__.get(function_name)
+    function = mod.__dict__.get(function_name)
     _validate_function(function_name, function)
     return function(*args, **kwargs)
 

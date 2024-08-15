@@ -1,22 +1,25 @@
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 from fastapi import (
     BackgroundTasks,
     Body,
     Depends,
     FastAPI,
+    Header,
     HTTPException,
     Request,
     Response,
     status,
 )
-from observability_utils import (
-    SpanKind,
-    get_current_span,
+from observability_utils.tracing import (
+    add_span_attributes,
     get_tracer,
     instrument_fastapi_app,
+    start_as_current_span,
 )
-from opentelemetry.util.types import AttributeValue
+from opentelemetry.context import attach
+from opentelemetry.propagate import get_global_textmap
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -42,6 +45,8 @@ from .runner import WorkerDispatcher
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
+
+CONTEXT_HDR = "traceparent"
 
 
 def _runner() -> WorkerDispatcher:
@@ -83,10 +88,11 @@ app = FastAPI(
     version=REST_API_VERSION,
 )
 
-instrument_fastapi_app(app, "blueapi")
-TRACER = get_tracer("main")
+instrument_fastapi_app(app)
+TRACER = get_tracer("API")
 """
-Set up basic automated instrumentation for the FastAPI app.
+Set up basic automated instrumentation for the FastAPI app, creating the
+observability context.
 """
 
 
@@ -99,7 +105,7 @@ async def on_key_error_404(_: Request, __: KeyError):
 
 
 @app.get("/environment", response_model=EnvironmentResponse)
-@TRACER.start_as_current_span("get_environment", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "runner")
 def get_environment(
     runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
@@ -108,7 +114,7 @@ def get_environment(
 
 
 @app.delete("/environment", response_model=EnvironmentResponse)
-@TRACER.start_as_current_span("delete_environment", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "background_tasks", "runner")
 async def delete_environment(
     background_tasks: BackgroundTasks,
     runner: WorkerDispatcher = Depends(_runner),
@@ -121,39 +127,40 @@ async def delete_environment(
 
 
 @app.get("/plans", response_model=PlanResponse)
-@TRACER.start_as_current_span("get_plans", kind=SpanKind.SERVER)
-def get_plans(runner: WorkerDispatcher = Depends(_runner)):
+@start_as_current_span(TRACER)
+def get_plans(
+    runner: WorkerDispatcher = Depends(_runner),
+    traceparent: Annotated[str | None, Header()] = None,
+):
     """Retrieve information about all available plans."""
-    return PlanResponse(plans=runner.run(interface.get_planscarrier))
+    return PlanResponse(plans=runner.run(interface.get_plans))
 
 
 @app.get(
     "/plans/{name}",
     response_model=PlanModel,
 )
-@TRACER.start_as_current_span("get_plan_by_name", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "name")
 def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a plan by its (unique) name."""
-    add_span_attributes({"Plan name": name})
-    return runner.run(interface.get_plan, [name])
+    return runner.run(interface.get_plan, name)
 
 
 @app.get("/devices", response_model=DeviceResponse)
-@TRACER.start_as_current_span("get_devices", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER)
 def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available devices."""
-    return DeviceResponse(devices=runner.run(interface.get_devicescarrier))
+    return DeviceResponse(devices=runner.run(interface.get_devices))
 
 
 @app.get(
     "/devices/{name}",
     response_model=DeviceModel,
 )
-@TRACER.start_as_current_span("get_device_by_name", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "name")
 def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a devices by its (unique) name."""
-    add_span_attributes({"Device": name})
-    return runner.run(interface.get_device, [name])
+    return runner.run(interface.get_device, name)
 
 
 example_task = Task(name="count", params={"detectors": ["x"]})
@@ -164,7 +171,7 @@ example_task = Task(name="count", params={"detectors": ["x"]})
     response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
 )
-@TRACER.start_as_current_span("submit_task", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "request", "task.name", "task.params")
 def submit_task(
     request: Request,
     response: Response,
@@ -173,9 +180,8 @@ def submit_task(
 ):
     """Submit a task to the worker."""
     try:
-        add_span_attributes({"Plan": task.name, "Params": str(task.params)})
-        plan_model = runner.run(interface.get_plan, [task.name])
-        task_id: str = runner.run(interface.submit_task, [task])
+        plan_model = runner.run(interface.get_plan, task.name)
+        task_id: str = runner.run(interface.submit_task, task)
         add_span_attributes({"Task Id": task_id})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
@@ -196,15 +202,15 @@ def submit_task(
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
-@TRACER.start_as_current_span("delete_submitted_task", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> TaskResponse:
-    add_span_attributes({"Task_id": task_id})
-    return TaskResponse(task_id=runner.run(interface.clear_task, [task_id]))
+    return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
+@start_as_current_span(TRACER, "v")
 def validate_task_status(v: str) -> TaskStatusEnum:
     v_upper = v.upper()
     if v_upper not in TaskStatusEnum.__members__:
@@ -213,7 +219,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 
 
 @app.get("/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
-@TRACER.start_as_current_span("get_tasks", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER)
 def get_tasks(
     task_status: str | None = None,
     runner: WorkerDispatcher = Depends(_runner),
@@ -224,7 +230,7 @@ def get_tasks(
     """
     tasks = []
     if task_status:
-        add_span_attributes({"Task_status": task_status})
+        add_span_attributes({"status": task_status})
         try:
             desired_status = validate_task_status(task_status)
         except ValueError as e:
@@ -233,9 +239,9 @@ def get_tasks(
                 detail="Invalid status query parameter",
             ) from e
 
-        tasks = runner.run(interface.get_tasks_by_status, [desired_status])
+        tasks = runner.run(interface.get_tasks_by_status, desired_status)
     else:
-        tasks = runner.run(interface.get_taskscarrier)
+        tasks = runner.run(interface.get_tasks)
     return TasksListResponse(tasks=tasks)
 
 
@@ -244,20 +250,19 @@ def get_tasks(
     response_model=WorkerTask,
     responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
 )
-@TRACER.start_as_current_span("set_active_task", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
     task: WorkerTask,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
     This will return an error response if the worker is not idle."""
-    add_span_attributes({"Task Id": task.task_id, "Task name": task.name})
-    active_task = runner.run(interface.get_active_taskcarrier)
+    active_task = runner.run(interface.get_active_task)
     if active_task is not None and not active_task.is_complete:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    runner.run(interface.begin_task, [task])
+    runner.run(interface.begin_task, task)
     return task
 
 
@@ -265,23 +270,22 @@ def set_active_task(
     "/tasks/{task_id}",
     response_model=TrackableTask,
 )
-@TRACER.start_as_current_span("get_task", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> TrackableTask:
     """Retrieve a task"""
-    add_span_attributes({"Task Id": task_id})
-    task = runner.run(interface.get_task_by_id, [task_id])
+    task = runner.run(interface.get_task_by_id, task_id)
     if task is None:
         raise KeyError
     return task
 
 
 @app.get("/worker/task")
-@TRACER.start_as_current_span("get_active_task", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER)
 def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
-    active = runner.run(interface.get_active_taskcarrier)
+    active = runner.run(interface.get_active_task)
     if active is not None:
         return WorkerTask(task_id=active.task_id)
     else:
@@ -289,10 +293,10 @@ def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
 
 
 @app.get("/worker/state")
-@TRACER.start_as_current_span("get_state", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER)
 def get_state(runner: WorkerDispatcher = Depends(_runner)) -> WorkerState:
     """Get the State of the Worker"""
-    return runner.run(interface.get_worker_statecarrier)
+    return runner.run(interface.get_worker_state)
 
 
 # Map of current_state: allowed new_states
@@ -318,20 +322,13 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
         status.HTTP_202_ACCEPTED: {"detail": "Transition requested"},
     },
 )
-@TRACER.start_as_current_span("set_state", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "state_change_request.new_state")
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerState:
-    """
-    Request that the worker is put into a particular state.
-    Returns the state of the worker at the end of the call.
-
-    - **The following transitions are allowed and return 202: Accepted**
-    - If the worker is **PAUSED**, new_state may be **RUNNING** to resume.
-    - If the worker is **RUNNING**, new_state may be **PAUSED** to pause:
-        - If defer is False (default): pauses and rewinds to the previous checkpoint
+    """from observability_utils import winds to the previous checkpoint
         - If defer is True: waits until the next checkpoint to pause
         - **If the task has no checkpoints, the task will instead be Aborted**
     - If the worker is **RUNNING/PAUSED**, new_state may be **STOPPING** to stop.
@@ -341,9 +338,9 @@ def set_state(
         - If reason is set, the reason will be passed as the reason for the Run failure.
     - **All other transitions return 400: Bad Request**
     """
-    current_state = runner.run(interface.get_worker_statecarrier)
+    current_state = runner.run(interface.get_worker_state)
     new_state = state_change_request.new_state
-    add_span_attributes({"Current state": current_state, "Requested State": new_state})
+    add_span_attributes({"current_state": current_state})
     if (
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
@@ -351,18 +348,16 @@ def set_state(
         if new_state == WorkerState.PAUSED:
             runner.run(
                 interface.pause_worker,
-                [state_change_request.defer],
+                state_change_request.defer,
             )
         elif new_state == WorkerState.RUNNING:
-            runner.run(interface.resume_workercarrier)
+            runner.run(interface.resume_worker)
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
             try:
                 runner.run(
                     interface.cancel_active_task,
-                    [
-                        state_change_request.new_state is WorkerState.ABORTING,
-                        state_change_request.reason,
-                    ],
+                    state_change_request.new_state is WorkerState.ABORTING,
+                    state_change_request.reason,
                 )
             except TransitionError:
                 response.status_code = status.HTTP_400_BAD_REQUEST
@@ -372,7 +367,7 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
-@TRACER.start_as_current_span("start", kind=SpanKind.SERVER)
+@start_as_current_span(TRACER, "config")
 def start(config: ApplicationConfig):
     import uvicorn
 
@@ -380,12 +375,20 @@ def start(config: ApplicationConfig):
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 
 
-def add_span_attributes(attributes: dict[str, AttributeValue]) -> None:
-    get_current_span().set_attributes(attributes)
-
-
 @app.middleware("http")
 async def add_api_version_header(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-API-Version"] = REST_API_VERSION
+    return response
+
+
+@app.middleware("http")
+async def inject_propagated_observability_context(request: Request, call_next):
+    """Middleware to extract the any prorpagated observability context from the
+    HTTP headers and attatch it to the local one.
+    """
+    if CONTEXT_HDR in request.headers:
+        ctx = get_global_textmap().extract({CONTEXT_HDR: request.headers[CONTEXT_HDR]})
+        attach(ctx)
+    response = await call_next(request)
     return response

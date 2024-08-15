@@ -17,7 +17,7 @@ dependencies = [
     "nslsii",
     "pyepics",
     "aioca",
-    "pydantic<2.0",                                                    # Leave pinned until can check incompatibility
+    "pydantic<2.0",        # Leave pinned until can check incompatibility
     "stomp-py",
     "aiohttp",
     "PyYAML",
@@ -25,11 +25,11 @@ dependencies = [
     "fastapi[all]",
     "uvicorn",
     "requests",
-    "dls-bluesky-core",                                                #requires ophyd-async
+    "dls-bluesky-core",    #requires ophyd-async
     "dls-dodal>=1.24.0",
-    "super-state-machine",                                             # See GH issue 553
+    "super-state-machine", # See GH issue 553
     "GitPython",
-    "observability-utils @ file:///scratch/venv/observability-utils/",
+    # "observability-utils",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

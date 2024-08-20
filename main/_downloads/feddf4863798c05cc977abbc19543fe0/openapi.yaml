@@ -38,10 +38,12 @@ components:
       description: State of internal environment.
       properties:
         error_message:
+          anyOf:
+          - minLength: 1
+            type: string
+          - type: 'null'
           description: If present - error loading context
-          minLength: 1
           title: Error Message
-          type: string
         initialized:
           description: blueapi context initialized
           title: Initialized
@@ -64,17 +66,21 @@ components:
       description: Representation of a plan
       properties:
         description:
+          anyOf:
+          - type: string
+          - type: 'null'
           description: Docstring of the plan
           title: Description
-          type: string
         name:
           description: Name of the plan
           title: Name
           type: string
         schema:
+          anyOf:
+          - type: object
+          - type: 'null'
           description: Schema of the plan's parameters
           title: Schema
-          type: object
       required:
       - name
       title: PlanModel
@@ -98,16 +104,20 @@ components:
       description: Request to change the state of the worker.
       properties:
         defer:
+          anyOf:
+          - type: boolean
+          - type: 'null'
           default: false
           description: Should worker defer Pausing until the next checkpoint
           title: Defer
-          type: boolean
         new_state:
           $ref: '#/components/schemas/WorkerState'
         reason:
+          anyOf:
+          - type: string
+          - type: 'null'
           description: The reason for the current run to be aborted
           title: Reason
-          type: string
       required:
       - new_state
       title: StateChangeRequest
@@ -178,6 +188,7 @@ components:
           type: string
       required:
       - task_id
+      - task
       title: TrackableTask
       type: object
     ValidationError:
@@ -221,9 +232,13 @@ components:
       description: Worker's active task ID, can be None
       properties:
         task_id:
+          anyOf:
+          - type: string
+          - type: 'null'
           description: The ID of the current task, None if the worker is idle
           title: Task Id
-          type: string
+      required:
+      - task_id
       title: WorkerTask
       type: object
 info:
@@ -340,8 +355,10 @@ paths:
         name: task_status
         required: false
         schema:
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Task Status
-          type: string
       responses:
         '200':
           content:

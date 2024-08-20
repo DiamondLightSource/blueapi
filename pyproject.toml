@@ -17,7 +17,9 @@ dependencies = [
     "nslsii",
     "pyepics",
     "aioca",
-    "pydantic<2.0",        # Leave pinned until can check incompatibility
+    "pydantic>=2.0",
+    "scanspec>=0.7.1",
+    "pydantic-settings",
     "stomp-py",
     "aiohttp",
     "PyYAML",

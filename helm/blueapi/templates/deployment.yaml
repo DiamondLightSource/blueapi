@@ -92,10 +92,8 @@ spec:
             - "-c"
             - "/config/config.yaml"
             - "serve"
-          {{- with .Values.extraEnvVars }}
           env:
-            {{- tpl .Values.extraEnvVars . | nindent 10 }}
-          {{- end }}
+            {{- toYaml .Values.extraEnvVars | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

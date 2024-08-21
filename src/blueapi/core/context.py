@@ -9,8 +9,10 @@ from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_
 from bluesky.run_engine import RunEngine
 from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
-from pydantic import create_model
-from pydantic.fields import FieldInfo, ModelField
+from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
+from pydantic.fields import FieldInfo
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema, core_schema
 
 from blueapi.config import EnvironmentConfig, SourceKind
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
@@ -187,24 +189,27 @@ class BlueskyContext:
 
             class Reference(target):
                 @classmethod
-                def __get_validators__(cls):
-                    yield cls.valid
+                def __get_pydantic_core_schema__(
+                    cls, source_type: Any, handler: GetCoreSchemaHandler
+                ) -> CoreSchema:
+                    def valid(value):
+                        val = self.find_device(value)
+                        if not isinstance(val, target):
+                            raise ValueError(f"Device {value} is not of type {target}")
+                        return val
+
+                    return core_schema.no_info_after_validator_function(
+                        valid, handler(str)
+                    )
 
                 @classmethod
-                def valid(cls, value):
-                    val = self.find_device(value)
-                    if not isinstance(val, target):
-                        raise ValueError(f"Device {value} is not of type {target}")
-                    return val
-
-                @classmethod
-                def __modify_schema__(
-                    cls, field_schema: dict[str, Any], field: ModelField | None
-                ):
-                    if field:
-                        field_schema.update(
-                            {"type": f"{target.__module__}.{target.__qualname__}"}
-                        )
+                def __get_pydantic_json_schema__(
+                    cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+                ) -> JsonSchemaValue:
+                    json_schema = handler(core_schema)
+                    json_schema = handler.resolve_ref_schema(json_schema)
+                    json_schema["type"] = f"{target.__module__}.{target.__qualname__}"
+                    return json_schema
 
             self._reference_cache[target] = Reference
 

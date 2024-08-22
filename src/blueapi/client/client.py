@@ -2,6 +2,7 @@ import time
 from concurrent.futures import Future
 
 from bluesky_stomp.messaging import MessageContext, MessagingTemplate
+from bluesky_stomp.models import Broker
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
@@ -39,7 +40,9 @@ class BlueapiClient:
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest = BlueapiRestClient(config.api)
         if config.stomp is not None:
-            template = MessagingTemplate.autoconfigured(config.stomp)
+            template = MessagingTemplate.for_broker(
+                broker=Broker(host=config.stomp.host, port=config.stomp.port, auth=None)
+            )
             events = EventBusClient(template)
         else:
             events = None

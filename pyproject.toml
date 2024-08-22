@@ -24,7 +24,7 @@ dependencies = [
     "aiohttp",
     "PyYAML",
     "click",
-    "fastapi[all]",
+    "fastapi>=0.112.0",
     "uvicorn",
     "requests",
     "dls-bluesky-core",    #requires ophyd-async
@@ -91,7 +91,7 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 markers = [
-    "handler: marks tests that interact with the global handler object in handler.py",
+    "stomp: marks tests that require the stomp" 
 ]
 asyncio_mode = "auto"
 

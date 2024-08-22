@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import Any
 
 from bluesky_stomp.messaging import MessagingTemplate
-from stomp import ConnectFailedException
+from bluesky_stomp.models import Broker, DestinationBase, MessageQueue
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.context import BlueskyContext
@@ -52,10 +52,12 @@ def worker() -> TaskWorker:
 def messaging_template() -> MessagingTemplate | None:
     stomp_config = config().stomp
     if stomp_config is not None:
-        template = MessagingTemplate.autoconfigured(stomp_config)
+        template = MessagingTemplate.for_broker(
+            broker=Broker(host=stomp_config.host, port=stomp_config.port, auth=None)
+        )
 
         task_worker = worker()
-        event_topic = template.destinations.topic("public.worker.event")
+        event_topic = MessageQueue(name="public.worker.event")
 
         _publish_event_streams(
             {
@@ -67,7 +69,7 @@ def messaging_template() -> MessagingTemplate | None:
         try:
             template.connect()
             return template
-        except ConnectFailedException as ex:
+        except Exception as ex:
             logging.exception(msg="Failed to connect to message bus", exc_info=ex)
             return None
     else:
@@ -95,15 +97,17 @@ def teardown() -> None:
     messaging_template.cache_clear()
 
 
-def _publish_event_streams(streams_to_destinations: Mapping[EventStream, str]) -> None:
+def _publish_event_streams(
+    streams_to_destinations: Mapping[EventStream, DestinationBase],
+) -> None:
     for stream, destination in streams_to_destinations.items():
         _publish_event_stream(stream, destination)
 
 
-def _publish_event_stream(stream: EventStream, destination: str) -> None:
+def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> None:
     def forward_message(event: Any, correlation_id: str | None) -> None:
         if (template := messaging_template()) is not None:
-            template.send(destination, event, None, correlation_id)
+            template.send(destination, event, None, correlation_id=correlation_id)
 
     stream.subscribe(forward_message)
 
@@ -160,7 +164,7 @@ def get_worker_state() -> WorkerState:
     return worker().state
 
 
-def pause_worker(defer: bool | None) -> None:
+def pause_worker(defer: bool) -> None:
     """Command the worker to pause"""
     worker().pause(defer)
 

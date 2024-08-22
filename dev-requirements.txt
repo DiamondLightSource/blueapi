@@ -18,6 +18,7 @@ black==24.8.0
 bluesky==1.13.0a4
 bluesky-kafka==0.10.0
 bluesky-live==0.0.8
+bluesky-stomp @ git+https://github.com/DiamondLightSource/bluesky-stomp@4dbdb6b144b4b03243a1784f2f53dc13cbbef30e
 boltons==24.0.0
 cachetools==5.4.0
 caproto==1.1.1

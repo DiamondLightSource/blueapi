@@ -1,7 +1,10 @@
+from typing import Any, Generic, TypeVar
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import pytest
+from ophyd import Callable
+from pydantic import BaseModel
 
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
@@ -161,3 +164,76 @@ def test_clear_message_for_wrong_return(started_runner: WorkerDispatcher):
         + " which is incompatible with expected <class 'int'>",
     ):
         started_runner.run(wrong_return_type)
+
+
+T = TypeVar("T")
+
+
+class SimpleModel(BaseModel):
+    a: int
+    b: str
+
+
+class NestedModel(BaseModel):
+    nested: SimpleModel
+    c: bool
+
+
+class GenericModel(BaseModel, Generic[T]):
+    a: T
+    b: str
+
+
+def return_int() -> int:
+    return 1
+
+
+def return_str() -> str:
+    return "hello"
+
+
+def return_list() -> list[int]:
+    return [1, 2, 3]
+
+
+def return_dict() -> dict[str, int]:
+    return {
+        "test": 1,
+        "other_test": 2,
+    }
+
+
+def return_simple_model() -> SimpleModel:
+    return SimpleModel(a=1, b="hi")
+
+
+def return_nested_model() -> NestedModel:
+    return NestedModel(nested=return_simple_model(), c=False)
+
+
+def return_unbound_generic_model() -> GenericModel:
+    return GenericModel(a="foo", b="bar")
+
+
+def return_bound_generic_model() -> GenericModel[int]:
+    return GenericModel(a=1, b="hi")
+
+
+@pytest.mark.parametrize(
+    "rpc_function",
+    [
+        return_int,
+        return_str,
+        return_list,
+        return_dict,
+        return_simple_model,
+        return_nested_model,
+        return_unbound_generic_model,
+        return_bound_generic_model,
+    ],
+)
+def test_accepts_return_type(
+    started_runner: WorkerDispatcher,
+    rpc_function: Callable[[], Any],
+):
+    started_runner.run(rpc_function)

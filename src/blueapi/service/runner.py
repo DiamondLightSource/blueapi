@@ -1,7 +1,7 @@
 import inspect
 import logging
 import signal
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
@@ -152,22 +152,32 @@ def _rpc(
         )
 
 
-def is_valid_return(value: Any, expected_type: type[T] | None = None) -> bool:
-    if expected_type is None:
+def is_valid_return(value: Any, expected_type: type[T]) -> bool:
+    if expected_type is Any:
         return True
-    if get_origin(expected_type) is None:
+    if expected_type is type(None):
+        return value is None
+    origin = get_origin(expected_type)
+    if origin is None or origin is Union:  # works for Python >= 3.10
         return isinstance(value, expected_type)
-    origin, args = get_origin(expected_type), get_args(expected_type)
-    if origin is Union:
-        return any(is_valid_return(value, valid_type) for valid_type in args)
-    if origin in {dict, Mapping}:
-        return isinstance(value, dict) and all(
+    args = get_args(expected_type)
+    if issubclass(origin, Mapping):
+        return isinstance(value, Mapping) and all(
             is_valid_return(k, args[0]) and is_valid_return(v, args[1])
             for k, v in value.items()
         )
-    if origin in {list, set, Sequence}:
-        return isinstance(value, origin) and all(
-            isinstance(inner, args[0]) for inner in value
+    if origin is tuple:  # handle ellipses specially
+        assert isinstance(value, tuple)
+        if args[1] is Ellipsis:
+            args = (args[0],) * len(value)
+        else:
+            return all(
+                is_valid_return(inner, arg)
+                for inner, arg in zip(value, args, strict=True)
+            )
+    if issubclass(origin, Collection):  # list, set, etc.
+        return isinstance(value, Collection) and all(
+            is_valid_return(inner, args[0]) for inner in value
         )
     raise TypeError(f"Unknown origin for generic type {expected_type}")
 

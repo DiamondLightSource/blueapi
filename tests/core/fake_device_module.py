@@ -33,7 +33,7 @@ def _mock_with_name(name: str) -> MagicMock:
 
 
 def wrong_return_type() -> int:
-    return "0"  # type: ignore
+    return "str"  # type: ignore
 
 
 fetchable_non_callable = NonCallableMock()

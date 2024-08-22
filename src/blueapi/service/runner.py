@@ -1,11 +1,13 @@
 import inspect
 import logging
 import signal
-from collections.abc import Callable, Collection, Mapping, Sequence
+from collections.abc import Callable
 from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any, ParamSpec, TypeVar, Union, get_args, get_origin
+from typing import Any, ParamSpec, TypeVar
+
+from pydantic import TypeAdapter
 
 from blueapi.config import ApplicationConfig
 from blueapi.service.interface import setup, teardown
@@ -143,43 +145,13 @@ def _rpc(
         mod.__dict__.get(function_name, None), function_name
     )
     value = func(*args, **kwargs)
-    if expected_type is None or is_valid_return(value, expected_type):
+    return _valid_return(value, expected_type)
+
+
+def _valid_return(value: Any, expected_type: type[T] | None = None) -> T:
+    if expected_type is None or expected_type is Any:
         return value
-    else:
-        raise TypeError(
-            f"{function_name} returned value of type {type(value)}"
-            + f" which is incompatible with expected {expected_type}"
-        )
-
-
-def is_valid_return(value: Any, expected_type: type[T]) -> bool:
-    if expected_type is Any:
-        return True
-    if expected_type is type(None):
-        return value is None
-    origin = get_origin(expected_type)
-    if origin is None or origin is Union:  # works for Python >= 3.10
-        return isinstance(value, expected_type)
-    args = get_args(expected_type)
-    if issubclass(origin, Mapping):
-        return isinstance(value, Mapping) and all(
-            is_valid_return(k, args[0]) and is_valid_return(v, args[1])
-            for k, v in value.items()
-        )
-    if origin is tuple:  # handle ellipses specially
-        assert isinstance(value, tuple)
-        if args[1] is Ellipsis:
-            args = (args[0],) * len(value)
-        else:
-            return all(
-                is_valid_return(inner, arg)
-                for inner, arg in zip(value, args, strict=True)
-            )
-    if issubclass(origin, Collection):  # list, set, etc.
-        return isinstance(value, Collection) and all(
-            is_valid_return(inner, args[0]) for inner in value
-        )
-    raise TypeError(f"Unknown origin for generic type {expected_type}")
+    return TypeAdapter(expected_type).validate_python(value)
 
 
 def _validate_function(func: Any, function_name: str) -> Callable:

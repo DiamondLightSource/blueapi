@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from ophyd import Callable
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
@@ -159,9 +159,8 @@ def test_clear_message_for_wrong_return(started_runner: WorkerDispatcher):
     from tests.core.fake_device_module import wrong_return_type
 
     with pytest.raises(
-        TypeError,
-        match="wrong_return_type returned value of type <class 'str'>"
-        + " which is incompatible with expected <class 'int'>",
+        ValidationError,
+        match="1 validation error for int",
     ):
         started_runner.run(wrong_return_type)
 

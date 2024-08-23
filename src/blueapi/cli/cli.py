@@ -155,8 +155,8 @@ def listen_to_events(obj: dict) -> None:
         raise RuntimeError("Message bus needs to be configured")
 
     def on_event(
-        context: MessageContext,
         event: WorkerEvent | ProgressEvent | DataEvent,
+        context: MessageContext,
     ) -> None:
         converted = json.dumps(event.dict(), indent=2)
         print(converted)

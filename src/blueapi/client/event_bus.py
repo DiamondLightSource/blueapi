@@ -30,7 +30,7 @@ class EventBusClient:
 
     def subscribe_to_all_events(
         self,
-        on_event: Callable[[MessageContext, AnyEvent], None],
+        on_event: Callable[[AnyEvent, MessageContext], None],
     ) -> None:
         try:
             self.app.subscribe(

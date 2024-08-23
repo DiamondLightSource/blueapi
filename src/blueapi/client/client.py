@@ -182,7 +182,7 @@ class BlueapiClient:
 
         complete: Future[WorkerEvent] = Future()
 
-        def inner_on_event(ctx: MessageContext, event: AnyEvent) -> None:
+        def inner_on_event(event: AnyEvent, ctx: MessageContext) -> None:
             match event:
                 case WorkerEvent(task_status=TaskStatus(task_id=test_id)):
                     relates_to_task = test_id == task_id

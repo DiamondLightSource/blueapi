@@ -1,3 +1,4 @@
+import logging
 import uuid
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
@@ -273,3 +274,11 @@ def test_get_task_by_id(context_mock: MagicMock):
 def test_stomp_config():
     interface.set_config(ApplicationConfig(stomp=StompConfig()))
     assert interface.messaging_template() is not None
+
+
+@pytest.mark.stomp
+def test_stomp_connection_failure_with_invalid_config(caplog):
+    caplog.at_level(logging.exception)
+    interface.set_config(ApplicationConfig(stomp=StompConfig(host="Not Exists")))
+    assert interface.messaging_template() is None
+    assert "Failed to connect to message bus" in caplog.text

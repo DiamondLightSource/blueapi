@@ -312,10 +312,9 @@ def set_state(
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
         if new_state == WorkerState.PAUSED:
-            if state_change_request.defer is not None:
-                runner.run(interface.pause_worker, state_change_request.defer)
-            else:
-                runner.run(interface.pause_worker, False)
+            if state_change_request.defer is None:
+                state_change_request.defer = False
+            runner.run(interface.pause_worker, state_change_request.defer)
         elif new_state == WorkerState.RUNNING:
             runner.run(interface.resume_worker)
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:

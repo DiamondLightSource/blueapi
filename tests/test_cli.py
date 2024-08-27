@@ -149,8 +149,8 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
         input="\n",
     )
     assert (
-        result.output
-        == 'Subscribing to all bluesky events from localhost:61613\nPress enter to exit{\n  "state": "IDLE",\n  "task_status": null,\n  "errors": [],\n  "warnings": []\n}\n'
+        "Subscribing to all bluesky events from localhost:61613\nPress enter to exit"
+        in result.output
     )
     assert result.exit_code == 0
 

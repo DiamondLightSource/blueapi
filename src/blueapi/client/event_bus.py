@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from bluesky_stomp.messaging import MessageContext, MessagingTemplate
-from bluesky_stomp.models import MessageQueue
+from bluesky_stomp.models import MessageTopic
 
 from blueapi.core import DataEvent
 from blueapi.worker import ProgressEvent, WorkerEvent
@@ -34,7 +34,7 @@ class EventBusClient:
     ) -> None:
         try:
             self.app.subscribe(
-                MessageQueue(name="public.worker.event"),
+                MessageTopic(name="public.worker.event"),
                 on_event,
             )
         except Exception as err:

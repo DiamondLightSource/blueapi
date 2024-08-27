@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import Any
 
 from bluesky_stomp.messaging import MessagingTemplate
-from bluesky_stomp.models import Broker, DestinationBase, MessageQueue
+from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.context import BlueskyContext
@@ -59,7 +59,7 @@ def messaging_template() -> MessagingTemplate | None:
         )
 
         task_worker = worker()
-        event_topic = MessageQueue(name="public.worker.event")
+        event_topic = MessageTopic(name="public.worker.event")
 
         _publish_event_streams(
             {

@@ -41,7 +41,11 @@ class BlueapiClient:
         rest = BlueapiRestClient(config.api)
         if config.stomp is not None:
             template = MessagingTemplate.for_broker(
-                broker=Broker(host=config.stomp.host, port=config.stomp.port, auth=None)
+                broker=Broker(
+                    host=config.stomp.host,
+                    port=config.stomp.port,
+                    auth=config.stomp.auth,
+                )
             )
             events = EventBusClient(template)
         else:

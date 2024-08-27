@@ -148,7 +148,11 @@ def listen_to_events(obj: dict) -> None:
     if config.stomp is not None:
         event_bus_client = EventBusClient(
             MessagingTemplate.for_broker(
-                broker=Broker(host=config.stomp.host, port=config.stomp.port, auth=None)
+                broker=Broker(
+                    host=config.stomp.host,
+                    port=config.stomp.port,
+                    auth=config.stomp.auth,
+                )
             )
         )
     else:

@@ -53,7 +53,9 @@ def messaging_template() -> MessagingTemplate | None:
     stomp_config = config().stomp
     if stomp_config is not None:
         template = MessagingTemplate.for_broker(
-            broker=Broker(host=stomp_config.host, port=stomp_config.port, auth=None)
+            broker=Broker(
+                host=stomp_config.host, port=stomp_config.port, auth=stomp_config.auth
+            )
         )
 
         task_worker = worker()

@@ -307,9 +307,11 @@ def test_run_task_sets_up_control(
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="foo")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
+    ctx = Mock()
+    ctx.correlation_id = "foo"
+    mock_events.subscribe_to_all_events = lambda on_event: on_event(COMPLETE_EVENT, ctx)
 
     client_with_events.run_task(Task(name="foo"))
-
     mock_rest.create_task.assert_called_once_with(Task(name="foo"))
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="foo"))
 
@@ -324,7 +326,7 @@ def test_run_task_fails_on_failing_event(
 
     ctx = Mock()
     ctx.correlation_id = "foo"
-    mock_events.subscribe_to_all_events = lambda on_event: on_event(ctx, FAILED_EVENT)
+    mock_events.subscribe_to_all_events = lambda on_event: on_event(FAILED_EVENT, ctx)
 
     on_event = Mock()
     with pytest.raises(BlueskyStreamingError):
@@ -360,9 +362,9 @@ def test_run_task_calls_event_callback(
     ctx = Mock()
     ctx.correlation_id = "foo"
 
-    def callback(on_event: Callable[[MessageContext, AnyEvent], None]):
-        on_event(ctx, test_event)
-        on_event(ctx, COMPLETE_EVENT)
+    def callback(on_event: Callable[[AnyEvent, MessageContext], None]):
+        on_event(test_event, ctx)
+        on_event(COMPLETE_EVENT, ctx)
 
     mock_events.subscribe_to_all_events = callback  # type: ignore
 
@@ -399,9 +401,9 @@ def test_run_task_ignores_non_matching_events(
     ctx = Mock()
     ctx.correlation_id = "foo"
 
-    def callback(on_event: Callable[[MessageContext, AnyEvent], None]):
-        on_event(ctx, test_event)
-        on_event(ctx, COMPLETE_EVENT)
+    def callback(on_event: Callable[[AnyEvent, MessageContext], None]):
+        on_event(test_event, ctx)  # type: ignore
+        on_event(COMPLETE_EVENT, ctx)
 
     mock_events.subscribe_to_all_events = callback
 

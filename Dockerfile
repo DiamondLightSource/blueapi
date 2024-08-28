@@ -17,6 +17,7 @@ FROM developer as build
 COPY . /context
 WORKDIR /context
 RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
+RUN pip install git+https://github.com/DiamondLightSource/bluesky-stomp.git@main
 
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim as runtime

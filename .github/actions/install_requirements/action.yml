@@ -26,11 +26,7 @@ runs:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install packages
-      run: pip install $([ -f dev-requirements.txt ] && echo '-c dev-requirements.txt') -e .[dev]
-      shell: bash
-
-    - name: Install bluesky_stomp
-      run: pip install git+https://github.com/DiamondLightSource/bluesky-stomp.git@main
+      run: pip install ${{ inputs.pip-install }}
       shell: bash
 
     - name: Report what was installed

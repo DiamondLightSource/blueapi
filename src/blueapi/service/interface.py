@@ -49,7 +49,7 @@ def worker() -> TaskWorker:
 
 
 @lru_cache
-def messaging_template() -> MessagingTemplate | None:
+def messaging_template() -> MessagingTemplate:
     stomp_config = config().stomp
     if stomp_config is not None:
         template = MessagingTemplate.for_broker(
@@ -68,14 +68,8 @@ def messaging_template() -> MessagingTemplate | None:
                 task_worker.data_events: event_topic,
             }
         )
-        try:
-            template.connect()
-            return template
-        except Exception as ex:
-            logging.exception(msg="Failed to connect to message bus", exc_info=ex)
-            return None
-    else:
-        return None
+        template.connect()
+        return template
 
 
 def setup(config: ApplicationConfig) -> None:

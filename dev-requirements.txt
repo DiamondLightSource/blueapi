@@ -17,7 +17,7 @@ bidict==0.23.1
 bluesky==1.13.0a4
 bluesky-kafka==0.10.0
 bluesky-live==0.0.8
-bluesky-stomp @ git+https://github.com/DiamondLightSource/bluesky-stomp@4dbdb6b144b4b03243a1784f2f53dc13cbbef30e
+bluesky-stomp==0.1.0
 boltons==24.0.0
 cachetools==5.5.0
 caproto==1.1.1
@@ -213,10 +213,10 @@ tzlocal==5.2
 urllib3==2.2.2
 uvicorn==0.30.6
 virtualenv==20.26.3
-watchfiles==0.23.0
+watchfiles==0.24.0
 wcwidth==0.2.13
 websocket-client==1.8.0
-websockets==13.0
+websockets==13.0.1
 widgetsnbextension==4.0.13
 workflows==2.27
 xarray==2024.7.0

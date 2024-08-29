@@ -1,522 +1,230 @@
-components:
-  schemas:
-    DeviceModel:
-      additionalProperties: false
-      description: Representation of a device
-      properties:
-        name:
-          description: Name of the device
-          title: Name
-          type: string
-        protocols:
-          description: Protocols that a device conforms to, indicating its capabilities
-          items:
-            type: string
-          title: Protocols
-          type: array
-      required:
-      - name
-      - protocols
-      title: DeviceModel
-      type: object
-    DeviceResponse:
-      additionalProperties: false
-      description: Response to a query for devices
-      properties:
-        devices:
-          description: Devices available to use in plans
-          items:
-            $ref: '#/components/schemas/DeviceModel'
-          title: Devices
-          type: array
-      required:
-      - devices
-      title: DeviceResponse
-      type: object
-    EnvironmentResponse:
-      additionalProperties: false
-      description: State of internal environment.
-      properties:
-        error_message:
-          anyOf:
-          - minLength: 1
-            type: string
-          - type: 'null'
-          description: If present - error loading context
-          title: Error Message
-        initialized:
-          description: blueapi context initialized
-          title: Initialized
-          type: boolean
-      required:
-      - initialized
-      title: EnvironmentResponse
-      type: object
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          title: Detail
-          type: array
-      title: HTTPValidationError
-      type: object
-    PlanModel:
-      additionalProperties: false
-      description: Representation of a plan
-      properties:
-        description:
-          anyOf:
-          - type: string
-          - type: 'null'
-          description: Docstring of the plan
-          title: Description
-        name:
-          description: Name of the plan
-          title: Name
-          type: string
-        schema:
-          anyOf:
-          - type: object
-          - type: 'null'
-          description: Schema of the plan's parameters
-          title: Schema
-      required:
-      - name
-      title: PlanModel
-      type: object
-    PlanResponse:
-      additionalProperties: false
-      description: Response to a query for plans
-      properties:
-        plans:
-          description: Plans available to use by a worker
-          items:
-            $ref: '#/components/schemas/PlanModel'
-          title: Plans
-          type: array
-      required:
-      - plans
-      title: PlanResponse
-      type: object
-    StateChangeRequest:
-      additionalProperties: false
-      description: Request to change the state of the worker.
-      properties:
-        defer:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          default: false
-          description: Should worker defer Pausing until the next checkpoint
-          title: Defer
-        new_state:
-          $ref: '#/components/schemas/WorkerState'
-        reason:
-          anyOf:
-          - type: string
-          - type: 'null'
-          description: The reason for the current run to be aborted
-          title: Reason
-      required:
-      - new_state
-      title: StateChangeRequest
-      type: object
-    Task:
-      additionalProperties: false
-      description: Task that will run a plan
-      properties:
-        name:
-          description: Name of plan to run
-          title: Name
-          type: string
-        params:
-          description: Values for parameters to plan, if any
-          title: Params
-          type: object
-      required:
-      - name
-      title: Task
-      type: object
-    TaskResponse:
-      additionalProperties: false
-      description: Acknowledgement that a task has started, includes its ID
-      properties:
-        task_id:
-          description: Unique identifier for the task
-          title: Task Id
-          type: string
-      required:
-      - task_id
-      title: TaskResponse
-      type: object
-    TasksListResponse:
-      additionalProperties: false
-      description: Diagnostic information on the tasks
-      properties:
-        tasks:
-          description: List of tasks
-          items:
-            $ref: '#/components/schemas/TrackableTask'
-          title: Tasks
-          type: array
-      required:
-      - tasks
-      title: TasksListResponse
-      type: object
-    TrackableTask:
-      additionalProperties: false
-      description: A representation of a task that the worker recognizes
-      properties:
-        errors:
-          items:
-            type: string
-          title: Errors
-          type: array
-        is_complete:
-          default: false
-          title: Is Complete
-          type: boolean
-        is_pending:
-          default: true
-          title: Is Pending
-          type: boolean
-        task:
-          title: Task
-        task_id:
-          title: Task Id
-          type: string
-      required:
-      - task_id
-      - task
-      title: TrackableTask
-      type: object
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          title: Location
-          type: array
-        msg:
-          title: Message
-          type: string
-        type:
-          title: Error Type
-          type: string
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-      type: object
-    WorkerState:
-      description: The state of the Worker.
-      enum:
-      - IDLE
-      - RUNNING
-      - PAUSING
-      - PAUSED
-      - HALTING
-      - STOPPING
-      - ABORTING
-      - SUSPENDING
-      - PANICKED
-      - UNKNOWN
-      title: WorkerState
-      type: string
-    WorkerTask:
-      additionalProperties: false
-      description: Worker's active task ID, can be None
-      properties:
-        task_id:
-          anyOf:
-          - type: string
-          - type: 'null'
-          description: The ID of the current task, None if the worker is idle
-          title: Task Id
-      required:
-      - task_id
-      title: WorkerTask
-      type: object
+openapi: 3.1.0
 info:
   title: BlueAPI Control
   version: 0.0.5
-openapi: 3.1.0
 paths:
-  /devices:
-    get:
-      description: Retrieve information about all available devices.
-      operationId: get_devices_devices_get
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeviceResponse'
-          description: Successful Response
-      summary: Get Devices
-  /devices/{name}:
-    get:
-      description: Retrieve information about a devices by its (unique) name.
-      operationId: get_device_by_name_devices__name__get
-      parameters:
-      - in: path
-        name: name
-        required: true
-        schema:
-          title: Name
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeviceModel'
-          description: Successful Response
-        '422':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
-      summary: Get Device By Name
   /environment:
-    delete:
-      description: Delete the current environment, causing internal components to
-        be reloaded.
-      operationId: delete_environment_environment_delete
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EnvironmentResponse'
-          description: Successful Response
-      summary: Delete Environment
     get:
+      summary: Get Environment
       description: Get the current state of the environment, i.e. initialization state.
       operationId: get_environment_environment_get
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/EnvironmentResponse'
+    delete:
+      summary: Delete Environment
+      description: >-
+        Delete the current environment, causing internal components to be
+        reloaded.
+      operationId: delete_environment_environment_delete
+      responses:
+        '200':
           description: Successful Response
-      summary: Get Environment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentResponse'
   /plans:
     get:
+      summary: Get Plans
       description: Retrieve information about all available plans.
       operationId: get_plans_plans_get
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlanResponse'
-          description: Successful Response
-      summary: Get Plans
   /plans/{name}:
     get:
+      summary: Get Plan By Name
       description: Retrieve information about a plan by its (unique) name.
       operationId: get_plan_by_name_plans__name__get
       parameters:
-      - in: path
-        name: name
-        required: true
-        schema:
-          title: Name
-          type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Name
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlanModel'
-          description: Successful Response
         '422':
+          description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
-      summary: Get Plan By Name
-  /tasks:
+  /devices:
     get:
-      description: 'Retrieve tasks based on their status.
-
-        The status of a newly created task is ''unstarted''.'
-      operationId: get_tasks_tasks_get
-      parameters:
-      - in: query
-        name: task_status
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Task Status
+      summary: Get Devices
+      description: Retrieve information about all available devices.
+      operationId: get_devices_devices_get
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TasksListResponse'
+                $ref: '#/components/schemas/DeviceResponse'
+  /devices/{name}:
+    get:
+      summary: Get Device By Name
+      description: Retrieve information about a devices by its (unique) name.
+      operationId: get_device_by_name_devices__name__get
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Name
+      responses:
+        '200':
           description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceModel'
         '422':
+          description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
-      summary: Get Tasks
+  /tasks:
     post:
+      summary: Submit Task
       description: Submit a task to the worker.
       operationId: submit_task_tasks_post
       requestBody:
+        required: true
         content:
           application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
             example:
               name: count
               params:
                 detectors:
-                - x
-            schema:
-              $ref: '#/components/schemas/Task'
-        required: true
+                  - x
       responses:
         '201':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TaskResponse'
-          description: Successful Response
         '422':
+          description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
-      summary: Submit Task
-  /tasks/{task_id}:
-    delete:
-      operationId: delete_submitted_task_tasks__task_id__delete
+    get:
+      summary: Get Tasks
+      description: |-
+        Retrieve tasks based on their status.
+        The status of a newly created task is 'unstarted'.
+      operationId: get_tasks_tasks_get
       parameters:
-      - in: path
-        name: task_id
-        required: true
-        schema:
-          title: Task Id
-          type: string
+        - name: task_status
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Task Status
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskResponse'
-          description: Successful Response
+                $ref: '#/components/schemas/TasksListResponse'
         '422':
+          description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
+  /tasks/{task_id}:
+    delete:
       summary: Delete Submitted Task
+      operationId: delete_submitted_task_tasks__task_id__delete
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
     get:
+      summary: Get Task
       description: Retrieve a task
       operationId: get_task_tasks__task_id__get
       parameters:
-      - in: path
-        name: task_id
-        required: true
-        schema:
-          title: Task Id
-          type: string
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Task Id
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TrackableTask'
-          description: Successful Response
         '422':
+          description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
-      summary: Get Task
-  /worker/state:
-    get:
-      description: Get the State of the Worker
-      operationId: get_state_worker_state_get
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkerState'
-          description: Successful Response
-      summary: Get State
-    put:
-      description: "Request that the worker is put into a particular state.\nReturns\
-        \ the state of the worker at the end of the call.\n\n- **The following transitions\
-        \ are allowed and return 202: Accepted**\n- If the worker is **PAUSED**, new_state\
-        \ may be **RUNNING** to resume.\n- If the worker is **RUNNING**, new_state\
-        \ may be **PAUSED** to pause:\n    - If defer is False (default): pauses and\
-        \ rewinds to the previous checkpoint\n    - If defer is True: waits until\
-        \ the next checkpoint to pause\n    - **If the task has no checkpoints, the\
-        \ task will instead be Aborted**\n- If the worker is **RUNNING/PAUSED**, new_state\
-        \ may be **STOPPING** to stop.\n    Stop marks any currently open Runs in\
-        \ the Task as a success and ends the task.\n- If the worker is **RUNNING/PAUSED**,\
-        \ new_state may be **ABORTING** to abort.\n    Abort marks any currently open\
-        \ Runs in the Task as a Failure and ends the task.\n    - If reason is set,\
-        \ the reason will be passed as the reason for the Run failure.\n- **All other\
-        \ transitions return 400: Bad Request**"
-      operationId: set_state_worker_state_put
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StateChangeRequest'
-        required: true
-      responses:
-        '202':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkerState'
-          description: Successful Response
-          detail: Transition requested
-        '400':
-          description: Bad Request
-          detail: Transition not allowed
-        '422':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
-      summary: Set State
   /worker/task:
     get:
+      summary: Get Active Task
       operationId: get_active_task_worker_task_get
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkerTask'
-          description: Successful Response
-      summary: Get Active Task
     put:
-      description: 'Set a task to active status, the worker should begin it as soon
-        as possible.
+      summary: Set Active Task
+      description: >-
+        Set a task to active status, the worker should begin it as soon as
+        possible.
 
-        This will return an error response if the worker is not idle.'
+        This will return an error response if the worker is not idle.
       operationId: set_active_task_worker_task_put
       requestBody:
         content:
@@ -526,18 +234,318 @@ paths:
         required: true
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkerTask'
-          description: Successful Response
         '409':
           description: Conflict
           worker: already active
         '422':
+          description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /worker/state:
+    get:
+      summary: Get State
+      description: Get the State of the Worker
+      operationId: get_state_worker_state_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerState'
+    put:
+      summary: Set State
+      description: >-
+        Request that the worker is put into a particular state.
+
+        Returns the state of the worker at the end of the call.
+
+
+        - **The following transitions are allowed and return 202: Accepted**
+
+        - If the worker is **PAUSED**, new_state may be **RUNNING** to resume.
+
+        - If the worker is **RUNNING**, new_state may be **PAUSED** to pause:
+            - If defer is False (default): pauses and rewinds to the previous checkpoint
+            - If defer is True: waits until the next checkpoint to pause
+            - **If the task has no checkpoints, the task will instead be Aborted**
+        - If the worker is **RUNNING/PAUSED**, new_state may be **STOPPING** to
+        stop.
+            Stop marks any currently open Runs in the Task as a success and ends the task.
+        - If the worker is **RUNNING/PAUSED**, new_state may be **ABORTING** to
+        abort.
+            Abort marks any currently open Runs in the Task as a Failure and ends the task.
+            - If reason is set, the reason will be passed as the reason for the Run failure.
+        - **All other transitions return 400: Bad Request**
+      operationId: set_state_worker_state_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StateChangeRequest'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerState'
+          detail: Transition requested
+        '400':
+          description: Bad Request
+          detail: Transition not allowed
+        '422':
           description: Validation Error
-      summary: Set Active Task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    DeviceModel:
+      properties:
+        name:
+          type: string
+          title: Name
+          description: Name of the device
+        protocols:
+          items:
+            type: string
+          type: array
+          title: Protocols
+          description: Protocols that a device conforms to, indicating its capabilities
+      additionalProperties: false
+      type: object
+      required:
+        - name
+        - protocols
+      title: DeviceModel
+      description: Representation of a device
+    DeviceResponse:
+      properties:
+        devices:
+          items:
+            $ref: '#/components/schemas/DeviceModel'
+          type: array
+          title: Devices
+          description: Devices available to use in plans
+      additionalProperties: false
+      type: object
+      required:
+        - devices
+      title: DeviceResponse
+      description: Response to a query for devices
+    EnvironmentResponse:
+      properties:
+        initialized:
+          type: boolean
+          title: Initialized
+          description: blueapi context initialized
+        error_message:
+          anyOf:
+            - type: string
+              minLength: 1
+            - type: 'null'
+          title: Error Message
+          description: If present - error loading context
+      additionalProperties: false
+      type: object
+      required:
+        - initialized
+      title: EnvironmentResponse
+      description: State of internal environment.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    PlanModel:
+      properties:
+        name:
+          type: string
+          title: Name
+          description: Name of the plan
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+          description: Docstring of the plan
+        schema:
+          anyOf:
+            - type: object
+            - type: 'null'
+          title: Schema
+          description: Schema of the plan's parameters
+      additionalProperties: false
+      type: object
+      required:
+        - name
+      title: PlanModel
+      description: Representation of a plan
+    PlanResponse:
+      properties:
+        plans:
+          items:
+            $ref: '#/components/schemas/PlanModel'
+          type: array
+          title: Plans
+          description: Plans available to use by a worker
+      additionalProperties: false
+      type: object
+      required:
+        - plans
+      title: PlanResponse
+      description: Response to a query for plans
+    StateChangeRequest:
+      properties:
+        new_state:
+          $ref: '#/components/schemas/WorkerState'
+        defer:
+          type: boolean
+          title: Defer
+          description: Should worker defer Pausing until the next checkpoint
+          default: false
+        reason:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Reason
+          description: The reason for the current run to be aborted
+      additionalProperties: false
+      type: object
+      required:
+        - new_state
+      title: StateChangeRequest
+      description: Request to change the state of the worker.
+    Task:
+      properties:
+        name:
+          type: string
+          title: Name
+          description: Name of plan to run
+        params:
+          type: object
+          title: Params
+          description: Values for parameters to plan, if any
+      additionalProperties: false
+      type: object
+      required:
+        - name
+      title: Task
+      description: Task that will run a plan
+    TaskResponse:
+      properties:
+        task_id:
+          type: string
+          title: Task Id
+          description: Unique identifier for the task
+      additionalProperties: false
+      type: object
+      required:
+        - task_id
+      title: TaskResponse
+      description: Acknowledgement that a task has started, includes its ID
+    TasksListResponse:
+      properties:
+        tasks:
+          items:
+            $ref: '#/components/schemas/TrackableTask'
+          type: array
+          title: Tasks
+          description: List of tasks
+      additionalProperties: false
+      type: object
+      required:
+        - tasks
+      title: TasksListResponse
+      description: Diagnostic information on the tasks
+    TrackableTask:
+      properties:
+        task_id:
+          type: string
+          title: Task Id
+        task:
+          title: Task
+        is_complete:
+          type: boolean
+          title: Is Complete
+          default: false
+        is_pending:
+          type: boolean
+          title: Is Pending
+          default: true
+        errors:
+          items:
+            type: string
+          type: array
+          title: Errors
+      additionalProperties: false
+      type: object
+      required:
+        - task_id
+        - task
+      title: TrackableTask
+      description: A representation of a task that the worker recognizes
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    WorkerState:
+      type: string
+      enum:
+        - IDLE
+        - RUNNING
+        - PAUSING
+        - PAUSED
+        - HALTING
+        - STOPPING
+        - ABORTING
+        - SUSPENDING
+        - PANICKED
+        - UNKNOWN
+      title: WorkerState
+      description: The state of the Worker.
+    WorkerTask:
+      properties:
+        task_id:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Task Id
+          description: The ID of the current task, None if the worker is idle
+      additionalProperties: false
+      type: object
+      required:
+        - task_id
+      title: WorkerTask
+      description: Worker's active task ID, can be None

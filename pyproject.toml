@@ -31,6 +31,7 @@ dependencies = [
     "dls-dodal>=1.24.0",
     "super-state-machine", # See GH issue 553
     "GitPython",
+    "bluesky-stomp>=0.1.0"
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

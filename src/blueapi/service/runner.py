@@ -149,9 +149,10 @@ def _rpc(
 
 
 def _valid_return(value: Any, expected_type: type[T] | None = None) -> T:
-    if expected_type is None or expected_type is Any:
+    if expected_type is None:
         return value
-    return TypeAdapter(expected_type).validate_python(value)
+    else:
+        return TypeAdapter(expected_type).validate_python(value)
 
 
 def _validate_function(func: Any, function_name: str) -> Callable:

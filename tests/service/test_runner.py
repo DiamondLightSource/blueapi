@@ -218,6 +218,10 @@ def return_bound_generic_model() -> GenericModel[int]:
     return GenericModel(a=1, b="hi")
 
 
+def return_explicitly_bound_generic_model() -> GenericModel[int]:
+    return GenericModel[int](a=1, b="hi")
+
+
 @pytest.mark.parametrize(
     "rpc_function",
     [
@@ -229,6 +233,7 @@ def return_bound_generic_model() -> GenericModel[int]:
         return_nested_model,
         return_unbound_generic_model,
         # https://github.com/pydantic/pydantic/issues/6870 return_bound_generic_model,
+        return_explicitly_bound_generic_model,
     ],
 )
 def test_accepts_return_type(

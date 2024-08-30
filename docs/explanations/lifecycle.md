@@ -23,7 +23,7 @@ of being written, loaded and run. Take the following plan.
         Args:
             detectors (List[Readable]): Readable devices to read: when being run in Blueapi
                                         defaults to fetching a device named "det" from its
-                                        context, else will require to be overriden.
+                                        context, else will require to be overridden.
             num (int, optional): Number of readings to take. Defaults to 1.
             delay (Optional[Union[float, List[float]]], optional): Delay between readings.
                                                                 Defaults to None.

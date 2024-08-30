@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Events Emitted by the Worker &#8212; blueapi 0.4.5a3.dev2+gad3f6864 documentation</title>
+    <title>Events Emitted by the Worker &#8212; blueapi 0.4.5a3.dev3+g7c78f6dc documentation</title>
   
   
   
@@ -38,7 +38,7 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../_static/documentation_options.js?v=13c4f0f5"></script>
+    <script src="../_static/documentation_options.js?v=6082252e"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -503,7 +503,7 @@ document.write(`
 <p>Since the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> is traditionally used by a human in front of an IPython terminal, it
 sometimes assumes intuitive behaviour. The worker replaces the human and so must fill in the
 gaps.</p>
-<p>The base engine programatically emits data events conforming to the <code class="docutils literal notranslate"><span class="pre">bluesky</span> <span class="pre">event</span> <span class="pre">model</span></code>_. These
+<p>The base engine programmatically emits data events conforming to the <code class="docutils literal notranslate"><span class="pre">bluesky</span> <span class="pre">event</span> <span class="pre">model</span></code>_. These
 are meant to be handled by other subscribing code (e.g. databroker) and are decoupled from concerns such as whether
 a plan has started, finished, paused, errored etc. See the example below:</p>
 <p><img alt="sequence of event emission compared to plan start/finish, in a complicated case" src="../_images/bluesky-events.png" /></p>
@@ -516,7 +516,7 @@ associated with which plans.</p>
 <section id="new-events">
 <h2>New Events<a class="headerlink" href="#new-events" title="Link to this heading">#</a></h2>
 <p>For the case of automation, we introduce a new set of events outside of the event model, specifically
-pertaining to the running of the plan and state of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>. At a mimimum, an event is emitted
+pertaining to the running of the plan and state of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>. At a minimum, an event is emitted
 every time the engine:</p>
 <ul class="simple">
 <li><p>Starts a new plan</p></li>
@@ -527,7 +527,7 @@ every time the engine:</p>
 </section>
 <section id="correlation-id">
 <h2>Correlation ID<a class="headerlink" href="#correlation-id" title="Link to this heading">#</a></h2>
-<p>When controlling plans programatically, it can be useful to verify that event model documents really are related to
+<p>When controlling plans programmatically, it can be useful to verify that event model documents really are related to
 the plan you just asked the worker to run. The worker will therefore bundle a correlation ID into the headers of
 messages containing documents.</p>
 <p>see also <a class="reference external" href="https://microsoft.github.io/code-with-engineering-playbook/observability/correlation-id/"><code class="docutils literal notranslate"><span class="pre">Microsoft</span> <span class="pre">Playbook</span> <span class="pre">on</span> <span class="pre">Correlation</span> <span class="pre">IDs</span></code></a></p>

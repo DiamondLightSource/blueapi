@@ -161,7 +161,7 @@ def test_clear_task(worker: TaskWorker) -> None:
     assert worker.get_tasks() == []
 
 
-def test_clear_nonexistant_task(worker: TaskWorker) -> None:
+def test_clear_nonexistent_task(worker: TaskWorker) -> None:
     with pytest.raises(KeyError):
         worker.clear_task("foo")
 

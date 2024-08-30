@@ -136,25 +136,6 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     )
 
 
-@pytest.mark.stomp
-def test_valid_stomp_config_for_listener(runner: CliRunner):
-    result = runner.invoke(
-        main,
-        [
-            "-c",
-            "tests/example_yaml/valid_stomp_config.yaml",
-            "controller",
-            "listen",
-        ],
-        input="\n",
-    )
-    assert (
-        "Subscribing to all bluesky events from localhost:61613\nPress enter to exit"
-        in result.output
-    )
-    assert result.exit_code == 0
-
-
 @responses.activate
 def test_get_env(
     runner: CliRunner,

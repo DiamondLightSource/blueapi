@@ -91,9 +91,6 @@ addopts = """
 filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
-markers = [
-    "stomp: marks tests that require a message bus configured for stomp" 
-]
 asyncio_mode = "auto"
 
 [tool.coverage.run]

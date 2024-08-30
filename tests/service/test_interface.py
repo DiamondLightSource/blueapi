@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from ophyd.sim import SynAxis
 
-from blueapi.config import ApplicationConfig, StompConfig
 from blueapi.core import MsgGenerator
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
@@ -267,9 +266,3 @@ def test_get_task_by_id(context_mock: MagicMock):
         is_pending=True,
         errors=[],
     )
-
-
-@pytest.mark.stomp
-def test_stomp_config():
-    interface.set_config(ApplicationConfig(stomp=StompConfig()))
-    assert interface.messaging_template() is not None

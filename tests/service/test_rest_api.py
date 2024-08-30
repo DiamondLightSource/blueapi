@@ -80,7 +80,7 @@ def test_get_plan_by_name(get_plan_mock: MagicMock, client: TestClient) -> None:
 
 
 @patch("blueapi.service.interface.get_plan")
-def test_get_non_existant_plan_by_name(
+def test_get_non_existent_plan_by_name(
     get_plan_mock: MagicMock, client: TestClient
 ) -> None:
     get_plan_mock.side_effect = KeyError("my-plan")

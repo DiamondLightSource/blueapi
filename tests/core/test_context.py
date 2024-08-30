@@ -231,11 +231,11 @@ def test_lookup_device(devicey_context: BlueskyContext, addr: str | list[str]) -
     assert is_bluesky_compatible_device(device)
 
 
-def test_lookup_nonexistant_device(devicey_context: BlueskyContext) -> None:
+def test_lookup_nonexistent_device(devicey_context: BlueskyContext) -> None:
     assert devicey_context.find_device("foo") is None
 
 
-def test_lookup_nonexistant_device_child(devicey_context: BlueskyContext) -> None:
+def test_lookup_nonexistent_device_child(devicey_context: BlueskyContext) -> None:
     assert devicey_context.find_device("sim.foo") is None
 
 

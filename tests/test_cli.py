@@ -147,8 +147,11 @@ def test_valid_stomp_config_for_listener(runner: CliRunner):
         ],
         input="\n",
     )
-    assert "Subscribing to all bluesky events from localhost:61613" in result.output
-    assert result.exit_code == 1
+    assert (
+        "Subscribing to all bluesky events from localhost:61613/nPress enter to exit"
+        in result.output
+    )
+    assert result.exit_code == 0
 
 
 @responses.activate

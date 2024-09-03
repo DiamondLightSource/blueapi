@@ -1,4 +1,4 @@
-import asyncio
+import time
 from typing import Any
 
 import requests
@@ -13,8 +13,10 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+    StateChangeRequest,
     TaskResponse,
     TasksListResponse,
+    WorkerTask,
 )
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
@@ -43,7 +45,10 @@ def get_response(
 
 
 def post_response(
-    url: str, json: dict[str, Any], BaseModel: Any, status_code: int
+    url: str,
+    json: dict[str, Any],
+    BaseModel: Any,
+    status_code: int = status.HTTP_200_OK,
 ) -> Any:
     post_response = requests.post(url, json=json)
     assert post_response.status_code == status_code
@@ -57,7 +62,10 @@ def delete_response(url: str, BaseModel: Any, status_code: int) -> Any:
 
 
 def put_response(
-    url: str, data: dict[str, str], BaseModel: Any, status_code: int
+    url: str,
+    data: str,
+    BaseModel: Any,
+    status_code: int = status.HTTP_200_OK,
 ) -> Any:
     put_response = requests.put(url, data=data)
     assert put_response.status_code == status_code
@@ -75,18 +83,6 @@ def test_get_current_state_of_environment():
     assert isinstance(
         environment, EnvironmentResponse
     ) and environment == EnvironmentResponse(initialized=True)
-
-
-async def test_delete_current_environment():
-    delete_response = requests.delete(ENDPOINT + "/environment")
-    assert delete_response.status_code == status.HTTP_200_OK
-    assert EnvironmentResponse(initialized=False).model_dump() == delete_response.json()
-    await asyncio.sleep(5)
-    get_response = requests.get(ENDPOINT + "/environment")
-    assert get_response.status_code == status.HTTP_200_OK
-    assert TypeAdapter(EnvironmentResponse).validate_python(
-        get_response.json()
-    ) == EnvironmentResponse(initialized=True)
 
 
 def test_get_plans():
@@ -205,12 +201,7 @@ def test_get_worker_task_by_id():
         and get_worker_info.is_pending is True
         and get_worker_info.errors == []
     )
-    get_worker_state = get_response(ENDPOINT + "/worker/state", WorkerState)
 
-    assert (
-        isinstance(get_worker_state, WorkerState)
-        and get_worker_state is WorkerState.IDLE
-    )
     delete_response(
         url=f"{ENDPOINT}/tasks/{created_task.task_id}",
         BaseModel=TaskResponse,
@@ -225,19 +216,28 @@ def test_put_worker_task():
         BaseModel=TaskResponse,
         status_code=status.HTTP_201_CREATED,
     )
+
+    worker_task = put_response(
+        url=ENDPOINT + "/worker/task",
+        data=WorkerTask(task_id=created_task.task_id).model_dump_json(),
+        BaseModel=WorkerTask,
+    )
+    assert isinstance(worker_task, WorkerTask)
+    delete_response(
+        url=f"{ENDPOINT}/tasks/{created_task.task_id}",
+        BaseModel=TaskResponse,
+        status_code=status.HTTP_200_OK,
+    )
+
+
+def test_get_worker_state():
+    created_task = post_response(
+        url=ENDPOINT + "/tasks",
+        json=_SIMPLE_TASK.model_dump(),
+        BaseModel=TaskResponse,
+        status_code=status.HTTP_201_CREATED,
+    )
     assert isinstance(created_task, TaskResponse)
-
-    get_worker_info = get_response(
-        f"{ENDPOINT}/tasks/{created_task.task_id}", TrackableTask
-    )
-
-    assert (
-        isinstance(get_worker_info, TrackableTask)
-        and get_worker_info.task_id == created_task.task_id
-        and get_worker_info.is_complete is False
-        and get_worker_info.is_pending is True
-        and get_worker_info.errors == []
-    )
     get_worker_state = get_response(ENDPOINT + "/worker/state", WorkerState)
 
     assert (
@@ -251,7 +251,23 @@ def test_put_worker_task():
     )
 
 
-def test_get_worker_state(): ...
+def test_put_worker_state():
+    put_task = put_response(
+        url=ENDPOINT + "/worker/state",
+        data=StateChangeRequest(new_state=WorkerState.RUNNING).model_dump_json(),
+        BaseModel=WorkerState,
+        status_code=status.HTTP_400_BAD_REQUEST,
+    )
+    assert isinstance(put_task, WorkerState) and put_task == WorkerState.IDLE
 
 
-def test_put_worker_state(): ...
+def test_delete_current_environment():
+    delete_response = requests.delete(ENDPOINT + "/environment")
+    assert delete_response.status_code == status.HTTP_200_OK
+    assert EnvironmentResponse(initialized=False).model_dump() == delete_response.json()
+    time.sleep(5)
+    get_response = requests.get(ENDPOINT + "/environment")
+    assert get_response.status_code == status.HTTP_200_OK
+    assert TypeAdapter(EnvironmentResponse).validate_python(
+        get_response.json()
+    ) == EnvironmentResponse(initialized=True)

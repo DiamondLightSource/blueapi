@@ -26,11 +26,6 @@ ENDPOINT = f"{RestConfig().protocol}://{RestConfig().host}:{RestConfig().port}"
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
-_INDEFINITE_TASK = Task(
-    name="set_absolute",
-    params={"movable": "fake_device", "value": 4.0},
-)
-_FAILING_TASK = Task(name="failing_plan", params={})
 
 TASKS: list[Task] = [_SIMPLE_TASK, _LONG_TASK]
 
@@ -48,14 +43,16 @@ def post_response(
     url: str,
     json: dict[str, Any],
     BaseModel: Any,
-    status_code: int = status.HTTP_200_OK,
+    status_code: int = status.HTTP_201_CREATED,
 ) -> Any:
     post_response = requests.post(url, json=json)
     assert post_response.status_code == status_code
     return TypeAdapter(BaseModel).validate_python(post_response.json())
 
 
-def delete_response(url: str, BaseModel: Any, status_code: int) -> Any:
+def delete_response(
+    url: str, BaseModel: Any, status_code: int = status.HTTP_200_OK
+) -> Any:
     delete_response = requests.delete(url)
     assert delete_response.status_code == status_code
     return TypeAdapter(BaseModel).validate_python(delete_response.json())
@@ -107,16 +104,19 @@ def test_get_device_by_name():
         assert device_response == device
 
 
-def test_post_task():
-    post_response = requests.post(ENDPOINT + "/tasks", json=_SIMPLE_TASK.model_dump())
-    assert post_response.status_code == status.HTTP_201_CREATED
-    created_task = TypeAdapter(TaskResponse).validate_python(post_response.json())
+def test_post_task_and_delete_task_by_id():
+    created_task = post_response(
+        url=ENDPOINT + "/tasks",
+        json=_SIMPLE_TASK.model_dump(),
+        BaseModel=TaskResponse,
+    )
 
-    assert created_task
+    assert isinstance(created_task, TaskResponse)
 
-    delete_response = requests.delete(f"{ENDPOINT}/tasks/{created_task.task_id}")
-    assert delete_response.status_code == status.HTTP_200_OK
-    assert TypeAdapter(TaskResponse).validate_python(delete_response.json())
+    delete_response(
+        url=f"{ENDPOINT}/tasks/{created_task.task_id}",
+        BaseModel=TaskResponse,
+    )
 
 
 def test_get_tasks():
@@ -126,7 +126,6 @@ def test_get_tasks():
             url=ENDPOINT + "/tasks",
             json=task.model_dump(),
             BaseModel=TaskResponse,
-            status_code=status.HTTP_201_CREATED,
         )
         assert isinstance(created_task, TaskResponse)
         created_tasks.append(created_task)
@@ -143,42 +142,33 @@ def test_get_tasks():
         delete_response(
             url=f"{ENDPOINT}/tasks/{task.task_id}",
             BaseModel=TaskResponse,
-            status_code=status.HTTP_200_OK,
         )
 
 
-def test_delete_task_by_id():
-    post_response = requests.post(ENDPOINT + "/tasks", json=_SIMPLE_TASK.model_dump())
-    assert post_response.status_code == status.HTTP_201_CREATED
-    created_task = TypeAdapter(TaskResponse).validate_python(post_response.json())
-
-    assert created_task
-
-    delete_response = requests.delete(f"{ENDPOINT}/tasks/{created_task.task_id}")
-    assert delete_response.status_code == status.HTTP_200_OK
-    assert TypeAdapter(TaskResponse).validate_python(delete_response.json())
-
-
 def test_get_task_by_id():
-    post_response = requests.post(ENDPOINT + "/tasks", json=_SIMPLE_TASK.model_dump())
-    assert post_response.status_code == status.HTTP_201_CREATED
-    created_task = TypeAdapter(TaskResponse).validate_python(post_response.json())
+    created_task = post_response(
+        url=ENDPOINT + "/tasks",
+        json=_SIMPLE_TASK.model_dump(),
+        BaseModel=TaskResponse,
+    )
 
-    assert created_task
+    assert isinstance(created_task, TaskResponse)
 
-    get_response = requests.get(f"{ENDPOINT}/tasks/{created_task.task_id}")
-    assert get_response.status_code == status.HTTP_200_OK
-    get_task = TypeAdapter(TrackableTask).validate_python(get_response.json())
+    get_task = get_response(
+        url=f"{ENDPOINT}/tasks/{created_task.task_id}", BaseModel=TrackableTask
+    )
 
+    assert isinstance(get_task, TrackableTask)
     assert (
         get_task.task_id == created_task.task_id
         and get_task.is_pending
         and not get_task.is_complete
         and len(get_task.errors) == 0
     )
-    delete_response = requests.delete(f"{ENDPOINT}/tasks/{created_task.task_id}")
-    assert delete_response.status_code == status.HTTP_200_OK
-    assert TypeAdapter(TaskResponse).validate_python(delete_response.json())
+    delete_response(
+        url=f"{ENDPOINT}/tasks/{created_task.task_id}",
+        BaseModel=TaskResponse,
+    )
 
 
 def test_get_worker_task_by_id():
@@ -186,7 +176,6 @@ def test_get_worker_task_by_id():
         url=ENDPOINT + "/tasks",
         json=_SIMPLE_TASK.model_dump(),
         BaseModel=TaskResponse,
-        status_code=status.HTTP_201_CREATED,
     )
     assert isinstance(created_task, TaskResponse)
 

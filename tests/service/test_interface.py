@@ -24,7 +24,9 @@ def mock_connection() -> Mock:
 
 @pytest.fixture
 def template(mock_connection: Mock) -> MessagingTemplate:
-    return MessagingTemplate(conn=mock_connection)
+    template = MessagingTemplate(conn=mock_connection)
+    template.disconnect = MagicMock()
+    return template
 
 
 @pytest.fixture(autouse=True)
@@ -282,6 +284,8 @@ def test_get_task_by_id(context_mock: MagicMock):
 
 
 def test_stomp_config(template: MessagingTemplate):
-    with patch("blueapi.cli.cli.MessagingTemplate.for_broker", return_value=template):
+    with patch(
+        "blueapi.service.interface.MessagingTemplate.for_broker", return_value=template
+    ):
         interface.set_config(ApplicationConfig(stomp=StompConfig()))
         assert interface.messaging_template() is not None

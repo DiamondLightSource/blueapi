@@ -45,6 +45,7 @@ jobs:
     needs: check
     if: needs.check.outputs.branch-pr == ''
     strategy:
+      max-parallel: 1
       matrix:
         runs-on: ["ubuntu-latest"] # can add windows-latest, macos-latest
         python-version: ["3.10", "3.11"]

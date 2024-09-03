@@ -8,10 +8,12 @@ from unittest.mock import Mock, patch
 
 import pytest
 import responses
+from bluesky_stomp.messaging import MessagingTemplate
 from click.testing import CliRunner
 from pydantic import BaseModel, ValidationError
 from requests.exceptions import ConnectionError
 from responses import matchers
+from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
 from blueapi.cli.cli import main
@@ -26,6 +28,16 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
 )
+
+
+@pytest.fixture
+def mock_connection() -> Mock:
+    return Mock(spec=Connection)
+
+
+@pytest.fixture
+def template(mock_connection: Mock) -> MessagingTemplate:
+    return MessagingTemplate(conn=mock_connection)
 
 
 @pytest.fixture
@@ -136,7 +148,13 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     )
 
 
-def test_valid_stomp_config_for_listener(runner: CliRunner):
+@patch("blueapi.cli.cli.MessagingTemplate.for_broker")
+def test_valid_stomp_config_for_listener(
+    template: MessagingTemplate,
+    runner: CliRunner,
+    mock_connection: Mock,
+):
+    mock_connection.is_connected.return_value = True
     result = runner.invoke(
         main,
         [

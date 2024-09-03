@@ -166,8 +166,8 @@ def test_valid_stomp_config_for_listener(
         input="\n",
     )
     assert (
-        "Subscribing to all bluesky events from localhost:61613\nPress enter to exit"
-        in result.output
+        result.output
+        == "Subscribing to all bluesky events from localhost:61613\nPress enter to exit"
     )
     assert result.exit_code == 0
 

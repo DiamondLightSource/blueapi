@@ -37,6 +37,10 @@ jobs:
             python-version: ${{ inputs.python-version }}
             pip-install: ".[dev]"
       
-        - name: Run blueapi and run system-test
-          run: blueapi serve & tox -e system-test
+        - name: Run blueapi
+          run: blueapi serve &
+
+        - name: Run system tests
+          run: tox -e system-test
+
   

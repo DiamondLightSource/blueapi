@@ -60,6 +60,11 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
+initResources:
+  {}
+  # Can optionally specify separate resource constraints for the scratch setup container.
+  # If left empty this defaults to the same as resources above.
+
 nodeSelector: {}
 
 tolerations: []

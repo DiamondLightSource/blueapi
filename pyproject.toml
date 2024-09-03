@@ -121,7 +121,7 @@ allowlist_externals =
 commands =
     pre-commit: pre-commit run --all-files {posargs}
     type-checking: mypy src tests {posargs}
-    tests: pytest --cov=blueapi --cov-report term --cov-report xml:cov.xml {posargs}
+    tests: pytest --ignore=tests/system_tests --cov=blueapi --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
     system-test: pytest tests/system_tests {posargs}
 """

@@ -38,8 +38,8 @@ jobs:
             pip-install: ".[dev]"
       
         - name: Run blueapi
-          run: blueapi serve
-          
+          run: blueapi serve &
+
         - name: Run tests
           run: tox -e system-test
   

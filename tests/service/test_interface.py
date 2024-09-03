@@ -1,10 +1,13 @@
 import uuid
 from dataclasses import dataclass
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from bluesky_stomp.messaging import MessagingTemplate
 from ophyd.sim import SynAxis
+from stomp.connect import StompConnection11 as Connection
 
+from blueapi.config import ApplicationConfig, StompConfig
 from blueapi.core import MsgGenerator
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
@@ -12,6 +15,18 @@ from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
+
+
+@pytest.fixture
+def mock_connection() -> Mock:
+    return Mock(spec=Connection)
+
+
+@pytest.fixture
+def template(mock_connection: Mock) -> MessagingTemplate:
+    template = MessagingTemplate(conn=mock_connection)
+    template.disconnect = MagicMock()
+    return template
 
 
 @pytest.fixture(autouse=True)
@@ -266,3 +281,11 @@ def test_get_task_by_id(context_mock: MagicMock):
         is_pending=True,
         errors=[],
     )
+
+
+def test_stomp_config(template: MessagingTemplate):
+    with patch(
+        "blueapi.service.interface.MessagingTemplate.for_broker", return_value=template
+    ):
+        interface.set_config(ApplicationConfig(stomp=StompConfig()))
+        assert interface.messaging_template() is not None

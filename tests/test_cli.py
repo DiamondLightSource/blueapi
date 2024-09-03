@@ -148,7 +148,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     )
 
 
-@patch("blueapi.cli.cli.MessagingTemplate.for_broker")
+@patch("blueapi.cli.cli.MessagingTemplate")
 def test_valid_stomp_config_for_listener(
     template: MessagingTemplate,
     runner: CliRunner,

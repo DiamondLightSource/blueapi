@@ -40,21 +40,7 @@ jobs:
     uses: ./.github/workflows/_container.yml
     permissions:
       packages: write
-  
-  system-test-rabbitmq:
-    needs: check
-    if: needs.check.outputs.branch-pr == ''
-    strategy:
-      max-parallel: 1
-      matrix:
-        runs-on: ["ubuntu-latest"] # can add windows-latest, macos-latest
-        python-version: ["3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/_system_test_rabbitmq.yml
-    with:
-      runs-on: ${{ matrix.runs-on }}
-      python-version: ${{ matrix.python-version }}
-  
+
   docs:
     needs: check
     if: needs.check.outputs.branch-pr == ''

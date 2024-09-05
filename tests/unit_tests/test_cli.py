@@ -165,10 +165,10 @@ def test_valid_stomp_config_for_listener(
         ],
         input="\n",
     )
-    assert (
-        result.output
-        == "Subscribing to all bluesky events from localhost:61613\nPress enter to exit\n"
-    )
+    assert result.output == dedent("""\
+                Subscribing to all bluesky events from localhost:61613
+                Press enter to exit
+                """)
     assert result.exit_code == 0
 
 

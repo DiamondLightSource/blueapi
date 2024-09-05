@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -17,10 +18,10 @@ from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
 from blueapi.cli.cli import main
-from blueapi.cli.format import OutputFormat
+from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ScratchConfig, ScratchRepository
-from blueapi.core.bluesky_types import Plan
+from blueapi.core.bluesky_types import DataEvent, Plan
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -28,6 +29,7 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
 )
+from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
 
 @pytest.fixture
@@ -507,6 +509,66 @@ def test_plan_output_formatting():
     assert output.getvalue() == full
 
 
+def test_event_formatting():
+    data = DataEvent(
+        name="start", doc={"foo": "bar", "fizz": {"buzz": (1, 2, 3), "hello": "world"}}
+    )
+    worker = WorkerEvent(
+        state=WorkerState.RUNNING,
+        task_status=TaskStatus(task_id="count", task_complete=False, task_failed=False),
+        errors=[],
+        warnings=[],
+    )
+    progress = ProgressEvent(task_id="start", statuses={})
+
+    _assert_matching_formatting(
+        OutputFormat.JSON,
+        data,
+        (
+            """{"name": "start", "doc": """
+            """{"foo": "bar", "fizz": {"buzz": [1, 2, 3], "hello": "world"}}}\n"""
+        ),
+    )
+    _assert_matching_formatting(OutputFormat.COMPACT, data, "Data Event: start\n")
+    _assert_matching_formatting(
+        OutputFormat.FULL,
+        data,
+        (
+            "Start: \n"
+            "    foo: bar\n"
+            "    fizz: \n"
+            "        buzz: (1, 2, 3)\n"
+            "        hello: world\n"
+        ),
+    )
+
+    _assert_matching_formatting(
+        OutputFormat.JSON,
+        worker,
+        (
+            """{"state": "RUNNING", "task_status": """
+            """{"task_id": "count", "task_complete": false, "task_failed": false}, """
+            """"errors": [], "warnings": []}\n"""
+        ),
+    )
+    _assert_matching_formatting(
+        OutputFormat.COMPACT, worker, "Worker Event: WorkerState.RUNNING\n"
+    )
+    _assert_matching_formatting(
+        OutputFormat.FULL,
+        worker,
+        "WorkerEvent: WorkerState.RUNNING\n    task_id: count\n",
+    )
+
+    _assert_matching_formatting(
+        OutputFormat.JSON, progress, """{"task_id": "start", "statuses": {}}\n"""
+    )
+    _assert_matching_formatting(OutputFormat.COMPACT, progress, "Progress: ???%\n")
+    _assert_matching_formatting(
+        OutputFormat.FULL, progress, "Progress:\n    task_id: start\n"
+    )
+
+
 def test_unknown_object_formatting():
     demo = {"foo": 42, "bar": ["hello", "World"]}
 
@@ -523,6 +585,15 @@ def test_unknown_object_formatting():
     output = StringIO()
     OutputFormat.FULL.display(demo, output)
     assert exp == output.getvalue()
+
+
+def test_dict_formatting():
+    demo = {"name": "foo", "keys": [1, 2, 3], "metadata": {"fizz": "buzz"}}
+    exp = """\nname: foo\nkeys: [1, 2, 3]\nmetadata: \n    fizz: buzz"""
+    assert fmt_dict(demo, 0) == exp
+
+    demo = "not a dict"
+    assert fmt_dict(demo, 0) == "not a dict"
 
 
 def test_generic_base_model_formatting():
@@ -552,3 +623,9 @@ def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliR
     )
     assert result.exit_code == 0
     mock_setup_scratch.assert_called_once_with(expected_config)
+
+
+def _assert_matching_formatting(fmt: OutputFormat, obj: Any, expected: str):
+    output = StringIO()
+    fmt.display(obj, output)
+    assert expected == output.getvalue()

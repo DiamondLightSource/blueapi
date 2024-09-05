@@ -167,7 +167,7 @@ def test_valid_stomp_config_for_listener(
     )
     assert (
         result.output
-        == "Subscribing to all bluesky events from localhost:61613\nPress enter to exit"
+        == "Subscribing to all bluesky events from localhost:61613\nPress enter to exit\n"
     )
     assert result.exit_code == 0
 
@@ -528,19 +528,7 @@ def test_unknown_object_formatting():
 def test_generic_base_model_formatting():
     output = StringIO()
     obj = ExtendedModel(name="foo", keys=[1, 2, 3], metadata={"fizz": "buzz"})
-    exp = dedent("""\
-            {
-              "name": "foo",
-              "keys": [
-                1,
-                2,
-                3
-              ],
-              "metadata": {
-                "fizz": "buzz"
-              }
-            }
-            """)
+    exp = '{"name": "foo", "keys": [1, 2, 3], "metadata": {"fizz": "buzz"}}\n'
     OutputFormat.JSON.display(obj, output)
     assert exp == output.getvalue()
 

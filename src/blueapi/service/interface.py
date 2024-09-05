@@ -49,7 +49,7 @@ def worker() -> TaskWorker:
 
 
 @lru_cache
-def messaging_template() -> MessagingTemplate:
+def messaging_template() -> MessagingTemplate | None:
     stomp_config = config().stomp
     if stomp_config is not None:
         template = MessagingTemplate.for_broker(
@@ -70,6 +70,8 @@ def messaging_template() -> MessagingTemplate:
         )
         template.connect()
         return template
+    else:
+        return None
 
 
 def setup(config: ApplicationConfig) -> None:
@@ -160,9 +162,9 @@ def get_worker_state() -> WorkerState:
     return worker().state
 
 
-def pause_worker(defer: bool) -> None:
+def pause_worker(defer: bool | None) -> None:
     """Command the worker to pause"""
-    worker().pause(defer)
+    worker().pause(defer or False)
 
 
 def resume_worker() -> None:

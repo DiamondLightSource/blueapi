@@ -162,7 +162,7 @@ def get_worker_state() -> WorkerState:
 
 def pause_worker(defer: bool) -> None:
     """Command the worker to pause"""
-    worker().pause(defer)
+    worker().pause(defer or False)
 
 
 def resume_worker() -> None:

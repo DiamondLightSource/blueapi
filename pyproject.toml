@@ -31,6 +31,7 @@ dependencies = [
     "dls-dodal>=1.24.0",
     "super-state-machine", # See GH issue 553
     "GitPython",
+    "bluesky-stomp>=0.1.0"
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -90,9 +91,6 @@ addopts = """
 filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
-markers = [
-    "handler: marks tests that interact with the global handler object in handler.py",
-]
 asyncio_mode = "auto"
 
 [tool.coverage.run]

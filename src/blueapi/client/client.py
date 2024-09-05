@@ -1,9 +1,11 @@
 import time
 from concurrent.futures import Future
 
+from bluesky_stomp.messaging import MessageContext, MessagingTemplate
+from bluesky_stomp.models import Broker
+
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.messaging import MessageContext, StompMessagingTemplate
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -38,7 +40,13 @@ class BlueapiClient:
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest = BlueapiRestClient(config.api)
         if config.stomp is not None:
-            template = StompMessagingTemplate.autoconfigured(config.stomp)
+            template = MessagingTemplate.for_broker(
+                broker=Broker(
+                    host=config.stomp.host,
+                    port=config.stomp.port,
+                    auth=config.stomp.auth,
+                )
+            )
             events = EventBusClient(template)
         else:
             events = None
@@ -178,7 +186,7 @@ class BlueapiClient:
 
         complete: Future[WorkerEvent] = Future()
 
-        def inner_on_event(ctx: MessageContext, event: AnyEvent) -> None:
+        def inner_on_event(event: AnyEvent, ctx: MessageContext) -> None:
             match event:
                 case WorkerEvent(task_status=TaskStatus(task_id=test_id)):
                     relates_to_task = test_id == task_id

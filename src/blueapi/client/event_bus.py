@@ -1,7 +1,9 @@
 from collections.abc import Callable
 
+from bluesky_stomp.messaging import MessageContext, MessagingTemplate
+from bluesky_stomp.models import MessageTopic
+
 from blueapi.core import DataEvent
-from blueapi.messaging import MessageContext, MessagingTemplate
 from blueapi.worker import ProgressEvent, WorkerEvent
 
 
@@ -28,11 +30,11 @@ class EventBusClient:
 
     def subscribe_to_all_events(
         self,
-        on_event: Callable[[MessageContext, AnyEvent], None],
+        on_event: Callable[[AnyEvent, MessageContext], None],
     ) -> None:
         try:
             self.app.subscribe(
-                self.app.destinations.topic("public.worker.event"),
+                MessageTopic(name="public.worker.event"),
                 on_event,
             )
         except Exception as err:

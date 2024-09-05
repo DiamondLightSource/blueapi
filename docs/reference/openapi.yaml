@@ -104,12 +104,10 @@ components:
       description: Request to change the state of the worker.
       properties:
         defer:
-          anyOf:
-          - type: boolean
-          - type: 'null'
           default: false
           description: Should worker defer Pausing until the next checkpoint
           title: Defer
+          type: boolean
         new_state:
           $ref: '#/components/schemas/WorkerState'
         reason:

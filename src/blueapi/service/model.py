@@ -128,7 +128,7 @@ class StateChangeRequest(BlueapiBaseModel):
     """
 
     new_state: WorkerState = Field()
-    defer: bool | None = Field(
+    defer: bool = Field(
         description="Should worker defer Pausing until the next checkpoint",
         default=False,
     )

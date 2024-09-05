@@ -6,6 +6,8 @@ from pprint import pprint
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
+from bluesky_stomp.messaging import MessageContext, MessagingTemplate
+from bluesky_stomp.models import Broker
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
@@ -16,8 +18,6 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
-from blueapi.messaging import MessageContext
-from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.main import start
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
@@ -147,14 +147,20 @@ def listen_to_events(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     if config.stomp is not None:
         event_bus_client = EventBusClient(
-            StompMessagingTemplate.autoconfigured(config.stomp)
+            MessagingTemplate.for_broker(
+                broker=Broker(
+                    host=config.stomp.host,
+                    port=config.stomp.port,
+                    auth=config.stomp.auth,
+                )
+            )
         )
     else:
         raise RuntimeError("Message bus needs to be configured")
 
     def on_event(
-        context: MessageContext,
         event: WorkerEvent | ProgressEvent | DataEvent,
+        context: MessageContext,
     ) -> None:
         converted = json.dumps(event.dict(), indent=2)
         print(converted)

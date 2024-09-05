@@ -3,11 +3,12 @@ from collections.abc import Mapping
 from functools import lru_cache
 from typing import Any
 
+from bluesky_stomp.messaging import MessagingTemplate
+from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+
 from blueapi.config import ApplicationConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
-from blueapi.messaging.base import MessagingTemplate
-from blueapi.messaging.stomptemplate import StompMessagingTemplate
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
@@ -51,10 +52,14 @@ def worker() -> TaskWorker:
 def messaging_template() -> MessagingTemplate | None:
     stomp_config = config().stomp
     if stomp_config is not None:
-        template = StompMessagingTemplate.autoconfigured(stomp_config)
+        template = MessagingTemplate.for_broker(
+            broker=Broker(
+                host=stomp_config.host, port=stomp_config.port, auth=stomp_config.auth
+            )
+        )
 
         task_worker = worker()
-        event_topic = template.destinations.topic("public.worker.event")
+        event_topic = MessageTopic(name="public.worker.event")
 
         _publish_event_streams(
             {
@@ -90,15 +95,17 @@ def teardown() -> None:
     messaging_template.cache_clear()
 
 
-def _publish_event_streams(streams_to_destinations: Mapping[EventStream, str]) -> None:
+def _publish_event_streams(
+    streams_to_destinations: Mapping[EventStream, DestinationBase],
+) -> None:
     for stream, destination in streams_to_destinations.items():
         _publish_event_stream(stream, destination)
 
 
-def _publish_event_stream(stream: EventStream, destination: str) -> None:
+def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> None:
     def forward_message(event: Any, correlation_id: str | None) -> None:
         if (template := messaging_template()) is not None:
-            template.send(destination, event, None, correlation_id)
+            template.send(destination, event, None, correlation_id=correlation_id)
 
     stream.subscribe(forward_message)
 
@@ -157,7 +164,7 @@ def get_worker_state() -> WorkerState:
 
 def pause_worker(defer: bool | None) -> None:
     """Command the worker to pause"""
-    worker().pause(defer)
+    worker().pause(defer or False)
 
 
 def resume_worker() -> None:

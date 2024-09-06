@@ -144,7 +144,7 @@ def test_add_invalid_plan(empty_context: BlueskyContext, plan: PlanGenerator) ->
 
 
 def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
-    import tests.core.fake_plan_module as plan_module
+    import tests.unit_tests.core.fake_plan_module as plan_module
 
     empty_context.with_plan_module(plan_module)
     assert {"scan"} == empty_context.plans.keys()
@@ -178,7 +178,7 @@ def test_override_device_name(
 
 
 def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
-    import tests.core.fake_device_module as device_module
+    import tests.unit_tests.core.fake_device_module as device_module
 
     empty_context.with_device_module(device_module)
     assert {
@@ -192,7 +192,7 @@ def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
 def test_add_failing_deivces_from_module(
     caplog: LogCaptureFixture, empty_context: BlueskyContext
 ) -> None:
-    import tests.core.fake_device_module_failing as device_module
+    import tests.unit_tests.core.fake_device_module_failing as device_module
 
     caplog.set_level(10)
     empty_context.with_device_module(device_module)
@@ -208,7 +208,7 @@ def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
     """
     Note that this functionality is currently used by hyperion.
     """
-    import tests.core.fake_device_module as device_module
+    import tests.unit_tests.core.fake_device_module as device_module
 
     with patch(
         "blueapi.core.context.make_all_devices",
@@ -262,10 +262,11 @@ def test_add_devices_and_plans_from_modules_with_config(
             sources=[
                 Source(
                     kind=SourceKind.DEVICE_FUNCTIONS,
-                    module="tests.core.fake_device_module",
+                    module="tests.unit_tests.core.fake_device_module",
                 ),
                 Source(
-                    kind=SourceKind.PLAN_FUNCTIONS, module="tests.core.fake_plan_module"
+                    kind=SourceKind.PLAN_FUNCTIONS,
+                    module="tests.unit_tests.core.fake_plan_module",
                 ),
             ]
         )

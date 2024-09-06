@@ -102,7 +102,7 @@ def test_get_all_tasks(client: BlueapiClient):
         created_tasks.append(created_task)
     task_ids = [task.task_id for task in created_tasks]
 
-    task_list = client.get_all_task()
+    task_list = client.get_all_tasks()
     for trackable_task in task_list.tasks:
         assert trackable_task.task_id in task_ids
         assert trackable_task.is_complete is False and trackable_task.is_pending is True
@@ -212,7 +212,7 @@ def test_get_task_by_status(client: BlueapiClient):
     client.clear_task(task_id=task_2.task_id)
 
 
-def test_progress_wit_stomp(client_with_stomp: BlueapiClient):
+def test_progress_with_stomp(client_with_stomp: BlueapiClient):
     all_events: list[AnyEvent] = []
 
     def on_event(event: AnyEvent):

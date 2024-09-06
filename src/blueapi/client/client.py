@@ -146,7 +146,7 @@ class BlueapiClient:
         assert task_id != "", "Task ID cannot be empty"
         return self._rest.get_task(task_id)
 
-    def get_all_task(self) -> TasksListResponse:
+    def get_all_tasks(self) -> TasksListResponse:
         """
         Get a list of all task stored by the worker
 
@@ -154,7 +154,7 @@ class BlueapiClient:
             TasksListResponse: List of all Trackable Task
         """
 
-        return self._rest.get_all_task()
+        return self._rest.get_all_tasks()
 
     def get_active_task(self) -> WorkerTask:
         """

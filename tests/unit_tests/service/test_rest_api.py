@@ -385,7 +385,7 @@ def test_get_task(get_task_by_id: MagicMock, client: TestClient):
 
 
 @patch("blueapi.service.interface.get_tasks")
-def test_get_all_task(get_all_tasks: MagicMock, client: TestClient):
+def test_get_all_tasks(get_all_tasks: MagicMock, client: TestClient):
     task_id = str(uuid.uuid4())
     tasks = [
         TrackableTask(

@@ -67,7 +67,7 @@ def mock_rest() -> BlueapiRestClient:
     mock.get_device.return_value = DEVICE
     mock.get_state.return_value = WorkerState.IDLE
     mock.get_task.return_value = TASK
-    mock.get_all_task.return_value = TASKS
+    mock.get_all_tasks.return_value = TASKS
     mock.get_active_task.return_value = ACTIVE_TASK
     mock.get_environment.return_value = ENV
     mock.delete_environment.return_value = EnvironmentResponse(initialized=False)
@@ -154,7 +154,7 @@ def test_get_task_with_empty_id(client: BlueapiClient):
 def test_get_all_tasks(
     client: BlueapiClient,
 ):
-    assert client.get_all_task() == TASKS
+    assert client.get_all_tasks() == TASKS
 
 
 def test_create_task(

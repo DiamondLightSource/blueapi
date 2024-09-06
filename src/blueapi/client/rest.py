@@ -71,7 +71,7 @@ class BlueapiRestClient:
     def get_task(self, task_id: str) -> TrackableTask[Task]:
         return self._request_and_deserialize(f"/tasks/{task_id}", TrackableTask[Task])
 
-    def get_all_task(self) -> TasksListResponse:
+    def get_all_tasks(self) -> TasksListResponse:
         return self._request_and_deserialize("/tasks", TasksListResponse)
 
     def get_active_task(self) -> WorkerTask:

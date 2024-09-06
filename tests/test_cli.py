@@ -84,7 +84,7 @@ def test_get_plans(runner: CliRunner):
     response = responses.add(
         responses.GET,
         "http://localhost:8000/plans",
-        json=PlanResponse(plans=[PlanModel.from_plan(plan)]).dict(),
+        json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
         status=200,
     )
 
@@ -100,7 +100,7 @@ def test_get_devices(runner: CliRunner):
     response = responses.add(
         responses.GET,
         "http://localhost:8000/devices",
-        json=DeviceResponse(devices=[DeviceModel.from_device(device)]).dict(),
+        json=DeviceResponse(devices=[DeviceModel.from_device(device)]).model_dump(),
         status=200,
     )
 
@@ -179,7 +179,7 @@ def test_get_env(
     responses.add(
         responses.GET,
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=True).dict(),
+        json=EnvironmentResponse(initialized=True).model_dump(),
         status=200,
     )
 
@@ -196,7 +196,7 @@ def test_reset_env_client_behavior(
     responses.add(
         responses.DELETE,
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=False).dict(),
+        json=EnvironmentResponse(initialized=False).model_dump(),
         status=200,
     )
 
@@ -206,7 +206,7 @@ def test_reset_env_client_behavior(
         responses.add(
             responses.GET,
             "http://localhost:8000/environment",
-            json=EnvironmentResponse(initialized=state).dict(),
+            json=EnvironmentResponse(initialized=state).model_dump(),
             status=200,
         )
 
@@ -241,13 +241,13 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
         responses.DELETE,
         "http://localhost:8000/environment",
         status=200,
-        json=EnvironmentResponse(initialized=False).dict(),
+        json=EnvironmentResponse(initialized=False).model_dump(),
     )
     # Add responses for each polling attempt, all indicating not initialized
     responses.add(
         responses.GET,
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=False).dict(),
+        json=EnvironmentResponse(initialized=False).model_dump(),
         status=200,
     )
 

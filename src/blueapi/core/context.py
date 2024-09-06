@@ -4,7 +4,15 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
 from types import ModuleType, UnionType
-from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing import (
+    Any,
+    Generic,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from bluesky.run_engine import RunEngine
 from dodal.utils import make_all_devices
@@ -217,7 +225,7 @@ class BlueskyContext:
 
     def _type_spec_for_function(
         self, func: Callable[..., Any]
-    ) -> dict[str, tuple[type, Any]]:
+    ) -> dict[str, tuple[type, FieldInfo]]:
         """
         Parse a function signature and build map of field types and default
         values that can be used to deserialise arguments from external sources.
@@ -234,7 +242,7 @@ class BlueskyContext:
         """
         args = signature(func).parameters
         types = get_type_hints(func)
-        new_args = {}
+        new_args: dict[str, tuple[type, FieldInfo]] = {}
         for name, para in args.items():
             arg_type = types.get(name, Parameter.empty)
             if arg_type is Parameter.empty:

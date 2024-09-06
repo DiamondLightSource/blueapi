@@ -152,7 +152,7 @@ def test_create_task(
 
     submit_task_mock.return_value = task_id
 
-    response = client.post("/tasks", json=task.dict())
+    response = client.post("/tasks", json=task.model_dump())
 
     submit_task_mock.assert_called_once_with(task)
     assert response.json() == {"task_id": task_id}
@@ -311,7 +311,7 @@ def test_set_active_task(
     task_id = str(uuid.uuid4())
     task = WorkerTask(task_id=task_id)
 
-    response = client.put("/worker/task", json=task.dict())
+    response = client.put("/worker/task", json=task.model_dump())
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"task_id": f"{task_id}"}
@@ -332,7 +332,7 @@ def test_set_active_task_active_task_complete(
         is_pending=False,
     )
 
-    response = client.put("/worker/task", json=task.dict())
+    response = client.put("/worker/task", json=task.model_dump())
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"task_id": f"{task_id}"}
@@ -353,7 +353,7 @@ def test_set_active_task_worker_already_running(
         is_pending=False,
     )
 
-    response = client.put("/worker/task", json=task.dict())
+    response = client.put("/worker/task", json=task.model_dump())
 
     assert response.status_code == status.HTTP_409_CONFLICT
     assert response.json() == {"detail": "Worker already active"}
@@ -430,7 +430,7 @@ def test_set_state_running_to_paused(
     get_worker_state_mock.side_effect = [current_state, final_state]
 
     response = client.put(
-        "/worker/state", json=StateChangeRequest(new_state=final_state).dict()
+        "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
     )
 
     pause_worker_mock.assert_called_once_with(False)
@@ -448,7 +448,7 @@ def test_set_state_paused_to_running(
     get_worker_state_mock.side_effect = [current_state, final_state]
 
     response = client.put(
-        "/worker/state", json=StateChangeRequest(new_state=final_state).dict()
+        "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
     )
 
     resume_worker_mock.assert_called_once()
@@ -468,7 +468,7 @@ def test_set_state_running_to_aborting(
     get_worker_state_mock.side_effect = [current_state, final_state]
 
     response = client.put(
-        "/worker/state", json=StateChangeRequest(new_state=final_state).dict()
+        "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
     )
 
     cancel_active_task_mock.assert_called_once_with(True, None)
@@ -490,7 +490,7 @@ def test_set_state_running_to_stopping_including_reason(
 
     response = client.put(
         "/worker/state",
-        json=StateChangeRequest(new_state=final_state, reason=reason).dict(),
+        json=StateChangeRequest(new_state=final_state, reason=reason).model_dump(),
     )
 
     cancel_active_task_mock.assert_called_once_with(False, reason)
@@ -514,7 +514,7 @@ def test_set_state_transition_error(
 
     response = client.put(
         "/worker/state",
-        json=StateChangeRequest(new_state=final_state).dict(),
+        json=StateChangeRequest(new_state=final_state).model_dump(),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -533,7 +533,7 @@ def test_set_state_invalid_transition(
 
     response = client.put(
         "/worker/state",
-        json=StateChangeRequest(new_state=requested_state).dict(),
+        json=StateChangeRequest(new_state=requested_state).model_dump(),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST

@@ -2,7 +2,7 @@ from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
 import requests
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 from blueapi.config import RestConfig
 from blueapi.service.model import (
@@ -78,7 +78,7 @@ class BlueapiRestClient:
             "/tasks",
             TaskResponse,
             method="POST",
-            data=task.dict(),
+            data=task.model_dump(),
         )
 
     def clear_task(self, task_id: str) -> TaskResponse:
@@ -91,7 +91,7 @@ class BlueapiRestClient:
             "/worker/task",
             WorkerTask,
             method="PUT",
-            data=task.dict(),
+            data=task.model_dump(),
         )
 
     def cancel_current_task(
@@ -130,7 +130,7 @@ class BlueapiRestClient:
         exception = get_exception(response)
         if exception is not None:
             raise exception
-        deserialized = parse_obj_as(target_type, response.json())
+        deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized
 
     def _url(self, suffix: str) -> str:

@@ -162,7 +162,7 @@ def listen_to_events(obj: dict) -> None:
         event: WorkerEvent | ProgressEvent | DataEvent,
         context: MessageContext,
     ) -> None:
-        converted = json.dumps(event.dict(), indent=2)
+        converted = json.dumps(event.model_dump(), indent=2)
         print(converted)
 
     print(
@@ -218,7 +218,7 @@ def run_plan(
         pprint("task could not run")
         return
 
-    pprint(resp.dict())
+    pprint(resp.model_dump())
     if resp.task_status is not None and not resp.task_status.task_failed:
         print("Plan Succeeded")
 

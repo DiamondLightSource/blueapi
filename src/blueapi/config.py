@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Generic, Literal, TypeVar
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, parse_obj_as, validator
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError, field_validator
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -34,7 +34,8 @@ class BasicAuthentication(BaseModel):
     username: str = "guest"
     passcode: str = "guest"
 
-    @validator("username", "passcode")
+    @field_validator("username", "passcode")
+    @classmethod
     def get_from_env(cls, v: str):
         if v.startswith("${") and v.endswith("}"):
             return os.environ[v.removeprefix("${").removesuffix("}").upper()]
@@ -129,12 +130,9 @@ class ConfigLoader(Generic[C]):
     of default values, dictionaries, YAML/JSON files etc.
     """
 
-    _schema: type[C]
-    _values: dict[str, Any]
-
     def __init__(self, schema: type[C]) -> None:
-        self._schema = schema
-        self._values = {}
+        self._adapter = TypeAdapter(schema)
+        self._values: dict[str, Any] = {}
 
     def use_values(self, values: Mapping[str, Any]) -> None:
         """
@@ -184,7 +182,7 @@ class ConfigLoader(Generic[C]):
         """
 
         try:
-            return parse_obj_as(self._schema, self._values)
+            return self._adapter.validate_python(self._values)
         except ValidationError as exc:
             raise InvalidConfigError(
                 "Something is wrong with the configuration file: \n"

@@ -7,7 +7,7 @@ import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
 from dls_bluesky_core.core import MsgGenerator, PlanGenerator, inject
 from ophyd.sim import SynAxis, SynGauss
-from pydantic import ValidationError, parse_obj_as
+from pydantic import TypeAdapter, ValidationError
 from pytest import LogCaptureFixture
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
@@ -366,13 +366,14 @@ def test_str_default(
 
     spec = empty_context._type_spec_for_function(has_default_reference)
     assert spec["m"][0] is movable_ref
-    assert spec["m"][1].default_factory() == SIM_MOTOR_NAME
+    assert (df := spec["m"][1].default_factory) and df() == SIM_MOTOR_NAME
 
     assert has_default_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_reference.__name__].model
-    assert parse_obj_as(model, {}).m is sim_motor  # type: ignore
+    adapter = TypeAdapter(model)
+    assert adapter.validate_python({}).m is sim_motor  # type: ignore
     empty_context.device(alt_motor)
-    assert parse_obj_as(model, {"m": ALT_MOTOR_NAME}).m is alt_motor  # type: ignore
+    assert adapter.validate_python({"m": ALT_MOTOR_NAME}).m is alt_motor  # type: ignore
 
 
 def test_nested_str_default(
@@ -384,13 +385,15 @@ def test_nested_str_default(
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
     assert spec["m"][0] == list[movable_ref]  # type: ignore
-    assert spec["m"][1].default_factory() == [SIM_MOTOR_NAME]
+    assert (df := spec["m"][1].default_factory) and df() == [SIM_MOTOR_NAME]
 
     assert has_default_nested_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_nested_reference.__name__].model
-    assert parse_obj_as(model, {}).m == [sim_motor]  # type: ignore
+    adapter = TypeAdapter(model)
+
+    assert adapter.validate_python({}).m == [sim_motor]  # type: ignore
     empty_context.device(alt_motor)
-    assert parse_obj_as(model, {"m": [ALT_MOTOR_NAME]}).m == [alt_motor]  # type: ignore
+    assert adapter.validate_python({"m": [ALT_MOTOR_NAME]}).m == [alt_motor]  # type: ignore
 
 
 def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:

@@ -12,7 +12,12 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.core.bluesky_types import Plan
 from blueapi.service import main
-from blueapi.service.model import DeviceModel, PlanModel, StateChangeRequest, WorkerTask
+from blueapi.service.model import (
+    DeviceModel,
+    PlanModel,
+    StateChangeRequest,
+    WorkerTask,
+)
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
@@ -376,6 +381,32 @@ def test_get_task(get_task_by_id: MagicMock, client: TestClient):
         "is_pending": True,
         "task": {"name": "third_task", "params": {}},
         "task_id": f"{task_id}",
+    }
+
+
+@patch("blueapi.service.interface.get_tasks")
+def test_get_all_task(get_all_tasks: MagicMock, client: TestClient):
+    task_id = str(uuid.uuid4())
+    tasks = [
+        TrackableTask(
+            task_id=task_id,
+            task=Task(name="third_task"),
+        )
+    ]
+
+    get_all_tasks.return_value = tasks
+    response = client.get("/tasks")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {
+        "tasks": [
+            {
+                "task_id": task_id,
+                "task": {"name": "third_task", "params": {}},
+                "is_complete": False,
+                "is_pending": True,
+                "errors": [],
+            }
+        ]
     }
 
 

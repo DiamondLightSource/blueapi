@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 import pytest
@@ -9,7 +10,8 @@ from blueapi.client.client import (
     BlueapiClient,
     BlueskyRemoteControlError,
 )
-from blueapi.config import ApplicationConfig
+from blueapi.client.event_bus import AnyEvent
+from blueapi.config import ApplicationConfig, StompConfig
 from blueapi.service.model import (
     DeviceResponse,
     EnvironmentResponse,
@@ -18,7 +20,7 @@ from blueapi.service.model import (
     TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker.event import TaskStatusEnum, WorkerState
+from blueapi.worker.event import TaskStatus, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -31,6 +33,11 @@ _DATA_PATH = Path(__file__).parent
 @pytest.fixture
 def client() -> BlueapiClient:
     return BlueapiClient.from_config(config=ApplicationConfig())
+
+
+@pytest.fixture
+def client_with_stomp() -> BlueapiClient:
+    return BlueapiClient.from_config(config=ApplicationConfig(stomp=StompConfig()))
 
 
 @pytest.fixture
@@ -59,7 +66,7 @@ def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
 def test_get_non_existent_plan(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
         client.get_plan("Not exists")
-    assert exception.value.args[0] == ("{'detail': 'Item not found'}")
+        assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_get_devices(client: BlueapiClient, expected_devices: DeviceResponse):
@@ -74,7 +81,7 @@ def test_get_device_by_name(client: BlueapiClient, expected_devices: DeviceRespo
 def test_get_non_existent_device(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
         assert client.get_device("Not exists")
-    assert exception.value.args[0] == ("{'detail': 'Item not found'}")
+        assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_create_task_and_delete_task_by_id(client: BlueapiClient):
@@ -85,7 +92,7 @@ def test_create_task_and_delete_task_by_id(client: BlueapiClient):
 def test_create_task_validation_error(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
         client.create_task(Task(name="Not-exists", params={"Not-exists": 0.0}))
-    assert exception.value.args[0] == ("{'detail': 'Item not found'}")
+        assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_get_all_tasks(client: BlueapiClient):
@@ -121,13 +128,13 @@ def test_get_task_by_id(client: BlueapiClient):
 def test_get_non_existent_task(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
         client.get_task("Not-exists")
-    assert exception.value.args[0] == "{'detail': 'Item not found'}"
+        assert str(exception) == "{'detail': 'Item not found'}"
 
 
 def test_delete_non_existent_task(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
         client.clear_task("Not-exists")
-    assert exception.value.args[0] == "{'detail': 'Item not found'}"
+        assert str(exception) == "{'detail': 'Item not found'}"
 
 
 def test_put_worker_task(client: BlueapiClient):
@@ -148,7 +155,7 @@ def test_put_worker_task_fails_if_not_idle(client: BlueapiClient):
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.start_task(WorkerTask(task_id=small_task.task_id))
-    assert exception.value.args[0] == "<Response [409]>"
+        assert str(exception) == "<Response [409]>"
     client.abort()
     client.clear_task(small_task.task_id)
     client.clear_task(long_task.task_id)
@@ -161,11 +168,11 @@ def test_get_worker_state(client: BlueapiClient):
 def test_set_state_transition_error(client: BlueapiClient):
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.resume()
-    assert exception.value.args[0] == "<Response [400]>"
+        assert str(exception) == "<Response [400]>"
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.pause()
-    assert exception.value.args[0] == "<Response [400]>"
+        assert str(exception) == "<Response [400]>"
 
 
 def test_get_task_by_status(client: BlueapiClient):
@@ -186,10 +193,10 @@ def test_get_task_by_status(client: BlueapiClient):
 
     client.start_task(WorkerTask(task_id=task_1.task_id))
     while not client.get_task(task_1.task_id).is_complete:
-        ...
+        time.sleep(0.1)
     client.start_task(WorkerTask(task_id=task_2.task_id))
     while not client.get_task(task_2.task_id).is_complete:
-        ...
+        time.sleep(0.1)
     task_by_completed_request = requests.get(
         client._rest._url("/tasks"), params={"task_status": TaskStatusEnum.COMPLETE}
     )
@@ -203,6 +210,45 @@ def test_get_task_by_status(client: BlueapiClient):
 
     client.clear_task(task_id=task_1.task_id)
     client.clear_task(task_id=task_2.task_id)
+
+
+def test_progress_wit_stomp(client_with_stomp: BlueapiClient):
+    all_events: list[AnyEvent] = []
+
+    def on_event(event: AnyEvent):
+        all_events.append(event)
+
+    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
+    assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
+    task_id = all_events[0].task_status.task_id
+    running_event = WorkerEvent(
+        state=WorkerState.RUNNING,
+        task_status=TaskStatus(
+            task_id=task_id,
+            task_complete=False,
+            task_failed=False,
+        ),
+    )
+    pending_event = WorkerEvent(
+        state=WorkerState.IDLE,
+        task_status=TaskStatus(
+            task_id=task_id,
+            task_complete=False,
+            task_failed=False,
+        ),
+    )
+    complete_event = WorkerEvent(
+        state=WorkerState.IDLE,
+        task_status=TaskStatus(
+            task_id=task_id,
+            task_complete=True,
+            task_failed=False,
+        ),
+    )
+    assert running_event in all_events
+    assert pending_event in all_events
+    assert complete_event in all_events
+    assert len(all_events) == 3
 
 
 def test_get_current_state_of_environment(client: BlueapiClient):

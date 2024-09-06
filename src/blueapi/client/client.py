@@ -143,7 +143,7 @@ class BlueapiClient:
         Returns:
             TrackableTask[Task]: Task details
         """
-        assert task_id != "", "Task ID cannot be empty"
+        assert task_id, "Task ID not provided!"
         return self._rest.get_task(task_id)
 
     def get_all_tasks(self) -> TasksListResponse:

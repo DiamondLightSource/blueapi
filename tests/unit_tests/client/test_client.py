@@ -148,7 +148,7 @@ def test_get_nonexistent_task(
 def test_get_task_with_empty_id(client: BlueapiClient):
     with pytest.raises(AssertionError) as exc:
         client.get_task("")
-        assert str(exc) == "Task ID cannot be empty"
+        assert str(exc) == "Task ID not provided!"
 
 
 def test_get_all_tasks(

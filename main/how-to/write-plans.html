@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Writing Bluesky plans for Blueapi &#8212; blueapi 0.4.5a4.dev2+g012238d6 documentation</title>
+    <title>Writing Bluesky plans for Blueapi &#8212; blueapi 0.4.5a4.dev3+gec13eac6 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../_static/documentation_options.js?v=bc16987c"></script>
+    <script src="../_static/documentation_options.js?v=08640a72"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -521,7 +521,7 @@ document.write(`
 <section id="allowed-argument-types">
 <h2>Allowed Argument Types<a class="headerlink" href="#allowed-argument-types" title="Link to this heading">#</a></h2>
 <p>When added to the blueapi context, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>\ s are formalised into their schema- <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">Pydantic</span> <span class="pre">BaseModel</span> <span class="pre">&lt;https://docs.pydantic.dev/1.10/usage/models/&gt;</span></code>__ with the expected argument types and their defaults.</p>
-<p>Therefore, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>\ s must only take as arguments <code class="docutils literal notranslate"><span class="pre">those</span> <span class="pre">types</span> <span class="pre">which</span> <span class="pre">are</span> <span class="pre">valid</span> <span class="pre">Pydantic</span> <span class="pre">fields</span> <span class="pre">&lt;https://docs.pydantic.dev/1.10/usage/types/&gt;</span></code>__ or Device types which implement <code class="docutils literal notranslate"><span class="pre">BLUESKY_PROTOCOLS</span></code> defined in dodal, which are fetched from the context at runtime.</p>
+<p>Therefore, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>\ s must only take as arguments <code class="docutils literal notranslate"><span class="pre">those</span> <span class="pre">types</span> <span class="pre">which</span> <span class="pre">are</span> <span class="pre">valid</span> <span class="pre">Pydantic</span> <span class="pre">fields</span> <span class="pre">&lt;https://docs.pydantic.dev/dev/concepts/types/&gt;</span></code>__ or Device types which implement <code class="docutils literal notranslate"><span class="pre">BLUESKY_PROTOCOLS</span></code> defined in dodal, which are fetched from the context at runtime.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Allowed argument types for Pydantic BaseModels include the primitives, types that extend `BaseModel` and `dict`\ s, `list`\ s  and other `sequence`\ s of supported types. Blueapi will deserialise these types from JSON, so `dict`\ s should use `str` keys.
 </pre></div>
 </div>

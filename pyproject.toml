@@ -27,9 +27,9 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-bluesky-core",                                                                                         #requires ophyd-async
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@6156312340b1e39d1cd9d7b088b83acae1e2d409",
-    "super-state-machine",                                                                                      # See GH issue 553
+    "dls-bluesky-core",     #requires ophyd-async
+    "dls-dodal>=1.31.0",
+    "super-state-machine",  # See GH issue 553
     "GitPython",
     "bluesky-stomp>=0.1.0",
 ]

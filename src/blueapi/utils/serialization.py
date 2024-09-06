@@ -19,7 +19,7 @@ def serialize(obj: Any) -> Any:
     if isinstance(obj, BaseModel):
         # Serialize by alias so that our camelCase models leave the service
         # with camelCase field names
-        return obj.dict(by_alias=True)
+        return obj.model_dump(by_alias=True)
     elif hasattr(obj, "__pydantic_model__"):
         return serialize(obj.__pydantic_model__)
     else:

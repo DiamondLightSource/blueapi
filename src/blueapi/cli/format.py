@@ -57,11 +57,11 @@ def display_json(obj: Any, stream: Stream):
     print = partial(builtins.print, file=stream)
     match obj:
         case PlanResponse(plans=plans):
-            print(json.dumps([p.dict() for p in plans], indent=2))
+            print(json.dumps([p.model_dump() for p in plans], indent=2))
         case DeviceResponse(devices=devices):
-            print(json.dumps([d.dict() for d in devices], indent=2))
+            print(json.dumps([d.model_dump() for d in devices], indent=2))
         case BaseModel():
-            print(json.dumps(obj.dict(), indent=2))
+            print(json.dumps(obj.model_dump(), indent=2))
         case _:
             print(json.dumps(obj))
 

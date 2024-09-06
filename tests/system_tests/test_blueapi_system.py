@@ -221,34 +221,32 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
     client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
-    running_event = WorkerEvent(
-        state=WorkerState.RUNNING,
-        task_status=TaskStatus(
-            task_id=task_id,
-            task_complete=False,
-            task_failed=False,
+    assert all_events == [
+        WorkerEvent(
+            state=WorkerState.RUNNING,
+            task_status=TaskStatus(
+                task_id=task_id,
+                task_complete=False,
+                task_failed=False,
+            ),
         ),
-    )
-    pending_event = WorkerEvent(
-        state=WorkerState.IDLE,
-        task_status=TaskStatus(
-            task_id=task_id,
-            task_complete=False,
-            task_failed=False,
+        WorkerEvent(
+            state=WorkerState.IDLE,
+            task_status=TaskStatus(
+                task_id=task_id,
+                task_complete=False,
+                task_failed=False,
+            ),
         ),
-    )
-    complete_event = WorkerEvent(
-        state=WorkerState.IDLE,
-        task_status=TaskStatus(
-            task_id=task_id,
-            task_complete=True,
-            task_failed=False,
+        WorkerEvent(
+            state=WorkerState.IDLE,
+            task_status=TaskStatus(
+                task_id=task_id,
+                task_complete=True,
+                task_failed=False,
+            ),
         ),
-    )
-    assert running_event in all_events
-    assert pending_event in all_events
-    assert complete_event in all_events
-    assert len(all_events) == 3
+    ]
 
 
 def test_get_current_state_of_environment(client: BlueapiClient):

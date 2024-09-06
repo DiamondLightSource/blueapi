@@ -13,6 +13,7 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
     TaskResponse,
+    TasksListResponse,
     WorkerTask,
 )
 from blueapi.worker import Task, TrackableTask, WorkerEvent, WorkerState
@@ -142,8 +143,19 @@ class BlueapiClient:
         Returns:
             TrackableTask[Task]: Task details
         """
+        response = self._rest.get_task(task_id)
+        assert isinstance(response, TrackableTask)
+        return response
 
-        return self._rest.get_task(task_id)
+    def get_all_task(self) -> TasksListResponse:
+        """
+        Get a list of all task stored by the worker
+
+        Returns:
+            TasksListResponse: List of all Trackable Task
+        """
+
+        return self._rest.get_all_task()
 
     def get_active_task(self) -> WorkerTask:
         """

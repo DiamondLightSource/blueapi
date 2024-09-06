@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Any
 
 import pytest
 import requests
@@ -15,6 +14,7 @@ from blueapi.service.model import (
     DeviceResponse,
     EnvironmentResponse,
     PlanResponse,
+    TaskResponse,
     TasksListResponse,
     WorkerTask,
 )
@@ -45,15 +45,6 @@ def expected_devices() -> DeviceResponse:
     return TypeAdapter(DeviceResponse).validate_json(
         (_DATA_PATH / "devices.json").read_text()
     )
-
-
-def get_response(
-    url: str, BaseModel: Any, status_code: int = status.HTTP_200_OK
-) -> Any:
-    get_response = requests.get(url)
-    model = TypeAdapter(BaseModel).validate_python(get_response.json())
-    assert get_response.status_code == status_code
-    return model
 
 
 def test_get_plans(client: BlueapiClient, expected_plans: PlanResponse):
@@ -98,21 +89,19 @@ def test_create_task_validation_error(client: BlueapiClient):
 
 
 def test_get_all_tasks(client: BlueapiClient):
-    created_tasks = []
+    created_tasks: list[TaskResponse] = []
     for task in [_SIMPLE_TASK, _LONG_TASK]:
         created_task = client.create_task(task)
         created_tasks.append(created_task)
-
-    task_list = get_response(client._rest._url("/tasks"), TasksListResponse)
-
-    assert isinstance(task_list, TasksListResponse)
     task_ids = [task.task_id for task in created_tasks]
-    for task in task_list.tasks:
-        assert task.task_id in task_ids
-        assert task.is_complete is False and task.is_pending is True
 
-    for task in created_tasks:
-        client.clear_task(task.task_id)
+    task_list = client.get_all_task()
+    for trackable_task in task_list.tasks:
+        assert trackable_task.task_id in task_ids
+        assert trackable_task.is_complete is False and trackable_task.is_pending is True
+
+    for task_id in task_ids:
+        client.clear_task(task_id)
 
 
 def test_get_task_by_id(client: BlueapiClient):

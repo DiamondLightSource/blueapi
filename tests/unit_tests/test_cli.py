@@ -349,13 +349,8 @@ def test_device_output_formatting():
                     HasName
                 """)
 
-    output = StringIO()
-    OutputFormat.COMPACT.display(devices, out=output)
-    assert output.getvalue() == compact
+    _assert_matching_formatting(OutputFormat.COMPACT, devices, compact)
 
-    # json outputs valid json
-    output = StringIO()
-    OutputFormat.JSON.display(devices, out=output)
     json_out = dedent("""\
                 [
                   {
@@ -366,16 +361,14 @@ def test_device_output_formatting():
                   }
                 ]
                 """)
-    assert output.getvalue() == json_out
-    _ = json.loads(output.getvalue())
+    _assert_matching_formatting(OutputFormat.JSON, devices, json_out)
+    _ = json.loads(json_out)
 
-    output = StringIO()
-    OutputFormat.FULL.display(devices, out=output)
     full = dedent("""\
             my-device
                 HasName
             """)
-    assert output.getvalue() == full
+    _assert_matching_formatting(OutputFormat.FULL, devices, full)
 
 
 class ExtendedModel(BaseModel):
@@ -407,13 +400,8 @@ def test_plan_output_formatting():
                       metadata=object
                 """)
 
-    output = StringIO()
-    OutputFormat.COMPACT.display(plans, out=output)
-    assert output.getvalue() == compact
+    _assert_matching_formatting(OutputFormat.COMPACT, plans, compact)
 
-    # json outputs valid json
-    output = StringIO()
-    OutputFormat.JSON.display(plans, out=output)
     json_out = dedent("""\
             [
               {
@@ -458,11 +446,9 @@ def test_plan_output_formatting():
               }
             ]
                 """)
-    assert output.getvalue() == json_out
-    _ = json.loads(output.getvalue())
+    _assert_matching_formatting(OutputFormat.JSON, plans, json_out)
+    _ = json.loads(json_out)
 
-    output = StringIO()
-    OutputFormat.FULL.display(plans, out=output)
     full = dedent("""\
         my-plan
             Summary of description
@@ -506,7 +492,7 @@ def test_plan_output_formatting():
                   "type": "object"
                 }
             """)
-    assert output.getvalue() == full
+    _assert_matching_formatting(OutputFormat.FULL, plans, full)
 
 
 def test_event_formatting():
@@ -570,19 +556,13 @@ def test_event_formatting():
 def test_unknown_object_formatting():
     demo = {"foo": 42, "bar": ["hello", "World"]}
 
-    output = StringIO()
-    OutputFormat.JSON.display(demo, output)
     exp = """{"foo": 42, "bar": ["hello", "World"]}\n"""
-    assert exp == output.getvalue()
+    _assert_matching_formatting(OutputFormat.JSON, demo, exp)
 
-    output = StringIO()
-    OutputFormat.COMPACT.display(demo, output)
     exp = """{'bar': ['hello', 'World'], 'foo': 42}\n"""
-    assert exp == output.getvalue()
+    _assert_matching_formatting(OutputFormat.COMPACT, demo, exp)
 
-    output = StringIO()
-    OutputFormat.FULL.display(demo, output)
-    assert exp == output.getvalue()
+    _assert_matching_formatting(OutputFormat.FULL, demo, exp)
 
 
 def test_dict_formatting():
@@ -595,24 +575,18 @@ def test_dict_formatting():
 
 
 def test_generic_base_model_formatting():
-    output = StringIO()
-    obj = ExtendedModel(name="foo", keys=[1, 2, 3], metadata={"fizz": "buzz"})
-    exp = '{"name": "foo", "keys": [1, 2, 3], "metadata": {"fizz": "buzz"}}\n'
-    OutputFormat.JSON.display(obj, output)
-    assert exp == output.getvalue()
+    model = ExtendedModel(name="demo", keys=[1, 2, 3], metadata={"fizz": "buzz"})
+    exp = '{"name": "demo", "keys": [1, 2, 3], "metadata": {"fizz": "buzz"}}\n'
+    _assert_matching_formatting(OutputFormat.JSON, model, exp)
 
-    model = ExtendedModel(
-        name="demo_model", keys=[1, 2, 3], metadata={"foo": "bar", "fizz": "buzz"}
-    )
     _assert_matching_formatting(
         OutputFormat.FULL,
         model,
         dedent("""\
             ExtendedModel
-                name: demo_model
+                name: demo
                 keys: [1, 2, 3]
                 metadata:
-                    foo: bar
                     fizz: buzz
             """),
     )

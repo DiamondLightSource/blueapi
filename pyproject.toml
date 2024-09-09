@@ -108,7 +108,7 @@ legacy_tox_ini = """
 [tox]
 skipsdist=True
 
-[testenv:{pre-commit,type-checking,tests,docs}]
+[testenv:{pre-commit,type-checking,tests,docs,system-test}]
 # Don't create a virtualenv for the command, requires tox-direct plugin
 direct = True
 passenv = *
@@ -121,8 +121,9 @@ allowlist_externals =
 commands =
     pre-commit: pre-commit run --all-files {posargs}
     type-checking: mypy src tests {posargs}
-    tests: pytest --cov=blueapi --cov-report term --cov-report xml:cov.xml {posargs}
+    tests: pytest --cov=blueapi --cov-report term --cov-report xml:cov.xml tests/unit_tests {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
+    system-test: pytest tests/system_tests {posargs}
 """
 
 [tool.ruff]

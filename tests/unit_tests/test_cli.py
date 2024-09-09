@@ -124,7 +124,7 @@ def test_submit_plan(runner: CliRunner):
         match=[matchers.json_params_matcher(body_data)],
     )
 
-    config_path = "tests/example_yaml/rest_config.yaml"
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
     runner.invoke(
         main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
     )
@@ -159,7 +159,7 @@ def test_valid_stomp_config_for_listener(
         main,
         [
             "-c",
-            "tests/example_yaml/valid_stomp_config.yaml",
+            "tests/unit_tests/example_yaml/valid_stomp_config.yaml",
             "controller",
             "listen",
         ],
@@ -559,7 +559,7 @@ def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliR
 
     result = runner.invoke(
         main,
-        ["-c", "tests/example_yaml/scratch.yaml", "setup-scratch"],
+        ["-c", "tests/unit_tests/example_yaml/scratch.yaml", "setup-scratch"],
         input="\n",
     )
     assert result.exit_code == 0

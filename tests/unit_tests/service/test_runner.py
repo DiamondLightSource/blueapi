@@ -108,7 +108,7 @@ def test_can_reload_after_an_error(pool_mock: MagicMock):
 
 
 def test_function_not_findable_on_subprocess(started_runner: WorkerDispatcher):
-    from tests.core.fake_device_module import fake_motor_y
+    from tests.unit_tests.core.fake_device_module import fake_motor_y
 
     # Valid target on main but not sub process
     # Change in this process not reflected in subprocess
@@ -122,7 +122,7 @@ def test_function_not_findable_on_subprocess(started_runner: WorkerDispatcher):
 
 def test_non_callable_excepts_in_main_process(started_runner: WorkerDispatcher):
     # Not a valid target on main or sub process
-    from tests.core.fake_device_module import fetchable_non_callable
+    from tests.unit_tests.core.fake_device_module import fetchable_non_callable
 
     with pytest.raises(
         RpcError,
@@ -134,7 +134,10 @@ def test_non_callable_excepts_in_main_process(started_runner: WorkerDispatcher):
 
 def test_non_callable_excepts_in_sub_process(started_runner: WorkerDispatcher):
     # Valid target on main but finds non-callable in sub process
-    from tests.core.fake_device_module import fetchable_callable, fetchable_non_callable
+    from tests.unit_tests.core.fake_device_module import (
+        fetchable_callable,
+        fetchable_non_callable,
+    )
 
     fetchable_callable.__name__ = fetchable_non_callable.__name__
 
@@ -156,7 +159,7 @@ def test_clear_message_for_anonymous_function(started_runner: WorkerDispatcher):
 
 
 def test_clear_message_for_wrong_return(started_runner: WorkerDispatcher):
-    from tests.core.fake_device_module import wrong_return_type
+    from tests.unit_tests.core.fake_device_module import wrong_return_type
 
     with pytest.raises(
         ValidationError,

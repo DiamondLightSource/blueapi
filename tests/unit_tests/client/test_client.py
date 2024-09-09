@@ -15,6 +15,7 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
     TaskResponse,
+    TasksListResponse,
     WorkerTask,
 )
 from blueapi.worker import ProgressEvent, Task, TrackableTask, WorkerEvent, WorkerState
@@ -35,6 +36,7 @@ DEVICES = DeviceResponse(
 )
 DEVICE = DeviceModel(name="foo", protocols=[])
 TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
+TASKS = TasksListResponse(tasks=[TASK])
 ACTIVE_TASK = WorkerTask(task_id="bar")
 ENV = EnvironmentResponse(initialized=True)
 COMPLETE_EVENT = WorkerEvent(
@@ -65,6 +67,7 @@ def mock_rest() -> BlueapiRestClient:
     mock.get_device.return_value = DEVICE
     mock.get_state.return_value = WorkerState.IDLE
     mock.get_task.return_value = TASK
+    mock.get_all_tasks.return_value = TASKS
     mock.get_active_task.return_value = ACTIVE_TASK
     mock.get_environment.return_value = ENV
     mock.delete_environment.return_value = EnvironmentResponse(initialized=False)
@@ -133,13 +136,25 @@ def test_get_task(client: BlueapiClient):
     assert client.get_task("foo") == TASK
 
 
-def test_get_nonexistant_task(
+def test_get_nonexistent_task(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
     mock_rest.get_task.side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
         client.get_task("baz")
+
+
+def test_get_task_with_empty_id(client: BlueapiClient):
+    with pytest.raises(AssertionError) as exc:
+        client.get_task("")
+        assert str(exc) == "Task ID not provided!"
+
+
+def test_get_all_tasks(
+    client: BlueapiClient,
+):
+    assert client.get_all_tasks() == TASKS
 
 
 def test_create_task(

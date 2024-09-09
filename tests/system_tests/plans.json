@@ -1,0 +1,1248 @@
+{
+    "plans": [
+        {
+            "name": "count",
+            "description": "\n    Take `n` readings from a device\n\n    Args:\n        detectors (Set[Readable]): Readable devices to read\n        num (int, optional): Number of readings to take. Defaults to 1.\n        delay (Optional[Union[float, List[float]]], optional): Delay between readings.\n                                                               Defaults to None.\n        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include\n                                                          in exported data.\n                                                          Defaults to None.\n\n    Returns:\n        MsgGenerator: _description_\n\n    Yields:\n        Iterator[MsgGenerator]: _description_\n    ",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "type": "bluesky.protocols.Readable"
+                        },
+                        "title": "Detectors",
+                        "type": "array",
+                        "uniqueItems": true
+                    },
+                    "num": {
+                        "title": "Num",
+                        "type": "integer"
+                    },
+                    "delay": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "items": {
+                                    "type": "number"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Delay"
+                    },
+                    "metadata": {
+                        "anyOf": [
+                            {
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metadata"
+                    }
+                },
+                "required": [
+                    "detectors"
+                ],
+                "title": "count",
+                "type": "object"
+            }
+        },
+        {
+            "name": "move",
+            "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, Any]): Mapping of Movables to target positions\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "moves": {
+                        "title": "Moves",
+                        "type": "object"
+                    },
+                    "group": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Group"
+                    }
+                },
+                "required": [
+                    "moves"
+                ],
+                "title": "move",
+                "type": "object"
+            }
+        },
+        {
+            "name": "stp_snapshot",
+            "description": "\n    Moves devices for pressure and temperature (defaults fetched from the context)\n    and captures a single frame from a collection of devices\n\n    Args:\n        detectors (List[Readable]): A list of devices to read while the sample is at STP\n        temperature (Optional[Movable]): A device controlling temperature of the sample,\n            defaults to fetching a device name \"sample_temperature\" from the context\n        pressure (Optional[Movable]): A device controlling pressure on the sample,\n            defaults to fetching a device name \"sample_pressure\" from the context\n    Returns:\n        MsgGenerator: Plan\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "type": "bluesky.protocols.Readable"
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "temperature": {
+                        "title": "Temperature",
+                        "type": "bluesky.protocols.Movable"
+                    },
+                    "pressure": {
+                        "title": "Pressure",
+                        "type": "bluesky.protocols.Movable"
+                    }
+                },
+                "required": [
+                    "detectors"
+                ],
+                "title": "stp_snapshot",
+                "type": "object"
+            }
+        },
+        {
+            "name": "scan",
+            "description": "\n    Scan wrapping `bp.scan_nd`\n\n    Args:\n        detectors: Set of readable devices, will take a reading at\n                                    each point\n        axes_to_move: All axes involved in this scan, names and\n            objects\n        spec: ScanSpec modelling the path of the scan\n        metadata: Key-value metadata to include\n                                                          in exported data, defaults to\n                                                          None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "parameter_schema": {
+                "$defs": {
+                    "Circle": {
+                        "additionalProperties": false,
+                        "description": "Mask contains points of axis within an xy circle of given radius.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 1, 3, 10) * ~Line(\"x\", 0, 2, 10)\n    spec = grid & Circle(\"x\", \"y\", 1, 2, 0.9)",
+                        "properties": {
+                            "x_axis": {
+                                "description": "The name matching the x axis of the spec",
+                                "title": "X Axis"
+                            },
+                            "y_axis": {
+                                "description": "The name matching the y axis of the spec",
+                                "title": "Y Axis"
+                            },
+                            "x_middle": {
+                                "description": "The central x point of the circle",
+                                "title": "X Middle",
+                                "type": "number"
+                            },
+                            "y_middle": {
+                                "description": "The central y point of the circle",
+                                "title": "Y Middle",
+                                "type": "number"
+                            },
+                            "radius": {
+                                "description": "Radius of the circle",
+                                "exclusiveMinimum": 0,
+                                "title": "Radius",
+                                "type": "number"
+                            },
+                            "type": {
+                                "const": "Circle",
+                                "default": "Circle",
+                                "enum": [
+                                    "Circle"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "x_axis",
+                            "y_axis",
+                            "x_middle",
+                            "y_middle",
+                            "radius"
+                        ],
+                        "title": "Circle",
+                        "type": "object"
+                    },
+                    "CombinationOf": {
+                        "additionalProperties": false,
+                        "description": "Abstract baseclass for a combination of two regions, left and right.",
+                        "properties": {
+                            "left": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The left-hand Region to combine"
+                            },
+                            "right": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The right-hand Region to combine"
+                            },
+                            "type": {
+                                "const": "CombinationOf",
+                                "default": "CombinationOf",
+                                "enum": [
+                                    "CombinationOf"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "left",
+                            "right"
+                        ],
+                        "title": "CombinationOf",
+                        "type": "object"
+                    },
+                    "Concat": {
+                        "additionalProperties": false,
+                        "description": "Concatenate two Specs together, running one after the other.\n\nEach Dimension of left and right must contain the same axes. Typically\nformed using `Spec.concat`.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"x\", 1, 3, 3).concat(Line(\"x\", 4, 5, 5))",
+                        "properties": {
+                            "left": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
+                                "description": "The left-hand Spec to Concat, midpoints will appear earlier"
+                            },
+                            "right": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
+                                "description": "The right-hand Spec to Concat, midpoints will appear later"
+                            },
+                            "gap": {
+                                "default": false,
+                                "description": "If True, force a gap in the output at the join",
+                                "title": "Gap",
+                                "type": "boolean"
+                            },
+                            "check_path_changes": {
+                                "default": true,
+                                "description": "If True path through scan will not be modified by squash",
+                                "title": "Check Path Changes",
+                                "type": "boolean"
+                            },
+                            "type": {
+                                "const": "Concat",
+                                "default": "Concat",
+                                "enum": [
+                                    "Concat"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "left",
+                            "right"
+                        ],
+                        "title": "Concat",
+                        "type": "object"
+                    },
+                    "DifferenceOf": {
+                        "additionalProperties": false,
+                        "description": "A point is in DifferenceOf(a, b) if in a and not in b.\n\nTypically created with the ``-`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) - Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False, False, False])",
+                        "properties": {
+                            "left": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The left-hand Region to combine"
+                            },
+                            "right": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The right-hand Region to combine"
+                            },
+                            "type": {
+                                "const": "DifferenceOf",
+                                "default": "DifferenceOf",
+                                "enum": [
+                                    "DifferenceOf"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "left",
+                            "right"
+                        ],
+                        "title": "DifferenceOf",
+                        "type": "object"
+                    },
+                    "Ellipse": {
+                        "additionalProperties": false,
+                        "description": "Mask contains points of axis within an xy ellipse of given radius.\n\n.. example_spec::\n\n    from scanspec.regions import Ellipse\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 3, 8, 10) * ~Line(\"x\", 1 ,8, 10)\n    spec = grid & Ellipse(\"x\", \"y\", 5, 5, 2, 3, 75)",
+                        "properties": {
+                            "x_axis": {
+                                "description": "The name matching the x axis of the spec",
+                                "title": "X Axis"
+                            },
+                            "y_axis": {
+                                "description": "The name matching the y axis of the spec",
+                                "title": "Y Axis"
+                            },
+                            "x_middle": {
+                                "description": "The central x point of the ellipse",
+                                "title": "X Middle",
+                                "type": "number"
+                            },
+                            "y_middle": {
+                                "description": "The central y point of the ellipse",
+                                "title": "Y Middle",
+                                "type": "number"
+                            },
+                            "x_radius": {
+                                "description": "The radius along the x axis of the ellipse",
+                                "exclusiveMinimum": 0,
+                                "title": "X Radius",
+                                "type": "number"
+                            },
+                            "y_radius": {
+                                "description": "The radius along the y axis of the ellipse",
+                                "exclusiveMinimum": 0,
+                                "title": "Y Radius",
+                                "type": "number"
+                            },
+                            "angle": {
+                                "default": 0,
+                                "description": "The angle of the ellipse (degrees)",
+                                "title": "Angle",
+                                "type": "number"
+                            },
+                            "type": {
+                                "const": "Ellipse",
+                                "default": "Ellipse",
+                                "enum": [
+                                    "Ellipse"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "x_axis",
+                            "y_axis",
+                            "x_middle",
+                            "y_middle",
+                            "x_radius",
+                            "y_radius"
+                        ],
+                        "title": "Ellipse",
+                        "type": "object"
+                    },
+                    "IntersectionOf": {
+                        "additionalProperties": false,
+                        "description": "A point is in IntersectionOf(a, b) if in both a and b.\n\nTypically created with the ``&`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) & Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False, False,  True, False, False])",
+                        "properties": {
+                            "left": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The left-hand Region to combine"
+                            },
+                            "right": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The right-hand Region to combine"
+                            },
+                            "type": {
+                                "const": "IntersectionOf",
+                                "default": "IntersectionOf",
+                                "enum": [
+                                    "IntersectionOf"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "left",
+                            "right"
+                        ],
+                        "title": "IntersectionOf",
+                        "type": "object"
+                    },
+                    "Line": {
+                        "additionalProperties": false,
+                        "description": "Linearly spaced frames with start and stop as first and last midpoints.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"x\", 1, 2, 5)",
+                        "properties": {
+                            "axis": {
+                                "description": "An identifier for what to move",
+                                "title": "Axis"
+                            },
+                            "start": {
+                                "description": "Midpoint of the first point of the line",
+                                "title": "Start",
+                                "type": "number"
+                            },
+                            "stop": {
+                                "description": "Midpoint of the last point of the line",
+                                "title": "Stop",
+                                "type": "number"
+                            },
+                            "num": {
+                                "description": "Number of frames to produce",
+                                "minimum": 1,
+                                "title": "Num",
+                                "type": "integer"
+                            },
+                            "type": {
+                                "const": "Line",
+                                "default": "Line",
+                                "enum": [
+                                    "Line"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "axis",
+                            "start",
+                            "stop",
+                            "num"
+                        ],
+                        "title": "Line",
+                        "type": "object"
+                    },
+                    "Mask": {
+                        "additionalProperties": false,
+                        "description": "Restrict Spec to only midpoints that fall inside the given Region.\n\nTypically created with the ``&`` operator. It also pushes down the\n``& | ^ -`` operators to its `Region` to avoid the need for brackets on\ncombinations of Regions.\n\nIf a Region spans multiple Frames objects, they will be squashed together.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * Line(\"x\", 3, 5, 5) & Circle(\"x\", \"y\", 4, 2, 1.2)\n\nSee Also: `why-squash-can-change-path`",
+                        "properties": {
+                            "spec": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
+                                "description": "The Spec containing the source midpoints"
+                            },
+                            "region": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The Region that midpoints will be inside"
+                            },
+                            "check_path_changes": {
+                                "default": true,
+                                "description": "If True path through scan will not be modified by squash",
+                                "title": "Check Path Changes",
+                                "type": "boolean"
+                            },
+                            "type": {
+                                "const": "Mask",
+                                "default": "Mask",
+                                "enum": [
+                                    "Mask"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "spec",
+                            "region"
+                        ],
+                        "title": "Mask",
+                        "type": "object"
+                    },
+                    "Polygon": {
+                        "additionalProperties": false,
+                        "description": "Mask contains points of axis within a rotated xy polygon.\n\n.. example_spec::\n\n    from scanspec.regions import Polygon\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 3, 8, 10) * ~Line(\"x\", 1 ,8, 10)\n    spec = grid & Polygon(\"x\", \"y\", [1.0, 6.0, 8.0, 2.0], [4.0, 10.0, 6.0, 1.0])",
+                        "properties": {
+                            "x_axis": {
+                                "description": "The name matching the x axis of the spec",
+                                "title": "X Axis"
+                            },
+                            "y_axis": {
+                                "description": "The name matching the y axis of the spec",
+                                "title": "Y Axis"
+                            },
+                            "x_verts": {
+                                "description": "The Nx1 x coordinates of the polygons vertices",
+                                "items": {
+                                    "type": "number"
+                                },
+                                "minItems": 3,
+                                "title": "X Verts",
+                                "type": "array"
+                            },
+                            "y_verts": {
+                                "description": "The Nx1 y coordinates of the polygons vertices",
+                                "items": {
+                                    "type": "number"
+                                },
+                                "minItems": 3,
+                                "title": "Y Verts",
+                                "type": "array"
+                            },
+                            "type": {
+                                "const": "Polygon",
+                                "default": "Polygon",
+                                "enum": [
+                                    "Polygon"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "x_axis",
+                            "y_axis",
+                            "x_verts",
+                            "y_verts"
+                        ],
+                        "title": "Polygon",
+                        "type": "object"
+                    },
+                    "Product": {
+                        "additionalProperties": false,
+                        "description": "Outer product of two Specs, nesting inner within outer.\n\nThis means that inner will run in its entirety at each point in outer.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 2, 3) * Line(\"x\", 3, 4, 12)",
+                        "properties": {
+                            "outer": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
+                                "description": "Will be executed once"
+                            },
+                            "inner": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
+                                "description": "Will be executed len(outer) times"
+                            },
+                            "type": {
+                                "const": "Product",
+                                "default": "Product",
+                                "enum": [
+                                    "Product"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "outer",
+                            "inner"
+                        ],
+                        "title": "Product",
+                        "type": "object"
+                    },
+                    "Range": {
+                        "additionalProperties": false,
+                        "description": "Mask contains points of axis >= min and <= max.\n\n>>> r = Range(\"x\", 1, 2)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True,  True, False, False])",
+                        "properties": {
+                            "axis": {
+                                "description": "The name matching the axis to mask in spec",
+                                "title": "Axis"
+                            },
+                            "min": {
+                                "description": "The minimum inclusive value in the region",
+                                "title": "Min",
+                                "type": "number"
+                            },
+                            "max": {
+                                "description": "The minimum inclusive value in the region",
+                                "title": "Max",
+                                "type": "number"
+                            },
+                            "type": {
+                                "const": "Range",
+                                "default": "Range",
+                                "enum": [
+                                    "Range"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "axis",
+                            "min",
+                            "max"
+                        ],
+                        "title": "Range",
+                        "type": "object"
+                    },
+                    "Rectangle": {
+                        "additionalProperties": false,
+                        "description": "Mask contains points of axis within a rotated xy rectangle.\n\n.. example_spec::\n\n    from scanspec.regions import Rectangle\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 1, 3, 10) * ~Line(\"x\", 0, 2, 10)\n    spec = grid & Rectangle(\"x\", \"y\", 0, 1.1, 1.5, 2.1, 30)",
+                        "properties": {
+                            "x_axis": {
+                                "description": "The name matching the x axis of the spec",
+                                "title": "X Axis"
+                            },
+                            "y_axis": {
+                                "description": "The name matching the y axis of the spec",
+                                "title": "Y Axis"
+                            },
+                            "x_min": {
+                                "description": "Minimum inclusive x value in the region",
+                                "title": "X Min",
+                                "type": "number"
+                            },
+                            "y_min": {
+                                "description": "Minimum inclusive y value in the region",
+                                "title": "Y Min",
+                                "type": "number"
+                            },
+                            "x_max": {
+                                "description": "Maximum inclusive x value in the region",
+                                "title": "X Max",
+                                "type": "number"
+                            },
+                            "y_max": {
+                                "description": "Maximum inclusive y value in the region",
+                                "title": "Y Max",
+                                "type": "number"
+                            },
+                            "angle": {
+                                "default": 0,
+                                "description": "Clockwise rotation angle of the rectangle",
+                                "title": "Angle",
+                                "type": "number"
+                            },
+                            "type": {
+                                "const": "Rectangle",
+                                "default": "Rectangle",
+                                "enum": [
+                                    "Rectangle"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "x_axis",
+                            "y_axis",
+                            "x_min",
+                            "y_min",
+                            "x_max",
+                            "y_max"
+                        ],
+                        "title": "Rectangle",
+                        "type": "object"
+                    },
+                    "Region": {
+                        "discriminator": {
+                            "mapping": {
+                                "Circle": "#/$defs/Circle",
+                                "CombinationOf": "#/$defs/CombinationOf",
+                                "DifferenceOf": "#/$defs/DifferenceOf",
+                                "Ellipse": "#/$defs/Ellipse",
+                                "IntersectionOf": "#/$defs/IntersectionOf",
+                                "Polygon": "#/$defs/Polygon",
+                                "Range": "#/$defs/Range",
+                                "Rectangle": "#/$defs/Rectangle",
+                                "SymmetricDifferenceOf": "#/$defs/SymmetricDifferenceOf",
+                                "UnionOf": "#/$defs/UnionOf"
+                            },
+                            "propertyName": "type"
+                        },
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/CombinationOf"
+                            },
+                            {
+                                "$ref": "#/$defs/UnionOf"
+                            },
+                            {
+                                "$ref": "#/$defs/IntersectionOf"
+                            },
+                            {
+                                "$ref": "#/$defs/DifferenceOf"
+                            },
+                            {
+                                "$ref": "#/$defs/SymmetricDifferenceOf"
+                            },
+                            {
+                                "$ref": "#/$defs/Range"
+                            },
+                            {
+                                "$ref": "#/$defs/Rectangle"
+                            },
+                            {
+                                "$ref": "#/$defs/Polygon"
+                            },
+                            {
+                                "$ref": "#/$defs/Circle"
+                            },
+                            {
+                                "$ref": "#/$defs/Ellipse"
+                            }
+                        ]
+                    },
+                    "Repeat": {
+                        "additionalProperties": false,
+                        "description": "Repeat an empty frame num times.\n\nCan be used on the outside of a scan to repeat the same scan many times.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = 2 * ~Line.bounded(\"x\", 3, 4, 1)\n\nIf you want snaked axes to have no gap between iterations you can do:\n\n.. example_spec::\n\n    from scanspec.specs import Line, Repeat\n\n    spec = Repeat(2, gap=False) * ~Line.bounded(\"x\", 3, 4, 1)\n\n.. note:: There is no turnaround arrow at x=4",
+                        "properties": {
+                            "num": {
+                                "description": "Number of frames to produce",
+                                "minimum": 1,
+                                "title": "Num",
+                                "type": "integer"
+                            },
+                            "gap": {
+                                "default": true,
+                                "description": "If False and the slowest of the stack of Frames is snaked then the end and start of consecutive iterations of Spec will have no gap",
+                                "title": "Gap",
+                                "type": "boolean"
+                            },
+                            "type": {
+                                "const": "Repeat",
+                                "default": "Repeat",
+                                "enum": [
+                                    "Repeat"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "num"
+                        ],
+                        "title": "Repeat",
+                        "type": "object"
+                    },
+                    "Snake": {
+                        "additionalProperties": false,
+                        "description": "Run the Spec in reverse on every other iteration when nested.\n\nTypically created with the ``~`` operator.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * ~Line(\"x\", 3, 5, 5)",
+                        "properties": {
+                            "spec": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
+                                "description": "The Spec to run in reverse every other iteration"
+                            },
+                            "type": {
+                                "const": "Snake",
+                                "default": "Snake",
+                                "enum": [
+                                    "Snake"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "spec"
+                        ],
+                        "title": "Snake",
+                        "type": "object"
+                    },
+                    "Spec": {
+                        "discriminator": {
+                            "mapping": {
+                                "Concat": "#/$defs/Concat",
+                                "Line": "#/$defs/Line",
+                                "Mask": "#/$defs/Mask",
+                                "Product": "#/$defs/Product",
+                                "Repeat": "#/$defs/Repeat",
+                                "Snake": "#/$defs/Snake",
+                                "Spiral": "#/$defs/Spiral",
+                                "Squash": "#/$defs/Squash",
+                                "Static": "#/$defs/Static",
+                                "Zip": "#/$defs/Zip"
+                            },
+                            "propertyName": "type"
+                        },
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/Product"
+                            },
+                            {
+                                "$ref": "#/$defs/Repeat"
+                            },
+                            {
+                                "$ref": "#/$defs/Zip"
+                            },
+                            {
+                                "$ref": "#/$defs/Mask"
+                            },
+                            {
+                                "$ref": "#/$defs/Snake"
+                            },
+                            {
+                                "$ref": "#/$defs/Concat"
+                            },
+                            {
+                                "$ref": "#/$defs/Squash"
+                            },
+                            {
+                                "$ref": "#/$defs/Line"
+                            },
+                            {
+                                "$ref": "#/$defs/Static"
+                            },
+                            {
+                                "$ref": "#/$defs/Spiral"
+                            }
+                        ]
+                    },
+                    "Spiral": {
+                        "additionalProperties": false,
+                        "description": "Archimedean spiral of \"x_axis\" and \"y_axis\".\n\nStarts at centre point (\"x_start\", \"y_start\") with angle \"rotate\". Produces\n\"num\" points in a spiral spanning width of \"x_range\" and height of \"y_range\"\n\n.. example_spec::\n\n    from scanspec.specs import Spiral\n\n    spec = Spiral(\"x\", \"y\", 1, 5, 10, 50, 30)",
+                        "properties": {
+                            "x_axis": {
+                                "description": "An identifier for what to move for x",
+                                "title": "X Axis"
+                            },
+                            "y_axis": {
+                                "description": "An identifier for what to move for y",
+                                "title": "Y Axis"
+                            },
+                            "x_start": {
+                                "description": "x centre of the spiral",
+                                "title": "X Start",
+                                "type": "number"
+                            },
+                            "y_start": {
+                                "description": "y centre of the spiral",
+                                "title": "Y Start",
+                                "type": "number"
+                            },
+                            "x_range": {
+                                "description": "x width of the spiral",
+                                "title": "X Range",
+                                "type": "number"
+                            },
+                            "y_range": {
+                                "description": "y width of the spiral",
+                                "title": "Y Range",
+                                "type": "number"
+                            },
+                            "num": {
+                                "description": "Number of frames to produce",
+                                "minimum": 1,
+                                "title": "Num",
+                                "type": "integer"
+                            },
+                            "rotate": {
+                                "default": 0,
+                                "description": "How much to rotate the angle of the spiral",
+                                "title": "Rotate",
+                                "type": "number"
+                            },
+                            "type": {
+                                "const": "Spiral",
+                                "default": "Spiral",
+                                "enum": [
+                                    "Spiral"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "x_axis",
+                            "y_axis",
+                            "x_start",
+                            "y_start",
+                            "x_range",
+                            "y_range",
+                            "num"
+                        ],
+                        "title": "Spiral",
+                        "type": "object"
+                    },
+                    "Squash": {
+                        "additionalProperties": false,
+                        "description": "Squash a stack of Frames together into a single expanded Frames object.\n\nSee Also:\n    `why-squash-can-change-path`\n\n.. example_spec::\n\n    from scanspec.specs import Line, Squash\n\n    spec = Squash(Line(\"y\", 1, 2, 3) * Line(\"x\", 0, 1, 4))",
+                        "properties": {
+                            "spec": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
+                                "description": "The Spec to squash the dimensions of"
+                            },
+                            "check_path_changes": {
+                                "default": true,
+                                "description": "If True path through scan will not be modified by squash",
+                                "title": "Check Path Changes",
+                                "type": "boolean"
+                            },
+                            "type": {
+                                "const": "Squash",
+                                "default": "Squash",
+                                "enum": [
+                                    "Squash"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "spec"
+                        ],
+                        "title": "Squash",
+                        "type": "object"
+                    },
+                    "Static": {
+                        "additionalProperties": false,
+                        "description": "A static frame, repeated num times, with axis at value.\n\nCan be used to set axis=value at every point in a scan.\n\n.. example_spec::\n\n    from scanspec.specs import Line, Static\n\n    spec = Line(\"y\", 1, 2, 3).zip(Static(\"x\", 3))",
+                        "properties": {
+                            "axis": {
+                                "description": "An identifier for what to move",
+                                "title": "Axis"
+                            },
+                            "value": {
+                                "description": "The value at each point",
+                                "title": "Value",
+                                "type": "number"
+                            },
+                            "num": {
+                                "default": 1,
+                                "description": "Number of frames to produce",
+                                "minimum": 1,
+                                "title": "Num",
+                                "type": "integer"
+                            },
+                            "type": {
+                                "const": "Static",
+                                "default": "Static",
+                                "enum": [
+                                    "Static"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "axis",
+                            "value"
+                        ],
+                        "title": "Static",
+                        "type": "object"
+                    },
+                    "SymmetricDifferenceOf": {
+                        "additionalProperties": false,
+                        "description": "A point is in SymmetricDifferenceOf(a, b) if in either a or b, but not both.\n\nTypically created with the ``^`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) ^ Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False,  True, False])",
+                        "properties": {
+                            "left": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The left-hand Region to combine"
+                            },
+                            "right": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The right-hand Region to combine"
+                            },
+                            "type": {
+                                "const": "SymmetricDifferenceOf",
+                                "default": "SymmetricDifferenceOf",
+                                "enum": [
+                                    "SymmetricDifferenceOf"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "left",
+                            "right"
+                        ],
+                        "title": "SymmetricDifferenceOf",
+                        "type": "object"
+                    },
+                    "UnionOf": {
+                        "additionalProperties": false,
+                        "description": "A point is in UnionOf(a, b) if in either a or b.\n\nTypically created with the ``|`` operator\n\n>>> r = Range(\"x\", 0.5, 2.5) | Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True,  True,  True, False])",
+                        "properties": {
+                            "left": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The left-hand Region to combine"
+                            },
+                            "right": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
+                                "description": "The right-hand Region to combine"
+                            },
+                            "type": {
+                                "const": "UnionOf",
+                                "default": "UnionOf",
+                                "enum": [
+                                    "UnionOf"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "left",
+                            "right"
+                        ],
+                        "title": "UnionOf",
+                        "type": "object"
+                    },
+                    "Zip": {
+                        "additionalProperties": false,
+                        "description": "Run two Specs in parallel, merging their midpoints together.\n\nTypically formed using `Spec.zip`.\n\nStacks of Frames are merged by:\n\n- If right creates a stack of a single Frames object of size 1, expand it to\n  the size of the fastest Frames object created by left\n- Merge individual Frames objects together from fastest to slowest\n\nThis means that Zipping a Spec producing stack [l2, l1] with a Spec\nproducing stack [r1] will assert len(l1)==len(r1), and produce\nstack [l2, l1.zip(r1)].\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"z\", 1, 2, 3) * Line(\"y\", 3, 4, 5).zip(Line(\"x\", 4, 5, 5))",
+                        "properties": {
+                            "left": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
+                                "description": "The left-hand Spec to Zip, will appear earlier in axes"
+                            },
+                            "right": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
+                                "description": "The right-hand Spec to Zip, will appear later in axes"
+                            },
+                            "type": {
+                                "const": "Zip",
+                                "default": "Zip",
+                                "enum": [
+                                    "Zip"
+                                ],
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "left",
+                            "right"
+                        ],
+                        "title": "Zip",
+                        "type": "object"
+                    }
+                },
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "type": "bluesky.protocols.Readable"
+                        },
+                        "title": "Detectors",
+                        "type": "array",
+                        "uniqueItems": true
+                    },
+                    "axes_to_move": {
+                        "additionalProperties": {
+                            "type": "bluesky.protocols.Movable"
+                        },
+                        "title": "Axes To Move",
+                        "type": "object"
+                    },
+                    "spec": {
+                        "$ref": "#/$defs/Spec"
+                    },
+                    "metadata": {
+                        "anyOf": [
+                            {
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metadata"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "axes_to_move",
+                    "spec"
+                ],
+                "title": "scan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "set_absolute",
+            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "movable": {
+                        "title": "Movable",
+                        "type": "bluesky.protocols.Movable"
+                    },
+                    "value": {
+                        "title": "Value"
+                    },
+                    "group": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Group"
+                    },
+                    "wait": {
+                        "title": "Wait",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "movable",
+                    "value"
+                ],
+                "title": "set_absolute",
+                "type": "object"
+            }
+        },
+        {
+            "name": "set_relative",
+            "description": "\n    Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "movable": {
+                        "title": "Movable",
+                        "type": "bluesky.protocols.Movable"
+                    },
+                    "value": {
+                        "title": "Value"
+                    },
+                    "group": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Group"
+                    },
+                    "wait": {
+                        "title": "Wait",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "movable",
+                    "value"
+                ],
+                "title": "set_relative",
+                "type": "object"
+            }
+        },
+        {
+            "name": "move_relative",
+            "description": "\n    Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, Any]): Mapping of Movables to target deltas\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "moves": {
+                        "title": "Moves",
+                        "type": "object"
+                    },
+                    "group": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Group"
+                    }
+                },
+                "required": [
+                    "moves"
+                ],
+                "title": "move_relative",
+                "type": "object"
+            }
+        },
+        {
+            "name": "sleep",
+            "description": "\n    Suspend all action for a given time, wrapper for `bp.sleep`\n\n    Args:\n        time (float): Time to wait in seconds\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "time": {
+                        "title": "Time",
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "time"
+                ],
+                "title": "sleep",
+                "type": "object"
+            }
+        },
+        {
+            "name": "wait",
+            "description": "\n    Wait for a group status to complete, wrapper for `bp.wait`\n\n    Args:\n        group (Optional[Group], optional): The name of the group to wait for, defaults\n                                           to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "group": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Group"
+                    }
+                },
+                "title": "wait",
+                "type": "object"
+            }
+        }
+    ]
+}

@@ -533,13 +533,13 @@ def test_event_formatting():
     _assert_matching_formatting(
         OutputFormat.FULL,
         data,
-        (
-            "Start: \n"
-            "    foo: bar\n"
-            "    fizz: \n"
-            "        buzz: (1, 2, 3)\n"
-            "        hello: world\n"
-        ),
+        dedent("""\
+            Start:
+                foo: bar
+                fizz:
+                    buzz: (1, 2, 3)
+                    hello: world
+            """),
     )
 
     _assert_matching_formatting(
@@ -587,11 +587,11 @@ def test_unknown_object_formatting():
 
 def test_dict_formatting():
     demo = {"name": "foo", "keys": [1, 2, 3], "metadata": {"fizz": "buzz"}}
-    exp = """\nname: foo\nkeys: [1, 2, 3]\nmetadata: \n    fizz: buzz"""
+    exp = """\nname: foo\nkeys: [1, 2, 3]\nmetadata:\n    fizz: buzz"""
     assert fmt_dict(demo, 0) == exp
 
     demo = "not a dict"
-    assert fmt_dict(demo, 0) == "not a dict"
+    assert fmt_dict(demo, 0) == " not a dict"
 
 
 def test_generic_base_model_formatting():
@@ -600,6 +600,22 @@ def test_generic_base_model_formatting():
     exp = '{"name": "foo", "keys": [1, 2, 3], "metadata": {"fizz": "buzz"}}\n'
     OutputFormat.JSON.display(obj, output)
     assert exp == output.getvalue()
+
+    model = ExtendedModel(
+        name="demo_model", keys=[1, 2, 3], metadata={"foo": "bar", "fizz": "buzz"}
+    )
+    _assert_matching_formatting(
+        OutputFormat.FULL,
+        model,
+        dedent("""\
+            ExtendedModel
+                name: demo_model
+                keys: [1, 2, 3]
+                metadata:
+                    foo: bar
+                    fizz: buzz
+            """),
+    )
 
 
 @patch("blueapi.cli.cli.setup_scratch")

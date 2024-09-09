@@ -23,9 +23,9 @@ Stream = TextIO | None
 def fmt_dict(t: dict[str, Any] | Any, ind: int = 1) -> str:
     """Format a (possibly nested) dict into a human readable tree"""
     if not isinstance(t, dict):
-        return t
+        return f" {t}"
     pre = " " * (ind * 4)
-    return NL + NL.join(f"{pre}{k}: {fmt_dict(v, ind+1)}" for k, v in t.items() if v)
+    return NL + NL.join(f"{pre}{k}:{fmt_dict(v, ind+1)}" for k, v in t.items() if v)
 
 
 class OutputFormat(str, enum.Enum):
@@ -61,7 +61,7 @@ def display_full(obj: Any, stream: Stream):
                 for proto in dev.protocols:
                     print("    " + proto)
         case DataEvent(name=name, doc=doc):
-            print(f"{name.title()}: {fmt_dict(doc)}")
+            print(f"{name.title()}:{fmt_dict(doc)}")
         case WorkerEvent(state=st, task_status=task):
             print(
                 f"WorkerEvent: {st.name}{fmt_dict(task.model_dump() if task else {})}"

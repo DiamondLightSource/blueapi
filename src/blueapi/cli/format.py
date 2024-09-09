@@ -62,9 +62,9 @@ def display_full(obj: Any, stream: Stream):
                     print("    " + proto)
         case DataEvent(name=name, doc=doc):
             print(f"{name.title()}: {fmt_dict(doc)}")
-        case WorkerEvent(state=state, task_status=task):
+        case WorkerEvent(state=st, task_status=task):
             print(
-                f"WorkerEvent: {state.name}{fmt_dict(task.model_dump() if task else {})}"
+                f"WorkerEvent: {st.name}{fmt_dict(task.model_dump() if task else {})}"
             )
         case ProgressEvent():
             print(f"Progress:{fmt_dict(obj.model_dump())}")

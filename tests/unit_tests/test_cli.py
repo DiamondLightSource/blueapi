@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -17,10 +18,10 @@ from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
 from blueapi.cli.cli import main
-from blueapi.cli.format import OutputFormat
+from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ScratchConfig, ScratchRepository
-from blueapi.core.bluesky_types import Plan
+from blueapi.core.bluesky_types import DataEvent, Plan
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -28,6 +29,7 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
 )
+from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
 
 @pytest.fixture
@@ -165,10 +167,10 @@ def test_valid_stomp_config_for_listener(
         ],
         input="\n",
     )
-    assert (
-        result.output
-        == "Subscribing to all bluesky events from localhost:61613\nPress enter to exit"
-    )
+    assert result.output == dedent("""\
+                Subscribing to all bluesky events from localhost:61613
+                Press enter to exit
+                """)
     assert result.exit_code == 0
 
 
@@ -347,13 +349,8 @@ def test_device_output_formatting():
                     HasName
                 """)
 
-    output = StringIO()
-    OutputFormat.COMPACT.display(devices, out=output)
-    assert output.getvalue() == compact
+    _assert_matching_formatting(OutputFormat.COMPACT, devices, compact)
 
-    # json outputs valid json
-    output = StringIO()
-    OutputFormat.JSON.display(devices, out=output)
     json_out = dedent("""\
                 [
                   {
@@ -364,16 +361,14 @@ def test_device_output_formatting():
                   }
                 ]
                 """)
-    assert output.getvalue() == json_out
-    _ = json.loads(output.getvalue())
+    _assert_matching_formatting(OutputFormat.JSON, devices, json_out)
+    _ = json.loads(json_out)
 
-    output = StringIO()
-    OutputFormat.FULL.display(devices, out=output)
     full = dedent("""\
             my-device
                 HasName
             """)
-    assert output.getvalue() == full
+    _assert_matching_formatting(OutputFormat.FULL, devices, full)
 
 
 class ExtendedModel(BaseModel):
@@ -405,13 +400,8 @@ def test_plan_output_formatting():
                       metadata=object
                 """)
 
-    output = StringIO()
-    OutputFormat.COMPACT.display(plans, out=output)
-    assert output.getvalue() == compact
+    _assert_matching_formatting(OutputFormat.COMPACT, plans, compact)
 
-    # json outputs valid json
-    output = StringIO()
-    OutputFormat.JSON.display(plans, out=output)
     json_out = dedent("""\
             [
               {
@@ -456,11 +446,9 @@ def test_plan_output_formatting():
               }
             ]
                 """)
-    assert output.getvalue() == json_out
-    _ = json.loads(output.getvalue())
+    _assert_matching_formatting(OutputFormat.JSON, plans, json_out)
+    _ = json.loads(json_out)
 
-    output = StringIO()
-    OutputFormat.FULL.display(plans, out=output)
     full = dedent("""\
         my-plan
             Summary of description
@@ -504,45 +492,104 @@ def test_plan_output_formatting():
                   "type": "object"
                 }
             """)
-    assert output.getvalue() == full
+    _assert_matching_formatting(OutputFormat.FULL, plans, full)
+
+
+def test_event_formatting():
+    data = DataEvent(
+        name="start", doc={"foo": "bar", "fizz": {"buzz": (1, 2, 3), "hello": "world"}}
+    )
+    worker = WorkerEvent(
+        state=WorkerState.RUNNING,
+        task_status=TaskStatus(task_id="count", task_complete=False, task_failed=False),
+        errors=[],
+        warnings=[],
+    )
+    progress = ProgressEvent(task_id="start", statuses={})
+
+    _assert_matching_formatting(
+        OutputFormat.JSON,
+        data,
+        (
+            """{"name": "start", "doc": """
+            """{"foo": "bar", "fizz": {"buzz": [1, 2, 3], "hello": "world"}}}\n"""
+        ),
+    )
+    _assert_matching_formatting(OutputFormat.COMPACT, data, "Data Event: start\n")
+    _assert_matching_formatting(
+        OutputFormat.FULL,
+        data,
+        dedent("""\
+            Start:
+                foo: bar
+                fizz:
+                    buzz: (1, 2, 3)
+                    hello: world
+            """),
+    )
+
+    _assert_matching_formatting(
+        OutputFormat.JSON,
+        worker,
+        (
+            """{"state": "RUNNING", "task_status": """
+            """{"task_id": "count", "task_complete": false, "task_failed": false}, """
+            """"errors": [], "warnings": []}\n"""
+        ),
+    )
+    _assert_matching_formatting(OutputFormat.COMPACT, worker, "Worker Event: RUNNING\n")
+    _assert_matching_formatting(
+        OutputFormat.FULL,
+        worker,
+        "WorkerEvent: RUNNING\n    task_id: count\n",
+    )
+
+    _assert_matching_formatting(
+        OutputFormat.JSON, progress, """{"task_id": "start", "statuses": {}}\n"""
+    )
+    _assert_matching_formatting(OutputFormat.COMPACT, progress, "Progress: ???%\n")
+    _assert_matching_formatting(
+        OutputFormat.FULL, progress, "Progress:\n    task_id: start\n"
+    )
 
 
 def test_unknown_object_formatting():
     demo = {"foo": 42, "bar": ["hello", "World"]}
 
-    output = StringIO()
-    OutputFormat.JSON.display(demo, output)
     exp = """{"foo": 42, "bar": ["hello", "World"]}\n"""
-    assert exp == output.getvalue()
+    _assert_matching_formatting(OutputFormat.JSON, demo, exp)
 
-    output = StringIO()
-    OutputFormat.COMPACT.display(demo, output)
     exp = """{'bar': ['hello', 'World'], 'foo': 42}\n"""
-    assert exp == output.getvalue()
+    _assert_matching_formatting(OutputFormat.COMPACT, demo, exp)
 
-    output = StringIO()
-    OutputFormat.FULL.display(demo, output)
-    assert exp == output.getvalue()
+    _assert_matching_formatting(OutputFormat.FULL, demo, exp)
+
+
+def test_dict_formatting():
+    demo = {"name": "foo", "keys": [1, 2, 3], "metadata": {"fizz": "buzz"}}
+    exp = """\nname: foo\nkeys: [1, 2, 3]\nmetadata:\n    fizz: buzz"""
+    assert fmt_dict(demo, 0) == exp
+
+    demo = "not a dict"
+    assert fmt_dict(demo, 0) == " not a dict"
 
 
 def test_generic_base_model_formatting():
-    output = StringIO()
-    obj = ExtendedModel(name="foo", keys=[1, 2, 3], metadata={"fizz": "buzz"})
-    exp = dedent("""\
-            {
-              "name": "foo",
-              "keys": [
-                1,
-                2,
-                3
-              ],
-              "metadata": {
-                "fizz": "buzz"
-              }
-            }
-            """)
-    OutputFormat.JSON.display(obj, output)
-    assert exp == output.getvalue()
+    model = ExtendedModel(name="demo", keys=[1, 2, 3], metadata={"fizz": "buzz"})
+    exp = '{"name": "demo", "keys": [1, 2, 3], "metadata": {"fizz": "buzz"}}\n'
+    _assert_matching_formatting(OutputFormat.JSON, model, exp)
+
+    _assert_matching_formatting(
+        OutputFormat.FULL,
+        model,
+        dedent("""\
+            ExtendedModel
+                name: demo
+                keys: [1, 2, 3]
+                metadata:
+                    fizz: buzz
+            """),
+    )
 
 
 @patch("blueapi.cli.cli.setup_scratch")
@@ -564,3 +611,9 @@ def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliR
     )
     assert result.exit_code == 0
     mock_setup_scratch.assert_called_once_with(expected_config)
+
+
+def _assert_matching_formatting(fmt: OutputFormat, obj: Any, expected: str):
+    output = StringIO()
+    fmt.display(obj, output)
+    assert expected == output.getvalue()

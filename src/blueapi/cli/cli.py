@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
@@ -158,20 +159,23 @@ def listen_to_events(obj: dict) -> None:
     else:
         raise RuntimeError("Message bus needs to be configured")
 
+    fmt = obj["fmt"]
+
     def on_event(
         event: WorkerEvent | ProgressEvent | DataEvent,
         context: MessageContext,
     ) -> None:
-        converted = json.dumps(event.model_dump(), indent=2)
-        print(converted)
+        fmt.display(event)
 
     print(
         "Subscribing to all bluesky events from "
-        f"{config.stomp.host}:{config.stomp.port}"
+        f"{config.stomp.host}:{config.stomp.port}",
+        file=sys.stderr,
     )
     with event_bus_client:
         event_bus_client.subscribe_to_all_events(on_event)
-        input("Press enter to exit")
+        print("Press enter to exit", file=sys.stderr)
+        input()
 
 
 @controller.command(name="run")

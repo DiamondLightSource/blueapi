@@ -551,13 +551,11 @@ def test_event_formatting():
             """"errors": [], "warnings": []}\n"""
         ),
     )
-    _assert_matching_formatting(
-        OutputFormat.COMPACT, worker, "Worker Event: WorkerState.RUNNING\n"
-    )
+    _assert_matching_formatting(OutputFormat.COMPACT, worker, "Worker Event: RUNNING\n")
     _assert_matching_formatting(
         OutputFormat.FULL,
         worker,
-        "WorkerEvent: WorkerState.RUNNING\n    task_id: count\n",
+        "WorkerEvent: RUNNING\n    task_id: count\n",
     )
 
     _assert_matching_formatting(

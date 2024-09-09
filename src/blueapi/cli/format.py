@@ -106,7 +106,7 @@ def display_compact(obj: Any, stream: Stream):
         case DataEvent(name=name):
             print(f"Data Event: {name}")
         case WorkerEvent(state=state):
-            print(f"Worker Event: {state}")
+            print(f"Worker Event: {state.name}")
         case ProgressEvent(statuses=stats):
             prog = (
                 max(100 * (s.percentage or 0) for s in stats.values())

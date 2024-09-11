@@ -19,7 +19,6 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import (
     ApplicationConfig,
-    BasicAuthentication,
     ConfigLoader,
     StompConfig,
 )

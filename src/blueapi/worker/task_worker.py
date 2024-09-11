@@ -122,7 +122,7 @@ class TaskWorker:
         reason: str | None = None,
     ) -> str:
         if self._current is None:
-            # Persuades mypy that self._current is not None
+            # Persuades type checker that self._current is not None
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
         if failure:
@@ -262,7 +262,7 @@ class TaskWorker:
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
                 LOGGER.info(f"Got new task: {next_task}")
-                self._current = next_task  # Informing mypy that the task is not None
+                self._current = next_task  # Informing type checker that the task is not None
                 self._current.is_pending = False
                 self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):

@@ -4,7 +4,7 @@ from concurrent.futures import Future
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, StompConfig
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
     DeviceModel,
@@ -40,17 +40,15 @@ class BlueapiClient:
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest = BlueapiRestClient(config.api)
-        if config.stomp is not None:
-            template = StompClient.for_broker(
-                broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
-                    auth=config.stomp.auth,
-                )
+        assert config.stomp is not None, "By this point, the stomp config should be set"
+        client = StompClient.for_broker(
+            broker=Broker(
+                host=config.stomp.host,
+                port=config.stomp.port,
+                auth=config.stomp.auth,
             )
-            events = EventBusClient(template)
-        else:
-            events = None
+        )
+        events = EventBusClient(client)
         return cls(rest, events)
 
     def get_plans(self) -> PlanResponse:

@@ -1,13 +1,15 @@
 import os
+import tempfile
 from pathlib import Path
 from typing import Any
 from unittest import mock
 
 import pytest
+import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ConfigLoader
+from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.utils import InvalidConfigError
 
 
@@ -146,4 +148,40 @@ def test_auth_from_env_throws_when_not_available():
     with pytest.raises(KeyError):
         BasicAuthentication(username="${BAZ}", password="baz")
     with pytest.raises(KeyError):
-        BasicAuthentication(username="${baz}", password="baz")
+        BasicAuthentication(username="${baz}", passcode="baz")
+
+
+def test_config_yaml_parsed():
+    # Define the configuration data as a dictionary
+    config_data = {
+        "env": {},
+        "sources": [
+            {"kind": "dodal", "module": "dodal.adsim"},
+            {"kind": "planFunctions", "module": "dls_bluesky_core.plans"},
+            {"kind": "planFunctions", "module": "dls_bluesky_core.stubs"},
+        ],
+        "data_writing": {
+            "visit_directory": "/dls/p38/data/2023/cm33874-1",
+            "group_name": "BL38P",
+        },
+    }
+
+    # Create a temporary file
+    with tempfile.NamedTemporaryFile(
+        suffix=".yaml", mode="w", delete=False
+    ) as temp_yaml_file:
+        # Write the YAML content into the file
+        yaml.dump(config_data, temp_yaml_file)
+        temp_yaml_file_path = temp_yaml_file.name
+
+    # Initialize loader and load config from the YAML file
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(temp_yaml_file_path)
+    loaded_config = loader.load()
+
+    # Assert that the loaded configuration matches the expected values
+    assert loaded_config.env.sources[0].kind == "dodal"
+    assert loaded_config.data_writing.visit_directory == "/dls/p38/data/2023/cm33874-1"
+
+    # Clean up by removing the temporary file if desired
+    os.remove(temp_yaml_file_path)  # Uncomment if you want to delete the temp file

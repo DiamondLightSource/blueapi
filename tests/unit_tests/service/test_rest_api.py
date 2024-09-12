@@ -25,9 +25,7 @@ from blueapi.worker.task_worker import TrackableTask
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    with (
-        patch("blueapi.service.interface.worker"),
-    ):
+    with patch("blueapi.service.interface.worker"):
         main.setup_runner(use_subprocess=False)
         yield TestClient(main.app)
         main.teardown_runner()

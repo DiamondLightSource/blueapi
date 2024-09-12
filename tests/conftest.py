@@ -2,8 +2,8 @@ import asyncio
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
 import pytest
-from bluesky import RunEngine
-from bluesky.run_engine import TransitionError
+from bluesky.run_engine import RunEngine
+from super_state_machine.errors import TransitionError
 
 
 @pytest.fixture(scope="function")

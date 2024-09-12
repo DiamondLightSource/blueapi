@@ -1,15 +1,16 @@
+import bluesky.plan_stubs as bps
+from bluesky.plans import count
 from bluesky.protocols import Movable, Readable
-from dls_bluesky_core.core import inject
-from dls_bluesky_core.plans import count
-from dls_bluesky_core.stubs import move
+from dodal.common import MsgGenerator, inject
 
-from blueapi.core import MsgGenerator
+TEMP: Movable = inject("sample_temperature")
+PRESS: Movable = inject("sample_pressure")
 
 
 def stp_snapshot(
     detectors: list[Readable],
-    temperature: Movable = inject("sample_temperature"),
-    pressure: Movable = inject("sample_pressure"),
+    temperature: Movable = TEMP,
+    pressure: Movable = PRESS,
 ) -> MsgGenerator:
     """
     Moves devices for pressure and temperature (defaults fetched from the context)
@@ -26,5 +27,5 @@ def stp_snapshot(
     Yields:
         Iterator[MsgGenerator]: Bluesky messages
     """
-    yield from move({temperature: 0, pressure: 10**5})
+    yield from bps.mv({temperature: 0, pressure: 10**5})
     yield from count(detectors, 1)

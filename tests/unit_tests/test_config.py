@@ -180,8 +180,7 @@ def test_config_yaml_parsed():
     loaded_config = loader.load()
 
     # Assert that the loaded configuration matches the expected values
-    assert loaded_config.env.sources[0].kind == "dodal"
-    assert loaded_config.data_writing.visit_directory == "/dls/p38/data/2023/cm33874-1"
+    assert loaded_config == config_data.model_dump()
 
     # Clean up by removing the temporary file if desired
     os.remove(temp_yaml_file_path)  # Uncomment if you want to delete the temp file

@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from functools import lru_cache
 from typing import Any
 
-from bluesky_stomp.messaging import MessagingTemplate
+from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 
 from blueapi.config import ApplicationConfig
@@ -49,10 +49,10 @@ def worker() -> TaskWorker:
 
 
 @lru_cache
-def messaging_template() -> MessagingTemplate | None:
+def messaging_template() -> StompClient | None:
     stomp_config = config().stomp
     if stomp_config is not None:
-        template = MessagingTemplate.for_broker(
+        template = StompClient.for_broker(
             broker=Broker(
                 host=stomp_config.host, port=stomp_config.port, auth=stomp_config.auth
             )

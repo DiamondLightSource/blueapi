@@ -7,7 +7,7 @@ from pprint import pprint
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
-from bluesky_stomp.messaging import MessageContext, MessagingTemplate
+from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
@@ -148,7 +148,7 @@ def listen_to_events(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     if config.stomp is not None:
         event_bus_client = EventBusClient(
-            MessagingTemplate.for_broker(
+            StompClient.for_broker(
                 broker=Broker(
                     host=config.stomp.host,
                     port=config.stomp.port,

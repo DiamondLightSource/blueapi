@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from bluesky_stomp.messaging import MessagingTemplate
+from bluesky_stomp.messaging import StompClient
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
@@ -23,8 +23,8 @@ def mock_connection() -> Mock:
 
 
 @pytest.fixture
-def template(mock_connection: Mock) -> MessagingTemplate:
-    template = MessagingTemplate(conn=mock_connection)
+def template(mock_connection: Mock) -> StompClient:
+    template = StompClient(conn=mock_connection)
     template.disconnect = MagicMock()
     return template
 
@@ -283,9 +283,9 @@ def test_get_task_by_id(context_mock: MagicMock):
     )
 
 
-def test_stomp_config(template: MessagingTemplate):
+def test_stomp_config(template: StompClient):
     with patch(
-        "blueapi.service.interface.MessagingTemplate.for_broker", return_value=template
+        "blueapi.service.interface.StompClient.for_broker", return_value=template
     ):
         interface.set_config(ApplicationConfig(stomp=StompConfig()))
         assert interface.messaging_template() is not None

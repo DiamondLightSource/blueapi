@@ -27,7 +27,7 @@ Plans in Python files look like this:
 > **_NOTE:_** The type annotations (e.g. `: str`, `: int`, `-> MsgGenerator`) are required as blueapi uses them to generate an API!  You can define as many plans as you like in a single Python file or spread them over multiple files.
 ``` 
     from bluesky.protocols import Readable, Movable
-    from blueapi.core import MsgGenerator
+    from dodal.common import MsgGenerator
     from typing import Mapping, Any
 
     def my_plan(

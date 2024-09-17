@@ -130,14 +130,14 @@ def test_auth_from_env():
 def test_auth_from_env_repeated_key():
     auth = BasicAuthentication(username="${FOO}", password="${FOO}")
     assert auth.username == "bar"
-    assert auth.password == "bar"
+    assert auth.password.get_secret_value() == "bar"
 
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
 def test_auth_from_env_ignore_case():
     auth = BasicAuthentication(username="${FOO}", password="${foo}")
     assert auth.username == "bar"
-    assert auth.password == "bar"
+    assert auth.password.get_secret_value() == "bar"
 
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)

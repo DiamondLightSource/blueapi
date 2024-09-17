@@ -84,8 +84,8 @@ imagesize==1.4.1
 importlib_metadata==8.5.0
 importlib_resources==6.4.5
 iniconfig==2.0.0
-intake==0.6.4
-ipython==8.18.0
+intake==2.0.7
+ipython==8.27.0
 ipywidgets==8.1.5
 itsdangerous==2.2.0
 jedi==0.19.1
@@ -121,7 +121,7 @@ nodeenv==1.9.1
 nose2==0.15.1
 nslsii==0.10.3
 numcodecs==0.13.0
-numpy==1.26.4
+numpy==2.1.1
 opencv-python-headless==4.10.0.84
 ophyd==1.9.0
 ophyd-async==0.5.2
@@ -146,7 +146,7 @@ plumbum==1.8.3
 ply==3.11
 pre-commit==3.8.0
 prettytable==3.11.0
-prompt-toolkit==3.0.36
+prompt-toolkit==3.0.47
 psutil==6.0.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
@@ -157,8 +157,8 @@ pycryptodome==3.20.0
 pydantic==2.9.1
 pydantic-extra-types==2.9.0
 pydantic-settings==2.5.2
-pydantic_core==2.23.3
-pydantic_numpy==5.0.2
+pydantic_core==2.23.4
+pydantic_numpy==6.0.0
 pydata-sphinx-theme==0.15.4
 pyepics==3.5.7
 Pygments==2.18.0
@@ -180,7 +180,7 @@ redis-json-dict==0.2.0
 referencing==0.35.1
 requests==2.32.3
 responses==0.25.3
-rich==13.7.1
+rich==13.8.1
 rpds-py==0.20.0
 ruamel.yaml==0.18.6
 ruamel.yaml.clib==0.2.8
@@ -220,11 +220,11 @@ tifffile==2024.8.30
 tomli==2.0.1
 toolz==0.12.1
 tornado==6.4.1
-tox==3.28.0
+tox==4.18.1
 tox-direct==0.4
 tqdm==4.66.5
 traitlets==5.14.3
-typer==0.12.4
+typer==0.12.5
 types-mock==5.1.0.20240425
 types-PyYAML==6.0.12.20240917
 types-requests==2.32.0.20240914
@@ -236,7 +236,7 @@ tzlocal==5.2
 ujson==5.10.0
 urllib3==2.2.3
 uvicorn==0.30.6
-uvloop==0.19.0
+uvloop==0.20.0
 virtualenv==20.26.4
 watchfiles==0.24.0
 wcwidth==0.2.13
@@ -247,6 +247,6 @@ workflows==2.27
 xarray==2024.9.0
 yarl==1.11.1
 zarr==2.18.3
-zict==2.2.0
+zict==3.0.0
 zipp==3.20.2
 zocalo==1.1.0

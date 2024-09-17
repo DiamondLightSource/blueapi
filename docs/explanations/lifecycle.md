@@ -7,7 +7,7 @@ of being written, loaded and run. Take the following plan.
     
     import bluesky.plans as bp
     from blueapi.core import MsgGenerator
-    from dls_bluesky_core.core import inject
+    from dodal.common import inject
     from bluesky.protocols import Readable
     
     

@@ -1,30 +1,67 @@
+import operator
+from collections.abc import Mapping
+from functools import reduce
+from typing import Annotated, Any
+
+import bluesky.plans as bp
 from bluesky.protocols import Movable, Readable
-from dls_bluesky_core.core import inject
-from dls_bluesky_core.plans import count
-from dls_bluesky_core.stubs import move
+from cycler import Cycler, cycler
+from dodal.common import MsgGenerator
+from dodal.plans.data_session_metadata import attach_data_session_metadata_decorator
+from pydantic import validate_call
+from scanspec.specs import Spec
 
-from blueapi.core import MsgGenerator
+"""
+Plans related to the use of the `ScanSpec https://github.com/dls-controls/scanspec`
+library for constructing arbitrarily complex N-dimensional trajectories, similar to
+Diamond's "mapping scans" using ScanPointGenerator.
+"""
 
 
-def stp_snapshot(
-    detectors: list[Readable],
-    temperature: Movable = inject("sample_temperature"),
-    pressure: Movable = inject("sample_pressure"),
+@attach_data_session_metadata_decorator()
+@validate_call(config={"arbitrary_types_allowed": True})
+def scan(
+    detectors: Annotated[
+        set[Readable], "Set of readable devices, will take a reading at each point"
+    ],
+    axes_to_move: Annotated[
+        Mapping[str, Movable], "All axes involved in this scan, names and objects"
+    ],
+    spec: Annotated[Spec[str], "ScanSpec modelling the path of the scan"],
+    metadata: Mapping[str, Any] | None = None,
 ) -> MsgGenerator:
+    _md = {
+        "plan_args": {
+            "detectors": {det.name for det in detectors},
+            "axes_to_move": {k: v.name for k, v in axes_to_move.items()},
+            "spec": repr(spec),
+        },
+        "plan_name": "scan",
+        "shape": spec.shape(),
+        **(metadata or {}),
+    }
+
+    cycler = _scanspec_to_cycler(spec, axes_to_move)
+    yield from bp.scan_nd(detectors, cycler, md=_md)
+
+
+def _scanspec_to_cycler(spec: Spec[str], axes: Mapping[str, Movable]) -> Cycler:
     """
-    Moves devices for pressure and temperature (defaults fetched from the context)
-    and captures a single frame from a collection of devices
+    Convert a scanspec to a cycler for compatibility with legacy Bluesky plans such as
+    `bp.scan_nd`. Use the midpoints of the scanspec since cyclers are normally used
+    for software triggered scans.
 
     Args:
-        detectors (List[Readable]): A list of devices to read while the sample is at STP
-        temperature (Optional[Movable]): A device controlling temperature of the sample,
-            defaults to fetching a device name "sample_temperature" from the context
-        pressure (Optional[Movable]): A device controlling pressure on the sample,
-            defaults to fetching a device name "sample_pressure" from the context
+        spec: A scanspec
+        axes: Names and axes to move
+
     Returns:
-        MsgGenerator: Plan
-    Yields:
-        Iterator[MsgGenerator]: Bluesky messages
+        Cycler: A new cycler
     """
-    yield from move({temperature: 0, pressure: 10**5})
-    yield from count(detectors, 1)
+
+    midpoints = spec.frames().midpoints
+    midpoints = {axes[name]: points for name, points in midpoints.items()}
+
+    # Need to "add" the cyclers for all the axes together. The code below is
+    # effectively: cycler(motor1, [...]) + cycler(motor2, [...]) + ...
+    return reduce(operator.add, (cycler(*args) for args in midpoints.items()))

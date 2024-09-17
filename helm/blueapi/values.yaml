@@ -25,18 +25,16 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext:
-  {}
-  # fsGroup: 2000
+podSecurityContext: {}
+# fsGroup: 2000
 
-securityContext:
-  {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+securityContext: {}
+# capabilities:
+#   drop:
+#   - ALL
+# readOnlyRootFilesystem: true
+# runAsNonRoot: true
+# runAsUser: 1000
 
 # Recommended for production to change service.type to ClusterIP and set up an Ingress
 service:
@@ -47,23 +45,21 @@ ingress:
   create: false
 #  host: foo.diamond.ac.uk  (assumes port = service.port)
 
-resources:
-  {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources: {}
+# We usually recommend not to specify default resources and to leave this as a conscious
+# choice for the user. This also increases chances charts run on environments with little
+# resources, such as Minikube. If you do want to specify resources, uncomment the following
+# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+# limits:
+#   cpu: 100m
+#   memory: 128Mi
+# requests:
+#   cpu: 100m
+#   memory: 128Mi
 
-initResources:
-  {}
-  # Can optionally specify separate resource constraints for the scratch setup container.
-  # If left empty this defaults to the same as resources above.
+initResources: {}
+# Can optionally specify separate resource constraints for the scratch setup container.
+# If left empty this defaults to the same as resources above.
 
 nodeSelector: {}
 
@@ -80,13 +76,12 @@ listener:
   resources: {}
 
 # Additional envVars to mount to the pod as a String
-extraEnvVars:
-  []
-  # - name: RABBITMQ_PASSWORD
-  #   valueFrom:
-  #     secretKeyRef:
-  #       name: rabbitmq-password
-  #       key: rabbitmq-password
+extraEnvVars: []
+# - name: RABBITMQ_PASSWORD
+#   valueFrom:
+#     secretKeyRef:
+#       name: rabbitmq-password
+#       key: rabbitmq-password
 
 # Config for the worker goes here, will be mounted into a config file
 worker:
@@ -95,18 +90,18 @@ worker:
     port: 8000
   env:
     sources:
-      - kind: deviceFunctions
-        module: blueapi.startup.example_devices
-      - kind: planFunctions
-        module: blueapi.startup.example_plans
-      - kind: planFunctions
-        module: dls_bluesky_core.plans
-      - kind: planFunctions
-        module: dls_bluesky_core.stubs
+    - kind: deviceFunctions
+      module: blueapi.startup.example_devices
+    - kind: planFunctions
+      module: blueapi.startup.example_plans
+    - kind: planFunctions
+      module: dls_bluesky_core.plans
+    - kind: planFunctions
+      module: dls_bluesky_core.stubs
   stomp:
     auth:
       username: guest
-      passcode: guest
+      password: guest
     host: rabbitmq
     port: 61613
 
@@ -114,8 +109,8 @@ initContainer:
   scratch:
     root: /blueapi-plugins/scratch
     repositories: []
-      # - name: "dodal"
-      #   remote_url: https://github.com/DiamondLightSource/dodal.git
+    # - name: "dodal"
+    #   remote_url: https://github.com/DiamondLightSource/dodal.git
 
 # Mount path for scratch area from host machine, setting
 # this effectively enables scratch area management

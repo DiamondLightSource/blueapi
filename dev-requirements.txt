@@ -18,7 +18,7 @@ bidict==0.23.1
 bluesky==1.13.0a4
 bluesky-kafka==0.10.0
 bluesky-live==0.0.8
-bluesky-stomp==0.1.1
+bluesky-stomp==0.1.2
 boltons==24.0.0
 bump-pydantic==0.8.0
 cachetools==5.5.0

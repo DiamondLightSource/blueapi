@@ -1,18 +1,18 @@
 from unittest.mock import ANY, Mock
 
 import pytest
-from bluesky_stomp.messaging import MessagingTemplate
+from bluesky_stomp.messaging import StompClient
 
 from blueapi.client.event_bus import BlueskyStreamingError, EventBusClient
 
 
 @pytest.fixture
-def mock_template() -> MessagingTemplate:
-    return Mock(spec=MessagingTemplate)
+def mock_template() -> StompClient:
+    return Mock(spec=StompClient)
 
 
 @pytest.fixture
-def events(mock_template: MessagingTemplate) -> EventBusClient:
+def events(mock_template: StompClient) -> EventBusClient:
     return EventBusClient(app=mock_template)
 
 

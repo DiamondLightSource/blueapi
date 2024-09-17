@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from bluesky_stomp.messaging import MessageContext, MessagingTemplate
+from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import MessageTopic
 
 from blueapi.core import DataEvent
@@ -17,9 +17,9 @@ OnAnyEvent = Callable[[AnyEvent], None]
 
 
 class EventBusClient:
-    app: MessagingTemplate
+    app: StompClient
 
-    def __init__(self, app: MessagingTemplate) -> None:
+    def __init__(self, app: StompClient) -> None:
         self.app = app
 
     def __enter__(self) -> None:

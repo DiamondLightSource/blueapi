@@ -1,7 +1,7 @@
 import time
 from concurrent.futures import Future
 
-from bluesky_stomp.messaging import MessageContext, MessagingTemplate
+from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 
 from blueapi.config import ApplicationConfig
@@ -41,7 +41,7 @@ class BlueapiClient:
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest = BlueapiRestClient(config.api)
         if config.stomp is not None:
-            template = MessagingTemplate.for_broker(
+            template = StompClient.for_broker(
                 broker=Broker(
                     host=config.stomp.host,
                     port=config.stomp.port,

@@ -91,9 +91,9 @@ worker:
   env:
     sources:
     - kind: deviceFunctions
-      module: blueapi.startup.example_devices
+      module: blueapi.startup
     - kind: planFunctions
-      module: blueapi.startup.example_plans
+      module: blueapi.startup
   stomp:
     auth:
       username: guest

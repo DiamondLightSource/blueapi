@@ -77,7 +77,9 @@ def _scanspec_to_cycler(spec: Spec[str], axes: Mapping[str, Movable]) -> Cycler:
 @validate_call(config={"arbitrary_types_allowed": True})
 def count(
     detectors: Annotated[
-        set[Readable], "Set of readable devices, will take a reading at each point"
+        set[Readable],
+        "Set of readable devices, will take a reading at each point",
+        Field(min_items=1),
     ],
     num: Annotated[int, "Number of frames to collect", Field(ge=1)] = 1,
     delay: Annotated[

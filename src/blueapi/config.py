@@ -59,6 +59,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
 class LoggingConfig(BlueapiBaseModel):
     level: LogLevel = "INFO"
+    graylog_port: int = 12232
 
 
 class RestConfig(BlueapiBaseModel):

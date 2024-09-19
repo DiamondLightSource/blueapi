@@ -1,4 +1,5 @@
 import json
+import logging
 import sys
 from functools import wraps
 from pathlib import Path
@@ -18,7 +19,6 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
-from blueapi.log import do_default_logging_setup
 from blueapi.service.main import start
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
@@ -54,8 +54,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     loaded_config: ApplicationConfig = config_loader.load()
 
     ctx.obj["config"] = loaded_config
-
-    do_default_logging_setup(True)
+    logging.basicConfig(level=loaded_config.logging.level)
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")

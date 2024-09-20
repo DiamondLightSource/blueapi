@@ -263,9 +263,7 @@ class BlueapiClient:
 
         return self._rest.create_task(task)
 
-    @start_as_current_span(
-        TRACER,
-    )
+    @start_as_current_span(TRACER)
     def clear_task(self, task_id: str) -> TaskResponse:
         """
         Delete a stored task on the worker

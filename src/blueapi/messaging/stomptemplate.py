@@ -269,8 +269,6 @@ class StompMessagingTemplate(MessagingTemplate):
     @handle_all_exceptions
     def _on_message(self, frame: Frame) -> None:
         LOGGER.info(f"Received {frame}")
-        # sub_id = frame.headers.get("subscription")
-        # sub = self._subscriptions.get(sub_id)
         with TRACER.start_as_current_span(
             "_on_message", retrieve_context_from_stomp_headers(frame), SpanKind.CONSUMER
         ):

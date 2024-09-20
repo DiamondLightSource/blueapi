@@ -1,12 +1,10 @@
 from contextlib import asynccontextmanager
-from typing import Annotated
 
 from fastapi import (
     BackgroundTasks,
     Body,
     Depends,
     FastAPI,
-    Header,
     HTTPException,
     Request,
     Response,
@@ -15,10 +13,10 @@ from fastapi import (
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
-    instrument_fastapi_app,
     start_as_current_span,
 )
 from opentelemetry.context import attach
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.propagate import get_global_textmap
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
@@ -88,7 +86,7 @@ app = FastAPI(
     version=REST_API_VERSION,
 )
 
-instrument_fastapi_app(app)
+FastAPIInstrumentor().instrument_app(app)
 TRACER = get_tracer("API")
 """
 Set up basic automated instrumentation for the FastAPI app, creating the
@@ -128,10 +126,7 @@ async def delete_environment(
 
 @app.get("/plans", response_model=PlanResponse)
 @start_as_current_span(TRACER)
-def get_plans(
-    runner: WorkerDispatcher = Depends(_runner),
-    traceparent: Annotated[str | None, Header()] = None,
-):
+def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available plans."""
     return PlanResponse(plans=runner.run(interface.get_plans))
 

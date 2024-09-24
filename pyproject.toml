@@ -33,6 +33,7 @@ dependencies = [
     "GitPython",
     "bluesky-stomp>=0.1.2",
     "event-model==1.21",    # https://github.com/DiamondLightSource/blueapi/issues/684
+    "observability-utils>=0.1.2",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

@@ -3,6 +3,10 @@ from concurrent.futures import Future
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from observability_utils.tracing import (
+    get_tracer,
+    start_as_current_span,
+)
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
@@ -21,6 +25,8 @@ from blueapi.worker.event import ProgressEvent, TaskStatus
 
 from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
 from .rest import BlueapiRestClient, BlueskyRemoteControlError
+
+TRACER = get_tracer("client")
 
 
 class BlueapiClient:
@@ -53,6 +59,7 @@ class BlueapiClient:
             events = None
         return cls(rest, events)
 
+    @start_as_current_span(TRACER)
     def get_plans(self) -> PlanResponse:
         """
         List plans available
@@ -62,6 +69,7 @@ class BlueapiClient:
         """
         return self._rest.get_plans()
 
+    @start_as_current_span(TRACER, "name")
     def get_plan(self, name: str) -> PlanModel:
         """
         Get details of a single plan
@@ -74,6 +82,7 @@ class BlueapiClient:
         """
         return self._rest.get_plan(name)
 
+    @start_as_current_span(TRACER)
     def get_devices(self) -> DeviceResponse:
         """
         List devices available
@@ -84,6 +93,7 @@ class BlueapiClient:
 
         return self._rest.get_devices()
 
+    @start_as_current_span(TRACER, "name")
     def get_device(self, name: str) -> DeviceModel:
         """
         Get details of a single device
@@ -97,6 +107,7 @@ class BlueapiClient:
 
         return self._rest.get_device(name)
 
+    @start_as_current_span(TRACER)
     def get_state(self) -> WorkerState:
         """
         Get current state of the blueapi worker
@@ -107,6 +118,7 @@ class BlueapiClient:
 
         return self._rest.get_state()
 
+    @start_as_current_span(TRACER, "defer")
     def pause(self, defer: bool = False) -> WorkerState:
         """
         Pause execution of the current task, if any
@@ -122,6 +134,7 @@ class BlueapiClient:
 
         return self._rest.set_state(WorkerState.PAUSED, defer=defer)
 
+    @start_as_current_span(TRACER)
     def resume(self) -> WorkerState:
         """
         Resume plan execution if previously paused
@@ -133,6 +146,7 @@ class BlueapiClient:
 
         return self._rest.set_state(WorkerState.RUNNING, defer=False)
 
+    @start_as_current_span(TRACER, "task_id")
     def get_task(self, task_id: str) -> TrackableTask[Task]:
         """
         Get a task stored by the worker
@@ -146,6 +160,7 @@ class BlueapiClient:
         assert task_id, "Task ID not provided!"
         return self._rest.get_task(task_id)
 
+    @start_as_current_span(TRACER)
     def get_all_tasks(self) -> TasksListResponse:
         """
         Get a list of all task stored by the worker
@@ -156,6 +171,7 @@ class BlueapiClient:
 
         return self._rest.get_all_tasks()
 
+    @start_as_current_span(TRACER)
     def get_active_task(self) -> WorkerTask:
         """
         Get the currently active task, if any
@@ -167,6 +183,7 @@ class BlueapiClient:
 
         return self._rest.get_active_task()
 
+    @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,
         task: Task,
@@ -229,6 +246,7 @@ class BlueapiClient:
             self.start_task(WorkerTask(task_id=task_id))
             return complete.result(timeout=timeout)
 
+    @start_as_current_span(TRACER, "task")
     def create_and_start_task(self, task: Task) -> TaskResponse:
         """
         Create a new task and instruct the worker to start it
@@ -251,6 +269,7 @@ class BlueapiClient:
                 f"but {worker_response.task_id} was started instead"
             )
 
+    @start_as_current_span(TRACER, "task")
     def create_task(self, task: Task) -> TaskResponse:
         """
         Create a new task, does not start execution
@@ -264,6 +283,7 @@ class BlueapiClient:
 
         return self._rest.create_task(task)
 
+    @start_as_current_span(TRACER)
     def clear_task(self, task_id: str) -> TaskResponse:
         """
         Delete a stored task on the worker
@@ -277,6 +297,7 @@ class BlueapiClient:
 
         return self._rest.clear_task(task_id)
 
+    @start_as_current_span(TRACER, "task")
     def start_task(self, task: WorkerTask) -> WorkerTask:
         """
         Instruct the worker to start a stored task immediately
@@ -290,6 +311,7 @@ class BlueapiClient:
 
         return self._rest.update_worker_task(task)
 
+    @start_as_current_span(TRACER, "reason")
     def abort(self, reason: str | None = None) -> WorkerState:
         """
         Abort the plan currently being executed, if any.
@@ -310,6 +332,7 @@ class BlueapiClient:
             reason=reason,
         )
 
+    @start_as_current_span(TRACER)
     def stop(self) -> WorkerState:
         """
         Stop execution of the current plan early.
@@ -323,6 +346,7 @@ class BlueapiClient:
 
         return self._rest.cancel_current_task(WorkerState.STOPPING)
 
+    @start_as_current_span(TRACER)
     def get_environment(self) -> EnvironmentResponse:
         """
         Get details of the worker environment
@@ -334,6 +358,7 @@ class BlueapiClient:
 
         return self._rest.get_environment()
 
+    @start_as_current_span(TRACER, "timeout", "polling_interval")
     def reload_environment(
         self,
         timeout: float | None = None,
@@ -366,6 +391,7 @@ class BlueapiClient:
             polling_interval,
         )
 
+    @start_as_current_span(TRACER, "timeout", "polling_interval")
     def _wait_for_reload(
         self,
         status: EnvironmentResponse,

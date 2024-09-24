@@ -5,8 +5,14 @@ from collections.abc import Callable
 from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any, ParamSpec, TypeVar
+from typing import Any, Concatenate, ParamSpec, TypeVar
 
+from observability_utils.tracing import (
+    add_span_attributes,
+    get_context_propagator,
+    get_tracer,
+    start_as_current_span,
+)
 from pydantic import TypeAdapter
 
 from blueapi.config import ApplicationConfig
@@ -17,6 +23,7 @@ from blueapi.service.model import EnvironmentResponse
 set_start_method("spawn", force=True)
 
 LOGGER = logging.getLogger(__name__)
+TRACER = get_tracer("interface")
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -50,13 +57,18 @@ class WorkerDispatcher:
             initialized=False,
         )
 
+    @start_as_current_span(TRACER)
     def reload(self):
         """Reload the subprocess to account for any changes in python modules"""
         self.stop()
         self.start()
         LOGGER.info("Runner reloaded")
 
+    @start_as_current_span(TRACER)
     def start(self):
+        add_span_attributes(
+            {"_use_subprocess": self._use_subprocess, "_config": self._config}
+        )
         try:
             if self._use_subprocess:
                 self._subprocess = Pool(initializer=_init_worker, processes=1)
@@ -69,6 +81,7 @@ class WorkerDispatcher:
             )
             LOGGER.exception(e)
 
+    @start_as_current_span(TRACER)
     def stop(self):
         try:
             self.run(teardown)
@@ -86,18 +99,33 @@ class WorkerDispatcher:
             )
             LOGGER.exception(e)
 
-    def run(self, function: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    @start_as_current_span(TRACER, "function", "args", "kwargs")
+    def run(
+        self,
+        function: Callable[Concatenate[dict[str, Any], P], T],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> T:
+        """Calls the supplied function, which is modified to accept a dict as it's new
+        first param, before being passed to the subprocess runner, or just run in place.
+        """
+        add_span_attributes({"use_subprocess": self._use_subprocess})
         if self._use_subprocess:
             return self._run_in_subprocess(function, *args, **kwargs)
         else:
-            return function(*args, **kwargs)
+            return function(get_context_propagator(), *args, **kwargs)
 
+    @start_as_current_span(TRACER, "function", "args", "kwargs")
     def _run_in_subprocess(
         self,
         function: Callable[P, T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
+        """Call the supplied function, prepending its parameter list with the current
+        Span ID from the observability context, if one exists. this will allow functions
+        decorated with @use_propagated_context to use the corresponding span as their
+        parent span."""
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
         if not (hasattr(function, "__name__") and hasattr(function, "__module__")):
@@ -115,7 +143,7 @@ class WorkerDispatcher:
                 function.__module__,
                 function.__name__,
                 return_type,
-                *args,
+                (get_context_propagator(), *args),
             ),
             kwargs,
         )

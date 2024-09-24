@@ -9,6 +9,7 @@ import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from observability_utils.tracing import setup_tracing
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
@@ -41,6 +42,7 @@ from .updates import CliEventRenderer
 def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     # if no command is supplied, run with the options passed
 
+    setup_tracing("BlueAPI")  # initialise TracerProvider for server app
     config_loader = ConfigLoader(ApplicationConfig)
     if config is not None:
         configs = (config,) if isinstance(config, Path) else config
@@ -101,6 +103,7 @@ def start_application(obj: dict):
 def controller(ctx: click.Context, output: str) -> None:
     """Client utility for controlling and introspecting the worker"""
 
+    setup_tracing("BlueAPICLI")  # initialise TracerProvider for controller app
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return

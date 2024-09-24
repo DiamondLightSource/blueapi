@@ -2,6 +2,11 @@ from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
 import requests
+from observability_utils.tracing import (
+    get_context_propagator,
+    get_tracer,
+    start_as_current_span,
+)
 from pydantic import TypeAdapter
 
 from blueapi.config import RestConfig
@@ -18,6 +23,8 @@ from blueapi.service.model import (
 from blueapi.worker import Task, TrackableTask, WorkerState
 
 T = TypeVar("T")
+
+TRACER = get_tracer("rest")
 
 
 class BlueskyRemoteControlError(Exception):
@@ -118,6 +125,7 @@ class BlueapiRestClient:
             "/environment", EnvironmentResponse, method="DELETE"
         )
 
+    @start_as_current_span(TRACER, "method", "data", "suffix")
     def _request_and_deserialize(
         self,
         suffix: str,
@@ -127,8 +135,9 @@ class BlueapiRestClient:
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
     ) -> T:
         url = self._url(suffix)
+        carr = get_context_propagator()
         if data:
-            response = requests.request(method, url, json=data)
+            response = requests.request(method, url, json=data, headers=carr)
         else:
             response = requests.request(method, url)
         exception = get_exception(response)

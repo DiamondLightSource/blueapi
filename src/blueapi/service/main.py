@@ -345,6 +345,10 @@ async def add_api_version_header(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-API-Version"] = REST_API_VERSION
     LOGGER.info(
-        "http request: %s call_next: %s response: %s", request, call_next, response
+        '%s:%s - "%s %s"',
+        request.client.host,
+        request.client.port,
+        request.method,
+        request.url.path,
     )
     return response

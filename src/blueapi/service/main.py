@@ -40,8 +40,6 @@ RUNNER: WorkerDispatcher | None = None
 
 logging_config = LoggingConfig()
 LOGGER = logging.getLogger(__name__)
-do_default_logging_setup(logging_config.logging_dev_mode)
-
 
 def _runner() -> WorkerDispatcher:
     """Intended to be used only with FastAPI Depends"""

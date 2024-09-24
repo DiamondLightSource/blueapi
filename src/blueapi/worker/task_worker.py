@@ -21,7 +21,6 @@ from blueapi.core import (
     WatchableStatus,
 )
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
-from blueapi.log import do_default_logging_setup
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
 
@@ -39,7 +38,6 @@ from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 logging_config = LoggingConfig()
-do_default_logging_setup(logging_config.logging_dev_mode)
 
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0

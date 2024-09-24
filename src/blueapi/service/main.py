@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import (
@@ -14,7 +15,8 @@ from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, LoggingConfig
+from blueapi.log import do_default_logging_setup
 from blueapi.service import interface
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
@@ -35,6 +37,10 @@ from .runner import WorkerDispatcher
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
+
+logging_config = LoggingConfig()
+LOGGER = logging.getLogger(__name__)
+do_default_logging_setup(logging_config.logging_dev_mode)
 
 
 def _runner() -> WorkerDispatcher:

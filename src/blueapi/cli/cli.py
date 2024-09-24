@@ -31,6 +31,8 @@ from blueapi.worker import ProgressEvent, Task, WorkerEvent
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
+logging_config = LoggingConfig()
+do_default_logging_setup(logging_config.logging_dev_mode)
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
@@ -54,9 +56,6 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     loaded_config: ApplicationConfig = config_loader.load()
 
     ctx.obj["config"] = loaded_config
-
-    logging_config = LoggingConfig()
-    do_default_logging_setup(logging_config.logging_dev_mode)
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")

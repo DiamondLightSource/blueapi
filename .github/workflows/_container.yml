@@ -4,6 +4,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        epics-target: [linux-x86_64] # , linux-aarch64]
+        include:
+          - os: ubuntu-latest # everyone is on ubuntu-latest
+          - blueapi-target: linux-x86_64
+            extension: ""
+            platform: linux/amd64
 
     steps:
       - name: Checkout
@@ -30,7 +39,13 @@ jobs:
           context: .
           # Need load and tags so we can test it below
           load: true
-          tags: tag_for_testing
+          tags: ci_build
+          platforms: ${{ matrix.platform }}
+          target: runtime
+          build-args: |
+            IMAGE_EXT=${{ matrix.extension }}
+          cache-from: type=gha,scope=${{ matrix.blueapi-target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.blueapi-target }}
 
       - name: Test cli works in cached runtime image
         run: docker run --rm tag_for_testing --version
@@ -54,3 +69,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: ${{ matrix.platform }}
+          target: runtime
+          build-args: |
+            IMAGE_EXT=${{ matrix.extension }}
+          cache-from: type=gha,scope=${{ matrix.epics-target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.epics-target }}
+          load: true

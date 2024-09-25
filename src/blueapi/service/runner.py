@@ -165,7 +165,7 @@ def _rpc(
     module_name: str,
     function_name: str,
     expected_type: type[T] | None,
-    *args: Any,
+    args: Any,
     **kwargs: Any,
 ) -> T:
     mod = import_module(module_name)

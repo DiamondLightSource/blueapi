@@ -27,12 +27,14 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-bluesky-core",     #requires ophyd-async
+    "dls-bluesky-core",                                                  #requires ophyd-async
     "dls-dodal>=1.31.0",
     "super-state-machine",  # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "bluesky-stomp>=0.1.2",
     "event-model==1.21",    # https://github.com/DiamondLightSource/blueapi/issues/684
+    "opentelemetry-distro>=0.48b0",
+    "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.2",
 ]
 dynamic = ["version"]

@@ -39,7 +39,7 @@
         // Make sure SELinux does not disable with access to host filesystems like tmp
         "--security-opt=label=disable"
     ],
-    // Remove this before pusing, only to allow local testing with editable library
+    // Remove this before pushing, only to allow local testing with editable library
     "mounts": [
         "source=/scratch/athena/observability-utils,target=/scratch/athena/observability-utils,type=bind,consistency=cached"
     ],    

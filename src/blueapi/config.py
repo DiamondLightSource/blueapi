@@ -106,9 +106,6 @@ C = TypeVar("C", bound=BaseModel)
 class ConfigLoader(Generic[C]):
     """
     Small utility class for loading config from various sources.
-    You must define a config schema as a dataclass (or series of
-    nested dataclasses) that can then be loaded from some combination
-    of default values, dictionaries, YAML/JSON files etc.
     """
 
     def __init__(self, schema: type[C]) -> None:
@@ -117,54 +114,57 @@ class ConfigLoader(Generic[C]):
 
     def use_values(self, values: Mapping[str, Any]) -> None:
         """
-        Use all values provided in the config, override any defaults
-        and values set by previous calls into this class.
-
-        Args:
-            values (Mapping[str, Any]): Dictionary of override values,
-                                        does not need to be exhaustive
-                                        if defaults provided.
+        Use all values provided in the config, override any defaults.
         """
 
         def recursively_update_map(old: dict[str, Any], new: Mapping[str, Any]) -> None:
-            for key in new:
+            for key, value in new.items():
                 if (
                     key in old
                     and isinstance(old[key], dict)
-                    and isinstance(new[key], dict)
+                    and isinstance(value, dict)
                 ):
-                    recursively_update_map(old[key], new[key])
+                    recursively_update_map(old[key], value)
                 else:
-                    old[key] = new[key]
+                    old[key] = value
 
         recursively_update_map(self._values, values)
 
     def use_values_from_yaml(self, path: Path) -> None:
         """
-        Use all values provided in a YAML/JSON file in the
-        config, override any defaults and values set by
-        previous calls into this class.
-
-        Args:
-            path (Path): Path to YAML/JSON file
+        Use values from a YAML/JSON file, overriding previous values.
         """
-
         with path.open("r") as stream:
             values = yaml.load(stream, yaml.Loader)
         self.use_values(values)
 
+    def use_values_from_env(self, prefix: str = "APP_") -> None:
+        """
+        Load values from environment variables with a given prefix.
+        """
+
+        env_values = {}
+        for key, value in os.environ.items():
+            if key.startswith(prefix):
+                # Convert key to a config path-like structure
+                config_key = key[len(prefix) :].lower()
+                env_values[config_key] = value
+        self.use_values(env_values)
+
+    def use_values_from_cli(self, cli_args: Namespace) -> None:
+        """
+        Use values from CLI arguments, overriding previous values.
+        """
+        cli_values = vars(cli_args)
+        self.use_values(cli_values)
+
     def load(self) -> C:
         """
-        Finalize and load the config as an instance of the `schema`
-        dataclass.
-
-        Returns:
-            C: Dataclass instance holding config
+        Finalize and load the config as an instance of the schema dataclass.
         """
-
         try:
             return self._adapter.validate_python(self._values)
         except ValidationError as exc:
             raise InvalidConfigError(
-                "Something is wrong with the configuration file: \n"
+                "Something is wrong with the configuration file:\n"
             ) from exc

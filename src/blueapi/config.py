@@ -1,3 +1,4 @@
+import os
 from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
@@ -151,7 +152,7 @@ class ConfigLoader(Generic[C]):
                 env_values[config_key] = value
         self.use_values(env_values)
 
-    def use_values_from_cli(self, cli_args: Namespace) -> None:
+    def use_values_from_cli(self, cli_args: Any) -> None:
         """
         Use values from CLI arguments, overriding previous values.
         """

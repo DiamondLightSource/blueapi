@@ -48,7 +48,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.blueapi-target }}
 
       - name: Test cli works in cached runtime image
-        run: docker run --rm tag_for_testing --version
+        run: docker run --rm ci_build --version
 
       - name: Create tags for publishing image
         id: meta

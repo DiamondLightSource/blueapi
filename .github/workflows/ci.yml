@@ -3,8 +3,6 @@ name: CI
 on:
   push:
   pull_request:
-permissions:
-  actions: write
 jobs:
   check:
     uses: ./.github/workflows/_check.yml

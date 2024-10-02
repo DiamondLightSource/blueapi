@@ -19,6 +19,7 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import DataEvent
+from blueapi.service.authentication import Authentication, AuthenticationType
 from blueapi.service.main import start
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
@@ -329,3 +330,9 @@ def scratch(obj: dict) -> None:
         setup_scratch(config.scratch)
     else:
         raise KeyError("No scratch config supplied")
+
+
+@main.command(name="login")
+def login() -> None:
+    auth = Authentication(authentication_type=AuthenticationType.DEVICE)
+    auth.start_device_flow()

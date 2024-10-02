@@ -24,11 +24,31 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        cache: "pip"
+      #  cache: "pip"
 
-    - name: Install packages
-      run: pip install ${{ inputs.pip-install }}
+    - name: Restore cached virtualenv
+      uses: actions/cache/restore@v4
+      with:
+        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}
+        path: .venv
+    - name: Install dependencies
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        python -m pip install -r requirements.txt
+        echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+        echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
       shell: bash
+
+    - name: Saved cached virtualenv
+      uses: actions/cache/save@v4
+      with:
+        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}
+        path: .venv
+
+    # - name: Install packages
+    #   run: pip install ${{ inputs.pip-install }}
+    #   shell: bash
 
     - name: Report what was installed
       run: pip freeze

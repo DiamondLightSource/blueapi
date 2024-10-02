@@ -30,7 +30,7 @@ runs:
     - name: Restore cached virtualenv
       uses: actions/cache/restore@v4
       with:
-        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles(${{ inputs.pip-install }}) }}
+        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('dev-requirements.txt') }}
         path: .venv
     - name: Install dependencies
       run: |
@@ -44,7 +44,7 @@ runs:
     - name: Saved cached virtualenv
       uses: actions/cache/save@v4
       with:
-        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles(${{ inputs.pip-install }}) }}
+        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}
         path: .venv
 
     # - name: Install packages

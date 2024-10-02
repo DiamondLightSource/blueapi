@@ -30,13 +30,13 @@ runs:
     - name: Restore cached virtualenv
       uses: actions/cache/restore@v4
       with:
-        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('dev-requirements.txt') }}
+        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles(${{ inputs.pip-install }}) }}
         path: .venv
     - name: Install dependencies
       run: |
         python -m venv .venv
         source .venv/bin/activate
-        python -m pip install -r dev-requirements.txt
+        python -m pip install ${{ inputs.pip-install }}
         echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
         echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
       shell: bash
@@ -44,7 +44,7 @@ runs:
     - name: Saved cached virtualenv
       uses: actions/cache/save@v4
       with:
-        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('dev-requirements.txt') }}
+        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles(${{ inputs.pip-install }}) }}
         path: .venv
 
     # - name: Install packages

@@ -142,8 +142,9 @@ class Authentication:
         with open("token.txt", "rb") as token_file:
             token = token_file.read()
             token = cipher_suite.decrypt(token).decode()
-            # This print is just for testing purposes
+            # TODO: This print is just for testing purposes
             print(token)
+            return json.loads(token)
 
     def start_device_flow(self):
         response = requests.post(

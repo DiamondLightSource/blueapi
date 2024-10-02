@@ -1,5 +1,8 @@
+import os
 from contextlib import asynccontextmanager
 
+import jwt
+from dotenv import load_dotenv
 from fastapi import (
     BackgroundTasks,
     Body,
@@ -10,12 +13,14 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.security import OAuth2AuthorizationCodeBearer
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.service import interface
+from blueapi.service.authentication import Authentication, AuthenticationType
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -31,6 +36,8 @@ from .model import (
     WorkerTask,
 )
 from .runner import WorkerDispatcher
+
+load_dotenv()
 
 REST_API_VERSION = "0.0.5"
 
@@ -73,7 +80,50 @@ app = FastAPI(
     title="BlueAPI Control",
     lifespan=lifespan,
     version=REST_API_VERSION,
+    # https://swagger.io/docs/open-source-tools/swagger-ui/usage/oauth2/
+    swagger_ui_init_oauth={
+        "clientId": os.getenv("PKCE_CLIENT_ID"),
+        "clientSecret": os.getenv("PKCE_CLIENT_SECRET"),
+        "usePkceWithAuthorizationCodeGrant": os.getenv("USE_PKCE") == "True",
+    },
 )
+authorizationUrl = os.getenv("PKCE_AUTHENTICATION_URL")
+tokenUrl = os.getenv("TOKEN_URL")
+assert authorizationUrl and tokenUrl, "Authorization and Token URLs must be set"
+
+token_auth_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl=authorizationUrl,
+    tokenUrl=tokenUrl,
+    auto_error=True,
+)
+
+
+def validate_token(token: str):
+    try:
+        auth = Authentication(AuthenticationType.PKCE)
+        sigining_key = auth.jwks_client.get_signing_key_from_jwt(token)
+        decode = jwt.decode(
+            token,
+            sigining_key.key,
+            algorithms=["RS256"],
+            # options={
+            #     "verify_exp": False
+            # },  # This need to be removed and we need to refresh our token
+            verify=True,
+            audience=auth.audience,
+            issuer=auth.issuer,
+            leeway=5,
+        )
+        print("Token Validated")
+        print(f"Logged in as {decode['name']} with fed-id {decode['fedid']}")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token Expired"
+        ) from None
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token"
+        ) from None
 
 
 @app.exception_handler(KeyError)
@@ -95,10 +145,11 @@ def get_environment(
 @app.delete("/environment", response_model=EnvironmentResponse)
 async def delete_environment(
     background_tasks: BackgroundTasks,
+    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
-
+    validate_token(token)
     if runner.state.initialized or runner.state.error_message is not None:
         background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
@@ -146,9 +197,11 @@ def submit_task(
     request: Request,
     response: Response,
     task: Task = Body(..., example=example_task),
+    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ):
     """Submit a task to the worker."""
+    validate_token(token)
     try:
         plan_model = runner.run(interface.get_plan, task.name)
         task_id: str = runner.run(interface.submit_task, task)
@@ -173,8 +226,10 @@ def submit_task(
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 def delete_submitted_task(
     task_id: str,
+    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ) -> TaskResponse:
+    validate_token(token)
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
@@ -217,10 +272,12 @@ def get_tasks(
 )
 def set_active_task(
     task: WorkerTask,
+    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
     This will return an error response if the worker is not idle."""
+    validate_token(token)
     active_task = runner.run(interface.get_active_task)
     if active_task is not None and not active_task.is_complete:
         raise HTTPException(
@@ -286,6 +343,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
+    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerState:
     """
@@ -305,6 +363,7 @@ def set_state(
         - If reason is set, the reason will be passed as the reason for the Run failure.
     - **All other transitions return 400: Bad Request**
     """
+    validate_token(token)
     current_state = runner.run(interface.get_worker_state)
     new_state = state_change_request.new_state
     if (

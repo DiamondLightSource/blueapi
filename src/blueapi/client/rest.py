@@ -5,6 +5,7 @@ import requests
 from pydantic import TypeAdapter
 
 from blueapi.config import RestConfig
+from blueapi.service.authentication import Authentication, AuthenticationType
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -127,10 +128,16 @@ class BlueapiRestClient:
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
     ) -> T:
         url = self._url(suffix)
+        auth = Authentication(AuthenticationType.DEVICE)
+        access_token = auth.load_token()["access_token"]
+        headers = {
+            "content-type": "application/json; charset=UTF-8",
+            "Authorization": f"Bearer {access_token}",
+        }
         if data:
-            response = requests.request(method, url, json=data)
+            response = requests.request(method, url, json=data, headers=headers)
         else:
-            response = requests.request(method, url)
+            response = requests.request(method, url, headers=headers)
         exception = get_exception(response)
         if exception is not None:
             raise exception

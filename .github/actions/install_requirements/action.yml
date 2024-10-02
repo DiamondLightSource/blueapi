@@ -25,7 +25,7 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-      #  cache: "pip"
+        cache: "pip"
 
     - name: Restore cached virtualenv
       uses: actions/cache/restore@v4

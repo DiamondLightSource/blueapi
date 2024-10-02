@@ -31,7 +31,6 @@ jobs:
     with:
       runs-on: ${{ matrix.runs-on }}
       python-version: ${{ matrix.python-version }}
-      cache: 'pip' 
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 

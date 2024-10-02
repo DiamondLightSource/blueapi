@@ -62,6 +62,7 @@ dev = [
     "types-requests",
     "types-urllib3",
     "mock",
+    "p99_bluesky",
 ]
 
 [project.scripts]

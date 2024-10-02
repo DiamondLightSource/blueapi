@@ -32,6 +32,7 @@ dependencies = [
     "super-state-machine",  # See GH issue 553
     "GitPython",
     "bluesky-stomp>=0.1.2",
+    "p99_bluesky",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

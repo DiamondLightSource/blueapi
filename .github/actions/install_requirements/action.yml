@@ -19,19 +19,20 @@ runs:
         fi
         echo "PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
       shell: bash
-
+    #Setup python env
     - name: Setup python
       id: setup_python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: "pip"
-
+    #Load caches if match
     - name: Restore cached virtualenv
       uses: actions/cache/restore@v4
       with:
         key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('dev-requirements.txt') }}
         path: .venv
+    #install missing packages
     - name: Install packages
       run: |
         python -m venv .venv

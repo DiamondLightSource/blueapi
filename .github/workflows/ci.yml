@@ -3,7 +3,6 @@ name: CI
 on:
   push:
   pull_request:
-
 jobs:
   check:
     uses: ./.github/workflows/_check.yml
@@ -18,6 +17,8 @@ jobs:
   test:
     needs: check
     if: needs.check.outputs.branch-pr == ''
+    permissions:
+      packages: write
     strategy:
       matrix:
         runs-on: ["ubuntu-latest"] # can add windows-latest, macos-latest

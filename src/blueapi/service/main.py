@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-from dotenv import load_dotenv
 from fastapi import (
     BackgroundTasks,
     Body,
@@ -34,8 +34,6 @@ from .model import (
     WorkerTask,
 )
 from .runner import WorkerDispatcher
-
-load_dotenv()
 
 REST_API_VERSION = "0.0.5"
 
@@ -84,6 +82,8 @@ app = FastAPI(
         "clientId": auth.client_id,
         "clientSecret": auth.client_secret,
         "usePkceWithAuthorizationCodeGrant": True,
+        "scopeSeparator": " ",
+        "scopes": "openid profile offline_access",
     },
 )
 
@@ -91,15 +91,18 @@ authorizationUrl = auth.authentication_url
 tokenUrl = auth.token_url
 assert authorizationUrl and tokenUrl, "Authorization and Token URLs must be set"
 
-token_auth_scheme = OAuth2AuthorizationCodeBearer(
+oauth_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl=authorizationUrl,
     tokenUrl=tokenUrl,
+    refreshUrl=tokenUrl,
     auto_error=True,
 )
 
 
-def validate_token(token: str):
-    _, exception = auth.verify_token(token)
+async def verify_token_auth(
+    access_token: Annotated[str, Depends(oauth_scheme)],
+) -> None:
+    _, exception = auth.verify_token(access_token)
     if exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exception)
@@ -122,14 +125,16 @@ def get_environment(
     return runner.state
 
 
-@app.delete("/environment", response_model=EnvironmentResponse)
+@app.delete(
+    "/environment",
+    dependencies=[Depends(verify_token_auth)],
+    response_model=EnvironmentResponse,
+)
 async def delete_environment(
     background_tasks: BackgroundTasks,
-    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
-    validate_token(token)
     if runner.state.initialized or runner.state.error_message is not None:
         background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
@@ -172,16 +177,15 @@ example_task = Task(name="count", params={"detectors": ["x"]})
     "/tasks",
     response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_token_auth)],
 )
 def submit_task(
     request: Request,
     response: Response,
     task: Task = Body(..., example=example_task),
-    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ):
     """Submit a task to the worker."""
-    validate_token(token)
     try:
         plan_model = runner.run(interface.get_plan, task.name)
         task_id: str = runner.run(interface.submit_task, task)
@@ -203,13 +207,15 @@ def submit_task(
         ) from e
 
 
-@app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+@app.delete(
+    "/tasks/{task_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_token_auth)],
+)
 def delete_submitted_task(
     task_id: str,
-    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ) -> TaskResponse:
-    validate_token(token)
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
@@ -249,15 +255,14 @@ def get_tasks(
     "/worker/task",
     response_model=WorkerTask,
     responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
+    dependencies=[Depends(verify_token_auth)],
 )
 def set_active_task(
     task: WorkerTask,
-    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
     This will return an error response if the worker is not idle."""
-    validate_token(token)
     active_task = runner.run(interface.get_active_task)
     if active_task is not None and not active_task.is_complete:
         raise HTTPException(
@@ -319,11 +324,11 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
         status.HTTP_400_BAD_REQUEST: {"detail": "Transition not allowed"},
         status.HTTP_202_ACCEPTED: {"detail": "Transition requested"},
     },
+    dependencies=[Depends(verify_token_auth)],
 )
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    token: str = Depends(token_auth_scheme),
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerState:
     """
@@ -343,7 +348,6 @@ def set_state(
         - If reason is set, the reason will be passed as the reason for the Run failure.
     - **All other transitions return 400: Bad Request**
     """
-    validate_token(token)
     current_state = runner.run(interface.get_worker_state)
     new_state = state_change_request.new_state
     if (

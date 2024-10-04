@@ -1,7 +1,5 @@
-import os
 from contextlib import asynccontextmanager
 
-import jwt
 from dotenv import load_dotenv
 from fastapi import (
     BackgroundTasks,
@@ -75,6 +73,7 @@ async def lifespan(app: FastAPI):
     teardown_runner()
 
 
+auth = Authentication(AuthenticationType.PKCE)
 app = FastAPI(
     docs_url="/docs",
     title="BlueAPI Control",
@@ -82,13 +81,14 @@ app = FastAPI(
     version=REST_API_VERSION,
     # https://swagger.io/docs/open-source-tools/swagger-ui/usage/oauth2/
     swagger_ui_init_oauth={
-        "clientId": os.getenv("PKCE_CLIENT_ID"),
-        "clientSecret": os.getenv("PKCE_CLIENT_SECRET"),
-        "usePkceWithAuthorizationCodeGrant": os.getenv("USE_PKCE") == "True",
+        "clientId": auth.client_id,
+        "clientSecret": auth.client_secret,
+        "usePkceWithAuthorizationCodeGrant": True,
     },
 )
-authorizationUrl = os.getenv("PKCE_AUTHENTICATION_URL")
-tokenUrl = os.getenv("TOKEN_URL")
+
+authorizationUrl = auth.authentication_url
+tokenUrl = auth.token_url
 assert authorizationUrl and tokenUrl, "Authorization and Token URLs must be set"
 
 token_auth_scheme = OAuth2AuthorizationCodeBearer(
@@ -99,31 +99,11 @@ token_auth_scheme = OAuth2AuthorizationCodeBearer(
 
 
 def validate_token(token: str):
-    try:
-        auth = Authentication(AuthenticationType.PKCE)
-        sigining_key = auth.jwks_client.get_signing_key_from_jwt(token)
-        decode = jwt.decode(
-            token,
-            sigining_key.key,
-            algorithms=["RS256"],
-            # options={
-            #     "verify_exp": False
-            # },  # This need to be removed and we need to refresh our token
-            verify=True,
-            audience=auth.audience,
-            issuer=auth.issuer,
-            leeway=5,
-        )
-        print("Token Validated")
-        print(f"Logged in as {decode['name']} with fed-id {decode['fedid']}")
-    except jwt.ExpiredSignatureError:
+    _, exception = auth.verify_token(token)
+    if exception:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token Expired"
-        ) from None
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token"
-        ) from None
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exception)
+        ) from exception
 
 
 @app.exception_handler(KeyError)

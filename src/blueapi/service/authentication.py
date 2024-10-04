@@ -17,6 +17,54 @@ class AuthenticationType(Enum):
 
 
 class Authentication:
+    """
+    Authentication class handles the authentication process using either
+    device code flow or PKCE flow.
+
+    Attributes:
+        client_id (str): The client ID for the authentication.
+        authentication_url (str): The URL for authentication.
+        audience (list[str]): The audience for the authentication.
+        token_url (str): The URL to obtain the token.
+        openid_config (str): The OpenID configuration URL.
+        issuer (str): The issuer of the token.
+        user_name (str | None): The username obtained from the token.
+        fedid (str | None): The federated ID obtained from the token.
+        jwks_client (jwt.PyJWKClient): The JWKS client for verifying tokens.
+        token_file_path (str): The file path to save the token.
+        token (None | dict[str, Any]): The token dictionary.
+
+    Methods:
+        __init__(authentication_type: AuthenticationType = AuthenticationType.DEVICE,
+                token_file_path: str = "token") -> None:
+            Initializes the Authentication class with the specified authentication type
+            and token file path.
+
+        get_device_code() -> str:
+            Obtains the device code for device code flow.
+
+        poll_for_token(device_code: str, timeout: float = 30,
+        polling_interval: float = 0.5)
+        -> dict[str, Any]:
+            Polls for the token using the device code.
+
+        verify_token(token: str, verify_expiration: bool = True)
+        -> tuple[bool, Exception | None]:
+            Verifies the provided token.
+
+        refresh_auth_token() -> bool:
+            Refreshes the authentication token.
+
+        save_token(token: dict[str, Any]) -> None:
+            Saves the token to a file.
+
+        load_token() -> None:
+            Loads the token from a file.
+
+        start_device_flow() -> None:
+            Starts the device flow for authentication.
+    """
+
     def __init__(
         self,
         authentication_type: AuthenticationType = AuthenticationType.DEVICE,
@@ -122,10 +170,10 @@ class Authentication:
                 return (True, None)
         except jwt.PyJWTError as e:
             return (False, e)
+
         return (False, Exception("Invalid token"))
 
     def refresh_auth_token(self) -> bool:
-        print("Refreshing token")
         if self.token:
             # Send POST request
             response = requests.post(
@@ -138,7 +186,6 @@ class Authentication:
                 },
             )
             if response.status_code == HTTPStatus.OK:
-                print("Token refreshed")
                 self.save_token(response.json())
                 return True
             else:

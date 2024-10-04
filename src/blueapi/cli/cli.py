@@ -54,9 +54,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     loaded_config: ApplicationConfig = config_loader.load()
 
     ctx.obj["config"] = loaded_config
-    logging.basicConfig(
-        format="%(asctime)s - %(message)s", level=loaded_config.logging.level
-    )
+    logging.basicConfig(level=loaded_config.logging.level)
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")

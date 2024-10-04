@@ -1,12 +1,13 @@
+import base64
 import json
 import os
 import time
 from enum import Enum
 from http import HTTPStatus
+from typing import Any
 
 import jwt
 import requests
-from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 
 
@@ -16,7 +17,11 @@ class AuthenticationType(Enum):
 
 
 class Authentication:
-    def __init__(self, authentication_type: AuthenticationType):
+    def __init__(
+        self,
+        authentication_type: AuthenticationType = AuthenticationType.DEVICE,
+        token_file_path: str = "token",
+    ) -> None:
         load_dotenv()
         if authentication_type == AuthenticationType.DEVICE:
             self.client_id: str = os.getenv("DEVICE_CLIENT_ID", "")
@@ -51,23 +56,29 @@ class Authentication:
         oidc_config = requests.get(self.openid_config).json()
         self.jwks_client = jwt.PyJWKClient(oidc_config["jwks_uri"])
 
+        # Token file path
+        self.token_file_path = token_file_path
+        self.token: None | dict[str, Any] = None
+        self.load_token()
+
     def get_device_code(self):
         response = requests.post(
             self.token_url,
             data={
                 "client_id": self.client_id,
                 "scope": "openid profile offline_access",
+                "audience": self.audience,
             },
         )
         response_data = response.json()
         if response.status_code == 200:
             return response_data["device_code"]
         else:
-            raise Exception(f"Failed to get device code: {response_data}")
+            raise Exception("Failed to get device code.")
 
     def poll_for_token(
         self, device_code: str, timeout: float = 30, polling_interval: float = 0.5
-    ) -> dict | None:
+    ) -> dict[str, Any]:
         too_late = time.time() + timeout
         while time.time() < too_late:
             # Send POST request
@@ -75,9 +86,9 @@ class Authentication:
                 self.token_url,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
                 data={
+                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                     "device_code": device_code,
                     "client_id": self.client_id,
-                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                 },
             )
 
@@ -90,63 +101,93 @@ class Authentication:
 
         raise TimeoutError("Polling timed out")
 
-    def validate_token(self, token):
-        # Verify Token
-        sigining_key = self.jwks_client.get_signing_key_from_jwt(token["access_token"])
+    def verify_token(
+        self, token: str, verify_expiration: bool = True
+    ) -> tuple[bool, Exception | None]:
+        signing_key = self.jwks_client.get_signing_key_from_jwt(token)
         try:
             decode = jwt.decode(
-                token["access_token"],
-                sigining_key.key,
+                token,
+                signing_key.key,
                 algorithms=["RS256"],
-                # options={
-                #     "verify_exp": False
-                # },  # This need to be removed and we need to refresh our token
+                options={"verify_exp": verify_expiration},
                 verify=True,
                 audience=self.audience,
                 issuer=self.issuer,
                 leeway=5,
             )
-        except jwt.ExpiredSignatureError:
-            print("Token Expired")
-        if decode:
-            self.user_name = decode["name"]
-            self.fedid = decode["fedid"]
-            return True
-        return False
+            if decode:
+                self.user_name = decode.get("name")
+                self.fedid = decode.get("fedid")
+                return (True, None)
+        except jwt.PyJWTError as e:
+            return (False, e)
+        return (False, Exception("Invalid token"))
 
-    def save_token(self, token):
-        # Encrypt and then save auth_token_response to a file
-        # Generate and save a key (do this once and keep the key secure)
-        key = Fernet.generate_key()
-        with open("secret.key", "wb") as key_file:
-            key_file.write(key)
+    def refresh_auth_token(self) -> bool:
+        print("Refreshing token")
+        if self.token:
+            # Send POST request
+            response = requests.post(
+                self.token_url,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={
+                    "client_id": self.client_id,
+                    "grant_type": "refresh_token",
+                    "refresh_token": self.token["refresh_token"],
+                },
+            )
+            if response.status_code == HTTPStatus.OK:
+                print("Token refreshed")
+                self.save_token(response.json())
+                return True
+            else:
+                return False
+        else:
+            return False
 
-        # Load the key
-        with open("secret.key", "rb") as key_file:
-            key = key_file.read()
+    def save_token(self, token: dict[str, Any]) -> None:
+        # Convert the token dictionary to a JSON string
+        token_json = json.dumps(token)
 
-        cipher_suite = Fernet(key)
+        # Convert the JSON string to bytes
+        token_bytes = token_json.encode("utf-8")
 
-        # Encrypt a message
-        token = cipher_suite.encrypt(json.dumps(token).encode())
-        with open("token.txt", "wb") as token_file:
-            token_file.write(token)
+        # Encode the bytes using base64
+        token_base64 = base64.b64encode(token_bytes)
 
-    def load_token(self):
-        # Load the key
-        with open("secret.key", "rb") as key_file:
-            key = key_file.read()
+        # Save the base64 encoded bytes to a file
 
-        cipher_suite = Fernet(key)
-        # Decrypt the message
-        with open("token.txt", "rb") as token_file:
-            token = token_file.read()
-            token = cipher_suite.decrypt(token).decode()
-            # TODO: This print is just for testing purposes
-            print(token)
-            return json.loads(token)
+        with open(self.token_file_path, "wb") as token_file:
+            token_file.write(token_base64)
 
-    def start_device_flow(self):
+    def load_token(self) -> None:
+        if not os.path.exists(self.token_file_path):
+            return None
+        with open(self.token_file_path, "rb") as token_file:
+            token_base64 = token_file.read()
+
+            # Decode the base64 encoded bytes
+            token_bytes = base64.b64decode(token_base64)
+
+            # Convert the bytes back to a JSON string
+            token_json = token_bytes.decode("utf-8")
+
+            # Convert the JSON string back to a dictionary
+            self.token = json.loads(token_json)
+
+    def start_device_flow(self) -> None:
+        # Check if we have a valid token
+        if self.token:
+            valid_token, exception = self.verify_token(self.token["access_token"])
+            if valid_token:
+                print("Token verified")
+                return
+            elif isinstance(exception, jwt.ExpiredSignatureError):
+                if self.refresh_auth_token():
+                    return
+        # Send Request to get fresh token as token is not valid
+        # and refresh token is not available
         response = requests.post(
             self.authentication_url,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -154,11 +195,6 @@ class Authentication:
         )
 
         if response.status_code == HTTPStatus.OK:
-            # TODO: (Not Done because have not figured out how to refresh the token)
-            # Before sending the request, we need to check if we already have a token
-            # If we have a token, we need to validate the token
-            # and use that token to make the request
-            # If the token is not valid, we need to get a new token
             response_json = response.json()
             device_code: str = response_json.get("device_code")
             print(
@@ -166,13 +202,16 @@ class Authentication:
                 f"{response_json['verification_uri_complete']}"
             )
             auth_token_json = self.poll_for_token(device_code)
-            # Verify Token
-            if self.validate_token(auth_token_json):
-                print("Token verified")
-            else:
-                return
-            print(f"Logged in as {self.user_name} with fed-id {self.fedid}")
-            self.save_token(auth_token_json)
-            self.load_token()
+            if auth_token_json:
+                # Verify Token
+                verify, exception = self.verify_token(auth_token_json["access_token"])
+                if verify:
+                    print("Token verified")
+                    self.save_token(auth_token_json)
+                else:
+                    print("Unauthorized access")
+                    return
         else:
             print("Unauthorized access")
+            return
+        print(f"Logged in as {self.user_name} with fed-id {self.fedid}")

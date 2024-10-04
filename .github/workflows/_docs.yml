@@ -21,7 +21,9 @@ jobs:
 
       - name: Install python packages
         uses: ./.github/actions/install_requirements
-
+        with:
+          workflow-name: docs
+          token: ${{ secrets.GITHUB_TOKEN }}        
       - name: Build docs
         run: tox -e docs
 

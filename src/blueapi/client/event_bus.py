@@ -45,12 +45,11 @@ class EventBusClient:
 
     @classmethod
     def from_stomp_config(cls, config: StompConfig) -> "EventBusClient":
-        return EventBusClient(
-            StompClient.for_broker(
-                broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
-                    auth=config.stomp.auth,
-                )
-            )
+        broker = Broker(
+            host=config.host,
+            port=config.port,
+            auth=config.auth,
         )
+
+        internal_client = StompClient.for_broker(broker=broker)
+        return EventBusClient(internal_client)

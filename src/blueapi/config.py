@@ -35,7 +35,7 @@ def parse_cli_context(ctx_params: dict[str, Any]) -> dict[str, Any]:
             dictionary = dictionary.setdefault(key, {})
         dictionary[keys[-1]] = value
 
-    cli_values = {}
+    cli_values: dict[str, Any] = {}
 
     # Handle dot notation (e.g., BLUEAPI.config.api.host)
     for key, value in ctx_params.items():

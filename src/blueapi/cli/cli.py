@@ -4,7 +4,7 @@ import sys
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -33,15 +33,15 @@ from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 
-def load_cli_values(ctx_params: Dict[str, Any]) -> Dict[str, Any]:
+def load_cli_values(ctx_params: dict[str, Any]) -> dict[str, Any]:
     """
     Load CLI values from the given context parameters.
 
     Args:
-        ctx_params (Dict[str, Any]): Dictionary containing CLI parameters.
+        ctx_params (dict[str, Any]): dictionary containing CLI parameters.
 
     Returns:
-        Dict[str, Any]: A dictionary of CLI values for configuration.
+        dict[str, Any]: A dictionary of CLI values for configuration.
     """
     cli_values = {
         # CLI parameters for StompConfig
@@ -80,9 +80,7 @@ def load_cli_values(ctx_params: Dict[str, Any]) -> Dict[str, Any]:
         },
         # CLI parameters for ScratchConfig (optional)
         "scratch": {
-            "root": Path(ctx_params.get("scratch_root"))
-            if ctx_params.get("scratch_root")
-            else None,
+            "root": ctx_params.get("scratch_root", None),
             "repositories": [
                 {
                     "name": ctx_params.get("repo_name"),
@@ -123,6 +121,7 @@ def main(
         for path in configs:
             if path.exists():
                 config_loader.use_values_from_yaml(path)
+                
             else:
                 raise FileNotFoundError(f"Cannot find file: {path}")
 

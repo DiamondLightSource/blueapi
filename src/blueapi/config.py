@@ -131,7 +131,7 @@ def recursively_updated_map(
             and isinstance(value, dict)
         ):
             updated[key] = recursively_updated_map(updated[key], value)
-        else:
+        elif value is not None:
             updated[key] = value
     return updated
 
@@ -149,7 +149,7 @@ class ConfigLoader(Generic[C]):
         """
         Use all values provided in the config, override any defaults.
         """
-        recursively_updated_map(self._values, values)
+        self._values = recursively_updated_map(self._values, values)
 
     def use_values_from_yaml(self, path: Path) -> None:
         """
@@ -187,6 +187,7 @@ class ConfigLoader(Generic[C]):
             return self._adapter.validate_python(self._values)
         except ValidationError as exc:
             pretty_error_messages = pretty_print_errors(exc.errors())
+
             raise InvalidConfigError(
                 f"Something is wrong with the configuration file:\n{pretty_error_messages}"
             ) from exc

@@ -13,6 +13,22 @@ from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
+def pretty_print_errors(errors):
+    formatted_errors = []
+    for error in errors:
+        loc = " -> ".join(
+            map(str, error["loc"])
+        )  # Create a string path for the location
+        message = f"Type: {error['type']}, Location: {loc}, Message: {error['msg']}"
+        if "input" in error:
+            message += f", Input: {error['input']}"
+        if "url" in error:
+            message += f", Documentation: {error['url']}"
+        formatted_errors.append(message)
+
+    return "\n".join(formatted_errors)
+
+
 class SourceKind(str, Enum):
     PLAN_FUNCTIONS = "planFunctions"
     DEVICE_FUNCTIONS = "deviceFunctions"
@@ -104,6 +120,22 @@ class ApplicationConfig(BlueapiBaseModel):
 C = TypeVar("C", bound=BaseModel)
 
 
+def recursively_updated_map(
+    old: dict[str, Any], new: Mapping[str, Any]
+) -> dict[str, Any]:
+    updated = old.copy()  # Create a copy to avoid mutating the original dictionary
+    for key, value in new.items():
+        if (
+            key in updated
+            and isinstance(updated[key], dict)
+            and isinstance(value, dict)
+        ):
+            updated[key] = recursively_updated_map(updated[key], value)
+        else:
+            updated[key] = value
+    return updated
+
+
 class ConfigLoader(Generic[C]):
     """
     Small utility class for loading config from various sources.
@@ -117,19 +149,7 @@ class ConfigLoader(Generic[C]):
         """
         Use all values provided in the config, override any defaults.
         """
-
-        def recursively_update_map(old: dict[str, Any], new: Mapping[str, Any]) -> None:
-            for key, value in new.items():
-                if (
-                    key in old
-                    and isinstance(old[key], dict)
-                    and isinstance(value, dict)
-                ):
-                    recursively_update_map(old[key], value)
-                else:
-                    old[key] = value
-
-        recursively_update_map(self._values, values)
+        recursively_updated_map(self._values, values)
 
     def use_values_from_yaml(self, path: Path) -> None:
         """
@@ -166,6 +186,7 @@ class ConfigLoader(Generic[C]):
         try:
             return self._adapter.validate_python(self._values)
         except ValidationError as exc:
+            pretty_error_messages = pretty_print_errors(exc.errors())
             raise InvalidConfigError(
-                "Something is wrong with the configuration file:\n"
+                f"Something is wrong with the configuration file:\n{pretty_error_messages}"
             ) from exc

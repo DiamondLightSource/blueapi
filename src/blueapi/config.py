@@ -190,6 +190,6 @@ class ConfigLoader(Generic[C]):
             pretty_error_messages = pretty_print_errors(exc.errors())
 
             raise InvalidConfigError(
-                "Something is wrong with the configuration file:\n"
-                + f"{pretty_error_messages}"
+                f"""Something is wrong with the configuration file:
+                {pretty_error_messages}"""
             ) from exc

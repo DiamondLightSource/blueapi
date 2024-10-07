@@ -4,6 +4,7 @@ import sys
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
+from typing import Any, Dict, Optional, Union
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -30,6 +31,71 @@ from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
+
+
+def load_cli_values(ctx_params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Load CLI values from the given context parameters.
+
+    Args:
+        ctx_params (Dict[str, Any]): Dictionary containing CLI parameters.
+
+    Returns:
+        Dict[str, Any]: A dictionary of CLI values for configuration.
+    """
+    cli_values = {
+        # CLI parameters for StompConfig
+        "stomp": {
+            "host": ctx_params.get("stomp_host"),
+            "port": ctx_params.get("stomp_port"),
+            "auth": {
+                "username": ctx_params.get("stomp_username"),
+                "password": ctx_params.get("stomp_password"),
+            }
+            if ctx_params.get("stomp_username") and ctx_params.get("stomp_password")
+            else None,
+        },
+        # CLI parameters for EnvironmentConfig (env)
+        "env": {
+            "sources": [
+                {
+                    "kind": ctx_params.get("source_kind"),
+                    "module": ctx_params.get("source_module"),
+                }
+                # Logic can be added here to handle multiple sources if required
+            ],
+            "events": {
+                "broadcast_status_events": ctx_params.get("broadcast_status_events"),
+            },
+        },
+        # CLI parameters for LoggingConfig
+        "logging": {
+            "level": ctx_params.get("log_level"),
+        },
+        # CLI parameters for RestConfig (API configuration)
+        "api": {
+            "host": ctx_params.get("api_host"),
+            "port": ctx_params.get("api_port"),
+            "protocol": ctx_params.get("api_protocol"),
+        },
+        # CLI parameters for ScratchConfig (optional)
+        "scratch": {
+            "root": Path(ctx_params.get("scratch_root"))
+            if ctx_params.get("scratch_root")
+            else None,
+            "repositories": [
+                {
+                    "name": ctx_params.get("repo_name"),
+                    "remote_url": ctx_params.get("repo_remote_url"),
+                }
+                # Logic can be added here for multiple repositories if required
+            ]
+            if ctx_params.get("repo_name") and ctx_params.get("repo_remote_url")
+            else None,
+        },
+    }
+
+    return cli_values
 
 
 @click.group(invoke_without_command=True)
@@ -64,11 +130,8 @@ def main(
     config_loader.use_values_from_env(env_prefix)
 
     # Step 4: Load CLI arguments as overrides
-    cli_values = {
-        "stomp": ctx.params.get("stomp"),
-        "logging": {"level": ctx.params.get("log_level")},
-        # Add more CLI parameters here as needed
-    }
+    cli_values = load_cli_values(ctx.params)
+
     config_loader.use_values(cli_values)
 
     # Load the final configuration

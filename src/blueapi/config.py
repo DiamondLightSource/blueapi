@@ -14,6 +14,39 @@ from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
+def parse_cli_context(ctx_params: dict[str, Any]) -> dict[str, Any]:
+    """
+    Load CLI values from the given context parameters using dot notation.
+
+    Args:
+        ctx_params (dict[str, Any]): dictionary containing CLI parameters.
+
+    Returns:
+        dict[str, Any]: A dictionary of CLI values for configuration.
+    """
+
+    def get_nested_value(
+        keys: list[str], value: Any, dictionary: dict[str, Any]
+    ) -> None:
+        """
+        Recursively insert a value into the dictionary based on a list of keys.
+        """
+        for key in keys[:-1]:
+            dictionary = dictionary.setdefault(key, {})
+        dictionary[keys[-1]] = value
+
+    cli_values = {}
+
+    # Handle dot notation (e.g., BLUEAPI.config.api.host)
+    for key, value in ctx_params.items():
+        if value is not None and "." in key:
+            # Split the key by dot and create nested dictionary structure
+            keys = key.split(".")
+            get_nested_value(keys, value, cli_values)
+
+    return cli_values
+
+
 def pretty_print_errors(errors):
     formatted_errors = []
     for error in errors:
@@ -177,8 +210,8 @@ class ConfigLoader(Generic[C]):
         """
         Use values from CLI arguments, overriding previous values.
         """
-        cli_values = vars(cli_args)
-        self.use_values(cli_values)
+        parsed = parse_cli_context(cli_args)
+        self.use_values(parsed)
 
     def load(self) -> C:
         """

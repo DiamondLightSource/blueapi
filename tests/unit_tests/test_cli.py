@@ -55,7 +55,7 @@ def test_cli_version(runner: CliRunner):
 def test_main_no_params():
     runner = CliRunner()
     result = runner.invoke(main)
-    expected = "Please invoke subcommand!\n"
+    expected = "Please invoke a subcommand!\n"
 
     assert result.stdout == expected
 

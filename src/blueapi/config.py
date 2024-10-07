@@ -1,3 +1,4 @@
+import ast
 import os
 from collections.abc import Mapping
 from enum import Enum
@@ -169,7 +170,7 @@ class ConfigLoader(Generic[C]):
             if key.startswith(prefix):
                 # Convert key to a config path-like structure
                 config_key = key[len(prefix) :].lower()
-                env_values[config_key] = value
+                env_values[config_key] = ast.literal_eval(value)
         self.use_values(env_values)
 
     def use_values_from_cli(self, cli_args: Any) -> None:
@@ -189,5 +190,6 @@ class ConfigLoader(Generic[C]):
             pretty_error_messages = pretty_print_errors(exc.errors())
 
             raise InvalidConfigError(
-                f"Something is wrong with the configuration file:\n{pretty_error_messages}"
+                "Something is wrong with the configuration file:\n"
+                + f"{pretty_error_messages}"
             ) from exc

@@ -35,7 +35,7 @@ from .updates import CliEventRenderer
 
 def load_cli_values(ctx_params: dict[str, Any]) -> dict[str, Any]:
     """
-    Load CLI values from the given context parameters.
+    Load CLI values from the given context parameters using dot notation.
 
     Args:
         ctx_params (dict[str, Any]): dictionary containing CLI parameters.
@@ -43,55 +43,25 @@ def load_cli_values(ctx_params: dict[str, Any]) -> dict[str, Any]:
     Returns:
         dict[str, Any]: A dictionary of CLI values for configuration.
     """
-    cli_values = {
-        # CLI parameters for StompConfig
-        "stomp": {
-            "host": ctx_params.get("stomp_host"),
-            "port": ctx_params.get("stomp_port"),
-            "auth": {
-                "username": ctx_params.get("stomp_username"),
-                "password": ctx_params.get("stomp_password"),
-            }
-            if ctx_params.get("stomp_username") and ctx_params.get("stomp_password")
-            else None,
-        },
-        # CLI parameters for EnvironmentConfig (env)
-        "env": {
-            "sources": [
-                {
-                    "kind": ctx_params.get("source_kind"),
-                    "module": ctx_params.get("source_module"),
-                }
-                # Logic can be added here to handle multiple sources if required
-            ],
-            "events": {
-                "broadcast_status_events": ctx_params.get("broadcast_status_events"),
-            },
-        },
-        # CLI parameters for LoggingConfig
-        "logging": {
-            "level": ctx_params.get("log_level"),
-        },
-        # CLI parameters for RestConfig (API configuration)
-        "api": {
-            "host": ctx_params.get("api_host"),
-            "port": ctx_params.get("api_port"),
-            "protocol": ctx_params.get("api_protocol"),
-        },
-        # CLI parameters for ScratchConfig (optional)
-        "scratch": {
-            "root": ctx_params.get("scratch_root", None),
-            "repositories": [
-                {
-                    "name": ctx_params.get("repo_name"),
-                    "remote_url": ctx_params.get("repo_remote_url"),
-                }
-                # Logic can be added here for multiple repositories if required
-            ]
-            if ctx_params.get("repo_name") and ctx_params.get("repo_remote_url")
-            else None,
-        },
-    }
+
+    def get_nested_value(
+        keys: list[str], value: Any, dictionary: dict[str, Any]
+    ) -> None:
+        """
+        Recursively insert a value into the dictionary based on a list of keys.
+        """
+        for key in keys[:-1]:
+            dictionary = dictionary.setdefault(key, {})
+        dictionary[keys[-1]] = value
+
+    cli_values = {}
+
+    # Handle dot notation (e.g., BLUEAPI.config.api.host)
+    for key, value in ctx_params.items():
+        if value is not None and "." in key:
+            # Split the key by dot and create nested dictionary structure
+            keys = key.split(".")
+            get_nested_value(keys, value, cli_values)
 
     return cli_values
 

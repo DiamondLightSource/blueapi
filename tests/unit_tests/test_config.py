@@ -7,7 +7,7 @@ import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ConfigLoader
+from blueapi.config import ConfigLoader, parse_cli_context, recursively_updated_map
 from blueapi.utils import InvalidConfigError
 
 
@@ -147,3 +147,121 @@ def test_auth_from_env_throws_when_not_available():
         BasicAuthentication(username="${BAZ}", password="baz")
     with pytest.raises(KeyError):
         BasicAuthentication(username="${baz}", password="baz")
+
+
+def test_single_dot_notation():
+    """Test with a single dot notation key."""
+    ctx_params = {"BLUEAPI.config.api.host": "my_host"}
+    expected = {"BLUEAPI": {"config": {"api": {"host": "my_host"}}}}
+    result = parse_cli_context(ctx_params)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_multiple_dot_notation():
+    """Test with multiple levels of dot notation."""
+    ctx_params = {
+        "BLUEAPI.config.api.host": "my_host",
+        "BLUEAPI.config.api.port": 8080,
+        "BLUEAPI.config.logging.level": "INFO",
+    }
+    expected = {
+        "BLUEAPI": {
+            "config": {
+                "api": {"host": "my_host", "port": 8080},
+                "logging": {"level": "INFO"},
+            }
+        }
+    }
+    result = parse_cli_context(ctx_params)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_no_dot_notation():
+    """Test with keys that don't contain dots (should be ignored)."""
+    ctx_params = {"stomp_host": "localhost", "BLUEAPI.config.api.host": "my_host"}
+    expected = {"BLUEAPI": {"config": {"api": {"host": "my_host"}}}}
+    result = parse_cli_context(ctx_params)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_empty_input():
+    """Test with an empty dictionary."""
+    ctx_params = {}
+    expected = {}
+    result = parse_cli_context(ctx_params)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_none_values_for_cli_context():
+    """Test that None values are ignored."""
+    ctx_params = {"BLUEAPI.config.api.host": None, "BLUEAPI.config.api.port": 8080}
+    expected = {"BLUEAPI": {"config": {"api": {"port": 8080}}}}
+    result = parse_cli_context(ctx_params)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_non_overlapping_keys():
+    """Test updating when no keys overlap."""
+    old = {"a": 1, "b": 2}
+    new = {"c": 3, "d": 4}
+    expected = {"a": 1, "b": 2, "c": 3, "d": 4}
+    result = recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_overlapping_keys():
+    """Test updating when keys overlap (non-dictionary values)."""
+    old = {"a": 1, "b": 2}
+    new = {"b": 3, "c": 4}
+    expected = {"a": 1, "b": 3, "c": 4}
+    result = recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_recursive_update():
+    """Test recursive update when both old and new have nested dictionaries."""
+    old = {"a": {"x": 1, "y": 2}, "b": 3}
+    new = {"a": {"y": 20, "z": 30}, "c": 4}
+    expected = {"a": {"x": 1, "y": 20, "z": 30}, "b": 3, "c": 4}
+    result = recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_none_values_for_recursive_map():
+    """Test that None values in the new dictionary are ignored."""
+    old = {"a": 1, "b": 2}
+    new = {"b": None, "c": 3}
+    expected = {
+        "a": 1,
+        "b": 2,  # Old value remains since None is ignored
+        "c": 3,
+    }
+    result = recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_empty_new_dict():
+    """Test with an empty new dictionary."""
+    old = {"a": 1, "b": 2}
+    new = {}
+    expected = {"a": 1, "b": 2}
+    result = recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_empty_old_dict():
+    """Test with an empty old dictionary."""
+    old = {}
+    new = {"a": 1, "b": 2}
+    expected = {"a": 1, "b": 2}
+    result = recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_both_empty_dicts():
+    """Test when both old and new dictionaries are empty."""
+    old = {}
+    new = {}
+    expected = {}
+    result = recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"

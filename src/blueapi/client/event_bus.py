@@ -1,8 +1,9 @@
 from collections.abc import Callable
 
 from bluesky_stomp.messaging import MessageContext, StompClient
-from bluesky_stomp.models import MessageTopic
+from bluesky_stomp.models import Broker, MessageTopic
 
+from blueapi.config import StompConfig
 from blueapi.core import DataEvent
 from blueapi.worker import ProgressEvent, WorkerEvent
 
@@ -41,3 +42,15 @@ class EventBusClient:
             raise BlueskyStreamingError(
                 "Unable to subscribe to messages from blueapi"
             ) from err
+
+    @classmethod
+    def from_stomp_config(cls, config: StompConfig) -> "EventBusClient":
+        return EventBusClient(
+            StompClient.for_broker(
+                broker=Broker(
+                    host=config.stomp.host,
+                    port=config.stomp.port,
+                    auth=config.stomp.auth,
+                )
+            )
+        )

@@ -4,12 +4,10 @@ import sys
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Any
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
-from bluesky_stomp.messaging import MessageContext, StompClient
-from bluesky_stomp.models import Broker
+from bluesky_stomp.messaging import MessageContext
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
@@ -31,39 +29,6 @@ from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
-
-
-def load_cli_values(ctx_params: dict[str, Any]) -> dict[str, Any]:
-    """
-    Load CLI values from the given context parameters using dot notation.
-
-    Args:
-        ctx_params (dict[str, Any]): dictionary containing CLI parameters.
-
-    Returns:
-        dict[str, Any]: A dictionary of CLI values for configuration.
-    """
-
-    def get_nested_value(
-        keys: list[str], value: Any, dictionary: dict[str, Any]
-    ) -> None:
-        """
-        Recursively insert a value into the dictionary based on a list of keys.
-        """
-        for key in keys[:-1]:
-            dictionary = dictionary.setdefault(key, {})
-        dictionary[keys[-1]] = value
-
-    cli_values = {}
-
-    # Handle dot notation (e.g., BLUEAPI.config.api.host)
-    for key, value in ctx_params.items():
-        if value is not None and "." in key:
-            # Split the key by dot and create nested dictionary structure
-            keys = key.split(".")
-            get_nested_value(keys, value, cli_values)
-
-    return cli_values
 
 
 @click.group(invoke_without_command=True)
@@ -91,7 +56,6 @@ def main(
         for path in configs:
             if path.exists():
                 config_loader.use_values_from_yaml(path)
-
             else:
                 raise FileNotFoundError(f"Cannot find file: {path}")
 
@@ -99,9 +63,7 @@ def main(
     config_loader.use_values_from_env(env_prefix)
 
     # Step 4: Load CLI arguments as overrides
-    cli_values = load_cli_values(ctx.params)
-
-    config_loader.use_values(cli_values)
+    config_loader.use_values_from_cli(ctx.params)
 
     # Load the final configuration
     ctx.ensure_object(dict)
@@ -205,15 +167,7 @@ def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
     if config.stomp is not None:
-        event_bus_client = EventBusClient(
-            StompClient.for_broker(
-                broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
-                    auth=config.stomp.auth,
-                )
-            )
-        )
+        event_bus_client = EventBusClient.from_stomp_config(config.stomp)
     else:
         raise RuntimeError("Message bus needs to be configured")
 

@@ -1,11 +1,15 @@
 import json
+
+import matplotlib
+
+matplotlib.use("Agg")
 from collections.abc import Mapping
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import responses
@@ -43,7 +47,16 @@ def template(mock_connection: Mock) -> StompClient:
 
 
 @pytest.fixture
-def runner():
+@patch("blueapi.client.rest.Authentication")
+def mock_auth(mock_auth: MagicMock) -> MagicMock:
+    mock_auth_instance = mock_auth.return_value
+    mock_auth_instance.token = {"access_token": "test_token"}
+    mock_auth_instance.verify_token.return_value = (True, None)
+    return MagicMock()
+
+
+@pytest.fixture
+def runner() -> CliRunner:
     return CliRunner()
 
 
@@ -60,9 +73,10 @@ def test_main_no_params():
     assert result.stdout == expected
 
 
+@patch("blueapi.client.rest.Authentication")
 @patch("requests.request")
 def test_connection_error_caught_by_wrapper_func(
-    mock_requests: Mock, runner: CliRunner
+    mock_auth: MagicMock, mock_requests: Mock, runner: CliRunner
 ):
     mock_requests.side_effect = ConnectionError()
     result = runner.invoke(main, ["controller", "plans"])
@@ -79,8 +93,15 @@ class MyDevice:
     name: str
 
 
+@patch("blueapi.client.rest.Authentication")
 @responses.activate
-def test_get_plans(runner: CliRunner):
+def test_get_plans(
+    mock_auth: MagicMock,
+    runner: CliRunner,
+):
+    mock_auth_instance = mock_auth.return_value
+    mock_auth_instance.token = {"access_token": "test_token"}
+    mock_auth_instance.verify_token.return_value = (True, None)
     plan = Plan(name="my-plan", model=MyModel)
 
     response = responses.add(
@@ -91,12 +112,16 @@ def test_get_plans(runner: CliRunner):
     )
 
     plans = runner.invoke(main, ["controller", "plans"])
-    assert response.call_count == 1
     assert plans.output == "my-plan\n    Args\n      id=string (Required)\n"
+    assert response.call_count == 1
 
 
 @responses.activate
-def test_get_devices(runner: CliRunner):
+@patch("blueapi.client.rest.Authentication")
+def test_get_devices(mock_auth: MagicMock, runner: CliRunner):
+    mock_auth_instance = mock_auth.return_value
+    mock_auth_instance.token = {"access_token": "test_token"}
+    mock_auth_instance.verify_token.return_value = (True, None)
     device = MyDevice(name="my-device")
 
     response = responses.add(
@@ -118,7 +143,11 @@ def test_invalid_config_path_handling(runner: CliRunner):
 
 
 @responses.activate
-def test_submit_plan(runner: CliRunner):
+@patch("blueapi.client.rest.Authentication")
+def test_submit_plan(mock_auth: MagicMock, runner: CliRunner):
+    mock_auth_instance = mock_auth.return_value
+    mock_auth_instance.token = {"access_token": "test_token"}
+    mock_auth_instance.verify_token.return_value = (True, None)
     body_data = {"name": "sleep", "params": {"time": 5}}
 
     response = responses.post(
@@ -175,9 +204,14 @@ def test_valid_stomp_config_for_listener(
 
 
 @responses.activate
+@patch("blueapi.client.rest.Authentication")
 def test_get_env(
+    mock_auth: MagicMock,
     runner: CliRunner,
 ):
+    mock_auth_instance = mock_auth.return_value
+    mock_auth_instance.token = {"access_token": "test_token"}
+    mock_auth_instance.verify_token.return_value = (True, None)
     responses.add(
         responses.GET,
         "http://localhost:8000/environment",
@@ -191,10 +225,15 @@ def test_get_env(
 
 @responses.activate(assert_all_requests_are_fired=True)
 @patch("blueapi.client.client.time.sleep", return_value=None)
+@patch("blueapi.client.rest.Authentication")
 def test_reset_env_client_behavior(
+    mock_auth: MagicMock,
     mock_sleep: Mock,
     runner: CliRunner,
 ):
+    mock_auth_instance = mock_auth.return_value
+    mock_auth_instance.token = {"access_token": "test_token"}
+    mock_auth_instance.verify_token.return_value = (True, None)
     responses.add(
         responses.DELETE,
         "http://localhost:8000/environment",
@@ -237,7 +276,11 @@ def test_reset_env_client_behavior(
 
 @responses.activate
 @patch("blueapi.client.client.time.sleep", return_value=None)
-def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
+@patch("blueapi.client.rest.Authentication")
+def test_env_timeout(mock_auth: MagicMock, mock_sleep: Mock, runner: CliRunner):
+    mock_auth_instance = mock_auth.return_value
+    mock_auth_instance.token = {"access_token": "test_token"}
+    mock_auth_instance.verify_token.return_value = (True, None)
     # Setup mocked responses for the REST endpoints
     responses.add(
         responses.DELETE,
@@ -282,7 +325,11 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
 
 
 @responses.activate
-def test_env_reload_server_side_error(runner: CliRunner):
+@patch("blueapi.client.rest.Authentication")
+def test_env_reload_server_side_error(mock_auth: MagicMock, runner: CliRunner):
+    mock_auth_instance = mock_auth.return_value
+    mock_auth_instance.token = {"access_token": "test_token"}
+    mock_auth_instance.verify_token.return_value = (True, None)
     # Setup mocked error response from the server
     responses.add(
         responses.DELETE, "http://localhost:8000/environment", status=500, json={}

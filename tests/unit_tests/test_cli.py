@@ -150,7 +150,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     )
 
 
-@patch("bluesky_stomp.messaging.StompClient")
+@patch("blueapi.cli.cli.StompClient")
 def test_valid_stomp_config_for_listener(
     template: StompClient,
     runner: CliRunner,

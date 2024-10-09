@@ -207,6 +207,7 @@ def test_non_overlapping_keys():
     expected = {"a": 1, "b": 2, "c": 3, "d": 4}
     result = _recursively_updated_map(old, new)
     assert result == expected, f"Expected {expected}, but got {result}"
+    assert old == {"a": 1, "b": 2}, f"Old dict was modified: {old}"
 
 
 def test_overlapping_keys():

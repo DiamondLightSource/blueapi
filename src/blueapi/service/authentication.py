@@ -16,53 +16,127 @@ class AuthenticationType(Enum):
     PKCE = "pkce"
 
 
-class Authentication:
+class TokenManager:
     """
-    Authentication class handles the authentication process using either
+    TokenManager class handles the token verification and refreshing.
+
+    Attributes:
+        client_id (str): The client ID for the authentication.
+        token_url (str): The URL to obtain the token.
+        audience (list[str]): The audience for the authentication.
+        issuer (str): The issuer of the token.
+        jwks_client (jwt.PyJWKClient): The JWKS client for verifying tokens.
+        token_file_path (str): The file path to save the token.
+        token (None | dict[str, Any]): The token dictionary.
+    """
+
+    # Will move this to a computed field in ApplicationConfig
+    # Get the OpenID Connect configuration and configure the JWKS client
+    oidc_config = requests.get(
+        "https://authn.diamond.ac.uk/realms/master/.well-known/openid-configuration"
+    ).json()
+    jwks_uri = oidc_config["jwks_uri"]
+    issuer = oidc_config["issuer"]
+    token_url = oidc_config["token_endpoint"]
+    jwks_client = jwt.PyJWKClient(jwks_uri)
+    audience = "blueapi"
+
+    def __init__(
+        self,
+        client_id: str,
+        token_file_path: str = "token",
+    ) -> None:
+        self.client_id = client_id
+        self.token_file_path = token_file_path
+        self.token: None | dict[str, Any] = None
+        self.load_token()
+
+    @classmethod
+    def verify_token(
+        cls, token: str, verify_expiration: bool = True
+    ) -> tuple[bool, Exception | None]:
+        try:
+            decode = cls.decode_jwt(token, verify_expiration)
+            if decode:
+                return (True, None)
+        except jwt.PyJWTError as e:
+            print(e)
+            return (False, e)
+
+        return (False, Exception("Invalid token"))
+
+    @classmethod
+    def decode_jwt(cls, token: str, verify_expiration: bool = True):
+        signing_key = cls.jwks_client.get_signing_key_from_jwt(token)
+        decode = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            options={"verify_exp": verify_expiration},
+            verify=True,
+            audience=cls.audience,
+            issuer=cls.issuer,
+            leeway=5,
+        )
+        return decode
+
+    @classmethod
+    def userInfo(cls, token: str) -> tuple[str | None, str | None]:
+        try:
+            decode = cls.decode_jwt(token)
+            if decode:
+                return (decode["name"], decode["fedid"])
+            else:
+                return (None, None)
+        except jwt.PyJWTError as _:
+            return (None, None)
+
+    def refresh_auth_token(self) -> bool:
+        if self.token:
+            response = requests.post(
+                self.token_url,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={
+                    "client_id": self.client_id,
+                    "grant_type": "refresh_token",
+                    "refresh_token": self.token["refresh_token"],
+                },
+            )
+            if response.status_code == HTTPStatus.OK:
+                self.save_token(response.json())
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def save_token(self, token: dict[str, Any]) -> None:
+        token_json = json.dumps(token)
+        token_bytes = token_json.encode("utf-8")
+        token_base64 = base64.b64encode(token_bytes)
+        with open(self.token_file_path, "wb") as token_file:
+            token_file.write(token_base64)
+
+    def load_token(self) -> None:
+        if not os.path.exists(self.token_file_path):
+            return None
+        with open(self.token_file_path, "rb") as token_file:
+            token_base64 = token_file.read()
+            token_bytes = base64.b64decode(token_base64)
+            token_json = token_bytes.decode("utf-8")
+            self.token = json.loads(token_json)
+
+
+class Authenticator:
+    """
+    Authenticator class handles the authentication process using either
     device code flow or PKCE flow.
 
     Attributes:
         client_id (str): The client ID for the authentication.
         authentication_url (str): The URL for authentication.
         audience (list[str]): The audience for the authentication.
-        token_url (str): The URL to obtain the token.
-        openid_config (str): The OpenID configuration URL.
-        issuer (str): The issuer of the token.
-        user_name (str | None): The username obtained from the token.
-        fedid (str | None): The federated ID obtained from the token.
-        jwks_client (jwt.PyJWKClient): The JWKS client for verifying tokens.
-        token_file_path (str): The file path to save the token.
-        token (None | dict[str, Any]): The token dictionary.
-
-    Methods:
-        __init__(authentication_type: AuthenticationType = AuthenticationType.DEVICE,
-                token_file_path: str = "token") -> None:
-            Initializes the Authentication class with the specified authentication type
-            and token file path.
-
-        get_device_code() -> str:
-            Obtains the device code for device code flow.
-
-        poll_for_token(device_code: str, timeout: float = 30,
-        polling_interval: float = 0.5)
-        -> dict[str, Any]:
-            Polls for the token using the device code.
-
-        verify_token(token: str, verify_expiration: bool = True)
-        -> tuple[bool, Exception | None]:
-            Verifies the provided token.
-
-        refresh_auth_token() -> bool:
-            Refreshes the authentication token.
-
-        save_token(token: dict[str, Any]) -> None:
-            Saves the token to a file.
-
-        load_token() -> None:
-            Loads the token from a file.
-
-        start_device_flow() -> None:
-            Starts the device flow for authentication.
+        token_manager (TokenManager): The TokenManager instance.
     """
 
     def __init__(
@@ -98,16 +172,10 @@ class Authentication:
         ):
             raise Exception("Missing environment variables")
 
-        self.user_name: str | None = None
-        self.fedid: str | None = None
-        # Get the OpenID Connect configuration and configure the JWKS client
-        oidc_config = requests.get(self.openid_config).json()
-        self.jwks_client = jwt.PyJWKClient(oidc_config["jwks_uri"])
-
-        # Token file path
-        self.token_file_path = token_file_path
-        self.token: None | dict[str, Any] = None
-        self.load_token()
+        self.token_manager = TokenManager(
+            client_id=self.client_id,
+            token_file_path=token_file_path,
+        )
 
     def get_device_code(self):
         response = requests.post(
@@ -129,7 +197,6 @@ class Authentication:
     ) -> dict[str, Any]:
         too_late = time.time() + timeout
         while time.time() < too_late:
-            # Send POST request
             response = requests.post(
                 self.token_url,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -139,8 +206,6 @@ class Authentication:
                     "client_id": self.client_id,
                 },
             )
-
-            # Check response status code
             if response.status_code == HTTPStatus.OK:
                 return response.json()
             if response.status_code == HTTPStatus.BAD_REQUEST:
@@ -149,92 +214,18 @@ class Authentication:
 
         raise TimeoutError("Polling timed out")
 
-    def verify_token(
-        self, token: str, verify_expiration: bool = True
-    ) -> tuple[bool, Exception | None]:
-        signing_key = self.jwks_client.get_signing_key_from_jwt(token)
-        try:
-            decode = jwt.decode(
-                token,
-                signing_key.key,
-                algorithms=["RS256"],
-                options={"verify_exp": verify_expiration},
-                verify=True,
-                audience=self.audience,
-                issuer=self.issuer,
-                leeway=5,
-            )
-            if decode:
-                self.user_name = decode.get("name")
-                self.fedid = decode.get("fedid")
-                return (True, None)
-        except jwt.PyJWTError as e:
-            return (False, e)
-
-        return (False, Exception("Invalid token"))
-
-    def refresh_auth_token(self) -> bool:
-        if self.token:
-            # Send POST request
-            response = requests.post(
-                self.token_url,
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-                data={
-                    "client_id": self.client_id,
-                    "grant_type": "refresh_token",
-                    "refresh_token": self.token["refresh_token"],
-                },
-            )
-            if response.status_code == HTTPStatus.OK:
-                self.save_token(response.json())
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def save_token(self, token: dict[str, Any]) -> None:
-        # Convert the token dictionary to a JSON string
-        token_json = json.dumps(token)
-
-        # Convert the JSON string to bytes
-        token_bytes = token_json.encode("utf-8")
-
-        # Encode the bytes using base64
-        token_base64 = base64.b64encode(token_bytes)
-
-        # Save the base64 encoded bytes to a file
-
-        with open(self.token_file_path, "wb") as token_file:
-            token_file.write(token_base64)
-
-    def load_token(self) -> None:
-        if not os.path.exists(self.token_file_path):
-            return None
-        with open(self.token_file_path, "rb") as token_file:
-            token_base64 = token_file.read()
-
-            # Decode the base64 encoded bytes
-            token_bytes = base64.b64decode(token_base64)
-
-            # Convert the bytes back to a JSON string
-            token_json = token_bytes.decode("utf-8")
-
-            # Convert the JSON string back to a dictionary
-            self.token = json.loads(token_json)
-
     def start_device_flow(self) -> None:
-        # Check if we have a valid token
-        if self.token:
-            valid_token, exception = self.verify_token(self.token["access_token"])
+        if self.token_manager.token:
+            valid_token, exception = self.token_manager.verify_token(
+                self.token_manager.token["access_token"]
+            )
             if valid_token:
                 print("Token verified")
                 return
             elif isinstance(exception, jwt.ExpiredSignatureError):
-                if self.refresh_auth_token():
+                if self.token_manager.refresh_auth_token():
                     return
-        # Send Request to get fresh token as token is not valid
-        # and refresh token is not available
+
         response = requests.post(
             self.authentication_url,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -250,15 +241,18 @@ class Authentication:
             )
             auth_token_json = self.poll_for_token(device_code)
             if auth_token_json:
-                # Verify Token
-                verify, exception = self.verify_token(auth_token_json["access_token"])
+                print(auth_token_json)
+                verify, exception = TokenManager.verify_token(
+                    auth_token_json["access_token"]
+                )
                 if verify:
                     print("Token verified")
-                    self.save_token(auth_token_json)
+                    self.token_manager.save_token(auth_token_json)
                 else:
                     print("Unauthorized access")
                     return
         else:
             print("Unauthorized access")
             return
-        print(f"Logged in as {self.user_name} with fed-id {self.fedid}")
+        userName, fedid = TokenManager.userInfo(auth_token_json["access_token"])
+        print(f"Logged in as {userName} with fed-id {fedid}")

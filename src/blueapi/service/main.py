@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
+from typing import Annotated
 
+import requests
 from fastapi import (
     BackgroundTasks,
     Body,
@@ -10,12 +12,14 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.security import OAuth2AuthorizationCodeBearer
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.service import interface
+from blueapi.service.authentication import TokenManager
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -73,7 +77,39 @@ app = FastAPI(
     title="BlueAPI Control",
     lifespan=lifespan,
     version=REST_API_VERSION,
+    # https://swagger.io/docs/open-source-tools/swagger-ui/usage/oauth2/
+    swagger_ui_init_oauth={
+        "clientId": "blueapi",  # TODO: This should be a configuration value
+        "clientSecret": "secret",  # TODO: This should be  a configuration value
+        "usePkceWithAuthorizationCodeGrant": True,
+        "scopeSeparator": " ",
+        "scopes": "openid profile offline_access",
+    },
 )
+# TODO: Need to move this to a configuration file
+oidc_config = requests.get(
+    "https://authn.diamond.ac.uk/realms/master/.well-known/openid-configuration"
+).json()
+authorizationUrl = oidc_config["authorization_endpoint"]
+tokenUrl = oidc_config["token_endpoint"]
+assert authorizationUrl and tokenUrl, "Authorization and Token URLs must be set"
+
+oauth_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl=authorizationUrl,
+    tokenUrl=tokenUrl,
+    refreshUrl=tokenUrl,
+    auto_error=True,
+)
+
+
+async def verify_token_auth(
+    access_token: Annotated[str, Depends(oauth_scheme)],
+) -> None:
+    _, exception = TokenManager.verify_token(access_token)
+    if exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exception)
+        ) from exception
 
 
 @app.exception_handler(KeyError)
@@ -92,13 +128,16 @@ def get_environment(
     return runner.state
 
 
-@app.delete("/environment", response_model=EnvironmentResponse)
+@app.delete(
+    "/environment",
+    dependencies=[Depends(verify_token_auth)],
+    response_model=EnvironmentResponse,
+)
 async def delete_environment(
     background_tasks: BackgroundTasks,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
-
     if runner.state.initialized or runner.state.error_message is not None:
         background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
@@ -141,6 +180,7 @@ example_task = Task(name="count", params={"detectors": ["x"]})
     "/tasks",
     response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_token_auth)],
 )
 def submit_task(
     request: Request,
@@ -170,7 +210,11 @@ def submit_task(
         ) from e
 
 
-@app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+@app.delete(
+    "/tasks/{task_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_token_auth)],
+)
 def delete_submitted_task(
     task_id: str,
     runner: WorkerDispatcher = Depends(_runner),
@@ -214,6 +258,7 @@ def get_tasks(
     "/worker/task",
     response_model=WorkerTask,
     responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
+    dependencies=[Depends(verify_token_auth)],
 )
 def set_active_task(
     task: WorkerTask,
@@ -282,6 +327,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
         status.HTTP_400_BAD_REQUEST: {"detail": "Transition not allowed"},
         status.HTTP_202_ACCEPTED: {"detail": "Transition requested"},
     },
+    dependencies=[Depends(verify_token_auth)],
 )
 def set_state(
     state_change_request: StateChangeRequest,

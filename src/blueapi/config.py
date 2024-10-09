@@ -208,5 +208,6 @@ class ConfigLoader(Generic[C]):
 
             raise InvalidConfigError(
                 f"""Something is wrong with the configuration file:
-                {pretty_error_messages}"""
+                    {pretty_error_messages}
+                """
             ) from exc

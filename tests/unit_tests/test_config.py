@@ -7,7 +7,7 @@ import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ConfigLoader, parse_cli_context, recursively_updated_map
+from blueapi.config import ConfigLoader, _recursively_updated_map, parse_cli_context
 from blueapi.utils import InvalidConfigError
 
 
@@ -205,7 +205,7 @@ def test_non_overlapping_keys():
     old = {"a": 1, "b": 2}
     new = {"c": 3, "d": 4}
     expected = {"a": 1, "b": 2, "c": 3, "d": 4}
-    result = recursively_updated_map(old, new)
+    result = _recursively_updated_map(old, new)
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
@@ -214,7 +214,7 @@ def test_overlapping_keys():
     old = {"a": 1, "b": 2}
     new = {"b": 3, "c": 4}
     expected = {"a": 1, "b": 3, "c": 4}
-    result = recursively_updated_map(old, new)
+    result = _recursively_updated_map(old, new)
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
@@ -223,7 +223,7 @@ def test_recursive_update():
     old = {"a": {"x": 1, "y": 2}, "b": 3}
     new = {"a": {"y": 20, "z": 30}, "c": 4}
     expected = {"a": {"x": 1, "y": 20, "z": 30}, "b": 3, "c": 4}
-    result = recursively_updated_map(old, new)
+    result = _recursively_updated_map(old, new)
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
@@ -236,7 +236,7 @@ def test_none_values_for_recursive_map():
         "b": 2,  # Old value remains since None is ignored
         "c": 3,
     }
-    result = recursively_updated_map(old, new)
+    result = _recursively_updated_map(old, new)
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
@@ -245,7 +245,7 @@ def test_empty_new_dict():
     old = {"a": 1, "b": 2}
     new = {}
     expected = {"a": 1, "b": 2}
-    result = recursively_updated_map(old, new)
+    result = _recursively_updated_map(old, new)
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
@@ -254,7 +254,7 @@ def test_empty_old_dict():
     old = {}
     new = {"a": 1, "b": 2}
     expected = {"a": 1, "b": 2}
-    result = recursively_updated_map(old, new)
+    result = _recursively_updated_map(old, new)
     assert result == expected, f"Expected {expected}, but got {result}"
 
 
@@ -263,5 +263,5 @@ def test_both_empty_dicts():
     old = {}
     new = {}
     expected = {}
-    result = recursively_updated_map(old, new)
+    result = _recursively_updated_map(old, new)
     assert result == expected, f"Expected {expected}, but got {result}"

@@ -36,15 +36,23 @@ from .updates import CliEventRenderer
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
-@click.option("--env-prefix", default="APP_", help="Prefix for environment variables")
+@click.option(
+    "--env-prefix",
+    default="BLUEAPI_",
+    help="Prefix for environment variables to override configuration",
+)
 @click.pass_context
 def main(
     ctx: click.Context, config: Path | None | tuple[Path, ...], env_prefix: str
 ) -> None:
     """
-    Main entry point for the CLI,
-    loading configuration in the correct order of precedence:
-    1. Defaults -> 2. File -> 3. Environment variables -> 4. CLI arguments.
+    BlueaAPI CLI, see below for options.
+    The configuration is loaded in the following order,
+    each step overriding the previous one:
+      1. Hardcoded defaults
+      2. File (via -c option)
+      3. Environment variables (prefixed with BLUEAPI_)
+      4. CLI arguments (in a dot format like `--app.logging.level=DEBUG`)
     """
 
     # Initialize the config loader with default schema
@@ -75,7 +83,6 @@ def main(
     # Set up logging based on loaded configuration
     logging.basicConfig(level=loaded_config.logging.level)
 
-    # If no subcommand is invoked, print a help message
     if ctx.invoked_subcommand is None:
         print("Please invoke a subcommand!")
 

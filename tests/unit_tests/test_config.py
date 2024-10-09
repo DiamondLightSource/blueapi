@@ -1,7 +1,7 @@
 import json
 import os
 import tempfile
-from collections.abc import Mapping
+from collections.abc import Generator, Mapping
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -175,7 +175,9 @@ def is_subset(subset: Mapping[str, Any], superset: Mapping[str, Any]) -> bool:
 
 # Parameterize the fixture to accept different config examples
 @pytest.fixture
-def temp_yaml_config_file(request):
+def temp_yaml_config_file(
+    request: pytest.FixtureRequest,
+) -> Generator[tuple[Path, dict[str, Any]]]:
     # Use the provided config data from test parameters
     config_data = request.param
 

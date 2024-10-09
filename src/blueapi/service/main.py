@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import Annotated
 
+import requests
 from fastapi import (
     BackgroundTasks,
     Body,
@@ -18,7 +19,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.service import interface
-from blueapi.service.authentication import Authentication, AuthenticationType
+from blueapi.service.authentication import TokenManager
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -71,7 +72,6 @@ async def lifespan(app: FastAPI):
     teardown_runner()
 
 
-auth = Authentication(AuthenticationType.PKCE)
 app = FastAPI(
     docs_url="/docs",
     title="BlueAPI Control",
@@ -79,16 +79,19 @@ app = FastAPI(
     version=REST_API_VERSION,
     # https://swagger.io/docs/open-source-tools/swagger-ui/usage/oauth2/
     swagger_ui_init_oauth={
-        "clientId": auth.client_id,
-        "clientSecret": auth.client_secret,
+        "clientId": "blueapi",  # TODO: This should be a configuration value
+        "clientSecret": "secret",  # TODO: This should be  a configuration value
         "usePkceWithAuthorizationCodeGrant": True,
         "scopeSeparator": " ",
         "scopes": "openid profile offline_access",
     },
 )
-
-authorizationUrl = auth.authentication_url
-tokenUrl = auth.token_url
+# TODO: Need to move this to a configuration file
+oidc_config = requests.get(
+    "https://authn.diamond.ac.uk/realms/master/.well-known/openid-configuration"
+).json()
+authorizationUrl = oidc_config["authorization_endpoint"]
+tokenUrl = oidc_config["token_endpoint"]
 assert authorizationUrl and tokenUrl, "Authorization and Token URLs must be set"
 
 oauth_scheme = OAuth2AuthorizationCodeBearer(
@@ -102,7 +105,7 @@ oauth_scheme = OAuth2AuthorizationCodeBearer(
 async def verify_token_auth(
     access_token: Annotated[str, Depends(oauth_scheme)],
 ) -> None:
-    _, exception = auth.verify_token(access_token)
+    _, exception = TokenManager.verify_token(access_token)
     if exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exception)

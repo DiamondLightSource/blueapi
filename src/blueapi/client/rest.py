@@ -6,7 +6,7 @@ import requests
 from pydantic import TypeAdapter
 
 from blueapi.config import RestConfig
-from blueapi.service.authentication import Authentication
+from blueapi.service.authentication import TokenManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -129,19 +129,23 @@ class BlueapiRestClient:
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
     ) -> T:
         url = self._url(suffix)
-        auth = Authentication()
-        if auth.token and auth.token["access_token"]:
-            valid_token, exception = auth.verify_token(auth.token["access_token"])
+        jwt_token_manager = TokenManager("blueapi-cli")
+        if jwt_token_manager.token and jwt_token_manager.token["access_token"]:
+            valid_token, exception = TokenManager.verify_token(
+                jwt_token_manager.token["access_token"]
+            )
             if valid_token:
+                access_token = jwt_token_manager.token["access_token"]
                 headers = {
                     "content-type": "application/json; charset=UTF-8",
-                    "Authorization": f"Bearer {auth.token['access_token']}",
+                    "Authorization": f"Bearer {access_token}",
                 }
             elif isinstance(exception, jwt.ExpiredSignatureError):
-                if auth.refresh_auth_token():
+                if jwt_token_manager.refresh_auth_token():
+                    access_token = jwt_token_manager.token["access_token"]
                     headers = {
                         "content-type": "application/json; charset=UTF-8",
-                        "Authorization": f"Bearer {auth.token['access_token']}",
+                        "Authorization": f"Bearer {access_token}",
                     }
                 else:
                     exception = BlueskyRemoteControlError("Invalid Token")

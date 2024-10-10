@@ -30,20 +30,33 @@
             ]
         },
         {
+            "name": "Blueapi Server (Custom Config)",
+            "type": "debugpy",
+            "request": "launch",
+            "justMyCode": false,
+            "module": "blueapi",
+            "args": "--config ${input:config_path} serve"
+        },
+        {
             "name": "Blueapi Controller",
             "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi",
-            "args": "controller ${input:args}"
+            "args": "controller ${input:controller_args}"
         },
     ],
     "inputs": [
         {
-            "id": "args",
+            "id": "controller_args",
             "type": "promptString",
             "description": "Arguments to pass to controller",
             "default": ""
+        },
+        {
+            "id": "config_path",
+            "type": "promptString",
+            "description": "Server config file path",
         }
     ]
 }

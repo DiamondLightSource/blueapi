@@ -8,7 +8,7 @@ from typing import Any, TypeVar
 from unittest.mock import MagicMock, patch
 
 import pytest
-from dodal.common import MsgGenerator
+from bluesky.utils import MsgGenerator
 from dodal.common.types import UpdatingPathProvider
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind

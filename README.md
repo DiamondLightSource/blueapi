@@ -10,12 +10,12 @@
 
 Lightweight bluesky-as-a-service wrapper application. Also usable as a library.
 
-Source          | <https://github.com/DiamondLightSource/blueapi>
-:---:           | :---:
-PyPI            | `pip install blueapi`
-Docker          | `docker run ghcr.io/diamondlightsource/blueapi:latest`
-Documentation   | <https://diamondlightsource.github.io/blueapi>
-Releases        | <https://github.com/DiamondLightSource/blueapi/releases>
+|    Source     |     <https://github.com/DiamondLightSource/blueapi>      |
+| :-----------: | :------------------------------------------------------: |
+|     PyPI      |                  `pip install blueapi`                   |
+|    Docker     |  `docker run ghcr.io/diamondlightsource/blueapi:latest`  |
+| Documentation |      <https://diamondlightsource.github.io/blueapi>      |
+|   Releases    | <https://github.com/DiamondLightSource/blueapi/releases> |
 
 This module wraps [bluesky](https://blueskyproject.io/bluesky) plans and devices
 inside a server and exposes endpoints to send commands/receive data. Useful for
@@ -30,7 +30,7 @@ type-annotated plans. For example, take the following plan:
 
 ```python
     import bluesky.plans as bp
-    from blueapi.core import MsgGenerator
+    from bluesky.utils  import MsgGenerator
 
     def my_plan(foo: str, bar: int) -> MsgGenerator:
         yield from bp.scan(...)

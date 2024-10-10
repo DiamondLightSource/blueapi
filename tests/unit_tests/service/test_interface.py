@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
-from dodal.common import MsgGenerator
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 

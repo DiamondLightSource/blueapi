@@ -5,8 +5,8 @@ from typing import Annotated, Any
 
 import bluesky.plans as bp
 from bluesky.protocols import HasName, Movable, Readable
+from bluesky.utils import MsgGenerator
 from cycler import Cycler, cycler
-from dodal.common import MsgGenerator
 from dodal.plans.data_session_metadata import attach_data_session_metadata_decorator
 from pydantic import Field, validate_call
 from scanspec.specs import Spec

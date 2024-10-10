@@ -4,7 +4,7 @@ from typing import Annotated, Any, TypeVar
 
 import bluesky.plan_stubs as bps
 from bluesky.protocols import Movable
-from dodal.common import MsgGenerator
+from bluesky.utils import MsgGenerator
 
 """
 Wrappers for Bluesky built-in plan stubs with type hinting

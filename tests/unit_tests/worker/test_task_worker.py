@@ -7,9 +7,10 @@ from typing import Any, TypeVar
 from unittest.mock import MagicMock, patch
 
 import pytest
+from dodal.common import MsgGenerator
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
-from blueapi.core import BlueskyContext, EventStream, MsgGenerator
+from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.worker import (
     ProgressEvent,

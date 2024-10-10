@@ -8,7 +8,7 @@ from bluesky.protocols import HasName, Movable, Readable
 from cycler import Cycler, cycler
 from dodal.common import MsgGenerator
 from dodal.plans.data_session_metadata import attach_data_session_metadata_decorator
-from pydantic import validate_call
+from pydantic import Field, validate_call
 from scanspec.specs import Spec
 
 """
@@ -19,6 +19,9 @@ Diamond's "mapping scans" using ScanPointGenerator.
 
 
 class NamedMovable(HasName, Movable): ...
+
+
+PositiveFloat = Annotated[float, Field(gt=0)]
 
 
 @attach_data_session_metadata_decorator()
@@ -68,3 +71,20 @@ def _scanspec_to_cycler(spec: Spec[str], axes: Mapping[str, Movable]) -> Cycler:
     # Need to "add" the cyclers for all the axes together. The code below is
     # effectively: cycler(motor1, [...]) + cycler(motor2, [...]) + ...
     return reduce(operator.add, (cycler(*args) for args in midpoints.items()))
+
+
+@attach_data_session_metadata_decorator()
+@validate_call(config={"arbitrary_types_allowed": True})
+def count(
+    detectors: Annotated[
+        set[Readable], "Set of readable devices, will take a reading at each point"
+    ],
+    num: Annotated[int, "Number of frames to collect", Field(ge=1)] = 1,
+    delay: Annotated[
+        PositiveFloat | list[PositiveFloat] | None,
+        "Delay between readings: if list, len(delay) == num - 1 and the delay is \
+            between each point, if value or None is the delay for every gap",
+    ] = None,
+    metadata: Mapping[str, Any] | None = None,
+) -> MsgGenerator:
+    yield from bp.count(detectors, num, delay=delay, md=metadata or {})

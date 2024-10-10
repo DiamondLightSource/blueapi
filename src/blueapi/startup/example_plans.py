@@ -4,7 +4,7 @@ from functools import reduce
 from typing import Annotated, Any
 
 import bluesky.plans as bp
-from bluesky.protocols import Movable, Readable
+from bluesky.protocols import HasName, Movable, Readable
 from cycler import Cycler, cycler
 from dodal.common import MsgGenerator
 from dodal.plans.data_session_metadata import attach_data_session_metadata_decorator
@@ -18,6 +18,9 @@ Diamond's "mapping scans" using ScanPointGenerator.
 """
 
 
+class NamedMovable(HasName, Movable): ...
+
+
 @attach_data_session_metadata_decorator()
 @validate_call(config={"arbitrary_types_allowed": True})
 def scan(
@@ -25,7 +28,7 @@ def scan(
         set[Readable], "Set of readable devices, will take a reading at each point"
     ],
     axes_to_move: Annotated[
-        Mapping[str, Movable], "All axes involved in this scan, names and objects"
+        Mapping[str, NamedMovable], "All axes involved in this scan, names and objects"
     ],
     spec: Annotated[Spec[str], "ScanSpec modelling the path of the scan"],
     metadata: Mapping[str, Any] | None = None,

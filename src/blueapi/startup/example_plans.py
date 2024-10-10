@@ -48,7 +48,7 @@ def scan(
     }
 
     cycler = _scanspec_to_cycler(spec, axes_to_move)
-    yield from bp.scan_nd(detectors, cycler, md=_md)
+    yield from bp.scan_nd(tuple(detectors), cycler, md=_md)
 
 
 def _scanspec_to_cycler(spec: Spec[str], axes: Mapping[str, Movable]) -> Cycler:
@@ -89,4 +89,4 @@ def count(
     ] = None,
     metadata: Mapping[str, Any] | None = None,
 ) -> MsgGenerator:
-    yield from bp.count(detectors, num, delay=delay, md=metadata or {})
+    yield from bp.count(tuple(detectors), num, delay=delay, md=metadata or {})

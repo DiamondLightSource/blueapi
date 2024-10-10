@@ -2,12 +2,14 @@ import itertools
 import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future
+from pathlib import Path
 from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import MagicMock, patch
 
 import pytest
 from dodal.common import MsgGenerator
+from dodal.common.types import UpdatingPathProvider
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream
@@ -308,40 +310,46 @@ def begin_task_and_wait_until_complete(
 #
 
 
-def test_worker_and_data_events_produce_in_order(worker: TaskWorker) -> None:
-    assert_running_count_plan_produces_ordered_worker_and_data_events(
-        [
-            WorkerEvent(
-                state=WorkerState.RUNNING,
-                task_status=TaskStatus(
-                    task_id="count", task_complete=False, task_failed=False
+def test_worker_and_data_events_produce_in_order(
+    updating_path_provider: UpdatingPathProvider, tmp_path: Path, worker: TaskWorker
+) -> None:
+    with patch(
+        "dodal.common.beamlines.beamline_utils.get_path_provider",
+        return_value=updating_path_provider,
+    ):
+        assert_running_count_plan_produces_ordered_worker_and_data_events(
+            [
+                WorkerEvent(
+                    state=WorkerState.RUNNING,
+                    task_status=TaskStatus(
+                        task_id="count", task_complete=False, task_failed=False
+                    ),
+                    errors=[],
+                    warnings=[],
                 ),
-                errors=[],
-                warnings=[],
-            ),
-            DataEvent(name="start", doc={}),
-            DataEvent(name="descriptor", doc={}),
-            DataEvent(name="event", doc={}),
-            DataEvent(name="stop", doc={}),
-            WorkerEvent(
-                state=WorkerState.IDLE,
-                task_status=TaskStatus(
-                    task_id="count", task_complete=False, task_failed=False
+                DataEvent(name="start", doc={}),
+                DataEvent(name="descriptor", doc={}),
+                DataEvent(name="event", doc={}),
+                DataEvent(name="stop", doc={}),
+                WorkerEvent(
+                    state=WorkerState.IDLE,
+                    task_status=TaskStatus(
+                        task_id="count", task_complete=False, task_failed=False
+                    ),
+                    errors=[],
+                    warnings=[],
                 ),
-                errors=[],
-                warnings=[],
-            ),
-            WorkerEvent(
-                state=WorkerState.IDLE,
-                task_status=TaskStatus(
-                    task_id="count", task_complete=True, task_failed=False
+                WorkerEvent(
+                    state=WorkerState.IDLE,
+                    task_status=TaskStatus(
+                        task_id="count", task_complete=True, task_failed=False
+                    ),
+                    errors=[],
+                    warnings=[],
                 ),
-                errors=[],
-                warnings=[],
-            ),
-        ],
-        worker,
-    )
+            ],
+            worker,
+        )
 
 
 def assert_running_count_plan_produces_ordered_worker_and_data_events(

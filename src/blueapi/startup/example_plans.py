@@ -89,4 +89,4 @@ def count(
     ] = None,
     metadata: Mapping[str, Any] | None = None,
 ) -> MsgGenerator:
-    yield from bp.count(tuple(detectors), num, delay=delay, md=metadata or {})
+    yield from bp.count(tuple(detectors), num, delay=delay or 0, md=metadata or {})

@@ -94,10 +94,6 @@ worker:
       module: blueapi.startup.example_devices
     - kind: planFunctions
       module: blueapi.startup.example_plans
-    - kind: planFunctions
-      module: dls_bluesky_core.plans
-    - kind: planFunctions
-      module: dls_bluesky_core.stubs
   stomp:
     auth:
       username: guest

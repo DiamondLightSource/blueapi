@@ -87,6 +87,6 @@ def count(
         "Delay between readings: if list, len(delay) == num - 1 and the delay is \
             between each point, if value or None is the delay for every gap",
     ] = None,
-    metadata: Mapping[str, Any] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
     yield from bp.count(tuple(detectors), num, delay=delay or 0, md=metadata or {})

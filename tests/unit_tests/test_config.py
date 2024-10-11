@@ -9,7 +9,7 @@ from unittest import mock
 import pytest
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Secret
 
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.utils import InvalidConfigError
@@ -251,7 +251,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             "stomp": {
                 "host": "localhost",
                 "port": 61613,
-                "auth": None,
+                "auth": {"username": "guest", "password": Secret("guest")},
             },
             "env": {
                 "sources": [
@@ -267,7 +267,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             "stomp": {
                 "host": "https://rabbitmq.diamond.ac.uk",
                 "port": 61613,
-                "auth": None,
+                "auth": {"username": "guest", "password": "guest"},
             },
             "env": {
                 "sources": [

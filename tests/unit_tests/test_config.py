@@ -9,7 +9,7 @@ from unittest import mock
 import pytest
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Secret
 
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.utils import InvalidConfigError
@@ -126,20 +126,20 @@ def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) ->
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
 def test_auth_from_env():
-    auth = BasicAuthentication(username="${FOO}", password="baz")
+    auth = BasicAuthentication(username="${FOO}", password=Secret("baz"))
     assert auth.username == "bar"
 
 
 @mock.patch.dict(os.environ, {"FOO": "bar", "BAZ": "qux"}, clear=True)
 def test_auth_from_env_repeated_key():
-    auth = BasicAuthentication(username="${FOO}", password="${FOO}")
+    auth = BasicAuthentication(username="${FOO}", password=Secret("${FOO}"))
     assert auth.username == "bar"
     assert auth.password.get_secret_value() == "bar"
 
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
 def test_auth_from_env_ignore_case():
-    auth = BasicAuthentication(username="${FOO}", password="${foo}")
+    auth = BasicAuthentication(username="${FOO}", password=Secret("${foo}"))
     assert auth.username == "bar"
     assert auth.password.get_secret_value() == "bar"
 
@@ -148,7 +148,7 @@ def test_auth_from_env_ignore_case():
 def test_auth_from_env_throws_when_not_available():
     # Eagerly throws an exception, will fail during initial loading
     with pytest.raises(KeyError):
-        BasicAuthentication(username="${BAZ}", password="baz")
+        BasicAuthentication(username="${BAZ}", password=Secret("baz"))
     with pytest.raises(KeyError):
         BasicAuthentication(username="${baz}", passcode="baz")
 

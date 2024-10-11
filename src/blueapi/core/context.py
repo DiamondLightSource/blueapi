@@ -284,7 +284,7 @@ class BlueskyContext:
             root = get_origin(typ)
             if root == UnionType:
                 root = Union
-                return root[new_types] # type: ignore
+                return root[new_types]  # type: ignore
         return typ
 
 

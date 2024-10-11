@@ -110,7 +110,7 @@ class TaskWorker:
 
         self._tasks = {}
 
-        self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
+        self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)  # type: ignore
         self._errors = []
         self._warnings = []
         self._task_channel = Queue(maxsize=1)
@@ -278,10 +278,10 @@ class TaskWorker:
     @start_as_current_span(TRACER)
     def run(self) -> None:
         LOGGER.info("Worker starting")
-        self._ctx.run_engine.state_hook = self._on_state_change
+        self._ctx.run_engine.state_hook = self._on_state_change  # type: ignore
         self._ctx.run_engine.subscribe(self._on_document)
         if self._broadcast_statuses:
-            self._ctx.run_engine.waiting_hook = self._waiting_hook
+            self._ctx.run_engine.waiting_hook = self._waiting_hook  # type: ignore
 
         self._stopped.clear()
         self._started.set()

@@ -27,6 +27,7 @@
                 "redhat.vscode-yaml",
                 "ryanluker.vscode-coverage-gutters",
                 "charliermarsh.ruff",
+                "ms-pyright.pyright",
                 "ms-azuretools.vscode-docker"
             ]
         }

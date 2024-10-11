@@ -16,6 +16,8 @@ way to start it is to run it via a container:
 ```
     podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
 ```
+Alternatively a script is avaiable in [script](../../src/script/start_rabbitmq.sh)
+
 
 ## Start Worker
 
@@ -30,7 +32,7 @@ The worker can also be started using a custom config file:
 ```
     blueapi --config path/to/file serve
 ```
-
+An example of the config file to start stomp with default values can be find in [config](../../src/script/stomp_config.yml)
 ## Test that the Worker is Running
 
 Blueapi comes with a CLI so that you can query and control the worker from the terminal.
@@ -40,5 +42,7 @@ Blueapi comes with a CLI so that you can query and control the worker from the t
 ```
 
 The above command should display all plans the worker is capable of running.
+
+
 
 See also [full cli reference](../reference/cli.md)

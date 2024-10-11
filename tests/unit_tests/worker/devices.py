@@ -41,8 +41,7 @@ class AdditionalUpdateStatus(DeviceStatus):
 class AdditionalStatusDevice(Device, Movable):
     def set(self, value: float) -> Status:
         status = AdditionalUpdateStatus(self)
-        # todo here again the ophyd issue
-        return status
+        return status  # type: ignore
 
 
 def additional_status_device(name="additional_status_device") -> AdditionalStatusDevice:

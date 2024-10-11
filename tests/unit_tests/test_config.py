@@ -240,3 +240,62 @@ def test_config_yaml_parsed(temp_yaml_config_file):
 
     # Assert that config_data is a subset of target_dict_json
     assert is_subset(config_data, target_dict_json), ""
+
+
+# Parameterized test to run with different configurations
+@pytest.mark.parametrize(
+    "temp_yaml_config_file",
+    [
+        # Different configuration examples passed to the fixture
+        {
+            "stomp": {
+                "host": "localhost",
+                "port": 61613,
+                "auth": None,
+            },
+            "env": {
+                "sources": [
+                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "planFunctions", "module": "dls_bluesky_core.plans"},
+                    {"kind": "planFunctions", "module": "dls_bluesky_core.stubs"},
+                ],
+            },
+            "api": {"host": "0.0.0.0", "port": 8000},
+            "scratch": {"root": "/tmp/scratch/blueapi", "repositories": ["dodal"]},
+        },
+        {
+            "stomp": {
+                "host": "https://rabbitmq.diamond.ac.uk",
+                "port": 61613,
+                "auth": None,
+            },
+            "env": {
+                "sources": [
+                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "planFunctions", "module": "dls_bluesky_core.plans"},
+                    {"kind": "planFunctions", "module": "dls_bluesky_core.stubs"},
+                ],
+                "events": {"broadcast_status_events": True},
+            },
+            "logging": {"level": "INFO"},
+            "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
+            "scratch": {"root": "/tmp/scratch/blueapi", "repositories": ["dodal"]},
+        },
+    ],
+    indirect=True,
+)
+def test_config_yaml_parsed_complete(temp_yaml_config_file):
+    temp_yaml_file_path, config_data = temp_yaml_config_file
+
+    # Initialize loader and load config from the YAML file
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(temp_yaml_file_path)
+    loaded_config = loader.load()
+
+    # Parse the loaded config JSON into a dictionary
+    target_dict_json = json.loads(loaded_config.model_dump_json())
+
+    # Assert that the loaded config is identical to the expected config_data
+    assert (
+        target_dict_json == config_data
+    ), f"Expected config {config_data}, but got {target_dict_json}"

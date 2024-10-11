@@ -17,7 +17,8 @@ way to start it is to run it via a container:
     podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
 ```
 
-Alternatively a script is avaiable:
+Alternatively, a script is available:
+
 ```
     src/script/start_rabbitmq.sh
 ```
@@ -35,7 +36,9 @@ The worker can also be started using a custom config file:
 ```
     blueapi --config path/to/file serve
 ```
-An example of the config file that start stomp with default values can be find in:
+
+An example of a config file that starts STOMP with default values can be found in:
+
 ```
     src/script/stomp_config.yml
 ```

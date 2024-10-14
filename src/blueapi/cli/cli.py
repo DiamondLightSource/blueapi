@@ -349,8 +349,6 @@ def login(obj: dict) -> None:
 def logout(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     if config.cliAuth is not None and config.oauth is not None:
-        print("Logging out")
         auth = TokenManager(cliAuth=config.cliAuth, oauth=config.oauth)
         auth.logout()
-    else:
-        print("Please provide configuration to login!")
+        print("Logged out")

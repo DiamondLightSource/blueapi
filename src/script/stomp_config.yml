@@ -1,7 +1,7 @@
 ---
 stomp:
   host: "localhost"
-  port: "61613"
+  port: 61613
   auth:
     username: "admin"
     password: "admin"

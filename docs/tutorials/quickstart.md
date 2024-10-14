@@ -4,10 +4,17 @@ Blueapi acts as a worker that can run bluesky plans against devices for a specif
 laboratory setup. It can control devices to collect data and export events to tell
 downstream services about the data it has collected.
 
-## Start ActiveMQ
+## Start RabbitMQ
 
-The worker requires a running instance of ActiveMQ, the simplest
-way to start it is to run it via a container:
+The worker requires a running instance of RabbitMQ. The easiest way to start it is
+ to execute the provided script:
+
+```
+    src/script/start_rabbitmq.sh
+```
+
+
+Alternatively, it is possible to run ActiveMQ via a container:
 
 ```
     docker run -it --rm --net host rmohr/activemq:5.15.9-alpine
@@ -17,11 +24,6 @@ way to start it is to run it via a container:
     podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
 ```
 
-Alternatively, a script is available:
-
-```
-    src/script/start_rabbitmq.sh
-```
 
 ## Start Worker
 

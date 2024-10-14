@@ -239,6 +239,14 @@ components:
       - task_id
       title: WorkerTask
       type: object
+  securitySchemes:
+    OAuth2AuthorizationCodeBearer:
+      flows:
+        authorizationCode:
+          authorizationUrl: ''
+          scopes: {}
+          tokenUrl: ''
+      type: oauth2
 info:
   title: BlueAPI Control
   version: 0.0.5
@@ -293,6 +301,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Delete Environment
     get:
       description: Get the current state of the environment, i.e. initialization state.
@@ -398,6 +408,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Submit Task
   /tasks/{task_id}:
     delete:
@@ -422,6 +434,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Delete Submitted Task
     get:
       description: Retrieve a task
@@ -498,6 +512,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Set State
   /worker/task:
     get:
@@ -538,4 +554,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Set Active Task

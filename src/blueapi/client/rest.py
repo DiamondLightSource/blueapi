@@ -1,12 +1,10 @@
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
-import jwt
 import requests
 from pydantic import TypeAdapter
 
 from blueapi.config import RestConfig
-from blueapi.service.authentication import TokenManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -129,29 +127,25 @@ class BlueapiRestClient:
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
     ) -> T:
         url = self._url(suffix)
-        jwt_token_manager = TokenManager("blueapi-cli")
-        if jwt_token_manager.token and jwt_token_manager.token["access_token"]:
-            valid_token, exception = TokenManager.verify_token(
-                jwt_token_manager.token["access_token"]
-            )
-            if valid_token:
-                access_token = jwt_token_manager.token["access_token"]
-                headers = {
-                    "content-type": "application/json; charset=UTF-8",
-                    "Authorization": f"Bearer {access_token}",
-                }
-            elif isinstance(exception, jwt.ExpiredSignatureError):
-                if jwt_token_manager.refresh_auth_token():
-                    access_token = jwt_token_manager.token["access_token"]
-                    headers = {
-                        "content-type": "application/json; charset=UTF-8",
-                        "Authorization": f"Bearer {access_token}",
-                    }
-                else:
-                    exception = BlueskyRemoteControlError("Invalid Token")
-                    raise exception
-        else:
-            raise BlueskyRemoteControlError("No token found")
+        headers = {"": ""}
+        # jwt_token_manager = TokenManager()
+        # if jwt_token_manager.token and jwt_token_manager.token["access_token"]:
+        #     valid_token, exception = TokenManager.verify_token(
+        #         jwt_token_manager.token["access_token"]
+        #     )
+        #     if valid_token:
+        #         access_token = jwt_token_manager.token["access_token"]
+        #         headers = {
+        #             "content-type": "application/json; charset=UTF-8",
+        #             "Authorization": f"Bearer {access_token}",
+        #         }
+        #     elif isinstance(exception, jwt.ExpiredSignatureError):
+        #         if jwt_token_manager.refresh_auth_token():
+        #             access_token = jwt_token_manager.token["access_token"]
+        #             headers = {
+        #                 "content-type": "application/json; charset=UTF-8",
+        #                 "Authorization": f"Bearer {access_token}",
+        #             }
         if data:
             response = requests.request(method, url, json=data, headers=headers)
         else:

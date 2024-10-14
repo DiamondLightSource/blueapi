@@ -17,7 +17,7 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import ApplicationConfig, CLIAuthConfig, ConfigLoader, OauthConfig
 from blueapi.core import DataEvent
 from blueapi.service.authentication import TokenManager
 from blueapi.service.main import start
@@ -86,6 +86,8 @@ def schema(output: Path | None = None, update: bool = False) -> None:
 @click.pass_obj
 def start_application(obj: dict):
     """Run a worker that accepts plans to run"""
+    print(obj)
+    print(obj["config"])
     config: ApplicationConfig = obj["config"]
 
     start(config)
@@ -335,10 +337,11 @@ def scratch(obj: dict) -> None:
 @main.command(name="login")
 @click.pass_obj
 def login(obj: dict) -> None:
-    config: ApplicationConfig = obj["config"]
-    if config.cliAuth is not None and config.oauth is not None:
+    cliAuthConfig: CLIAuthConfig = obj["cliAuth"]
+    oauthConfig: OauthConfig = obj["oauth"]
+    if oauthConfig and cliAuthConfig:
         print("Logging in")
-        auth = TokenManager(cliAuth=config.cliAuth, oauth=config.oauth)
+        auth = TokenManager(oauth=oauthConfig, cliAuth=cliAuthConfig)
         auth.start_device_flow()
     else:
         print("Please provide configuration to login!")
@@ -347,8 +350,11 @@ def login(obj: dict) -> None:
 @main.command(name="logout")
 @click.pass_obj
 def logout(obj: dict) -> None:
-    config: ApplicationConfig = obj["config"]
-    if config.cliAuth is not None and config.oauth is not None:
-        auth = TokenManager(cliAuth=config.cliAuth, oauth=config.oauth)
+    cliAuthConfig: CLIAuthConfig = obj["cliAuth"]
+    oauthConfig: OauthConfig = obj["oauth"]
+    if oauthConfig and cliAuthConfig:
+        auth = TokenManager(cliAuth=cliAuthConfig, oauth=oauthConfig)
         auth.logout()
         print("Logged out")
+    else:
+        print("Please provide configuration to logout!")

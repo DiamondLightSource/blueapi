@@ -18,7 +18,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.service import interface
-from blueapi.service.authentication import Authenticator
+from blueapi.service.authentication import Authenticator, SwaggerAuthConfig
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -73,7 +73,9 @@ async def lifespan(app: FastAPI):
     teardown_runner()
 
 
+oauth_scheme = OAuth2AuthorizationCodeBearer(authorizationUrl="", tokenUrl="")
 if AUTHENTICATOR and AUTHENTICATOR.oauth:
+    assert isinstance(AUTHENTICATOR.authConfig, SwaggerAuthConfig)
     oauth_scheme = OAuth2AuthorizationCodeBearer(
         authorizationUrl=AUTHENTICATOR.oauth.pkce_auth_url,
         tokenUrl=AUTHENTICATOR.oauth.token_url,
@@ -97,9 +99,9 @@ app = FastAPI(
     swagger_ui_init_oauth=SWAGGER_CONFIG,
 )
 
-if AUTHENTICATOR:
 
-    def verify_token_auth(access_token: str = Depends(oauth_scheme)):
+def verify_token_auth(access_token: str = Depends(oauth_scheme)):
+    if AUTHENTICATOR:
         _, exception = AUTHENTICATOR.verify_token(access_token)
         if exception:
             raise HTTPException(
@@ -376,10 +378,9 @@ def start(config: ApplicationConfig):
 
     global AUTHENTICATOR
     app.state.config = config
-    print(config)
-    uvicorn.run(app, host=config.api.host, port=config.api.port)
     if config.swaggerAuth and config.oauth:
         AUTHENTICATOR = Authenticator(oauth=config.oauth, authConfig=config.swaggerAuth)
+    uvicorn.run(app, host=config.api.host, port=config.api.port)
 
 
 @app.middleware("http")

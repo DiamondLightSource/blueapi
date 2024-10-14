@@ -91,13 +91,13 @@ class OauthConfig(BlueapiBaseModel):
         description="URL to fetch OIDC config from the provider"
     )
     # Initialized post-init
-    device_auth_url: str
-    pkce_auth_url: str
-    token_url: str
-    issuer: str
-    jwks_uri: str
-    logout_url: str
-    refresh_url: str
+    device_auth_url: str = ""
+    pkce_auth_url: str = ""
+    token_url: str = ""
+    issuer: str = ""
+    jwks_uri: str = ""
+    logout_url: str = ""
+    refresh_url: str = ""
 
     def model_post_init(self, __context: Any) -> None:
         response = requests.get(self.oidc_config_url)
@@ -112,13 +112,15 @@ class OauthConfig(BlueapiBaseModel):
         self.logout_url = config_data.get("end_session_endpoint")
         self.refresh_url = config_data.get("end_session_endpoint")
         # post this we need to check if all the values are present
-        if not (
-            self.device_auth_url
-            and self.pkce_auth_url
-            and self.token_url
-            and self.issuer
-            and self.jwks_uri
-            and self.logout_url
+        if any(
+            (
+                self.device_auth_url == "",
+                self.pkce_auth_url == "",
+                self.token_url == "",
+                self.issuer == "",
+                self.jwks_uri == "",
+                self.logout_url == "",
+            )
         ):
             raise ValueError("OIDC config is missing required fields")
 

@@ -336,11 +336,21 @@ def scratch(obj: dict) -> None:
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    print(config)
     if config.cliAuth is not None and config.oauth is not None:
         print("Logging in")
-        print(config)
         auth = TokenManager(cliAuth=config.cliAuth, oauth=config.oauth)
         auth.start_device_flow()
+    else:
+        print("Please provide configuration to login!")
+
+
+@main.command(name="logout")
+@click.pass_obj
+def logout(obj: dict) -> None:
+    config: ApplicationConfig = obj["config"]
+    if config.cliAuth is not None and config.oauth is not None:
+        print("Logging out")
+        auth = TokenManager(cliAuth=config.cliAuth, oauth=config.oauth)
+        auth.logout()
     else:
         print("Please provide configuration to login!")

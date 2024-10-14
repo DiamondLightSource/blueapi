@@ -25,10 +25,10 @@ class Authenticator:
     def __init__(
         self,
         oauth: OauthConfig,
-        authentorConfig: CLIAuthConfig | SwaggerAuthConfig,
+        authConfig: CLIAuthConfig | SwaggerAuthConfig,
     ):
         self.oauth: OauthConfig = oauth
-        self.authentorConfig: CLIAuthConfig | SwaggerAuthConfig = authentorConfig
+        self.authConfig: CLIAuthConfig | SwaggerAuthConfig = authConfig
 
     def verify_token(
         self, token: str, verify_expiration: bool = True
@@ -53,7 +53,7 @@ class Authenticator:
             algorithms=["RS256"],
             options={"verify_exp": verify_expiration},
             verify=True,
-            audience=self.authentorConfig.client_audience,
+            audience=self.authConfig.client_audience,
             issuer=self.oauth.issuer,
             leeway=5,
         )
@@ -77,6 +77,12 @@ class TokenManager:
         self.token = None
         self.authenticator = Authenticator(self.oauth, self.cliAuth)
         self.load_token()
+
+    def logout(self) -> None:
+        # TODO: Use ID token to close the session
+        # We can use self.oauth.logout_url to logout the user
+        if os.path.exists(os.path.expanduser(self.cliAuth.token_file_path)):
+            os.remove(os.path.expanduser(self.cliAuth.token_file_path))
 
     def refresh_auth_token(self) -> bool:
         if self.token:
@@ -105,7 +111,7 @@ class TokenManager:
             token_file.write(token_base64)
 
     def load_token(self) -> None:
-        if not os.path.exists(self.cliAuth.token_file_path):
+        if not os.path.exists(os.path.expanduser(self.cliAuth.token_file_path)):
             return None
         with open(os.path.expanduser(self.cliAuth.token_file_path), "rb") as token_file:
             token_base64 = token_file.read()

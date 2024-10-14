@@ -96,6 +96,8 @@ class OauthConfig(BlueapiBaseModel):
     token_url: str = ""
     issuer: str = ""
     jwks_uri: str = ""
+    logout_url: str = ""
+    refresh_url: str = ""
 
     def model_post_init(self, __context: Any) -> None:
         response = requests.get(self.oidc_config_url)
@@ -107,6 +109,8 @@ class OauthConfig(BlueapiBaseModel):
         self.token_url = config_data.get("token_endpoint")
         self.issuer = config_data.get("issuer")
         self.jwks_uri = config_data.get("jwks_uri")
+        self.logout_url = config_data.get("end_session_endpoint")
+        self.refresh_url = config_data.get("end_session_endpoint")
         # post this we need to check if all the values are present
         if any(
             (
@@ -115,6 +119,7 @@ class OauthConfig(BlueapiBaseModel):
                 self.token_url == "",
                 self.issuer == "",
                 self.jwks_uri == "",
+                self.logout_url == "",
             )
         ):
             raise ValueError("OIDC config is missing required fields")

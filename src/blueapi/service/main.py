@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
-from typing import Annotated
+from typing import Any
 
-import requests
 from fastapi import (
     BackgroundTasks,
     Body,
@@ -19,7 +18,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.service import interface
-from blueapi.service.authentication import TokenManager
+from blueapi.service.authentication import Authenticator
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -39,6 +38,8 @@ from .runner import WorkerDispatcher
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
+AUTHENTICATOR: Authenticator | None = None
+SWAGGER_CONFIG: dict[str, Any] | None = None
 
 
 def _runner() -> WorkerDispatcher:
@@ -72,44 +73,38 @@ async def lifespan(app: FastAPI):
     teardown_runner()
 
 
+if AUTHENTICATOR and AUTHENTICATOR.oauth:
+    oauth_scheme = OAuth2AuthorizationCodeBearer(
+        authorizationUrl=AUTHENTICATOR.oauth.pkce_auth_url,
+        tokenUrl=AUTHENTICATOR.oauth.token_url,
+        refreshUrl=AUTHENTICATOR.oauth.token_url,
+        auto_error=True,
+    )
+    # https://swagger.io/docs/open-source-tools/swagger-ui/usage/oauth2/
+    SWAGGER_CONFIG = {
+        "clientId": AUTHENTICATOR.authConfig.client_id,
+        "clientSecret": AUTHENTICATOR.authConfig.client_secret,
+        "usePkceWithAuthorizationCodeGrant": True,
+        "scopeSeparator": " ",
+        "scopes": "openid profile offline_access",
+    }
+
 app = FastAPI(
     docs_url="/docs",
     title="BlueAPI Control",
     lifespan=lifespan,
     version=REST_API_VERSION,
-    # https://swagger.io/docs/open-source-tools/swagger-ui/usage/oauth2/
-    swagger_ui_init_oauth={
-        "clientId": "blueapi",  # TODO: This should be a configuration value
-        "clientSecret": "secret",  # TODO: This should be  a configuration value
-        "usePkceWithAuthorizationCodeGrant": True,
-        "scopeSeparator": " ",
-        "scopes": "openid profile offline_access",
-    },
-)
-# TODO: Need to move this to a configuration file
-oidc_config = requests.get(
-    "https://authn.diamond.ac.uk/realms/master/.well-known/openid-configuration"
-).json()
-authorizationUrl = oidc_config["authorization_endpoint"]
-tokenUrl = oidc_config["token_endpoint"]
-assert authorizationUrl and tokenUrl, "Authorization and Token URLs must be set"
-
-oauth_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl=authorizationUrl,
-    tokenUrl=tokenUrl,
-    refreshUrl=tokenUrl,
-    auto_error=True,
+    swagger_ui_init_oauth=SWAGGER_CONFIG,
 )
 
+if AUTHENTICATOR:
 
-async def verify_token_auth(
-    access_token: Annotated[str, Depends(oauth_scheme)],
-) -> None:
-    _, exception = TokenManager.verify_token(access_token)
-    if exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exception)
-        ) from exception
+    def verify_token_auth(access_token: str = Depends(oauth_scheme)):
+        _, exception = AUTHENTICATOR.verify_token(access_token)
+        if exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exception)
+            ) from exception
 
 
 @app.exception_handler(KeyError)
@@ -379,8 +374,12 @@ def set_state(
 def start(config: ApplicationConfig):
     import uvicorn
 
+    global AUTHENTICATOR
     app.state.config = config
+    print(config)
     uvicorn.run(app, host=config.api.host, port=config.api.port)
+    if config.swaggerAuth and config.oauth:
+        AUTHENTICATOR = Authenticator(oauth=config.oauth, authConfig=config.swaggerAuth)
 
 
 @app.middleware("http")

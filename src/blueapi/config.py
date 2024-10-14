@@ -1,11 +1,20 @@
+import os
 from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
 from typing import Any, Generic, Literal, TypeVar
 
+import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import (
+    BaseModel,
+    Field,
+    Secret,
+    TypeAdapter,
+    ValidationError,
+    field_validator,
+)
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -77,6 +86,61 @@ class ScratchConfig(BlueapiBaseModel):
     repositories: list[ScratchRepository] = Field(default_factory=list)
 
 
+class OauthConfig(BlueapiBaseModel):
+    oidc_config_url: str = Field(
+        description="URL to fetch OIDC config from the provider"
+    )
+    # Initialized post-init
+    device_auth_url: str = ""
+    pkce_auth_url: str = ""
+    token_url: str = ""
+    issuer: str = ""
+    jwks_uri: str = ""
+
+    def model_post_init(self, __context: Any) -> None:
+        response = requests.get(self.oidc_config_url)
+        response.raise_for_status()
+        config_data = response.json()
+
+        self.device_auth_url = config_data.get("device_authorization_endpoint")
+        self.pkce_auth_url = config_data.get("authorization_endpoint")
+        self.token_url = config_data.get("token_endpoint")
+        self.issuer = config_data.get("issuer")
+        self.jwks_uri = config_data.get("jwks_uri")
+        # post this we need to check if all the values are present
+        if any(
+            (
+                self.device_auth_url == "",
+                self.pkce_auth_url == "",
+                self.token_url == "",
+                self.issuer == "",
+                self.jwks_uri == "",
+            )
+        ):
+            raise ValueError("OIDC config is missing required fields")
+
+
+class SwaggerAuthConfig(BlueapiBaseModel):
+    client_id: str = Field(description="Client ID for PKCE client")
+    client_secret: Secret[str] = Field(
+        description="Password to verify PKCE client's identity"
+    )
+    client_audience: str
+
+    @field_validator("client_secret", mode="before")
+    @classmethod
+    def get_from_env(cls, v: str):
+        if v.startswith("${") and v.endswith("}"):
+            return os.environ[v.removeprefix("${").removesuffix("}").upper()]
+        return v
+
+
+class CLIAuthConfig(BlueapiBaseModel):
+    client_id: str = Field(description="Client ID for CLI client")
+    client_audience: str = Field(description="Audience for CLI client")
+    token_file_path: str = "~/token"
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -88,6 +152,9 @@ class ApplicationConfig(BlueapiBaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
+    oauth: OauthConfig | None = None
+    cliAuth: CLIAuthConfig | None = None
+    swaggerAuth: SwaggerAuthConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

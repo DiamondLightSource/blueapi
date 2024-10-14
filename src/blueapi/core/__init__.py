@@ -1,3 +1,5 @@
+from os import environ
+
 from .bluesky_event_loop import configure_bluesky_event_loop
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
@@ -13,6 +15,8 @@ from .bluesky_types import (
 )
 from .context import BlueskyContext
 from .event import EventPublisher, EventStream
+
+OTLP_EXPORT_ENABLED = environ.get("OTLP_EXPORT_ENABLED") == "true"
 
 __all__ = [
     "Plan",

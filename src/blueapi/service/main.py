@@ -16,7 +16,6 @@ from observability_utils.tracing import (
     start_as_current_span,
 )
 from opentelemetry.context import attach
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.propagate import get_global_textmap
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
@@ -85,12 +84,7 @@ app = FastAPI(
     version=REST_API_VERSION,
 )
 
-FastAPIInstrumentor().instrument_app(app)
-TRACER = get_tracer("API")
-"""
-Set up basic automated instrumentation for the FastAPI app, creating the
-observability context.
-"""
+TRACER = get_tracer("interface")
 
 
 @app.exception_handler(KeyError)
@@ -111,7 +105,6 @@ def get_environment(
 
 
 @app.delete("/environment", response_model=EnvironmentResponse)
-@start_as_current_span(TRACER, "background_tasks", "runner")
 async def delete_environment(
     background_tasks: BackgroundTasks,
     runner: WorkerDispatcher = Depends(_runner),

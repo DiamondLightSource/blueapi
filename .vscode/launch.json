@@ -25,9 +25,10 @@
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi",
-            "args": [
-                "serve"
-            ]
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
+            "args": "-c ${input:config_path} serve"
         },
         {
             "name": "Blueapi Controller",
@@ -35,10 +36,19 @@
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi",
-            "args": "controller ${input:args}"
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
+            "args": "-c ${input:config_path} controller ${input:args}"
         },
     ],
     "inputs": [
+        {
+            "id": "config_path",
+            "type": "promptString",
+            "description": "Path to configuration YAML file",
+            "default": ""
+        },
         {
             "id": "args",
             "type": "promptString",

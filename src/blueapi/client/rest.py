@@ -135,11 +135,12 @@ class BlueapiRestClient:
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
     ) -> T:
         url = self._url(suffix)
+        # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
         if data:
             response = requests.request(method, url, json=data, headers=carr)
         else:
-            response = requests.request(method, url)
+            response = requests.request(method, url, headers=carr)
         exception = get_exception(response)
         if exception is not None:
             raise exception

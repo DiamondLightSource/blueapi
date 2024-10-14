@@ -179,6 +179,10 @@ components:
           default: true
           title: Is Pending
           type: boolean
+        request_id:
+          default: ''
+          title: Request Id
+          type: string
         task:
           title: Task
         task_id:

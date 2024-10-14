@@ -23,6 +23,7 @@ from pydantic import Field
 from super_state_machine.errors import TransitionError
 
 from blueapi.core import (
+    OTLP_EXPORT_ENABLED,
     BlueskyContext,
     DataEvent,
     EventPublisher,
@@ -46,7 +47,7 @@ from .task import Task
 from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
-TRACER = get_tracer("reworker")
+TRACER = get_tracer("task_worker")
 """ Initialise a Tracer for this module provided by the app's global TracerProvider. """
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
@@ -126,10 +127,10 @@ class TaskWorker:
         self._stopped.set()
         self._broadcast_statuses = broadcast_statuses
         self._context_register = {}
-        setup_tracing("BlueAPIWorker")
+        setup_tracing("BlueAPIWorker", OTLP_EXPORT_ENABLED)
 
     @start_as_current_span(TRACER, "task_id")
-    def clear_task(self, task_id: str, carr: dict[str, Any] = None) -> str:
+    def clear_task(self, task_id: str, carr: dict[str, Any] | None = None) -> str:
         task = self._tasks.pop(task_id)
         return task.task_id
 
@@ -138,7 +139,7 @@ class TaskWorker:
         self,
         failure: bool = False,
         reason: str | None = None,
-        carr: dict[str, Any] = None,
+        carr: dict[str, Any] | None = None,
     ) -> str:
         if self._current is None:
             # Persuades mypy that self._current is not None
@@ -153,18 +154,18 @@ class TaskWorker:
         return self._current.task_id
 
     @start_as_current_span(TRACER)
-    def get_tasks(self, carr: dict[str, Any] = None) -> list[TrackableTask]:
+    def get_tasks(self, carr: dict[str, Any] | None = None) -> list[TrackableTask]:
         return list(self._tasks.values())
 
     @start_as_current_span(TRACER, "task_id")
     def get_task_by_id(
-        self, task_id: str, carr: dict[str, Any] = None
+        self, task_id: str, carr: dict[str, Any] | None = None
     ) -> TrackableTask | None:
         return self._tasks.get(task_id)
 
     @start_as_current_span(TRACER, "status")
     def get_tasks_by_status(
-        self, status: TaskStatusEnum, carr: dict[str, Any] = None
+        self, status: TaskStatusEnum, carr: dict[str, Any] | None = None
     ) -> list[TrackableTask]:
         if status == TaskStatusEnum.RUNNING:
             return [
@@ -180,7 +181,7 @@ class TaskWorker:
 
     @start_as_current_span(TRACER)
     def get_active_task(
-        self, carr: dict[str, Any] = None
+        self, carr: dict[str, Any] | None = None
     ) -> TrackableTask[Task] | None:
         current = self._current
         if current is not None:
@@ -188,7 +189,7 @@ class TaskWorker:
         return current
 
     @start_as_current_span(TRACER, "task_id")
-    def begin_task(self, task_id: str, carr: dict[str, Any] = None) -> None:
+    def begin_task(self, task_id: str, carr: dict[str, Any] | None = None) -> None:
         task = self._tasks.get(task_id)
         if task is not None:
             self._submit_trackable_task(task)
@@ -196,7 +197,7 @@ class TaskWorker:
             raise KeyError(f"No pending task with ID {task_id}")
 
     @start_as_current_span(TRACER, "task.name", "task.params")
-    def submit_task(self, task: Task, carr: dict[str, Any] = None) -> str:
+    def submit_task(self, task: Task, carr: dict[str, Any] | None = None) -> str:
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         add_span_attributes({"TaskId": task_id})
@@ -298,12 +299,12 @@ class TaskWorker:
         self._stopped.set()
 
     @start_as_current_span(TRACER, "defer")
-    def pause(self, defer=False, carr: dict[str, Any] = None):
+    def pause(self, defer=False, carr: dict[str, Any] | None = None):
         LOGGER.info("Requesting to pause the worker")
         self._ctx.run_engine.request_pause(defer)
 
     @start_as_current_span(TRACER)
-    def resume(self, carr: dict[str, Any] = None):
+    def resume(self, carr: dict[str, Any] | None = None):
         LOGGER.info("Requesting to resume the worker")
         self._ctx.run_engine.resume()
 
@@ -411,10 +412,6 @@ class TaskWorker:
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
-            correlation_id = self._current.task_id
-            self._data_events.publish(
-                DataEvent(name=name, doc=document), correlation_id
-            )
             with TRACER.start_as_current_span(
                 "_on_document",
                 context=self._context_register[self._current.task_id],

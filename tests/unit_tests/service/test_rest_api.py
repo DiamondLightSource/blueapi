@@ -23,6 +23,22 @@ from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
 
+class _ANY_DICT(dict):
+    "A helper object that compares equal to all dictionaries."
+
+    def __eq__(self, other):
+        return isinstance(other, dict)
+
+    def __ne__(self, other):
+        return False
+
+    def __repr__(self):
+        return "<ANY_DICT>"
+
+
+ANY_DICT = _ANY_DICT()
+
+
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     with (
@@ -70,7 +86,7 @@ def test_get_plan_by_name(get_plan_mock: MagicMock, client: TestClient) -> None:
 
     response = client.get("/plans/my-plan")
 
-    get_plan_mock.assert_called_once_with("my-plan")
+    get_plan_mock.assert_called_once_with(ANY_DICT, "my-plan")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "description": None,
@@ -128,7 +144,7 @@ def test_get_device_by_name(get_device_mock: MagicMock, client: TestClient) -> N
     get_device_mock.return_value = DeviceModel.from_device(device)
     response = client.get("/devices/my-device")
 
-    get_device_mock.assert_called_once_with("my-device")
+    get_device_mock.assert_called_once_with(ANY_DICT, "my-device")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "name": "my-device",
@@ -159,7 +175,7 @@ def test_create_task(
 
     response = client.post("/tasks", json=task.model_dump())
 
-    submit_task_mock.assert_called_once_with(task)
+    submit_task_mock.assert_called_once_with(ANY_DICT, task)
     assert response.json() == {"task_id": task_id}
 
 
@@ -252,6 +268,7 @@ def test_get_tasks(get_tasks_mock: MagicMock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
+                "request_id": "",
                 "task": {"name": "sleep", "params": {"time": 0.0}},
                 "task_id": "0",
             },
@@ -259,6 +276,7 @@ def test_get_tasks(get_tasks_mock: MagicMock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
+                "request_id": "",
                 "task": {"name": "first_task", "params": {}},
                 "task_id": "1",
             },
@@ -288,6 +306,7 @@ def test_get_tasks_by_status(
                 "errors": [],
                 "is_complete": True,
                 "is_pending": False,
+                "request_id": "",
                 "task": {"name": "third_task", "params": {}},
                 "task_id": "3",
             }
@@ -379,6 +398,7 @@ def test_get_task(get_task_by_id: MagicMock, client: TestClient):
         "errors": [],
         "is_complete": False,
         "is_pending": True,
+        "request_id": "",
         "task": {"name": "third_task", "params": {}},
         "task_id": f"{task_id}",
     }
@@ -404,6 +424,7 @@ def test_get_all_tasks(get_all_tasks: MagicMock, client: TestClient):
                 "task": {"name": "third_task", "params": {}},
                 "is_complete": False,
                 "is_pending": True,
+                "request_id": "",
                 "errors": [],
             }
         ]
@@ -464,7 +485,7 @@ def test_set_state_running_to_paused(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
     )
 
-    pause_worker_mock.assert_called_once_with(False)
+    pause_worker_mock.assert_called_once_with(ANY_DICT, False)
     assert response.status_code == status.HTTP_202_ACCEPTED
     assert response.json() == final_state
 
@@ -502,7 +523,7 @@ def test_set_state_running_to_aborting(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
     )
 
-    cancel_active_task_mock.assert_called_once_with(True, None)
+    cancel_active_task_mock.assert_called_once_with(ANY_DICT, True, None)
     assert response.status_code == status.HTTP_202_ACCEPTED
     assert response.json() == final_state
 
@@ -524,7 +545,7 @@ def test_set_state_running_to_stopping_including_reason(
         json=StateChangeRequest(new_state=final_state, reason=reason).model_dump(),
     )
 
-    cancel_active_task_mock.assert_called_once_with(False, reason)
+    cancel_active_task_mock.assert_called_once_with(ANY_DICT, False, reason)
     assert response.status_code == status.HTTP_202_ACCEPTED
     assert response.json() == final_state
 

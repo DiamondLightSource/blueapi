@@ -40,9 +40,7 @@
         "--security-opt=label=disable"
     ],
     // Remove this before pushing, only to allow local testing with editable library
-    "mounts": [
-        "source=/scratch/athena/observability-utils,target=/scratch/athena/observability-utils,type=bind,consistency=cached"
-    ],    
+    "mounts": [],
     // Mount the parent as /workspaces so we can pip install peers as editable
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
     // After the container is created, install the python project in editable form

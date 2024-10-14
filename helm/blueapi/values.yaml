@@ -77,29 +77,29 @@ listener:
 
 # Additional envVars to mount to the pod as a String
 extraEnvVars: |
+  - name: OTLP_EXPORT_ENABLED
+    value: {{ .Values.tracing.otlp.export_enabled] }}
   - name: OTEL_EXPORTER_OTLP_TRACES_PROTOCOL
-    value: {{ .Values.jaeger.otlp.protocol }}
+    value: {{ .Values.tracing.otlp.protocol }}
   - name: OTEL_EXPORTER_OTLP_ENDPOINT
-    value: "{{ .Values.jaeger.otlp.host }}:{{ .Values.jaeger.otlp.port }}"
-  - name: OTEL_EXPORTER_OTLP_INSECURE
-    value: "{{ .Values.jaeger.otlp.insecure }}"
+    value: "{{ .Values.tracing.otlp.host }}:{{ .Values.tracing.otlp.port }}"
   - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST
-    value: {{ .Values.jaeger.otlp.request.headers }}
+    value: {{ .Values.tracing.http.request.headers }}
   - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE
-    value: {{ .Values.jaeger.otlp.response.headers }}
+    value: {{ .Values.tracing.http.response.headers }}
 # - name: RABBITMQ_PASSWORD
 #   valueFrom:
 #     secretKeyRef:
 #       name: rabbitmq-password
 #       key: rabbitmq-password
 
-jaeger:
+tracing:
   otlp:
+    export_enabled: false
     protocol: http/protobuf
-    insecure: true
-    #
-    host: http://localhost
+    host: https://daq-services-jaeger # replace with central instance
     port: 4318
+  http:
     request:
       headers: ".*"
     response:
@@ -126,6 +126,8 @@ worker:
       password: guest
     host: rabbitmq
     port: 61613
+  tracing_exporter:
+    host: ""
 
 initContainer:
   scratch:

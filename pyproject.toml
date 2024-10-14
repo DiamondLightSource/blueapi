@@ -27,7 +27,7 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-bluesky-core",                                                  #requires ophyd-async
+    "dls-bluesky-core",                              #requires ophyd-async
     "dls-dodal>=1.31.0",
     "super-state-machine",  # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
@@ -83,7 +83,7 @@ write_to = "src/blueapi/_version.py"
 
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules
-namespace_packages = false    # rely only on __init__ files to determine fully qualified module names.
+namespace_packages = true     # necessary for tracing sdk to work with mypy
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error

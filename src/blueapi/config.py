@@ -23,24 +23,6 @@ class Source(BaseModel):
     module: Path | str
 
 
-# class BasicAuthentication(BaseModel):
-#     """
-#     Log in details for when a server uses authentication.
-#     If username or passcode match exactly the regex ^\\${(.*)}$
-#     they attempt to replace with an environment variable of the same.
-#     i.e. ${foo} or ${FOO} are replaced with the value of FOO
-#     """
-
-#     username: str = "test"  # "guest"
-#     passcode: str = "test"  # "guest"
-
-#     @validator("username", "passcode")
-#     def get_from_env(cls, v: str):
-#         if v.startswith("${") and v.endswith("}"):
-#             return os.environ[v.removeprefix("${").removesuffix("}").upper()]
-#         return v
-
-
 class StompConfig(BaseModel):
     """
     Config for connecting to stomp broker

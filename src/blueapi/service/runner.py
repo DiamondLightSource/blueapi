@@ -23,7 +23,7 @@ from blueapi.service.model import EnvironmentResponse
 set_start_method("spawn", force=True)
 
 LOGGER = logging.getLogger(__name__)
-TRACER = get_tracer("interface")
+TRACER = get_tracer("runner")
 
 P = ParamSpec("P")
 T = TypeVar("T")

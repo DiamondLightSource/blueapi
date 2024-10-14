@@ -186,42 +186,42 @@ class GenericModel(BaseModel, Generic[T]):
     b: str
 
 
-def return_int() -> int:
+def return_int(*args, **kwargs) -> int:
     return 1
 
 
-def return_str() -> str:
+def return_str(*args, **kwargs) -> str:
     return "hello"
 
 
-def return_list() -> list[int]:
+def return_list(*args, **kwargs) -> list[int]:
     return [1, 2, 3]
 
 
-def return_dict() -> dict[str, int]:
+def return_dict(*args, **kwargs) -> dict[str, int]:
     return {
         "test": 1,
         "other_test": 2,
     }
 
 
-def return_simple_model() -> SimpleModel:
+def return_simple_model(*args, **kwargs) -> SimpleModel:
     return SimpleModel(a=1, b="hi")
 
 
-def return_nested_model() -> NestedModel:
+def return_nested_model(*args, **kwargs) -> NestedModel:
     return NestedModel(nested=return_simple_model(), c=False)
 
 
-def return_unbound_generic_model() -> GenericModel:
+def return_unbound_generic_model(*args, **kwargs) -> GenericModel:
     return GenericModel(a="foo", b="bar")
 
 
-def return_bound_generic_model() -> GenericModel[int]:
+def return_bound_generic_model(*args, **kwargs) -> GenericModel[int]:
     return GenericModel(a=1, b="hi")
 
 
-def return_explicitly_bound_generic_model() -> GenericModel[int]:
+def return_explicitly_bound_generic_model(*args, **kwargs) -> GenericModel[int]:
     return GenericModel[int](a=1, b="hi")
 
 

@@ -86,8 +86,6 @@ def schema(output: Path | None = None, update: bool = False) -> None:
 @click.pass_obj
 def start_application(obj: dict):
     """Run a worker that accepts plans to run"""
-    print(obj)
-    print(obj["config"])
     config: ApplicationConfig = obj["config"]
 
     start(config)

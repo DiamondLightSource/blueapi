@@ -11,14 +11,13 @@ from fastapi import (
     Response,
     status,
 )
-from fastapi.security import OAuth2AuthorizationCodeBearer
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.service import interface
-from blueapi.service.authentication import Authenticator, SwaggerAuthConfig
+from blueapi.service.authentication import Authenticator
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -73,40 +72,26 @@ async def lifespan(app: FastAPI):
     teardown_runner()
 
 
-oauth_scheme = OAuth2AuthorizationCodeBearer(authorizationUrl="", tokenUrl="")
-if AUTHENTICATOR and AUTHENTICATOR.oauth:
-    assert isinstance(AUTHENTICATOR.authConfig, SwaggerAuthConfig)
-    oauth_scheme = OAuth2AuthorizationCodeBearer(
-        authorizationUrl=AUTHENTICATOR.oauth.pkce_auth_url,
-        tokenUrl=AUTHENTICATOR.oauth.token_url,
-        refreshUrl=AUTHENTICATOR.oauth.token_url,
-        auto_error=True,
-    )
-    # https://swagger.io/docs/open-source-tools/swagger-ui/usage/oauth2/
-    SWAGGER_CONFIG = {
-        "clientId": AUTHENTICATOR.authConfig.client_id,
-        "clientSecret": AUTHENTICATOR.authConfig.client_secret,
-        "usePkceWithAuthorizationCodeGrant": True,
-        "scopeSeparator": " ",
-        "scopes": "openid profile offline_access",
-    }
+# oauth_scheme = OAuth2AuthorizationCodeBearer(
+#     authorizationUrl="", tokenUrl="", auto_error=False
+# )
+# if AUTHENTICATOR and AUTHENTICATOR.oauth:
+#     assert isinstance(AUTHENTICATOR.authConfig, SwaggerAuthConfig)
+#     oauth_scheme = OAuth2AuthorizationCodeBearer(
+#         authorizationUrl=AUTHENTICATOR.oauth.pkce_auth_url,
+#         tokenUrl=AUTHENTICATOR.oauth.token_url,
+#         refreshUrl=AUTHENTICATOR.oauth.token_url,
+#         auto_error=True,
+#     )
+#     # https://swagger.io/docs/open-source-tools/swagger-ui/usage/oauth2/
+#     SWAGGER_CONFIG =
 
 app = FastAPI(
     docs_url="/docs",
     title="BlueAPI Control",
     lifespan=lifespan,
     version=REST_API_VERSION,
-    swagger_ui_init_oauth=SWAGGER_CONFIG,
 )
-
-
-def verify_token_auth(access_token: str = Depends(oauth_scheme)):
-    if AUTHENTICATOR:
-        _, exception = AUTHENTICATOR.verify_token(access_token)
-        if exception:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exception)
-            ) from exception
 
 
 @app.exception_handler(KeyError)
@@ -127,7 +112,6 @@ def get_environment(
 
 @app.delete(
     "/environment",
-    dependencies=[Depends(verify_token_auth)],
     response_model=EnvironmentResponse,
 )
 async def delete_environment(
@@ -177,7 +161,6 @@ example_task = Task(name="count", params={"detectors": ["x"]})
     "/tasks",
     response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(verify_token_auth)],
 )
 def submit_task(
     request: Request,
@@ -210,7 +193,6 @@ def submit_task(
 @app.delete(
     "/tasks/{task_id}",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_token_auth)],
 )
 def delete_submitted_task(
     task_id: str,
@@ -255,7 +237,6 @@ def get_tasks(
     "/worker/task",
     response_model=WorkerTask,
     responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
-    dependencies=[Depends(verify_token_auth)],
 )
 def set_active_task(
     task: WorkerTask,
@@ -324,7 +305,6 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
         status.HTTP_400_BAD_REQUEST: {"detail": "Transition not allowed"},
         status.HTTP_202_ACCEPTED: {"detail": "Transition requested"},
     },
-    dependencies=[Depends(verify_token_auth)],
 )
 def set_state(
     state_change_request: StateChangeRequest,
@@ -379,6 +359,16 @@ def start(config: ApplicationConfig):
     global AUTHENTICATOR
     app.state.config = config
     if config.swaggerAuth and config.oauth:
+        app.swagger_ui_init_oauth = {
+            "clientId": config.swaggerAuth.client_id,
+            "clientSecret": config.swaggerAuth.client_secret,
+            "usePkceWithAuthorizationCodeGrant": True,
+            "scopeSeparator": " ",
+            "scopes": "openid profile offline_access",
+        }
+        app.setup()
+        print("SWAGGER CONFIG")
+        print(config.swaggerAuth)
         AUTHENTICATOR = Authenticator(oauth=config.oauth, authConfig=config.swaggerAuth)
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 
@@ -388,3 +378,60 @@ async def add_api_version_header(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-API-Version"] = REST_API_VERSION
     return response
+
+
+@app.middleware("http")
+async def verify_token(request: Request, call_next):
+    if AUTHENTICATOR:
+        print(AUTHENTICATOR)
+        print(request.url.path)
+        if request.url.path not in ["/docs", "/openapi.json"]:
+            try:
+                verify_access_token(request)
+            except HTTPException as exc:
+                return JSONResponse(
+                    content={"detail": exc.detail}, status_code=exc.status_code
+                )
+            except Exception as exc:
+                return JSONResponse(
+                    content={"detail": f"Error: {str(exc)}"}, status_code=500
+                )
+    response = await call_next(request)
+    return response
+
+
+def get_token_from_request(request: Request) -> str:
+    """Extract the token from the request headers."""
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        return auth_header[len("Bearer ") :]
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or missing token"
+    )
+
+
+def verify_access_token(request: Request):
+    if AUTHENTICATOR:
+        _, exception = AUTHENTICATOR.verify_token(get_token_from_request(request))
+        if exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exception)
+            ) from exception
+
+
+# class AuthenticationMiddleware(BaseHTTPMiddleware):
+#     async def dispatch(self, request, call_next):
+#         try:
+#             # Call the verify_access_token function to validate the token
+
+#             verify_access_token(request)
+#             response = await call_next(request)
+#             return response
+#         except HTTPException as exc:
+#             return JSONResponse(
+#                 content={"detail": exc.detail}, status_code=exc.status_code
+#             )
+#         except Exception as exc:
+#             return JSONResponse(
+#                 content={"detail": f"Error: {str(exc)}"}, status_code=500
+#             )

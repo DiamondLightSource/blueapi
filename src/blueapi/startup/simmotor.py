@@ -3,7 +3,7 @@ import time as ttime
 from collections.abc import Callable
 
 from ophyd.sim import SynAxis
-from ophyd.status import MoveStatus
+from ophyd.status import MoveStatus, Status
 
 
 class SynAxisWithMotionEvents(SynAxis):
@@ -38,7 +38,7 @@ class SynAxisWithMotionEvents(SynAxis):
         self._events_per_move = events_per_move
         self.egu = egu
 
-    def set(self, value: float) -> MoveStatus:
+    def set(self, value: float) -> Status:
         old_setpoint = self.sim_state["setpoint"]
         distance = value - old_setpoint
         self.sim_state["setpoint"] = value

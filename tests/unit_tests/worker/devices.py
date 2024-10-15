@@ -1,7 +1,8 @@
 # Devices to use for worker tests
 
-from bluesky.protocols import Movable, Status
+from bluesky.protocols import Movable
 from ophyd import Device, DeviceStatus
+from ophyd.status import Status
 
 
 class AdditionalUpdateStatus(DeviceStatus):
@@ -41,7 +42,7 @@ class AdditionalUpdateStatus(DeviceStatus):
 class AdditionalStatusDevice(Device, Movable):
     def set(self, value: float) -> Status:
         status = AdditionalUpdateStatus(self)
-        return status  # type: ignore
+        return status
 
 
 def additional_status_device(name="additional_status_device") -> AdditionalStatusDevice:

@@ -4,15 +4,6 @@ Blueapi acts as a worker that can run bluesky plans against devices for a specif
 laboratory setup. It can control devices to collect data and export events to tell
 downstream services about the data it has collected.
 
-## Start RabbitMQ
-
-The worker requires a running instance of RabbitMQ. The easiest way to start it is
- to execute the provided script:
-
-```
-    src/script/start_rabbitmq.sh
-```
-
 ## Start Worker
 
 To start the worker:

@@ -254,7 +254,6 @@ def pause(obj: dict, defer: bool = False) -> None:
 @click.pass_obj
 def resume(obj: dict) -> None:
     """Resume the execution of the current task"""
-
     client: BlueapiClient = obj["client"]
     pprint(client.resume())
 
@@ -335,9 +334,10 @@ def scratch(obj: dict) -> None:
 @main.command(name="login")
 @click.pass_obj
 def login(obj: dict) -> None:
-    cliAuthConfig: CLIAuthConfig = obj["cliAuth"]
-    oauthConfig: OauthConfig = obj["oauth"]
-    if oauthConfig and cliAuthConfig:
+    config: ApplicationConfig = obj["config"]
+    if config.cliAuth and config.oauth:
+        cliAuthConfig: CLIAuthConfig = config.cliAuth
+        oauthConfig: OauthConfig = config.oauth
         print("Logging in")
         auth = TokenManager(oauth=oauthConfig, cliAuth=cliAuthConfig)
         auth.start_device_flow()
@@ -348,9 +348,10 @@ def login(obj: dict) -> None:
 @main.command(name="logout")
 @click.pass_obj
 def logout(obj: dict) -> None:
-    cliAuthConfig: CLIAuthConfig = obj["cliAuth"]
-    oauthConfig: OauthConfig = obj["oauth"]
-    if oauthConfig and cliAuthConfig:
+    config: ApplicationConfig = obj["config"]
+    if config.cliAuth and config.oauth:
+        oauthConfig: OauthConfig = config.oauth
+        cliAuthConfig: CLIAuthConfig = config.cliAuth
         auth = TokenManager(cliAuth=cliAuthConfig, oauth=oauthConfig)
         auth.logout()
         print("Logged out")

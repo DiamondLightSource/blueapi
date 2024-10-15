@@ -125,12 +125,15 @@ class OauthConfig(BlueapiBaseModel):
             raise ValueError("OIDC config is missing required fields")
 
 
-class SwaggerAuthConfig(BlueapiBaseModel):
-    client_id: str = Field(description="Client ID for PKCE client")
+class BaseAuthConfig(BlueapiBaseModel):
+    client_id: str = Field(description="Client ID")
+    client_audience: str = Field(description="Client Audience")
+
+
+class SwaggerAuthConfig(BaseAuthConfig):
     client_secret: Secret[str] = Field(
         description="Password to verify PKCE client's identity"
     )
-    client_audience: str
 
     @field_validator("client_secret", mode="before")
     @classmethod
@@ -140,9 +143,7 @@ class SwaggerAuthConfig(BlueapiBaseModel):
         return v
 
 
-class CLIAuthConfig(BlueapiBaseModel):
-    client_id: str = Field(description="Client ID for CLI client")
-    client_audience: str = Field(description="Audience for CLI client")
+class CLIAuthConfig(BaseAuthConfig):
     token_file_path: str = "~/token"
 
 

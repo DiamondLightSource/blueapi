@@ -10,9 +10,9 @@ import jwt
 import requests
 
 from blueapi.config import (
+    BaseAuthConfig,
     CLIAuthConfig,
     OauthConfig,
-    SwaggerAuthConfig,
 )
 
 
@@ -25,10 +25,10 @@ class Authenticator:
     def __init__(
         self,
         oauth: OauthConfig,
-        authConfig: CLIAuthConfig | SwaggerAuthConfig,
+        baseAuthConfig: BaseAuthConfig,
     ):
         self.oauth: OauthConfig = oauth
-        self.authConfig: CLIAuthConfig | SwaggerAuthConfig = authConfig
+        self.baseAuthConfig: BaseAuthConfig = baseAuthConfig
 
     def verify_token(
         self, token: str, verify_expiration: bool = True
@@ -53,7 +53,7 @@ class Authenticator:
             algorithms=["RS256"],
             options={"verify_exp": verify_expiration},
             verify=True,
-            audience=self.authConfig.client_audience,
+            audience=self.baseAuthConfig.client_audience,
             issuer=self.oauth.issuer,
             leeway=5,
         )

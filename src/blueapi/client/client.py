@@ -39,7 +39,7 @@ class BlueapiClient:
 
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
-        rest = BlueapiRestClient(config.api)
+        rest = BlueapiRestClient(config.api, config.oauth, config.cliAuth)
         if config.stomp is not None:
             template = StompClient.for_broker(
                 broker=Broker(

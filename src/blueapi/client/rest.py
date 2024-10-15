@@ -1,10 +1,12 @@
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
+import jwt
 import requests
 from pydantic import TypeAdapter
 
-from blueapi.config import RestConfig
+from blueapi.config import CLIAuthConfig, OauthConfig, RestConfig
+from blueapi.service.authentication import TokenManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -38,8 +40,15 @@ def _exception(response: requests.Response) -> Exception | None:
 class BlueapiRestClient:
     _config: RestConfig
 
-    def __init__(self, config: RestConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: RestConfig | None = None,
+        authConfig: OauthConfig | None = None,
+        cliAuthConfig: CLIAuthConfig | None = None,
+    ) -> None:
         self._config = config or RestConfig()
+        self._oauth_config = authConfig
+        self._cli_auth_config = cliAuthConfig
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -128,24 +137,25 @@ class BlueapiRestClient:
     ) -> T:
         url = self._url(suffix)
         headers = {"": ""}
-        # jwt_token_manager = TokenManager()
-        # if jwt_token_manager.token and jwt_token_manager.token["access_token"]:
-        #     valid_token, exception = TokenManager.verify_token(
-        #         jwt_token_manager.token["access_token"]
-        #     )
-        #     if valid_token:
-        #         access_token = jwt_token_manager.token["access_token"]
-        #         headers = {
-        #             "content-type": "application/json; charset=UTF-8",
-        #             "Authorization": f"Bearer {access_token}",
-        #         }
-        #     elif isinstance(exception, jwt.ExpiredSignatureError):
-        #         if jwt_token_manager.refresh_auth_token():
-        #             access_token = jwt_token_manager.token["access_token"]
-        #             headers = {
-        #                 "content-type": "application/json; charset=UTF-8",
-        #                 "Authorization": f"Bearer {access_token}",
-        #             }
+        if self._oauth_config and self._cli_auth_config:
+            jwt_token_manager = TokenManager(self._oauth_config, self._cli_auth_config)
+            if jwt_token_manager.token and jwt_token_manager.token["access_token"]:
+                valid_token, exception = jwt_token_manager.authenticator.verify_token(
+                    jwt_token_manager.token["access_token"]
+                )
+                if valid_token:
+                    access_token = jwt_token_manager.token["access_token"]
+                    headers = {
+                        "content-type": "application/json; charset=UTF-8",
+                        "Authorization": f"Bearer {access_token}",
+                    }
+                elif isinstance(exception, jwt.ExpiredSignatureError):
+                    if jwt_token_manager.refresh_auth_token():
+                        access_token = jwt_token_manager.token["access_token"]
+                        headers = {
+                            "content-type": "application/json; charset=UTF-8",
+                            "Authorization": f"Bearer {access_token}",
+                        }
         if data:
             response = requests.request(method, url, json=data, headers=headers)
         else:

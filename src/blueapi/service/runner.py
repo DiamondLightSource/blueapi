@@ -138,13 +138,13 @@ def _rpc(
     function_name: str,
     expected_type: type[T] | None,
     *args: Any,
-    **kwargs: Any,
+    **P: Any,
 ) -> T:
     mod = import_module(module_name)
     func: Callable[..., T] = _validate_function(
         mod.__dict__.get(function_name, None), function_name
-    )  # type: ignore
-    value = func(*args, **kwargs)
+    )
+    value = func(*args, **P)
     return _valid_return(value, expected_type)
 
 

@@ -27,7 +27,7 @@ from blueapi.worker.task_worker import TrackableTask
 def client() -> Iterator[TestClient]:
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(use_subprocess=False)
-        # main.app.dependency_overrides[main.verify_token_auth] = lambda: None
+        main.app.dependency_overrides[main.verify_access_token] = lambda: None
         yield TestClient(main.app)
         main.teardown_runner()
 

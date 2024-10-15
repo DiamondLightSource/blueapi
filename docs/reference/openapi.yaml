@@ -244,6 +244,7 @@ components:
       flows:
         authorizationCode:
           authorizationUrl: ''
+          refreshUrl: ''
           scopes: {}
           tokenUrl: ''
       type: oauth2
@@ -263,6 +264,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeviceResponse'
           description: Successful Response
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Devices
   /devices/{name}:
     get:
@@ -288,6 +291,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Device By Name
   /environment:
     delete:
@@ -314,6 +319,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Environment
   /plans:
     get:
@@ -326,6 +333,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlanResponse'
           description: Successful Response
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Plans
   /plans/{name}:
     get:
@@ -351,6 +360,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Plan By Name
   /tasks:
     get:
@@ -380,6 +391,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Tasks
     post:
       description: Submit a task to the worker.
@@ -460,6 +473,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Task
   /worker/state:
     get:
@@ -472,6 +487,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/WorkerState'
           description: Successful Response
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get State
     put:
       description: "Request that the worker is put into a particular state.\nReturns\
@@ -525,6 +542,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/WorkerTask'
           description: Successful Response
+      security:
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Active Task
     put:
       description: 'Set a task to active status, the worker should begin it as soon

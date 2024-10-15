@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -19,17 +19,12 @@ def rest() -> BlueapiRestClient:
     ],
 )
 @patch("blueapi.client.rest.requests.request")
-@patch("blueapi.client.rest.Authentication", autospec=True)
 def test_rest_error_code(
-    mock_auth: MagicMock,
     mock_request: Mock,
     rest: BlueapiRestClient,
     code: int,
     expected_exception: type[Exception],
 ):
-    mock_auth_instance = mock_auth.return_value
-    mock_auth_instance.token = {"access_token": "test_token"}
-    mock_auth_instance.verify_token.return_value = (True, None)
     response = Mock()
     response.status_code = code
     mock_request.return_value = response

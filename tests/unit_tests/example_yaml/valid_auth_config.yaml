@@ -1,0 +1,14 @@
+stomp:
+  host: localhost
+  port: 61613
+oauth:
+  oidc_config_url: https://auth.example.com/realms/sample/.well-known/openid-configuration
+
+cliAuth:
+  client_id: sample-cli
+  client_audience: sample-account
+
+swaggerAuth:
+  client_id: sample
+  client_audience: sample-account
+  client_secret: ${PKCE_CLIENT_SECRET}

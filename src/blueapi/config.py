@@ -65,6 +65,7 @@ class RestConfig(BlueapiBaseModel):
     host: str = "localhost"
     port: int = 8000
     protocol: str = "http"
+    workers: int = 1
 
 
 class ScratchRepository(BlueapiBaseModel):

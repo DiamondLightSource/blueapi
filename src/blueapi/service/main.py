@@ -1,4 +1,7 @@
+import json
+import subprocess
 from contextlib import asynccontextmanager
+from sys import argv
 
 from fastapi import (
     BackgroundTasks,
@@ -330,19 +333,31 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
-def start(config: ApplicationConfig):
-    import uvicorn
-    from uvicorn.config import LOGGING_CONFIG
+def create_app():
+    # start a new app with new configuration
+    new_app = app
+    app_config_dict = json.loads(argv[-1])
+    app_config = ApplicationConfig(**app_config_dict)
+    app.state.config = app_config
+    return new_app
 
-    LOGGING_CONFIG["formatters"]["default"]["fmt"] = (
-        "%(asctime)s %(levelprefix)s %(message)s"
+
+def start(config: ApplicationConfig):
+    subprocess.run(
+        [
+            "gunicorn",
+            "-b",
+            f"{config.api.host}:{config.api.port}",
+            "-w",
+            f"{config.api.workers}",
+            "--access-logfile",
+            "-",
+            "-k",
+            "uvicorn.workers.UvicornWorker",
+            "blueapi.service.main:create_app()",
+            f"{config.model_dump_json()}",
+        ]
     )
-    LOGGING_CONFIG["formatters"]["access"]["fmt"] = (
-        "%(asctime)s %(levelprefix)s %(client_addr)s"
-        + " - '%(request_line)s' %(status_code)s"
-    )
-    app.state.config = config
-    uvicorn.run(app, host=config.api.host, port=config.api.port)
 
 
 @app.middleware("http")

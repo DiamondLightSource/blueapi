@@ -1,3 +1,5 @@
+import ast
+import os
 from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
@@ -7,9 +9,34 @@ import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
-from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+from blueapi.utils import BlueapiBaseModel, InvalidConfigError, format_errors
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+
+def parse_cli_context(ctx_params: dict[str, Any]) -> dict[str, Any]:
+    """
+    Load CLI values from the given context parameters using dot notation.
+
+    Args:
+        ctx_params (dict[str, Any]): dictionary containing CLI parameters.
+
+    Returns:
+        dict[str, Any]: A dictionary of CLI values for configuration.
+    """
+
+    recursive_dict = lambda:defaultdict(recursive_dict)
+    cli_values: dict[str, Any] = recursive_dict()
+
+    # Handle dot notation (e.g., BLUEAPI.config.api.host)
+    for key, value in ctx_params.items():
+        *path, key = key.split('.')
+        if not path: continue
+        local = cli_values
+        for seg in path: local = local[seg]
+        local[key] = value
+
+    return cli_values
 
 
 class SourceKind(str, Enum):
@@ -103,12 +130,25 @@ class ApplicationConfig(BlueapiBaseModel):
 C = TypeVar("C", bound=BaseModel)
 
 
+def _recursively_updated_map(
+    old: dict[str, Any], new: Mapping[str, Any]
+) -> dict[str, Any]:
+    updated = old.copy()  # Create a copy to avoid mutating the original dictionary
+    for key, value in new.items():
+        if (
+            key in updated
+            and isinstance(updated[key], dict)
+            and isinstance(value, dict)
+        ):
+            updated[key] = _recursively_updated_map(updated[key], value)
+        elif value is not None:
+            updated[key] = value
+    return updated
+
+
 class ConfigLoader(Generic[C]):
     """
     Small utility class for loading config from various sources.
-    You must define a config schema as a dataclass (or series of
-    nested dataclasses) that can then be loaded from some combination
-    of default values, dictionaries, YAML/JSON files etc.
     """
 
     def __init__(self, schema: type[C]) -> None:
@@ -117,54 +157,49 @@ class ConfigLoader(Generic[C]):
 
     def use_values(self, values: Mapping[str, Any]) -> None:
         """
-        Use all values provided in the config, override any defaults
-        and values set by previous calls into this class.
-
-        Args:
-            values (Mapping[str, Any]): Dictionary of override values,
-                                        does not need to be exhaustive
-                                        if defaults provided.
+        Use all values provided in the config, override any defaults.
         """
-
-        def recursively_update_map(old: dict[str, Any], new: Mapping[str, Any]) -> None:
-            for key in new:
-                if (
-                    key in old
-                    and isinstance(old[key], dict)
-                    and isinstance(new[key], dict)
-                ):
-                    recursively_update_map(old[key], new[key])
-                else:
-                    old[key] = new[key]
-
-        recursively_update_map(self._values, values)
+        self._values = _recursively_updated_map(self._values, values)
 
     def use_values_from_yaml(self, path: Path) -> None:
         """
-        Use all values provided in a YAML/JSON file in the
-        config, override any defaults and values set by
-        previous calls into this class.
-
-        Args:
-            path (Path): Path to YAML/JSON file
+        Use values from a YAML/JSON file, overriding previous values.
         """
-
         with path.open("r") as stream:
             values = yaml.load(stream, yaml.Loader)
         self.use_values(values)
 
+    def use_values_from_env(self, prefix: str = "APP_") -> None:
+        """
+        Load values from environment variables with a given prefix.
+        """
+
+        env_values = {}
+        for key, value in os.environ.items():
+            if key.startswith(prefix):
+                # Convert key to a config path-like structure
+                config_key = key[len(prefix) :].lower()
+                env_values[config_key] = ast.literal_eval(value)
+        self.use_values(env_values)
+
+    def use_values_from_cli(self, cli_args: Any) -> None:
+        """
+        Use values from CLI arguments, overriding previous values.
+        """
+        parsed = parse_cli_context(cli_args)
+        self.use_values(parsed)
+
     def load(self) -> C:
         """
-        Finalize and load the config as an instance of the `schema`
-        dataclass.
-
-        Returns:
-            C: Dataclass instance holding config
+        Finalize and load the config as an instance of the schema dataclass.
         """
-
         try:
             return self._adapter.validate_python(self._values)
         except ValidationError as exc:
+            pretty_error_messages = format_errors(exc.errors())
+
             raise InvalidConfigError(
-                "Something is wrong with the configuration file: \n"
+                f"""Something is wrong with the configuration file:
+                    {pretty_error_messages}
+                """
             ) from exc

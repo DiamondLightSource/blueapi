@@ -170,7 +170,7 @@ def _rpc(
     expected_type: type[T] | None,
     carrier: dict[str, Any] | None,
     *args: Any,
-    **P: Any,
+    **kwargs: Any,
 ) -> T:
     if carrier:
         ctx = get_global_textmap().extract(carrier)
@@ -179,7 +179,7 @@ def _rpc(
     func: Callable[..., T] = _validate_function(
         mod.__dict__.get(function_name, None), function_name
     )
-    value = func(*args, **P)
+    value = func(*args, **kwargs)
     return _valid_return(value, expected_type)
 
 

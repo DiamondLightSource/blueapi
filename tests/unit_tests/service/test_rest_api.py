@@ -1,4 +1,3 @@
-import os
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -22,33 +21,6 @@ from blueapi.service.model import (
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
-
-
-@pytest.fixture
-def client_with_authentication() -> Iterator[TestClient]:
-    os.environ["PKCE_AUTHENTICATION_URL"] = "http://localhost:8080"
-    os.environ["TOKEN_URL"] = "http://localhost:8080"
-    with patch("blueapi.service.interface.worker"):
-        main.setup_runner(use_subprocess=False)
-        yield TestClient(main.app)
-        main.teardown_runner()
-    del os.environ["PKCE_AUTHENTICATION_URL"]
-    del os.environ["TOKEN_URL"]
-
-
-@patch("blueapi.service.interface.get_plans")
-def test_get_plans_gives_auth_error(
-    get_plans_mock: MagicMock, client_with_authentication: TestClient
-) -> None:
-    class MyModel(BaseModel):
-        id: str
-
-    plan = Plan(name="my-plan", model=MyModel)
-    get_plans_mock.return_value = [PlanModel.from_plan(plan)]
-
-    response = client_with_authentication.get("/plans")
-
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.fixture

@@ -43,6 +43,8 @@ REST_API_VERSION = "0.0.5"
 RUNNER: WorkerDispatcher | None = None
 AUTHENTICATOR: Authenticator | None = None
 SWAGGER_CONFIG: dict[str, Any] | None = None
+AUTH_URL: str = os.getenv("PKCE_AUTHENTICATION_URL") or ""
+TOKEN_URL: str = os.getenv("TOKEN_URL") or ""
 
 
 def _runner() -> WorkerDispatcher:
@@ -77,20 +79,28 @@ async def lifespan(app: FastAPI):
 
 
 oauth_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl=os.getenv("PKCE_AUTHENTICATION_URL") or "",
-    tokenUrl=os.getenv("TOKEN_URL") or "",
-    refreshUrl=os.getenv("TOKEN_URL") or "",
+    authorizationUrl=AUTH_URL,
+    tokenUrl=TOKEN_URL,
+    refreshUrl=TOKEN_URL,
 )
 
 
 def verify_access_token(access_token: str = Depends(oauth_scheme)):
     if AUTHENTICATOR:
-        _, exception = AUTHENTICATOR.verify_token(access_token)
-        if exception:
+        try:
+            valid_token = AUTHENTICATOR.verify_token(access_token)
+            if not valid_token:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        except Exception as exception:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exception)
+                status_code=status.HTTP_401_UNAUTHORIZED,
             ) from exception
 
+
+if TOKEN_URL == "" or AUTH_URL == "":
+    dependencies = []
+else:
+    dependencies = [Depends(verify_access_token)]
 
 app = FastAPI(
     docs_url="/docs",
@@ -104,7 +114,7 @@ app = FastAPI(
         "scopeSeparator": " ",
         "scopes": "openid profile offline_access",
     },
-    dependencies=[Depends(verify_access_token)],
+    dependencies=dependencies,
 )
 
 

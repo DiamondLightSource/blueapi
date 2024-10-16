@@ -22,6 +22,7 @@ boltons==24.0.0
 cachetools==5.5.0
 caproto==1.1.1
 certifi==2024.8.30
+cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.4.0
 click==8.1.7
@@ -34,6 +35,7 @@ confluent-kafka==2.6.0
 contourpy==1.3.0
 copier==9.4.0
 coverage==7.6.3
+cryptography==43.0.1
 cycler==0.12.1
 dask==2024.9.1
 databroker==1.2.5
@@ -149,6 +151,7 @@ pure_eval==0.2.3
 pvxslibs==1.3.2
 py==1.11.0
 pyasn1==0.6.1
+pycparser==2.22
 pycryptodome==3.21.0
 pydantic==2.9.2
 pydantic-settings==2.5.2

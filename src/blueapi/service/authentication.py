@@ -30,18 +30,11 @@ class Authenticator:
         self.oauth: OauthConfig = oauth
         self.baseAuthConfig: BaseAuthConfig = baseAuthConfig
 
-    def verify_token(
-        self, token: str, verify_expiration: bool = True
-    ) -> tuple[bool, Exception | None]:
-        try:
-            decode = self.decode_jwt(token, verify_expiration)
-            if decode:
-                return (True, None)
-        except jwt.PyJWTError as e:
-            print(e)
-            return (False, e)
-
-        return (False, Exception("Invalid token"))
+    def verify_token(self, token: str, verify_expiration: bool = True) -> bool:
+        decode = self.decode_jwt(token, verify_expiration)
+        if decode:
+            return True
+        return False
 
     def decode_jwt(self, token: str, verify_expiration: bool = True):
         signing_key = jwt.PyJWKClient(self.oauth.jwks_uri).get_signing_key_from_jwt(
@@ -59,15 +52,9 @@ class Authenticator:
         )
         return decode
 
-    def userInfo(self, token: str) -> tuple[str | None, str | None]:
-        try:
-            decode = self.decode_jwt(token)
-            if decode:
-                return (decode["name"], decode["fedid"])
-            else:
-                return (None, None)
-        except jwt.PyJWTError as _:
-            return (None, None)
+    def userInfo(self, token: str, verify_expiration=True) -> tuple[str, str]:
+        decode = self.decode_jwt(token, verify_expiration)
+        return (decode["name"], decode["fedid"])
 
 
 class TokenManager:
@@ -158,13 +145,14 @@ class TokenManager:
 
     def start_device_flow(self) -> None:
         if self.token:
-            valid_token, exception = self.authenticator.verify_token(
-                self.token["access_token"]
-            )
-            if valid_token:
-                print("Token verified")
-                return
-            elif isinstance(exception, jwt.ExpiredSignatureError):
+            try:
+                valid_token = self.authenticator.verify_token(
+                    self.token["access_token"]
+                )
+                if valid_token:
+                    print("Logged in successfully!")
+                    return
+            except jwt.ExpiredSignatureError:
                 if self.refresh_auth_token():
                     return
 
@@ -183,14 +171,18 @@ class TokenManager:
             )
             auth_token_json = self.poll_for_token(device_code)
             if auth_token_json:
-                print(auth_token_json)
-                verify, exception = self.authenticator.verify_token(
-                    auth_token_json["access_token"]
-                )
-                if verify:
-                    print("Token verified")
-                    self.save_token(auth_token_json)
-                else:
+                try:
+                    valid_token = self.authenticator.verify_token(
+                        auth_token_json["access_token"]
+                    )
+                    if valid_token:
+                        print("Logged in successfully!")
+                        self.save_token(auth_token_json)
+                        return
+                except jwt.ExpiredSignatureError:
+                    if self.refresh_auth_token():
+                        return
+                except Exception:
                     print("Unauthorized access")
                     return
         else:

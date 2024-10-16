@@ -153,8 +153,8 @@ class BlueapiRestClient:
                 if self._tokenHandler.refresh_auth_token():
                     access_token = self._tokenHandler.token["access_token"]
                     headers["Authorization"] = f"Bearer {access_token}"
-            except Exception:
-                pass
+            except Exception as e:
+                raise Exception from e
         if data:
             response = requests.request(method, url, json=data, headers=headers)
         else:

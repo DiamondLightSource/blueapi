@@ -52,7 +52,7 @@ def get_versions(ref: str, add: str | None) -> list[str]:
     return versions
 
 
-def write_json(path: Path, repository: str, versions: str):
+def write_json(path: Path, repository: str, versions: list[str]):
     org, repo_name = repository.split("/")
     struct = [
         {"version": version, "url": f"https://{org}.github.io/{repo_name}/{version}/"}

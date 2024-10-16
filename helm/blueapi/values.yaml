@@ -76,12 +76,34 @@ listener:
   resources: {}
 
 # Additional envVars to mount to the pod as a String
-extraEnvVars: []
+extraEnvVars: |
+  - name: OTLP_EXPORT_ENABLED
+    value: {{ .Values.tracing.otlp.export_enabled] }}
+  - name: OTEL_EXPORTER_OTLP_TRACES_PROTOCOL
+    value: {{ .Values.tracing.otlp.protocol }}
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "{{ .Values.tracing.otlp.host }}:{{ .Values.tracing.otlp.port }}"
+  - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST
+    value: {{ .Values.tracing.http.request.headers }}
+  - name: OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE
+    value: {{ .Values.tracing.http.response.headers }}
 # - name: RABBITMQ_PASSWORD
 #   valueFrom:
 #     secretKeyRef:
 #       name: rabbitmq-password
 #       key: rabbitmq-password
+
+tracing:
+  otlp:
+    export_enabled: false
+    protocol: http/protobuf
+    host: https://daq-services-jaeger # replace with central instance
+    port: 4318
+  http:
+    request:
+      headers: ".*"
+    response:
+      headers: ".*"
 
 # Config for the worker goes here, will be mounted into a config file
 worker:
@@ -90,20 +112,22 @@ worker:
     port: 8000
   env:
     sources:
-    - kind: deviceFunctions
-      module: blueapi.startup.example_devices
-    - kind: planFunctions
-      module: blueapi.startup.example_plans
-    - kind: planFunctions
-      module: dls_bluesky_core.plans
-    - kind: planFunctions
-      module: dls_bluesky_core.stubs
+      - kind: deviceFunctions
+        module: blueapi.startup.example_devices
+      - kind: planFunctions
+        module: blueapi.startup.example_plans
+      - kind: planFunctions
+        module: dls_bluesky_core.plans
+      - kind: planFunctions
+        module: dls_bluesky_core.stubs
   stomp:
     auth:
       username: guest
       password: guest
     host: rabbitmq
     port: 61613
+  tracing_exporter:
+    host: ""
 
 initContainer:
   scratch:

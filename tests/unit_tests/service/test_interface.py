@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from bluesky_stomp.messaging import StompClient
@@ -15,6 +15,10 @@ from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
+
+TEST_CARRIER = {
+    "traceparent": "00-6fc19ca6e39c1fc845bb7c6fe28c7fdc-00babae1b7c9591d-01"
+}
 
 
 @pytest.fixture
@@ -36,7 +40,7 @@ def ensure_worker_stopped():
     of an assertion error. The start_worker method is not managed by a fixture
     as some of the tests require it to be customised."""
     yield
-    interface.teardown()
+    interface.teardown(TEST_CARRIER)
 
 
 def my_plan() -> MsgGenerator:
@@ -56,7 +60,7 @@ def test_get_plans(context_mock: MagicMock):
     context.plan(my_second_plan)
     context_mock.return_value = context
 
-    assert interface.get_plans() == [
+    assert interface.get_plans(TEST_CARRIER) == [
         PlanModel(
             name="my_plan",
             description="My plan does cool stuff.",
@@ -88,7 +92,7 @@ def test_get_plan(context_mock: MagicMock):
     context.plan(my_second_plan)
     context_mock.return_value = context
 
-    assert interface.get_plan("my_plan") == PlanModel(
+    assert interface.get_plan(TEST_CARRIER, "my_plan") == PlanModel(
         name="my_plan",
         description="My plan does cool stuff.",
         schema={
@@ -100,7 +104,7 @@ def test_get_plan(context_mock: MagicMock):
     )
 
     with pytest.raises(KeyError):
-        interface.get_plan("non_existing_plan")
+        interface.get_plan(TEST_CARRIER, "non_existing_plan")
 
 
 @dataclass
@@ -115,7 +119,7 @@ def test_get_devices(context_mock: MagicMock):
     context.device(SynAxis(name="my_axis"))
     context_mock.return_value = context
 
-    assert interface.get_devices() == [
+    assert interface.get_devices(TEST_CARRIER) == [
         DeviceModel(name="my_device", protocols=["HasName"]),
         DeviceModel(
             name="my_axis",
@@ -143,12 +147,12 @@ def test_get_device(context_mock: MagicMock):
     context.device(MyDevice(name="my_device"))
     context_mock.return_value = context
 
-    assert interface.get_device("my_device") == DeviceModel(
+    assert interface.get_device(TEST_CARRIER, "my_device") == DeviceModel(
         name="my_device", protocols=["HasName"]
     )
 
     with pytest.raises(KeyError):
-        assert interface.get_device("non_existing_device")
+        assert interface.get_device(TEST_CARRIER, "non_existing_device")
 
 
 @patch("blueapi.service.interface.context")
@@ -160,7 +164,7 @@ def test_submit_task(context_mock: MagicMock):
     mock_uuid_value = "8dfbb9c2-7a15-47b6-bea8-b6b77c31d3d9"
     with patch.object(uuid, "uuid4") as uuid_mock:
         uuid_mock.return_value = uuid.UUID(mock_uuid_value)
-        task_uuid = interface.submit_task(task)
+        task_uuid = interface.submit_task(TEST_CARRIER, task)
     assert task_uuid == mock_uuid_value
 
 
@@ -173,9 +177,9 @@ def test_clear_task(context_mock: MagicMock):
     mock_uuid_value = "3d858a62-b40a-400f-82af-8d2603a4e59a"
     with patch.object(uuid, "uuid4") as uuid_mock:
         uuid_mock.return_value = uuid.UUID(mock_uuid_value)
-        interface.submit_task(task)
+        interface.submit_task(TEST_CARRIER, task)
 
-    clear_task_return = interface.clear_task(mock_uuid_value)
+    clear_task_return = interface.clear_task(TEST_CARRIER, mock_uuid_value)
     assert clear_task_return == mock_uuid_value
 
 
@@ -183,7 +187,7 @@ def test_clear_task(context_mock: MagicMock):
 def test_begin_task(worker_mock: MagicMock):
     uuid_value = "350043fd-597e-41a7-9a92-5d5478232cf7"
     task = WorkerTask(task_id=uuid_value)
-    returned_task = interface.begin_task(task)
+    returned_task = interface.begin_task(TEST_CARRIER, task)
     assert task == returned_task
     worker_mock.assert_called_once_with(uuid_value)
 
@@ -191,7 +195,7 @@ def test_begin_task(worker_mock: MagicMock):
 @patch("blueapi.service.interface.TaskWorker.begin_task")
 def test_begin_task_no_task_id(worker_mock: MagicMock):
     task = WorkerTask(task_id=None)
-    returned_task = interface.begin_task(task)
+    returned_task = interface.begin_task(TEST_CARRIER, task)
     assert task == returned_task
     worker_mock.assert_not_called()
 
@@ -212,35 +216,37 @@ def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
 
     get_tasks_by_status_mock.side_effect = mock_tasks_by_status
 
-    assert interface.get_tasks_by_status(TaskStatusEnum.PENDING) == [
+    assert interface.get_tasks_by_status(TEST_CARRIER, TaskStatusEnum.PENDING) == [
         pending_task1,
         pending_task2,
     ]
-    assert interface.get_tasks_by_status(TaskStatusEnum.RUNNING) == [running_task]
-    assert interface.get_tasks_by_status(TaskStatusEnum.COMPLETE) == []
+    assert interface.get_tasks_by_status(TEST_CARRIER, TaskStatusEnum.RUNNING) == [
+        running_task
+    ]
+    assert interface.get_tasks_by_status(TEST_CARRIER, TaskStatusEnum.COMPLETE) == []
 
 
 def test_get_active_task():
-    assert interface.get_active_task() is None
+    assert interface.get_active_task(TEST_CARRIER) is None
 
 
 def test_get_worker_state():
-    assert interface.get_worker_state() == WorkerState.IDLE
+    assert interface.get_worker_state(TEST_CARRIER) == WorkerState.IDLE
 
 
 @patch("blueapi.service.interface.TaskWorker.pause")
 def test_pause_worker(pause_worker_mock: MagicMock):
-    interface.pause_worker(False)
+    interface.pause_worker(TEST_CARRIER, False)
     pause_worker_mock.assert_called_once_with(False)
 
     pause_worker_mock.reset_mock()
-    interface.pause_worker(True)
+    interface.pause_worker(TEST_CARRIER, True)
     pause_worker_mock.assert_called_once_with(True)
 
 
 @patch("blueapi.service.interface.TaskWorker.resume")
 def test_resume_worker(resume_worker_mock: MagicMock):
-    interface.resume_worker()
+    interface.resume_worker(TEST_CARRIER)
     resume_worker_mock.assert_called_once()
 
 
@@ -250,7 +256,7 @@ def test_cancel_active_task(cancel_active_task_mock: MagicMock):
     reason = "End of session"
     task_id = "789"
     cancel_active_task_mock.return_value = task_id
-    assert interface.cancel_active_task(fail, reason) == task_id
+    assert interface.cancel_active_task(TEST_CARRIER, fail, reason) == task_id
     cancel_active_task_mock.assert_called_once_with(fail, reason)
 
 
@@ -263,7 +269,7 @@ def test_get_tasks(get_tasks_mock: MagicMock):
     ]
     get_tasks_mock.return_value = tasks
 
-    assert interface.get_tasks() == tasks
+    assert interface.get_tasks(TEST_CARRIER) == tasks
 
 
 @patch("blueapi.service.interface.context")
@@ -272,10 +278,13 @@ def test_get_task_by_id(context_mock: MagicMock):
     context.plan(my_plan)
     context_mock.return_value = context
 
-    task_id = interface.submit_task(Task(name="my_plan"))
+    task_id = interface.submit_task(TEST_CARRIER, Task(name="my_plan"))
 
-    assert interface.get_task_by_id(task_id) == TrackableTask(
+    assert interface.get_task_by_id(
+        TEST_CARRIER, task_id
+    ) == TrackableTask.model_construct(
         task_id=task_id,
+        request_id=ANY,
         task=Task(name="my_plan", params={}),
         is_complete=False,
         is_pending=True,

@@ -141,7 +141,7 @@
                             },
                             "radius": {
                                 "description": "Radius of the circle",
-                                "exclusiveMinimum": 0,
+                                "exclusiveMinimum": 0.0,
                                 "title": "Radius",
                                 "type": "number"
                             },
@@ -170,19 +170,11 @@
                         "description": "Abstract baseclass for a combination of two regions, left and right.",
                         "properties": {
                             "left": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -207,19 +199,11 @@
                         "description": "Concatenate two Specs together, running one after the other.\n\nEach Dimension of left and right must contain the same axes. Typically\nformed using `Spec.concat`.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"x\", 1, 3, 3).concat(Line(\"x\", 4, 5, 5))",
                         "properties": {
                             "left": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Spec"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Spec",
                                 "description": "The left-hand Spec to Concat, midpoints will appear earlier"
                             },
                             "right": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Spec"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Spec",
                                 "description": "The right-hand Spec to Concat, midpoints will appear later"
                             },
                             "gap": {
@@ -256,19 +240,11 @@
                         "description": "A point is in DifferenceOf(a, b) if in a and not in b.\n\nTypically created with the ``-`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) - Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False, False, False])",
                         "properties": {
                             "left": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -312,18 +288,18 @@
                             },
                             "x_radius": {
                                 "description": "The radius along the x axis of the ellipse",
-                                "exclusiveMinimum": 0,
+                                "exclusiveMinimum": 0.0,
                                 "title": "X Radius",
                                 "type": "number"
                             },
                             "y_radius": {
                                 "description": "The radius along the y axis of the ellipse",
-                                "exclusiveMinimum": 0,
+                                "exclusiveMinimum": 0.0,
                                 "title": "Y Radius",
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0,
+                                "default": 0.0,
                                 "description": "The angle of the ellipse (degrees)",
                                 "title": "Angle",
                                 "type": "number"
@@ -354,19 +330,11 @@
                         "description": "A point is in IntersectionOf(a, b) if in both a and b.\n\nTypically created with the ``&`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) & Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False, False,  True, False, False])",
                         "properties": {
                             "left": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -434,19 +402,11 @@
                         "description": "Restrict Spec to only midpoints that fall inside the given Region.\n\nTypically created with the ``&`` operator. It also pushes down the\n``& | ^ -`` operators to its `Region` to avoid the need for brackets on\ncombinations of Regions.\n\nIf a Region spans multiple Frames objects, they will be squashed together.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * Line(\"x\", 3, 5, 5) & Circle(\"x\", \"y\", 4, 2, 1.2)\n\nSee Also: `why-squash-can-change-path`",
                         "properties": {
                             "spec": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Spec"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Spec",
                                 "description": "The Spec containing the source midpoints"
                             },
                             "region": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The Region that midpoints will be inside"
                             },
                             "check_path_changes": {
@@ -526,19 +486,11 @@
                         "description": "Outer product of two Specs, nesting inner within outer.\n\nThis means that inner will run in its entirety at each point in outer.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 2, 3) * Line(\"x\", 3, 4, 12)",
                         "properties": {
                             "outer": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Spec"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Spec",
                                 "description": "Will be executed once"
                             },
                             "inner": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Spec"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Spec",
                                 "description": "Will be executed len(outer) times"
                             },
                             "type": {
@@ -627,7 +579,7 @@
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0,
+                                "default": 0.0,
                                 "description": "Clockwise rotation angle of the rectangle",
                                 "title": "Angle",
                                 "type": "number"
@@ -739,11 +691,7 @@
                         "description": "Run the Spec in reverse on every other iteration when nested.\n\nTypically created with the ``~`` operator.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * ~Line(\"x\", 3, 5, 5)",
                         "properties": {
                             "spec": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Spec"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Spec",
                                 "description": "The Spec to run in reverse every other iteration"
                             },
                             "type": {
@@ -850,7 +798,7 @@
                                 "type": "integer"
                             },
                             "rotate": {
-                                "default": 0,
+                                "default": 0.0,
                                 "description": "How much to rotate the angle of the spiral",
                                 "title": "Rotate",
                                 "type": "number"
@@ -882,11 +830,7 @@
                         "description": "Squash a stack of Frames together into a single expanded Frames object.\n\nSee Also:\n    `why-squash-can-change-path`\n\n.. example_spec::\n\n    from scanspec.specs import Line, Squash\n\n    spec = Squash(Line(\"y\", 1, 2, 3) * Line(\"x\", 0, 1, 4))",
                         "properties": {
                             "spec": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Spec"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Spec",
                                 "description": "The Spec to squash the dimensions of"
                             },
                             "check_path_changes": {
@@ -953,19 +897,11 @@
                         "description": "A point is in SymmetricDifferenceOf(a, b) if in either a or b, but not both.\n\nTypically created with the ``^`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) ^ Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False,  True, False])",
                         "properties": {
                             "left": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -990,19 +926,11 @@
                         "description": "A point is in UnionOf(a, b) if in either a or b.\n\nTypically created with the ``|`` operator\n\n>>> r = Range(\"x\", 0.5, 2.5) | Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True,  True,  True, False])",
                         "properties": {
                             "left": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Region"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Region",
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -1027,19 +955,11 @@
                         "description": "Run two Specs in parallel, merging their midpoints together.\n\nTypically formed using `Spec.zip`.\n\nStacks of Frames are merged by:\n\n- If right creates a stack of a single Frames object of size 1, expand it to\n  the size of the fastest Frames object created by left\n- Merge individual Frames objects together from fastest to slowest\n\nThis means that Zipping a Spec producing stack [l2, l1] with a Spec\nproducing stack [r1] will assert len(l1)==len(r1), and produce\nstack [l2, l1.zip(r1)].\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"z\", 1, 2, 3) * Line(\"y\", 3, 4, 5).zip(Line(\"x\", 4, 5, 5))",
                         "properties": {
                             "left": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Spec"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Spec",
                                 "description": "The left-hand Spec to Zip, will appear earlier in axes"
                             },
                             "right": {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/$defs/Spec"
-                                    }
-                                ],
+                                "$ref": "#/$defs/Spec",
                                 "description": "The right-hand Spec to Zip, will appear later in axes"
                             },
                             "type": {

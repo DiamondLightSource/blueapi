@@ -632,3 +632,17 @@ def _assert_matching_formatting(fmt: OutputFormat, obj: Any, expected: str):
     output = StringIO()
     fmt.display(obj, output)
     assert expected == output.getvalue()
+
+
+@responses.activate
+def test_login_missing_config(runner: CliRunner):
+    result = runner.invoke(main, ["login"])
+    assert "Please provide configuration to login!" in result.output
+    assert result.exit_code == 0
+
+
+@responses.activate
+def test_logout_missing_config(runner: CliRunner):
+    result = runner.invoke(main, ["logout"])
+    assert "Please provide configuration to logout!" in result.output
+    assert result.exit_code == 0

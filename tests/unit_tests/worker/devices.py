@@ -40,9 +40,9 @@ class AdditionalUpdateStatus(DeviceStatus):
 
 
 class AdditionalStatusDevice(Device, Movable):
-    def set(self, value: float) -> Status:
+    def set(self, value: float) -> Status:  # type: ignore
         status = AdditionalUpdateStatus(self)
-        return status
+        return status  # type: ignore
 
 
 def additional_status_device(name="additional_status_device") -> AdditionalStatusDevice:

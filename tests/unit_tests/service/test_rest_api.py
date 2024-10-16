@@ -32,6 +32,14 @@ def client() -> Iterator[TestClient]:
         main.teardown_runner()
 
 
+@pytest.fixture
+def client_with_authentication() -> Iterator[TestClient]:
+    with patch("blueapi.service.interface.worker"):
+        main.setup_runner(use_subprocess=False)
+        yield TestClient(main.app)
+        main.teardown_runner()
+
+
 @patch("blueapi.service.interface.get_plans")
 def test_get_plans(get_plans_mock: MagicMock, client: TestClient) -> None:
     class MyModel(BaseModel):
@@ -588,3 +596,18 @@ def test_subprocess_enabled_by_default(mp_pool_mock: MagicMock):
     main.setup_runner()
     mp_pool_mock.assert_called_once()
     main.teardown_runner()
+
+
+@patch("blueapi.service.interface.get_plans")
+def test_get_plans_gives_auth_error(
+    get_plans_mock: MagicMock, client_with_authentication: TestClient
+) -> None:
+    class MyModel(BaseModel):
+        id: str
+
+    plan = Plan(name="my-plan", model=MyModel)
+    get_plans_mock.return_value = [PlanModel.from_plan(plan)]
+
+    response = client_with_authentication.get("/plans")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED

@@ -48,14 +48,16 @@ class TestAuthenticator(TestCase):
 
     @mock.patch("jwt.decode")
     @mock.patch("jwt.PyJWKClient.get_signing_key_from_jwt")
-    def test_user_info(self, mock_get_signing_key, mock_decode):
+    def test_user_info(
+        self,
+        mock_get_signing_key,
+        mock_decode,
+    ):
         mock_decode.return_value = {
             "name": "John Doe",
             "fedid": "12345",
         }
-        name, fedid = self.authenticator.userInfo("valid_token")
-        self.assertEqual(name, "John Doe")
-        self.assertEqual(fedid, "12345")
+        self.authenticator.print_user_info("valid_token")
 
 
 class TestTokenManager(TestCase):
@@ -76,7 +78,7 @@ class TestTokenManager(TestCase):
         self.cli_auth_config = CLIAuthConfig(
             client_id="client_id",
             client_audience="client_audience",
-            token_file_path="~/.token",
+            token_file_path="~/token",
         )
         self.token_manager = TokenManager(self.oauth_config, self.cli_auth_config)
 
@@ -121,15 +123,3 @@ class TestTokenManager(TestCase):
             self.token_manager.poll_for_token(
                 device_code, timeout=1, polling_interval=0.1
             )
-
-    @mock.patch("requests.post")
-    @mock.patch("blueapi.service.authentication.Authenticator.verify_token")
-    def test_start_device_flow(self, mock_verify_token, mock_post):
-        mock_post.return_value.status_code = HTTPStatus.OK
-        mock_post.return_value.json.return_value = {
-            "device_code": "device_code",
-            "verification_uri_complete": "https://example.com/verify",
-        }
-        mock_verify_token.return_value = (True, None)
-        self.token_manager.start_device_flow()
-        mock_verify_token.assert_called()

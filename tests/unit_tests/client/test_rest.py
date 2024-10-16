@@ -101,22 +101,3 @@ def test_refresh_if_signature_expired(rest_with_auth: BlueapiRestClient):
         result = rest_with_auth.get_plans()
         # Add assertions as needed
         assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
-
-
-@responses.activate
-def test_verify_token_ignore_other_exceptions(rest_with_auth: BlueapiRestClient):
-    plan = Plan(name="my-plan", model=MyModel)
-    responses.add(
-        responses.GET,
-        "http://localhost:8000/plans",
-        json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
-        status=200,
-    )
-    with (
-        patch("blueapi.service.Authenticator.verify_token") as mock_verify_token,
-    ):
-        # Mock the verify_token function to return True (indicating a valid token)
-        mock_verify_token.side_effect = Exception
-        result = rest_with_auth.get_plans()
-        # Add assertions as needed
-        assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])

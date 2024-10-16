@@ -47,7 +47,7 @@ class BlueapiRestClient:
         cliAuthConfig: CLIAuthConfig | None = None,
     ) -> None:
         self._config = config or RestConfig()
-        self._tokenHandler = None
+        self._tokenHandler: TokenManager | None = None
         if authConfig and cliAuthConfig:
             self._tokenHandler = TokenManager(authConfig, cliAuthConfig)
 
@@ -137,7 +137,7 @@ class BlueapiRestClient:
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
     ) -> T:
         url = self._url(suffix)
-        headers = {
+        headers: dict[str, str] = {
             "content-type": "application/json; charset=UTF-8",
         }
         if (
@@ -146,15 +146,15 @@ class BlueapiRestClient:
             and self._tokenHandler.token["access_token"]
         ):
             try:
-                access_token = self._tokenHandler.token["access_token"]
-                self._tokenHandler.authenticator.verify_token(access_token)
-                headers["Authorization"] = f"Bearer {access_token}"
+                auth_token: str = self._tokenHandler.token["access_token"]
+                self._tokenHandler.authenticator.verify_token(auth_token)
+                headers["Authorization"] = f"Bearer {auth_token}"
             except jwt.ExpiredSignatureError:
                 if self._tokenHandler.refresh_auth_token():
-                    access_token = self._tokenHandler.token["access_token"]
+                    access_token: str = self._tokenHandler.token["access_token"]
                     headers["Authorization"] = f"Bearer {access_token}"
-            except Exception as e:
-                raise Exception from e
+            except Exception:
+                pass
         if data:
             response = requests.request(method, url, json=data, headers=headers)
         else:

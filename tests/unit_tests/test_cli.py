@@ -1,6 +1,5 @@
 import base64
 import json
-from datetime import datetime, timedelta
 
 import jwt
 import matplotlib
@@ -659,15 +658,9 @@ cliAuth:
 
 @responses.activate
 def test_login_success(runner: CliRunner, valid_auth_config: str):
-    payload: dict[str, Any] = {
-        "kid": "Key_identifier",
-        "sub": "1234567890",  # Subject (usually user ID)
+    payload: dict[str, str] = {
         "name": "John Doe",
         "fedid": "jd1",
-        "iat": datetime.now(),  # Issued at time
-        "exp": datetime.now() + timedelta(hours=1),  # Expiration time
-        "aud": "client_audience",
-        "iss": "https://example.com/",
     }
 
     mock_json_responses: list[dict[str, str]] = [
@@ -732,15 +725,8 @@ def test_login_with_refresh_token(
             ).decode("utf-8")
         )
     payload: dict[str, Any] = {
-        "kid": "Key_identifier",
-        "sub": "1234567890",  # Subject (usually user ID)
         "name": "John Doe",
         "fedid": "jd1",
-        "iat": datetime.now(),  # Issued at time
-        "exp": datetime.now() + timedelta(hours=1),  # Expiration time
-        "aud": "client_audience",
-        "iss": "https://example.com/",
-        "refresh_token": "refresh_token",
     }
 
     mock_json_responses: list[dict[str, str]] = [
@@ -779,6 +765,57 @@ def test_login_with_refresh_token(
         f"Logged in as {payload['name']} with fed-id {payload['fedid']}\n"
         == result.output
     )
+    assert result.exit_code == 0
+
+
+@responses.activate
+def test_login_edge_cases(runner: CliRunner, valid_auth_config: str, tmp_path: Path):
+    with open(tmp_path / "token", "w") as token_file:
+        # base64 encoded token
+        token_file.write(
+            base64.b64encode(
+                b'{"access_token":"token","refresh_token":"refresh_token"}'
+            ).decode("utf-8")
+        )
+
+    mock_json_responses: list[dict[str, str]] = [
+        {
+            "device_authorization_endpoint": "https://example.com/device_authorization",
+            "authorization_endpoint": "https://example.com/authorization",
+            "token_endpoint": "https://example.com/token",
+            "issuer": "https://example.com",
+            "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
+            "end_session_endpoint": "https://example.com/logout",
+        },
+        {
+            "details": "not found",
+        },
+    ]
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as requests_mock:
+        requests_mock.add(
+            requests_mock.GET,
+            "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+            json=mock_json_responses[0],
+            status=200,
+        )
+        requests_mock.add(
+            requests_mock.POST,
+            "https://example.com/token",
+            json=mock_json_responses[1],
+            status=400,
+        )
+        requests_mock.add(
+            requests_mock.POST,
+            "https://example.com/device_authorization",
+            json=mock_json_responses[1],
+            status=400,
+        )
+        with (
+            patch("blueapi.service.Authenticator.decode_jwt") as mock_decode,
+        ):
+            mock_decode.side_effect = jwt.ExpiredSignatureError
+            result = runner.invoke(main, ["-c", valid_auth_config, "login"])
+    assert "Logging in\n" == result.output
     assert result.exit_code == 0
 
 

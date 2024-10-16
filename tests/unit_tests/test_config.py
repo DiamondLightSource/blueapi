@@ -174,7 +174,7 @@ def test_oauth_config_model_post_init(mock_get):
     assert oauth_config.issuer == mock_response["issuer"]
     assert oauth_config.jwks_uri == mock_response["jwks_uri"]
     assert oauth_config.logout_url == mock_response["end_session_endpoint"]
-    assert oauth_config.refresh_url == mock_response["end_session_endpoint"]
+    assert oauth_config.refresh_url == mock_response["token_endpoint"]
 
 
 @mock.patch("requests.get")

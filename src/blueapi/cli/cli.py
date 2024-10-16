@@ -339,7 +339,7 @@ def login(obj: dict) -> None:
         cliAuthConfig: CLIAuthConfig = config.cliAuth
         oauthConfig: OauthConfig = config.oauth
         print("Logging in")
-        auth = TokenManager(oauth=oauthConfig, cliAuth=cliAuthConfig)
+        auth: TokenManager = TokenManager(oauth=oauthConfig, cliAuth=cliAuthConfig)
         auth.start_device_flow()
     else:
         print("Please provide configuration to login!")
@@ -352,7 +352,7 @@ def logout(obj: dict) -> None:
     if config.cliAuth and config.oauth:
         oauthConfig: OauthConfig = config.oauth
         cliAuthConfig: CLIAuthConfig = config.cliAuth
-        auth = TokenManager(cliAuth=cliAuthConfig, oauth=oauthConfig)
+        auth: TokenManager = TokenManager(cliAuth=cliAuthConfig, oauth=oauthConfig)
         auth.logout()
         print("Logged out")
     else:

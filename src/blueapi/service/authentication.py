@@ -38,7 +38,7 @@ class Authenticator:
         signing_key = jwt.PyJWKClient(self.oauth.jwks_uri).get_signing_key_from_jwt(
             token
         )
-        decode = jwt.decode(
+        decode: dict[str, str] = jwt.decode(
             token,
             signing_key.key,
             algorithms=["RS256"],
@@ -51,8 +51,8 @@ class Authenticator:
         return decode
 
     def print_user_info(self, token: str) -> None:
-        decode = self.decode_jwt(token)
-        print(f'Logged in as {decode["name"]} with fed-id {decode["fedid"]}')
+        decode: dict[str, str] = self.decode_jwt(token)
+        print(f'Logged in as {decode.get("name")} with fed-id {decode.get("fedid")}')
 
 
 class TokenManager:
@@ -80,13 +80,14 @@ class TokenManager:
             )
             if response.status_code == HTTPStatus.OK:
                 self.save_token(response.json())
+                self.load_token()
                 return True
         return False
 
     def save_token(self, token: dict[str, Any]) -> None:
-        token_json = json.dumps(token)
-        token_bytes = token_json.encode("utf-8")
-        token_base64 = base64.b64encode(token_bytes)
+        token_json: str = json.dumps(token)
+        token_bytes: bytes = token_json.encode("utf-8")
+        token_base64: bytes = base64.b64encode(token_bytes)
         with open(os.path.expanduser(self.cliAuth.token_file_path), "wb") as token_file:
             token_file.write(token_base64)
 
@@ -94,13 +95,13 @@ class TokenManager:
         if not os.path.exists(os.path.expanduser(self.cliAuth.token_file_path)):
             return
         with open(os.path.expanduser(self.cliAuth.token_file_path), "rb") as token_file:
-            token_base64 = token_file.read()
-            token_bytes = base64.b64decode(token_base64)
-            token_json = token_bytes.decode("utf-8")
+            token_base64: bytes = token_file.read()
+            token_bytes: bytes = base64.b64decode(token_base64)
+            token_json: str = token_bytes.decode("utf-8")
             self.token = json.loads(token_json)
 
     def get_device_code(self):
-        response = requests.post(
+        response: requests.Response = requests.post(
             self.oauth.token_url,
             data={
                 "client_id": self.cliAuth.client_id,
@@ -108,7 +109,7 @@ class TokenManager:
                 "audience": self.cliAuth.client_audience,
             },
         )
-        response_data = response.json()
+        response_data: dict[str, str] = response.json()
         if response.status_code == 200:
             return response_data["device_code"]
         raise Exception("Failed to get device code.")
@@ -116,7 +117,7 @@ class TokenManager:
     def poll_for_token(
         self, device_code: str, timeout: float = 30, polling_interval: float = 0.5
     ) -> dict[str, Any]:
-        too_late = time.time() + timeout
+        too_late: float = time.time() + timeout
         while time.time() < too_late:
             response = requests.post(
                 self.oauth.token_url,
@@ -138,12 +139,17 @@ class TokenManager:
     def start_device_flow(self) -> None:
         if self.token:
             try:
-                self.authenticator.verify_token(self.token["access_token"])
+                is_token_vaild: bool = self.authenticator.verify_token(
+                    self.token["access_token"]
+                )
+                if is_token_vaild:
+                    self.load_token()
+                    self.authenticator.print_user_info(self.token["access_token"])
+                    return
             except jwt.ExpiredSignatureError:
-                self.refresh_auth_token()
-            self.load_token()
-            self.authenticator.print_user_info(self.token["access_token"])
-            return
+                if self.refresh_auth_token():
+                    self.authenticator.print_user_info(self.token["access_token"])
+                    return
 
         response: requests.Response = requests.post(
             self.oauth.device_auth_url,
@@ -159,11 +165,9 @@ class TokenManager:
                 f"{response_json['verification_uri_complete']}"
             )
             auth_token_json: dict[str, Any] = self.poll_for_token(device_code)
-            valid_token = self.authenticator.verify_token(
+            valid_token: bool = self.authenticator.verify_token(
                 auth_token_json["access_token"]
             )
             if valid_token:
                 self.save_token(auth_token_json)
-        self.load_token()
-        if self.token:
-            self.authenticator.print_user_info(self.token["access_token"])
+                self.authenticator.print_user_info(auth_token_json["access_token"])

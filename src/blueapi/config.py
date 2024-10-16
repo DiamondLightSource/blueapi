@@ -97,28 +97,33 @@ class OauthConfig(BlueapiBaseModel):
     refresh_url: str = ""
 
     def model_post_init(self, __context: Any) -> None:
-        response = requests.get(self.oidc_config_url)
+        response: requests.Response = requests.get(self.oidc_config_url)
         response.raise_for_status()
-        config_data = response.json()
+        config_data: dict[str, str] = response.json()
 
-        self.device_auth_url = config_data.get("device_authorization_endpoint")
-        self.pkce_auth_url = config_data.get("authorization_endpoint")
-        self.token_url = config_data.get("token_endpoint")
-        self.issuer = config_data.get("issuer")
-        self.jwks_uri = config_data.get("jwks_uri")
-        self.logout_url = config_data.get("end_session_endpoint")
-        self.refresh_url = config_data.get("end_session_endpoint")
+        device_auth_url: str | None = config_data.get("device_authorization_endpoint")
+        pkce_auth_url: str | None = config_data.get("authorization_endpoint")
+        token_url: str | None = config_data.get("token_endpoint")
+        issuer: str | None = config_data.get("issuer")
+        jwks_uri: str | None = config_data.get("jwks_uri")
+        logout_url: str | None = config_data.get("end_session_endpoint")
         # post this we need to check if all the values are present
-        if any(
-            (
-                self.device_auth_url == "",
-                self.pkce_auth_url == "",
-                self.token_url == "",
-                self.issuer == "",
-                self.jwks_uri == "",
-                self.logout_url == "",
-            )
+        if (
+            device_auth_url
+            and pkce_auth_url
+            and token_url
+            and issuer
+            and jwks_uri
+            and logout_url
         ):
+            self.device_auth_url = device_auth_url
+            self.pkce_auth_url = pkce_auth_url
+            self.token_url = token_url
+            self.issuer = issuer
+            self.jwks_uri = jwks_uri
+            self.logout_url = logout_url
+            self.refresh_url = token_url
+        else:
             raise ValueError("OIDC config is missing required fields")
 
 

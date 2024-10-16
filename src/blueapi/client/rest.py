@@ -142,16 +142,21 @@ class BlueapiRestClient:
         if self._oauth_config and self._cli_auth_config:
             jwt_token_manager = TokenManager(self._oauth_config, self._cli_auth_config)
             if jwt_token_manager.token and jwt_token_manager.token["access_token"]:
-                valid_token, exception = jwt_token_manager.authenticator.verify_token(
-                    jwt_token_manager.token["access_token"]
-                )
-                if valid_token:
-                    access_token = jwt_token_manager.token["access_token"]
-                    headers["Authorization"] = f"Bearer {access_token}"
-                elif isinstance(exception, jwt.ExpiredSignatureError):
+                try:
+                    valid_token = jwt_token_manager.authenticator.verify_token(
+                        jwt_token_manager.token["access_token"]
+                    )
+                    if valid_token:
+                        access_token = jwt_token_manager.token["access_token"]
+                        headers["Authorization"] = f"Bearer {access_token}"
+                    else:
+                        raise jwt.ExpiredSignatureError
+                except jwt.ExpiredSignatureError:
                     if jwt_token_manager.refresh_auth_token():
                         access_token = jwt_token_manager.token["access_token"]
                         headers["Authorization"] = f"Bearer {access_token}"
+                except Exception:
+                    pass
         if data:
             response = requests.request(method, url, json=data, headers=headers)
         else:

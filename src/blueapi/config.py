@@ -25,24 +25,16 @@ def parse_cli_context(ctx_params: dict[str, Any]) -> dict[str, Any]:
         dict[str, Any]: A dictionary of CLI values for configuration.
     """
 
-    def get_nested_value(
-        keys: list[str], value: Any, dictionary: dict[str, Any]
-    ) -> None:
-        """
-        Recursively insert a value into the dictionary based on a list of keys.
-        """
-        for key in keys[:-1]:
-            dictionary = dictionary.setdefault(key, {})
-        dictionary[keys[-1]] = value
-
-    cli_values: dict[str, Any] = {}
+    recursive_dict = lambda:defaultdict(recursive_dict)
+    cli_values: dict[str, Any] = recursive_dict()
 
     # Handle dot notation (e.g., BLUEAPI.config.api.host)
     for key, value in ctx_params.items():
-        if value is not None and "." in key:
-            # Split the key by dot and create nested dictionary structure
-            keys = key.split(".")
-            get_nested_value(keys, value, cli_values)
+        *path, key = key.split('.')
+        if not path: continue
+        local = cli_values
+        for seg in path: local = local[seg]
+        local[key] = value
 
     return cli_values
 

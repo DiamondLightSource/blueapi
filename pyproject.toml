@@ -32,6 +32,8 @@ dependencies = [
     "super-state-machine",  # See GH issue 553
     "GitPython",
     "bluesky-stomp>=0.1.2",
+    "pyjwt",
+    "python-multipart",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -61,8 +63,6 @@ dev = [
     "types-requests",
     "types-urllib3",
     "mock",
-    "PyJWT",
-    "python-multipart",
 ]
 
 [project.scripts]

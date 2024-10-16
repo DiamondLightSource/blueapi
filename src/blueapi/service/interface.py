@@ -49,7 +49,7 @@ def worker() -> TaskWorker:
 
 
 @lru_cache
-def messaging_template() -> StompClient | None:
+def stomp_client() -> StompClient | None:
     stomp_config = config().stomp
     if stomp_config is not None:
         template = StompClient.for_broker(
@@ -83,16 +83,16 @@ def setup(config: ApplicationConfig) -> None:
 
     logging.basicConfig(level=config.logging.level)
     worker()
-    messaging_template()
+    stomp_client()
 
 
 def teardown() -> None:
     worker().stop()
-    if (template := messaging_template()) is not None:
+    if (template := stomp_client()) is not None:
         template.disconnect()
     context.cache_clear()
     worker.cache_clear()
-    messaging_template.cache_clear()
+    stomp_client.cache_clear()
 
 
 def _publish_event_streams(
@@ -104,7 +104,7 @@ def _publish_event_streams(
 
 def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> None:
     def forward_message(event: Any, correlation_id: str | None) -> None:
-        if (template := messaging_template()) is not None:
+        if (template := stomp_client()) is not None:
             template.send(destination, event, None, correlation_id=correlation_id)
 
     stream.subscribe(forward_message)

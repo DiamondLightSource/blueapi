@@ -308,7 +308,16 @@ def test_config_yaml_parsed(temp_yaml_config_file):
     ],
     indirect=True,
 )
-def test_config_yaml_parsed_complete(temp_yaml_config_file):
+def test_config_yaml_parsed_complete(
+    temp_yaml_config_file: dict[
+        str,
+        dict[str, str | int | dict[str, str]]
+        | dict[str, dict[str, bool] | list[dict[str, str]]]
+        | dict[str, str | int]
+        | dict[str, str]
+        | dict[str, str | list[dict[str, str]]],
+    ],
+):
     temp_yaml_file_path, config_data = temp_yaml_config_file
 
     # Initialize loader and load config from the YAML file

@@ -7,7 +7,7 @@ import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ConfigLoader, OauthConfig, SwaggerAuthConfig
+from blueapi.config import ConfigLoader, OauthConfig
 from blueapi.utils import InvalidConfigError
 
 
@@ -193,11 +193,3 @@ def test_oauth_config_model_post_init_missing_fields(mock_get):
     mock_get.return_value.raise_for_status = lambda: None
     with pytest.raises(ValueError, match="OIDC config is missing required fields"):
         OauthConfig(oidc_config_url=oidc_config_url)
-
-
-@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
-def test_swagger_auth_from_env_ignore_case():
-    swaggerAuth = SwaggerAuthConfig(
-        client_id="", client_audience="", client_secret="${foo}"
-    )
-    assert swaggerAuth.client_secret.get_secret_value() == "bar"

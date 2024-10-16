@@ -1,4 +1,3 @@
-import os
 from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
@@ -10,10 +9,8 @@ from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
     BaseModel,
     Field,
-    Secret,
     TypeAdapter,
     ValidationError,
-    field_validator,
 )
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
@@ -130,19 +127,6 @@ class BaseAuthConfig(BlueapiBaseModel):
     client_audience: str = Field(description="Client Audience")
 
 
-class SwaggerAuthConfig(BaseAuthConfig):
-    client_secret: Secret[str] = Field(
-        description="Password to verify PKCE client's identity"
-    )
-
-    @field_validator("client_secret", mode="before")
-    @classmethod
-    def get_from_env(cls, v: str):
-        if v.startswith("${") and v.endswith("}"):
-            return os.environ[v.removeprefix("${").removesuffix("}").upper()]
-        return v
-
-
 class CLIAuthConfig(BaseAuthConfig):
     token_file_path: str = "~/token"
 
@@ -160,7 +144,7 @@ class ApplicationConfig(BlueapiBaseModel):
     scratch: ScratchConfig | None = None
     oauth: OauthConfig | None = None
     cliAuth: CLIAuthConfig | None = None
-    swaggerAuth: SwaggerAuthConfig | None = None
+    swaggerAuth: BaseAuthConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

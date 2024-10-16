@@ -30,6 +30,8 @@ jobs:
         uses: ./.github/actions/install_requirements
         with:
           pip-install: dist/*.whl
+          workflow-name: dist
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test module --version works using the installed wheel
         # If more than one module in src/ replace with module name to test

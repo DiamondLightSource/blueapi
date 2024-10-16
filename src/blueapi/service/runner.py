@@ -141,7 +141,7 @@ def _rpc(
     **kwargs: Any,
 ) -> T:
     mod = import_module(module_name)
-    func: Callable[P, T] = _validate_function(
+    func: Callable[..., T] = _validate_function(
         mod.__dict__.get(function_name, None), function_name
     )
     value = func(*args, **kwargs)

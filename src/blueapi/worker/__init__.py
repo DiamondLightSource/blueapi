@@ -6,7 +6,6 @@ from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 __all__ = [
     "TaskWorker",
     "Task",
-    "Worker",
     "WorkerEvent",
     "WorkerState",
     "StatusView",

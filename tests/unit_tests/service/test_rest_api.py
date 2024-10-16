@@ -25,9 +25,7 @@ from blueapi.worker.task_worker import TrackableTask
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    with (
-        patch("blueapi.service.interface.worker"),
-    ):
+    with patch("blueapi.service.interface.worker"):
         main.setup_runner(use_subprocess=False)
         yield TestClient(main.app)
         main.teardown_runner()
@@ -186,7 +184,7 @@ def test_create_task_validation_error(
     assert response.json() == {
         "detail": (
             "\n        Input validation failed: id: Field required,\n"
-            "        suppplied params {},\n"
+            "        supplied params {},\n"
             "        do not match the expected params: {'properties': {'id': "
             "{'title': 'Id', 'type': 'string'}}, 'required': ['id'], 'title': "
             "'MyModel', 'type': 'object'}\n        "

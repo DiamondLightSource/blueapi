@@ -95,7 +95,9 @@ class TaskWorker:
 
         self._tasks = {}
 
-        self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
+        assert ctx.run_engine.state is not None, "RunEngine state is not set"
+        state: RawRunEngineState = str(ctx.run_engine.state)
+        self._state = WorkerState.from_bluesky_state(state)
         self._errors = []
         self._warnings = []
         self._task_channel = Queue(maxsize=1)
@@ -122,11 +124,12 @@ class TaskWorker:
         reason: str | None = None,
     ) -> str:
         if self._current is None:
-            # Persuades mypy that self._current is not None
+            # Persuades type checker that self._current is not None
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
         if failure:
-            self._ctx.run_engine.abort(reason)
+            default_reason = "Task failed for unknown reason"
+            self._ctx.run_engine.abort(reason or default_reason)
         else:
             self._ctx.run_engine.stop()
         return self._current.task_id
@@ -181,8 +184,8 @@ class TaskWorker:
                 task_started.set()
 
         LOGGER.info(f"Submitting: {trackable_task}")
+        sub = self.worker_events.subscribe(mark_task_as_started)
         try:
-            sub = self.worker_events.subscribe(mark_task_as_started)
             self._task_channel.put_nowait(trackable_task)
             task_started.wait(timeout=5.0)
             if not task_started.is_set():
@@ -229,10 +232,10 @@ class TaskWorker:
 
     def run(self) -> None:
         LOGGER.info("Worker starting")
-        self._ctx.run_engine.state_hook = self._on_state_change
+        self._ctx.run_engine.state_hook = self._on_state_change  # type: ignore
         self._ctx.run_engine.subscribe(self._on_document)
         if self._broadcast_statuses:
-            self._ctx.run_engine.waiting_hook = self._waiting_hook
+            self._ctx.run_engine.waiting_hook = self._waiting_hook  # type: ignore
 
         self._stopped.clear()
         self._started.set()
@@ -262,7 +265,9 @@ class TaskWorker:
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
                 LOGGER.info(f"Got new task: {next_task}")
-                self._current = next_task  # Informing mypy that the task is not None
+                self._current = (
+                    next_task  # Informing type checker that the task is not None
+                )
                 self._current.is_pending = False
                 self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):

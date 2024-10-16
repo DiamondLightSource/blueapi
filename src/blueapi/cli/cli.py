@@ -17,7 +17,10 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import (
+    ApplicationConfig,
+    ConfigLoader,
+)
 from blueapi.core import DataEvent
 from blueapi.service.main import start
 from blueapi.service.openapi import (
@@ -146,19 +149,16 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    if config.stomp is not None:
-        event_bus_client = EventBusClient(
-            StompClient.for_broker(
-                broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
-                    auth=config.stomp.auth,
-                )
+    assert config.stomp is not None, "By this point, the stomp config should be set"
+    event_bus_client = EventBusClient(
+        StompClient.for_broker(
+            broker=Broker(
+                host=config.stomp.host,
+                port=config.stomp.port,
+                auth=config.stomp.auth,
             )
         )
-    else:
-        raise RuntimeError("Message bus needs to be configured")
-
+    )
     fmt = obj["fmt"]
 
     def on_event(

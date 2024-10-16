@@ -1,3 +1,4 @@
+import os
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -25,10 +26,14 @@ from blueapi.worker.task_worker import TrackableTask
 
 @pytest.fixture
 def client_with_authentication() -> Iterator[TestClient]:
+    os.environ["PKCE_AUTHENTICATION_URL"] = "http://localhost:8080"
+    os.environ["TOKEN_URL"] = "http://localhost:8080"
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(use_subprocess=False)
         yield TestClient(main.app)
         main.teardown_runner()
+    del os.environ["PKCE_AUTHENTICATION_URL"]
+    del os.environ["TOKEN_URL"]
 
 
 @patch("blueapi.service.interface.get_plans")

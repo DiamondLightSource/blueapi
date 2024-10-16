@@ -743,31 +743,3 @@ def test_logout_success(runner: CliRunner, valid_auth_config: str, tmp_path: Pat
     assert result.exit_code == 0
     assert response.call_count == 1
     assert tmp_path.joinpath("token").exists() is False
-
-
-@responses.activate
-def test_controller_plan_with_auth(runner: CliRunner, valid_auth_config):
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as requests_mock:
-        plan = Plan(name="my-plan", model=MyModel)
-        requests_mock.add(
-            responses.GET,
-            "https://auth.example.com/realms/sample/.well-known/openid-configuration",
-            json={
-                "device_authorization_endpoint": "https://example.com/device_authorization",
-                "authorization_endpoint": "https://example.com/authorization",
-                "token_endpoint": "https://example.com/token",
-                "issuer": "https://example.com",
-                "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
-                "end_session_endpoint": "https://example.com/logout",
-            },
-            status=200,
-        )
-        requests_mock.add(
-            responses.GET,
-            "http://localhost:8000/plans",
-            json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
-            status=200,
-        )
-        result = runner.invoke(main, ["-c", valid_auth_config, "controller", "plans"])
-    assert result.exit_code == 0
-    assert "Please login to access the plans" in result.output

@@ -126,7 +126,8 @@ class TaskWorker:
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
         if failure:
-            self._ctx.run_engine.abort(reason)
+            default_reason = "Task failed for unknown reason"
+            self._ctx.run_engine.abort(reason or default_reason)
         else:
             self._ctx.run_engine.stop()
         return self._current.task_id
@@ -181,8 +182,8 @@ class TaskWorker:
                 task_started.set()
 
         LOGGER.info(f"Submitting: {trackable_task}")
+        sub = self.worker_events.subscribe(mark_task_as_started)
         try:
-            sub = self.worker_events.subscribe(mark_task_as_started)
             self._task_channel.put_nowait(trackable_task)
             task_started.wait(timeout=5.0)
             if not task_started.is_set():
@@ -262,7 +263,9 @@ class TaskWorker:
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
                 LOGGER.info(f"Got new task: {next_task}")
-                self._current = next_task  # Informing type checker that the task is not None
+                self._current = (
+                    next_task  # Informing type checker that the task is not None
+                )
                 self._current.is_pending = False
                 self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):

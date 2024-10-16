@@ -4,7 +4,7 @@ from concurrent.futures import Future
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 
-from blueapi.config import ApplicationConfig, StompConfig
+from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
     DeviceModel,

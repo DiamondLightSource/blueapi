@@ -254,14 +254,30 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "auth": {"username": "guest", "password": "guest"},
             },
             "env": {
+                "events": {
+                    "broadcast_status_events": True,
+                },
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
                     {"kind": "planFunctions", "module": "dls_bluesky_core.plans"},
                     {"kind": "planFunctions", "module": "dls_bluesky_core.stubs"},
                 ],
             },
-            "api": {"host": "0.0.0.0", "port": 8000},
-            "scratch": {"root": "/tmp/scratch/blueapi", "repositories": ["dodal"]},
+            "api": {
+                "host": "0.0.0.0",
+                "port": 8000,
+                "protocol": "http",
+            },
+            "logging": {"level": "INFO"},
+            "scratch": {
+                "root": "/tmp/scratch/blueapi",
+                "repositories": [
+                    {
+                        "name": "dodal",
+                        "remote_url": "https://github.com/DiamondLightSource/dodal.git",
+                    }
+                ],
+            },
         },
         {
             "stomp": {
@@ -279,7 +295,15 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "logging": {"level": "INFO"},
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
-            "scratch": {"root": "/tmp/scratch/blueapi", "repositories": ["dodal"]},
+            "scratch": {
+                "root": "/tmp/scratch/blueapi",
+                "repositories": [
+                    {
+                        "name": "dodal",
+                        "remote_url": "https://github.com/DiamondLightSource/dodal.git",
+                    }
+                ],
+            },
         },
     ],
     indirect=True,
@@ -295,7 +319,15 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file):
     # Parse the loaded config JSON into a dictionary
     target_dict_json = json.loads(loaded_config.model_dump_json())
 
-    # Assert that the loaded config is identical to the expected config_data
+    assert (
+        loaded_config.stomp.auth.password.get_secret_value()
+        == config_data["stomp"]["auth"]["password"]
+    )
+    # Remove the password field to not compare it again in the full dict comparison
+    del target_dict_json["stomp"]["auth"]["password"]
+    del config_data["stomp"]["auth"]["password"]
+
+    # Assert that the remaining config data is identical
     assert (
         target_dict_json == config_data
     ), f"Expected config {config_data}, but got {target_dict_json}"

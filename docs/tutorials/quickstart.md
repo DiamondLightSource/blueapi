@@ -9,13 +9,13 @@ downstream services about the data it has collected.
 To start the worker:
 
 ```
-    blueapi serve
+blueapi serve
 ```
 
 The worker can also be started using a custom config file:
 
 ```
-    blueapi --config path/to/file serve
+blueapi --config path/to/file serve
 ```
 
 An example of a config file that starts STOMP with default values can be found in:
@@ -29,7 +29,7 @@ An example of a config file that starts STOMP with default values can be found i
 Blueapi comes with a CLI so that you can query and control the worker from the terminal.
 
 ```
-    blueapi controller plans
+blueapi controller plans
 ```
 
 The above command should display all plans the worker is capable of running.

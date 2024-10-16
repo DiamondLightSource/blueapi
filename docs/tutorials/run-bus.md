@@ -33,11 +33,7 @@ stomp:
 ## Run the Server
 
 ```
-    blueapi --config stomp.yaml serve
+blueapi --config stomp.yaml serve
 ```
 
-## Run the CLI
-
-```
-blueapi --config stomp.yaml controller run scan '{"detectors": ["image_det"], spec: {"type": "Line", "axis": "x", "start": 0, "stop": 10, "num": 10}}'
-```
+It should print a message about being connected to the console, otherwise it will print an error.

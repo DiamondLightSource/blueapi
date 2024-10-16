@@ -176,9 +176,9 @@ def _rpc(
         ctx = get_global_textmap().extract(carrier)
         attach(ctx)
     mod = import_module(module_name)
-    func: Callable[P, T] = _validate_function(
+    func: Callable[..., T] = _validate_function(
         mod.__dict__.get(function_name, None), function_name
-    )
+    )  # type: ignore
     value = func(*args, **kwargs)
     return _valid_return(value, expected_type)
 

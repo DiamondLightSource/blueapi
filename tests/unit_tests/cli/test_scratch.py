@@ -14,6 +14,7 @@ from blueapi.config import ScratchConfig, ScratchRepository
 @pytest.fixture
 def directory_path() -> Path:  # type: ignore
     temporary_directory = TemporaryDirectory()
+    # todo what does the yield do?
     yield Path(temporary_directory.name)
     temporary_directory.cleanup()
 
@@ -23,6 +24,7 @@ def file_path(directory_path: Path) -> Path:  # type: ignore
     file_path = directory_path / str(uuid.uuid4())
     with file_path.open("w") as stream:
         stream.write("foo")
+    # todo what does the yield do?
     yield file_path
     os.remove(file_path)
 

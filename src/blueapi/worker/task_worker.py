@@ -145,8 +145,9 @@ class TaskWorker:
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
         if failure:
-            self._ctx.run_engine.abort(reason)
-            add_span_attributes({"Task aborted": reason})
+            default_reason = "Task failed for unknown reason"
+            self._ctx.run_engine.abort(reason or default_reason)
+            add_span_attributes({"Task aborted": reason or default_reason})
         else:
             self._ctx.run_engine.stop()
             add_span_attributes({"Task stopped": reason})
@@ -220,6 +221,7 @@ class TaskWorker:
                 task_started.set()
 
         LOGGER.info(f"Submitting: {trackable_task}")
+        sub = self.worker_events.subscribe(mark_task_as_started)
         try:
             self._current_task_otel_context = get_current()
             sub = self.worker_events.subscribe(mark_task_as_started)

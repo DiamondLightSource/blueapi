@@ -5,8 +5,7 @@ from unittest.mock import patch
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
-from bluesky.utils import MsgGenerator
-from dodal.common import PlanGenerator, inject
+from dodal.common import MsgGenerator, PlanGenerator, inject
 from ophyd.sim import SynAxis, SynGauss
 from pydantic import TypeAdapter, ValidationError
 from pytest import LogCaptureFixture
@@ -49,7 +48,10 @@ def has_typeless_params(foo, bar) -> MsgGenerator:  # type: ignore
     ...
 
 
-def has_default_reference(m: Movable = inject(SIM_MOTOR_NAME)) -> MsgGenerator:
+MOTOR: Movable = inject(SIM_MOTOR_NAME)
+
+
+def has_default_reference(m: Movable = MOTOR) -> MsgGenerator:
     yield from []
 
 

@@ -36,7 +36,7 @@ class Authenticator:
             return True
         return False
 
-    def decode_jwt(self, token: str, verify_expiration: bool = True):
+    def decode_jwt(self, token: str, verify_expiration: bool = True) -> dict[str, str]:
         signing_key = jwt.PyJWKClient(self.oauth.jwks_uri).get_signing_key_from_jwt(
             token
         )
@@ -66,8 +66,6 @@ class TokenManager:
         self.load_token()
 
     def logout(self) -> None:
-        # TODO: Use ID token to close the session
-        # We can use self.oauth.logout_url to logout the user
         if os.path.exists(os.path.expanduser(self.cliAuth.token_file_path)):
             os.remove(os.path.expanduser(self.cliAuth.token_file_path))
 
@@ -178,6 +176,10 @@ class TokenManager:
                     if valid_token:
                         print("Logged in successfully!")
                         self.save_token(auth_token_json)
+                        userName, fedid = self.authenticator.userInfo(
+                            auth_token_json["access_token"]
+                        )
+                        print(f"Logged in as {userName} with fed-id {fedid}")
                         return
                 except jwt.ExpiredSignatureError:
                     if self.refresh_auth_token():
@@ -188,5 +190,3 @@ class TokenManager:
         else:
             print("Unauthorized access")
             return
-        userName, fedid = self.authenticator.userInfo(auth_token_json["access_token"])
-        print(f"Logged in as {userName} with fed-id {fedid}")

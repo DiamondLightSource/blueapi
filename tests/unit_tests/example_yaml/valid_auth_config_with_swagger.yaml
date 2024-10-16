@@ -7,5 +7,8 @@ oauth:
 cliAuth:
   client_id: sample-cli
   client_audience: sample-account
-  token_file_path: /tmp/token
 
+swaggerAuth:
+  client_id: sample
+  client_audience: sample-account
+  client_secret: ${PKCE_CLIENT_SECRET}

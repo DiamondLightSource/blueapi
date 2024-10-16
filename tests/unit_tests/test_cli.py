@@ -1,4 +1,6 @@
+import base64
 import json
+from datetime import datetime, timedelta
 
 import matplotlib
 
@@ -9,7 +11,7 @@ from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 import responses
@@ -44,15 +46,6 @@ def mock_connection() -> Mock:
 @pytest.fixture
 def template(mock_connection: Mock) -> StompClient:
     return StompClient(conn=mock_connection)
-
-
-@pytest.fixture
-@patch("blueapi.client.rest.Authentication")
-def mock_auth(mock_auth: MagicMock) -> MagicMock:
-    mock_auth_instance = mock_auth.return_value
-    mock_auth_instance.token = {"access_token": "test_token"}
-    mock_auth_instance.verify_token.return_value = (True, None)
-    return MagicMock()
 
 
 @pytest.fixture
@@ -646,3 +639,100 @@ def test_logout_missing_config(runner: CliRunner):
     result = runner.invoke(main, ["logout"])
     assert "Please provide configuration to logout!" in result.output
     assert result.exit_code == 0
+
+
+@pytest.fixture
+def valid_auth_config(tmp_path: Path) -> str:
+    config = f"""
+oauth:
+  oidc_config_url: https://auth.example.com/realms/sample/.well-known/openid-configuration
+cliAuth:
+  client_id: sample-cli
+  client_audience: sample-account
+  token_file_path: {tmp_path}/token
+"""
+    with open(tmp_path / "auth_config.yaml", mode="w") as valid_auth_config_file:
+        valid_auth_config_file.write(config)
+        return valid_auth_config_file.name
+
+
+@responses.activate
+def test_login_success(runner: CliRunner, valid_auth_config: str):
+    payload = {
+        "kid": "Key_identifier",
+        "sub": "1234567890",  # Subject (usually user ID)
+        "name": "John Doe",
+        "fedid": "jd1",
+        "iat": datetime.now(),  # Issued at time
+        "exp": datetime.now() + timedelta(hours=1),  # Expiration time
+        "aud": "client_audience",
+        "iss": "https://example.com/",
+    }
+
+    mock_json_responses = [
+        {
+            "device_authorization_endpoint": "https://example.com/device_authorization",
+            "authorization_endpoint": "https://example.com/authorization",
+            "token_endpoint": "https://example.com/token",
+            "issuer": "https://example.com",
+            "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
+            "end_session_endpoint": "https://example.com/logout",
+        },
+        {
+            "device_code": "device_code",
+            "verification_uri_complete": "https://example.com/verify",
+        },
+        {
+            "access_token": "token",
+        },
+    ]
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as requests_mock:
+        requests_mock.add(
+            requests_mock.GET,
+            "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+            json=mock_json_responses[0],
+            status=200,
+        )
+        requests_mock.add(
+            requests_mock.POST,
+            "https://example.com/device_authorization",
+            json=mock_json_responses[1],
+            status=200,
+        )
+        requests_mock.add(
+            requests_mock.POST,
+            "https://example.com/token",
+            json=mock_json_responses[2],
+            status=200,
+        )
+        with (
+            patch("blueapi.service.Authenticator.decode_jwt") as mock_decode,
+        ):
+            mock_decode.return_value = payload
+            result = runner.invoke(main, ["-c", valid_auth_config, "login"])
+    assert (
+        "Logging in\n"
+        "Please login from this URL:- https://example.com/verify\n"
+        "Logged in successfully!\n"
+        "Logged in as John Doe with fed-id jd1\n" == result.output
+    )
+    assert result.exit_code == 0
+
+
+@responses.activate
+def test_logout_success(runner: CliRunner, valid_auth_config: str, tmp_path: Path):
+    with open(tmp_path / "token", "w+") as token_file:
+        # base64 encoded token
+        token_file.write(base64.b64encode(b'{"access_token":"token"}').decode("utf-8"))
+    response = responses.add(
+        responses.GET,
+        "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+        json=EnvironmentResponse(initialized=False).model_dump(),
+        status=200,
+    )
+    assert tmp_path.joinpath("token").exists() is True
+    result = runner.invoke(main, ["-c", valid_auth_config, "logout"])
+    assert "Logged out" in result.output
+    assert result.exit_code == 0
+    assert response.call_count == 1
+    assert tmp_path.joinpath("token").exists() is False

@@ -111,7 +111,8 @@ class TaskWorker:
         self._tasks = {}
 
         assert ctx.run_engine.state is not None, "RunEngine state is not set"
-        self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
+        state: RawRunEngineState = str(ctx.run_engine.state)
+        self._state = WorkerState.from_bluesky_state(state)
         self._errors = []
         self._warnings = []
         self._task_channel = Queue(maxsize=1)

@@ -8,7 +8,8 @@ from super_state_machine.extras import PropertyMachine, ProxyString
 from blueapi.utils import BlueapiBaseModel
 
 # The RunEngine can return any of these three types as its state
-RawRunEngineState = type[PropertyMachine | ProxyString | str]
+# RawRunEngineState = type[PropertyMachine | ProxyString | str]
+RawRunEngineState = PropertyMachine | ProxyString | str
 
 
 # NOTE this is interim until refactor

@@ -16,6 +16,22 @@ jobs:
         with:
           # Need this to get version number from last tag
           fetch-depth: 0
+      - name: Validate PEP 440 version compliance
+        run: |
+          python -m pip install packaging
+          python -c "
+      import re
+      from packaging.version import Version, InvalidVersion
+
+      ref = '${GITHUB_REF##*/}'
+      try:
+          version = Version(ref)
+          print(f'PEP 440 compliant version: {version}')
+      except InvalidVersion:
+          print(f'Invalid PEP 440 version: {ref}')
+          exit(1)
+        "
+
 
       - name: Set up Docker Buildx
         id: buildx
@@ -85,9 +101,20 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=tag
+
+      - name: Convert PEP 440 version to SemVer
+        run: |
+          ref="${GITHUB_REF##*/}"
+          # Convert alpha/beta/rc versions from PEP 440 to SemVer
+          if [[ "$ref" =~ ([0-9]+\.[0-9]+\.[0-9]+)(a|b|rc)([0-9]+) ]]; then
+            ref="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
+          fi
+          echo "Converted version: $ref"
+          echo "VERSION=$ref" >> $GITHUB_ENV
+
       - name: package chart and push it
         run: |
-          sed -i "$ a appVersion: ${GITHUB_REF##*/}" helm/blueapi/Chart.yaml
+          sed -i "$ a appVersion: ${VERSION}" helm/blueapi/Chart.yaml
           helm dependencies update helm/blueapi
-          helm package helm/blueapi --version ${GITHUB_REF##*/} -d /tmp/
-          helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/diamondlightsource/charts
+          helm package helm/blueapi --version ${VERSION} -d /tmp/
+          helm push /tmp/blueapi-${VERSION}.tgz oci://ghcr.io/diamondlightsource/charts

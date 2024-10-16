@@ -16,15 +16,15 @@ Blueapi can be configured to load custom code at startup that defines plans and 
 First determine the import path of your code. If you were going to import it in a Python file, what would you put?
 For example:
 ```python
-    import my_plan_library.tomography.plans
+import my_plan_library.tomography.plans
 ```
 
 You would add the following into your configuration file:
 ```yaml
-    env:
-      sources:
-        - kind: planFunctions
-          module: my_plan_library.tomography.plans
+env:
+  sources:
+    - kind: planFunctions
+      module: my_plan_library.tomography.plans
 ```
 
 You can have as many sources for plans and devices as are needed.

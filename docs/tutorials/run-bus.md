@@ -4,15 +4,15 @@ Blueapi can publish updates to a message bus asynchronously, the CLI can then vi
 
 ## Start Message Bus
 
-The worker requires a running instance of a message bus such as  ActiveMQ, the simplest
+The worker can publish updates to a running instance of a message bus such as  ActiveMQ, the simplest
 way to start it is to run it via a container:
 
 ```
-    docker run -it --rm --net host rmohr/activemq:5.15.9-alpine
+docker run -it --rm --net host rmohr/activemq:5.15.9-alpine
 ```
 
 ```
-    podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
+podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
 ```
 
 ## Config File
@@ -37,11 +37,7 @@ stomp:
 ## Run the Server
 
 ```
-    blueapi --config stomp.yaml serve
+blueapi --config stomp.yaml serve
 ```
 
-## Run the CLI
-
-```
-blueapi --config stomp.yaml controller run scan '{"detectors": ["image_det"], spec: {"type": "Line", "axis": "x", "start": 0, "stop": 10, "num": 10}}'
-```
+It should print a message about being connected to the console, otherwise it will print an error.

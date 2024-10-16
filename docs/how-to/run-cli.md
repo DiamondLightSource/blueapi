@@ -6,8 +6,6 @@ a test/development/debugging tool and not meant for production!
     `./run-container` and `../tutorials/installation`
 
 
-
-
 ## Basic Introspection
 
 The worker can tell you which plans and devices are available via:

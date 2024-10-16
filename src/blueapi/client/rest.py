@@ -47,8 +47,9 @@ class BlueapiRestClient:
         cliAuthConfig: CLIAuthConfig | None = None,
     ) -> None:
         self._config = config or RestConfig()
-        self._oauth_config = authConfig
-        self._cli_auth_config = cliAuthConfig
+        self._tokenHandler = None
+        if authConfig and cliAuthConfig:
+            self._tokenHandler = TokenManager(authConfig, cliAuthConfig)
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -139,24 +140,21 @@ class BlueapiRestClient:
         headers = {
             "content-type": "application/json; charset=UTF-8",
         }
-        if self._oauth_config and self._cli_auth_config:
-            jwt_token_manager = TokenManager(self._oauth_config, self._cli_auth_config)
-            if jwt_token_manager.token and jwt_token_manager.token["access_token"]:
-                try:
-                    valid_token = jwt_token_manager.authenticator.verify_token(
-                        jwt_token_manager.token["access_token"]
-                    )
-                    if valid_token:
-                        access_token = jwt_token_manager.token["access_token"]
-                        headers["Authorization"] = f"Bearer {access_token}"
-                    else:
-                        raise jwt.ExpiredSignatureError
-                except jwt.ExpiredSignatureError:
-                    if jwt_token_manager.refresh_auth_token():
-                        access_token = jwt_token_manager.token["access_token"]
-                        headers["Authorization"] = f"Bearer {access_token}"
-                except Exception:
-                    pass
+        if (
+            self._tokenHandler
+            and self._tokenHandler.token
+            and self._tokenHandler.token["access_token"]
+        ):
+            try:
+                access_token = self._tokenHandler.token["access_token"]
+                self._tokenHandler.authenticator.verify_token(access_token)
+                headers["Authorization"] = f"Bearer {access_token}"
+            except jwt.ExpiredSignatureError:
+                if self._tokenHandler.refresh_auth_token():
+                    access_token = self._tokenHandler.token["access_token"]
+                    headers["Authorization"] = f"Bearer {access_token}"
+            except Exception:
+                pass
         if data:
             response = requests.request(method, url, json=data, headers=headers)
         else:

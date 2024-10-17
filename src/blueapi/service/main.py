@@ -114,7 +114,6 @@ app = FastAPI(
         "clientId": os.getenv(_PKCE_CLIENT_ID),
         "clientSecret": os.getenv(_PKCE_CLIENT_SECRET),
         "usePkceWithAuthorizationCodeGrant": True,
-        "scopeSeparator": " ",
         "scopes": "openid profile offline_access",
     },
     dependencies=dependencies,

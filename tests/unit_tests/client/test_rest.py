@@ -107,6 +107,8 @@ def test_refresh_if_signature_expired(rest: BlueapiRestClient):
         mock_verify_token.side_effect = jwt.ExpiredSignatureError
         mock_refresh_token.return_value = {"access_token": "new_token"}
         result = rest.get_plans()
+        mock_verify_token.assert_called_once()
+        mock_refresh_token.assert_called_once()
         assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
 
 

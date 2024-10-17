@@ -2,7 +2,6 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any
 
-from dotenv import load_dotenv
 from fastapi import (
     BackgroundTasks,
     Body,

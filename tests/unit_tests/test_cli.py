@@ -714,6 +714,55 @@ def test_login_success(runner: CliRunner, valid_auth_config: str):
 
 
 @responses.activate
+def test_token_login_early_exit(
+    runner: CliRunner, valid_auth_config: str, tmp_path: Path
+):
+    with open(tmp_path / "token", "w") as token_file:
+        # base64 encoded token
+        token_file.write(
+            base64.b64encode(
+                b'{"access_token":"token","refresh_token":"refresh_token"}'
+            ).decode("utf-8")
+        )
+    payload: dict[str, Any] = {
+        "name": "John Doe",
+        "fedid": "jd1",
+    }
+
+    mock_json_responses: list[dict[str, str]] = [
+        {
+            "device_authorization_endpoint": "https://example.com/device_authorization",
+            "authorization_endpoint": "https://example.com/authorization",
+            "token_endpoint": "https://example.com/token",
+            "issuer": "https://example.com",
+            "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
+            "end_session_endpoint": "https://example.com/logout",
+        },
+        {
+            "access_token": "token",
+        },
+    ]
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as requests_mock:
+        requests_mock.add(
+            requests_mock.GET,
+            "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+            json=mock_json_responses[0],
+            status=200,
+        )
+        with (
+            patch("blueapi.service.Authenticator.decode_jwt") as mock_decode,
+        ):
+            mock_decode.side_effect = [payload, payload]
+            result = runner.invoke(main, ["-c", valid_auth_config, "login"])
+    assert (
+        "Logging in\n"
+        f"Logged in as {payload['name']} with fed-id {payload['fedid']}\n"
+        == result.output
+    )
+    assert result.exit_code == 0
+
+
+@responses.activate
 def test_login_with_refresh_token(
     runner: CliRunner, valid_auth_config: str, tmp_path: Path
 ):

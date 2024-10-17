@@ -288,4 +288,4 @@ def test_stomp_config(template: StompClient):
         "blueapi.service.interface.StompClient.for_broker", return_value=template
     ):
         interface.set_config(ApplicationConfig(stomp=StompConfig()))
-        assert interface.messaging_template() is not None
+        assert interface.stomp_client() is not None

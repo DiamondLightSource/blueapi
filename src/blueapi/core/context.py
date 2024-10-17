@@ -15,6 +15,7 @@ from typing import (
 )
 
 from bluesky.run_engine import RunEngine
+from dodal.common import PlanGenerator
 from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
 from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
@@ -30,7 +31,6 @@ from .bluesky_types import (
     Device,
     HasName,
     Plan,
-    PlanGenerator,
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )

@@ -3,12 +3,12 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi.config import ApplicationConfig, StompConfig
-from blueapi.core import MsgGenerator
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
@@ -148,7 +148,7 @@ def test_get_device(context_mock: MagicMock):
     )
 
     with pytest.raises(KeyError):
-        assert interface.get_device("non_existing_device")
+        interface.get_device("non_existing_device")
 
 
 @patch("blueapi.service.interface.context")

@@ -1,4 +1,4 @@
-# Configure the application
+# Configure the Application
 
 Blueapi's default configuration can be overridden 
 by defining a yaml file which can be passed to the `blueapi` command.

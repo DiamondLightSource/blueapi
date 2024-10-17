@@ -1,4 +1,4 @@
-# Run with Local Message Bus
+# Run with local message bus
 
 Blueapi can publish updates to a message bus asynchronously, the CLI can then view these updates display them to the user.
 

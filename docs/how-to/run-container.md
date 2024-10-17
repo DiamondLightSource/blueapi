@@ -1,4 +1,4 @@
-# Run in a container
+# Run in a Container
 
 Pre-built containers with blueapi and its dependencies already
 installed are available on `Github Container Registry

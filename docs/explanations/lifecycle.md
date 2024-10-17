@@ -2,43 +2,44 @@
 
 The following demonstrates exactly what the code does with a plan through its lifecycle 
 of being written, loaded and run. Take the following plan.
-```
-    from typing import Any, List, Mapping, Optional, Union
-    
-    import bluesky.plans as bp
-    from bluesky.utils import MsgGenerator
-    from dodal.common import inject
-    from bluesky.protocols import Readable
-    
-    
-    def count(
-        detectors: List[Readable] = [inject("det")],  # default valid for Blueapi only
-        num: int = 1,
-        delay: Optional[Union[float, List[float]]] = None,
-        metadata: Optional[Mapping[str, Any]] = None,
-    ) -> MsgGenerator:
-        """
-        Take `n` readings from a collection of detectors
-    
-        Args:
-            detectors (List[Readable]): Readable devices to read: when being run in Blueapi
-                                        defaults to fetching a device named "det" from its
-                                        context, else will require to be overridden.
-            num (int, optional): Number of readings to take. Defaults to 1.
-            delay (Optional[Union[float, List[float]]], optional): Delay between readings.
-                                                                Defaults to None.
-            metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include
-                                                            in exported data.
+
+```python
+from typing import Any, List, Mapping, Optional, Union
+
+import bluesky.plans as bp
+from blueapi.core import MsgGenerator
+from dls_bluesky_core.core import inject
+from bluesky.protocols import Readable
+
+
+def count(
+    detectors: List[Readable] = [inject("det")],  # default valid for Blueapi only
+    num: int = 1,
+    delay: Optional[Union[float, List[float]]] = None,
+    metadata: Optional[Mapping[str, Any]] = None,
+) -> MsgGenerator:
+    """
+    Take `n` readings from a collection of detectors
+
+    Args:
+        detectors (List[Readable]): Readable devices to read: when being run in Blueapi
+                                    defaults to fetching a device named "det" from its
+                                    context, else will require to be overridden.
+        num (int, optional): Number of readings to take. Defaults to 1.
+        delay (Optional[Union[float, List[float]]], optional): Delay between readings.
                                                             Defaults to None.
-    
-        Returns:
-            MsgGenerator: _description_
-    
-        Yields:
-            Iterator[MsgGenerator]: _description_
-        """
-    
-        yield from bp.count(detectors, num, delay=delay, md=metadata)
+        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include
+                                                        in exported data.
+                                                        Defaults to None.
+
+    Returns:
+        MsgGenerator: _description_
+
+    Yields:
+        Iterator[MsgGenerator]: _description_
+    """
+
+    yield from bp.count(detectors, num, delay=delay, md=metadata)
 ```
 
 
@@ -53,50 +54,46 @@ will build a [pydantic](https://docs.pydantic.dev/) model of the parameters to v
 like this:
 
 
-```
-    from pydantic import BaseModel
+```python
+from pydantic import BaseModel
 
-    class CountParameters(BaseModel):
-        detectors: List[Readable] = ["det"]
-        num: int = 1
-        delay: Optional[Union[float, List[float]]] = None
-        metadata: Optional[Mapping[str, Any]] = None
+class CountParameters(BaseModel):
+    detectors: List[Readable] = [inject("det")]
+    num: int = 1
+    delay: Optional[Union[float, List[float]]] = None
+    metadata: Optional[Mapping[str, Any]] = None
 
-        class Config:
-            arbitrary_types_allowed = True
-            validate_all = True
-
-    This is for illustrative purposes only, this code is not actually generated, but an object
-    resembling this class is constructed in memory.
-    The default arguments will be validated by the context to inject the "det" device when the
-    plan is run. The existence of the "det" default device is not checked until this time.
+    class Config:
+        arbitrary_types_allowed = True
+        validate_all = True
 ```
 
-The model is also stored in the context.
-
+This is for illustrative purposes only, this code is not actually generated, but an object
+resembling this class is constructed in memory.
+The default arguments will be validated by the context to inject the "det" device when the
+plan is run. The existence of the "det" default device is not checked until this time. The model is also stored in the context.
 
 ## Startup
 
 On startup, the context is passed to the worker, which is passed to the service.
 The worker also holds a reference to the `RunEngine` that can run the plan.
 
-
 ## Request
 
 A user can send a request to run the plan to the service, which includes values for the parameters.
 It takes the form of JSON and may look something like this:
-```
-    {
-        "name": "count",
-        "params": {
-            "detectors": [
+```json
+{
+    "name": "count",
+    "params": {
+        "detectors": [
             "andor",
             "pilatus"
-            ],
-            "num": 3,
-            "delay": 0.1
-        }
+        ],
+        "num": 3,
+        "delay": 0.1
     }
+}
 ```
 
 The `Service` receives the request and passes it to the worker, which holds it in an internal queue
@@ -114,13 +111,13 @@ See also [type validators](./type_validators.md)
 
 ## Execution
 
-The validated parameter values are then passed to the plan function, which is passed to the RunEngine.
+The validated parameter values are then passed to the plan function, which is passed to the `RunEngine`.
 The plan is executed. While it is running, the `Worker` will publish
 
 * Changes to the state of the `RunEngine`
 * Changes to any device statuses running within a plan (e.g. when a motor changes position)
 * Event model documents emitted by the `RunEngine`
-* When a plan starts, finishes or fails.
+* When the plan starts, finishes or fails.
 
 If an error occurs during any of the stages from "Request" onwards it is sent back to the user
 over the message bus.

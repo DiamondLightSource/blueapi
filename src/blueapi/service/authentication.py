@@ -61,7 +61,7 @@ class Authenticator:
 
 class TokenManager(ABC):
     @abstractmethod
-    def save_token(self, token: dict[str, Any]): ...
+    def save_token(self, token: dict[str, Any]) -> None: ...
     @abstractmethod
     def load_token(token) -> dict[str, Any] | None: ...
     @abstractmethod
@@ -119,6 +119,7 @@ class SessionManager:
                     client_config,
                     CLITokenManager(Path(client_config.token_file_path)),
                 )
+        return None
 
     def get_token(self) -> dict[str, Any] | None:
         return self._token_manager.load_token()
@@ -139,11 +140,13 @@ class SessionManager:
             )
             if response.status_code == HTTPStatus.OK:
                 token = response.json()
-                self._token_manager.save_token(token)
-                return token
+                if token:
+                    self._token_manager.save_token(token)
+                    return token
+        return None
 
     def get_device_code(self):
-        response: requests.Response = requests.post(
+        response = requests.post(
             self._server_config.token_url,
             data={
                 "client_id": self._client_config.client_id,
@@ -151,7 +154,7 @@ class SessionManager:
                 "audience": self._client_config.client_audience,
             },
         )
-        response_data: dict[str, str] = response.json()
+        response_data = response.json()
         if response.status_code == 200:
             return response_data["device_code"]
         raise Exception("Failed to get device code.")

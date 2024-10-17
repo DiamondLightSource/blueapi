@@ -39,9 +39,10 @@ def mock_server_config(mock_requests_get) -> OAuthServerConfig:
 
 
 @pytest.fixture
-def mock_session_manager(mock_client_config, mock_server_config) -> SessionManager:
-    session_manager = SessionManager.from_config(mock_server_config, mock_client_config)
-    return session_manager
+def mock_session_manager(
+    mock_client_config: OAuthClientConfig, mock_server_config: OAuthServerConfig
+) -> SessionManager | None:
+    return SessionManager.from_config(mock_server_config, mock_client_config)
 
 
 @pytest.fixture

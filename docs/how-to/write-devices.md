@@ -7,34 +7,30 @@
 
 ## Format
 
+:::{seealso}
+[Dodal](https://github.com/DiamondLightSource/dodal) for many more examples
+:::
+
 Devices are made using the [dodal](https://github.com/DiamondLightSource/dodal) style available through factory functions like this:
 
-:::{note}
-The return type annotation `-> MyTypeOfDetector` is required as blueapi uses it to determine that this function creates a device. Meaning you can have a Python file where only some functions create devices and they will be automatically picked up.
-:::
+```python 
+from my_facility_devices import MyTypeOfDetector
 
-Similarly, these functions can be organized per-preference into files.
-``` 
-    from my_facility_devices import MyTypeOfDetector
-
-    def my_detector(name: str) -> MyTypeOfDetector:
-        return MyTypeOfDetector(name, {"other_config": "foo"})
+def my_detector(name: str) -> MyTypeOfDetector:
+    return MyTypeOfDetector(name, {"other_config": "foo"})
 ```
 
-:::{seealso}
-[dodal](https://github.com/DiamondLightSource/dodal) for many more examples
-:::
+The return type annotation `-> MyTypeOfDetector` is required as blueapi uses it to determine that this function creates a device. Meaning you can have a Python file where only some functions create devices and they will be automatically picked up. Similarly, these functions can be organized per-preference into files. 
 
-An extra function to create the device is used to preserve side-effect-free imports. Each device must have its own factory function.
-
+The device is created via a function rather than a global to preserve side-effect-free imports. Each device must have its own factory function.
 
 # How to Configure Detectors to Write Files
 
-Dodal defines a decorator for configuring any `ophyd-async` devices- which will be the majority of devices at Diamond- to write to a common location. 
-
 :::{note}
-**This is an absolute requirement to write data onto the Diamond Filesystem**.  This decorator must be used every time a new data collection is intended to begin. For an example, see below.
+**This is an absolute requirement to write data onto the Diamond Filesystem**. This decorator must be used every time a new data collection is intended to begin. For an example, see below.
 :::
+
+Dodal defines a decorator, `@attach_metadata`, for configuring `ophyd-async` detectors to write data to a common location. 
 
 ```python
    @attach_metadata

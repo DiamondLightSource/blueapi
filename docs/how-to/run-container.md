@@ -9,13 +9,13 @@ installed are available on `Github Container Registry
 To pull the container from github container registry and run::
 
 ```
-    docker run ghcr.io/diamondlightsource/blueapi:latest
+docker run ghcr.io/diamondlightsource/blueapi:latest
 ```
 
 with `podman`:
 
 ```
-    podman run ghcr.io/diamondlightsource/blueapi:latest
+podman run ghcr.io/diamondlightsource/blueapi:latest
 ```
 
 To get a released version, use a numbered release instead of `latest`.

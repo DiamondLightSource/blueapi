@@ -22,8 +22,6 @@ inside a server and exposes endpoints to send commands/receive data. Useful for
 installation at labs where multiple people may control equipment, possibly from
 remote locations.
 
-![concept][]
-
 The main premise of blueapi is to minimize the boilerplate required to get plans
 and devices up and running by generating an API for your lab out of
 type-annotated plans. For example, take the following plan:

@@ -94,7 +94,6 @@ class OauthConfig(BlueapiBaseModel):
     issuer: str = ""
     jwks_uri: str = ""
     logout_url: str = ""
-    refresh_url: str = ""
 
     def model_post_init(self, __context: Any) -> None:
         response: requests.Response = requests.get(self.oidc_config_url)
@@ -122,7 +121,6 @@ class OauthConfig(BlueapiBaseModel):
             self.issuer = issuer
             self.jwks_uri = jwks_uri
             self.logout_url = logout_url
-            self.refresh_url = token_url
         else:
             raise ValueError("OIDC config is missing required fields")
 

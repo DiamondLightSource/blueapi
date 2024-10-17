@@ -134,10 +134,7 @@ def get_environment(
     return runner.state
 
 
-@app.delete(
-    "/environment",
-    response_model=EnvironmentResponse,
-)
+@app.delete("/environment", response_model=EnvironmentResponse)
 async def delete_environment(
     background_tasks: BackgroundTasks,
     runner: WorkerDispatcher = Depends(_runner),
@@ -214,10 +211,7 @@ def submit_task(
         ) from e
 
 
-@app.delete(
-    "/tasks/{task_id}",
-    status_code=status.HTTP_200_OK,
-)
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 def delete_submitted_task(
     task_id: str,
     runner: WorkerDispatcher = Depends(_runner),

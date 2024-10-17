@@ -1,10 +1,5 @@
 import base64
 import json
-
-import jwt
-import matplotlib
-
-matplotlib.use("Agg")
 from collections.abc import Mapping
 from dataclasses import dataclass
 from io import StringIO
@@ -13,6 +8,7 @@ from textwrap import dedent
 from typing import Any
 from unittest.mock import Mock, patch
 
+import jwt
 import pytest
 import responses
 from bluesky_stomp.messaging import StompClient

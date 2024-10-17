@@ -1,4 +1,4 @@
-# Quickstart Guide
+# Quickstart guide
 
 Blueapi acts as a worker that can run bluesky plans against devices for a specific
 laboratory setup. It can control devices to collect data and export events to tell

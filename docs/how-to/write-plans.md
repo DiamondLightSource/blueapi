@@ -1,4 +1,4 @@
-# Write Bluesky plans for Blueapi
+# Write Bluesky Plans for Blueapi
 
 :::{seealso}
 [The bluesky documentation](https://blueskyproject.io/bluesky/main/index.html) for an introduction to bluesky plans and general forms/advice. Blueapi has some additional requirements, which are explained below.

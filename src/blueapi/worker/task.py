@@ -5,7 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, TypeAdapter
 
 from blueapi.core import BlueskyContext
-from blueapi.utils import BlueapiBaseModel
+from blueapi.utils import BlueapiBaseModel, StdLogger
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +29,8 @@ class Task(BlueapiBaseModel):
 
         func = ctx.plan_functions[self.name]
         prepared_params = self.prepare_params(ctx)
-        ctx.run_engine(func(**prepared_params))
+        with StdLogger(__name__, "INFO"):
+            ctx.run_engine(func(**prepared_params))
 
 
 def _lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:

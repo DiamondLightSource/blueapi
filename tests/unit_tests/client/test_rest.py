@@ -1,3 +1,5 @@
+import base64
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import jwt
@@ -6,14 +8,15 @@ import responses
 from pydantic import BaseModel
 
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
-from blueapi.config import CLIAuthConfig, OauthConfig
+from blueapi.config import OAuthClientConfig, OAuthServerConfig
 from blueapi.core.bluesky_types import Plan
+from blueapi.service.authentication import CLITokenManager, SessionManager
 from blueapi.service.model import PlanModel, PlanResponse
 
 
 @pytest.fixture
 @responses.activate
-def rest() -> BlueapiRestClient:
+def rest(tmp_path: Path) -> BlueapiRestClient:
     responses.add(
         responses.GET,
         "http://example.com",
@@ -27,10 +30,19 @@ def rest() -> BlueapiRestClient:
         },
         status=200,
     )
-    return BlueapiRestClient(
-        cliAuthConfig=CLIAuthConfig(client_id="foo", client_audience="bar"),
-        authConfig=OauthConfig(oidc_config_url="http://example.com"),
+    with open(tmp_path / "token", "w") as token_file:
+        # base64 encoded token
+        token_file.write(
+            base64.b64encode(
+                b'{"access_token":"token","refresh_token":"refresh_token"}'
+            ).decode("utf-8")
+        )
+    session_manager = SessionManager(
+        token_manager=CLITokenManager(tmp_path / "token"),
+        client_config=OAuthClientConfig(client_id="foo", client_audience="bar"),
+        server_config=OAuthServerConfig(oidc_config_url="http://example.com"),
     )
+    return BlueapiRestClient(session_manager=session_manager)
 
 
 @pytest.mark.parametrize(
@@ -88,7 +100,9 @@ def test_refresh_if_signature_expired(rest: BlueapiRestClient):
     )
     with (
         patch("blueapi.service.Authenticator.verify_token") as mock_verify_token,
-        patch("blueapi.service.TokenManager.refresh_auth_token") as mock_refresh_token,
+        patch(
+            "blueapi.service.SessionManager.refresh_auth_token"
+        ) as mock_refresh_token,
     ):
         mock_verify_token.side_effect = jwt.ExpiredSignatureError
         mock_refresh_token.return_value = True

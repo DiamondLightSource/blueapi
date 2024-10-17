@@ -17,9 +17,13 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ApplicationConfig, CLIAuthConfig, ConfigLoader, OauthConfig
+from blueapi.config import (
+    ApplicationConfig,
+    CLIClientConfig,
+    ConfigLoader,
+)
 from blueapi.core import DataEvent
-from blueapi.service.authentication import TokenManager
+from blueapi.service.authentication import CLITokenManager, SessionManager
 from blueapi.service.main import start
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
@@ -335,11 +339,13 @@ def scratch(obj: dict) -> None:
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    if config.cliAuth and config.oauth:
-        cliAuthConfig: CLIAuthConfig = config.cliAuth
-        oauthConfig: OauthConfig = config.oauth
+    if isinstance(config.oauth_client, CLIClientConfig) and config.oauth_server:
         print("Logging in")
-        auth: TokenManager = TokenManager(oauth=oauthConfig, cliAuth=cliAuthConfig)
+        auth: SessionManager = SessionManager(
+            server_config=config.oauth_server,
+            client_config=config.oauth_client,
+            token_manager=CLITokenManager(Path(config.oauth_client.token_file_path)),
+        )
         auth.start_device_flow()
     else:
         print("Please provide configuration to login!")
@@ -349,10 +355,12 @@ def login(obj: dict) -> None:
 @click.pass_obj
 def logout(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    if config.cliAuth and config.oauth:
-        oauthConfig: OauthConfig = config.oauth
-        cliAuthConfig: CLIAuthConfig = config.cliAuth
-        auth: TokenManager = TokenManager(cliAuth=cliAuthConfig, oauth=oauthConfig)
+    if isinstance(config.oauth_client, CLIClientConfig) and config.oauth_server:
+        auth: SessionManager = SessionManager(
+            server_config=config.oauth_server,
+            client_config=config.oauth_client,
+            token_manager=CLITokenManager(Path(config.oauth_client.token_file_path)),
+        )
         auth.logout()
         print("Logged out")
     else:

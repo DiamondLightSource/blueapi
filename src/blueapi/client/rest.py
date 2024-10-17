@@ -5,8 +5,8 @@ import jwt
 import requests
 from pydantic import TypeAdapter
 
-from blueapi.config import CLIAuthConfig, OauthConfig, RestConfig
-from blueapi.service.authentication import TokenManager
+from blueapi.config import RestConfig
+from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -43,13 +43,10 @@ class BlueapiRestClient:
     def __init__(
         self,
         config: RestConfig | None = None,
-        authConfig: OauthConfig | None = None,
-        cliAuthConfig: CLIAuthConfig | None = None,
+        session_manager: SessionManager | None = None,
     ) -> None:
         self._config = config or RestConfig()
-        self._tokenHandler: TokenManager | None = None
-        if authConfig and cliAuthConfig:
-            self._tokenHandler = TokenManager(authConfig, cliAuthConfig)
+        self._session_manager: SessionManager | None = session_manager
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -140,19 +137,14 @@ class BlueapiRestClient:
         headers: dict[str, str] = {
             "content-type": "application/json; charset=UTF-8",
         }
-        if (
-            self._tokenHandler
-            and self._tokenHandler.token
-            and self._tokenHandler.token["access_token"]
-        ):
+        if self._session_manager and (token := self._session_manager.get_token()):
             try:
-                auth_token: str = self._tokenHandler.token["access_token"]
-                self._tokenHandler.authenticator.verify_token(auth_token)
-                headers["Authorization"] = f"Bearer {auth_token}"
+                self._session_manager.authenticator.verify_token(token["access_token"])
+                headers["Authorization"] = f"Bearer {token['access_token']}"
             except jwt.ExpiredSignatureError:
-                if self._tokenHandler.refresh_auth_token():
-                    access_token: str = self._tokenHandler.token["access_token"]
-                    headers["Authorization"] = f"Bearer {access_token}"
+                if token := self._session_manager.refresh_auth_token():
+                    if token := self._session_manager.get_token():
+                        headers["Authorization"] = f"Bearer {token['access_token']}"
             except Exception:
                 pass
         if data:

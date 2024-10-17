@@ -7,7 +7,7 @@ import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ConfigLoader, OauthConfig
+from blueapi.config import ConfigLoader, OAuthServerConfig
 from blueapi.utils import InvalidConfigError
 
 
@@ -164,7 +164,7 @@ def test_oauth_config_model_post_init(mock_get):
     mock_get.return_value.json.return_value = mock_response
     mock_get.return_value.raise_for_status = lambda: None
 
-    oauth_config = OauthConfig(oidc_config_url=oidc_config_url)
+    oauth_config = OAuthServerConfig(oidc_config_url=oidc_config_url)
 
     assert (
         oauth_config.device_auth_url == mock_response["device_authorization_endpoint"]
@@ -191,4 +191,4 @@ def test_oauth_config_model_post_init_missing_fields(mock_get):
     mock_get.return_value.json.return_value = mock_response
     mock_get.return_value.raise_for_status = lambda: None
     with pytest.raises(ValueError, match="OIDC config is missing required fields"):
-        OauthConfig(oidc_config_url=oidc_config_url)
+        OAuthServerConfig(oidc_config_url=oidc_config_url)

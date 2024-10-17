@@ -83,7 +83,7 @@ class ScratchConfig(BlueapiBaseModel):
     repositories: list[ScratchRepository] = Field(default_factory=list)
 
 
-class OauthConfig(BlueapiBaseModel):
+class OAuthServerConfig(BlueapiBaseModel):
     oidc_config_url: str = Field(
         description="URL to fetch OIDC config from the provider"
     )
@@ -125,13 +125,13 @@ class OauthConfig(BlueapiBaseModel):
             raise ValueError("OIDC config is missing required fields")
 
 
-class BaseAuthConfig(BlueapiBaseModel):
+class OAuthClientConfig(BlueapiBaseModel):
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience")
 
 
-class CLIAuthConfig(BaseAuthConfig):
-    token_file_path: str = "~/token"
+class CLIClientConfig(OAuthClientConfig):
+    token_file_path: Path | None = Path("~/token")
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -145,9 +145,8 @@ class ApplicationConfig(BlueapiBaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
-    oauth: OauthConfig | None = None
-    cliAuth: CLIAuthConfig | None = None
-    swaggerAuth: BaseAuthConfig | None = None
+    oauth_server: OAuthServerConfig | None = None
+    oauth_client: CLIClientConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

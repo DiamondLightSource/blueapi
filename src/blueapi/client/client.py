@@ -6,6 +6,7 @@ from bluesky_stomp.models import Broker
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -40,7 +41,8 @@ class BlueapiClient:
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest: BlueapiRestClient = BlueapiRestClient(
-            config.api, config.oauth, config.cliAuth
+            config.api,
+            SessionManager.from_config(config.oauth_server, config.oauth_client),
         )
         if config.stomp is not None:
             template = StompClient.for_broker(

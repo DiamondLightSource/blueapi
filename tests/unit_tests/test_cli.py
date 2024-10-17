@@ -644,9 +644,9 @@ def test_logout_missing_config(runner: CliRunner):
 @pytest.fixture
 def valid_auth_config(tmp_path: Path) -> str:
     config = f"""
-oauth:
+oauth_server:
   oidc_config_url: https://auth.example.com/realms/sample/.well-known/openid-configuration
-cliAuth:
+oauth_client:
   client_id: sample-cli
   client_audience: sample-account
   token_file_path: {tmp_path}/token

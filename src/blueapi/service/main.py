@@ -376,9 +376,9 @@ def start(config: ApplicationConfig):
 
     global AUTHENTICATOR
     app.state.config = config
-    if config.swaggerAuth and config.oauth:
+    if config.oauth_client and config.oauth_server:
         AUTHENTICATOR = Authenticator(
-            oauth=config.oauth, baseAuthConfig=config.swaggerAuth
+            server_config=config.oauth_server, client_config=config.oauth_client
         )
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 

@@ -81,7 +81,7 @@ def setup(config: ApplicationConfig) -> None:
 
     # Eagerly initialize worker and messaging connection
 
-    logging.basicConfig(level=config.logging.level)
+    logging.basicConfig(format="%(asctime)s - %(message)s", level=config.logging.level)
     worker()
     stomp_client()
 

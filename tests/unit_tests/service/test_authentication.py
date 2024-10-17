@@ -6,6 +6,7 @@ from unittest import mock
 
 import jwt
 import pytest
+import requests
 from jwt import PyJWTError
 
 from blueapi.config import CLIClientConfig, OAuthClientConfig, OAuthServerConfig
@@ -128,6 +129,19 @@ def test_get_device_code(
     mock_post.return_value.json.return_value = {"device_code": "device_code"}
     device_code = mock_session_manager.get_device_code()
     assert device_code == "device_code"
+
+
+@mock.patch("requests.post")
+def test_failed_device_code_get(
+    mock_post,
+    mock_session_manager: SessionManager,
+):
+    mock_post.return_value.status_code = HTTPStatus.BAD_REQUEST
+    mock_post.return_value.json.return_value = {"details": "Not Found"}
+    with pytest.raises(
+        requests.exceptions.RequestException, match="Failed to get device code."
+    ):
+        mock_session_manager.get_device_code()
 
 
 @mock.patch("requests.post")

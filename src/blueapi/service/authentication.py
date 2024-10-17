@@ -155,9 +155,9 @@ class SessionManager:
             },
         )
         response_data = response.json()
-        if response.status_code == 200:
+        if response.status_code == HTTPStatus.OK:
             return response_data["device_code"]
-        raise Exception("Failed to get device code.")
+        raise requests.exceptions.RequestException("Failed to get device code.")
 
     def poll_for_token(
         self, device_code: str, timeout: float = 30, polling_interval: float = 0.5

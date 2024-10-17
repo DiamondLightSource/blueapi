@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
 from blueapi.config import OAuthClientConfig, OAuthServerConfig
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.authentication import CLITokenManager, SessionManager
+from blueapi.service.authentication import CliTokenManager, SessionManager
 from blueapi.service.model import PlanModel, PlanResponse
 
 
@@ -38,7 +38,7 @@ def rest(tmp_path: Path) -> BlueapiRestClient:
             ).decode("utf-8")
         )
     session_manager = SessionManager(
-        token_manager=CLITokenManager(tmp_path / "token"),
+        token_manager=CliTokenManager(tmp_path / "token"),
         client_config=OAuthClientConfig(client_id="foo", client_audience="bar"),
         server_config=OAuthServerConfig(oidc_config_url="http://example.com"),
     )

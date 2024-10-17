@@ -68,7 +68,7 @@ class TokenManager(ABC):
     def delete_token(self): ...
 
 
-class CLITokenManager(TokenManager):
+class CliTokenManager(TokenManager):
     def __init__(self, token_file_path: Path) -> None:
         self._token_file_path: Path = token_file_path
 
@@ -117,7 +117,7 @@ class SessionManager:
                 return SessionManager(
                     server_config,
                     client_config,
-                    CLITokenManager(Path(client_config.token_file_path)),
+                    CliTokenManager(Path(client_config.token_file_path)),
                 )
         return None
 

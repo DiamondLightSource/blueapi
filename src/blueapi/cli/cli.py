@@ -23,7 +23,7 @@ from blueapi.config import (
     ConfigLoader,
 )
 from blueapi.core import DataEvent
-from blueapi.service.authentication import CLITokenManager, SessionManager
+from blueapi.service.authentication import CliTokenManager, SessionManager
 from blueapi.service.main import start
 from blueapi.service.openapi import (
     DOCS_SCHEMA_LOCATION,
@@ -344,7 +344,7 @@ def login(obj: dict) -> None:
         auth: SessionManager = SessionManager(
             server_config=config.oauth_server,
             client_config=config.oauth_client,
-            token_manager=CLITokenManager(Path(config.oauth_client.token_file_path)),
+            token_manager=CliTokenManager(Path(config.oauth_client.token_file_path)),
         )
         auth.start_device_flow()
     else:
@@ -359,7 +359,7 @@ def logout(obj: dict) -> None:
         auth: SessionManager = SessionManager(
             server_config=config.oauth_server,
             client_config=config.oauth_client,
-            token_manager=CLITokenManager(Path(config.oauth_client.token_file_path)),
+            token_manager=CliTokenManager(Path(config.oauth_client.token_file_path)),
         )
         auth.logout()
         print("Logged out")

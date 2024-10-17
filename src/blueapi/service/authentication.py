@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import json
 import os
@@ -109,15 +111,14 @@ class SessionManager:
         cls,
         server_config: OAuthServerConfig | None,
         client_config: OAuthClientConfig | None,
-    ) -> "SessionManager":
+    ) -> SessionManager | None:
         if server_config and client_config:
             if isinstance(client_config, CLIClientConfig):
                 return SessionManager(
                     server_config,
                     client_config,
-                    CLITokenManager(Path(client_config.token_file_path)),  # type: ignore
+                    CLITokenManager(Path(client_config.token_file_path)),
                 )
-        # raise NotImplementedError("Only CLI client config is supported")
 
     def get_token(self) -> dict[str, Any] | None:
         return self._token_manager.load_token()

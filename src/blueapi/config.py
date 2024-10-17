@@ -131,7 +131,7 @@ class OAuthClientConfig(BlueapiBaseModel):
 
 
 class CLIClientConfig(OAuthClientConfig):
-    token_file_path: Path | None = Path("~/token")
+    token_file_path: Path = Path("~/token")
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -146,7 +146,7 @@ class ApplicationConfig(BlueapiBaseModel):
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
     oauth_server: OAuthServerConfig | None = None
-    oauth_client: CLIClientConfig | None = None
+    oauth_client: OAuthClientConfig | CLIClientConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

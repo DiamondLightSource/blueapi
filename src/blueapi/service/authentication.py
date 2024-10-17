@@ -72,16 +72,19 @@ class CliTokenManager(TokenManager):
     def __init__(self, token_file_path: Path) -> None:
         self._token_file_path: Path = token_file_path
 
+    def _file_path(self) -> str:
+        return os.path.expanduser(self._token_file_path)
+
     def save_token(self, token: dict[str, Any]) -> None:
         token_json: str = json.dumps(token)
         token_bytes: bytes = token_json.encode("utf-8")
         token_base64: bytes = base64.b64encode(token_bytes)
-        with open(os.path.expanduser(self._token_file_path), "wb") as token_file:
+        with open(self._file_path(), "wb") as token_file:
             token_file.write(token_base64)
 
     def load_token(self) -> dict[str, Any] | None:
-        file_path = os.path.expanduser(self._token_file_path)
-        if not os.path.exists(file_path):
+        file_path = self._file_path()
+        if not os.path.exists(self._file_path()):
             return None
         with open(file_path, "rb") as token_file:
             token_base64: bytes = token_file.read()
@@ -90,8 +93,8 @@ class CliTokenManager(TokenManager):
             return json.loads(token_json)
 
     def delete_token(self) -> None:
-        if os.path.exists(os.path.expanduser(self._token_file_path)):
-            os.remove(os.path.expanduser(self._token_file_path))
+        if os.path.exists(self._file_path()):
+            os.remove(self._file_path())
 
 
 class SessionManager:
@@ -215,3 +218,5 @@ class SessionManager:
             if valid_token:
                 self._token_manager.save_token(auth_token_json)
                 self.authenticator.print_user_info(auth_token_json["access_token"])
+        else:
+            print("Failed to login")

@@ -37,14 +37,17 @@ from .model import (
     WorkerTask,
 )
 
-load_dotenv()
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
 AUTHENTICATOR: Authenticator | None = None
 SWAGGER_CONFIG: dict[str, Any] | None = None
-AUTH_URL: str = os.getenv("PKCE_AUTHENTICATION_URL") or ""
-TOKEN_URL: str = os.getenv("TOKEN_URL") or ""
+_PKCE_AUTHENTICATION_URL: str = "PKCE_AUTHENTICATION_URL"
+_TOKEN_URL: str = "TOKEN_URL"
+_PKCE_CLIENT_ID: str = "PKCE_CLIENT_ID"
+_PKCE_CLIENT_SECRET: str = "PKCE_CLIENT_SECRET"
+AUTH_URL: str = os.getenv(_PKCE_AUTHENTICATION_URL, "")
+TOKEN_URL: str = os.getenv(_TOKEN_URL, "")
 
 
 def _runner() -> WorkerDispatcher:
@@ -97,10 +100,10 @@ def verify_access_token(access_token: str = Depends(oauth_scheme)):
             ) from exception
 
 
-if TOKEN_URL == "" or AUTH_URL == "":
-    dependencies = []
-else:
+if TOKEN_URL and AUTH_URL:
     dependencies = [Depends(verify_access_token)]
+else:
+    dependencies = []
 
 app = FastAPI(
     docs_url="/docs",
@@ -108,8 +111,8 @@ app = FastAPI(
     lifespan=lifespan,
     version=REST_API_VERSION,
     swagger_ui_init_oauth={
-        "clientId": os.getenv("PKCE_CLIENT_ID"),
-        "clientSecret": os.getenv("PKCE_CLIENT_SECRET"),
+        "clientId": os.getenv(_PKCE_CLIENT_ID),
+        "clientSecret": os.getenv(_PKCE_CLIENT_SECRET),
         "usePkceWithAuthorizationCodeGrant": True,
         "scopeSeparator": " ",
         "scopes": "openid profile offline_access",

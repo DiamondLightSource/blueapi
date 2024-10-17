@@ -2,7 +2,6 @@ import base64
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
-from enum import Enum
 from io import StringIO
 from pathlib import Path
 from textwrap import dedent
@@ -73,11 +72,6 @@ def test_connection_error_caught_by_wrapper_func(
     assert result.stdout == "Failed to establish connection to FastAPI server.\n"
 
 
-class OidcResponse(Enum):
-    VERIFICATION_URL = ""
-    DEVICE_AUTHORIZATION = ""
-
-
 class MyModel(BaseModel):
     id: str
 
@@ -88,9 +82,7 @@ class MyDevice:
 
 
 @responses.activate
-def test_get_plans(
-    runner: CliRunner,
-):
+def test_get_plans(runner: CliRunner):
     plan = Plan(name="my-plan", model=MyModel)
 
     response = responses.add(
@@ -101,8 +93,8 @@ def test_get_plans(
     )
 
     plans = runner.invoke(main, ["controller", "plans"])
-    assert plans.output == "my-plan\n    Args\n      id=string (Required)\n"
     assert response.call_count == 1
+    assert plans.output == "my-plan\n    Args\n      id=string (Required)\n"
 
 
 @responses.activate
@@ -825,7 +817,7 @@ def test_login_edge_cases(runner: CliRunner, valid_auth_config: str, tmp_path: P
         ):
             mock_decode.side_effect = jwt.ExpiredSignatureError
             result = runner.invoke(main, ["-c", valid_auth_config, "login"])
-    assert "Logging in\n" == result.output
+    assert "Logging in\nFailed to login\n" == result.output
     assert result.exit_code == 0
 
 

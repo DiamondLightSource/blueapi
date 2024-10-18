@@ -7,9 +7,11 @@ from unittest import mock
 import jwt
 import pytest
 import requests
+from fastapi.exceptions import HTTPException
 from jwt import PyJWTError
 
 from blueapi.config import CLIClientConfig, OAuthClientConfig, OAuthServerConfig
+from blueapi.service import main
 from blueapi.service.authentication import Authenticator, SessionManager
 
 
@@ -60,7 +62,9 @@ def mock_connected_client_config(mock_client_config: OAuthClientConfig):
 
 
 @pytest.fixture
-def mock_authenticator(mock_server_config, mock_client_config) -> Authenticator:
+def mock_authenticator(
+    mock_server_config: OAuthServerConfig, mock_client_config: OAuthClientConfig
+) -> Authenticator:
     return Authenticator(mock_server_config, mock_client_config)
 
 
@@ -169,3 +173,24 @@ def test_poll_for_token_timeout(
         mock_session_manager.poll_for_token(
             device_code, timeout=1, polling_interval=0.1
         )
+
+
+def test_valid_token_access_granted(mock_authenticator):
+    with mock.patch.object(main, "AUTHENTICATOR", mock_authenticator):
+        mock_authenticator.verify_token = True
+        main.verify_access_token("token")
+
+
+def test_invalid_token_no_access(mock_authenticator):
+    with pytest.raises(HTTPException) as exec:
+        with mock.patch.object(main, "AUTHENTICATOR", mock_authenticator):
+            mock_authenticator.verify_token = False
+            main.verify_access_token("token")
+        assert exec.value.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_verify_access_token_failure(mock_authenticator):
+    with pytest.raises(HTTPException) as exec:
+        with mock.patch.object(main, "AUTHENTICATOR", mock_authenticator):
+            main.verify_access_token("token")
+        assert exec.value.status_code == HTTPStatus.UNAUTHORIZED

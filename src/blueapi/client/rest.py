@@ -139,7 +139,7 @@ class BlueapiRestClient:
         }
         if self._session_manager and (token := self._session_manager.get_token()):
             try:
-                self._session_manager.authenticator.verify_token(token["access_token"])
+                self._session_manager.authenticator.decode_jwt(token["access_token"])
                 headers["Authorization"] = f"Bearer {token['access_token']}"
             except jwt.ExpiredSignatureError:
                 if token := self._session_manager.refresh_auth_token():

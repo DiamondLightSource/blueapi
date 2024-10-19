@@ -8,7 +8,6 @@ import jwt
 import pytest
 import requests
 from fastapi.exceptions import HTTPException
-from jwt import PyJWTError
 
 from blueapi.config import CLIClientConfig, OAuthClientConfig, OAuthServerConfig
 from blueapi.service import main
@@ -66,28 +65,6 @@ def mock_authenticator(
     mock_server_config: OAuthServerConfig, mock_client_config: OAuthClientConfig
 ) -> Authenticator:
     return Authenticator(mock_server_config, mock_client_config)
-
-
-@mock.patch("jwt.decode")
-@mock.patch("jwt.PyJWKClient.get_signing_key_from_jwt")
-def test_verify_token_valid(
-    mock_get_signing_key, mock_decode, mock_authenticator: Authenticator
-):
-    decode_retun_value = {"token": "valid_token", "name": "John Doe"}
-    mock_decode.return_value = decode_retun_value
-    valid_token = mock_authenticator.verify_token(decode_retun_value["token"])
-    assert valid_token
-
-
-@mock.patch("jwt.decode")
-@mock.patch("jwt.PyJWKClient.get_signing_key_from_jwt")
-def test_verify_token_invalid(
-    mock_get_signing_key, mock_decode, mock_authenticator: Authenticator
-):
-    mock_decode.side_effect = jwt.ExpiredSignatureError
-    token = "invalid_token"
-    with pytest.raises(PyJWTError):
-        mock_authenticator.verify_token(token)
 
 
 @mock.patch("jwt.decode")
@@ -175,22 +152,36 @@ def test_poll_for_token_timeout(
         )
 
 
-def test_valid_token_access_granted(mock_authenticator):
+@mock.patch("jwt.decode")
+@mock.patch("jwt.PyJWKClient.get_signing_key_from_jwt")
+def test_valid_token_access_granted(
+    mock_get_signing_key, mock_decode, mock_authenticator: Authenticator
+):
     with mock.patch.object(main, "AUTHENTICATOR", mock_authenticator):
-        mock_authenticator.verify_token = True
+        decode_return_value = {"token": "valid_token", "name": "John Doe"}
+        mock_decode.return_value = decode_return_value
         main.verify_access_token("token")
 
 
-def test_invalid_token_no_access(mock_authenticator):
+@mock.patch("jwt.decode")
+@mock.patch("jwt.PyJWKClient.get_signing_key_from_jwt")
+def test_invalid_token_no_access(
+    mock_get_signing_key, mock_decode, mock_authenticator: Authenticator
+):
     with pytest.raises(HTTPException) as exec:
         with mock.patch.object(main, "AUTHENTICATOR", mock_authenticator):
-            mock_authenticator.verify_token = False
+            mock_decode.return_value = None
             main.verify_access_token("token")
         assert exec.value.status_code == HTTPStatus.UNAUTHORIZED
 
 
-def test_verify_access_token_failure(mock_authenticator):
+@mock.patch("jwt.decode")
+@mock.patch("jwt.PyJWKClient.get_signing_key_from_jwt")
+def test_verify_access_token_failure(
+    mock_get_signing_key, mock_decode, mock_authenticator: Authenticator
+):
     with pytest.raises(HTTPException) as exec:
         with mock.patch.object(main, "AUTHENTICATOR", mock_authenticator):
+            mock_decode.side_effect = jwt.ExpiredSignatureError
             main.verify_access_token("token")
         assert exec.value.status_code == HTTPStatus.UNAUTHORIZED

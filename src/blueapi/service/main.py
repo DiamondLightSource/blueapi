@@ -90,8 +90,8 @@ oauth_scheme = OAuth2AuthorizationCodeBearer(
 def verify_access_token(access_token: str = Depends(oauth_scheme)):
     if AUTHENTICATOR:
         try:
-            valid_token = AUTHENTICATOR.verify_token(access_token)
-            if not valid_token:
+            decoded_token: dict[str, Any] = AUTHENTICATOR.decode_jwt(access_token)
+            if not decoded_token:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         except Exception as exception:
             raise HTTPException(

@@ -34,10 +34,6 @@ class Authenticator:
         self._server_config: OAuthServerConfig = server_config
         self._client_config: OAuthClientConfig = client_config
 
-    def verify_token(self, token: str, verify_expiration: bool = True) -> bool:
-        self.decode_jwt(token, verify_expiration)
-        return True
-
     def decode_jwt(self, token: str, verify_expiration: bool = True) -> dict[str, str]:
         signing_key = jwt.PyJWKClient(
             self._server_config.jwks_uri
@@ -187,10 +183,10 @@ class SessionManager:
     def start_device_flow(self) -> None:
         if token := self._token_manager.load_token():
             try:
-                is_token_vaild: bool = self.authenticator.verify_token(
+                access_token_info: dict[str, Any] = self.authenticator.decode_jwt(
                     token["access_token"]
                 )
-                if is_token_vaild:
+                if access_token_info:
                     self.authenticator.print_user_info(token["access_token"])
                     return
             except jwt.ExpiredSignatureError:
@@ -212,10 +208,10 @@ class SessionManager:
                 f"{response_json['verification_uri_complete']}"
             )
             auth_token_json: dict[str, Any] = self.poll_for_token(device_code)
-            valid_token: bool = self.authenticator.verify_token(
+            decoded_token: dict[str, Any] = self.authenticator.decode_jwt(
                 auth_token_json["access_token"]
             )
-            if valid_token:
+            if decoded_token:
                 self._token_manager.save_token(auth_token_json)
                 self.authenticator.print_user_info(auth_token_json["access_token"])
         else:

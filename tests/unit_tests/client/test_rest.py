@@ -80,9 +80,8 @@ def test_auth_request_functionality(rest: BlueapiRestClient):
         json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
         status=200,
     )
-    with patch("blueapi.service.Authenticator.verify_token") as mock_verify_token:
-        # Mock the verify_token function to return True (indicating a valid token)
-        mock_verify_token.return_value = True
+    with patch("blueapi.service.Authenticator.decode_jwt") as mock_decode_jwt:
+        mock_decode_jwt.return_value = {"name": "John Doe", "fedid": "jd1"}
 
         result = rest.get_plans()
         # Add assertions as needed
@@ -99,15 +98,15 @@ def test_refresh_if_signature_expired(rest: BlueapiRestClient):
         status=200,
     )
     with (
-        patch("blueapi.service.Authenticator.verify_token") as mock_verify_token,
+        patch("blueapi.service.Authenticator.decode_jwt") as mock_decode_token,
         patch(
             "blueapi.service.SessionManager.refresh_auth_token"
         ) as mock_refresh_token,
     ):
-        mock_verify_token.side_effect = jwt.ExpiredSignatureError
+        mock_decode_token.side_effect = jwt.ExpiredSignatureError
         mock_refresh_token.return_value = {"access_token": "new_token"}
         result = rest.get_plans()
-        mock_verify_token.assert_called_once()
+        mock_decode_token.assert_called_once()
         mock_refresh_token.assert_called_once()
         assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
 
@@ -122,8 +121,8 @@ def test_handle_exceptions_other_than_expired_token(rest: BlueapiRestClient):
         status=200,
     )
     with (
-        patch("blueapi.service.Authenticator.verify_token") as mock_verify_token,
+        patch("blueapi.service.Authenticator.decode_jwt") as mock_decode_jwt,
     ):
-        mock_verify_token.side_effect = Exception
+        mock_decode_jwt.side_effect = Exception
         result = rest.get_plans()
         assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])

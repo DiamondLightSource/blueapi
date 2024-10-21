@@ -1,4 +1,6 @@
+import os
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import (
     BackgroundTasks,
@@ -10,12 +12,15 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.security import OAuth2AuthorizationCodeBearer
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.service import interface
+from blueapi.service.authentication import Authenticator
+from blueapi.service.runner import WorkerDispatcher
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -30,11 +35,18 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
-from .runner import WorkerDispatcher
 
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
+AUTHENTICATOR: Authenticator | None = None
+SWAGGER_CONFIG: dict[str, Any] | None = None
+_PKCE_AUTHENTICATION_URL: str = "PKCE_AUTHENTICATION_URL"
+_TOKEN_URL: str = "TOKEN_URL"
+_PKCE_CLIENT_ID: str = "PKCE_CLIENT_ID"
+_PKCE_CLIENT_SECRET: str = "PKCE_CLIENT_SECRET"
+AUTH_URL: str = os.getenv(_PKCE_AUTHENTICATION_URL, "")
+TOKEN_URL: str = os.getenv(_TOKEN_URL, "")
 
 
 def _runner() -> WorkerDispatcher:
@@ -68,11 +80,42 @@ async def lifespan(app: FastAPI):
     teardown_runner()
 
 
+oauth_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl=AUTH_URL,
+    tokenUrl=TOKEN_URL,
+    refreshUrl=TOKEN_URL,
+)
+
+
+def verify_access_token(access_token: str = Depends(oauth_scheme)):
+    if AUTHENTICATOR:
+        try:
+            decoded_token: dict[str, Any] = AUTHENTICATOR.decode_jwt(access_token)
+            if not decoded_token:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        except Exception as exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            ) from exception
+
+
+if TOKEN_URL and AUTH_URL:
+    dependencies = [Depends(verify_access_token)]
+else:
+    dependencies = []
+
 app = FastAPI(
     docs_url="/docs",
     title="BlueAPI Control",
     lifespan=lifespan,
     version=REST_API_VERSION,
+    swagger_ui_init_oauth={
+        "clientId": os.getenv(_PKCE_CLIENT_ID),
+        "clientSecret": os.getenv(_PKCE_CLIENT_SECRET),
+        "usePkceWithAuthorizationCodeGrant": True,
+        "scopes": "openid profile offline_access",
+    },
+    dependencies=dependencies,
 )
 
 
@@ -98,7 +141,6 @@ async def delete_environment(
     runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
-
     if runner.state.initialized or runner.state.error_message is not None:
         background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
@@ -333,7 +375,12 @@ def set_state(
 def start(config: ApplicationConfig):
     import uvicorn
 
+    global AUTHENTICATOR
     app.state.config = config
+    if config.oauth_client and config.oauth_server:
+        AUTHENTICATOR = Authenticator(
+            server_config=config.oauth_server, client_config=config.oauth_client
+        )
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 
 

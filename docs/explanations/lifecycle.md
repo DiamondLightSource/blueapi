@@ -4,16 +4,16 @@ The following demonstrates exactly what the code does with a plan through its li
 of being written, loaded and run. Take the following plan.
 
 ```python
+import bluesky.plans as bp
+
 from typing import Any, List, Mapping, Optional, Union
 
-import bluesky.plans as bp
 from blueapi.core import MsgGenerator
-from dls_bluesky_core.core import inject
 from bluesky.protocols import Readable
-
+from dodal.beamlines import my_beamline
 
 def count(
-    detectors: List[Readable] = [inject("det")],  # default valid for Blueapi only
+    detectors: List[Readable] = [my_beamline.det(connect_immediately=False)],
     num: int = 1,
     delay: Optional[Union[float, List[float]]] = None,
     metadata: Optional[Mapping[str, Any]] = None,
@@ -56,9 +56,10 @@ like this:
 
 ```python
 from pydantic import BaseModel
+from dodal.beamlines import my_beamline
 
 class CountParameters(BaseModel):
-    detectors: List[Readable] = [inject("det")]
+    detectors: List[Readable] = [my_beamline.det(connect_immediately=False)]
     num: int = 1
     delay: Optional[Union[float, List[float]]] = None
     metadata: Optional[Mapping[str, Any]] = None
@@ -68,10 +69,7 @@ class CountParameters(BaseModel):
         validate_all = True
 ```
 
-This is for illustrative purposes only, this code is not actually generated, but an object
-resembling this class is constructed in memory.
-The default arguments will be validated by the context to inject the "det" device when the
-plan is run. The existence of the "det" default device is not checked until this time. The model is also stored in the context.
+This is for illustrative purposes only, this code is not actually generated, but an object resembling this class is constructed in memory. The default arguments will be validated by the context when the plan is run. `my_beamline.det(connect_immediately=False)` evaluates to a lazily created singleton device. The model is also stored in the context.
 
 ## Startup
 

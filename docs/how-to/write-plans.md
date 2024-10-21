@@ -32,21 +32,9 @@ The type annotations (e.g. `: str`, `: int`, `-> MsgGenerator`) are required as 
 
 **Input annotations should be as broad as possible**, the least specific implementation that is sufficient to accomplish the requirements of the plan. For example, if a plan is written to drive a specific motor (`MyMotor`), but only uses the general methods on the [`Movable` protocol](https://blueskyproject.io/bluesky/main/hardware.html#bluesky.protocols.Movable), it should take `Movable` as a parameter annotation rather than `MyMotor`.
 
-## Injecting defaults
+## Injecting Devices
 
-Some plans are created for specific sets of devices, or will almost always be used with the same devices, it is useful to be able to specify defaults. Dodal defines device factory functions, but these cannot be injected as default arguments to plans.
-
-Dodal defines an `inject` function which allows defaulting devices, so long as there is a device of that name in the context which conforms to the type annotation.
-
-```python
-from dodal.common import inject
-
-def touch_synchrotron(sync: Synchrotron = inject("synchrotron")) -> MsgGenerator:
-    # There is only one Synchrotron device, so we know which one it will always be.
-    # If there is no device named "synchrotron" in the blueapi context, it will except.
-    sync.specific_function()
-    yield from {}
-```
+Some plans are created for specific sets of devices, or will almost always be used with the same devices, it is useful to be able to specify defaults. [Dodal makes this easy with its factory functions](https://diamondlightsource.github.io/dodal/main/how-to/include-devices-in-plans.html).
 
 ## Injecting Metadata
 
@@ -66,8 +54,8 @@ Blueapi exposes the docstrings of plans to clients, along with the parameter typ
 ```python
 def temp_pressure_snapshot(
     detectors: List[Readable],
-    temperature: Movable = inject("sample_temperature"),
-    pressure: Movable = inject("sample_pressure"),
+    temperature: Movable = sample_temperature(),
+    pressure: Movable = sample_pressure(),
     target_temperature: float = 273.0,
     target_pressure: float = 10**5,
     metadata: Optional[Mapping[str, Any]] = None,

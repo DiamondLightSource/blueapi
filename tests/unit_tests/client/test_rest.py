@@ -15,8 +15,13 @@ from blueapi.service.model import PlanModel, PlanResponse
 
 
 @pytest.fixture
+def rest() -> BlueapiRestClient:
+    return BlueapiRestClient()
+
+
+@pytest.fixture
 @responses.activate
-def rest(tmp_path: Path) -> BlueapiRestClient:
+def rest_with_auth(tmp_path: Path) -> BlueapiRestClient:
     responses.add(
         responses.GET,
         "http://example.com",
@@ -72,7 +77,7 @@ class MyModel(BaseModel):
 
 
 @responses.activate
-def test_auth_request_functionality(rest: BlueapiRestClient):
+def test_auth_request_functionality(rest_with_auth: BlueapiRestClient):
     plan = Plan(name="my-plan", model=MyModel)
     responses.add(
         responses.GET,
@@ -83,13 +88,13 @@ def test_auth_request_functionality(rest: BlueapiRestClient):
     with patch("blueapi.service.Authenticator.decode_jwt") as mock_decode_jwt:
         mock_decode_jwt.return_value = {"name": "John Doe", "fedid": "jd1"}
 
-        result = rest.get_plans()
+        result = rest_with_auth.get_plans()
         # Add assertions as needed
         assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
 
 
 @responses.activate
-def test_refresh_if_signature_expired(rest: BlueapiRestClient):
+def test_refresh_if_signature_expired(rest_with_auth: BlueapiRestClient):
     plan = Plan(name="my-plan", model=MyModel)
     responses.add(
         responses.GET,
@@ -105,14 +110,14 @@ def test_refresh_if_signature_expired(rest: BlueapiRestClient):
     ):
         mock_decode_token.side_effect = jwt.ExpiredSignatureError
         mock_refresh_token.return_value = {"access_token": "new_token"}
-        result = rest.get_plans()
+        result = rest_with_auth.get_plans()
         mock_decode_token.assert_called_once()
         mock_refresh_token.assert_called_once()
         assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
 
 
 @responses.activate
-def test_handle_exceptions_other_than_expired_token(rest: BlueapiRestClient):
+def test_handle_exceptions_other_than_expired_token(rest_with_auth: BlueapiRestClient):
     plan = Plan(name="my-plan", model=MyModel)
     responses.add(
         responses.GET,
@@ -124,5 +129,5 @@ def test_handle_exceptions_other_than_expired_token(rest: BlueapiRestClient):
         patch("blueapi.service.Authenticator.decode_jwt") as mock_decode_jwt,
     ):
         mock_decode_jwt.side_effect = Exception
-        result = rest.get_plans()
+        result = rest_with_auth.get_plans()
         assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])

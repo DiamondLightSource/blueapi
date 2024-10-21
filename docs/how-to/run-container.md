@@ -1,4 +1,4 @@
-# Run in a container
+# Run in a Container
 
 Pre-built containers with blueapi and its dependencies already
 installed are available on `Github Container Registry
@@ -8,10 +8,14 @@ installed are available on `Github Container Registry
 
 To pull the container from github container registry and run::
 
-    `docker run ghcr.io/diamondlightsource/blueapi:main --version`
+```
+docker run ghcr.io/diamondlightsource/blueapi:latest
+```
 
 with `podman`:
 
-    `podman run ghcr.io/diamondlightsource/blueapi:main --version`
+```
+podman run ghcr.io/diamondlightsource/blueapi:latest
+```
 
-To get a released version, use a numbered release instead of `main`.
+To get a released version, use a numbered release instead of `latest`.

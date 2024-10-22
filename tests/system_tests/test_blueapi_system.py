@@ -1,3 +1,4 @@
+import inspect
 import time
 from pathlib import Path
 
@@ -39,7 +40,7 @@ _DATA_PATH = Path(__file__).parent
 #   export TOKEN_URL="https://example.com/token"
 #   export PKCE_AUTHENTICATION_URL="https://example.com/auth"
 #
-# Step 3: Start the BlueAPI server:
+# Step 3: Start the BlueAPI server with valid configuration:
 #   blueapi -c tests/unit_tests/example_yaml/valid_stomp_config.yaml serve
 #
 # Step 4: Run the system tests using tox:
@@ -64,11 +65,17 @@ def oauth_client() -> CLIClientConfig:
 
 
 @pytest.fixture
-def client(
+def client_without_auth() -> BlueapiClient:
+    return BlueapiClient.from_config(config=ApplicationConfig())
+
+
+@pytest.fixture
+def client_with_authenticated_stomp(
     oauth_server: OAuthServerConfig, oauth_client: CLIClientConfig
 ) -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
+            stomp=StompConfig(),
             oauth_server=oauth_server,
             oauth_client=oauth_client,
         )
@@ -76,12 +83,11 @@ def client(
 
 
 @pytest.fixture
-def client_with_stomp(
+def client(
     oauth_server: OAuthServerConfig, oauth_client: CLIClientConfig
 ) -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
-            stomp=StompConfig(),
             oauth_server=oauth_server,
             oauth_client=oauth_client,
         )
@@ -100,6 +106,38 @@ def expected_devices() -> DeviceResponse:
     return TypeAdapter(DeviceResponse).validate_json(
         (_DATA_PATH / "devices.json").read_text()
     )
+
+
+@pytest.fixture
+def blueapi_client_get_methods() -> list[str]:
+    # Get a list of methods that take only one argument (self)
+    # This will currently return
+    # ['get_plans', 'get_devices', 'get_state', 'resume', 'get_all_tasks',
+    # 'get_active_task', 'stop', 'get_environment']
+    return [
+        method
+        for method in BlueapiClient.__dict__
+        if callable(getattr(BlueapiClient, method))
+        and not method.startswith("__")
+        and len(inspect.signature(getattr(BlueapiClient, method)).parameters) == 1
+        and "self" in inspect.signature(getattr(BlueapiClient, method)).parameters
+    ]
+
+
+@pytest.fixture(autouse=True)
+def clean_existing_tasks(client: BlueapiClient):
+    for task in client.get_all_tasks().tasks:
+        client.clear_task(task.task_id)
+    yield
+
+
+def test_cannot_access_endpoints(
+    client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
+):
+    for get_method in blueapi_client_get_methods:
+        with pytest.raises(BlueskyRemoteControlError) as exception:
+            getattr(client_without_auth, get_method)()
+            assert str(exception) == "<Response [401]>"
 
 
 def test_get_plans(client: BlueapiClient, expected_plans: PlanResponse):
@@ -248,13 +286,13 @@ def test_get_task_by_status(client: BlueapiClient):
     client.clear_task(task_id=task_2.task_id)
 
 
-def test_progress_with_stomp(client_with_stomp: BlueapiClient):
+def test_progress_with_stomp(client_with_authenticated_stomp: BlueapiClient):
     all_events: list[AnyEvent] = []
 
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
+    client_with_authenticated_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [

@@ -2,8 +2,6 @@ import time
 from pathlib import Path
 
 import pytest
-import requests
-from fastapi import status
 from pydantic import TypeAdapter
 
 from blueapi.client.client import (
@@ -11,16 +9,20 @@ from blueapi.client.client import (
     BlueskyRemoteControlError,
 )
 from blueapi.client.event_bus import AnyEvent
-from blueapi.config import ApplicationConfig, StompConfig
+from blueapi.config import (
+    ApplicationConfig,
+    CLIClientConfig,
+    OAuthServerConfig,
+    StompConfig,
+)
 from blueapi.service.model import (
     DeviceResponse,
     EnvironmentResponse,
     PlanResponse,
     TaskResponse,
-    TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker.event import TaskStatus, TaskStatusEnum, WorkerEvent, WorkerState
+from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -29,15 +31,61 @@ _LONG_TASK = Task(name="sleep", params={"time": 1.0})
 
 _DATA_PATH = Path(__file__).parent
 
+# Instructions to run the system tests:
+# Step 1: Ensure ActiveMQ is running:
+#   podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
+#
+# Step 2: Set the required environment variables:
+#   export TOKEN_URL="https://example.com/token"
+#   export PKCE_AUTHENTICATION_URL="https://example.com/auth"
+#
+# Step 3: Start the BlueAPI server:
+#   blueapi -c tests/unit_tests/example_yaml/valid_stomp_config.yaml serve
+#
+# Step 4: Run the system tests using tox:
+#   tox -e system-test
+#
+# Note: The system tests will be executed in the CI pipeline after resolving:
+#   https://github.com/DiamondLightSource/blueapi/issues/630
+
 
 @pytest.fixture
-def client() -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig())
+def oauth_server() -> OAuthServerConfig:
+    return OAuthServerConfig(oidc_config_url="https://example.com")
 
 
 @pytest.fixture
-def client_with_stomp() -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig(stomp=StompConfig()))
+def oauth_client() -> CLIClientConfig:
+    return CLIClientConfig(
+        client_id="example-client",
+        client_audience="example",
+        token_file_path=Path("example-token-file"),
+    )
+
+
+@pytest.fixture
+def client(
+    oauth_server: OAuthServerConfig, oauth_client: CLIClientConfig
+) -> BlueapiClient:
+    return BlueapiClient.from_config(
+        config=ApplicationConfig(
+            oauth_server=oauth_server,
+            oauth_client=oauth_client,
+        )
+    )
+
+
+@pytest.fixture
+def client_with_stomp(
+    oauth_server: OAuthServerConfig, oauth_client: CLIClientConfig
+) -> BlueapiClient:
+    return BlueapiClient.from_config(
+        config=ApplicationConfig(
+            stomp=StompConfig(),
+            oauth_server=oauth_server,
+            oauth_client=oauth_client,
+        )
+    )
 
 
 @pytest.fixture
@@ -178,14 +226,7 @@ def test_set_state_transition_error(client: BlueapiClient):
 def test_get_task_by_status(client: BlueapiClient):
     task_1 = client.create_task(_SIMPLE_TASK)
     task_2 = client.create_task(_SIMPLE_TASK)
-    task_by_pending_request = requests.get(
-        client._rest._url("/tasks"), params={"task_status": TaskStatusEnum.PENDING}
-    )
-    assert task_by_pending_request.status_code == status.HTTP_200_OK
-    task_by_pending = TypeAdapter(TasksListResponse).validate_python(
-        task_by_pending_request.json()
-    )
-
+    task_by_pending = client.get_all_tasks()
     assert len(task_by_pending.tasks) == 2
     for task in task_by_pending.tasks:
         trackable_task = TypeAdapter(TrackableTask).validate_python(task)
@@ -197,12 +238,7 @@ def test_get_task_by_status(client: BlueapiClient):
     client.start_task(WorkerTask(task_id=task_2.task_id))
     while not client.get_task(task_2.task_id).is_complete:
         time.sleep(0.1)
-    task_by_completed_request = requests.get(
-        client._rest._url("/tasks"), params={"task_status": TaskStatusEnum.COMPLETE}
-    )
-    task_by_completed = TypeAdapter(TasksListResponse).validate_python(
-        task_by_completed_request.json()
-    )
+    task_by_completed = client.get_all_tasks()
     assert len(task_by_completed.tasks) == 2
     for task in task_by_completed.tasks:
         trackable_task = TypeAdapter(TrackableTask).validate_python(task)

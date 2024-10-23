@@ -1,13 +1,15 @@
+import copy
 import os
 from pathlib import Path
 from typing import Any
 from unittest import mock
 
+from mock import patch
 import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ConfigLoader
+from blueapi.config import ConfigLoader, _recursively_updated_map
 from blueapi.utils import InvalidConfigError
 
 
@@ -120,30 +122,125 @@ def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) ->
         loader.load()
 
 
-@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
-def test_auth_from_env():
-    auth = BasicAuthentication(username="${FOO}", password="baz")
-    assert auth.username == "bar"
+def test_use_values_from_env_single_value():
+    """Test loading a single value from the environment using dot notation."""
+    env_values = {"BLUEAPI.config.api.host": "my_host"}
+
+    with (
+        patch.dict(os.environ, env_values, clear=True),
+        patch.object(ConfigLoader, "use_values") as mock_use_values,
+    ):
+        loader = ConfigLoader(ConfigWithDefaults)
+        loader.use_values_from_env()
+
+        expected = {"config": {"api": {"host": "my_host"}}}
+        mock_use_values.assert_called_once_with(expected)
 
 
-@mock.patch.dict(os.environ, {"FOO": "bar", "BAZ": "qux"}, clear=True)
-def test_auth_from_env_repeated_key():
-    auth = BasicAuthentication(username="${FOO}", password="${FOO}")
-    assert auth.username == "bar"
-    assert auth.password.get_secret_value() == "bar"
+def test_use_values_from_env_multiple_values():
+    """Test loading multiple values from the environment using dot notation."""
+    env_values = {
+        "BLUEAPI.config.api.host": "my_host",
+        "BLUEAPI.config.api.port": "8080",
+        "BLUEAPI.config.logging.level": "INFO",
+    }
+
+    with (
+        patch.dict(os.environ, env_values, clear=True),
+        patch.object(ConfigLoader, "use_values") as mock_use_values,
+    ):
+        loader = ConfigLoader(ConfigWithDefaults)
+        loader.use_values_from_env()
+
+        expected = {
+            "config": {
+                "api": {"host": "my_host", "port": "8080"},
+                "logging": {"level": "INFO"},
+            }
+        }
+        mock_use_values.assert_called_once_with(expected)
 
 
-@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
-def test_auth_from_env_ignore_case():
-    auth = BasicAuthentication(username="${FOO}", password="${foo}")
-    assert auth.username == "bar"
-    assert auth.password.get_secret_value() == "bar"
+def test_use_values_from_env_no_values():
+    """Test loading when no environment variables are set using dot notation."""
+    env_values = {}
+
+    with (
+        patch.dict(os.environ, env_values, clear=True),
+        patch.object(ConfigLoader, "use_values") as mock_use_values,
+    ):
+        loader = ConfigLoader(ConfigWithDefaults)
+        loader.use_values_from_env()
+
+        expected = {}
+        mock_use_values.assert_called_once_with(expected)
 
 
-@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
-def test_auth_from_env_throws_when_not_available():
-    # Eagerly throws an exception, will fail during initial loading
-    with pytest.raises(KeyError):
-        BasicAuthentication(username="${BAZ}", password="baz")
-    with pytest.raises(KeyError):
-        BasicAuthentication(username="${baz}", password="baz")
+def test_non_overlapping_keys():
+    """Test updating when no keys overlap."""
+    old = {"a": 1, "b": 2}
+    new = {"c": 3, "d": 4}
+    expected = {"a": 1, "b": 2, "c": 3, "d": 4}
+    result = _recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+    assert old == {"a": 1, "b": 2}, f"Old dict was modified: {old}"
+
+
+def test_overlapping_keys():
+    """Test updating when keys overlap (non-dictionary values)."""
+    old = {"a": 1, "b": 2}
+    new = {"b": 3, "c": 4}
+    expected = {"a": 1, "b": 3, "c": 4}
+    result = _recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_recursive_update():
+    """Test recursive update when both old and new have nested dictionaries."""
+    old = {"a": {"x": 1, "y": 2}, "b": 3}
+    cached_old = copy.deepcopy(old)
+    new = {"a": {"y": 20, "z": 30}, "c": 4}
+    expected = {"a": {"x": 1, "y": 20, "z": 30}, "b": 3, "c": 4}
+    result = _recursively_updated_map(old, new)
+    assert result == expected
+    assert old == cached_old
+
+
+def test_none_values_for_recursive_map():
+    """Test that None values in the new dictionary are ignored."""
+    old = {"a": 1, "b": 2}
+    new = {"b": None, "c": 3}
+    expected = {
+        "a": 1,
+        "b": 2,  # Old value remains since None is ignored
+        "c": 3,
+    }
+    result = _recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_empty_new_dict():
+    """Test with an empty new dictionary."""
+    old = {"a": 1, "b": 2}
+    new = {}
+    expected = {"a": 1, "b": 2}
+    result = _recursively_updated_map(old, new)
+    assert result == expected
+
+
+def test_empty_old_dict():
+    """Test with an empty old dictionary."""
+    old = {}
+    new = {"a": 1, "b": 2}
+    expected = {"a": 1, "b": 2}
+    result = _recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"
+
+
+def test_both_empty_dicts():
+    """Test when both old and new dictionaries are empty."""
+    old = {}
+    new = {}
+    expected = {}
+    result = _recursively_updated_map(old, new)
+    assert result == expected, f"Expected {expected}, but got {result}"

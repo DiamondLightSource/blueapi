@@ -7,8 +7,7 @@ from pprint import pprint
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
-from bluesky_stomp.messaging import MessageContext, StompClient
-from bluesky_stomp.models import Broker
+from bluesky_stomp.messaging import MessageContext
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
@@ -38,10 +37,23 @@ from .updates import CliEventRenderer
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
 @click.pass_context
-def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
-    # if no command is supplied, run with the options passed
+def main(
+    ctx: click.Context, config: Path | None | tuple[Path, ...], env_prefix: str
+) -> None:
+    """
+    BlueAPI CLI, see below for options.
+    The configuration is loaded in the following order,
+    each step overriding the previous one:
+      1. Hardcoded defaults
+      2. Files (via -c option)
+      3. Environment variables (prefixed with BLUEAPI_)
+      4. CLI arguments (in a dot format like `--app.logging.level=DEBUG`)
+    """
 
+    # Initialize the config loader with default schema
     config_loader = ConfigLoader(ApplicationConfig)
+
+    # Step 2: Load values from configuration file(s) if provided
     if config is not None:
         configs = (config,) if isinstance(config, Path) else config
         for path in configs:
@@ -50,14 +62,22 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
             else:
                 raise FileNotFoundError(f"Cannot find file: {path}")
 
+    # Step 3: Load values from environment variables
+    config_loader.use_values_from_env()
+
+
+    # Load the final configuration
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
 
+    # Store config in the Click context object for subcommands to access
     ctx.obj["config"] = loaded_config
+
+    # Set up logging based on loaded configuration
     logging.basicConfig(level=loaded_config.logging.level)
 
     if ctx.invoked_subcommand is None:
-        print("Please invoke subcommand!")
+        print("Please invoke a subcommand!")
 
 
 @main.command(name="schema")
@@ -147,15 +167,7 @@ def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
     if config.stomp is not None:
-        event_bus_client = EventBusClient(
-            StompClient.for_broker(
-                broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
-                    auth=config.stomp.auth,
-                )
-            )
-        )
+        event_bus_client = EventBusClient.from_stomp_config(config.stomp)
     else:
         raise RuntimeError("Message bus needs to be configured")
 

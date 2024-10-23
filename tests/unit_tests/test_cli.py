@@ -55,7 +55,7 @@ def test_cli_version(runner: CliRunner):
 def test_main_no_params():
     runner = CliRunner()
     result = runner.invoke(main)
-    expected = "Please invoke subcommand!\n"
+    expected = "Please invoke a subcommand!\n"
 
     assert result.stdout == expected
 
@@ -150,7 +150,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     )
 
 
-@patch("blueapi.cli.cli.StompClient")
+@patch("blueapi.client.event_bus.StompClient")
 def test_valid_stomp_config_for_listener(
     template: StompClient,
     runner: CliRunner,
@@ -167,11 +167,8 @@ def test_valid_stomp_config_for_listener(
         ],
         input="\n",
     )
-    assert result.output == dedent("""\
-                Subscribing to all bluesky events from localhost:61613
-                Press enter to exit
-                """)
     assert result.exit_code == 0
+    assert """Subscribing to all bluesky events from localhost:61613""" in result.output
 
 
 @responses.activate

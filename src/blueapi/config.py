@@ -152,7 +152,7 @@ class ConfigLoader(Generic[C]):
 
         env_values = {}
         for key, value in os.environ.items():
-            if key.startswith(ENV_PREFIX):
+            if key.startswith(ENV_PREFIX) and value is not None:
                 # Convert key to a config path-like structure
                 config_key = key.removeprefix(ENV_PREFIX).lower()
                 li: list[str] = config_key.split(".")

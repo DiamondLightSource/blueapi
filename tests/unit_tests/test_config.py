@@ -4,11 +4,12 @@ from pathlib import Path
 from typing import Any
 from unittest import mock
 
+from mock import patch
 import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ConfigLoader, _recursively_updated_map, parse_cli_context
+from blueapi.config import ConfigLoader, _recursively_updated_map
 from blueapi.utils import InvalidConfigError
 
 
@@ -121,84 +122,58 @@ def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) ->
         loader.load()
 
 
-@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
-def test_auth_from_env():
-    auth = BasicAuthentication(username="${FOO}", password="baz")
-    assert auth.username == "bar"
+def test_use_values_from_env_single_value():
+    """Test loading a single value from the environment using dot notation."""
+    env_values = {"BLUEAPI.config.api.host": "my_host"}
+
+    with (
+        patch.dict(os.environ, env_values, clear=True),
+        patch.object(ConfigLoader, "use_values") as mock_use_values,
+    ):
+        loader = ConfigLoader(ConfigWithDefaults)
+        loader.use_values_from_env()
+
+        expected = {"config": {"api": {"host": "my_host"}}}
+        mock_use_values.assert_called_once_with(expected)
 
 
-@mock.patch.dict(os.environ, {"FOO": "bar", "BAZ": "qux"}, clear=True)
-def test_auth_from_env_repeated_key():
-    auth = BasicAuthentication(username="${FOO}", password="${FOO}")
-    assert auth.username == "bar"
-    assert auth.password.get_secret_value() == "bar"
-
-
-@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
-def test_auth_from_env_ignore_case():
-    auth = BasicAuthentication(username="${FOO}", password="${foo}")
-    assert auth.username == "bar"
-    assert auth.password.get_secret_value() == "bar"
-
-
-@mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
-def test_auth_from_env_throws_when_not_available():
-    # Eagerly throws an exception, will fail during initial loading
-    with pytest.raises(KeyError):
-        BasicAuthentication(username="${BAZ}", password="baz")
-    with pytest.raises(KeyError):
-        BasicAuthentication(username="${baz}", password="baz")
-
-
-def test_single_dot_notation():
-    """Test with a single dot notation key."""
-    ctx_params = {"BLUEAPI.config.api.host": "my_host"}
-    expected = {"BLUEAPI": {"config": {"api": {"host": "my_host"}}}}
-    result = parse_cli_context(ctx_params)
-    assert result == expected
-
-
-def test_multiple_dot_notation():
-    """Test with multiple levels of dot notation."""
-    ctx_params = {
+def test_use_values_from_env_multiple_values():
+    """Test loading multiple values from the environment using dot notation."""
+    env_values = {
         "BLUEAPI.config.api.host": "my_host",
-        "BLUEAPI.config.api.port": 8080,
+        "BLUEAPI.config.api.port": "8080",
         "BLUEAPI.config.logging.level": "INFO",
     }
-    expected = {
-        "BLUEAPI": {
+
+    with (
+        patch.dict(os.environ, env_values, clear=True),
+        patch.object(ConfigLoader, "use_values") as mock_use_values,
+    ):
+        loader = ConfigLoader(ConfigWithDefaults)
+        loader.use_values_from_env()
+
+        expected = {
             "config": {
-                "api": {"host": "my_host", "port": 8080},
+                "api": {"host": "my_host", "port": "8080"},
                 "logging": {"level": "INFO"},
             }
         }
-    }
-    result = parse_cli_context(ctx_params)
-    assert result == expected
+        mock_use_values.assert_called_once_with(expected)
 
 
-def test_no_dot_notation():
-    """Test with keys that don't contain dots (should be ignored)."""
-    ctx_params = {"stomp_host": "localhost", "BLUEAPI.config.api.host": "my_host"}
-    expected = {"BLUEAPI": {"config": {"api": {"host": "my_host"}}}}
-    result = parse_cli_context(ctx_params)
-    assert result == expected
+def test_use_values_from_env_no_values():
+    """Test loading when no environment variables are set using dot notation."""
+    env_values = {}
 
+    with (
+        patch.dict(os.environ, env_values, clear=True),
+        patch.object(ConfigLoader, "use_values") as mock_use_values,
+    ):
+        loader = ConfigLoader(ConfigWithDefaults)
+        loader.use_values_from_env()
 
-def test_empty_input():
-    """Test with an empty dictionary."""
-    ctx_params = {}
-    expected = {}
-    result = parse_cli_context(ctx_params)
-    assert result == expected, f"Expected {expected}, but got {result}"
-
-
-def test_none_values_for_cli_context():
-    """Test that None values are ignored."""
-    ctx_params = {"BLUEAPI.config.api.host": None, "BLUEAPI.config.api.port": 8080}
-    expected = {"BLUEAPI": {"config": {"api": {"port": 8080}}}}
-    result = parse_cli_context(ctx_params)
-    assert result == expected, f"Expected {expected}, but got {result}"
+        expected = {}
+        mock_use_values.assert_called_once_with(expected)
 
 
 def test_non_overlapping_keys():

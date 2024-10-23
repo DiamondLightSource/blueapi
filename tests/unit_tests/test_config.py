@@ -1,3 +1,4 @@
+import copy
 import os
 from pathlib import Path
 from typing import Any
@@ -154,7 +155,7 @@ def test_single_dot_notation():
     ctx_params = {"BLUEAPI.config.api.host": "my_host"}
     expected = {"BLUEAPI": {"config": {"api": {"host": "my_host"}}}}
     result = parse_cli_context(ctx_params)
-    assert result == expected, f"Expected {expected}, but got {result}"
+    assert result == expected
 
 
 def test_multiple_dot_notation():
@@ -173,7 +174,7 @@ def test_multiple_dot_notation():
         }
     }
     result = parse_cli_context(ctx_params)
-    assert result == expected, f"Expected {expected}, but got {result}"
+    assert result == expected
 
 
 def test_no_dot_notation():
@@ -181,7 +182,7 @@ def test_no_dot_notation():
     ctx_params = {"stomp_host": "localhost", "BLUEAPI.config.api.host": "my_host"}
     expected = {"BLUEAPI": {"config": {"api": {"host": "my_host"}}}}
     result = parse_cli_context(ctx_params)
-    assert result == expected, f"Expected {expected}, but got {result}"
+        assert result == expectep
 
 
 def test_empty_input():
@@ -222,10 +223,12 @@ def test_overlapping_keys():
 def test_recursive_update():
     """Test recursive update when both old and new have nested dictionaries."""
     old = {"a": {"x": 1, "y": 2}, "b": 3}
+    cached_old = copy.deepcopy(old)
     new = {"a": {"y": 20, "z": 30}, "c": 4}
     expected = {"a": {"x": 1, "y": 20, "z": 30}, "b": 3, "c": 4}
     result = _recursively_updated_map(old, new)
-    assert result == expected, f"Expected {expected}, but got {result}"
+    assert result == expected
+    assert old == cached_old
 
 
 def test_none_values_for_recursive_map():
@@ -247,7 +250,7 @@ def test_empty_new_dict():
     new = {}
     expected = {"a": 1, "b": 2}
     result = _recursively_updated_map(old, new)
-    assert result == expected, f"Expected {expected}, but got {result}"
+    assert result == expected
 
 
 def test_empty_old_dict():

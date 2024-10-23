@@ -20,6 +20,17 @@ def rest() -> BlueapiRestClient:
 
 
 @pytest.fixture
+def cache_token(tmp_path: Path):
+    with open(tmp_path / "token", "w") as token_file:
+        # base64 encoded token
+        token_file.write(
+            base64.b64encode(
+                b'{"access_token":"token","refresh_token":"refresh_token"}'
+            ).decode("utf-8")
+        )
+
+
+@pytest.fixture
 @responses.activate
 def rest_with_auth(tmp_path: Path) -> BlueapiRestClient:
     responses.add(
@@ -36,13 +47,7 @@ def rest_with_auth(tmp_path: Path) -> BlueapiRestClient:
         },
         status=200,
     )
-    with open(tmp_path / "token", "w") as token_file:
-        # base64 encoded token
-        token_file.write(
-            base64.b64encode(
-                b'{"access_token":"token","refresh_token":"refresh_token"}'
-            ).decode("utf-8")
-        )
+
     session_manager = SessionManager(
         token_manager=CliTokenManager(tmp_path / "token"),
         client_config=OAuthClientConfig(client_id="foo", client_audience="bar"),
@@ -78,7 +83,7 @@ class MyModel(BaseModel):
 
 
 @responses.activate
-def test_auth_request_functionality(rest_with_auth: BlueapiRestClient):
+def test_auth_request_functionality(rest_with_auth: BlueapiRestClient, cache_token):
     plan = Plan(name="my-plan", model=MyModel)
     responses.add(
         responses.GET,
@@ -95,7 +100,7 @@ def test_auth_request_functionality(rest_with_auth: BlueapiRestClient):
 
 
 @responses.activate
-def test_refresh_if_signature_expired(rest_with_auth: BlueapiRestClient):
+def test_refresh_if_signature_expired(rest_with_auth: BlueapiRestClient, cache_token):
     plan = Plan(name="my-plan", model=MyModel)
     responses.add(
         responses.GET,

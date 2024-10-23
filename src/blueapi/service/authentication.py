@@ -141,20 +141,6 @@ class SessionManager:
                     return token
         return None
 
-    def get_device_code(self):
-        response = requests.post(
-            self._server_config.token_url,
-            data={
-                "client_id": self._client_config.client_id,
-                "scope": "openid profile offline_access",
-                "audience": self._client_config.client_audience,
-            },
-        )
-        response_data = response.json()
-        if response.status_code == HTTPStatus.OK:
-            return response_data["device_code"]
-        raise requests.exceptions.RequestException("Failed to get device code.")
-
     def poll_for_token(
         self, device_code: str, timeout: float = 30, polling_interval: float = 0.5
     ) -> dict[str, Any]:
@@ -194,7 +180,11 @@ class SessionManager:
         response: requests.Response = requests.post(
             self._server_config.device_auth_url,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data={"client_id": self._client_config.client_id},
+            data={
+                "client_id": self._client_config.client_id,
+                "scope": "openid profile offline_access",
+                "audience": self._client_config.client_audience,
+            },
         )
 
         if response.status_code == HTTPStatus.OK:

@@ -36,21 +36,16 @@ from .updates import CliEventRenderer
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
-@click.option(
-    "--env-prefix",
-    default="BLUEAPI_",
-    help="Prefix for environment variables to override configuration",
-)
 @click.pass_context
 def main(
     ctx: click.Context, config: Path | None | tuple[Path, ...], env_prefix: str
 ) -> None:
     """
-    BlueaAPI CLI, see below for options.
+    BlueAPI CLI, see below for options.
     The configuration is loaded in the following order,
     each step overriding the previous one:
       1. Hardcoded defaults
-      2. File (via -c option)
+      2. Files (via -c option)
       3. Environment variables (prefixed with BLUEAPI_)
       4. CLI arguments (in a dot format like `--app.logging.level=DEBUG`)
     """
@@ -68,10 +63,8 @@ def main(
                 raise FileNotFoundError(f"Cannot find file: {path}")
 
     # Step 3: Load values from environment variables
-    config_loader.use_values_from_env(env_prefix)
+    config_loader.use_values_from_env()
 
-    # Step 4: Load CLI arguments as overrides
-    config_loader.use_values_from_cli(ctx.params)
 
     # Load the final configuration
     ctx.ensure_object(dict)

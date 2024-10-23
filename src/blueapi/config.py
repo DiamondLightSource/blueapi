@@ -1,4 +1,3 @@
-import ast
 import os
 from collections.abc import Mapping
 from enum import Enum
@@ -13,30 +12,7 @@ from blueapi.utils import BlueapiBaseModel, InvalidConfigError, format_errors
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
-
-def parse_cli_context(ctx_params: dict[str, Any]) -> dict[str, Any]:
-    """
-    Load CLI values from the given context parameters using dot notation.
-
-    Args:
-        ctx_params (dict[str, Any]): dictionary containing CLI parameters.
-
-    Returns:
-        dict[str, Any]: A dictionary of CLI values for configuration.
-    """
-
-    recursive_dict = lambda:defaultdict(recursive_dict)
-    cli_values: dict[str, Any] = recursive_dict()
-
-    # Handle dot notation (e.g., BLUEAPI.config.api.host)
-    for key, value in ctx_params.items():
-        *path, key = key.split('.')
-        if not path: continue
-        local = cli_values
-        for seg in path: local = local[seg]
-        local[key] = value
-
-    return cli_values
+ENV_PREFIX = "BLUEAPI."
 
 
 class SourceKind(str, Enum):
@@ -169,25 +145,23 @@ class ConfigLoader(Generic[C]):
             values = yaml.load(stream, yaml.Loader)
         self.use_values(values)
 
-    def use_values_from_env(self, prefix: str = "APP_") -> None:
+    def use_values_from_env(self) -> None:
         """
         Load values from environment variables with a given prefix.
         """
 
         env_values = {}
         for key, value in os.environ.items():
-            if key.startswith(prefix):
+            if key.startswith(ENV_PREFIX):
                 # Convert key to a config path-like structure
-                config_key = key[len(prefix) :].lower()
-                env_values[config_key] = ast.literal_eval(value)
+                config_key = key.removeprefix(ENV_PREFIX).lower()
+                li: list[str] = config_key.split(".")
+                local_value = env_values
+                while len(li) > 1:
+                    key = li.pop(0)
+                    local_value = local_value.setdefault(key, {})
+                local_value.setdefault(li[0], value)
         self.use_values(env_values)
-
-    def use_values_from_cli(self, cli_args: Any) -> None:
-        """
-        Use values from CLI arguments, overriding previous values.
-        """
-        parsed = parse_cli_context(cli_args)
-        self.use_values(parsed)
 
     def load(self) -> C:
         """

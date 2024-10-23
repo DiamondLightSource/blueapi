@@ -94,11 +94,12 @@ class OAuthServerConfig(BlueapiBaseModel):
     issuer: str = ""
     jwks_uri: str = ""
     logout_url: str = ""
+    signing_algos: list[str] = []
 
     def model_post_init(self, __context: Any) -> None:
         response: requests.Response = requests.get(self.oidc_config_url)
         response.raise_for_status()
-        config_data: dict[str, str] = response.json()
+        config_data: dict[str, Any] = response.json()
 
         device_auth_url: str | None = config_data.get("device_authorization_endpoint")
         pkce_auth_url: str | None = config_data.get("authorization_endpoint")
@@ -106,6 +107,9 @@ class OAuthServerConfig(BlueapiBaseModel):
         issuer: str | None = config_data.get("issuer")
         jwks_uri: str | None = config_data.get("jwks_uri")
         logout_url: str | None = config_data.get("end_session_endpoint")
+        signing_algos: list[str] | None = config_data.get(
+            "id_token_signing_alg_values_supported"
+        )
         # post this we need to check if all the values are present
         if (
             device_auth_url
@@ -114,6 +118,7 @@ class OAuthServerConfig(BlueapiBaseModel):
             and issuer
             and jwks_uri
             and logout_url
+            and signing_algos
         ):
             self.device_auth_url = device_auth_url
             self.pkce_auth_url = pkce_auth_url
@@ -121,6 +126,7 @@ class OAuthServerConfig(BlueapiBaseModel):
             self.issuer = issuer
             self.jwks_uri = jwks_uri
             self.logout_url = logout_url
+            self.signing_algos = signing_algos
         else:
             raise ValueError("OIDC config is missing required fields")
 

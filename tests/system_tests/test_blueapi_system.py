@@ -70,7 +70,7 @@ def client_without_auth() -> BlueapiClient:
 
 
 @pytest.fixture
-def client_with_authenticated_stomp(
+def client_with_stomp(
     oauth_server: OAuthServerConfig, oauth_client: CLIClientConfig
 ) -> BlueapiClient:
     return BlueapiClient.from_config(
@@ -266,6 +266,7 @@ def test_get_task_by_status(client: BlueapiClient):
     task_2 = client.create_task(_SIMPLE_TASK)
     task_by_pending = client.get_all_tasks()
     assert len(task_by_pending.tasks) == 2
+    # Check if all the tasks are pending
     for task in task_by_pending.tasks:
         trackable_task = TypeAdapter(TrackableTask).validate_python(task)
         assert trackable_task.is_complete is False and trackable_task.is_pending is True
@@ -278,6 +279,7 @@ def test_get_task_by_status(client: BlueapiClient):
         time.sleep(0.1)
     task_by_completed = client.get_all_tasks()
     assert len(task_by_completed.tasks) == 2
+    # Check if all the tasks are completed
     for task in task_by_completed.tasks:
         trackable_task = TypeAdapter(TrackableTask).validate_python(task)
         assert trackable_task.is_complete is True and trackable_task.is_pending is False
@@ -286,13 +288,13 @@ def test_get_task_by_status(client: BlueapiClient):
     client.clear_task(task_id=task_2.task_id)
 
 
-def test_progress_with_stomp(client_with_authenticated_stomp: BlueapiClient):
+def test_progress_with_stomp(client_with_stomp: BlueapiClient):
     all_events: list[AnyEvent] = []
 
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_authenticated_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
+    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [

@@ -640,13 +640,14 @@ DEVICE_AUTHORIZATION_URL: str = "https://example.com/device_authorization"
 OIDC_URL: str = (
     "https://auth.example.com/realms/sample/.well-known/openid-configuration"
 )
-OAUTH_CONFIGURATION: dict[str, str] = {
+OAUTH_CONFIGURATION: dict[str, str | list[str]] = {
     "device_authorization_endpoint": DEVICE_AUTHORIZATION_URL,
     "authorization_endpoint": "https://example.com/authorization",
     "token_endpoint": TOKEN_URL,
     "issuer": "https://example.com",
     "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
     "end_session_endpoint": "https://example.com/logout",
+    "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512"],
 }
 ERROR_RESPONSE: dict[str, str] = {
     "details": "not found",

@@ -34,19 +34,17 @@ class Authenticator:
         self._server_config: OAuthServerConfig = server_config
         self._client_config: OAuthClientConfig = client_config
 
-    def decode_jwt(self, token: str, verify_expiration: bool = True) -> dict[str, str]:
+    def decode_jwt(self, token: str) -> dict[str, str]:
         signing_key = jwt.PyJWKClient(
             self._server_config.jwks_uri
         ).get_signing_key_from_jwt(token)
         decode: dict[str, str] = jwt.decode(
             token,
             signing_key.key,
-            algorithms=["RS256"],
-            options={"verify_exp": verify_expiration},
+            algorithms=self._server_config.signing_algos,
             verify=True,
             audience=self._client_config.client_audience,
             issuer=self._server_config.issuer,
-            leeway=5,
         )
         return decode
 
@@ -80,7 +78,7 @@ class CliTokenManager(TokenManager):
 
     def load_token(self) -> dict[str, Any] | None:
         file_path = self._file_path()
-        if not os.path.exists(self._file_path()):
+        if not os.path.exists(file_path):
             return None
         with open(file_path, "rb") as token_file:
             token_base64: bytes = token_file.read()
@@ -89,8 +87,7 @@ class CliTokenManager(TokenManager):
             return json.loads(token_json)
 
     def delete_token(self) -> None:
-        if os.path.exists(self._file_path()):
-            os.remove(self._file_path())
+        Path(self._file_path()).unlink(missing_ok=True)
 
 
 class SessionManager:

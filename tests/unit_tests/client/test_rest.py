@@ -32,6 +32,7 @@ def rest_with_auth(tmp_path: Path) -> BlueapiRestClient:
             "issuer": "https://example.com",
             "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
             "end_session_endpoint": "https://example.com/logout",
+            "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512"],
         },
         status=200,
     )
@@ -89,7 +90,7 @@ def test_auth_request_functionality(rest_with_auth: BlueapiRestClient):
         mock_decode_jwt.return_value = {"name": "John Doe", "fedid": "jd1"}
 
         result = rest_with_auth.get_plans()
-        # Add assertions as needed
+        mock_decode_jwt.assert_called_once_with("token")
         assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
 
 
@@ -111,23 +112,6 @@ def test_refresh_if_signature_expired(rest_with_auth: BlueapiRestClient):
         mock_decode_token.side_effect = jwt.ExpiredSignatureError
         mock_refresh_token.return_value = {"access_token": "new_token"}
         result = rest_with_auth.get_plans()
-        mock_decode_token.assert_called_once()
+        mock_decode_token.assert_called_once_with("token")
         mock_refresh_token.assert_called_once()
-        assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
-
-
-@responses.activate
-def test_handle_exceptions_other_than_expired_token(rest_with_auth: BlueapiRestClient):
-    plan = Plan(name="my-plan", model=MyModel)
-    responses.add(
-        responses.GET,
-        "http://localhost:8000/plans",
-        json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
-        status=200,
-    )
-    with (
-        patch("blueapi.service.Authenticator.decode_jwt") as mock_decode_jwt,
-    ):
-        mock_decode_jwt.side_effect = Exception
-        result = rest_with_auth.get_plans()
         assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])

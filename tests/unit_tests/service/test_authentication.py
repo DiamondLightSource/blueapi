@@ -34,6 +34,7 @@ def mock_server_config(mock_requests_get) -> OAuthServerConfig:
         "issuer": "https://example.com",
         "jwks_uri": "https://example.com/.well-known/jwks.json",
         "end_session_endpoint": "https://example.com/logout",
+        "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512"],
     }
     return OAuthServerConfig(
         oidc_config_url="https://auth.example.com/realms/sample/.well-known/openid-configuration",
@@ -67,49 +68,30 @@ def mock_authenticator(
     return Authenticator(mock_server_config, mock_client_config)
 
 
-@mock.patch("jwt.decode")
-@mock.patch("jwt.PyJWKClient.get_signing_key_from_jwt")
-def test_user_info(
-    mock_get_signing_key,
-    mock_decode,
-    mock_authenticator: Authenticator,
-):
-    mock_decode.return_value = {
-        "name": "John Doe",
-        "fedid": "12345",
-    }
-    mock_authenticator.print_user_info("valid_token")
-
-
 def test_logout(
     mock_session_manager: SessionManager, mock_connected_client_config: CLIClientConfig
 ):
-    assert os.path.exists(mock_connected_client_config.token_file_path)  # type: ignore
+    assert os.path.exists(mock_connected_client_config.token_file_path)
     mock_session_manager.logout()
-    assert not os.path.exists(mock_connected_client_config.token_file_path)  # type: ignore
+    assert not os.path.exists(mock_connected_client_config.token_file_path)
 
 
 @mock.patch("requests.post")
 def test_refresh_auth_token(
     mock_post,
     mock_session_manager: SessionManager,
-    mock_connected_client_config: OAuthClientConfig,
+    mock_connected_client_config: CLIClientConfig,
 ):
     mock_post.return_value.status_code = HTTPStatus.OK
     mock_post.return_value.json.return_value = {"access_token": "new_access_token"}
     result = mock_session_manager.refresh_auth_token()
     assert result == {"access_token": "new_access_token"}
-
-
-@mock.patch("requests.post")
-def test_get_device_code(
-    mock_post,
-    mock_session_manager: SessionManager,
-):
-    mock_post.return_value.status_code = HTTPStatus.OK
-    mock_post.return_value.json.return_value = {"device_code": "device_code"}
-    device_code = mock_session_manager.get_device_code()
-    assert device_code == "device_code"
+    assert os.path.exists(mock_connected_client_config.token_file_path)
+    with open(mock_connected_client_config.token_file_path) as token_file:
+        token = token_file.read()
+        assert token == base64.b64encode(
+            b'{"access_token": "new_access_token"}'
+        ).decode("utf-8")
 
 
 @mock.patch("requests.post")

@@ -159,6 +159,7 @@ def test_oauth_config_model_post_init(mock_get):
         "issuer": "https://example.com/",
         "jwks_uri": "https://example.com/jwks",
         "end_session_endpoint": "https://example.com/logout",
+        "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512"],
     }
 
     mock_get.return_value.json.return_value = mock_response

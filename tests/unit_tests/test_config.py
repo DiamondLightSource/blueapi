@@ -182,7 +182,7 @@ def test_no_dot_notation():
     ctx_params = {"stomp_host": "localhost", "BLUEAPI.config.api.host": "my_host"}
     expected = {"BLUEAPI": {"config": {"api": {"host": "my_host"}}}}
     result = parse_cli_context(ctx_params)
-        assert result == expectep
+    assert result == expected
 
 
 def test_empty_input():

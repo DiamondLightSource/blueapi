@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 
 import pytest
+from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 
 from blueapi.client.client import (
@@ -32,9 +33,9 @@ _LONG_TASK = Task(name="sleep", params={"time": 1.0})
 
 _DATA_PATH = Path(__file__).parent
 
-# Instructions to run the system tests:
-# Step 1: Ensure ActiveMQ is running:
-#   podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
+# Step 1: Ensure a message bus that supports stomp is running and available:
+#   podman build --tag 'rabbitmq_stomp' tests/system_tests/  # get the latest rabbitmq
+#   podman run -d -p 15672:15672 -p 61613:61613 'rabbitmq_stomp'
 #
 # Step 2: Set the required environment variables:
 #   export TOKEN_URL="https://example.com/token"
@@ -46,6 +47,8 @@ _DATA_PATH = Path(__file__).parent
 # Step 4: Run the system tests using tox:
 #   tox -e system-test
 #
+# Step 5: Optionally tear down the message bus:
+#   podman container stop 'rabbitmq_stomp'
 # Note: The system tests will be executed in the CI pipeline after resolving:
 #   https://github.com/DiamondLightSource/blueapi/issues/630
 
@@ -75,7 +78,9 @@ def client_with_stomp(
 ) -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
-            stomp=StompConfig(),
+            stomp=StompConfig(
+                auth=BasicAuthentication(username="guest", password="guest")  # type: ignore
+            ),
             oauth_server=oauth_server,
             oauth_client=oauth_client,
         )
@@ -265,6 +270,8 @@ def test_get_task_by_status(client: BlueapiClient):
     task_1 = client.create_task(_SIMPLE_TASK)
     task_2 = client.create_task(_SIMPLE_TASK)
     task_by_pending = client.get_all_tasks()
+    # https://github.com/DiamondLightSource/blueapi/issues/680
+    # task_by_pending = client.get_tasks_by_status(TaskStatusEnum.PENDING)
     assert len(task_by_pending.tasks) == 2
     # Check if all the tasks are pending
     for task in task_by_pending.tasks:
@@ -278,6 +285,8 @@ def test_get_task_by_status(client: BlueapiClient):
     while not client.get_task(task_2.task_id).is_complete:
         time.sleep(0.1)
     task_by_completed = client.get_all_tasks()
+    # https://github.com/DiamondLightSource/blueapi/issues/680
+    # task_by_pending = client.get_tasks_by_status(TaskStatusEnum.COMPLETE)
     assert len(task_by_completed.tasks) == 2
     # Check if all the tasks are completed
     for task in task_by_completed.tasks:

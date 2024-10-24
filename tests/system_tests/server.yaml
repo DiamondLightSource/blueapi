@@ -1,0 +1,13 @@
+oauth_server:
+  oidc_config_url: https://example.com
+
+oauth_client:
+  client_id: example-client
+  client_audience: example
+
+stomp:
+  host: localhost
+  port: 61613
+  auth:
+    username: guest
+    password: guest

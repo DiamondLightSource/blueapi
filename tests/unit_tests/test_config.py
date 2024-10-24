@@ -7,7 +7,7 @@ import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ConfigLoader
+from blueapi.config import ConfigLoader, OAuthServerConfig
 from blueapi.utils import InvalidConfigError
 
 
@@ -147,3 +147,49 @@ def test_auth_from_env_throws_when_not_available():
         BasicAuthentication(username="${BAZ}", password="baz")
     with pytest.raises(KeyError):
         BasicAuthentication(username="${baz}", password="baz")
+
+
+@mock.patch("requests.get")
+def test_oauth_config_model_post_init(mock_get):
+    oidc_config_url = "https://example.com/.well-known/openid-configuration"
+    mock_response = {
+        "device_authorization_endpoint": "https://example.com/device_authorization",
+        "authorization_endpoint": "https://example.com/authorize",
+        "token_endpoint": "https://example.com/token",
+        "issuer": "https://example.com/",
+        "jwks_uri": "https://example.com/jwks",
+        "end_session_endpoint": "https://example.com/logout",
+        "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512"],
+    }
+
+    mock_get.return_value.json.return_value = mock_response
+    mock_get.return_value.raise_for_status = lambda: None
+
+    oauth_config = OAuthServerConfig(oidc_config_url=oidc_config_url)
+
+    assert (
+        oauth_config.device_auth_url == mock_response["device_authorization_endpoint"]
+    )
+    assert oauth_config.pkce_auth_url == mock_response["authorization_endpoint"]
+    assert oauth_config.token_url == mock_response["token_endpoint"]
+    assert oauth_config.issuer == mock_response["issuer"]
+    assert oauth_config.jwks_uri == mock_response["jwks_uri"]
+    assert oauth_config.logout_url == mock_response["end_session_endpoint"]
+
+
+@mock.patch("requests.get")
+def test_oauth_config_model_post_init_missing_fields(mock_get):
+    oidc_config_url = "https://example.com/.well-known/openid-configuration"
+    mock_response = {
+        "device_authorization_endpoint": "https://example.com/device_authorization",
+        "authorization_endpoint": "https://example.com/authorize",
+        "token_endpoint": "https://example.com/token",
+        "issuer": "https://example.com/",
+        "jwks_uri": "https://example.com/jwks",
+        "end_session_endpoint": "",  # Missing end_session_endpoint
+    }
+
+    mock_get.return_value.json.return_value = mock_response
+    mock_get.return_value.raise_for_status = lambda: None
+    with pytest.raises(ValueError, match="OIDC config is missing required fields"):
+        OAuthServerConfig(oidc_config_url=oidc_config_url)

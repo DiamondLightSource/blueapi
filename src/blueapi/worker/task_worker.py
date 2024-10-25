@@ -223,8 +223,8 @@ class TaskWorker:
 
         LOGGER.info(f"Submitting: {trackable_task}")
         try:
-            sub = self.worker_events.subscribe(mark_task_as_started)
             self._context_register[trackable_task.task_id] = get_trace_context()
+            sub = self.worker_events.subscribe(mark_task_as_started)
             """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
             task_started.wait(timeout=5.0)
@@ -332,7 +332,10 @@ class TaskWorker:
         except Exception as err:
             self._report_error(err)
         finally:
-            if self._current is not None:
+            if (
+                self._current is not None
+                and self._current.task_id in self._context_register
+            ):
                 self._context_register.pop(self._current.task_id)
 
         if self._current is not None:

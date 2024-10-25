@@ -32,7 +32,7 @@ dependencies = [
     "super-state-machine",  # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "bluesky-stomp>=0.1.2",
-    "event-model<1.23",     # https://github.com/DiamondLightSource/blueapi/issues/684
+    "event-model==1.21",    # https://github.com/DiamondLightSource/blueapi/issues/684
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

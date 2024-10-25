@@ -307,6 +307,9 @@ def begin_task_and_wait_until_complete(
 #
 
 
+@pytest.mark.skip(
+    "This test is currently waiting for https://github.com/DiamondLightSource/dls-bluesky-core/blob/main/src/dls_bluesky_core/plans/wrapped.py"
+)
 def test_worker_and_data_events_produce_in_order(worker: TaskWorker) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [

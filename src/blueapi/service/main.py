@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import (
@@ -391,7 +391,7 @@ async def add_api_version_header(request: Request, call_next):
 
 @app.middleware("http")
 async def inject_propagated_observability_context(
-    request: Request, call_next: Callable[[Request], Response]
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     """Middleware to extract the any prorpagated observability context from the
     HTTP headers and attatch it to the local one.

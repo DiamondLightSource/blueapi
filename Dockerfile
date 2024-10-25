@@ -12,15 +12,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /venv
 ENV PATH=/venv/bin:$PATH
 
-ENV OTLP_EXPORT_ENABLED=false
-# enable opentelemetry support
-ENV OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=http/protobuf
-# Change this to point to Jaeger server before merging e.g. https://daq-services-jaeger
-ENV OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
-# Ensure that all Http headers are captured
-ENV OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST=".*"
-ENV OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE=".*"
-
 # The build stage installs the context into the venv
 FROM developer as build
 COPY . /context

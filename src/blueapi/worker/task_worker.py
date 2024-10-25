@@ -51,6 +51,7 @@ TRACER = get_tracer("task_worker")
 """ Initialise a Tracer for this module provided by the app's global TracerProvider. """
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
+WORKER_THREAD_STATE = "worker thread state"
 
 T = TypeVar("T")
 
@@ -61,8 +62,8 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
     """
 
     task_id: str
-    request_id: str = ""
     task: T
+    request_id: str = ""
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
@@ -130,7 +131,7 @@ class TaskWorker:
         setup_tracing("BlueAPIWorker", OTLP_EXPORT_ENABLED)
 
     @start_as_current_span(TRACER, "task_id")
-    def clear_task(self, task_id: str, carr: dict[str, Any] | None = None) -> str:
+    def clear_task(self, task_id: str) -> str:
         task = self._tasks.pop(task_id)
         return task.task_id
 
@@ -139,7 +140,6 @@ class TaskWorker:
         self,
         failure: bool = False,
         reason: str | None = None,
-        carr: dict[str, Any] | None = None,
     ) -> str:
         if self._current is None:
             # Persuades mypy that self._current is not None
@@ -154,19 +154,15 @@ class TaskWorker:
         return self._current.task_id
 
     @start_as_current_span(TRACER)
-    def get_tasks(self, carr: dict[str, Any] | None = None) -> list[TrackableTask]:
+    def get_tasks(self) -> list[TrackableTask]:
         return list(self._tasks.values())
 
     @start_as_current_span(TRACER, "task_id")
-    def get_task_by_id(
-        self, task_id: str, carr: dict[str, Any] | None = None
-    ) -> TrackableTask | None:
+    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         return self._tasks.get(task_id)
 
     @start_as_current_span(TRACER, "status")
-    def get_tasks_by_status(
-        self, status: TaskStatusEnum, carr: dict[str, Any] | None = None
-    ) -> list[TrackableTask]:
+    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
         if status == TaskStatusEnum.RUNNING:
             return [
                 task
@@ -180,16 +176,14 @@ class TaskWorker:
         return []
 
     @start_as_current_span(TRACER)
-    def get_active_task(
-        self, carr: dict[str, Any] | None = None
-    ) -> TrackableTask[Task] | None:
+    def get_active_task(self) -> TrackableTask[Task] | None:
         current = self._current
         if current is not None:
             add_span_attributes({"Active Task": current.task_id})
         return current
 
     @start_as_current_span(TRACER, "task_id")
-    def begin_task(self, task_id: str, carr: dict[str, Any] | None = None) -> None:
+    def begin_task(self, task_id: str) -> None:
         task = self._tasks.get(task_id)
         if task is not None:
             self._submit_trackable_task(task)
@@ -197,7 +191,7 @@ class TaskWorker:
             raise KeyError(f"No pending task with ID {task_id}")
 
     @start_as_current_span(TRACER, "task.name", "task.params")
-    def submit_task(self, task: Task, carr: dict[str, Any] | None = None) -> str:
+    def submit_task(self, task: Task) -> str:
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         add_span_attributes({"TaskId": task_id})
@@ -249,7 +243,8 @@ class TaskWorker:
         self._wait_until_stopped()
         fut = run_worker_in_own_thread(self)
         self._wait_until_started()
-        add_span_attributes({"worker thread state": fut._state})
+
+        add_span_attributes({WORKER_THREAD_STATE: fut._state})
 
     @start_as_current_span(TRACER)
     def stop(self) -> None:
@@ -261,7 +256,7 @@ class TaskWorker:
         else:
             LOGGER.info("Stopping worker: nothing to do")
         self._wait_until_stopped()
-        add_span_attributes({"worker thread state": "STOPPED"})
+        add_span_attributes({WORKER_THREAD_STATE: "STOPPED"})
         LOGGER.info("Stopped")
 
     @start_as_current_span(TRACER)
@@ -299,12 +294,12 @@ class TaskWorker:
         self._stopped.set()
 
     @start_as_current_span(TRACER, "defer")
-    def pause(self, defer=False, carr: dict[str, Any] | None = None):
+    def pause(self, defer=False):
         LOGGER.info("Requesting to pause the worker")
         self._ctx.run_engine.request_pause(defer)
 
     @start_as_current_span(TRACER)
-    def resume(self, carr: dict[str, Any] | None = None):
+    def resume(self):
         LOGGER.info("Requesting to resume the worker")
         self._ctx.run_engine.resume()
 
@@ -336,6 +331,9 @@ class TaskWorker:
                 raise KeyError(f"Unknown command: {next_task}")
         except Exception as err:
             self._report_error(err)
+        finally:
+            if self._current is not None:
+                self._context_register.pop(self._current.task_id)
 
         if self._current is not None:
             self._current.is_complete = True

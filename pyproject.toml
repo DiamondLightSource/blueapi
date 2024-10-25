@@ -18,7 +18,7 @@ dependencies = [
     "pyepics",
     "aioca",
     "pydantic>=2.0",
-    "scanspec>=0.7.2",
+    "scanspec>=0.7.6",
     "pydantic-settings",
     "stomp-py",
     "aiohttp",
@@ -83,7 +83,9 @@ write_to = "src/blueapi/_version.py"
 
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules
-namespace_packages = true     # necessary for tracing sdk to work with mypy
+
+# necessary for tracing sdk to work with mypy, set false once migraion to pyright complete
+namespace_packages = true
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error

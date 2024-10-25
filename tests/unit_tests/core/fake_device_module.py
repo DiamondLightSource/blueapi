@@ -32,7 +32,7 @@ def _mock_with_name(name: str) -> MagicMock:
     return mock
 
 
-def wrong_return_type(*args, **kwargs) -> int:
+def wrong_return_type() -> int:
     return "str"  # type: ignore
 
 

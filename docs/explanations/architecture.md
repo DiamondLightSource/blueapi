@@ -11,4 +11,4 @@ These responsibilities are kept separate in the codebase to ensure a clean, main
 ![blueapi main components](../images/blueapi.png)
 
 
-Above are the main components of blueapi. The main process houses the REST API and manages the subprocess, which wraps the `RunEngine`, devices and optional connection to the downstream message broker.
+Above are the main components of blueapi. The main process houses the REST API and manages the subprocess, which wraps the `RunEngine`, devices and external connections.

@@ -1,9 +1,9 @@
-import inspect
 import time
 from pathlib import Path
 
 import pytest
-from bluesky_stomp.models import BasicAuthentication
+import requests
+from fastapi import status
 from pydantic import TypeAdapter
 
 from blueapi.client.client import (
@@ -11,20 +11,16 @@ from blueapi.client.client import (
     BlueskyRemoteControlError,
 )
 from blueapi.client.event_bus import AnyEvent
-from blueapi.config import (
-    ApplicationConfig,
-    CLIClientConfig,
-    OAuthServerConfig,
-    StompConfig,
-)
+from blueapi.config import ApplicationConfig, StompConfig
 from blueapi.service.model import (
     DeviceResponse,
     EnvironmentResponse,
     PlanResponse,
     TaskResponse,
+    TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
+from blueapi.worker.event import TaskStatus, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -33,70 +29,15 @@ _LONG_TASK = Task(name="sleep", params={"time": 1.0})
 
 _DATA_PATH = Path(__file__).parent
 
-# Step 1: Ensure a message bus that supports stomp is running and available:
-#   podman build --tag 'rabbitmq_stomp' tests/system_tests/  # get the latest rabbitmq
-#   podman run -d -p 15672:15672 -p 61613:61613 'rabbitmq_stomp'
-#
-# Step 2: Set the required environment variables:
-#   export TOKEN_URL="https://example.com/token"
-#   export PKCE_AUTHENTICATION_URL="https://example.com/auth"
-#
-# Step 3: Start the BlueAPI server with valid configuration:
-#   blueapi -c tests/unit_tests/example_yaml/valid_stomp_config.yaml serve
-#
-# Step 4: Run the system tests using tox:
-#   tox -e system-test
-#
-# Step 5: Optionally tear down the message bus:
-#   podman container stop 'rabbitmq_stomp'
-# Note: The system tests will be executed in the CI pipeline after resolving:
-#   https://github.com/DiamondLightSource/blueapi/issues/630
-
 
 @pytest.fixture
-def oauth_server() -> OAuthServerConfig:
-    return OAuthServerConfig(oidc_config_url="https://example.com")
-
-
-@pytest.fixture
-def oauth_client() -> CLIClientConfig:
-    return CLIClientConfig(
-        client_id="example-client",
-        client_audience="example",
-        token_file_path=Path("example-token-file"),
-    )
-
-
-@pytest.fixture
-def client_without_auth() -> BlueapiClient:
+def client() -> BlueapiClient:
     return BlueapiClient.from_config(config=ApplicationConfig())
 
 
 @pytest.fixture
-def client_with_stomp(
-    oauth_server: OAuthServerConfig, oauth_client: CLIClientConfig
-) -> BlueapiClient:
-    return BlueapiClient.from_config(
-        config=ApplicationConfig(
-            stomp=StompConfig(
-                auth=BasicAuthentication(username="guest", password="guest")  # type: ignore
-            ),
-            oauth_server=oauth_server,
-            oauth_client=oauth_client,
-        )
-    )
-
-
-@pytest.fixture
-def client(
-    oauth_server: OAuthServerConfig, oauth_client: CLIClientConfig
-) -> BlueapiClient:
-    return BlueapiClient.from_config(
-        config=ApplicationConfig(
-            oauth_server=oauth_server,
-            oauth_client=oauth_client,
-        )
-    )
+def client_with_stomp() -> BlueapiClient:
+    return BlueapiClient.from_config(config=ApplicationConfig(stomp=StompConfig()))
 
 
 @pytest.fixture
@@ -111,38 +52,6 @@ def expected_devices() -> DeviceResponse:
     return TypeAdapter(DeviceResponse).validate_json(
         (_DATA_PATH / "devices.json").read_text()
     )
-
-
-@pytest.fixture
-def blueapi_client_get_methods() -> list[str]:
-    # Get a list of methods that take only one argument (self)
-    # This will currently return
-    # ['get_plans', 'get_devices', 'get_state', 'resume', 'get_all_tasks',
-    # 'get_active_task', 'stop', 'get_environment']
-    return [
-        method
-        for method in BlueapiClient.__dict__
-        if callable(getattr(BlueapiClient, method))
-        and not method.startswith("__")
-        and len(inspect.signature(getattr(BlueapiClient, method)).parameters) == 1
-        and "self" in inspect.signature(getattr(BlueapiClient, method)).parameters
-    ]
-
-
-@pytest.fixture(autouse=True)
-def clean_existing_tasks(client: BlueapiClient):
-    for task in client.get_all_tasks().tasks:
-        client.clear_task(task.task_id)
-    yield
-
-
-def test_cannot_access_endpoints(
-    client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
-):
-    for get_method in blueapi_client_get_methods:
-        with pytest.raises(BlueskyRemoteControlError) as exception:
-            getattr(client_without_auth, get_method)()
-            assert str(exception) == "<Response [401]>"
 
 
 def test_get_plans(client: BlueapiClient, expected_plans: PlanResponse):
@@ -269,11 +178,15 @@ def test_set_state_transition_error(client: BlueapiClient):
 def test_get_task_by_status(client: BlueapiClient):
     task_1 = client.create_task(_SIMPLE_TASK)
     task_2 = client.create_task(_SIMPLE_TASK)
-    task_by_pending = client.get_all_tasks()
-    # https://github.com/DiamondLightSource/blueapi/issues/680
-    # task_by_pending = client.get_tasks_by_status(TaskStatusEnum.PENDING)
+    task_by_pending_request = requests.get(
+        client._rest._url("/tasks"), params={"task_status": TaskStatusEnum.PENDING}
+    )
+    assert task_by_pending_request.status_code == status.HTTP_200_OK
+    task_by_pending = TypeAdapter(TasksListResponse).validate_python(
+        task_by_pending_request.json()
+    )
+
     assert len(task_by_pending.tasks) == 2
-    # Check if all the tasks are pending
     for task in task_by_pending.tasks:
         trackable_task = TypeAdapter(TrackableTask).validate_python(task)
         assert trackable_task.is_complete is False and trackable_task.is_pending is True
@@ -284,11 +197,13 @@ def test_get_task_by_status(client: BlueapiClient):
     client.start_task(WorkerTask(task_id=task_2.task_id))
     while not client.get_task(task_2.task_id).is_complete:
         time.sleep(0.1)
-    task_by_completed = client.get_all_tasks()
-    # https://github.com/DiamondLightSource/blueapi/issues/680
-    # task_by_pending = client.get_tasks_by_status(TaskStatusEnum.COMPLETE)
+    task_by_completed_request = requests.get(
+        client._rest._url("/tasks"), params={"task_status": TaskStatusEnum.COMPLETE}
+    )
+    task_by_completed = TypeAdapter(TasksListResponse).validate_python(
+        task_by_completed_request.json()
+    )
     assert len(task_by_completed.tasks) == 2
-    # Check if all the tasks are completed
     for task in task_by_completed.tasks:
         trackable_task = TypeAdapter(TrackableTask).validate_python(task)
         assert trackable_task.is_complete is True and trackable_task.is_pending is False

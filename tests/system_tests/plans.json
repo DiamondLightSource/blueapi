@@ -3,7 +3,7 @@
         {
             "name": "count",
             "description": "\n    Take `n` readings from a device\n\n    Args:\n        detectors (Set[Readable]): Readable devices to read\n        num (int, optional): Number of readings to take. Defaults to 1.\n        delay (Optional[Union[float, List[float]]], optional): Delay between readings.\n                                                               Defaults to None.\n        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include\n                                                          in exported data.\n                                                          Defaults to None.\n\n    Returns:\n        MsgGenerator: _description_\n\n    Yields:\n        Iterator[MsgGenerator]: _description_\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "detectors": {
@@ -57,7 +57,7 @@
         {
             "name": "move",
             "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, Any]): Mapping of Movables to target positions\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
@@ -86,7 +86,7 @@
         {
             "name": "stp_snapshot",
             "description": "\n    Moves devices for pressure and temperature (defaults fetched from the context)\n    and captures a single frame from a collection of devices\n\n    Args:\n        detectors (List[Readable]): A list of devices to read while the sample is at STP\n        temperature (Optional[Movable]): A device controlling temperature of the sample,\n            defaults to fetching a device name \"sample_temperature\" from the context\n        pressure (Optional[Movable]): A device controlling pressure on the sample,\n            defaults to fetching a device name \"sample_pressure\" from the context\n    Returns:\n        MsgGenerator: Plan\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "detectors": {
@@ -115,7 +115,7 @@
         {
             "name": "scan",
             "description": "\n    Scan wrapping `bp.scan_nd`\n\n    Args:\n        detectors: Set of readable devices, will take a reading at\n                                    each point\n        axes_to_move: All axes involved in this scan, names and\n            objects\n        spec: ScanSpec modelling the path of the scan\n        metadata: Key-value metadata to include\n                                                          in exported data, defaults to\n                                                          None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "$defs": {
                     "Circle": {
                         "additionalProperties": false,
@@ -170,11 +170,19 @@
                         "description": "Abstract baseclass for a combination of two regions, left and right.",
                         "properties": {
                             "left": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -199,11 +207,19 @@
                         "description": "Concatenate two Specs together, running one after the other.\n\nEach Dimension of left and right must contain the same axes. Typically\nformed using `Spec.concat`.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"x\", 1, 3, 3).concat(Line(\"x\", 4, 5, 5))",
                         "properties": {
                             "left": {
-                                "$ref": "#/$defs/Spec",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
                                 "description": "The left-hand Spec to Concat, midpoints will appear earlier"
                             },
                             "right": {
-                                "$ref": "#/$defs/Spec",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
                                 "description": "The right-hand Spec to Concat, midpoints will appear later"
                             },
                             "gap": {
@@ -240,11 +256,19 @@
                         "description": "A point is in DifferenceOf(a, b) if in a and not in b.\n\nTypically created with the ``-`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) - Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False, False, False])",
                         "properties": {
                             "left": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -330,11 +354,19 @@
                         "description": "A point is in IntersectionOf(a, b) if in both a and b.\n\nTypically created with the ``&`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) & Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False, False,  True, False, False])",
                         "properties": {
                             "left": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -402,11 +434,19 @@
                         "description": "Restrict Spec to only midpoints that fall inside the given Region.\n\nTypically created with the ``&`` operator. It also pushes down the\n``& | ^ -`` operators to its `Region` to avoid the need for brackets on\ncombinations of Regions.\n\nIf a Region spans multiple Frames objects, they will be squashed together.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * Line(\"x\", 3, 5, 5) & Circle(\"x\", \"y\", 4, 2, 1.2)\n\nSee Also: `why-squash-can-change-path`",
                         "properties": {
                             "spec": {
-                                "$ref": "#/$defs/Spec",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
                                 "description": "The Spec containing the source midpoints"
                             },
                             "region": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The Region that midpoints will be inside"
                             },
                             "check_path_changes": {
@@ -486,11 +526,19 @@
                         "description": "Outer product of two Specs, nesting inner within outer.\n\nThis means that inner will run in its entirety at each point in outer.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 2, 3) * Line(\"x\", 3, 4, 12)",
                         "properties": {
                             "outer": {
-                                "$ref": "#/$defs/Spec",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
                                 "description": "Will be executed once"
                             },
                             "inner": {
-                                "$ref": "#/$defs/Spec",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
                                 "description": "Will be executed len(outer) times"
                             },
                             "type": {
@@ -691,7 +739,11 @@
                         "description": "Run the Spec in reverse on every other iteration when nested.\n\nTypically created with the ``~`` operator.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * ~Line(\"x\", 3, 5, 5)",
                         "properties": {
                             "spec": {
-                                "$ref": "#/$defs/Spec",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
                                 "description": "The Spec to run in reverse every other iteration"
                             },
                             "type": {
@@ -830,7 +882,11 @@
                         "description": "Squash a stack of Frames together into a single expanded Frames object.\n\nSee Also:\n    `why-squash-can-change-path`\n\n.. example_spec::\n\n    from scanspec.specs import Line, Squash\n\n    spec = Squash(Line(\"y\", 1, 2, 3) * Line(\"x\", 0, 1, 4))",
                         "properties": {
                             "spec": {
-                                "$ref": "#/$defs/Spec",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
                                 "description": "The Spec to squash the dimensions of"
                             },
                             "check_path_changes": {
@@ -897,11 +953,19 @@
                         "description": "A point is in SymmetricDifferenceOf(a, b) if in either a or b, but not both.\n\nTypically created with the ``^`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) ^ Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False,  True, False])",
                         "properties": {
                             "left": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -926,11 +990,19 @@
                         "description": "A point is in UnionOf(a, b) if in either a or b.\n\nTypically created with the ``|`` operator\n\n>>> r = Range(\"x\", 0.5, 2.5) | Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True,  True,  True, False])",
                         "properties": {
                             "left": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The left-hand Region to combine"
                             },
                             "right": {
-                                "$ref": "#/$defs/Region",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Region"
+                                    }
+                                ],
                                 "description": "The right-hand Region to combine"
                             },
                             "type": {
@@ -955,11 +1027,19 @@
                         "description": "Run two Specs in parallel, merging their midpoints together.\n\nTypically formed using `Spec.zip`.\n\nStacks of Frames are merged by:\n\n- If right creates a stack of a single Frames object of size 1, expand it to\n  the size of the fastest Frames object created by left\n- Merge individual Frames objects together from fastest to slowest\n\nThis means that Zipping a Spec producing stack [l2, l1] with a Spec\nproducing stack [r1] will assert len(l1)==len(r1), and produce\nstack [l2, l1.zip(r1)].\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"z\", 1, 2, 3) * Line(\"y\", 3, 4, 5).zip(Line(\"x\", 4, 5, 5))",
                         "properties": {
                             "left": {
-                                "$ref": "#/$defs/Spec",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
                                 "description": "The left-hand Spec to Zip, will appear earlier in axes"
                             },
                             "right": {
-                                "$ref": "#/$defs/Spec",
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    }
+                                ],
                                 "description": "The right-hand Spec to Zip, will appear later in axes"
                             },
                             "type": {
@@ -1024,7 +1104,7 @@
         {
             "name": "set_absolute",
             "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -1061,7 +1141,7 @@
         {
             "name": "set_relative",
             "description": "\n    Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -1098,7 +1178,7 @@
         {
             "name": "move_relative",
             "description": "\n    Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, Any]): Mapping of Movables to target deltas\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
@@ -1127,7 +1207,7 @@
         {
             "name": "sleep",
             "description": "\n    Suspend all action for a given time, wrapper for `bp.sleep`\n\n    Args:\n        time (float): Time to wait in seconds\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "time": {
@@ -1145,7 +1225,7 @@
         {
             "name": "wait",
             "description": "\n    Wait for a group status to complete, wrapper for `bp.wait`\n\n    Args:\n        group (Optional[Group], optional): The name of the group to wait for, defaults\n                                           to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "group": {

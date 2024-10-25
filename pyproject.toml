@@ -32,9 +32,6 @@ dependencies = [
     "super-state-machine",  # See GH issue 553
     "GitPython",
     "bluesky-stomp>=0.1.2",
-    "pyjwt",
-    "python-multipart",
-    "cryptography"
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

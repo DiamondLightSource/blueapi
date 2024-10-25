@@ -3,15 +3,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Generic, Literal, TypeVar
 
-import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import (
-    BaseModel,
-    Field,
-    TypeAdapter,
-    ValidationError,
-)
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -83,63 +77,6 @@ class ScratchConfig(BlueapiBaseModel):
     repositories: list[ScratchRepository] = Field(default_factory=list)
 
 
-class OAuthServerConfig(BlueapiBaseModel):
-    oidc_config_url: str = Field(
-        description="URL to fetch OIDC config from the provider"
-    )
-    # Initialized post-init
-    device_auth_url: str = ""
-    pkce_auth_url: str = ""
-    token_url: str = ""
-    issuer: str = ""
-    jwks_uri: str = ""
-    logout_url: str = ""
-    signing_algos: list[str] = []
-
-    def model_post_init(self, __context: Any) -> None:
-        response: requests.Response = requests.get(self.oidc_config_url)
-        response.raise_for_status()
-        config_data: dict[str, Any] = response.json()
-
-        device_auth_url: str | None = config_data.get("device_authorization_endpoint")
-        pkce_auth_url: str | None = config_data.get("authorization_endpoint")
-        token_url: str | None = config_data.get("token_endpoint")
-        issuer: str | None = config_data.get("issuer")
-        jwks_uri: str | None = config_data.get("jwks_uri")
-        logout_url: str | None = config_data.get("end_session_endpoint")
-        signing_algos: list[str] | None = config_data.get(
-            "id_token_signing_alg_values_supported"
-        )
-        # post this we need to check if all the values are present
-        if (
-            device_auth_url
-            and pkce_auth_url
-            and token_url
-            and issuer
-            and jwks_uri
-            and logout_url
-            and signing_algos
-        ):
-            self.device_auth_url = device_auth_url
-            self.pkce_auth_url = pkce_auth_url
-            self.token_url = token_url
-            self.issuer = issuer
-            self.jwks_uri = jwks_uri
-            self.logout_url = logout_url
-            self.signing_algos = signing_algos
-        else:
-            raise ValueError("OIDC config is missing required fields")
-
-
-class OAuthClientConfig(BlueapiBaseModel):
-    client_id: str = Field(description="Client ID")
-    client_audience: str = Field(description="Client Audience")
-
-
-class CLIClientConfig(OAuthClientConfig):
-    token_file_path: Path = Path("~/token")
-
-
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -151,8 +88,6 @@ class ApplicationConfig(BlueapiBaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
-    oauth_server: OAuthServerConfig | None = None
-    oauth_client: OAuthClientConfig | CLIClientConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

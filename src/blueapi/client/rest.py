@@ -1,12 +1,10 @@
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
-import jwt
 import requests
 from pydantic import TypeAdapter
 
 from blueapi.config import RestConfig
-from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -40,13 +38,8 @@ def _exception(response: requests.Response) -> Exception | None:
 class BlueapiRestClient:
     _config: RestConfig
 
-    def __init__(
-        self,
-        config: RestConfig | None = None,
-        session_manager: SessionManager | None = None,
-    ) -> None:
+    def __init__(self, config: RestConfig | None = None) -> None:
         self._config = config or RestConfig()
-        self._session_manager: SessionManager | None = session_manager
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -134,20 +127,10 @@ class BlueapiRestClient:
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
     ) -> T:
         url = self._url(suffix)
-        headers: dict[str, str] = {
-            "content-type": "application/json; charset=UTF-8",
-        }
-        if self._session_manager and (token := self._session_manager.get_token()):
-            try:
-                self._session_manager.authenticator.decode_jwt(token["access_token"])
-                headers["Authorization"] = f"Bearer {token['access_token']}"
-            except jwt.ExpiredSignatureError:
-                if token := self._session_manager.refresh_auth_token():
-                    headers["Authorization"] = f"Bearer {token['access_token']}"
         if data:
-            response = requests.request(method, url, json=data, headers=headers)
+            response = requests.request(method, url, json=data)
         else:
-            response = requests.request(method, url, headers=headers)
+            response = requests.request(method, url)
         exception = get_exception(response)
         if exception is not None:
             raise exception

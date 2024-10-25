@@ -5,7 +5,6 @@ from typing import Any
 
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
-from observability_utils.tracing import get_tracer, use_propagated_context
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.context import BlueskyContext
@@ -18,8 +17,6 @@ from blueapi.worker.task_worker import TaskWorker, TrackableTask
 """This module provides interface between web application and underlying Bluesky
 context and worker"""
 
-TRACER = get_tracer("interface")
-PROP_KEY = "carrier"
 
 _CONFIG: ApplicationConfig = ApplicationConfig()
 
@@ -77,7 +74,6 @@ def stomp_client() -> StompClient | None:
         return None
 
 
-@use_propagated_context
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
 
@@ -90,7 +86,6 @@ def setup(config: ApplicationConfig) -> None:
     stomp_client()
 
 
-@use_propagated_context
 def teardown() -> None:
     worker().stop()
     if (template := stomp_client()) is not None:
@@ -115,43 +110,36 @@ def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> 
     stream.subscribe(forward_message)
 
 
-@use_propagated_context
 def get_plans() -> list[PlanModel]:
     """Get all available plans in the BlueskyContext"""
     return [PlanModel.from_plan(plan) for plan in context().plans.values()]
 
 
-@use_propagated_context
 def get_plan(name: str) -> PlanModel:
     """Get plan by name from the BlueskyContext"""
     return PlanModel.from_plan(context().plans[name])
 
 
-@use_propagated_context
 def get_devices() -> list[DeviceModel]:
     """Get all available devices in the BlueskyContext"""
     return [DeviceModel.from_device(device) for device in context().devices.values()]
 
 
-@use_propagated_context
 def get_device(name: str) -> DeviceModel:
     """Retrieve device by name from the BlueskyContext"""
     return DeviceModel.from_device(context().devices[name])
 
 
-@use_propagated_context
 def submit_task(task: Task) -> str:
     """Submit a task to be run on begin_task"""
     return worker().submit_task(task)
 
 
-@use_propagated_context
 def clear_task(task_id: str) -> str:
     """Remove a task from the worker"""
     return worker().clear_task(task_id)
 
 
-@use_propagated_context
 def begin_task(task: WorkerTask) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
     if task.task_id is not None:
@@ -159,51 +147,43 @@ def begin_task(task: WorkerTask) -> WorkerTask:
     return task
 
 
-@use_propagated_context
 def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
     """Retrieve a list of tasks based on their status."""
     return worker().get_tasks_by_status(status)
 
 
-@use_propagated_context
 def get_active_task() -> TrackableTask | None:
     """Task the worker is currently running"""
     return worker().get_active_task()
 
 
-@use_propagated_context
 def get_worker_state() -> WorkerState:
     """State of the worker"""
     return worker().state
 
 
-@use_propagated_context
 def pause_worker(defer: bool | None) -> None:
     """Command the worker to pause"""
     worker().pause(defer or False)
 
 
-@use_propagated_context
 def resume_worker() -> None:
     """Command the worker to resume"""
     worker().resume()
 
 
-@use_propagated_context
 def cancel_active_task(failure: bool, reason: str | None) -> str:
     """Remove the currently active task from the worker if there is one
     Returns the task_id of the active task"""
     return worker().cancel_active_task(failure, reason)
 
 
-@use_propagated_context
 def get_tasks() -> list[TrackableTask]:
     """Return a list of all tasks on the worker,
     any one of which can be triggered with begin_task"""
     return worker().get_tasks()
 
 
-@use_propagated_context
 def get_task_by_id(task_id: str) -> TrackableTask | None:
     """Returns a task matching the task ID supplied,
     if the worker knows of it"""

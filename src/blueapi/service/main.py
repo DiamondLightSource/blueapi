@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 
 from fastapi import (
@@ -16,7 +17,9 @@ from observability_utils.tracing import (
     start_as_current_span,
 )
 from opentelemetry.context import attach
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.propagate import get_global_textmap
+from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -43,7 +46,7 @@ REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
 
-CONTEXT_HDR = "traceparent"
+CONTEXT_HEADER = "traceparent"
 
 
 def _runner() -> WorkerDispatcher:
@@ -369,6 +372,12 @@ def start(config: ApplicationConfig):
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"
     )
+    FastAPIInstrumentor().instrument_app(
+        app,
+        tracer_provider=get_tracer_provider(),
+        http_capture_headers_server_request=[",*"],
+        http_capture_headers_server_response=[",*"],
+    )
     app.state.config = config
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 
@@ -381,12 +390,16 @@ async def add_api_version_header(request: Request, call_next):
 
 
 @app.middleware("http")
-async def inject_propagated_observability_context(request: Request, call_next):
+async def inject_propagated_observability_context(
+    request: Request, call_next: Callable[[Request], Response]
+) -> Response:
     """Middleware to extract the any prorpagated observability context from the
     HTTP headers and attatch it to the local one.
     """
-    if CONTEXT_HDR in request.headers:
-        ctx = get_global_textmap().extract({CONTEXT_HDR: request.headers[CONTEXT_HDR]})
+    if CONTEXT_HEADER in request.headers:
+        ctx = get_global_textmap().extract(
+            {CONTEXT_HEADER: request.headers[CONTEXT_HEADER]}
+        )
         attach(ctx)
     response = await call_next(request)
     return response

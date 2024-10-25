@@ -5,6 +5,10 @@
         "dockerfile": "../Dockerfile",
         "target": "developer"
     },
+    "containerEnv": {
+        "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "http/protobuf",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "http://127.0.0.1:4318",
+    },
     "remoteEnv": {
         // Allow X11 apps to run inside the container
         "DISPLAY": "${localEnv:DISPLAY}"
@@ -39,8 +43,6 @@
         // Make sure SELinux does not disable with access to host filesystems like tmp
         "--security-opt=label=disable"
     ],
-    // Remove this before pushing, only to allow local testing with editable library
-    "mounts": [],
     // Mount the parent as /workspaces so we can pip install peers as editable
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
     // After the container is created, install the python project in editable form

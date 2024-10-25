@@ -10,8 +10,6 @@ from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 from observability_utils.tracing import setup_tracing
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
@@ -98,14 +96,13 @@ def start_application(obj: dict):
     """Only import the service functions when starting the service or generating
     the schema, not the controller as a new FastAPI app will be started each time.
     """
-    from blueapi.service.main import app, start
+    from blueapi.service.main import start
 
     """
     Set up basic automated instrumentation for the FastAPI app, creating the
     observability context.
     """
     setup_tracing("BlueAPI", OTLP_EXPORT_ENABLED)
-    FastAPIInstrumentor().instrument_app(app, tracer_provider=get_tracer_provider())
     start(config)
 
 

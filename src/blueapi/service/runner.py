@@ -13,6 +13,8 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
+from opentelemetry.context import attach
+from opentelemetry.propagate import get_global_textmap
 from pydantic import TypeAdapter
 
 from blueapi.config import ApplicationConfig
@@ -113,7 +115,7 @@ class WorkerDispatcher:
         if self._use_subprocess:
             return self._run_in_subprocess(function, *args, **kwargs)
         else:
-            return function(get_context_propagator(), *args, **kwargs)
+            return function(*args, **kwargs)
 
     @start_as_current_span(TRACER, "function", "args", "kwargs")
     def _run_in_subprocess(
@@ -122,10 +124,10 @@ class WorkerDispatcher:
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
-        """Call the supplied function, prepending its parameter list with the current
-        Span ID from the observability context, if one exists. this will allow functions
-        decorated with @use_propagated_context to use the corresponding span as their
-        parent span."""
+        """Call the supplied function, passing the current Span ID, if one
+        exists,from the observability context inro the _rpc caller function.
+        When this is deserialized in and run by the subprocess, this will allow
+        its functions to use the corresponding span as their parent span."""
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
         if not (hasattr(function, "__name__") and hasattr(function, "__module__")):
@@ -143,7 +145,8 @@ class WorkerDispatcher:
                 function.__module__,
                 function.__name__,
                 return_type,
-                (get_context_propagator(), *args),
+                get_context_propagator(),
+                *args,
             ),
             kwargs,
         )
@@ -165,9 +168,13 @@ def _rpc(
     module_name: str,
     function_name: str,
     expected_type: type[T] | None,
-    args: Any,
+    carrier: dict[str, Any] | None,
+    *args: Any,
     **kwargs: Any,
 ) -> T:
+    if carrier:
+        ctx = get_global_textmap().extract(carrier)
+        attach(ctx)
     mod = import_module(module_name)
     func: Callable[P, T] = _validate_function(
         mod.__dict__.get(function_name, None), function_name

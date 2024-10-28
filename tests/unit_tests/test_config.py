@@ -239,10 +239,20 @@ def test_config_yaml_parsed(temp_yaml_config_file):
     target_dict_json = json.loads(loaded_config.model_dump_json())
 
     # Assert that config_data is a subset of target_dict_json
-    assert is_subset(config_data, target_dict_json), ""
+    assert is_subset(config_data, target_dict_json)
 
 
 # Parameterized test to run with different configurations
+# todo uncomment in python3.12, this here is for reference
+# type config_type = (
+#     dict[str, str | int | dict[str, str]]
+#     | dict[str, dict[str, bool] | list[dict[str, str]]]
+#     | dict[str, str | int]
+#     | dict[str, str]
+#     | dict[str, str | list[dict[str, str]]]
+# )
+
+
 @pytest.mark.parametrize(
     "temp_yaml_config_file",
     [
@@ -308,16 +318,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
     ],
     indirect=True,
 )
-def test_config_yaml_parsed_complete(
-    temp_yaml_config_file: dict[
-        str,
-        dict[str, str | int | dict[str, str]]
-        | dict[str, dict[str, bool] | list[dict[str, str]]]
-        | dict[str, str | int]
-        | dict[str, str]
-        | dict[str, str | list[dict[str, str]]],
-    ],
-):
+def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     temp_yaml_file_path, config_data = temp_yaml_config_file
 
     # Initialize loader and load config from the YAML file
@@ -330,12 +331,11 @@ def test_config_yaml_parsed_complete(
 
     assert (
         loaded_config.stomp.auth.password.get_secret_value()
-        == config_data["stomp"]["auth"]["password"]
+        == config_data["stomp"]["auth"]["password"]  # noqa: E501
     )
     # Remove the password field to not compare it again in the full dict comparison
     del target_dict_json["stomp"]["auth"]["password"]
-    del config_data["stomp"]["auth"]["password"]
-
+    del config_data["stomp"]["auth"]["password"]  # noqa: E501
     # Assert that the remaining config data is identical
     assert (
         target_dict_json == config_data

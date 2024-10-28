@@ -329,6 +329,8 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     # Parse the loaded config JSON into a dictionary
     target_dict_json = json.loads(loaded_config.model_dump_json())
 
+    assert loaded_config.stomp is not None
+    assert loaded_config.stomp.auth is not None
     assert (
         loaded_config.stomp.auth.password.get_secret_value()
         == config_data["stomp"]["auth"]["password"]  # noqa: E501

@@ -98,7 +98,7 @@ class TaskWorker:
     _started: Event
     _stopping: Event
     _stopped: Event
-    _context_register: dict[str, Context]
+    _current_task_otel_context: Context | None
 
     def __init__(
         self,
@@ -127,7 +127,7 @@ class TaskWorker:
         self._stopped = Event()
         self._stopped.set()
         self._broadcast_statuses = broadcast_statuses
-        self._context_register = {}
+        self._current_task_otel_context = None
         setup_tracing("BlueAPIWorker", OTLP_EXPORT_ENABLED)
 
     @start_as_current_span(TRACER, "task_id")
@@ -217,13 +217,11 @@ class TaskWorker:
             if (
                 event.task_status is not None
                 and event.task_status.task_id == trackable_task.task_id
-                and trackable_task.task_id in self._context_register
             ):
                 task_started.set()
 
         LOGGER.info(f"Submitting: {trackable_task}")
         try:
-            self._context_register[trackable_task.task_id] = get_trace_context()
             sub = self.worker_events.subscribe(mark_task_as_started)
             """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
@@ -316,9 +314,12 @@ class TaskWorker:
             LOGGER.info("Awaiting task")
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
-                add_span_attributes({"next_task.task_id": next_task.task_id})
                 LOGGER.info(f"Got new task: {next_task}")
                 self._current = next_task  # Informing mypy that the task is not None
+
+                self._current_task_otel_context = get_trace_context()
+                add_span_attributes({"next_task.task_id": next_task.task_id})
+
                 self._current.is_pending = False
                 self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):
@@ -332,11 +333,8 @@ class TaskWorker:
         except Exception as err:
             self._report_error(err)
         finally:
-            if (
-                self._current is not None
-                and self._current.task_id in self._context_register
-            ):
-                self._context_register.pop(self._current.task_id)
+            if self._current_task_otel_context is not None:
+                self._current_task_otel_context = None
 
         if self._current is not None:
             self._current.is_complete = True
@@ -413,26 +411,35 @@ class TaskWorker:
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
-            with TRACER.start_as_current_span(
-                "_on_document",
-                context=self._context_register[self._current.task_id],
-                kind=SpanKind.PRODUCER,
-            ):
-                """Start a new span but inject the context cached when the current task
-                was created. This will make the documents received part of the same
-                trace."""
-                add_span_attributes(
-                    {
-                        "task_id": self._current.task_id,
-                        "name": name,
-                        "document": str(document),
-                    }
+            if self._current_task_otel_context is not None:
+                with TRACER.start_as_current_span(
+                    "_on_document",
+                    context=self._current_task_otel_context,
+                    kind=SpanKind.PRODUCER,
+                ):
+                    """
+                    Start a new span but inject the context cached when the current task
+                    was created. This will make the documents received part of the same
+                    trace.
+                    """
+                    add_span_attributes(
+                        {
+                            "task_id": self._current.task_id,
+                            "name": name,
+                            "document": str(document),
+                        }
+                    )
+
+                    correlation_id = self._current.request_id
+                    self._data_events.publish(
+                        DataEvent(name=name, doc=document), correlation_id
+                    )
+            else:
+                raise ValueError(
+                    "There is no context set for tracing despite the fact that a task"
+                    " is running, something has gone wrong..."
                 )
 
-                correlation_id = self._current.request_id
-                self._data_events.publish(
-                    DataEvent(name=name, doc=document), correlation_id
-                )
         else:
             raise KeyError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"

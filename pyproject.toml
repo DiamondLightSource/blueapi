@@ -12,7 +12,7 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky",
+    "bluesky==1.13.0a3",
     "ophyd",
     "nslsii",
     "pyepics",
@@ -29,9 +29,10 @@ dependencies = [
     "requests",
     "dls-bluesky-core",     #requires ophyd-async
     "dls-dodal>=1.31.0",
-    "super-state-machine",  # See GH issue 553
+    "super-state-machine",  # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "bluesky-stomp>=0.1.2",
+    "event-model==1.21",    # https://github.com/DiamondLightSource/blueapi/issues/684
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

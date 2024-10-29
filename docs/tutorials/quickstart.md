@@ -13,18 +13,6 @@ The worker requires a running instance of RabbitMQ. The easiest way to start it 
     src/script/start_rabbitmq.sh
 ```
 
-
-Alternatively, it is possible to run ActiveMQ via a container:
-
-```
-    docker run -it --rm --net host rmohr/activemq:5.15.9-alpine
-```
-
-```
-    podman run -it --rm --net host rmohr/activemq:5.15.9-alpine
-```
-
-
 ## Start Worker
 
 To start the worker:

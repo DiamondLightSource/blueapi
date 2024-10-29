@@ -242,17 +242,6 @@ def test_config_yaml_parsed(temp_yaml_config_file):
     assert is_subset(config_data, target_dict_json)
 
 
-# Parameterized test to run with different configurations
-# todo uncomment in python3.12, this here is for reference
-# type config_type = (
-#     dict[str, str | int | dict[str, str]]
-#     | dict[str, dict[str, bool] | list[dict[str, str]]]
-#     | dict[str, str | int]
-#     | dict[str, str]
-#     | dict[str, str | list[dict[str, str]]]
-# )
-
-
 @pytest.mark.parametrize(
     "temp_yaml_config_file",
     [

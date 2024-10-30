@@ -86,6 +86,13 @@ class TaskWorker:
     _state: WorkerState
     _errors: list[str]
     _warnings: list[str]
+
+    # The queue is actually a channel between 2 threads
+    # most programming languages have a separate abstraction for this but Python reuses Queue
+    # So it's not used as a standard queue,
+    # but as a box in which to put the "current" task and nothing else
+    # So the calling thread can only ever submit one plan at a time.
+
     _task_channel: Queue  # type: ignore
     _current: TrackableTask | None
     _status_lock: RLock

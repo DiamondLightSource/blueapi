@@ -24,13 +24,6 @@ class JsonObjectSpanExporter(SpanExporter):
         self.service_name = service_name
         self.top_span = Future()
 
-    # def prime(self):
-    #     if self.top_span is not None:
-    #         try:
-    #             self.top_span.result(timeout=0.0)
-    #         except:
-    #             pass
-
     def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
         if self.top_span is not None and not self.top_span.done():
             self.top_span.set_result(spans[-1])
@@ -38,12 +31,6 @@ class JsonObjectSpanExporter(SpanExporter):
 
     def force_flush(self, timeout_millis: int = 30000) -> bool:
         return True
-
-
-# setup_tracing("test", False)
-# PROVIDER = cast(TracerProvider, get_tracer_provider())
-# EXPORTER = JsonObjectSpanExporter()
-# PROVIDER.add_span_processor(BatchSpanProcessor(EXPORTER))
 
 
 @contextmanager

@@ -222,6 +222,7 @@ class TaskWorker:
 
         LOGGER.info(f"Submitting: {trackable_task}")
         try:
+            self._current_task_otel_context = get_trace_context()
             sub = self.worker_events.subscribe(mark_task_as_started)
             """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
@@ -314,14 +315,22 @@ class TaskWorker:
             LOGGER.info("Awaiting task")
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
-                LOGGER.info(f"Got new task: {next_task}")
-                self._current = next_task  # Informing mypy that the task is not None
+                if self._current_task_otel_context is not None:
+                    with TRACER.start_as_current_span(
+                        "_cycle",
+                        context=self._current_task_otel_context,
+                        kind=SpanKind.SERVER,
+                    ):
+                        LOGGER.info(f"Got new task: {next_task}")
+                        self._current = (
+                            next_task  # Informing mypy that the task is not None
+                        )
 
-                self._current_task_otel_context = get_trace_context()
-                add_span_attributes({"next_task.task_id": next_task.task_id})
+                        self._current_task_otel_context = get_trace_context()
+                        add_span_attributes({"next_task.task_id": next_task.task_id})
 
-                self._current.is_pending = False
-                self._current.task.do_task(self._ctx)
+                        self._current.is_pending = False
+                        self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't

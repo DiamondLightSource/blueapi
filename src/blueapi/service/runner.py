@@ -5,7 +5,7 @@ from collections.abc import Callable
 from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any, Concatenate, ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 from observability_utils.tracing import (
     add_span_attributes,
@@ -104,7 +104,7 @@ class WorkerDispatcher:
     @start_as_current_span(TRACER, "function", "args", "kwargs")
     def run(
         self,
-        function: Callable[Concatenate[dict[str, Any], P], T],
+        function: Callable[P, T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:

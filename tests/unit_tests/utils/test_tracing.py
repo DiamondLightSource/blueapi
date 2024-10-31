@@ -46,7 +46,7 @@ def asserting_span_exporter(
     """
     yield
     if exporter.top_span is not None:
-        span = exporter.top_span.result(10)
+        span = exporter.top_span.result(timeout=5.0)
         assert span.name == func_name
         for param in span_args:
             assert param in span.attributes.keys()

@@ -42,5 +42,6 @@ def provider() -> TracerProvider:
 @pytest.fixture
 def exporter(provider: TracerProvider) -> JsonObjectSpanExporter:
     exporter = JsonObjectSpanExporter()
-    provider.add_span_processor(BatchSpanProcessor(exporter))
+    processor = BatchSpanProcessor(exporter)
+    provider.add_span_processor(processor)
     return exporter

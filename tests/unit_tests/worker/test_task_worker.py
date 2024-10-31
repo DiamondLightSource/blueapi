@@ -528,6 +528,7 @@ def test_start_span_ok(
 ) -> None:
     with asserting_span_exporter(exporter, "start"):
         inert_worker.start()
+    inert_worker.stop()
 
 
 def test_stop_span_ok(

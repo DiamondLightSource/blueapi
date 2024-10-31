@@ -5,7 +5,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from ophyd import Callable
 from pydantic import BaseModel, ValidationError
-from tests.unit_tests.utils.test_tracing import JsonObjectSpanExporter, span_exporter
+from tests.unit_tests.utils.test_tracing import (
+    JsonObjectSpanExporter,
+    asserting_span_exporter,
+)
 
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
@@ -54,14 +57,6 @@ def test_reload(runner: WorkerDispatcher):
 def test_raises_if_used_before_started(runner: WorkerDispatcher):
     with pytest.raises(InvalidRunnerStateError):
         runner.run(interface.get_plans)
-
-
-def test_raises_if_used_before_started_span_ok(
-    exporter: JsonObjectSpanExporter, runner: WorkerDispatcher
-):
-    with pytest.raises(InvalidRunnerStateError):
-        with span_exporter(exporter, "run", "function", "args", "kwargs"):
-            runner.run(interface.get_plans)
 
 
 def test_error_on_runner_setup(local_runner: WorkerDispatcher):
@@ -253,3 +248,10 @@ def test_accepts_return_type(
     rpc_function: Callable[[], Any],
 ):
     started_runner.run(rpc_function)
+
+
+def test_run_span_ok(
+    exporter: JsonObjectSpanExporter, started_runner: WorkerDispatcher
+):
+    with asserting_span_exporter(exporter, "run", "function", "args", "kwargs"):
+        started_runner.run(interface.get_plans)

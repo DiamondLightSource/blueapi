@@ -7,7 +7,10 @@ from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
-from tests.unit_tests.utils.test_tracing import JsonObjectSpanExporter, span_exporter
+from tests.unit_tests.utils.test_tracing import (
+    JsonObjectSpanExporter,
+    asserting_span_exporter,
+)
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream, MsgGenerator
@@ -88,15 +91,6 @@ def test_stop_doesnt_hang(inert_worker: TaskWorker) -> None:
     inert_worker.stop()
 
 
-def test_stop_doesnt_hang_span_ok(
-    exporter: JsonObjectSpanExporter, inert_worker: TaskWorker
-) -> None:
-    with span_exporter(exporter, "start"):
-        inert_worker.start()
-    with span_exporter(exporter, "stop"):
-        inert_worker.stop()
-
-
 def test_stop_is_idempontent_if_worker_not_started(inert_worker: TaskWorker) -> None:
     inert_worker.stop()
 
@@ -126,20 +120,6 @@ def test_submit_task(
 ) -> None:
     assert worker.get_tasks() == []
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [
-        TrackableTask.model_construct(
-            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
-        )
-    ]
-
-
-def test_submit_task_span_ok(
-    exporter: JsonObjectSpanExporter,
-    worker: TaskWorker,
-) -> None:
-    assert worker.get_tasks() == []
-    with span_exporter(exporter, "submit_task", "task.name", "task.params"):
-        task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_tasks() == [
         TrackableTask.model_construct(
             task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
@@ -218,14 +198,6 @@ def test_clear_task(worker: TaskWorker) -> None:
 def test_clear_nonexistent_task(worker: TaskWorker) -> None:
     with pytest.raises(KeyError):
         worker.clear_task("foo")
-
-
-def test_clear_nonexistent_task_span_ok(
-    exporter: JsonObjectSpanExporter, worker: TaskWorker
-) -> None:
-    with pytest.raises(KeyError):
-        with span_exporter(exporter, "clear_task", "task_id"):
-            worker.clear_task("foo")
 
 
 def test_does_not_allow_simultaneous_running_tasks(
@@ -549,3 +521,35 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
     result_ids = [task_id for task_id, task in worker._tasks.items() if task in result]
 
     assert result_ids == expected_task_ids
+
+
+def test_start_span_ok(
+    exporter: JsonObjectSpanExporter, inert_worker: TaskWorker
+) -> None:
+    with asserting_span_exporter(exporter, "start"):
+        inert_worker.start()
+
+
+def test_stop_span_ok(
+    exporter: JsonObjectSpanExporter, inert_worker: TaskWorker
+) -> None:
+    inert_worker.start()
+    with asserting_span_exporter(exporter, "stop"):
+        inert_worker.stop()
+
+
+def test_submit_task_span_ok(
+    exporter: JsonObjectSpanExporter,
+    worker: TaskWorker,
+) -> None:
+    assert worker.get_tasks() == []
+    with asserting_span_exporter(exporter, "submit_task", "task.name", "task.params"):
+        worker.submit_task(_SIMPLE_TASK)
+
+
+def test_clear_task_span_ok(
+    exporter: JsonObjectSpanExporter, worker: TaskWorker
+) -> None:
+    with pytest.raises(KeyError):
+        with asserting_span_exporter(exporter, "clear_task", "task_id"):
+            worker.clear_task("foo")

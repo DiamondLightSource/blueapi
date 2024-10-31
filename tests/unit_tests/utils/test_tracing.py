@@ -22,7 +22,7 @@ class JsonObjectSpanExporter(SpanExporter):
         formatter: Callable[[ReadableSpan], str] | None = None,
     ):
         self.service_name = service_name
-        self.top_span = Future()
+        self.top_span: Future = Future()
 
     def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
         if self.top_span is not None and not self.top_span.done():
@@ -34,7 +34,9 @@ class JsonObjectSpanExporter(SpanExporter):
 
 
 @contextmanager
-def span_exporter(exporter: JsonObjectSpanExporter, func_name: str, *span_args: str):
+def asserting_span_exporter(
+    exporter: JsonObjectSpanExporter, func_name: str, *span_args: str
+):
     """Use as a with block around the function under test decorated with
     start_as_current_span to check span creation and content.
 
@@ -42,11 +44,9 @@ def span_exporter(exporter: JsonObjectSpanExporter, func_name: str, *span_args: 
         func_name: The name of the function being tested
         span_args: The arguments specified in its start_as_current_span decorator
     """
-    # EXPORTER.prime()
     yield
     if exporter.top_span is not None:
         span = exporter.top_span.result(10)
-        exporter.top_span = None
         assert span.name == func_name
         for param in span_args:
             assert param in span.attributes.keys()

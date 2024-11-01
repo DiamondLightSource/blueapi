@@ -21,7 +21,7 @@ jobs:
       - name: Validate SemVer2 version compliance
         run: |
           ref="${{ github.ref_name }}"
-          my_regex=${{env.SEMVER_REGEX}}
+          my_regex="${{env.SEMVER_REGEX}}"
           if [[ "$ref" =~ $my_regex ]]; then
             echo "SemVer compliant version: $ref"
           else

@@ -5,8 +5,8 @@ on:
 env:
   GCR_IMAGE: ghcr.io/diamondlightsource/blueapi
   HELM_VERSION: 3.10.3
-  PEP_440_REGEX: v?(?:(?:(?<epoch>[0-9]+)!)?(?<release>[0-9]+(?:\.[0-9]+)*)(?<pre>[-_\.]?(?<preLabel>(a|b|c|rc|alpha|beta|pre|preview))[-_\.]?(?<preNumber>[0-9]+)?)?(?<post>(?:-(?<postNumber0>[0-9]+))|(?:[-_\.]?(?<postLabel>post|rev|r)[-_\.]?(?<postNumber1>[0-9]+)?))?(?<dev>[-_\.]?(?<devLabel>dev)[-_\.]?(?<devNumber>[0-9]+)?)?)(?:\+(?<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?
-  # https://regex101.com/library/M7QMAp
+  SEMVER_REGEX: ^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+  # https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
 
 jobs:
   build_container:
@@ -18,14 +18,14 @@ jobs:
         with:
           # Need this to get version number from last tag
           fetch-depth: 0
-      - name: Validate PEP 440 version compliance
+      - name: Validate SemVer2 version compliance
         run: |
           ref="${{ github.ref_name }}"
-          my_regex=${{env.PEP_440_REGEX}}
+          my_regex=${{env.SEMVER_REGEX}}
           if [[ "$ref" =~ $my_regex ]]; then
-            echo "PEP 440 compliant version: $ref"
+            echo "SemVer compliant version: $ref"
           else
-            echo "Invalid PEP 440 version: $ref"
+            echo "Invalid SemVer version: $ref"
             exit 1
           fi
       - name: Set up Docker Buildx
@@ -96,16 +96,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=tag
-
-      - name: Convert PEP 440 version to SemVer
-        run: |
-          ref="${GITHUB_REF##*/}"
-          # Convert alpha/beta/rc versions from PEP 440 to SemVer
-          if [[ "$ref" =~ ([0-9]+\.[0-9]+\.[0-9]+)(a|b|rc)([0-9]+) ]]; then
-            ref="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
-          fi
-          echo "Converted version: $ref"
-          echo "VERSION=$ref" >> $GITHUB_ENV
 
       - name: package chart and push it
         run: |

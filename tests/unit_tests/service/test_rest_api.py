@@ -252,6 +252,7 @@ def test_get_tasks(get_tasks_mock: MagicMock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
+                "request_id": "",
                 "task": {"name": "sleep", "params": {"time": 0.0}},
                 "task_id": "0",
             },
@@ -259,6 +260,7 @@ def test_get_tasks(get_tasks_mock: MagicMock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
+                "request_id": "",
                 "task": {"name": "first_task", "params": {}},
                 "task_id": "1",
             },
@@ -288,6 +290,7 @@ def test_get_tasks_by_status(
                 "errors": [],
                 "is_complete": True,
                 "is_pending": False,
+                "request_id": "",
                 "task": {"name": "third_task", "params": {}},
                 "task_id": "3",
             }
@@ -379,6 +382,7 @@ def test_get_task(get_task_by_id: MagicMock, client: TestClient):
         "errors": [],
         "is_complete": False,
         "is_pending": True,
+        "request_id": "",
         "task": {"name": "third_task", "params": {}},
         "task_id": f"{task_id}",
     }
@@ -404,6 +408,7 @@ def test_get_all_tasks(get_all_tasks: MagicMock, client: TestClient):
                 "task": {"name": "third_task", "params": {}},
                 "is_complete": False,
                 "is_pending": True,
+                "request_id": "",
                 "errors": [],
             }
         ]

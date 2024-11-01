@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import (
@@ -10,6 +11,15 @@ from fastapi import (
     Response,
     status,
 )
+from observability_utils.tracing import (
+    add_span_attributes,
+    get_tracer,
+    start_as_current_span,
+)
+from opentelemetry.context import attach
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.propagate import get_global_textmap
+from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -35,6 +45,8 @@ from .runner import WorkerDispatcher
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
+
+CONTEXT_HEADER = "traceparent"
 
 
 def _runner() -> WorkerDispatcher:
@@ -75,6 +87,8 @@ app = FastAPI(
     version=REST_API_VERSION,
 )
 
+TRACER = get_tracer("interface")
+
 
 @app.exception_handler(KeyError)
 async def on_key_error_404(_: Request, __: KeyError):
@@ -85,6 +99,7 @@ async def on_key_error_404(_: Request, __: KeyError):
 
 
 @app.get("/environment", response_model=EnvironmentResponse)
+@start_as_current_span(TRACER, "runner")
 def get_environment(
     runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
@@ -105,6 +120,7 @@ async def delete_environment(
 
 
 @app.get("/plans", response_model=PlanResponse)
+@start_as_current_span(TRACER)
 def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available plans."""
     return PlanResponse(plans=runner.run(interface.get_plans))
@@ -114,12 +130,14 @@ def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     "/plans/{name}",
     response_model=PlanModel,
 )
+@start_as_current_span(TRACER, "name")
 def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a plan by its (unique) name."""
     return runner.run(interface.get_plan, name)
 
 
 @app.get("/devices", response_model=DeviceResponse)
+@start_as_current_span(TRACER)
 def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available devices."""
     return DeviceResponse(devices=runner.run(interface.get_devices))
@@ -129,6 +147,7 @@ def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     "/devices/{name}",
     response_model=DeviceModel,
 )
+@start_as_current_span(TRACER, "name")
 def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a devices by its (unique) name."""
     return runner.run(interface.get_device, name)
@@ -142,6 +161,7 @@ example_task = Task(name="count", params={"detectors": ["x"]})
     response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@start_as_current_span(TRACER, "request", "task.name", "task.params")
 def submit_task(
     request: Request,
     response: Response,
@@ -171,6 +191,7 @@ def submit_task(
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+@start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
     runner: WorkerDispatcher = Depends(_runner),
@@ -178,6 +199,7 @@ def delete_submitted_task(
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
+@start_as_current_span(TRACER, "v")
 def validate_task_status(v: str) -> TaskStatusEnum:
     v_upper = v.upper()
     if v_upper not in TaskStatusEnum.__members__:
@@ -186,6 +208,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 
 
 @app.get("/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
+@start_as_current_span(TRACER)
 def get_tasks(
     task_status: str | None = None,
     runner: WorkerDispatcher = Depends(_runner),
@@ -196,6 +219,7 @@ def get_tasks(
     """
     tasks = []
     if task_status:
+        add_span_attributes({"status": task_status})
         try:
             desired_status = validate_task_status(task_status)
         except ValueError as e:
@@ -215,6 +239,7 @@ def get_tasks(
     response_model=WorkerTask,
     responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
 )
+@start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
     task: WorkerTask,
     runner: WorkerDispatcher = Depends(_runner),
@@ -234,6 +259,7 @@ def set_active_task(
     "/tasks/{task_id}",
     response_model=TrackableTask,
 )
+@start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
     runner: WorkerDispatcher = Depends(_runner),
@@ -246,6 +272,7 @@ def get_task(
 
 
 @app.get("/worker/task")
+@start_as_current_span(TRACER)
 def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
     active = runner.run(interface.get_active_task)
     if active is not None:
@@ -255,6 +282,7 @@ def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
 
 
 @app.get("/worker/state")
+@start_as_current_span(TRACER)
 def get_state(runner: WorkerDispatcher = Depends(_runner)) -> WorkerState:
     """Get the State of the Worker"""
     return runner.run(interface.get_worker_state)
@@ -283,6 +311,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
         status.HTTP_202_ACCEPTED: {"detail": "Transition requested"},
     },
 )
+@start_as_current_span(TRACER, "state_change_request.new_state")
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
@@ -307,6 +336,7 @@ def set_state(
     """
     current_state = runner.run(interface.get_worker_state)
     new_state = state_change_request.new_state
+    add_span_attributes({"current_state": current_state})
     if (
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
@@ -330,6 +360,7 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
+@start_as_current_span(TRACER, "config")
 def start(config: ApplicationConfig):
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG
@@ -341,6 +372,12 @@ def start(config: ApplicationConfig):
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"
     )
+    FastAPIInstrumentor().instrument_app(
+        app,
+        tracer_provider=get_tracer_provider(),
+        http_capture_headers_server_request=[",*"],
+        http_capture_headers_server_response=[",*"],
+    )
     app.state.config = config
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 
@@ -349,4 +386,20 @@ def start(config: ApplicationConfig):
 async def add_api_version_header(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-API-Version"] = REST_API_VERSION
+    return response
+
+
+@app.middleware("http")
+async def inject_propagated_observability_context(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Middleware to extract the any prorpagated observability context from the
+    HTTP headers and attatch it to the local one.
+    """
+    if CONTEXT_HEADER in request.headers:
+        ctx = get_global_textmap().extract(
+            {CONTEXT_HEADER: request.headers[CONTEXT_HEADER]}
+        )
+        attach(ctx)
+    response = await call_next(request)
     return response

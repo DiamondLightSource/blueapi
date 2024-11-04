@@ -5,6 +5,10 @@
         "dockerfile": "../Dockerfile",
         "target": "developer"
     },
+    "containerEnv": {
+        "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "http/protobuf",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "http://127.0.0.1:4318",
+    },
     "remoteEnv": {
         // Allow X11 apps to run inside the container
         "DISPLAY": "${localEnv:DISPLAY}"

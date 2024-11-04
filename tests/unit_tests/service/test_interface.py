@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from bluesky_stomp.messaging import StompClient
@@ -274,8 +274,9 @@ def test_get_task_by_id(context_mock: MagicMock):
 
     task_id = interface.submit_task(Task(name="my_plan"))
 
-    assert interface.get_task_by_id(task_id) == TrackableTask(
+    assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
+        request_id=ANY,
         task=Task(name="my_plan", params={}),
         is_complete=False,
         is_pending=True,

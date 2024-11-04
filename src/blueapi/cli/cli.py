@@ -9,6 +9,7 @@ import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from observability_utils.tracing import setup_tracing
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
@@ -18,14 +19,7 @@ from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ApplicationConfig, ConfigLoader
-from blueapi.core import DataEvent
-from blueapi.service.main import start
-from blueapi.service.openapi import (
-    DOCS_SCHEMA_LOCATION,
-    generate_schema,
-    print_schema_as_yaml,
-    write_schema_as_yaml,
-)
+from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
@@ -54,7 +48,9 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     loaded_config: ApplicationConfig = config_loader.load()
 
     ctx.obj["config"] = loaded_config
-    logging.basicConfig(level=loaded_config.logging.level)
+    logging.basicConfig(
+        format="%(asctime)s - %(message)s", level=loaded_config.logging.level
+    )
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
@@ -70,6 +66,16 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     help="[Development only] update the schema in the documentation",
 )
 def schema(output: Path | None = None, update: bool = False) -> None:
+    """Only import the service functions when starting the service or generating
+    the schema, not the controller as a new FastAPI app will be started each time.
+    """
+    from blueapi.service.openapi import (
+        DOCS_SCHEMA_LOCATION,
+        generate_schema,
+        print_schema_as_yaml,
+        write_schema_as_yaml,
+    )
+
     """Generate the schema for the REST API"""
     schema = generate_schema()
 
@@ -87,6 +93,16 @@ def start_application(obj: dict):
     """Run a worker that accepts plans to run"""
     config: ApplicationConfig = obj["config"]
 
+    """Only import the service functions when starting the service or generating
+    the schema, not the controller as a new FastAPI app will be started each time.
+    """
+    from blueapi.service.main import start
+
+    """
+    Set up basic automated instrumentation for the FastAPI app, creating the
+    observability context.
+    """
+    setup_tracing("BlueAPI", OTLP_EXPORT_ENABLED)
     start(config)
 
 
@@ -101,6 +117,7 @@ def start_application(obj: dict):
 def controller(ctx: click.Context, output: str) -> None:
     """Client utility for controlling and introspecting the worker"""
 
+    setup_tracing("BlueAPICLI", OTLP_EXPORT_ENABLED)
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return

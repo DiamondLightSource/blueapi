@@ -25,9 +25,21 @@
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi",
-            "args": [
-                "serve"
-            ]
+            "args": "serve",
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
+        },
+        {
+            "name": "Blueapi Server (Custom Config)",
+            "type": "debugpy",
+            "request": "launch",
+            "justMyCode": false,
+            "module": "blueapi",
+            "args": "--config ${input:config_path} serve",
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
         },
         {
             "name": "Blueapi Controller",
@@ -35,15 +47,35 @@
             "request": "launch",
             "justMyCode": false,
             "module": "blueapi",
-            "args": "controller ${input:args}"
+            "args": "controller ${input:controller_args}",
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
+        },
+        {
+            "name": "Blueapi Controller (Custom Config)",
+            "type": "debugpy",
+            "request": "launch",
+            "justMyCode": false,
+            "module": "blueapi",
+            "args": "-c ${input:config_path} controller ${input:controller_args}",
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
         },
     ],
     "inputs": [
         {
-            "id": "args",
+            "id": "controller_args",
             "type": "promptString",
             "description": "Arguments to pass to controller",
             "default": ""
-        }
+        },
+        {
+            "id": "config_path",
+            "type": "promptString",
+            "description": "Path to configuration YAML file",
+            "default": ""
+        },
     ]
 }

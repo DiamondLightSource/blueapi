@@ -165,6 +165,7 @@ class ConfigLoader(Generic[C]):
         try:
             return self._adapter.validate_python(self._values)
         except ValidationError as exc:
+            error_details = "\n".join(str(e) for e in exc.errors())
             raise InvalidConfigError(
-                "Something is wrong with the configuration file: \n"
+                f"Something is wrong with the configuration file: \n {error_details}"
             ) from exc

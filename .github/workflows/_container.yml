@@ -86,7 +86,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
         id: install
 
-      - name: login to acr using helm
+      - name: login to gcr using helm
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ${{ env.GCR_IMAGE }} --username ${{ github.repository_owner }} --password-stdin
       - name: Extract metadata (tags, labels) for Docker

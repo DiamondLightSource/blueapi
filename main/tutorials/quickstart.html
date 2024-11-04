@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Quickstart Guide &#8212; blueapi 0.6.1.dev10+ga33daa22 documentation</title>
+    <title>Quickstart Guide &#8212; blueapi 0.6.1a3.dev1+g5abe34a2 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../_static/documentation_options.js?v=aba198c4"></script>
+    <script src="../_static/documentation_options.js?v=663cfd1a"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -459,14 +459,11 @@
 <p>Blueapi acts as a worker that can run bluesky plans against devices for a specific
 laboratory setup. It can control devices to collect data and export events to tell
 downstream services about the data it has collected.</p>
-<section id="start-activemq">
-<h2>Start ActiveMQ<a class="headerlink" href="#start-activemq" title="Link to this heading">#</a></h2>
-<p>The worker requires a running instance of ActiveMQ, the simplest
-way to start it is to run it via a container:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">docker</span> <span class="n">run</span> <span class="o">-</span><span class="n">it</span> <span class="o">--</span><span class="n">rm</span> <span class="o">--</span><span class="n">net</span> <span class="n">host</span> <span class="n">rmohr</span><span class="o">/</span><span class="n">activemq</span><span class="p">:</span><span class="mf">5.15.9</span><span class="o">-</span><span class="n">alpine</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">podman</span> <span class="n">run</span> <span class="o">-</span><span class="n">it</span> <span class="o">--</span><span class="n">rm</span> <span class="o">--</span><span class="n">net</span> <span class="n">host</span> <span class="n">rmohr</span><span class="o">/</span><span class="n">activemq</span><span class="p">:</span><span class="mf">5.15.9</span><span class="o">-</span><span class="n">alpine</span>
+<section id="start-rabbitmq">
+<h2>Start RabbitMQ<a class="headerlink" href="#start-rabbitmq" title="Link to this heading">#</a></h2>
+<p>The worker requires a running instance of RabbitMQ. The easiest way to start it is
+to execute the provided script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">src</span><span class="o">/</span><span class="n">script</span><span class="o">/</span><span class="n">start_rabbitmq</span><span class="o">.</span><span class="n">sh</span>
 </pre></div>
 </div>
 </section>
@@ -478,6 +475,10 @@ way to start it is to run it via a container:</p>
 </div>
 <p>The worker can also be started using a custom config file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">blueapi</span> <span class="o">--</span><span class="n">config</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">file</span> <span class="n">serve</span>
+</pre></div>
+</div>
+<p>An example of a config file that starts STOMP with default values can be found in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">src</span><span class="o">/</span><span class="n">script</span><span class="o">/</span><span class="n">stomp_config</span><span class="o">.</span><span class="n">yml</span>
 </pre></div>
 </div>
 </section>
@@ -539,7 +540,7 @@ way to start it is to run it via a container:</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-activemq">Start ActiveMQ</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-rabbitmq">Start RabbitMQ</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-worker">Start Worker</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-that-the-worker-is-running">Test that the Worker is Running</a></li>
 </ul>

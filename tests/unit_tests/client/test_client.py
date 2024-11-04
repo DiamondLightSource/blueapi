@@ -3,6 +3,10 @@ from unittest.mock import MagicMock, Mock, call
 
 import pytest
 from bluesky_stomp.messaging import MessageContext
+from tests.unit_tests.utils.test_tracing import (
+    JsonObjectSpanExporter,
+    asserting_span_exporter,
+)
 
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
@@ -426,3 +430,149 @@ def test_run_task_ignores_non_matching_events(
     client_with_events.run_task(Task(name="foo"), on_event=mock_on_event)
 
     mock_on_event.assert_called_once_with(COMPLETE_EVENT)
+
+
+def test_get_plans_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
+    with asserting_span_exporter(exporter, "get_plans"):
+        client.get_plans()
+
+
+def test_get_plan_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
+    with asserting_span_exporter(exporter, "get_plan", "name"):
+        client.get_plan("foo")
+
+
+def test_get_devices_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
+    with asserting_span_exporter(exporter, "get_devices"):
+        client.get_devices()
+
+
+def test_get_device_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
+    with asserting_span_exporter(exporter, "get_device", "name"):
+        client.get_device("foo")
+
+
+def test_get_state_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
+    with asserting_span_exporter(exporter, "get_state"):
+        client.get_state()
+
+
+def test_get_task_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
+    with asserting_span_exporter(exporter, "get_task", "task_id"):
+        client.get_task("foo")
+
+
+def test_get_all_tasks_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+):
+    with asserting_span_exporter(exporter, "get_all_tasks"):
+        client.get_all_tasks()
+
+
+def test_create_task_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    with asserting_span_exporter(exporter, "create_task", "task"):
+        client.create_task(task=Task(name="foo"))
+
+
+def test_clear_task_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    with asserting_span_exporter(exporter, "clear_task"):
+        client.clear_task(task_id="foo")
+
+
+def test_get_active_task_span_ok(
+    exporter: JsonObjectSpanExporter, client: BlueapiClient
+):
+    with asserting_span_exporter(exporter, "get_active_task"):
+        client.get_active_task()
+
+
+def test_start_task_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    with asserting_span_exporter(exporter, "start_task", "task"):
+        client.start_task(task=WorkerTask(task_id="bar"))
+
+
+def test_create_and_start_task_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    mock_rest.create_task.return_value = TaskResponse(task_id="baz")
+    mock_rest.update_worker_task.return_value = TaskResponse(task_id="baz")
+    with asserting_span_exporter(exporter, "create_and_start_task", "task"):
+        client.create_and_start_task(Task(name="baz"))
+
+
+def test_get_environment_span_ok(
+    exporter: JsonObjectSpanExporter, client: BlueapiClient
+):
+    with asserting_span_exporter(exporter, "get_environment"):
+        client.get_environment()
+
+
+def test_reload_environment_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    with asserting_span_exporter(exporter, "reload_environment"):
+        client.reload_environment()
+
+
+def test_abort_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    with asserting_span_exporter(exporter, "abort", "reason"):
+        client.abort(reason="foo")
+
+
+def test_stop_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    with asserting_span_exporter(exporter, "stop"):
+        client.stop()
+
+
+def test_pause_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    with asserting_span_exporter(exporter, "pause"):
+        client.pause(defer=True)
+
+
+def test_resume_span_ok(
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    with asserting_span_exporter(exporter, "resume"):
+        client.resume()
+
+
+def test_cannot_run_task_span_ok(
+    exporter: JsonObjectSpanExporter, client: BlueapiClient
+):
+    with pytest.raises(
+        RuntimeError,
+        match="Cannot run plans without Stomp configuration to track progress",
+    ):
+        with asserting_span_exporter(exporter, "grun_task"):
+            client.run_task(Task(name="foo"))

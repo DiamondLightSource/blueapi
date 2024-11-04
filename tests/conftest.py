@@ -1,9 +1,16 @@
 import asyncio
+from typing import cast
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
 import pytest
 from bluesky import RunEngine
 from bluesky.run_engine import TransitionError
+from observability_utils.tracing import setup_tracing
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.trace import get_tracer_provider
+
+from tests.unit_tests.utils.test_tracing import JsonObjectSpanExporter
 
 
 @pytest.fixture(scope="function")
@@ -24,3 +31,17 @@ def RE(request):
 
     request.addfinalizer(clean_event_loop)
     return RE
+
+
+@pytest.fixture
+def provider() -> TracerProvider:
+    setup_tracing("test", False)
+    return cast(TracerProvider, get_tracer_provider())
+
+
+@pytest.fixture
+def exporter(provider: TracerProvider) -> JsonObjectSpanExporter:
+    exporter = JsonObjectSpanExporter()
+    processor = BatchSpanProcessor(exporter)
+    provider.add_span_processor(processor)
+    return exporter

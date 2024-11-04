@@ -75,6 +75,7 @@ jobs:
   helm_publish:
     name: publish gcr
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     environment: prod
     needs: build_container
     steps:

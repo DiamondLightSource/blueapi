@@ -5,9 +5,6 @@ import pytest
 
 from blueapi.log import LOGGER, do_default_logging_setup
 
-# do_default_logging_setup(dev_mode=True)
-LOGGER.info("BAR")
-
 
 @pytest.fixture
 def mock_loggers():
@@ -17,5 +14,6 @@ def mock_loggers():
 
 
 def test_logger_emits(mock_loggers):
+    do_default_logging_setup(dev_mode=True)
     LOGGER.info("FOO")
     mock_loggers.assert_called()

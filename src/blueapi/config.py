@@ -1,15 +1,16 @@
-from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
-from typing import Any, Generic, Literal, TypeVar
+from typing import Literal
 
-import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict, YamlConfigSettingsSource
 
-from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+from blueapi.utils import BlueapiBaseModel
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+DEFAULT_PATH = Path("config.yaml")  # Default YAML file path
 
 
 class SourceKind(str, Enum):
@@ -77,7 +78,7 @@ class ScratchConfig(BlueapiBaseModel):
     repositories: list[ScratchRepository] = Field(default_factory=list)
 
 
-class ApplicationConfig(BlueapiBaseModel):
+class ApplicationConfig(BaseSettings, cli_parse_args=True, cli_prog_name="blueapi"):
     """
     Config for the worker application as a whole. Root of
     config tree.
@@ -89,83 +90,16 @@ class ApplicationConfig(BlueapiBaseModel):
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
 
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, ApplicationConfig):
-            return (
-                (self.stomp == other.stomp)
-                & (self.env == other.env)
-                & (self.logging == other.logging)
-                & (self.api == other.api)
-            )
-        return False
+    model_config = SettingsConfigDict(
+        env_nested_delimiter="__", yaml_file=DEFAULT_PATH, yaml_file_encoding="utf-8"
+    )
 
-
-C = TypeVar("C", bound=BaseModel)
-
-
-class ConfigLoader(Generic[C]):
-    """
-    Small utility class for loading config from various sources.
-    You must define a config schema as a dataclass (or series of
-    nested dataclasses) that can then be loaded from some combination
-    of default values, dictionaries, YAML/JSON files etc.
-    """
-
-    def __init__(self, schema: type[C]) -> None:
-        self._adapter = TypeAdapter(schema)
-        self._values: dict[str, Any] = {}
-
-    def use_values(self, values: Mapping[str, Any]) -> None:
-        """
-        Use all values provided in the config, override any defaults
-        and values set by previous calls into this class.
-
-        Args:
-            values (Mapping[str, Any]): Dictionary of override values,
-                                        does not need to be exhaustive
-                                        if defaults provided.
-        """
-
-        def recursively_update_map(old: dict[str, Any], new: Mapping[str, Any]) -> None:
-            for key in new:
-                if (
-                    key in old
-                    and isinstance(old[key], dict)
-                    and isinstance(new[key], dict)
-                ):
-                    recursively_update_map(old[key], new[key])
-                else:
-                    old[key] = new[key]
-
-        recursively_update_map(self._values, values)
-
-    def use_values_from_yaml(self, path: Path) -> None:
-        """
-        Use all values provided in a YAML/JSON file in the
-        config, override any defaults and values set by
-        previous calls into this class.
-
-        Args:
-            path (Path): Path to YAML/JSON file
-        """
-
-        with path.open("r") as stream:
-            values = yaml.load(stream, yaml.Loader)
-        self.use_values(values)
-
-    def load(self) -> C:
-        """
-        Finalize and load the config as an instance of the `schema`
-        dataclass.
-
-        Returns:
-            C: Dataclass instance holding config
-        """
-
-        try:
-            return self._adapter.validate_python(self._values)
-        except ValidationError as exc:
-            error_details = "\n".join(str(e) for e in exc.errors())
-            raise InvalidConfigError(
-                f"Something is wrong with the configuration file: \n {error_details}"
-            ) from exc
+    @classmethod
+    def customize_sources(cls, init_settings, env_settings, file_secret_settings):
+        path = cls.model_config.get("yaml_file")
+        return (
+            init_settings,
+            YamlConfigSettingsSource(settings_cls=cls, yaml_file=path),
+            env_settings,
+            file_secret_settings,
+        )

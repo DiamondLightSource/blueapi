@@ -11,8 +11,7 @@ import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ApplicationConfig, ConfigLoader
-from blueapi.utils import InvalidConfigError
+from blueapi.config import ApplicationConfig
 
 
 class Config(BaseModel):
@@ -60,70 +59,6 @@ def default_yaml(package_root: Path) -> Path:
     return package_root.parent.parent / "config" / "defaults.yaml"
 
 
-@pytest.mark.parametrize("schema", [ConfigWithDefaults, NestedConfigWithDefaults])
-def test_load_defaults(schema: type[Any]) -> None:
-    loader = ConfigLoader(schema)
-    assert loader.load() == schema()
-
-
-def test_load_some_defaults() -> None:
-    loader = ConfigLoader(ConfigWithDefaults)
-    loader.use_values({"foo": 4})
-    assert loader.load() == ConfigWithDefaults(foo=4)
-
-
-def test_load_override_all() -> None:
-    loader = ConfigLoader(ConfigWithDefaults)
-    loader.use_values({"foo": 4, "bar": "hi"})
-    assert loader.load() == ConfigWithDefaults(foo=4, bar="hi")
-
-
-def test_load_override_all_nested() -> None:
-    loader = ConfigLoader(NestedConfig)
-    loader.use_values({"nested": {"foo": 4, "bar": "hi"}, "baz": True})
-    assert loader.load() == NestedConfig(nested=Config(foo=4, bar="hi"), baz=True)
-
-
-def test_load_defaultless_schema() -> None:
-    loader = ConfigLoader(Config)
-    with pytest.raises(InvalidConfigError):
-        loader.load()
-
-
-def test_inject_values_into_defaultless_schema() -> None:
-    loader = ConfigLoader(Config)
-    loader.use_values({"foo": 4, "bar": "hi"})
-    assert loader.load() == Config(foo=4, bar="hi")
-
-
-def test_load_yaml(config_yaml: Path) -> None:
-    loader = ConfigLoader(Config)
-    loader.use_values_from_yaml(config_yaml)
-    assert loader.load() == Config(foo=5, bar="test string")
-
-
-def test_load_yaml_nested(nested_config_yaml: Path) -> None:
-    loader = ConfigLoader(NestedConfig)
-    loader.use_values_from_yaml(nested_config_yaml)
-    assert loader.load() == NestedConfig(
-        nested=Config(foo=6, bar="other test string"), baz=True
-    )
-
-
-def test_load_yaml_override(override_config_yaml: Path) -> None:
-    loader = ConfigLoader(ConfigWithDefaults)
-    loader.use_values_from_yaml(override_config_yaml)
-
-    assert loader.load() == ConfigWithDefaults(foo=7)
-
-
-def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) -> None:
-    loader = ConfigLoader(Config)
-    loader.use_values_from_yaml(nested_config_yaml)
-    with pytest.raises(InvalidConfigError):
-        loader.load()
-
-
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
 def test_auth_from_env():
     auth = BasicAuthentication(username="${FOO}", password="baz")
@@ -150,7 +85,7 @@ def test_auth_from_env_throws_when_not_available():
     with pytest.raises(KeyError):
         BasicAuthentication(username="${BAZ}", password="baz")
     with pytest.raises(KeyError):
-        BasicAuthentication(username="${baz}", passcode="baz")
+        BasicAuthentication(username="${baz}", passcode="baz")  # type: ignore
 
 
 def is_subset(subset: Mapping[str, Any], superset: Mapping[str, Any]) -> bool:
@@ -231,12 +166,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
     temp_yaml_file_path, config_data = temp_yaml_config_file
 
     # Initialize loader and load config from the YAML file
-    loader = ConfigLoader(ApplicationConfig)
-    loader.use_values_from_yaml(temp_yaml_file_path)
-    loaded_config = loader.load()
+    ApplicationConfig.model_config["yaml_file"] = temp_yaml_file_path
+    app_config = ApplicationConfig()  # Instantiates with customized sources
 
     # Parse the loaded config JSON into a dictionary
-    target_dict_json = json.loads(loaded_config.model_dump_json())
+    target_dict_json = json.loads(app_config.model_dump_json())
 
     # Assert that config_data is a subset of target_dict_json
     assert is_subset(config_data, target_dict_json)
@@ -311,17 +245,16 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     temp_yaml_file_path, config_data = temp_yaml_config_file
 
     # Initialize loader and load config from the YAML file
-    loader = ConfigLoader(ApplicationConfig)
-    loader.use_values_from_yaml(temp_yaml_file_path)
-    loaded_config = loader.load()
+    ApplicationConfig.model_config["yaml_file"] = temp_yaml_file_path
+    app_config = ApplicationConfig()  # Instantiates with customized sources
 
     # Parse the loaded config JSON into a dictionary
-    target_dict_json = json.loads(loaded_config.model_dump_json())
+    target_dict_json = json.loads(app_config.model_dump_json())
 
-    assert loaded_config.stomp is not None
-    assert loaded_config.stomp.auth is not None
+    assert app_config.stomp is not None
+    assert app_config.stomp.auth is not None
     assert (
-        loaded_config.stomp.auth.password.get_secret_value()
+        app_config.stomp.auth.password.get_secret_value()
         == config_data["stomp"]["auth"]["password"]  # noqa: E501
     )
     # Remove the password field to not compare it again in the full dict comparison

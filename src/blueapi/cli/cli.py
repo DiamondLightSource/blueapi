@@ -18,7 +18,7 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import ApplicationConfig
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
@@ -33,23 +33,16 @@ from .updates import CliEventRenderer
 )
 @click.pass_context
 def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
-    # if no command is supplied, run with the options passed
+    # Override default yaml_file path in the model_config if `config` is provided
+    ApplicationConfig.model_config["yaml_file"] = config
+    app_config = ApplicationConfig()  # Instantiates with customized sources
+    ctx.obj["config"] = app_config
 
-    config_loader = ConfigLoader(ApplicationConfig)
-    if config is not None:
-        configs = (config,) if isinstance(config, Path) else config
-        for path in configs:
-            if path.exists():
-                config_loader.use_values_from_yaml(path)
-            else:
-                raise FileNotFoundError(f"Cannot find file: {path}")
-
-    ctx.ensure_object(dict)
-    loaded_config: ApplicationConfig = config_loader.load()
-
-    ctx.obj["config"] = loaded_config
+    # note: this is the key result of the 'main' function, it loaded the config
+    # and due to 'pass context' flag above
+    # it's left for the handler of words that are later in the stdin
     logging.basicConfig(
-        format="%(asctime)s - %(message)s", level=loaded_config.logging.level
+        format="%(asctime)s - %(message)s", level=app_config.logging.level
     )
 
     if ctx.invoked_subcommand is None:
@@ -163,18 +156,18 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    if config.stomp is not None:
-        event_bus_client = EventBusClient(
-            StompClient.for_broker(
-                broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
-                    auth=config.stomp.auth,
-                )
+    if config.stomp is None:
+        raise RuntimeError("Message bus needs to be configured")
+
+    event_bus_client = EventBusClient(
+        StompClient.for_broker(
+            broker=Broker(
+                host=config.stomp.host,
+                port=config.stomp.port,
+                auth=config.stomp.auth,
             )
         )
-    else:
-        raise RuntimeError("Message bus needs to be configured")
+    )
 
     fmt = obj["fmt"]
 

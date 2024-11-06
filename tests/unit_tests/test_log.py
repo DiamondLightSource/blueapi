@@ -20,7 +20,6 @@ def mock_stream_handler_emit():
 
 
 def test_logger_emits(mock_graylog_emit):
-    # def test_logger_emits(mock_handlers):
     do_default_logging_setup(dev_mode=True)
     LOGGER.info("FOO")
     mock_graylog_emit.assert_called()

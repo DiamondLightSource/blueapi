@@ -17,7 +17,9 @@ LOGGER.parent = dodal_logger
 
 
 def do_default_logging_setup(dev_mode=False):
-    set_up_stream_handler(LOGGER)
-    set_up_graylog_handler(
+    handlers = {}
+    handlers["stream_handler"] = set_up_stream_handler(LOGGER)
+    handlers["graylog_handler"] = set_up_graylog_handler(
         LOGGER, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
     )
+    return handlers

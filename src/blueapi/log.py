@@ -5,6 +5,7 @@ from dodal.log import LOGGER as dodal_logger
 from dodal.log import (
     DodalLogHandlers,
     get_graylog_configuration,
+    integrate_bluesky_and_ophyd_logging,
     set_up_graylog_handler,
     set_up_stream_handler,
 )
@@ -26,5 +27,6 @@ def do_default_logging_setup(dev_mode=False):
     handlers["graylog_handler"] = set_up_graylog_handler(
         LOGGER, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
     )
+    integrate_bluesky_and_ophyd_logging(dodal_logger)
     global __logger_handlers
     __logger_handlers = handlers

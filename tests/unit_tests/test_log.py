@@ -28,3 +28,31 @@ def test_stream_handler_emits(mock_stream_handler_emit):
     do_default_logging_setup(dev_mode=True)
     LOGGER.info("FOO")
     mock_stream_handler_emit.assert_called()
+
+
+def test_messages_are_tagged_with_application_name():
+    raise NotImplementedError
+
+
+def test_messages_are_tagged_with_beamline():
+    raise NotImplementedError
+
+
+def test_messages_are_tagged_with_correlation_id():
+    raise NotImplementedError
+
+
+def test_messages_are_tagged_with_fed_id():
+    raise NotImplementedError
+
+
+def test_messages_are_timestamped():
+    raise NotImplementedError
+
+
+def test_messages_are_tagged_with_severity():
+    raise NotImplementedError
+
+
+def test_messages_contain_log_message():
+    raise NotImplementedError

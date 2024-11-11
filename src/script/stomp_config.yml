@@ -1,11 +1,7 @@
+---
 stomp:
   host: "localhost"
   port: 61613
   auth:
     username: "guest"
     password: "guest"
-oidc_config:
-  well_known_url: "http://localhost:8080/auth/.well-known/openid-configuration"
-  client_id: "blueapi"
-  client_audience: "blueapi-cli"
-  token_file_path: "/tmp/auth_token"

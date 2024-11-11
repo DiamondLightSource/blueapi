@@ -35,7 +35,7 @@ dependencies = [
     "event-model==1.21",    # https://github.com/DiamondLightSource/blueapi/issues/684
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
-    "observability-utils>=0.1.2",
+    "observability-utils>=0.1.4"
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

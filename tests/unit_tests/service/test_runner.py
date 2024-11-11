@@ -3,12 +3,12 @@ from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import pytest
-from ophyd import Callable
-from pydantic import BaseModel, ValidationError
-from tests.unit_tests.utils.test_tracing import (
+from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
 )
+from ophyd import Callable
+from pydantic import BaseModel, ValidationError
 
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse

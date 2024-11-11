@@ -318,7 +318,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
     ],
     indirect=True,
 )
-def test_config_yaml_parsed_complete(temp_yaml_config_file: dict, mock_server_response):
+def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     temp_yaml_file_path, config_data = temp_yaml_config_file
 
     # Initialize loader and load config from the YAML file
@@ -344,53 +344,21 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict, mock_server_re
     ), f"Expected config {config_data}, but got {target_dict_json}"
 
 
-@pytest.fixture
-def valid_oidc_url() -> str:
-    return "https://auth.example.com/realms/sample/.well-known/openid-configuration"
-
-
-@pytest.fixture
-def valid_oidc_config() -> dict[str, Any]:
-    return {
-        "device_authorization_endpoint": "https://example.com/device_authorization",
-        "authorization_endpoint": "https://example.com/authorization",
-        "token_endpoint": "https://example.com/token",
-        "issuer": "https://example.com",
-        "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
-        "end_session_endpoint": "https://example.com/logout",
-        "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512"],
-    }
-
-
-@pytest.fixture
-def mock_server_response(valid_oidc_url: str, valid_oidc_config: dict[str, Any]):
-    requests_mock = responses.RequestsMock(assert_all_requests_are_fired=True)
-    requests_mock.get(
-        valid_oidc_url,
-        json=valid_oidc_config,
-    )
-    return requests_mock
-
-
 def test_oauth_config_model_post_init(
-    valid_oidc_url: str,
     valid_oidc_config: dict[str, Any],
     oidc_config: OIDCConfig,
-    mock_server_response: responses.RequestsMock,
+    mock_authn_server: responses.RequestsMock,
 ):
-    with mock_server_response:
-        assert (
-            oidc_config.device_authorization_endpoint
-            == valid_oidc_config["device_authorization_endpoint"]
-        )
-        assert (
-            oidc_config.authorization_endpoint
-            == valid_oidc_config["authorization_endpoint"]
-        )
-        assert oidc_config.token_endpoint == valid_oidc_config["token_endpoint"]
-        assert oidc_config.issuer == valid_oidc_config["issuer"]
-        assert oidc_config.jwks_uri == valid_oidc_config["jwks_uri"]
-        assert (
-            oidc_config.end_session_endpoint
-            == valid_oidc_config["end_session_endpoint"]
-        )
+    assert (
+        oidc_config.device_authorization_endpoint
+        == valid_oidc_config["device_authorization_endpoint"]
+    )
+
+    assert (
+        oidc_config.authorization_endpoint
+        == valid_oidc_config["authorization_endpoint"]
+    )
+    assert oidc_config.token_endpoint == valid_oidc_config["token_endpoint"]
+    assert oidc_config.issuer == valid_oidc_config["issuer"]
+    assert oidc_config.jwks_uri == valid_oidc_config["jwks_uri"]
+    assert oidc_config.end_session_endpoint == valid_oidc_config["end_session_endpoint"]

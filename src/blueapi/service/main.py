@@ -133,7 +133,8 @@ async def delete_environment(
 @start_as_current_span(TRACER)
 def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available plans."""
-    return PlanResponse(plans=runner.run(interface.get_plans))
+    plans = runner.run(interface.get_plans)
+    return PlanResponse(plans=plans)
 
 
 @router.get(
@@ -150,7 +151,8 @@ def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
 @start_as_current_span(TRACER)
 def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available devices."""
-    return DeviceResponse(devices=runner.run(interface.get_devices))
+    devices = runner.run(interface.get_devices)
+    return DeviceResponse(devices=devices)
 
 
 @router.get(
@@ -285,10 +287,8 @@ def get_task(
 @start_as_current_span(TRACER)
 def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
     active = runner.run(interface.get_active_task)
-    if active is not None:
-        return WorkerTask(task_id=active.task_id)
-    else:
-        return WorkerTask(task_id=None)
+    task_id = active.task_id if active is not None else None
+    return WorkerTask(task_id=task_id)
 
 
 @router.get("/worker/state")

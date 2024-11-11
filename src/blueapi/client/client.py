@@ -47,14 +47,14 @@ class BlueapiClient:
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest = BlueapiRestClient(config.api)
         if config.stomp is not None:
-            template = StompClient.for_broker(
+            stomp_client = StompClient.for_broker(
                 broker=Broker(
                     host=config.stomp.host,
                     port=config.stomp.port,
                     auth=config.stomp.auth,
                 )
             )
-            events = EventBusClient(template)
+            events = EventBusClient(stomp_client)
         else:
             events = None
         return cls(rest, events)

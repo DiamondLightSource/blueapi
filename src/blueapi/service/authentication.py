@@ -5,6 +5,7 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
+from functools import cached_property
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, cast
@@ -70,12 +71,15 @@ class SessionManager:
         server_config: OIDCConfig,
     ) -> None:
         self._server_config = server_config
-        self._client = jwt.PyJWKClient(server_config.jwks_uri)
         self._token_manager: TokenManager = (
             CliTokenManager(server_config.token_file_path)
             if isinstance(server_config, CLIClientConfig)
             else NoOpTokenManager()
         )
+
+    @cached_property
+    def client(self):
+        return jwt.PyJWKClient(self._server_config.jwks_uri)
 
     def get_token(self) -> dict[str, Any]:
         return self._token_manager.load_token()
@@ -84,7 +88,7 @@ class SessionManager:
         self._token_manager.delete_token()
 
     def decode_jwt(self, json_web_token: str):
-        signing_key = self._client.get_signing_key(json_web_token)
+        signing_key = self.client.get_signing_key_from_jwt(json_web_token)
         return jwt.decode(
             json_web_token,
             signing_key.key,
@@ -101,6 +105,8 @@ class SessionManager:
         except jwt.DecodeError:
             # Else, we check if the id_token is still valid
             return self.decode_jwt(token["id_token"])
+        except Exception as e:
+            print(e)
 
     def refresh_auth_token(self) -> None:
         token = self._token_manager.load_token()

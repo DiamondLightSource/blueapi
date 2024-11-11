@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Generic, Literal, TypeVar
+from typing import Any, Generic, Literal, TypeVar, cast
 
 import requests
 import yaml
@@ -98,31 +98,36 @@ class OAuthServerConfig(BlueapiBaseModel):
 
     @cached_property
     def device_auth_url(self) -> str:
-        return self._config_from_oidc_url.get("device_authorization_endpoint")
+        return cast(
+            str, self._config_from_oidc_url.get("device_authorization_endpoint")
+        )
 
     @cached_property
     def pkce_auth_url(self) -> str:
-        return self._config_from_oidc_url.get("authorization_endpoint")
+        return cast(str, self._config_from_oidc_url.get("authorization_endpoint"))
 
     @cached_property
     def token_url(self) -> str:
-        return self._config_from_oidc_url.get("token_endpoint")
+        return cast(str, self._config_from_oidc_url.get("token_endpoint"))
 
     @cached_property
     def issuer(self) -> str:
-        return self._config_from_oidc_url.get("issuer")
+        return cast(str, self._config_from_oidc_url.get("issuer"))
 
     @cached_property
     def jwks_uri(self) -> str:
-        return self._config_from_oidc_url.get("jwks_uri")
+        return cast(str, self._config_from_oidc_url.get("jwks_uri"))
 
     @cached_property
     def logout_url(self) -> str:
-        return self._config_from_oidc_url.get("end_session_endpoint")
+        return cast(str, self._config_from_oidc_url.get("end_session_endpoint"))
 
     @cached_property
     def signing_algos(self) -> list[str]:
-        return self._config_from_oidc_url.get("id_token_signing_alg_values_supported")
+        return cast(
+            list[str],
+            self._config_from_oidc_url.get("id_token_signing_alg_values_supported"),
+        )
 
 
 class OAuthClientConfig(BlueapiBaseModel):

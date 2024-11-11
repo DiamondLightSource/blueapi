@@ -676,7 +676,7 @@ def mock_authn_server(valid_oidc_url: str, valid_oidc_config: dict[str, Any]):
 
 @pytest.fixture
 def mock_decode_jwt():
-    def mock_decode(token: str) -> dict[str, Any]:
+    def mock_decode(token: str) -> dict[str, Any] | None:
         if token == "expired_token":
             raise jwt.ExpiredSignatureError
         if token == "token":
@@ -684,6 +684,7 @@ def mock_decode_jwt():
                 "name": "John Doe",
                 "fedid": "jd1",
             }
+        return None
 
     return Mock(side_effect=mock_decode)
 

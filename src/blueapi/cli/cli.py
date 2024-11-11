@@ -24,7 +24,7 @@ from blueapi.config import (
     ConfigLoader,
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
-from blueapi.service.authentication import CliTokenManager, SessionManager
+from blueapi.service.authentication import SessionManager
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
@@ -362,7 +362,6 @@ def login(obj: dict) -> None:
         auth: SessionManager = SessionManager(
             server_config=config.oauth_server,
             client_config=config.oauth_client,
-            token_manager=CliTokenManager(Path(config.oauth_client.token_file_path)),
         )
         auth.start_device_flow()
     else:
@@ -377,7 +376,6 @@ def logout(obj: dict) -> None:
         auth: SessionManager = SessionManager(
             server_config=config.oauth_server,
             client_config=config.oauth_client,
-            token_manager=CliTokenManager(Path(config.oauth_client.token_file_path)),
         )
         auth.logout()
         print("Logged out")

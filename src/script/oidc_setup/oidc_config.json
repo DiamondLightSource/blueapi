@@ -1,0 +1,11 @@
+{
+    "interactiveLogin": false,
+    "httpServer": "MockWebServerWrapper",
+    "tokenCallbacks": [
+        {
+            "issuerId": "auth",
+            "tokenExpiry": 120,
+            "requestMappings": []
+        }
+    ]
+}

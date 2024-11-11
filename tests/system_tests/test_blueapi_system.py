@@ -44,47 +44,33 @@ _DATA_PATH = Path(__file__).parent
 
 
 @pytest.fixture
-def oauth_server() -> OAuthServerConfig:
-    return OAuthServerConfig(oidc_config_url="https://example.com")
-
-
-@pytest.fixture
-def oauth_client() -> CLIClientConfig:
-    return CLIClientConfig(
-        client_id="example-client",
-        client_audience="example",
-        token_file_path=Path("example-token-file"),
-    )
-
-
-@pytest.fixture
 def client_without_auth() -> BlueapiClient:
     return BlueapiClient.from_config(config=ApplicationConfig())
 
 
 @pytest.fixture
 def client_with_stomp(
-    oauth_server: OAuthServerConfig, oauth_client: CLIClientConfig
+    oauth_server_config: OAuthServerConfig, oauth_client_config: CLIClientConfig
 ) -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
             stomp=StompConfig(
                 auth=BasicAuthentication(username="guest", password="guest")
             ),
-            oauth_server=oauth_server,
-            oauth_client=oauth_client,
+            oauth_server=oauth_server_config,
+            oauth_client=oauth_client_config,
         )
     )
 
 
 @pytest.fixture
 def client(
-    oauth_server: OAuthServerConfig, oauth_client: CLIClientConfig
+    oauth_server_config: OAuthServerConfig, oauth_client_config: CLIClientConfig
 ) -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
-            oauth_server=oauth_server,
-            oauth_client=oauth_client,
+            oauth_server=oauth_server_config,
+            oauth_client=oauth_client_config,
         )
     )
 

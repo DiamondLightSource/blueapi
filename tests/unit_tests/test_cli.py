@@ -1,6 +1,5 @@
-import base64
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
@@ -8,7 +7,6 @@ from textwrap import dedent
 from typing import Any
 from unittest.mock import Mock, patch
 
-import jwt
 import pytest
 import responses
 from bluesky_stomp.messaging import StompClient
@@ -634,67 +632,12 @@ def test_logout_missing_config(runner: CliRunner):
     assert result.exit_code == 0
 
 
-@pytest.fixture
-def valid_oidc_url() -> str:
-    return "https://auth.example.com/realms/sample/.well-known/openid-configuration"
-
-
-@pytest.fixture
-def valid_auth_config(tmp_path: Path, valid_oidc_url: str) -> str:
-    config: str = f"""
-oauth_server:
-  oidc_config_url: {valid_oidc_url}
-oauth_client:
-  client_id: sample-cli
-  client_audience: sample-account
-  token_file_path: {tmp_path}/token
-"""
-    with open(tmp_path / "auth_config.yaml", mode="w") as valid_auth_config_file:
-        valid_auth_config_file.write(config)
-        return valid_auth_config_file.name
-
-
-@pytest.fixture
-def valid_oidc_config() -> dict[str, Any]:
-    return {
-        "device_authorization_endpoint": "https://example.com/device_authorization",
-        "authorization_endpoint": "https://example.com/authorization",
-        "token_endpoint": "https://example.com/token",
-        "issuer": "https://example.com",
-        "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
-        "end_session_endpoint": "https://example.com/logout",
-        "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512"],
-    }
-
-
-@pytest.fixture
-def mock_authn_server(valid_oidc_url: str, valid_oidc_config: dict[str, Any]):
-    requests_mock = responses.RequestsMock(assert_all_requests_are_fired=True)
-    requests_mock.get(valid_oidc_url, json=valid_oidc_config)
-    return requests_mock
-
-
-@pytest.fixture
-def mock_decode_jwt():
-    def mock_decode(token: str) -> dict[str, Any] | None:
-        if token == "expired_token":
-            raise jwt.ExpiredSignatureError
-        if token == "token":
-            return {
-                "name": "John Doe",
-                "fedid": "jd1",
-            }
-        return None
-
-    return Mock(side_effect=mock_decode)
-
-
 def test_login_success(
     runner: CliRunner,
     valid_auth_config: str,
     mock_authn_server: responses.RequestsMock,
     valid_oidc_config: dict[str, Any],
-    mock_decode_jwt,
+    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
 ):
     mock_authn_server.post(
         valid_oidc_config["device_authorization_endpoint"],
@@ -719,48 +662,22 @@ def test_login_success(
     assert (
         "Logging in\n"
         "Please login from this URL:- https://example.com/verify\n"
-        "Logged in as John Doe with fed-id jd1\n" == result.output
+        "Logged in and cached new token\n" == result.output
     )
     assert result.exit_code == 0
-
-
-@pytest.fixture
-def expired_token(tmp_path: Path):
-    token_path = tmp_path / "token"
-    with open(token_path, "w") as token_file:
-        # base64 encoded token
-        token_file.write(
-            base64.b64encode(
-                b'{"access_token":"expired_token","refresh_token":"refresh_token"}'
-            ).decode("utf-8")
-        )
-    yield token_path
-
-
-@pytest.fixture
-def valid_token(tmp_path: Path):
-    token_path = tmp_path / "token"
-    with open(token_path, "w") as token_file:
-        # base64 encoded token
-        token_file.write(
-            base64.b64encode(
-                b'{"access_token":"token","refresh_token":"refresh_token"}'
-            ).decode("utf-8")
-        )
-    yield token_path
 
 
 def test_token_login_early_exit(
     runner: CliRunner,
     valid_auth_config: str,
     valid_token: Path,
-    mock_decode_jwt,
+    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
 ):
     with (
         patch("blueapi.service.Authenticator.decode_jwt", mock_decode_jwt),
     ):
         result = runner.invoke(main, ["-c", valid_auth_config, "login"])
-    assert "Logging in\nLogged in as John Doe with fed-id jd1\n" == result.output
+    assert "Logging in\nCached token still valid, skipping flow\n" == result.output
     assert result.exit_code == 0
 
 
@@ -769,8 +686,8 @@ def test_login_with_refresh_token(
     valid_auth_config: str,
     mock_authn_server: responses.RequestsMock,
     valid_oidc_config: dict[str, Any],
-    expired_token,
-    mock_decode_jwt,
+    expired_token: Path,
+    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
 ):
     mock_authn_server.post(
         valid_oidc_config["token_endpoint"],
@@ -785,7 +702,7 @@ def test_login_with_refresh_token(
     ):
         result = runner.invoke(main, ["-c", valid_auth_config, "login"])
 
-    assert "Logging in\nLogged in as John Doe with fed-id jd1\n" == result.output
+    assert "Logging in\nRefreshed cached token, skipping flow\n" == result.output
     assert result.exit_code == 0
 
 

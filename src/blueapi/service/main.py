@@ -1,5 +1,6 @@
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
+from functools import lru_cache
 from typing import Any
 
 from fastapi import (
@@ -27,7 +28,7 @@ from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, OAuthClientConfig, OAuthServerConfig
+from blueapi.config import ApplicationConfig, OAuthServerConfig
 from blueapi.service import interface
 from blueapi.service.authentication import Authenticator
 from blueapi.service.runner import WorkerDispatcher
@@ -49,8 +50,6 @@ from .model import (
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
-SWAGGER_CONFIG: dict[str, Any] | None = None
-
 CONTEXT_HEADER = "traceparent"
 
 
@@ -90,7 +89,8 @@ def lifespan(config: ApplicationConfig | None):
 router = APIRouter()
 
 
-def get_app(config: ApplicationConfig | None):
+@lru_cache(1)
+def get_app(config: ApplicationConfig | None = None):
     app = FastAPI(
         docs_url="/docs",
         title="BlueAPI Control",
@@ -108,7 +108,7 @@ def get_app(config: ApplicationConfig | None):
 
 def verify_access_token(config: OAuthServerConfig):
     oauth_scheme = OAuth2AuthorizationCodeBearer(
-        authorizationUrl=config.pkce_auth_url,
+        authorizationUrl=config.auth_url,
         tokenUrl=config.token_url,
         refreshUrl=config.token_url,
     )

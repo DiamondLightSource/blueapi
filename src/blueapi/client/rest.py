@@ -53,7 +53,7 @@ class BlueapiRestClient:
         session_manager: SessionManager | None = None,
     ) -> None:
         self._config = config or RestConfig()
-        self._session_manager: SessionManager | None = session_manager
+        self._session_manager = session_manager
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -149,7 +149,9 @@ class BlueapiRestClient:
         if self._session_manager and (token := self._session_manager.get_token()):
             try:
                 # Check token is not expired
-                self._session_manager.authenticator.decode_jwt(token["access_token"])
+                self._session_manager.authenticator.decode_jwt(
+                    token["access_token"], self._session_manager._client_audience
+                )
             except jwt.ExpiredSignatureError:
                 token = self._session_manager.refresh_auth_token()
                 assert token  # This must be present

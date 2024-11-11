@@ -48,7 +48,9 @@ class BlueapiClient:
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest: BlueapiRestClient = BlueapiRestClient(
             config.api,
-            SessionManager.from_config(config.oauth_server, config.oauth_client),
+            SessionManager(config.oauth_server, config.oauth_client)
+            if config.oauth_server and config.oauth_client
+            else None,
         )
         if config.stomp is not None:
             stomp_client = StompClient.for_broker(

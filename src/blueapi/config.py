@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
@@ -88,7 +88,6 @@ class OAuthServerConfig(BlueapiBaseModel):
     oidc_config_url: str = Field(
         description="URL to fetch OIDC config from the provider"
     )
-    audience: str = Field(description="Valid audience")
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
@@ -103,7 +102,7 @@ class OAuthServerConfig(BlueapiBaseModel):
         )
 
     @cached_property
-    def pkce_auth_url(self) -> str:
+    def auth_url(self) -> str:
         return cast(str, self._config_from_oidc_url.get("authorization_endpoint"))
 
     @cached_property
@@ -132,7 +131,9 @@ class OAuthServerConfig(BlueapiBaseModel):
 
 class OAuthClientConfig(BlueapiBaseModel):
     client_id: str = Field(description="Client ID")
-    client_audience: str = Field(description="Client Audience")
+    client_audience: str | Iterable[str] | None = Field(
+        description="Client Audience(s)"
+    )
 
 
 class CLIClientConfig(OAuthClientConfig):

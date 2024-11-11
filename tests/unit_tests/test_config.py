@@ -389,7 +389,7 @@ def test_oauth_config_model_post_init(
             oauth_config.device_auth_url
             == valid_oidc_config["device_authorization_endpoint"]
         )
-        assert oauth_config.pkce_auth_url == valid_oidc_config["authorization_endpoint"]
+        assert oauth_config.auth_url == valid_oidc_config["authorization_endpoint"]
         assert oauth_config.token_url == valid_oidc_config["token_endpoint"]
         assert oauth_config.issuer == valid_oidc_config["issuer"]
         assert oauth_config.jwks_uri == valid_oidc_config["jwks_uri"]

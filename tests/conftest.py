@@ -5,12 +5,10 @@ from typing import cast
 import pytest
 from bluesky import RunEngine
 from bluesky.run_engine import TransitionError
-from observability_utils.tracing import setup_tracing
+from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
-
-from tests.unit_tests.utils.test_tracing import JsonObjectSpanExporter
 
 
 @pytest.fixture(scope="function")
@@ -33,15 +31,11 @@ def RE(request):
     return RE
 
 
-@pytest.fixture
-def provider() -> TracerProvider:
+@pytest.fixture(scope="session")
+def exporter() -> TracerProvider:
     setup_tracing("test", False)
-    return cast(TracerProvider, get_tracer_provider())
-
-
-@pytest.fixture
-def exporter(provider: TracerProvider) -> JsonObjectSpanExporter:
     exporter = JsonObjectSpanExporter()
-    processor = BatchSpanProcessor(exporter)
-    provider.add_span_processor(processor)
+    provider = cast(TracerProvider, get_tracer_provider())
+    # Use SimpleSpanProcessor to keep tests quick
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
     return exporter

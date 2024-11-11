@@ -11,13 +11,12 @@ from typing import Any, Generic, TypeVar
 from bluesky.protocols import Status
 from observability_utils.tracing import (
     add_span_attributes,
-    get_trace_context,
     get_tracer,
     setup_tracing,
     start_as_current_span,
 )
 from opentelemetry.baggage import get_baggage
-from opentelemetry.context import Context
+from opentelemetry.context import Context, get_current
 from opentelemetry.trace import SpanKind
 from pydantic import Field
 from super_state_machine.errors import TransitionError
@@ -222,7 +221,7 @@ class TaskWorker:
 
         LOGGER.info(f"Submitting: {trackable_task}")
         try:
-            self._current_task_otel_context = get_trace_context()
+            self._current_task_otel_context = get_current()
             sub = self.worker_events.subscribe(mark_task_as_started)
             """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
@@ -326,7 +325,7 @@ class TaskWorker:
                             next_task  # Informing mypy that the task is not None
                         )
 
-                        self._current_task_otel_context = get_trace_context()
+                        self._current_task_otel_context = get_current()
                         add_span_attributes({"next_task.task_id": next_task.task_id})
 
                         self._current.is_pending = False

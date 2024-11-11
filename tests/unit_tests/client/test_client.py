@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, Mock, call
 
 import pytest
 from bluesky_stomp.messaging import MessageContext
-from tests.unit_tests.utils.test_tracing import (
+from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
 )

@@ -7,7 +7,7 @@ from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
-from tests.unit_tests.utils.test_tracing import (
+from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
 )
@@ -554,3 +554,11 @@ def test_clear_task_span_ok(
     with pytest.raises(KeyError):
         with asserting_span_exporter(exporter, "clear_task", "task_id"):
             worker.clear_task("foo")
+
+
+def test_begin_task_span_ok(
+    exporter: JsonObjectSpanExporter, worker: TaskWorker
+) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    with asserting_span_exporter(exporter, "begin_task", "task_id"):
+        worker.begin_task(task_id)

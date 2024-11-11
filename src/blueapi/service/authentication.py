@@ -68,7 +68,6 @@ class CliTokenManager(TokenManager):
         token_base64: bytes = base64.b64encode(token_json.encode("utf-8"))
         with open(self._file_path(), "wb") as token_file:
             token_file.write(token_base64)
-        print("Logged in and cached new token")
 
     def load_token(self) -> dict[str, Any]:
         file_path = self._file_path()
@@ -160,6 +159,7 @@ class SessionManager:
             device_code, interval, expires_in
         )
         self._token_manager.save_token(auth_token_json)
+        print("Logged in and cached new token")
 
     def start_device_flow(self) -> None:
         try:
@@ -173,7 +173,6 @@ class SessionManager:
             return
         except FileNotFoundError:
             self._do_device_flow()
-        except Exception as e:
-            print(e)
+        except Exception:
             print("Problem with cached token, starting new session")
             self._token_manager.delete_token()

@@ -37,8 +37,7 @@ def test_refresh_auth_token(
     token = session_manager.get_token()
     assert token and token["access_token"] == "expired_token"
 
-    with mock_authn_server:
-        session_manager.refresh_auth_token()
+    session_manager.refresh_auth_token()
     token = session_manager.get_token()
     assert token and token["access_token"] == "new_token"
 
@@ -47,9 +46,9 @@ def test_poll_for_token(
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
     valid_token: dict[str, Any],
+    device_code: str,
 ):
-    with mock_authn_server:
-        token = session_manager.poll_for_token("device_code", 1, 2)
+    token = session_manager.poll_for_token(device_code, 1, 2)
     assert token == valid_token
 
 
@@ -58,14 +57,16 @@ def test_poll_for_token_timeout(
     mock_sleep,
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
+    device_code: str,
 ):
+    mock_authn_server.stop()
     mock_authn_server.post(
         url="https://example.com/token",
         json={"error": "authorization_pending"},
         status=HTTP_403_FORBIDDEN,
     )
     with pytest.raises(TimeoutError), mock_authn_server:
-        session_manager.poll_for_token("device_code", 1, 2)
+        session_manager.poll_for_token(device_code, 1, 2)
 
 
 def test_valid_token_access_granted(
@@ -73,8 +74,7 @@ def test_valid_token_access_granted(
     mock_authn_server: responses.RequestsMock,
     valid_token: dict[str, Any],
 ):
-    with mock_authn_server:
-        main.verify_access_token(oidc_config)(valid_token["access_token"])
+    main.verify_access_token(oidc_config)(valid_token["id_token"])
 
 
 def test_invalid_token_no_access(
@@ -92,5 +92,5 @@ def test_expired_token_no_access(
     expired_token: dict[str, Any],
 ):
     with pytest.raises(HTTPException) as exec, mock_authn_server:
-        main.verify_access_token(oidc_config)(expired_token["access_token"])
+        main.verify_access_token(oidc_config)(expired_token["id_token"])
     assert exec.value.status_code == HTTPStatus.UNAUTHORIZED

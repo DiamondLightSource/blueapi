@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -55,6 +54,7 @@ def test_auth_request_functionality(
     cached_valid_token: Path,
 ):
     plan = Plan(name="my-plan", model=MyModel)
+    mock_authn_server.stop()  # Cannot use multiple RequestsMock context manager
     mock_authn_server.get(
         "http://localhost:8000/plans",
         json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
@@ -71,8 +71,9 @@ def test_refresh_if_signature_expired(
 ):
     plan = Plan(name="my-plan", model=MyModel)
 
+    mock_authn_server.stop()
     mock_get_plans = (
-        mock_authn_server.get(  # Cannot use more than 1 RequestsMock context manager
+        mock_authn_server.get(  # Cannot use multiple RequestsMock context manager
             "http://localhost:8000/plans",
             json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
         )

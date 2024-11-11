@@ -1,5 +1,5 @@
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
@@ -637,8 +637,7 @@ def test_login_success(
     valid_auth_config: Path,
     mock_authn_server: responses.RequestsMock,
 ):
-    with mock_authn_server:
-        result = runner.invoke(main, ["-c", valid_auth_config, "login"])
+    result = runner.invoke(main, ["-c", valid_auth_config, "login"])
     assert (
         "Logging in\n"
         "Please login from this URL:- https://example.com/verify\n"
@@ -653,8 +652,7 @@ def test_token_login_early_exit(
     mock_authn_server: responses.RequestsMock,
     cached_valid_token: Path,
 ):
-    with mock_authn_server:
-        result = runner.invoke(main, ["-c", valid_auth_config, "login"])
+    result = runner.invoke(main, ["-c", valid_auth_config, "login"])
     assert "Logging in\nCached token still valid, skipping flow\n" == result.output
     assert result.exit_code == 0
 
@@ -665,8 +663,7 @@ def test_login_with_refresh_token(
     mock_authn_server: responses.RequestsMock,
     cached_expired_token: Path,
 ):
-    with mock_authn_server:
-        result = runner.invoke(main, ["-c", valid_auth_config, "login"])
+    result = runner.invoke(main, ["-c", valid_auth_config, "login"])
 
     assert "Logging in\nRefreshed cached token, skipping flow\n" == result.output
     assert result.exit_code == 0
@@ -678,6 +675,10 @@ def test_login_edge_cases(
     mock_authn_server: responses.RequestsMock,
     valid_oidc_config: dict[str, Any],
 ):
+    mock_authn_server.stop()
+    mock_authn_server.remove(
+        responses.POST, url=valid_oidc_config["device_authorization_endpoint"]
+    )
     mock_authn_server.post(
         valid_oidc_config["device_authorization_endpoint"],
         json={"details": "not found"},

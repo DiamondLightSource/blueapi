@@ -360,7 +360,10 @@ def login(obj: dict) -> None:
     if isinstance(config.oidc_config, CLIClientConfig):
         print("Logging in")
         auth: SessionManager = SessionManager(config.oidc_config)
-        auth.start_device_flow()
+        try:
+            auth.start_device_flow()
+        except Exception:
+            print("Failed to login")
     else:
         print("Please provide configuration to login!")
 

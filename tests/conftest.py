@@ -4,6 +4,7 @@ import json
 import time
 from pathlib import Path
 from typing import Any, cast
+from unittest.mock import Mock, patch
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
 import jwt
@@ -54,15 +55,17 @@ def exporter() -> TracerProvider:
 
 @pytest.fixture
 def valid_oidc_url() -> str:
-    return "https://auth.example.com/realms/sample/.well-known/openid-configuration"
+    return (
+        "https://auth.example.com/realms/master/oidc/.well-known/openid-configuration"
+    )
 
 
 @pytest.fixture
 def oidc_config(valid_oidc_url: str, tmp_path: Path) -> CLIClientConfig:
     return CLIClientConfig(
         well_known_url=valid_oidc_url,
-        client_id="example-client",
-        client_audience="example",
+        client_id="blueapi-client",
+        client_audience="blueapi",
         token_file_path=tmp_path / "token",
     )
 
@@ -84,14 +87,14 @@ def valid_oidc_config() -> dict[str, Any]:
         "token_endpoint": "https://example.com/token",
         "issuer": "https://example.com",
         "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
-        "end_session_endpoint": "https://example.com/logout",
-        "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512"],
+        "end_session_endpoint": "https://example.com/end_session",
+        "id_token_signing_alg_values_supported": ["RS256"],
     }
 
 
 @pytest.fixture(scope="session")
 def json_web_keyset() -> JWK:
-    return JWK.generate(kty="RSA", size=1024, kid="secret", use="sig", alg="RSA256")
+    return JWK.generate(kty="RSA", size=1024, kid="secret", use="sig", alg="RS256")
 
 
 @pytest.fixture(scope="session")
@@ -100,12 +103,12 @@ def rsa_private_key(json_web_keyset: JWK) -> str:
 
 
 def _make_token(
-    name: str, issued_in: float, expires_in: float, tmp_path: Path, rsa_private_key: str
+    name: str, issued_in: float, expires_in: float, rsa_private_key: str
 ) -> dict[str, str]:
     now = time.time()
 
     id_token = {
-        "aud": "default-demo",
+        "aud": "blueapi",
         "exp": now + expires_in,
         "iat": now + issued_in,
         "iss": "https://example.com",
@@ -113,11 +116,17 @@ def _make_token(
         "name": "Jane Doe",
         "fedid": "jd1",
     }
+    id_token_encoded = jwt.encode(
+        id_token,
+        key=rsa_private_key,
+        algorithm="RS256",
+        headers={"kid": "secret"},
+    )
     response = {
         "access_token": name,
         "token_type": "Bearer",
         "refresh_token": "refresh_token",
-        "id_token": f"{jwt.encode(id_token, key=rsa_private_key, algorithm="RS256", headers={"kid": "secret"})}",
+        "id_token": id_token_encoded,
     }
     return response
 
@@ -141,18 +150,23 @@ def cached_valid_token(tmp_path: Path, valid_token: dict[str, Any]) -> Path:
 
 
 @pytest.fixture
-def expired_token(tmp_path: Path, rsa_private_key: str) -> dict[str, Any]:
-    return _make_token("expired_token", -3600, -1800, tmp_path, rsa_private_key)
+def expired_token(rsa_private_key: str) -> dict[str, Any]:
+    return _make_token("expired_token", -3600, -1800, rsa_private_key)
 
 
 @pytest.fixture
-def valid_token(tmp_path: Path, rsa_private_key: str) -> dict[str, Any]:
-    return _make_token("valid_token", -900, +900, tmp_path, rsa_private_key)
+def valid_token(rsa_private_key: str) -> dict[str, Any]:
+    return _make_token("valid_token", -900, +900, rsa_private_key)
 
 
 @pytest.fixture
-def new_token(tmp_path: Path, rsa_private_key: str) -> dict[str, Any]:
-    return _make_token("new_token", -100, +1700, tmp_path, rsa_private_key)
+def new_token(rsa_private_key: str) -> dict[str, Any]:
+    return _make_token("new_token", -100, +1700, rsa_private_key)
+
+
+@pytest.fixture
+def device_code() -> str:
+    return "ff83j3dk"
 
 
 @pytest.fixture
@@ -161,18 +175,14 @@ def mock_authn_server(
     valid_oidc_config: dict[str, Any],
     oidc_config: CLIClientConfig,
     valid_token: dict[str, Any],
-    json_web_keyset: JWK,
     new_token: dict[str, Any],
+    device_code: str,
+    mock_jwks_fetch,
 ):
     requests_mock = responses.RequestsMock(assert_all_requests_are_fired=False)
     # Fetch well-known OIDC flow URLs from server
     requests_mock.get(valid_oidc_url, json=valid_oidc_config)
-    requests_mock.get(
-        valid_oidc_config["jwks_uri"],
-        json={"keys": [json_web_keyset.export_public(as_dict=True)]},
-    )
     # When device flow begins, return a device_code
-    device_code = "ff83j3dk"
     requests_mock.post(
         valid_oidc_config["device_authorization_endpoint"],
         json={
@@ -212,4 +222,11 @@ def mock_authn_server(
         ],
     )
 
-    return requests_mock
+    with mock_jwks_fetch, requests_mock:
+        yield requests_mock
+
+
+@pytest.fixture
+def mock_jwks_fetch(json_web_keyset: JWK):
+    mock = Mock(return_value={"keys": [json_web_keyset.export_public(as_dict=True)]})
+    return patch("jwt.PyJWKClient.fetch_data", mock)

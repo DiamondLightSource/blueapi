@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -6,7 +7,7 @@ import responses
 from pydantic import BaseModel
 
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
-from blueapi.config import CLIClientConfig
+from blueapi.config import OIDCConfig
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import PlanModel, PlanResponse
@@ -18,16 +19,8 @@ def rest() -> BlueapiRestClient:
 
 
 @pytest.fixture
-def rest_with_auth(valid_oidc_url: str, tmp_path: Path) -> BlueapiRestClient:
-    session_manager = SessionManager(
-        server_config=CLIClientConfig(
-            well_known_url=valid_oidc_url,
-            client_id="foo",
-            client_audience="bar",
-            token_file_path=tmp_path / "token",
-        ),
-    )
-    return BlueapiRestClient(session_manager=session_manager)
+def rest_with_auth(oidc_config: OIDCConfig) -> BlueapiRestClient:
+    return BlueapiRestClient(session_manager=SessionManager(oidc_config))
 
 
 @pytest.mark.parametrize(
@@ -58,15 +51,15 @@ class MyModel(BaseModel):
 
 def test_auth_request_functionality(
     rest_with_auth: BlueapiRestClient,
-    valid_token: Path,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,
 ):
     plan = Plan(name="my-plan", model=MyModel)
-    mock_server = responses.RequestsMock()
-    mock_server.get(
+    mock_authn_server.get(
         "http://localhost:8000/plans",
         json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
     )
-    with mock_server:
+    with mock_authn_server:
         result = rest_with_auth.get_plans()
     assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
 
@@ -74,12 +67,8 @@ def test_auth_request_functionality(
 def test_refresh_if_signature_expired(
     rest_with_auth: BlueapiRestClient,
     mock_authn_server: responses.RequestsMock,
-    expired_token: Path,
+    cached_expired_token: Path,
 ):
-    mock_authn_server.post(
-        "https://example.com/token",
-        json={"access_token": "new_token"},
-    )
     plan = Plan(name="my-plan", model=MyModel)
 
     mock_get_plans = (

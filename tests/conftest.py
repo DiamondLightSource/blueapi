@@ -9,14 +9,17 @@ from typing import Any, cast
 import jwt
 import pytest
 import responses
+import responses.matchers
+import yaml
 from bluesky import RunEngine
 from bluesky.run_engine import TransitionError
+from jwcrypto.jwk import JWK
 from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
 
-from blueapi.config import CLIClientConfig
+from blueapi.config import ApplicationConfig, CLIClientConfig
 
 
 @pytest.fixture(scope="function")
@@ -65,17 +68,12 @@ def oidc_config(valid_oidc_url: str, tmp_path: Path) -> CLIClientConfig:
 
 
 @pytest.fixture
-def valid_auth_config(tmp_path: Path, valid_oidc_url: str) -> str:
-    config: str = f"""
-oidc_config:
-  well_known_url: {valid_oidc_url}
-  client_id: "blueapi"
-  client_audience: "blueapi-cli"
-  token_file_path: {tmp_path / "auth_token"}
-"""
-    with open(tmp_path / "auth_config.yaml", mode="w") as valid_auth_config_file:
-        valid_auth_config_file.write(config)
-        return valid_auth_config_file.name
+def valid_auth_config(tmp_path: Path, oidc_config: CLIClientConfig) -> Path:
+    config = ApplicationConfig(oidc_config=oidc_config)
+    config_path = tmp_path / "auth_config.yaml"
+    with open(config_path, mode="w") as valid_auth_config_file:
+        valid_auth_config_file.write(yaml.dump(config.model_dump()))
+    return config_path
 
 
 @pytest.fixture
@@ -91,20 +89,20 @@ def valid_oidc_config() -> dict[str, Any]:
     }
 
 
-def _make_token(name: str, issued_in: float, expires_in: float, tmp_path: Path) -> Path:
-    token_path = tmp_path / "token"
+@pytest.fixture(scope="session")
+def json_web_keyset() -> JWK:
+    return JWK.generate(kty="RSA", size=1024, kid="secret", use="sig", alg="RSA256")
 
+
+@pytest.fixture(scope="session")
+def rsa_private_key(json_web_keyset: JWK) -> str:
+    return json_web_keyset.export_to_pem("private_key", password=None).decode("utf-8")
+
+
+def _make_token(
+    name: str, issued_in: float, expires_in: float, tmp_path: Path, rsa_private_key: str
+) -> dict[str, str]:
     now = time.time()
-
-    RSA_key = """-----BEGIN RSA PRIVATE KEY-----
-MIIBOgIBAAJBAKj34GkxFhD90vcNLYLInFEX6Ppy1tPf9Cnzj4p4WGeKLs1Pt8Qu
-KUpRKfFLfRYC9AIKjbJTWit+CqvjWYzvQwECAwEAAQJAIJLixBy2qpFoS4DSmoEm
-o3qGy0t6z09AIJtH+5OeRV1be+N4cDYJKffGzDa88vQENZiRm0GRq6a+HPGQMd2k
-TQIhAKMSvzIBnni7ot/OSie2TmJLY4SwTQAevXysE2RbFDYdAiEBCUEaRQnMnbp7
-9mxDXDf6AU0cN/RPBjb9qSHDcWZHGzUCIG2Es59z8ugGrDY+pxLQnwfotadxd+Uy
-v/Ow5T0q5gIJAiEAyS4RaI9YG8EWx/2w0T67ZUVAw8eOMB6BIUg0Xcu+3okCIBOs
-/5OiPgoTdSy7bcF9IGpSE8ZgGKzgYQVZeN97YE00
------END RSA PRIVATE KEY-----"""
 
     id_token = {
         "aud": "default-demo",
@@ -119,28 +117,99 @@ v/Ow5T0q5gIJAiEAyS4RaI9YG8EWx/2w0T67ZUVAw8eOMB6BIUg0Xcu+3okCIBOs
         "access_token": name,
         "token_type": "Bearer",
         "refresh_token": "refresh_token",
-        "id_token": f"{jwt.encode(id_token, key=RSA_key, algorithm="RS256")}",
+        "id_token": f"{jwt.encode(id_token, key=rsa_private_key, algorithm="RS256", headers={"kid": "secret"})}",
     }
+    return response
+
+
+@pytest.fixture
+def cached_expired_token(tmp_path: Path, expired_token: dict[str, Any]) -> Path:
+    token_path = tmp_path / "token"
+    token_json = json.dumps(expired_token)
     with open(token_path, "w") as token_file:
-        token_file.write(
-            base64.b64encode(json.dumps(response).encode("utf-8")).decode("utf-8")
-        )
+        token_file.write(base64.b64encode(token_json.encode("utf-8")).decode("utf-8"))
     return token_path
 
 
 @pytest.fixture
-def expired_token(tmp_path: Path) -> Path:
-    return _make_token("expired_token", -3600, -1800, tmp_path)
+def cached_valid_token(tmp_path: Path, valid_token: dict[str, Any]) -> Path:
+    token_path = tmp_path / "token"
+    token_json = json.dumps(valid_token)
+    with open(token_path, "w") as token_file:
+        token_file.write(base64.b64encode(token_json.encode("utf-8")).decode("utf-8"))
+    return token_path
 
 
 @pytest.fixture
-def valid_token(tmp_path: Path) -> Path:
-    return _make_token("expired_token", -1800, +1800, tmp_path)
+def expired_token(tmp_path: Path, rsa_private_key: str) -> dict[str, Any]:
+    return _make_token("expired_token", -3600, -1800, tmp_path, rsa_private_key)
 
 
 @pytest.fixture
-def mock_authn_server(valid_oidc_url: str, valid_oidc_config: dict[str, Any]):
-    requests_mock = responses.RequestsMock(assert_all_requests_are_fired=True)
+def valid_token(tmp_path: Path, rsa_private_key: str) -> dict[str, Any]:
+    return _make_token("valid_token", -900, +900, tmp_path, rsa_private_key)
+
+
+@pytest.fixture
+def new_token(tmp_path: Path, rsa_private_key: str) -> dict[str, Any]:
+    return _make_token("new_token", -100, +1700, tmp_path, rsa_private_key)
+
+
+@pytest.fixture
+def mock_authn_server(
+    valid_oidc_url: str,
+    valid_oidc_config: dict[str, Any],
+    oidc_config: CLIClientConfig,
+    valid_token: dict[str, Any],
+    json_web_keyset: JWK,
+    new_token: dict[str, Any],
+):
+    requests_mock = responses.RequestsMock(assert_all_requests_are_fired=False)
+    # Fetch well-known OIDC flow URLs from server
     requests_mock.get(valid_oidc_url, json=valid_oidc_config)
-    requests_mock.get(valid_oidc_config["jwks_uri"], json="")
+    requests_mock.get(
+        valid_oidc_config["jwks_uri"],
+        json={"keys": [json_web_keyset.export_public(as_dict=True)]},
+    )
+    # When device flow begins, return a device_code
+    device_code = "ff83j3dk"
+    requests_mock.post(
+        valid_oidc_config["device_authorization_endpoint"],
+        json={
+            "device_code": device_code,
+            "verification_uri_complete": valid_oidc_config["issuer"] + "/verify",
+            "expires_in": 30,
+            "interval": 5,
+        },
+    )
+
+    # When polled with device_code return token
+    requests_mock.post(
+        valid_oidc_config["token_endpoint"],
+        json=valid_token,
+        match=[
+            responses.matchers.json_params_matcher(
+                {
+                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                    "device_code": device_code,
+                    "client_id": oidc_config.client_id,
+                }
+            ),
+        ],
+    )
+    # When asked to refresh with refresh_token return refreshed token
+    requests_mock.post(
+        valid_oidc_config["token_endpoint"],
+        json=new_token,
+        match=[
+            responses.matchers.json_params_matcher(
+                {
+                    "client_id": oidc_config.client_id,
+                    "grant_type": "refresh_token",
+                    "refresh_token": "refresh_token",
+                },
+            )
+        ],
+    )
+
     return requests_mock

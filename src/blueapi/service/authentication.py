@@ -26,7 +26,7 @@ class Authenticator:
         return jwt.decode(
             token,
             signing_key.key,
-            algorithms=self._server_config.signing_algos,
+            algorithms=self._server_config.id_token_signing_alg_values_supported,
             verify=True,
             audience=self._server_config.client_audience,
             issuer=self._server_config.issuer,
@@ -105,9 +105,8 @@ class SessionManager:
     def refresh_auth_token(self) -> None:
         token = self._token_manager.load_token()
         response = requests.post(
-            self._server_config.token_url,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data={
+            self._server_config.token_endpoint,
+            json={
                 "client_id": self._server_config.client_id,
                 "grant_type": "refresh_token",
                 "refresh_token": token["refresh_token"],
@@ -124,9 +123,8 @@ class SessionManager:
         expiry_time: float = time.time() + expires_in
         while time.time() < expiry_time:
             response = requests.post(
-                self._server_config.token_url,
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-                data={
+                self._server_config.token_endpoint,
+                json={
                     "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                     "device_code": device_code,
                     "client_id": self._server_config.client_id,
@@ -138,24 +136,10 @@ class SessionManager:
 
         raise TimeoutError("Polling timed out")
 
-    def start_device_flow(self) -> None:
-        token = self._token_manager.load_token()
-        try:
-            self.authenticator.decode_jwt(token["access_token"])
-            print("Cached token still valid, skipping flow")
-            return
-        except jwt.ExpiredSignatureError:
-            token = self.refresh_auth_token()
-            print("Refreshed cached token, skipping flow")
-            return
-        except Exception:
-            print("Problem with cached token, starting new session")
-            self._token_manager.delete_token()
-
+    def _do_device_flow(self) -> None:
         response: requests.Response = requests.post(
-            self._server_config.device_auth_url,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data={
+            self._server_config.device_authorization_endpoint,
+            json={
                 "client_id": self._server_config.client_id,
                 "scope": "openid profile offline_access",
                 "audience": self._server_config.client_audience,
@@ -175,7 +159,21 @@ class SessionManager:
         auth_token_json: dict[str, Any] = self.poll_for_token(
             device_code, interval, expires_in
         )
-        decoded_token: dict[str, Any] = self.authenticator.decode_jwt(
-            auth_token_json["access_token"]
-        )
-        self._token_manager.save_token(decoded_token)
+        self._token_manager.save_token(auth_token_json)
+
+    def start_device_flow(self) -> None:
+        try:
+            token = self._token_manager.load_token()
+            self.authenticator.decode_jwt(token["id_token"])
+            print("Cached token still valid, skipping flow")
+            return
+        except jwt.ExpiredSignatureError:
+            token = self.refresh_auth_token()
+            print("Refreshed cached token, skipping flow")
+            return
+        except FileNotFoundError:
+            self._do_device_flow()
+        except Exception as e:
+            print(e)
+            print("Problem with cached token, starting new session")
+            self._token_manager.delete_token()

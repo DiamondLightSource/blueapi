@@ -634,25 +634,9 @@ def test_logout_missing_config(runner: CliRunner):
 
 def test_login_success(
     runner: CliRunner,
-    valid_auth_config: str,
+    valid_auth_config: Path,
     mock_authn_server: responses.RequestsMock,
-    valid_oidc_config: dict[str, Any],
 ):
-    mock_authn_server.post(
-        valid_oidc_config["device_authorization_endpoint"],
-        json={
-            "device_code": "device_code",
-            "verification_uri_complete": "https://example.com/verify",
-            "expires_in": 30,
-            "interval": 5,
-        },
-    )
-    mock_authn_server.post(
-        valid_oidc_config["token_endpoint"],
-        json={
-            "access_token": "token",
-        },
-    )
     with mock_authn_server:
         result = runner.invoke(main, ["-c", valid_auth_config, "login"])
     assert (
@@ -665,28 +649,22 @@ def test_login_success(
 
 def test_token_login_early_exit(
     runner: CliRunner,
-    valid_auth_config: str,
-    valid_token: Path,
+    valid_auth_config: Path,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,
 ):
-    result = runner.invoke(main, ["-c", valid_auth_config, "login"])
+    with mock_authn_server:
+        result = runner.invoke(main, ["-c", valid_auth_config, "login"])
     assert "Logging in\nCached token still valid, skipping flow\n" == result.output
     assert result.exit_code == 0
 
 
 def test_login_with_refresh_token(
     runner: CliRunner,
-    valid_auth_config: str,
+    valid_auth_config: Path,
     mock_authn_server: responses.RequestsMock,
-    valid_oidc_config: dict[str, Any],
-    expired_token: Path,
+    cached_expired_token: Path,
 ):
-    mock_authn_server.post(
-        valid_oidc_config["token_endpoint"],
-        json={
-            "access_token": "token",
-        },
-    )
-
     with mock_authn_server:
         result = runner.invoke(main, ["-c", valid_auth_config, "login"])
 
@@ -696,7 +674,7 @@ def test_login_with_refresh_token(
 
 def test_login_edge_cases(
     runner: CliRunner,
-    valid_auth_config: str,
+    valid_auth_config: Path,
     mock_authn_server: responses.RequestsMock,
     valid_oidc_config: dict[str, Any],
 ):
@@ -712,9 +690,13 @@ def test_login_edge_cases(
     assert result.exit_code == 0
 
 
-def test_logout_success(runner: CliRunner, valid_auth_config: str, expired_token: Path):
-    assert expired_token.exists()
+def test_logout_success(
+    runner: CliRunner,
+    valid_auth_config: Path,
+    cached_expired_token: Path,
+):
+    assert cached_expired_token.exists()
     result = runner.invoke(main, ["-c", valid_auth_config, "logout"])
     assert "Logged out" in result.output
     assert result.exit_code == 0
-    assert not expired_token.exists()
+    assert not cached_expired_token.exists()

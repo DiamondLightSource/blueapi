@@ -13,7 +13,6 @@ from blueapi.client.client import (
 from blueapi.client.event_bus import AnyEvent
 from blueapi.config import (
     ApplicationConfig,
-    CLIClientConfig,
     OIDCConfig,
     StompConfig,
 )

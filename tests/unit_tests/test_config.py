@@ -375,17 +375,22 @@ def mock_server_response(valid_oidc_url: str, valid_oidc_config: dict[str, Any])
 def test_oauth_config_model_post_init(
     valid_oidc_url: str,
     valid_oidc_config: dict[str, Any],
+    oidc_config: OIDCConfig,
     mock_server_response: responses.RequestsMock,
 ):
-    oauth_config = OIDCConfig(well_known_url=valid_oidc_url)
-
     with mock_server_response:
         assert (
-            oauth_config.device_auth_url
+            oidc_config.device_authorization_endpoint
             == valid_oidc_config["device_authorization_endpoint"]
         )
-        assert oauth_config.auth_url == valid_oidc_config["authorization_endpoint"]
-        assert oauth_config.token_url == valid_oidc_config["token_endpoint"]
-        assert oauth_config.issuer == valid_oidc_config["issuer"]
-        assert oauth_config.jwks_uri == valid_oidc_config["jwks_uri"]
-        assert oauth_config.logout_url == valid_oidc_config["end_session_endpoint"]
+        assert (
+            oidc_config.authorization_endpoint
+            == valid_oidc_config["authorization_endpoint"]
+        )
+        assert oidc_config.token_endpoint == valid_oidc_config["token_endpoint"]
+        assert oidc_config.issuer == valid_oidc_config["issuer"]
+        assert oidc_config.jwks_uri == valid_oidc_config["jwks_uri"]
+        assert (
+            oidc_config.end_session_endpoint
+            == valid_oidc_config["end_session_endpoint"]
+        )

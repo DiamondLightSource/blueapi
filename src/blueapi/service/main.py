@@ -108,9 +108,9 @@ def get_app(config: ApplicationConfig | None = None):
 
 def verify_access_token(config: OIDCConfig):
     oauth_scheme = OAuth2AuthorizationCodeBearer(
-        authorizationUrl=config.auth_url,
-        tokenUrl=config.token_url,
-        refreshUrl=config.token_url,
+        authorizationUrl=config.authorization_endpoint,
+        tokenUrl=config.token_endpoint,
+        refreshUrl=config.token_endpoint,
     )
     authenticator = Authenticator(config)
 

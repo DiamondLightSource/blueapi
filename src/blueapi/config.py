@@ -12,6 +12,7 @@ from pydantic import (
     Field,
     TypeAdapter,
     ValidationError,
+    field_serializer,
 )
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
@@ -100,17 +101,17 @@ class OIDCConfig(BlueapiBaseModel):
         return response.json()
 
     @cached_property
-    def device_auth_url(self) -> str:
+    def device_authorization_endpoint(self) -> str:
         return cast(
             str, self._config_from_oidc_url.get("device_authorization_endpoint")
         )
 
     @cached_property
-    def auth_url(self) -> str:
+    def authorization_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("authorization_endpoint"))
 
     @cached_property
-    def token_url(self) -> str:
+    def token_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("token_endpoint"))
 
     @cached_property
@@ -122,11 +123,11 @@ class OIDCConfig(BlueapiBaseModel):
         return cast(str, self._config_from_oidc_url.get("jwks_uri"))
 
     @cached_property
-    def logout_url(self) -> str:
+    def end_session_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("end_session_endpoint"))
 
     @cached_property
-    def signing_algos(self) -> list[str]:
+    def id_token_signing_alg_values_supported(self) -> list[str]:
         return cast(
             list[str],
             self._config_from_oidc_url.get("id_token_signing_alg_values_supported"),
@@ -134,7 +135,11 @@ class OIDCConfig(BlueapiBaseModel):
 
 
 class CLIClientConfig(OIDCConfig):
-    token_file_path: Path = Path("~/token")
+    token_file_path: Path = Field(Path("~/token"))
+
+    @field_serializer("token_file_path")
+    def serialize_token_file_path(self, token_file_path: Path, _info):
+        return f"{token_file_path}"
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -148,7 +153,7 @@ class ApplicationConfig(BlueapiBaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
-    oidc_config: OIDCConfig | None = None
+    oidc_config: OIDCConfig | CLIClientConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

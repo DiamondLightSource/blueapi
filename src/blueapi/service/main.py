@@ -1,7 +1,6 @@
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from typing import Any
 
 from fastapi import (
     APIRouter,

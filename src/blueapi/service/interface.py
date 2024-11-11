@@ -52,7 +52,7 @@ def worker() -> TaskWorker:
 def stomp_client() -> StompClient | None:
     stomp_config = config().stomp
     if stomp_config is not None:
-        template = StompClient.for_broker(
+        stomp_client = StompClient.for_broker(
             broker=Broker(
                 host=stomp_config.host, port=stomp_config.port, auth=stomp_config.auth
             )
@@ -68,8 +68,8 @@ def stomp_client() -> StompClient | None:
                 task_worker.data_events: event_topic,
             }
         )
-        template.connect()
-        return template
+        stomp_client.connect()
+        return stomp_client
     else:
         return None
 
@@ -88,8 +88,8 @@ def setup(config: ApplicationConfig) -> None:
 
 def teardown() -> None:
     worker().stop()
-    if (template := stomp_client()) is not None:
-        template.disconnect()
+    if (stomp_client_ref := stomp_client()) is not None:
+        stomp_client_ref.disconnect()
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
@@ -104,8 +104,10 @@ def _publish_event_streams(
 
 def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> None:
     def forward_message(event: Any, correlation_id: str | None) -> None:
-        if (template := stomp_client()) is not None:
-            template.send(destination, event, None, correlation_id=correlation_id)
+        if (stomp_client_ref := stomp_client()) is not None:
+            stomp_client_ref.send(
+                destination, event, None, correlation_id=correlation_id
+            )
 
     stream.subscribe(forward_message)
 

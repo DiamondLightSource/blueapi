@@ -107,7 +107,7 @@ class BlueskyContext:
 
         for obj in load_module_all(module):
             if is_bluesky_plan_generator(obj):
-                self.plan(obj)
+                self.register_plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
@@ -116,7 +116,7 @@ class BlueskyContext:
         devices, exceptions = make_all_devices(module, **kwargs)
 
         for device in devices.values():
-            self.device(device)
+            self.register_device(device)
 
         # If exceptions have occurred, we log them but we do not make blueapi
         # fall over
@@ -126,7 +126,7 @@ class BlueskyContext:
             )
             LOGGER.exception(NotConnected(exceptions))
 
-    def plan(self, plan: PlanGenerator) -> PlanGenerator:
+    def register_plan(self, plan: PlanGenerator) -> PlanGenerator:
         """
         Register the argument as a plan in the context. Can be used as a decorator e.g.
         @ctx.plan
@@ -154,7 +154,7 @@ class BlueskyContext:
         self.plan_functions[plan.__name__] = plan
         return plan
 
-    def device(self, device: Device, name: str | None = None) -> None:
+    def register_device(self, device: Device, name: str | None = None) -> None:
         """
         Register an device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`

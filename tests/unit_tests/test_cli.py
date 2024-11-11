@@ -38,7 +38,7 @@ def mock_connection() -> Mock:
 
 
 @pytest.fixture
-def template(mock_connection: Mock) -> StompClient:
+def mock_stomp_client(mock_connection: Mock) -> StompClient:
     return StompClient(conn=mock_connection)
 
 
@@ -152,7 +152,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
 
 @patch("blueapi.cli.cli.StompClient")
 def test_valid_stomp_config_for_listener(
-    template: StompClient,
+    mock_stomp_client: StompClient,
     runner: CliRunner,
     mock_connection: Mock,
 ):

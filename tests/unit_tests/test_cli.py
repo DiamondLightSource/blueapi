@@ -634,7 +634,7 @@ def test_logout_missing_config(runner: CliRunner):
 
 def test_login_success(
     runner: CliRunner,
-    valid_auth_config: Path,
+    valid_auth_config: str,
     mock_authn_server: responses.RequestsMock,
 ):
     result = runner.invoke(main, ["-c", valid_auth_config, "login"])
@@ -648,7 +648,7 @@ def test_login_success(
 
 def test_token_login_early_exit(
     runner: CliRunner,
-    valid_auth_config: Path,
+    valid_auth_config: str,
     mock_authn_server: responses.RequestsMock,
     cached_valid_token: Path,
 ):
@@ -659,7 +659,7 @@ def test_token_login_early_exit(
 
 def test_login_with_refresh_token(
     runner: CliRunner,
-    valid_auth_config: Path,
+    valid_auth_config: str,
     mock_authn_server: responses.RequestsMock,
     cached_expired_token: Path,
 ):
@@ -671,7 +671,7 @@ def test_login_with_refresh_token(
 
 def test_login_edge_cases(
     runner: CliRunner,
-    valid_auth_config: Path,
+    valid_auth_config: str,
     mock_authn_server: responses.RequestsMock,
     valid_oidc_config: dict[str, Any],
 ):
@@ -693,7 +693,7 @@ def test_login_edge_cases(
 
 def test_logout_success(
     runner: CliRunner,
-    valid_auth_config: Path,
+    valid_auth_config: str,
     cached_expired_token: Path,
 ):
     assert cached_expired_token.exists()

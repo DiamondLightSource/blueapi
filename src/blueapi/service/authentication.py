@@ -58,7 +58,7 @@ class CliTokenManager(TokenManager):
             raise FileNotFoundError
         with open(file_path, "rb") as token_file:
             token_base64: bytes = token_file.read()
-            token_json: bytes = base64.b64decode(token_base64).decode("utf-8")
+            token_json: str = base64.b64decode(token_base64).decode("utf-8")
             return json.loads(token_json)
 
     def delete_token(self) -> None:
@@ -105,10 +105,8 @@ class SessionManager:
         except jwt.DecodeError:
             # Else, we check if the id_token is still valid
             return self.decode_jwt(token["id_token"])
-        except Exception as e:
-            print(e)
 
-    def refresh_auth_token(self) -> None:
+    def refresh_auth_token(self) -> dict[str, Any]:
         token = self._token_manager.load_token()
         response = requests.post(
             self._server_config.token_endpoint,
@@ -168,16 +166,14 @@ class SessionManager:
         self._token_manager.save_token(auth_token_json)
         print("Logged in and cached new token")
 
-    def start_device_flow(self) -> None:
+    def start_device_flow(self):
         try:
             token = self._token_manager.load_token()
             self.decode_token(token)
             print("Cached token still valid, skipping flow")
-            return
         except jwt.ExpiredSignatureError:
             token = self.refresh_auth_token()
             print("Refreshed cached token, skipping flow")
-            return
         except FileNotFoundError:
             self._do_device_flow()
         except Exception:

@@ -71,12 +71,12 @@ def oidc_config(valid_oidc_url: str, tmp_path: Path) -> CLIClientConfig:
 
 
 @pytest.fixture
-def valid_auth_config(tmp_path: Path, oidc_config: CLIClientConfig) -> Path:
+def valid_auth_config(tmp_path: Path, oidc_config: CLIClientConfig) -> str:
     config = ApplicationConfig(oidc_config=oidc_config)
     config_path = tmp_path / "auth_config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
-    return config_path
+    return config_path.as_posix()
 
 
 @pytest.fixture

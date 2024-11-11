@@ -127,7 +127,7 @@ def verify_access_token(config: OIDCConfig):
 TRACER = get_tracer("interface")
 
 
-async def on_key_error_404(_: Request, __: KeyError):
+async def on_key_error_404(_: Request, __: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "Item not found"},

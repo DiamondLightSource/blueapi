@@ -160,7 +160,8 @@ class TaskWorker:
             add_span_attributes({"Task aborted": reason or default_reason})
         else:
             self._ctx.run_engine.stop()
-            add_span_attributes({"Task stopped": reason})
+            default_reason = "Cancellation successful: Task stopped without error"
+            add_span_attributes({"Task stopped": reason or default_reason})
         return self._current.task_id
 
     @start_as_current_span(TRACER)

@@ -69,7 +69,7 @@ class WorkerDispatcher:
     @start_as_current_span(TRACER)
     def start(self):
         add_span_attributes(
-            {"_use_subprocess": self._use_subprocess, "_config": self._config}
+            {"_use_subprocess": self._use_subprocess, "_config": str(self._config)}
         )
         try:
             if self._use_subprocess:

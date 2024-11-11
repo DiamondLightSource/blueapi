@@ -1,7 +1,8 @@
 import bluesky.plan_stubs as bps
 from bluesky.plans import count
 from bluesky.protocols import Movable, Readable
-from dodal.common import MsgGenerator, inject
+from bluesky.utils import MsgGenerator
+from dodal.common import inject
 
 TEMP: Movable = inject("sample_temperature")
 PRESS: Movable = inject("sample_pressure")
@@ -27,5 +28,5 @@ def stp_snapshot(
     Yields:
         Iterator[MsgGenerator]: Bluesky messages
     """
-    yield from bps.mv({temperature: 0, pressure: 10**5})
+    yield from bps.mv({temperature: 0, pressure: 10**5})  # type: ignore
     yield from count(detectors, 1)

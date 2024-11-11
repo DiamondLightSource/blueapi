@@ -150,7 +150,7 @@ def test_auth_from_env_throws_when_not_available():
     with pytest.raises(KeyError):
         BasicAuthentication(username="${BAZ}", password=Secret("baz"))
     with pytest.raises(KeyError):
-        BasicAuthentication(username="${baz}", passcode="baz")
+        BasicAuthentication(username="${baz}", passcode="baz")  # type: ignore
 
 
 def is_subset(subset: Mapping[str, Any], superset: Mapping[str, Any]) -> bool:

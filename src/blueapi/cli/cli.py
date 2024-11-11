@@ -11,6 +11,7 @@ from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 from observability_utils.tracing import setup_tracing
 from pydantic import ValidationError
+from pydantic_settings.sources import PathType
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
@@ -32,7 +33,7 @@ from .updates import CliEventRenderer
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
 @click.pass_context
-def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
+def main(ctx: click.Context, config: PathType) -> None:
     # Override default yaml_file path in the model_config if `config` is provided
     ApplicationConfig.model_config["yaml_file"] = config
     app_config = ApplicationConfig()  # Instantiates with customized sources

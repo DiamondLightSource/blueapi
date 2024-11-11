@@ -95,7 +95,9 @@ class ApplicationConfig(BaseSettings, cli_parse_args=True, cli_prog_name="blueap
     )
 
     @classmethod
-    def customize_sources(cls, init_settings, env_settings, file_secret_settings):
+    def settings_customize_sources(
+        cls, init_settings, env_settings, file_secret_settings
+    ):
         path = cls.model_config.get("yaml_file")
         return (
             init_settings,

@@ -15,7 +15,11 @@ from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
 """This module provides interface between web application and underlying Bluesky
-context and worker"""
+context and worker
+
+the _CONFIG global variable is used by the subprocess only
+
+"""
 
 
 _CONFIG: ApplicationConfig = ApplicationConfig()
@@ -26,6 +30,10 @@ def config() -> ApplicationConfig:
 
 
 def set_config(new_config: ApplicationConfig):
+    """
+    This is a setter function that the main process uses
+    to pass the config into the subprocess
+    """
     global _CONFIG
 
     _CONFIG = new_config

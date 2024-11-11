@@ -150,7 +150,7 @@ class BlueapiRestClient:
             token = self._session_manager.get_token()
             try:
                 # Check token is not expired
-                self._session_manager.authenticator.decode_jwt(token["id_token"])
+                self._session_manager.decode_jwt(token["id_token"])
             except jwt.ExpiredSignatureError:
                 token = self._session_manager.refresh_auth_token()
             carr["Authorization"] = f"Bearer {token['access_token']}"

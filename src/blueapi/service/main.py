@@ -30,7 +30,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service import interface
-from blueapi.service.authentication import Authenticator
+from blueapi.service.authentication import SessionManager
 from blueapi.service.runner import WorkerDispatcher
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
@@ -112,11 +112,11 @@ def verify_access_token(config: OIDCConfig):
         tokenUrl=config.token_endpoint,
         refreshUrl=config.token_endpoint,
     )
-    authenticator = Authenticator(config)
+    session_manager = SessionManager(config)
 
     def inner(access_token: str = Depends(oauth_scheme)):
         try:
-            decoded_token: dict[str, Any] = authenticator.decode_jwt(access_token)
+            decoded_token: dict[str, Any] = session_manager.decode_jwt(access_token)
             if not decoded_token:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         except Exception as exception:

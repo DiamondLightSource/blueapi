@@ -15,24 +15,6 @@ import requests
 from blueapi.config import CLIClientConfig, OIDCConfig
 
 
-class Authenticator:
-    def __init__(self, server_config: OIDCConfig):
-        self._server_config: OIDCConfig = server_config
-
-    def decode_jwt(self, token: str) -> dict[str, str]:
-        signing_key = jwt.PyJWKClient(
-            self._server_config.jwks_uri
-        ).get_signing_key_from_jwt(token)
-        return jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=self._server_config.id_token_signing_alg_values_supported,
-            verify=True,
-            audience=self._server_config.client_audience,
-            issuer=self._server_config.issuer,
-        )
-
-
 class TokenManager(ABC):
     @abstractmethod
     def save_token(self, token: dict[str, Any]) -> None: ...
@@ -88,7 +70,6 @@ class SessionManager:
         server_config: OIDCConfig,
     ) -> None:
         self._server_config = server_config
-        self.authenticator: Authenticator = Authenticator(server_config)
         self._token_manager: TokenManager = (
             CliTokenManager(server_config.token_file_path)
             if isinstance(server_config, CLIClientConfig)
@@ -100,6 +81,19 @@ class SessionManager:
 
     def logout(self) -> None:
         self._token_manager.delete_token()
+
+    def decode_jwt(self, token: str) -> dict[str, str]:
+        signing_key = jwt.PyJWKClient(
+            self._server_config.jwks_uri
+        ).get_signing_key_from_jwt(token)
+        return jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=self._server_config.id_token_signing_alg_values_supported,
+            verify=True,
+            audience=self._server_config.client_audience,
+            issuer=self._server_config.issuer,
+        )
 
     def refresh_auth_token(self) -> None:
         token = self._token_manager.load_token()
@@ -164,7 +158,7 @@ class SessionManager:
     def start_device_flow(self) -> None:
         try:
             token = self._token_manager.load_token()
-            self.authenticator.decode_jwt(token["id_token"])
+            self.decode_jwt(token["id_token"])
             print("Cached token still valid, skipping flow")
             return
         except jwt.ExpiredSignatureError:

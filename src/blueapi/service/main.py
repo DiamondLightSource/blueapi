@@ -116,9 +116,7 @@ def verify_access_token(config: OIDCConfig):
 
     def inner(access_token: str = Depends(oauth_scheme)):
         try:
-            decoded_token: dict[str, Any] = session_manager.decode_jwt(access_token)
-            if not decoded_token:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+            session_manager.decode_jwt(access_token)
         except Exception as exception:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

@@ -144,13 +144,12 @@ class BlueapiRestClient:
         url = self._url(suffix)
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
-        # Attach authentication information if present
-        carr["content-type"] = "application/json; charset=UTF-8"
         if self._session_manager:
+            # Attach authentication information if present
             token = self._session_manager.get_token()
             try:
                 # Check token is not expired
-                self._session_manager.decode_jwt(token["id_token"])
+                self._session_manager.decode_token(token)
             except jwt.ExpiredSignatureError:
                 token = self._session_manager.refresh_auth_token()
             carr["Authorization"] = f"Bearer {token['access_token']}"

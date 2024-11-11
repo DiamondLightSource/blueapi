@@ -70,6 +70,7 @@ class SessionManager:
         server_config: OIDCConfig,
     ) -> None:
         self._server_config = server_config
+        self._client = jwt.PyJWKClient(server_config.jwks_uri)
         self._token_manager: TokenManager = (
             CliTokenManager(server_config.token_file_path)
             if isinstance(server_config, CLIClientConfig)
@@ -82,18 +83,24 @@ class SessionManager:
     def logout(self) -> None:
         self._token_manager.delete_token()
 
-    def decode_jwt(self, token: str) -> dict[str, str]:
-        signing_key = jwt.PyJWKClient(
-            self._server_config.jwks_uri
-        ).get_signing_key_from_jwt(token)
+    def decode_jwt(self, json_web_token: str):
+        signing_key = self._client.get_signing_key(json_web_token)
         return jwt.decode(
-            token,
+            json_web_token,
             signing_key.key,
             algorithms=self._server_config.id_token_signing_alg_values_supported,
             verify=True,
             audience=self._server_config.client_audience,
             issuer=self._server_config.issuer,
         )
+
+    def decode_token(self, token: dict[str, Any]) -> dict[str, Any]:
+        try:
+            # If the access_token is a JWT, we check if it is still valid
+            return self.decode_jwt(token["access_token"])
+        except jwt.DecodeError:
+            # Else, we check if the id_token is still valid
+            return self.decode_jwt(token["id_token"])
 
     def refresh_auth_token(self) -> None:
         token = self._token_manager.load_token()
@@ -158,7 +165,7 @@ class SessionManager:
     def start_device_flow(self) -> None:
         try:
             token = self._token_manager.load_token()
-            self.decode_jwt(token["id_token"])
+            self.decode_token(token)
             print("Cached token still valid, skipping flow")
             return
         except jwt.ExpiredSignatureError:

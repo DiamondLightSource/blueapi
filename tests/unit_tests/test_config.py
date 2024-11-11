@@ -12,7 +12,7 @@ import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ApplicationConfig, ConfigLoader, OAuthServerConfig
+from blueapi.config import ApplicationConfig, ConfigLoader, OIDCConfig
 from blueapi.utils import InvalidConfigError
 
 
@@ -269,12 +269,10 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "protocol": "http",
             },
             "logging": {"level": "INFO"},
-            "oauth_client": {
+            "oidc_config": {
+                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
-            },
-            "oauth_server": {
-                "oidc_config_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration"
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
@@ -302,13 +300,10 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "logging": {"level": "INFO"},
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
-            "oauth_server": {
-                "oidc_config_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration"
-            },
-            "oauth_client": {
+            "oidc_config": {
+                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
-                "token_file_path": "~/token",
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
@@ -382,7 +377,7 @@ def test_oauth_config_model_post_init(
     valid_oidc_config: dict[str, Any],
     mock_server_response: responses.RequestsMock,
 ):
-    oauth_config = OAuthServerConfig(oidc_config_url=valid_oidc_url)
+    oauth_config = OIDCConfig(well_known_url=valid_oidc_url)
 
     with mock_server_response:
         assert (

@@ -5,7 +5,6 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, cast
@@ -13,20 +12,14 @@ from typing import Any, cast
 import jwt
 import requests
 
-from blueapi.config import (
-    CLIClientConfig,
-    OAuthClientConfig,
-    OAuthServerConfig,
-)
+from blueapi.config import CLIClientConfig, OIDCConfig
 
 
 class Authenticator:
-    def __init__(self, server_config: OAuthServerConfig):
-        self._server_config: OAuthServerConfig = server_config
+    def __init__(self, server_config: OIDCConfig):
+        self._server_config: OIDCConfig = server_config
 
-    def decode_jwt(
-        self, token: str, audience: str | Iterable[str] | None = None
-    ) -> dict[str, str]:
+    def decode_jwt(self, token: str) -> dict[str, str]:
         signing_key = jwt.PyJWKClient(
             self._server_config.jwks_uri
         ).get_signing_key_from_jwt(token)
@@ -35,7 +28,7 @@ class Authenticator:
             signing_key.key,
             algorithms=self._server_config.signing_algos,
             verify=True,
-            audience=audience,
+            audience=self._server_config.client_audience,
             issuer=self._server_config.issuer,
         )
 
@@ -44,9 +37,23 @@ class TokenManager(ABC):
     @abstractmethod
     def save_token(self, token: dict[str, Any]) -> None: ...
     @abstractmethod
-    def load_token(token) -> dict[str, Any] | None: ...
+    def load_token(token) -> dict[str, Any]: ...
     @abstractmethod
-    def delete_token(self): ...
+    def delete_token(self) -> None: ...
+
+
+class NoOpTokenManager(TokenManager):
+    def __init__(self, warning: str = "Session not configured to persist!"):
+        self._warning = warning
+
+    def save_token(self, token: dict[str, Any]) -> None:
+        print(self._warning)
+
+    def load_token(self) -> dict[str, Any]:
+        raise ValueError(self._warning)
+
+    def delete_token(self) -> None:
+        print(self._warning)
 
 
 class CliTokenManager(TokenManager):
@@ -61,11 +68,12 @@ class CliTokenManager(TokenManager):
         token_base64: bytes = base64.b64encode(token_json.encode("utf-8"))
         with open(self._file_path(), "wb") as token_file:
             token_file.write(token_base64)
+        print("Logged in and cached new token")
 
-    def load_token(self) -> dict[str, Any] | None:
+    def load_token(self) -> dict[str, Any]:
         file_path = self._file_path()
         if not os.path.exists(file_path):
-            return None
+            raise FileNotFoundError
         with open(file_path, "rb") as token_file:
             token_base64: bytes = token_file.read()
             token_json: bytes = base64.b64decode(token_base64).decode("utf-8")
@@ -78,49 +86,37 @@ class CliTokenManager(TokenManager):
 class SessionManager:
     def __init__(
         self,
-        server_config: OAuthServerConfig,
-        client_config: OAuthClientConfig,
+        server_config: OIDCConfig,
     ) -> None:
         self._server_config = server_config
-        self._client_id = client_config.client_id
-        self._client_audience = client_config.client_audience
         self.authenticator: Authenticator = Authenticator(server_config)
-        self._token_manager: TokenManager | None = (
-            CliTokenManager(client_config.token_file_path)
-            if isinstance(client_config, CLIClientConfig)
-            else None
+        self._token_manager: TokenManager = (
+            CliTokenManager(server_config.token_file_path)
+            if isinstance(server_config, CLIClientConfig)
+            else NoOpTokenManager()
         )
 
-    def get_token(self) -> dict[str, Any] | None:
-        if self._token_manager:
-            return self._token_manager.load_token()
-        return None
+    def get_token(self) -> dict[str, Any]:
+        return self._token_manager.load_token()
 
     def logout(self) -> None:
-        if self._token_manager:
-            self._token_manager.delete_token()
+        self._token_manager.delete_token()
 
-    def refresh_auth_token(self) -> dict[str, Any] | None:
-        if not self._token_manager:
-            print("Session not configured to persist, no token to refresh")
-            return None
+    def refresh_auth_token(self) -> None:
         token = self._token_manager.load_token()
-        if not token:
-            print("No current Session, no token to refresh")
-            return None
         response = requests.post(
             self._server_config.token_url,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data={
-                "client_id": self._client_id,
+                "client_id": self._server_config.client_id,
                 "grant_type": "refresh_token",
                 "refresh_token": token["refresh_token"],
             },
         )
-        if response.status_code == HTTPStatus.OK and (token := response.json()):
-            self._token_manager.save_token(token)
-            return token
-        return None
+        response.raise_for_status()
+        token = response.json()
+        self._token_manager.save_token(token)
+        return token
 
     def poll_for_token(
         self, device_code: str, polling_interval: float, expires_in: float
@@ -133,7 +129,7 @@ class SessionManager:
                 data={
                     "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                     "device_code": device_code,
-                    "client_id": self._client_id,
+                    "client_id": self._server_config.client_id,
                 },
             )
             if response.status_code == HTTPStatus.OK:
@@ -143,56 +139,43 @@ class SessionManager:
         raise TimeoutError("Polling timed out")
 
     def start_device_flow(self) -> None:
-        if not self._token_manager:
-            print("Session not configured to persist, no token to refresh")
-            return None
-
-        if token := self._token_manager.load_token():
-            try:
-                self.authenticator.decode_jwt(
-                    token["access_token"], self._client_audience
-                )
-                print("Cached token still valid, skipping flow")
-                return
-            except jwt.ExpiredSignatureError:
-                if token := self.refresh_auth_token():
-                    print("Refreshed cached token, skipping flow")
-                    return
-            except Exception:
-                print("Problem with cached token, starting new session")
-                self._token_manager.delete_token()
+        token = self._token_manager.load_token()
+        try:
+            self.authenticator.decode_jwt(token["access_token"])
+            print("Cached token still valid, skipping flow")
+            return
+        except jwt.ExpiredSignatureError:
+            token = self.refresh_auth_token()
+            print("Refreshed cached token, skipping flow")
+            return
+        except Exception:
+            print("Problem with cached token, starting new session")
+            self._token_manager.delete_token()
 
         response: requests.Response = requests.post(
             self._server_config.device_auth_url,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data={
-                "client_id": self._client_id,
+                "client_id": self._server_config.client_id,
                 "scope": "openid profile offline_access",
-                "audience": self._client_audience,
+                "audience": self._server_config.client_audience,
             },
         )
 
-        if response.status_code == HTTPStatus.OK:
-            response_json: dict[str, Any] = response.json()
-            device_code = cast(str, response_json.get("device_code"))
-            interval = cast(float, response_json.get("interval"))
-            expires_in = cast(float, response_json.get("expires_in"))
-            print(
-                "Please login from this URL:- "
-                f"{response_json['verification_uri_complete']}"
-            )
-            auth_token_json: dict[str, Any] = self.poll_for_token(
-                device_code, interval, expires_in
-            )
-            decoded_token: dict[str, Any] = self.authenticator.decode_jwt(
-                auth_token_json["access_token"], self._client_audience
-            )
-            if decoded_token:
-                if self._token_manager:
-                    self._token_manager.save_token(auth_token_json)
-                    print("Logged in and cached new token")
-                else:
-                    print("Logged in but not configured to persist session")
+        response.raise_for_status()
 
-        else:
-            print("Failed to login")
+        response_json: dict[str, Any] = response.json()
+        device_code = cast(str, response_json.get("device_code"))
+        interval = cast(float, response_json.get("interval"))
+        expires_in = cast(float, response_json.get("expires_in"))
+        print(
+            "Please login from this URL:- "
+            f"{response_json['verification_uri_complete']}"
+        )
+        auth_token_json: dict[str, Any] = self.poll_for_token(
+            device_code, interval, expires_in
+        )
+        decoded_token: dict[str, Any] = self.authenticator.decode_jwt(
+            auth_token_json["access_token"]
+        )
+        self._token_manager.save_token(decoded_token)

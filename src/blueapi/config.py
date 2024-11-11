@@ -84,14 +84,18 @@ class ScratchConfig(BlueapiBaseModel):
     repositories: list[ScratchRepository] = Field(default_factory=list)
 
 
-class OAuthServerConfig(BlueapiBaseModel):
-    oidc_config_url: str = Field(
+class OIDCConfig(BlueapiBaseModel):
+    well_known_url: str = Field(
         description="URL to fetch OIDC config from the provider"
+    )
+    client_id: str = Field(description="Client ID")
+    client_audience: str | Iterable[str] | None = Field(
+        description="Client Audience(s)"
     )
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
-        response: requests.Response = requests.get(self.oidc_config_url)
+        response: requests.Response = requests.get(self.well_known_url)
         response.raise_for_status()
         return response.json()
 
@@ -129,14 +133,7 @@ class OAuthServerConfig(BlueapiBaseModel):
         )
 
 
-class OAuthClientConfig(BlueapiBaseModel):
-    client_id: str = Field(description="Client ID")
-    client_audience: str | Iterable[str] | None = Field(
-        description="Client Audience(s)"
-    )
-
-
-class CLIClientConfig(OAuthClientConfig):
+class CLIClientConfig(OIDCConfig):
     token_file_path: Path = Path("~/token")
 
 
@@ -151,8 +148,7 @@ class ApplicationConfig(BlueapiBaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
-    oauth_server: OAuthServerConfig | None = None
-    oauth_client: OAuthClientConfig | CLIClientConfig | None = None
+    oidc_config: OIDCConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

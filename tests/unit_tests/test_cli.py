@@ -637,7 +637,6 @@ def test_login_success(
     valid_auth_config: str,
     mock_authn_server: responses.RequestsMock,
     valid_oidc_config: dict[str, Any],
-    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
 ):
     mock_authn_server.post(
         valid_oidc_config["device_authorization_endpoint"],
@@ -654,10 +653,7 @@ def test_login_success(
             "access_token": "token",
         },
     )
-    with (
-        mock_authn_server,
-        patch("blueapi.service.Authenticator.decode_jwt", mock_decode_jwt),
-    ):
+    with mock_authn_server:
         result = runner.invoke(main, ["-c", valid_auth_config, "login"])
     assert (
         "Logging in\n"
@@ -671,12 +667,8 @@ def test_token_login_early_exit(
     runner: CliRunner,
     valid_auth_config: str,
     valid_token: Path,
-    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
 ):
-    with (
-        patch("blueapi.service.Authenticator.decode_jwt", mock_decode_jwt),
-    ):
-        result = runner.invoke(main, ["-c", valid_auth_config, "login"])
+    result = runner.invoke(main, ["-c", valid_auth_config, "login"])
     assert "Logging in\nCached token still valid, skipping flow\n" == result.output
     assert result.exit_code == 0
 
@@ -687,7 +679,6 @@ def test_login_with_refresh_token(
     mock_authn_server: responses.RequestsMock,
     valid_oidc_config: dict[str, Any],
     expired_token: Path,
-    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
 ):
     mock_authn_server.post(
         valid_oidc_config["token_endpoint"],
@@ -696,10 +687,7 @@ def test_login_with_refresh_token(
         },
     )
 
-    with (
-        mock_authn_server,
-        patch("blueapi.service.Authenticator.decode_jwt", mock_decode_jwt),
-    ):
+    with mock_authn_server:
         result = runner.invoke(main, ["-c", valid_auth_config, "login"])
 
     assert "Logging in\nRefreshed cached token, skipping flow\n" == result.output

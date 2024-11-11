@@ -1,6 +1,4 @@
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -8,7 +6,7 @@ import responses
 from pydantic import BaseModel
 
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
-from blueapi.config import CLIClientConfig, OAuthServerConfig
+from blueapi.config import CLIClientConfig
 from blueapi.core.bluesky_types import Plan
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import PlanModel, PlanResponse
@@ -22,9 +20,11 @@ def rest() -> BlueapiRestClient:
 @pytest.fixture
 def rest_with_auth(valid_oidc_url: str, tmp_path: Path) -> BlueapiRestClient:
     session_manager = SessionManager(
-        server_config=OAuthServerConfig(oidc_config_url=valid_oidc_url),
-        client_config=CLIClientConfig(
-            client_id="foo", client_audience="bar", token_file_path=tmp_path / "token"
+        server_config=CLIClientConfig(
+            well_known_url=valid_oidc_url,
+            client_id="foo",
+            client_audience="bar",
+            token_file_path=tmp_path / "token",
         ),
     )
     return BlueapiRestClient(session_manager=session_manager)
@@ -59,7 +59,6 @@ class MyModel(BaseModel):
 def test_auth_request_functionality(
     rest_with_auth: BlueapiRestClient,
     valid_token: Path,
-    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
 ):
     plan = Plan(name="my-plan", model=MyModel)
     mock_server = responses.RequestsMock()
@@ -67,19 +66,14 @@ def test_auth_request_functionality(
         "http://localhost:8000/plans",
         json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
     )
-    with (
-        patch("blueapi.service.Authenticator.decode_jwt", mock_decode_jwt),
-        mock_server,
-    ):
+    with mock_server:
         result = rest_with_auth.get_plans()
-    mock_decode_jwt.assert_called_once_with("token", "bar")
     assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
 
 
 def test_refresh_if_signature_expired(
     rest_with_auth: BlueapiRestClient,
     mock_authn_server: responses.RequestsMock,
-    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
     expired_token: Path,
 ):
     mock_authn_server.post(
@@ -94,12 +88,8 @@ def test_refresh_if_signature_expired(
             json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
         )
     )
-    with (
-        patch("blueapi.service.Authenticator.decode_jwt", mock_decode_jwt),
-        mock_authn_server,
-    ):
+    with mock_authn_server:
         result = rest_with_auth.get_plans()
-    mock_decode_jwt.assert_called_once_with("expired_token", "bar")
     assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
     calls = mock_get_plans.calls
     assert len(calls) == 1

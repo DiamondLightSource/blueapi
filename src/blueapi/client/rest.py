@@ -146,15 +146,13 @@ class BlueapiRestClient:
         carr = get_context_propagator()
         # Attach authentication information if present
         carr["content-type"] = "application/json; charset=UTF-8"
-        if self._session_manager and (token := self._session_manager.get_token()):
+        if self._session_manager:
+            token = self._session_manager.get_token()
             try:
                 # Check token is not expired
-                self._session_manager.authenticator.decode_jwt(
-                    token["access_token"], self._session_manager._client_audience
-                )
+                self._session_manager.authenticator.decode_jwt(token["id_token"])
             except jwt.ExpiredSignatureError:
                 token = self._session_manager.refresh_auth_token()
-                assert token  # This must be present
             carr["Authorization"] = f"Bearer {token['access_token']}"
 
         if data:

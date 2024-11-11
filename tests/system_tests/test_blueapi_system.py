@@ -14,7 +14,7 @@ from blueapi.client.event_bus import AnyEvent
 from blueapi.config import (
     ApplicationConfig,
     CLIClientConfig,
-    OAuthServerConfig,
+    OIDCConfig,
     StompConfig,
 )
 from blueapi.service.model import (
@@ -49,28 +49,22 @@ def client_without_auth() -> BlueapiClient:
 
 
 @pytest.fixture
-def client_with_stomp(
-    oauth_server_config: OAuthServerConfig, oauth_client_config: CLIClientConfig
-) -> BlueapiClient:
+def client_with_stomp(oidc_config: OIDCConfig) -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
             stomp=StompConfig(
                 auth=BasicAuthentication(username="guest", password="guest")
             ),
-            oauth_server=oauth_server_config,
-            oauth_client=oauth_client_config,
+            oidc_config=oidc_config,
         )
     )
 
 
 @pytest.fixture
-def client(
-    oauth_server_config: OAuthServerConfig, oauth_client_config: CLIClientConfig
-) -> BlueapiClient:
+def client(oidc_config: OIDCConfig) -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
-            oauth_server=oauth_server_config,
-            oauth_client=oauth_client_config,
+            oidc_config=oidc_config,
         )
     )
 

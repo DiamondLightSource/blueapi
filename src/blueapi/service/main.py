@@ -28,7 +28,7 @@ from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, OAuthServerConfig
+from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service import interface
 from blueapi.service.authentication import Authenticator
 from blueapi.service.runner import WorkerDispatcher
@@ -101,12 +101,12 @@ def get_app(config: ApplicationConfig | None = None):
     app.add_exception_handler(KeyError, on_key_error_404)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
-    if config and config.oauth_server:
-        app.middleware("http")(verify_access_token(config.oauth_server))
+    if config and config.oidc_config:
+        app.middleware("http")(verify_access_token(config.oidc_config))
     return app
 
 
-def verify_access_token(config: OAuthServerConfig):
+def verify_access_token(config: OIDCConfig):
     oauth_scheme = OAuth2AuthorizationCodeBearer(
         authorizationUrl=config.auth_url,
         tokenUrl=config.token_url,

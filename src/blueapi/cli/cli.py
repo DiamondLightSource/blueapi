@@ -357,12 +357,9 @@ def scratch(obj: dict) -> None:
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    if isinstance(config.oauth_client, CLIClientConfig) and config.oauth_server:
+    if isinstance(config.oidc_config, CLIClientConfig):
         print("Logging in")
-        auth: SessionManager = SessionManager(
-            server_config=config.oauth_server,
-            client_config=config.oauth_client,
-        )
+        auth: SessionManager = SessionManager(config.oidc_config)
         auth.start_device_flow()
     else:
         print("Please provide configuration to login!")
@@ -372,11 +369,8 @@ def login(obj: dict) -> None:
 @click.pass_obj
 def logout(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    if isinstance(config.oauth_client, CLIClientConfig) and config.oauth_server:
-        auth: SessionManager = SessionManager(
-            server_config=config.oauth_server,
-            client_config=config.oauth_client,
-        )
+    if isinstance(config.oidc_config, CLIClientConfig):
+        auth: SessionManager = SessionManager(server_config=config.oidc_config)
         auth.logout()
         print("Logged out")
     else:

@@ -11,7 +11,7 @@ import responses
 from fastapi.exceptions import HTTPException
 from starlette.status import HTTP_403_FORBIDDEN
 
-from blueapi.config import CLIClientConfig, OAuthClientConfig, OAuthServerConfig
+from blueapi.config import CLIClientConfig, OAuthClientConfig, OIDCConfig
 from blueapi.service import main
 from blueapi.service.authentication import SessionManager
 
@@ -74,13 +74,13 @@ def client_config(tmp_path: Path) -> OAuthClientConfig:
 
 
 @pytest.fixture
-def server_config(valid_oidc_url: str, mock_authn_server) -> OAuthServerConfig:
-    return OAuthServerConfig(oidc_config_url=valid_oidc_url)
+def server_config(valid_oidc_url: str, mock_authn_server) -> OIDCConfig:
+    return OIDCConfig(well_known_url=valid_oidc_url)
 
 
 @pytest.fixture
 def session_manager(
-    client_config: OAuthClientConfig, server_config: OAuthServerConfig
+    client_config: OAuthClientConfig, server_config: OIDCConfig
 ) -> SessionManager:
     return SessionManager(server_config, client_config)
 
@@ -144,40 +144,26 @@ def test_poll_for_token_timeout(
 
 
 def test_valid_token_access_granted(
-    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
-    server_config: OAuthServerConfig,
+    server_config: OIDCConfig,
     mock_authn_server: responses.RequestsMock,
 ):
-    with (
-        patch("blueapi.service.Authenticator.decode_jwt", mock_decode_jwt),
-        mock_authn_server,
-    ):
+    with mock_authn_server:
         main.verify_access_token(server_config)("token")
 
 
 def test_invalid_token_no_access(
-    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
-    server_config: OAuthServerConfig,
+    server_config: OIDCConfig,
     mock_authn_server: responses.RequestsMock,
 ):
-    with (
-        pytest.raises(HTTPException) as exec,
-        patch("blueapi.service.Authenticator.decode_jwt", mock_decode_jwt),
-        mock_authn_server,
-    ):
+    with pytest.raises(HTTPException) as exec, mock_authn_server:
         main.verify_access_token(server_config)("bad_token")
     assert exec.value.status_code == HTTPStatus.UNAUTHORIZED
 
 
 def test_expired_token_no_access(
-    mock_decode_jwt: Callable[[str], dict[str, Any] | None],
-    server_config: OAuthServerConfig,
+    server_config: OIDCConfig,
     mock_authn_server: responses.RequestsMock,
 ):
-    with (
-        pytest.raises(HTTPException) as exec,
-        patch("blueapi.service.Authenticator.decode_jwt", mock_decode_jwt),
-        mock_authn_server,
-    ):
+    with pytest.raises(HTTPException) as exec, mock_authn_server:
         main.verify_access_token(server_config)("expired_token")
     assert exec.value.status_code == HTTPStatus.UNAUTHORIZED

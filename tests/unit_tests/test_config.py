@@ -11,7 +11,6 @@ import responses
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
-from tests.unit_tests.test_cli import OAUTH_CONFIGURATION, OIDC_URL
 
 from blueapi.config import ApplicationConfig, ConfigLoader, OAuthServerConfig
 from blueapi.utils import InvalidConfigError
@@ -244,7 +243,6 @@ def test_config_yaml_parsed(temp_yaml_config_file):
     assert is_subset(config_data, target_dict_json)
 
 
-@responses.activate
 @pytest.mark.parametrize(
     "temp_yaml_config_file",
     [
@@ -275,7 +273,9 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
             },
-            "oauth_server": {"oidc_config_url": OIDC_URL},
+            "oauth_server": {
+                "oidc_config_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration"
+            },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
                 "repositories": [
@@ -302,7 +302,9 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "logging": {"level": "INFO"},
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
-            "oauth_server": {"oidc_config_url": OIDC_URL},
+            "oauth_server": {
+                "oidc_config_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration"
+            },
             "oauth_client": {
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
@@ -321,20 +323,13 @@ def test_config_yaml_parsed(temp_yaml_config_file):
     ],
     indirect=True,
 )
-def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
+def test_config_yaml_parsed_complete(temp_yaml_config_file: dict, mock_server_response):
     temp_yaml_file_path, config_data = temp_yaml_config_file
 
     # Initialize loader and load config from the YAML file
     loader = ConfigLoader(ApplicationConfig)
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as requests_mock:
-        requests_mock.add(
-            requests_mock.GET,
-            OIDC_URL,
-            json=OAUTH_CONFIGURATION,
-            status=200,
-        )
-        loader.use_values_from_yaml(temp_yaml_file_path)
-        loaded_config = loader.load()
+    loader.use_values_from_yaml(temp_yaml_file_path)
+    loaded_config = loader.load()
 
     # Parse the loaded config JSON into a dictionary
     target_dict_json = json.loads(loaded_config.model_dump_json())
@@ -354,47 +349,48 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     ), f"Expected config {config_data}, but got {target_dict_json}"
 
 
-@mock.patch("requests.get")
-def test_oauth_config_model_post_init(mock_get):
-    oidc_config_url = "https://example.com/.well-known/openid-configuration"
-    mock_response = {
+@pytest.fixture
+def valid_oidc_url() -> str:
+    return "https://auth.example.com/realms/sample/.well-known/openid-configuration"
+
+
+@pytest.fixture
+def valid_oidc_config() -> dict[str, Any]:
+    return {
         "device_authorization_endpoint": "https://example.com/device_authorization",
-        "authorization_endpoint": "https://example.com/authorize",
+        "authorization_endpoint": "https://example.com/authorization",
         "token_endpoint": "https://example.com/token",
-        "issuer": "https://example.com/",
-        "jwks_uri": "https://example.com/jwks",
+        "issuer": "https://example.com",
+        "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
         "end_session_endpoint": "https://example.com/logout",
         "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512"],
     }
 
-    mock_get.return_value.json.return_value = mock_response
-    mock_get.return_value.raise_for_status = lambda: None
 
-    oauth_config = OAuthServerConfig(oidc_config_url=oidc_config_url)
-
-    assert (
-        oauth_config.device_auth_url == mock_response["device_authorization_endpoint"]
+@pytest.fixture
+def mock_server_response(valid_oidc_url: str, valid_oidc_config: dict[str, Any]):
+    requests_mock = responses.RequestsMock(assert_all_requests_are_fired=True)
+    requests_mock.get(
+        valid_oidc_url,
+        json=valid_oidc_config,
     )
-    assert oauth_config.pkce_auth_url == mock_response["authorization_endpoint"]
-    assert oauth_config.token_url == mock_response["token_endpoint"]
-    assert oauth_config.issuer == mock_response["issuer"]
-    assert oauth_config.jwks_uri == mock_response["jwks_uri"]
-    assert oauth_config.logout_url == mock_response["end_session_endpoint"]
+    return requests_mock
 
 
-@mock.patch("requests.get")
-def test_oauth_config_model_post_init_missing_fields(mock_get):
-    oidc_config_url = "https://example.com/.well-known/openid-configuration"
-    mock_response = {
-        "device_authorization_endpoint": "https://example.com/device_authorization",
-        "authorization_endpoint": "https://example.com/authorize",
-        "token_endpoint": "https://example.com/token",
-        "issuer": "https://example.com/",
-        "jwks_uri": "https://example.com/jwks",
-        "end_session_endpoint": "",  # Missing end_session_endpoint
-    }
+def test_oauth_config_model_post_init(
+    valid_oidc_url: str,
+    valid_oidc_config: dict[str, Any],
+    mock_server_response: responses.RequestsMock,
+):
+    oauth_config = OAuthServerConfig(oidc_config_url=valid_oidc_url)
 
-    mock_get.return_value.json.return_value = mock_response
-    mock_get.return_value.raise_for_status = lambda: None
-    with pytest.raises(ValueError, match="OIDC config is missing required fields"):
-        OAuthServerConfig(oidc_config_url=oidc_config_url)
+    with mock_server_response:
+        assert (
+            oauth_config.device_auth_url
+            == valid_oidc_config["device_authorization_endpoint"]
+        )
+        assert oauth_config.pkce_auth_url == valid_oidc_config["authorization_endpoint"]
+        assert oauth_config.token_url == valid_oidc_config["token_endpoint"]
+        assert oauth_config.issuer == valid_oidc_config["issuer"]
+        assert oauth_config.jwks_uri == valid_oidc_config["jwks_uri"]
+        assert oauth_config.logout_url == valid_oidc_config["end_session_endpoint"]

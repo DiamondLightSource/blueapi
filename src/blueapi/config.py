@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from enum import Enum
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Generic, Literal, TypeVar
 
@@ -89,48 +90,39 @@ class OAuthServerConfig(BlueapiBaseModel):
     )
     audience: str = Field(description="Valid audience")
 
-    # Initialized post-init
-    device_auth_url: str = Field(exclude=True, default="")
-    pkce_auth_url: str = Field(exclude=True, default="")
-    token_url: str = Field(exclude=True, default="")
-    issuer: str = Field(exclude=True, default="")
-    jwks_uri: str = Field(exclude=True, default="")
-    logout_url: str = Field(exclude=True, default="")
-    signing_algos: list[str] = Field(exclude=True, default_factory=list)
-
-    def model_post_init(self, __context: Any) -> None:
+    @cached_property
+    def _config_from_oidc_url(self) -> dict[str, Any]:
         response: requests.Response = requests.get(self.oidc_config_url)
         response.raise_for_status()
-        config_data: dict[str, Any] = response.json()
+        return response.json()
 
-        device_auth_url: str | None = config_data.get("device_authorization_endpoint")
-        pkce_auth_url: str | None = config_data.get("authorization_endpoint")
-        token_url: str | None = config_data.get("token_endpoint")
-        issuer: str | None = config_data.get("issuer")
-        jwks_uri: str | None = config_data.get("jwks_uri")
-        logout_url: str | None = config_data.get("end_session_endpoint")
-        signing_algos: list[str] | None = config_data.get(
-            "id_token_signing_alg_values_supported"
-        )
-        # post this we need to check if all the values are present
-        if (
-            device_auth_url
-            and pkce_auth_url
-            and token_url
-            and issuer
-            and jwks_uri
-            and logout_url
-            and signing_algos
-        ):
-            self.device_auth_url = device_auth_url
-            self.pkce_auth_url = pkce_auth_url
-            self.token_url = token_url
-            self.issuer = issuer
-            self.jwks_uri = jwks_uri
-            self.logout_url = logout_url
-            self.signing_algos = signing_algos
-        else:
-            raise ValueError("OIDC config is missing required fields")
+    @cached_property
+    def device_auth_url(self) -> str:
+        return self._config_from_oidc_url.get("device_authorization_endpoint")
+
+    @cached_property
+    def pkce_auth_url(self) -> str:
+        return self._config_from_oidc_url.get("authorization_endpoint")
+
+    @cached_property
+    def token_url(self) -> str:
+        return self._config_from_oidc_url.get("token_endpoint")
+
+    @cached_property
+    def issuer(self) -> str:
+        return self._config_from_oidc_url.get("issuer")
+
+    @cached_property
+    def jwks_uri(self) -> str:
+        return self._config_from_oidc_url.get("jwks_uri")
+
+    @cached_property
+    def logout_url(self) -> str:
+        return self._config_from_oidc_url.get("end_session_endpoint")
+
+    @cached_property
+    def signing_algos(self) -> list[str]:
+        return self._config_from_oidc_url.get("id_token_signing_alg_values_supported")
 
 
 class OAuthClientConfig(BlueapiBaseModel):

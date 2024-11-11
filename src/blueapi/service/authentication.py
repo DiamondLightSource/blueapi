@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import jwt
 import requests
@@ -182,9 +182,9 @@ class SessionManager:
 
         if response.status_code == HTTPStatus.OK:
             response_json: dict[str, Any] = response.json()
-            device_code: str = response_json.get("device_code")
-            interval: float = response_json.get("interval")
-            expires_in: float = response_json.get("expires_in")
+            device_code = cast(str, response_json.get("device_code"))
+            interval = cast(float, response_json.get("interval"))
+            expires_in = cast(float, response_json.get("expires_in"))
             print(
                 "Please login from this URL:- "
                 f"{response_json['verification_uri_complete']}"

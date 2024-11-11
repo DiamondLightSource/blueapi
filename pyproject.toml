@@ -36,10 +36,8 @@ dependencies = [
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
-    "pyjwt",
     "pyjwt[crypto]",
 ]
-
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"

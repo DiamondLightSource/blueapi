@@ -3,7 +3,7 @@
         {
             "name": "count",
             "description": "\n    Take `n` readings from a device\n\n    Args:\n        detectors (Set[Readable]): Readable devices to read\n        num (int, optional): Number of readings to take. Defaults to 1.\n        delay (Optional[Union[float, List[float]]], optional): Delay between readings.\n                                                               Defaults to None.\n        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include\n                                                          in exported data.\n                                                          Defaults to None.\n\n    Returns:\n        MsgGenerator: _description_\n\n    Yields:\n        Iterator[MsgGenerator]: _description_\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "detectors": {
@@ -57,7 +57,7 @@
         {
             "name": "move",
             "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, Any]): Mapping of Movables to target positions\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
@@ -86,7 +86,7 @@
         {
             "name": "stp_snapshot",
             "description": "\n    Moves devices for pressure and temperature (defaults fetched from the context)\n    and captures a single frame from a collection of devices\n\n    Args:\n        detectors (List[Readable]): A list of devices to read while the sample is at STP\n        temperature (Optional[Movable]): A device controlling temperature of the sample,\n            defaults to fetching a device name \"sample_temperature\" from the context\n        pressure (Optional[Movable]): A device controlling pressure on the sample,\n            defaults to fetching a device name \"sample_pressure\" from the context\n    Returns:\n        MsgGenerator: Plan\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "detectors": {
@@ -115,7 +115,7 @@
         {
             "name": "scan",
             "description": "\n    Scan wrapping `bp.scan_nd`\n\n    Args:\n        detectors: Set of readable devices, will take a reading at\n                                    each point\n        axes_to_move: All axes involved in this scan, names and\n            objects\n        spec: ScanSpec modelling the path of the scan\n        metadata: Key-value metadata to include\n                                                          in exported data, defaults to\n                                                          None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "$defs": {
                     "Circle": {
                         "additionalProperties": false,
@@ -1024,7 +1024,7 @@
         {
             "name": "set_absolute",
             "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -1061,7 +1061,7 @@
         {
             "name": "set_relative",
             "description": "\n    Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -1098,7 +1098,7 @@
         {
             "name": "move_relative",
             "description": "\n    Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, Any]): Mapping of Movables to target deltas\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
@@ -1127,7 +1127,7 @@
         {
             "name": "sleep",
             "description": "\n    Suspend all action for a given time, wrapper for `bp.sleep`\n\n    Args:\n        time (float): Time to wait in seconds\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "time": {
@@ -1145,7 +1145,7 @@
         {
             "name": "wait",
             "description": "\n    Wait for a group status to complete, wrapper for `bp.wait`\n\n    Args:\n        group (Optional[Group], optional): The name of the group to wait for, defaults\n                                           to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "group": {

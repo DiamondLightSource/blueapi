@@ -1,6 +1,7 @@
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
+import jwt
 import requests
 from observability_utils.tracing import (
     get_context_propagator,
@@ -10,6 +11,7 @@ from observability_utils.tracing import (
 from pydantic import TypeAdapter
 
 from blueapi.config import RestConfig
+from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -45,8 +47,13 @@ def _exception(response: requests.Response) -> Exception | None:
 class BlueapiRestClient:
     _config: RestConfig
 
-    def __init__(self, config: RestConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: RestConfig | None = None,
+        session_manager: SessionManager | None = None,
+    ) -> None:
         self._config = config or RestConfig()
+        self._session_manager: SessionManager | None = session_manager
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -137,6 +144,17 @@ class BlueapiRestClient:
         url = self._url(suffix)
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
+        # Attach authentication information if present
+        carr["content-type"] = "application/json; charset=UTF-8"
+        if self._session_manager and (token := self._session_manager.get_token()):
+            try:
+                # Check token is not expired
+                self._session_manager.authenticator.decode_jwt(token["access_token"])
+            except jwt.ExpiredSignatureError:
+                token = self._session_manager.refresh_auth_token()
+                assert token  # This must be present
+            carr["Authorization"] = f"Bearer {token['access_token']}"
+
         if data:
             response = requests.request(method, url, json=data, headers=carr)
         else:

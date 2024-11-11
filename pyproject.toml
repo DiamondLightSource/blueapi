@@ -3,14 +3,6 @@ requires = ["setuptools>=64", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "blueapi"
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-]
-description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
     "bluesky==1.13.0a3",
     "ophyd",
@@ -29,14 +21,26 @@ dependencies = [
     "requests",
     "dls-bluesky-core",                              #requires ophyd-async
     "dls-dodal>=1.31.0",
-    "super-state-machine",  # https://github.com/DiamondLightSource/blueapi/issues/553
+    "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "bluesky-stomp>=0.1.2",
-    "event-model==1.21",    # https://github.com/DiamondLightSource/blueapi/issues/684
+    "event-model==1.21",                             # https://github.com/DiamondLightSource/blueapi/issues/684
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
-    "observability-utils>=0.1.4"
+    "observability-utils>=0.1.4",
+    "pyjwt",
+    "python-multipart",
+    "cryptography",
 ]
+
+name = "blueapi"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"

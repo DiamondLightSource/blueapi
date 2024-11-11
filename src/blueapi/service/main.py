@@ -1,5 +1,6 @@
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import (
     APIRouter,
@@ -12,6 +13,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -25,8 +27,10 @@ from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, OAuthClientConfig, OAuthServerConfig
 from blueapi.service import interface
+from blueapi.service.authentication import Authenticator
+from blueapi.service.runner import WorkerDispatcher
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -41,11 +45,11 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
-from .runner import WorkerDispatcher
 
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
+SWAGGER_CONFIG: dict[str, Any] | None = None
 
 CONTEXT_HEADER = "traceparent"
 
@@ -73,29 +77,54 @@ def teardown_runner():
     RUNNER = None
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    config: ApplicationConfig = app.state.config
-    setup_runner(config)
-    yield
-    teardown_runner()
+def lifespan(config: ApplicationConfig | None):
+    @asynccontextmanager
+    async def inner(app: FastAPI):
+        setup_runner(config)
+        yield
+        teardown_runner()
+
+    return inner
 
 
 router = APIRouter()
 
 
-def get_app():
+def get_app(config: ApplicationConfig | None):
     app = FastAPI(
         docs_url="/docs",
         title="BlueAPI Control",
-        lifespan=lifespan,
+        lifespan=lifespan(config),
         version=REST_API_VERSION,
     )
     app.include_router(router)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
+    if config and config.oauth_server:
+        app.middleware("http")(verify_access_token(config.oauth_server))
     return app
+
+
+def verify_access_token(config: OAuthServerConfig):
+    oauth_scheme = OAuth2AuthorizationCodeBearer(
+        authorizationUrl=config.pkce_auth_url,
+        tokenUrl=config.token_url,
+        refreshUrl=config.token_url,
+    )
+    authenticator = Authenticator(config)
+
+    def inner(access_token: str = Depends(oauth_scheme)):
+        try:
+            decoded_token: dict[str, Any] = authenticator.decode_jwt(access_token)
+            if not decoded_token:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        except Exception as exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            ) from exception
+
+    return inner
 
 
 TRACER = get_tracer("interface")
@@ -123,7 +152,6 @@ async def delete_environment(
     runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
-
     if runner.state.initialized or runner.state.error_message is not None:
         background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
@@ -137,10 +165,7 @@ def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     return PlanResponse(plans=plans)
 
 
-@router.get(
-    "/plans/{name}",
-    response_model=PlanModel,
-)
+@router.get("/plans/{name}", response_model=PlanModel)
 @start_as_current_span(TRACER, "name")
 def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a plan by its (unique) name."""
@@ -155,10 +180,7 @@ def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     return DeviceResponse(devices=devices)
 
 
-@router.get(
-    "/devices/{name}",
-    response_model=DeviceModel,
-)
+@router.get("/devices/{name}", response_model=DeviceModel)
 @start_as_current_span(TRACER, "name")
 def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a devices by its (unique) name."""
@@ -168,11 +190,7 @@ def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
 example_task = Task(name="count", params={"detectors": ["x"]})
 
 
-@router.post(
-    "/tasks",
-    response_model=TaskResponse,
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 @start_as_current_span(TRACER, "request", "task.name", "task.params")
 def submit_task(
     request: Request,
@@ -267,10 +285,7 @@ def set_active_task(
     return task
 
 
-@router.get(
-    "/tasks/{task_id}",
-    response_model=TrackableTask,
-)
+@router.get("/tasks/{task_id}", response_model=TrackableTask)
 @start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
@@ -382,7 +397,7 @@ def start(config: ApplicationConfig):
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"
     )
-    app = get_app()
+    app = get_app(config)
 
     FastAPIInstrumentor().instrument_app(
         app,
@@ -390,8 +405,6 @@ def start(config: ApplicationConfig):
         http_capture_headers_server_request=[",*"],
         http_capture_headers_server_response=[",*"],
     )
-    app.state.config = config
-
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 
 

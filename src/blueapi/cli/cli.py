@@ -18,8 +18,13 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import (
+    ApplicationConfig,
+    CLIClientConfig,
+    ConfigLoader,
+)
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
+from blueapi.service.authentication import CliTokenManager, SessionManager
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
@@ -346,3 +351,35 @@ def scratch(obj: dict) -> None:
         setup_scratch(config.scratch)
     else:
         raise KeyError("No scratch config supplied")
+
+
+@main.command(name="login")
+@click.pass_obj
+def login(obj: dict) -> None:
+    config: ApplicationConfig = obj["config"]
+    if isinstance(config.oauth_client, CLIClientConfig) and config.oauth_server:
+        print("Logging in")
+        auth: SessionManager = SessionManager(
+            server_config=config.oauth_server,
+            client_config=config.oauth_client,
+            token_manager=CliTokenManager(Path(config.oauth_client.token_file_path)),
+        )
+        auth.start_device_flow()
+    else:
+        print("Please provide configuration to login!")
+
+
+@main.command(name="logout")
+@click.pass_obj
+def logout(obj: dict) -> None:
+    config: ApplicationConfig = obj["config"]
+    if isinstance(config.oauth_client, CLIClientConfig) and config.oauth_server:
+        auth: SessionManager = SessionManager(
+            server_config=config.oauth_server,
+            client_config=config.oauth_client,
+            token_manager=CliTokenManager(Path(config.oauth_client.token_file_path)),
+        )
+        auth.logout()
+        print("Logged out")
+    else:
+        print("Please provide configuration to logout!")

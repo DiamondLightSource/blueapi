@@ -687,7 +687,11 @@ def test_login_edge_cases(
 
     with mock_authn_server:
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
-    assert "Logging in\nFailed to login\n" == result.output
+
+    assert (
+        "Logging in\nFailed to login: 400 Client Error: Bad Request for url: https://example.com/device_authorization\n"
+        == result.output
+    )
     assert result.exit_code == 0
 
 

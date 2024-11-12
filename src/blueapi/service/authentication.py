@@ -91,6 +91,8 @@ class SessionManager:
                 self._server_config.end_session_endpoint,
                 params={"id_token_hint": token["id_token"]},
             )
+        except Exception:
+            ...  # Swallow any exceptions
         finally:
             self._token_manager.delete_token()
 

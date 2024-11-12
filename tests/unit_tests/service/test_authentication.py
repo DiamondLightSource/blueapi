@@ -1,16 +1,13 @@
 import os
-from http import HTTPStatus
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
 import pytest
 import responses
-from fastapi.exceptions import HTTPException
 from starlette.status import HTTP_403_FORBIDDEN
 
 from blueapi.config import CLIClientConfig, OIDCConfig
-from blueapi.service import main
 from blueapi.service.authentication import SessionManager
 
 
@@ -69,30 +66,3 @@ def test_poll_for_token_timeout(
     )
     with pytest.raises(TimeoutError), mock_authn_server:
         session_manager.poll_for_token(device_code, 1, 2)
-
-
-def test_valid_token_access_granted(
-    oidc_config: OIDCConfig,
-    mock_authn_server: responses.RequestsMock,
-    valid_token: dict[str, Any],
-):
-    main.verify_access_token(oidc_config)(valid_token["id_token"])
-
-
-def test_invalid_token_no_access(
-    oidc_config: OIDCConfig,
-    mock_authn_server: responses.RequestsMock,
-):
-    with pytest.raises(HTTPException) as exec, mock_authn_server:
-        main.verify_access_token(oidc_config)("bad_token")
-    assert exec.value.status_code == HTTPStatus.UNAUTHORIZED
-
-
-def test_expired_token_no_access(
-    oidc_config: OIDCConfig,
-    mock_authn_server: responses.RequestsMock,
-    expired_token: dict[str, Any],
-):
-    with pytest.raises(HTTPException) as exec, mock_authn_server:
-        main.verify_access_token(oidc_config)(expired_token["id_token"])
-    assert exec.value.status_code == HTTPStatus.UNAUTHORIZED

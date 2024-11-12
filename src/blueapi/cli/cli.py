@@ -362,8 +362,8 @@ def login(obj: dict) -> None:
         auth: SessionManager = SessionManager(config.oidc)
         try:
             auth.start_device_flow()
-        except Exception:
-            print("Failed to login")
+        except Exception as e:
+            print(f"Failed to login: {e}")
     else:
         print("Please provide configuration to login!")
 

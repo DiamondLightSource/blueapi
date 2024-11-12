@@ -88,7 +88,6 @@ def lifespan(config: ApplicationConfig | None):
 router = APIRouter()
 
 
-@lru_cache(1)
 def get_app(config: ApplicationConfig | None = None):
     app = FastAPI(
         docs_url="/docs",
@@ -149,6 +148,7 @@ async def delete_environment(
     runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
+
     if runner.state.initialized or runner.state.error_message is not None:
         background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
@@ -162,7 +162,10 @@ def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     return PlanResponse(plans=plans)
 
 
-@router.get("/plans/{name}", response_model=PlanModel)
+@router.get(
+    "/plans/{name}",
+    response_model=PlanModel,
+)
 @start_as_current_span(TRACER, "name")
 def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a plan by its (unique) name."""
@@ -177,7 +180,10 @@ def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     return DeviceResponse(devices=devices)
 
 
-@router.get("/devices/{name}", response_model=DeviceModel)
+@router.get(
+    "/devices/{name}",
+    response_model=DeviceModel,
+)
 @start_as_current_span(TRACER, "name")
 def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a devices by its (unique) name."""
@@ -187,7 +193,11 @@ def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
 example_task = Task(name="count", params={"detectors": ["x"]})
 
 
-@router.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/tasks",
+    response_model=TaskResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 @start_as_current_span(TRACER, "request", "task.name", "task.params")
 def submit_task(
     request: Request,
@@ -282,7 +292,10 @@ def set_active_task(
     return task
 
 
-@router.get("/tasks/{task_id}", response_model=TrackableTask)
+@router.get(
+    "/tasks/{task_id}",
+    response_model=TrackableTask,
+)
 @start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,

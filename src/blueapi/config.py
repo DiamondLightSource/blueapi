@@ -107,10 +107,6 @@ class OIDCConfig(BlueapiBaseModel):
         )
 
     @cached_property
-    def authorization_endpoint(self) -> str:
-        return cast(str, self._config_from_oidc_url.get("authorization_endpoint"))
-
-    @cached_property
     def token_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("token_endpoint"))
 

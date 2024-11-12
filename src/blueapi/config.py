@@ -135,11 +135,11 @@ class OIDCConfig(BlueapiBaseModel):
 
 
 class CLIClientConfig(OIDCConfig):
-    token_file_path: Path
+    token_path: Path
 
-    @field_serializer("token_file_path")
-    def serialize_token_file_path(self, token_file_path: Path, _info):
-        return f"{token_file_path}"
+    @field_serializer("token_path")
+    def serialize_token_path(self, token_path: Path, _info):
+        return f"{token_path}"
 
 
 class ApplicationConfig(BlueapiBaseModel):

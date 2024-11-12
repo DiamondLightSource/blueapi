@@ -40,29 +40,29 @@ class NoOpTokenManager(TokenManager):
 
 
 class CliTokenManager(TokenManager):
-    def __init__(self, token_file_path: Path) -> None:
-        self._token_file_path: Path = token_file_path
+    def __init__(self, token_path: Path) -> None:
+        self._token_path: Path = token_path
 
+    @cached_property
     def _file_path(self) -> str:
-        return os.path.expanduser(self._token_file_path)
+        return os.path.expanduser(self._token_path)
 
     def save_token(self, token: dict[str, Any]) -> None:
         token_json: str = json.dumps(token)
         token_base64: bytes = base64.b64encode(token_json.encode("utf-8"))
-        with open(self._file_path(), "wb") as token_file:
+        with open(self._file_path, "wb") as token_file:
             token_file.write(token_base64)
 
     def load_token(self) -> dict[str, Any]:
-        file_path = self._file_path()
-        if not os.path.exists(file_path):
+        if not os.path.exists(self._file_path):
             raise FileNotFoundError
-        with open(file_path, "rb") as token_file:
+        with open(self._file_path, "rb") as token_file:
             token_base64: bytes = token_file.read()
             token_json: str = base64.b64decode(token_base64).decode("utf-8")
             return json.loads(token_json)
 
     def delete_token(self) -> None:
-        Path(self._file_path()).unlink(missing_ok=True)
+        Path(self._file_path).unlink(missing_ok=True)
 
 
 class SessionManager:
@@ -72,7 +72,7 @@ class SessionManager:
     ) -> None:
         self._server_config = server_config
         self._token_manager: TokenManager = (
-            CliTokenManager(server_config.token_file_path)
+            CliTokenManager(server_config.token_path)
             if isinstance(server_config, CLIClientConfig)
             else NoOpTokenManager()
         )

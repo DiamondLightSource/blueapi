@@ -24,9 +24,9 @@ def test_logout(
     oidc_config: CLIClientConfig,
     cached_valid_token: Path,
 ):
-    assert os.path.exists(oidc_config.token_file_path)
+    assert os.path.exists(oidc_config.token_path)
     session_manager.logout()
-    assert not os.path.exists(oidc_config.token_file_path)
+    assert not os.path.exists(oidc_config.token_path)
 
 
 def test_refresh_auth_token(

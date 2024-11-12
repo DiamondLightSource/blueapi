@@ -66,7 +66,7 @@ def oidc_config(oidc_url: str, tmp_path: Path) -> CLIClientConfig:
         well_known_url=oidc_url,
         client_id="blueapi-client",
         client_audience="blueapi",
-        token_file_path=tmp_path / "token",
+        token_path=tmp_path / "token",
     )
 
 

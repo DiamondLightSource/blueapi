@@ -1,6 +1,5 @@
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from functools import lru_cache
 
 from fastapi import (
     APIRouter,
@@ -13,7 +12,6 @@ from fastapi import (
     Response,
     status,
 )
-from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -27,10 +25,8 @@ from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, OIDCConfig
+from blueapi.config import ApplicationConfig
 from blueapi.service import interface
-from blueapi.service.authentication import SessionManager
-from blueapi.service.runner import WorkerDispatcher
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -45,10 +41,12 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
+from .runner import WorkerDispatcher
 
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
+
 CONTEXT_HEADER = "traceparent"
 
 
@@ -75,58 +73,35 @@ def teardown_runner():
     RUNNER = None
 
 
-def lifespan(config: ApplicationConfig | None):
-    @asynccontextmanager
-    async def inner(app: FastAPI):
-        setup_runner(config)
-        yield
-        teardown_runner()
-
-    return inner
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    config: ApplicationConfig = app.state.config
+    setup_runner(config)
+    yield
+    teardown_runner()
 
 
 router = APIRouter()
 
 
-def get_app(config: ApplicationConfig | None = None):
+def get_app():
     app = FastAPI(
         docs_url="/docs",
         title="BlueAPI Control",
-        lifespan=lifespan(config),
+        lifespan=lifespan,
         version=REST_API_VERSION,
     )
     app.include_router(router)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
-    if config and config.oidc:
-        app.middleware("http")(verify_access_token(config.oidc))
     return app
-
-
-def verify_access_token(config: OIDCConfig):
-    oauth_scheme = OAuth2AuthorizationCodeBearer(
-        authorizationUrl=config.authorization_endpoint,
-        tokenUrl=config.token_endpoint,
-        refreshUrl=config.token_endpoint,
-    )
-    session_manager = SessionManager(config)
-
-    def inner(access_token: str = Depends(oauth_scheme)):
-        try:
-            session_manager.decode_jwt(access_token)
-        except Exception as exception:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-            ) from exception
-
-    return inner
 
 
 TRACER = get_tracer("interface")
 
 
-async def on_key_error_404(_: Request, __: Exception):
+async def on_key_error_404(_: Request, __: KeyError):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "Item not found"},
@@ -407,7 +382,7 @@ def start(config: ApplicationConfig):
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"
     )
-    app = get_app(config)
+    app = get_app()
 
     FastAPIInstrumentor().instrument_app(
         app,
@@ -415,6 +390,8 @@ def start(config: ApplicationConfig):
         http_capture_headers_server_request=[",*"],
         http_capture_headers_server_response=[",*"],
     )
+    app.state.config = config
+
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 
 

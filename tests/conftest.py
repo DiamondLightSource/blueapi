@@ -38,7 +38,7 @@ def exporter() -> TracerProvider:
     provider = cast(TracerProvider, get_tracer_provider())
     # Use SimpleSpanProcessor to keep tests quick
     provider.add_span_processor(SimpleSpanProcessor(exporter))
-    return exporter
+    return provider
 
 
 @pytest.hookimpl(tryfirst=True)

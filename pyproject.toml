@@ -13,7 +13,7 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky",
+    "bluesky==1.13.0",
     "ophyd",
     "nslsii",
     "pyepics",
@@ -35,7 +35,7 @@ dependencies = [
     "event-model==1.22.1",    # https://github.com/DiamondLightSource/blueapi/issues/684
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
-    "observability-utils>=0.1.4"
+    "observability-utils>=0.1.4",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -84,7 +84,7 @@ version_file = "src/blueapi/_version.py"
 
 [tool.pyright]
 typeCheckingMode = "standard"
-reportMissingImports = false # Ignore missing stubs in imported modules
+reportMissingImports = false  # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error

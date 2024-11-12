@@ -269,7 +269,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "protocol": "http",
             },
             "logging": {"level": "INFO"},
-            "oidc_config": {
+            "oidc": {
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
@@ -300,7 +300,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "logging": {"level": "INFO"},
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
-            "oidc_config": {
+            "oidc": {
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
@@ -345,20 +345,19 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
 
 
 def test_oauth_config_model_post_init(
-    valid_oidc_config: dict[str, Any],
+    oidc_well_known: dict[str, Any],
     oidc_config: OIDCConfig,
     mock_authn_server: responses.RequestsMock,
 ):
     assert (
         oidc_config.device_authorization_endpoint
-        == valid_oidc_config["device_authorization_endpoint"]
+        == oidc_well_known["device_authorization_endpoint"]
     )
 
     assert (
-        oidc_config.authorization_endpoint
-        == valid_oidc_config["authorization_endpoint"]
+        oidc_config.authorization_endpoint == oidc_well_known["authorization_endpoint"]
     )
-    assert oidc_config.token_endpoint == valid_oidc_config["token_endpoint"]
-    assert oidc_config.issuer == valid_oidc_config["issuer"]
-    assert oidc_config.jwks_uri == valid_oidc_config["jwks_uri"]
-    assert oidc_config.end_session_endpoint == valid_oidc_config["end_session_endpoint"]
+    assert oidc_config.token_endpoint == oidc_well_known["token_endpoint"]
+    assert oidc_config.issuer == oidc_well_known["issuer"]
+    assert oidc_config.jwks_uri == oidc_well_known["jwks_uri"]
+    assert oidc_config.end_session_endpoint == oidc_well_known["end_session_endpoint"]

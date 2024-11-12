@@ -55,15 +55,15 @@ def test_poll_for_token(
 @patch("time.sleep")
 def test_poll_for_token_timeout(
     mock_sleep,
-    valid_oidc_config: dict[str, Any],
+    oidc_well_known: dict[str, Any],
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
     device_code: str,
 ):
     mock_authn_server.stop()
-    mock_authn_server.remove(responses.POST, valid_oidc_config["token_endpoint"])
+    mock_authn_server.remove(responses.POST, oidc_well_known["token_endpoint"])
     mock_authn_server.post(
-        url=valid_oidc_config["token_endpoint"],
+        url=oidc_well_known["token_endpoint"],
         json={"error": "authorization_pending"},
         status=HTTP_403_FORBIDDEN,
     )

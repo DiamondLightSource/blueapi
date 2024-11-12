@@ -54,7 +54,7 @@ def client_with_stomp(oidc_config: OIDCConfig) -> BlueapiClient:
             stomp=StompConfig(
                 auth=BasicAuthentication(username="guest", password="guest")
             ),
-            oidc_config=oidc_config,
+            oidc=oidc_config,
         )
     )
 
@@ -63,7 +63,7 @@ def client_with_stomp(oidc_config: OIDCConfig) -> BlueapiClient:
 def client(oidc_config: OIDCConfig) -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
-            oidc_config=oidc_config,
+            oidc=oidc_config,
         )
     )
 

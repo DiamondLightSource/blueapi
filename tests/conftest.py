@@ -54,16 +54,16 @@ def exporter() -> TracerProvider:
 
 
 @pytest.fixture
-def valid_oidc_url() -> str:
+def oidc_url() -> str:
     return (
         "https://auth.example.com/realms/master/oidc/.well-known/openid-configuration"
     )
 
 
 @pytest.fixture
-def oidc_config(valid_oidc_url: str, tmp_path: Path) -> CLIClientConfig:
+def oidc_config(oidc_url: str, tmp_path: Path) -> CLIClientConfig:
     return CLIClientConfig(
-        well_known_url=valid_oidc_url,
+        well_known_url=oidc_url,
         client_id="blueapi-client",
         client_audience="blueapi",
         token_file_path=tmp_path / "token",
@@ -71,8 +71,8 @@ def oidc_config(valid_oidc_url: str, tmp_path: Path) -> CLIClientConfig:
 
 
 @pytest.fixture
-def valid_auth_config(tmp_path: Path, oidc_config: CLIClientConfig) -> str:
-    config = ApplicationConfig(oidc_config=oidc_config)
+def config_with_auth(tmp_path: Path, oidc_config: CLIClientConfig) -> str:
+    config = ApplicationConfig(oidc=oidc_config)
     config_path = tmp_path / "auth_config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
@@ -80,7 +80,7 @@ def valid_auth_config(tmp_path: Path, oidc_config: CLIClientConfig) -> str:
 
 
 @pytest.fixture
-def valid_oidc_config() -> dict[str, Any]:
+def oidc_well_known() -> dict[str, Any]:
     return {
         "device_authorization_endpoint": "https://example.com/device_authorization",
         "authorization_endpoint": "https://example.com/authorization",
@@ -171,8 +171,8 @@ def device_code() -> str:
 
 @pytest.fixture
 def mock_authn_server(
-    valid_oidc_url: str,
-    valid_oidc_config: dict[str, Any],
+    oidc_url: str,
+    oidc_well_known: dict[str, Any],
     oidc_config: CLIClientConfig,
     valid_token: dict[str, Any],
     new_token: dict[str, Any],
@@ -181,13 +181,13 @@ def mock_authn_server(
 ):
     requests_mock = responses.RequestsMock(assert_all_requests_are_fired=False)
     # Fetch well-known OIDC flow URLs from server
-    requests_mock.get(valid_oidc_url, json=valid_oidc_config)
+    requests_mock.get(oidc_url, json=oidc_well_known)
     # When device flow begins, return a device_code
     requests_mock.post(
-        valid_oidc_config["device_authorization_endpoint"],
+        oidc_well_known["device_authorization_endpoint"],
         json={
             "device_code": device_code,
-            "verification_uri_complete": valid_oidc_config["issuer"] + "/verify",
+            "verification_uri_complete": oidc_well_known["issuer"] + "/verify",
             "expires_in": 30,
             "interval": 5,
         },
@@ -195,7 +195,7 @@ def mock_authn_server(
 
     # When polled with device_code return token
     requests_mock.post(
-        valid_oidc_config["token_endpoint"],
+        oidc_well_known["token_endpoint"],
         json=valid_token,
         match=[
             responses.matchers.json_params_matcher(
@@ -209,7 +209,7 @@ def mock_authn_server(
     )
     # When asked to refresh with refresh_token return refreshed token
     requests_mock.post(
-        valid_oidc_config["token_endpoint"],
+        oidc_well_known["token_endpoint"],
         json=new_token,
         match=[
             responses.matchers.json_params_matcher(

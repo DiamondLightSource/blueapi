@@ -357,9 +357,9 @@ def scratch(obj: dict) -> None:
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    if isinstance(config.oidc_config, CLIClientConfig):
+    if isinstance(config.oidc, CLIClientConfig):
         print("Logging in")
-        auth: SessionManager = SessionManager(config.oidc_config)
+        auth: SessionManager = SessionManager(config.oidc)
         try:
             auth.start_device_flow()
         except Exception:
@@ -372,8 +372,8 @@ def login(obj: dict) -> None:
 @click.pass_obj
 def logout(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    if isinstance(config.oidc_config, CLIClientConfig):
-        auth: SessionManager = SessionManager(server_config=config.oidc_config)
+    if isinstance(config.oidc, CLIClientConfig):
+        auth: SessionManager = SessionManager(server_config=config.oidc)
         auth.logout()
         print("Logged out")
     else:

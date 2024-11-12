@@ -100,8 +100,8 @@ def get_app(config: ApplicationConfig | None = None):
     app.add_exception_handler(KeyError, on_key_error_404)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
-    if config and config.oidc_config:
-        app.middleware("http")(verify_access_token(config.oidc_config))
+    if config and config.oidc:
+        app.middleware("http")(verify_access_token(config.oidc))
     return app
 
 

@@ -5,12 +5,10 @@ from typing import Any, cast
 import pytest
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.run_engine import RunEngine
-from observability_utils.tracing import setup_tracing
+from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
-
-from tests.unit_tests.utils.test_tracing import JsonObjectSpanExporter
 
 
 @pytest.fixture(scope="function")

@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Mapping
-from functools import lru_cache
+from functools import cache
 from typing import Any
 
 from bluesky_stomp.messaging import StompClient
@@ -31,14 +31,14 @@ def set_config(new_config: ApplicationConfig):
     _CONFIG = new_config
 
 
-@lru_cache
+@cache
 def context() -> BlueskyContext:
     ctx = BlueskyContext()
     ctx.with_config(config().env)
     return ctx
 
 
-@lru_cache
+@cache
 def worker() -> TaskWorker:
     worker = TaskWorker(
         context(),
@@ -48,7 +48,7 @@ def worker() -> TaskWorker:
     return worker
 
 
-@lru_cache
+@cache
 def stomp_client() -> StompClient | None:
     stomp_config = config().stomp
     if stomp_config is not None:

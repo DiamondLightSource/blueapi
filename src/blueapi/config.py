@@ -135,7 +135,7 @@ class OIDCConfig(BlueapiBaseModel):
 
 
 class CLIClientConfig(OIDCConfig):
-    token_file_path: Path = Field(Path("~/token"))
+    token_file_path: Path
 
     @field_serializer("token_file_path")
     def serialize_token_file_path(self, token_file_path: Path, _info):

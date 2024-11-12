@@ -85,7 +85,14 @@ class SessionManager:
         return self._token_manager.load_token()
 
     def logout(self) -> None:
-        self._token_manager.delete_token()
+        try:
+            token = self._token_manager.load_token()
+            requests.get(
+                self._server_config.end_session_endpoint,
+                params={"id_token_hint": token["id_token"]},
+            )
+        finally:
+            self._token_manager.delete_token()
 
     def decode_jwt(self, json_web_token: str):
         signing_key = self.client.get_signing_key_from_jwt(json_web_token)
@@ -115,6 +122,7 @@ class SessionManager:
                 "grant_type": "refresh_token",
                 "refresh_token": token["refresh_token"],
             },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         response.raise_for_status()
         token = response.json()
@@ -133,6 +141,7 @@ class SessionManager:
                     "device_code": device_code,
                     "client_id": self._server_config.client_id,
                 },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
             if response.status_code == HTTPStatus.OK:
                 return response.json()
@@ -148,6 +157,7 @@ class SessionManager:
                 "scope": "openid profile offline_access",
                 "audience": self._server_config.client_audience,
             },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         response.raise_for_status()

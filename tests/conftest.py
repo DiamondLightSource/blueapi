@@ -198,7 +198,7 @@ def mock_authn_server(
         oidc_well_known["token_endpoint"],
         json=valid_token,
         match=[
-            responses.matchers.json_params_matcher(
+            responses.matchers.urlencoded_params_matcher(
                 {
                     "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                     "device_code": device_code,
@@ -212,7 +212,7 @@ def mock_authn_server(
         oidc_well_known["token_endpoint"],
         json=new_token,
         match=[
-            responses.matchers.json_params_matcher(
+            responses.matchers.urlencoded_params_matcher(
                 {
                     "client_id": oidc_config.client_id,
                     "grant_type": "refresh_token",

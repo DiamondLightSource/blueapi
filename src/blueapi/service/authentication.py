@@ -119,7 +119,7 @@ class SessionManager:
         token = self._token_manager.load_token()
         response = requests.post(
             self._server_config.token_endpoint,
-            json={
+            data={
                 "client_id": self._server_config.client_id,
                 "grant_type": "refresh_token",
                 "refresh_token": token["refresh_token"],
@@ -138,7 +138,7 @@ class SessionManager:
         while time.time() < expiry_time:
             response = requests.post(
                 self._server_config.token_endpoint,
-                json={
+                data={
                     "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                     "device_code": device_code,
                     "client_id": self._server_config.client_id,
@@ -154,7 +154,7 @@ class SessionManager:
     def _do_device_flow(self) -> None:
         response: requests.Response = requests.post(
             self._server_config.device_authorization_endpoint,
-            json={
+            data={
                 "client_id": self._server_config.client_id,
                 "scope": "openid profile offline_access",
                 "audience": self._server_config.client_audience,

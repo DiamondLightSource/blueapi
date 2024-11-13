@@ -13,6 +13,7 @@ from blueapi.client.client import (
 from blueapi.client.event_bus import AnyEvent
 from blueapi.config import (
     ApplicationConfig,
+    CLIClientConfig,
     OIDCConfig,
     StompConfig,
 )
@@ -45,6 +46,16 @@ _DATA_PATH = Path(__file__).parent
 @pytest.fixture
 def client_without_auth() -> BlueapiClient:
     return BlueapiClient.from_config(config=ApplicationConfig())
+
+
+@pytest.fixture
+def oidc_config() -> CLIClientConfig:
+    return CLIClientConfig(
+        well_known_url="https://auth.example.com/realms/master/oidc/.well-known/openid-configuration",
+        client_id="blueapi-cli",
+        client_audience="account",
+        token_path=Path("~/token"),
+    )
 
 
 @pytest.fixture
@@ -124,9 +135,8 @@ def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
 
 
 def test_get_non_existent_plan(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
         client.get_plan("Not exists")
-    assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_get_devices(client: BlueapiClient, expected_devices: DeviceResponse):
@@ -139,9 +149,8 @@ def test_get_device_by_name(client: BlueapiClient, expected_devices: DeviceRespo
 
 
 def test_get_non_existent_device(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
         client.get_device("Not exists")
-    assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_create_task_and_delete_task_by_id(client: BlueapiClient):
@@ -150,9 +159,8 @@ def test_create_task_and_delete_task_by_id(client: BlueapiClient):
 
 
 def test_create_task_validation_error(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
         client.create_task(Task(name="Not-exists", params={"Not-exists": 0.0}))
-    assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_get_all_tasks(client: BlueapiClient):
@@ -186,15 +194,13 @@ def test_get_task_by_id(client: BlueapiClient):
 
 
 def test_get_non_existent_task(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
         client.get_task("Not-exists")
-    assert str(exception) == "{'detail': 'Item not found'}"
 
 
 def test_delete_non_existent_task(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
         client.clear_task("Not-exists")
-    assert str(exception) == "{'detail': 'Item not found'}"
 
 
 def test_put_worker_task(client: BlueapiClient):
@@ -215,7 +221,7 @@ def test_put_worker_task_fails_if_not_idle(client: BlueapiClient):
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.start_task(WorkerTask(task_id=small_task.task_id))
-    assert str(exception) == "<Response [409]>"
+    assert "<Response [409]>" in str(exception)
     client.abort()
     client.clear_task(small_task.task_id)
     client.clear_task(long_task.task_id)
@@ -228,11 +234,10 @@ def test_get_worker_state(client: BlueapiClient):
 def test_set_state_transition_error(client: BlueapiClient):
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.resume()
-    assert str(exception) == "<Response [400]>"
-
+    assert "<Response [400]>" in str(exception)
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.pause()
-    assert str(exception) == "<Response [400]>"
+    assert "<Response [400]>" in str(exception)
 
 
 def test_get_task_by_status(client: BlueapiClient):

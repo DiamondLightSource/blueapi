@@ -24,7 +24,7 @@ from bluesky.protocols import (
     Triggerable,
     WritesExternalAssets,
 )
-from bluesky.utils import MsgGenerator
+from dls_bluesky_core.core import MsgGenerator
 from dodal.common import PlanGenerator
 from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel, Field

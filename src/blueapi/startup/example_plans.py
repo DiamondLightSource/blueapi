@@ -1,7 +1,7 @@
 import bluesky.plan_stubs as bps
 from bluesky.plans import count
 from bluesky.protocols import Movable, Readable
-from bluesky.utils import MsgGenerator
+from dls_bluesky_core.core import MsgGenerator
 from dodal.common import inject
 
 TEMP: Movable = inject("sample_temperature")

@@ -5,7 +5,8 @@ from unittest.mock import patch
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
-from dodal.common import MsgGenerator, PlanGenerator, inject
+from dls_bluesky_core.core import MsgGenerator
+from dodal.common import PlanGenerator, inject
 from ophyd.sim import SynAxis, SynGauss
 from pydantic import TypeAdapter, ValidationError
 from pytest import LogCaptureFixture

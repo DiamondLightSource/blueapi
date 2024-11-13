@@ -141,6 +141,14 @@ def cached_expired_token(tmp_path: Path, expired_token: dict[str, Any]) -> Path:
 
 
 @pytest.fixture
+def cached_invalid_token(tmp_path: Path, expired_token: dict[str, Any]) -> Path:
+    token_path = tmp_path / "token"
+    with open(token_path, "w") as token_file:
+        token_file.write("Invalid Token")
+    return token_path
+
+
+@pytest.fixture
 def cached_valid_token(tmp_path: Path, valid_token: dict[str, Any]) -> Path:
     token_path = tmp_path / "token"
     token_json = json.dumps(valid_token)

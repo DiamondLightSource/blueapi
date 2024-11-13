@@ -25,20 +25,6 @@ class TokenManager(ABC):
     def delete_token(self) -> None: ...
 
 
-class NoOpTokenManager(TokenManager):
-    def __init__(self, warning: str = "Session not configured to persist!"):
-        self._warning = warning
-
-    def save_token(self, token: dict[str, Any]) -> None:
-        print(self._warning)
-
-    def load_token(self) -> dict[str, Any]:
-        raise ValueError(self._warning)
-
-    def delete_token(self) -> None:
-        print(self._warning)
-
-
 class CliTokenManager(TokenManager):
     def __init__(self, token_path: Path) -> None:
         self._token_path: Path = token_path
@@ -71,11 +57,10 @@ class SessionManager:
         server_config: OIDCConfig,
     ) -> None:
         self._server_config = server_config
-        self._token_manager: TokenManager = (
-            CliTokenManager(server_config.token_path)
-            if isinstance(server_config, CLIClientConfig)
-            else NoOpTokenManager()
-        )
+        assert isinstance(
+            server_config, CLIClientConfig
+        ), "Please provide token_path in config"
+        self._token_manager: TokenManager = CliTokenManager(server_config.token_path)
 
     @cached_property
     def client(self):
@@ -191,3 +176,4 @@ class SessionManager:
         except Exception:
             print("Problem with cached token, starting new session")
             self._token_manager.delete_token()
+            self._do_device_flow()

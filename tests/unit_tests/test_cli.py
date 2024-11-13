@@ -695,6 +695,22 @@ def test_login_edge_cases(
     assert result.exit_code == 0
 
 
+def test_login_when_cached_token_decode_fails(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+    cached_invalid_token: Path,
+):
+    result = runner.invoke(main, ["-c", config_with_auth, "login"])
+    assert (
+        "Logging in\n"
+        "Problem with cached token, starting new session\n"
+        "Please login from this URL:- https://example.com/verify\n"
+        "Logged in and cached new token\n" in result.output
+    )
+    assert result.exit_code == 0
+
+
 def test_logout_success(
     runner: CliRunner,
     config_with_auth: str,

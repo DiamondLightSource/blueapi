@@ -5,20 +5,8 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Rest Service",
-            "type": "python",
-            "request": "launch",
-            "module": "uvicorn",
-            "args": [
-                "src.blueapi.rest.main:app",
-                "--reload"
-            ],
-            "jinja": true,
-            "justMyCode": true
-        },
-        {
             "name": "Debug Unit Test",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
             "program": "${file}",
@@ -27,57 +15,67 @@
             ],
             "console": "integratedTerminal",
             "env": {
-                // The default config in setup.cfg's "[tool:pytest]" adds coverage.
-                // Cannot have coverage and debugging at the same time.
-                // https://github.com/microsoft/vscode-python/issues/693
-                "PYTEST_ADDOPTS": "--no-cov"
+                // Enable break on exception when debugging tests (see: tests/conftest.py)
+                "PYTEST_RAISE": "1",
             },
         },
         {
-            "name": "Run Service",
-            "type": "python",
+            "name": "Blueapi Server",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
-            "module": "blueapi.cli",
-            "args": [
-                "serve"
-            ]
+            "module": "blueapi",
+            "args": "serve",
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
         },
         {
-            "name": "Controller (get plans)",
-            "type": "python",
+            "name": "Blueapi Server (Custom Config)",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
-            "module": "blueapi.cli",
-            "args": [
-                "controller",
-                "plans"
-            ]
+            "module": "blueapi",
+            "args": "--config ${input:config_path} serve",
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
         },
         {
-            "name": "Controller (get devices)",
-            "type": "python",
+            "name": "Blueapi Controller",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
-            "module": "blueapi.cli",
-            "args": [
-                "controller",
-                "devices"
-            ]
+            "module": "blueapi",
+            "args": "controller ${input:controller_args}",
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
         },
         {
-            "name": "Controller (sleep)",
-            "type": "python",
+            "name": "Blueapi Controller (Custom Config)",
+            "type": "debugpy",
             "request": "launch",
             "justMyCode": false,
-            "module": "blueapi.cli",
-            "args": [
-                "controller",
-                "run",
-                "sleep",
-                "-p",
-                "{\"time\": 5}"
-            ]
-        }
+            "module": "blueapi",
+            "args": "-c ${input:config_path} controller ${input:controller_args}",
+            "env": {
+                "OTLP_EXPORT_ENABLED": "false"
+            },
+        },
+    ],
+    "inputs": [
+        {
+            "id": "controller_args",
+            "type": "promptString",
+            "description": "Arguments to pass to controller",
+            "default": ""
+        },
+        {
+            "id": "config_path",
+            "type": "promptString",
+            "description": "Path to configuration YAML file",
+            "default": ""
+        },
     ]
 }

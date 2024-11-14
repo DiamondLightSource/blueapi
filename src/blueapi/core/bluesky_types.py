@@ -1,5 +1,11 @@
 import inspect
-from typing import Any, Callable, Mapping, Optional, Type, Union, get_type_hints
+from collections.abc import Callable, Mapping
+from typing import (
+    Any,
+    Protocol,
+    get_type_hints,
+    runtime_checkable,
+)
 
 from bluesky.protocols import (
     Checkable,
@@ -24,32 +30,27 @@ from pydantic import BaseModel, Field
 
 from blueapi.utils import BlueapiBaseModel
 
-try:
-    from typing import Protocol, runtime_checkable
-except ImportError:
-    from typing_extensions import Protocol, runtime_checkable  # type: ignore
-
 PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
 
 #: An object that encapsulates the device to do useful things to produce
 # data (e.g. move and read)
-Device = Union[
-    Checkable,
-    Flyable,
-    HasHints,
-    HasName,
-    HasParent,
-    Movable,
-    Pausable,
-    Readable,
-    Stageable,
-    Stoppable,
-    Subscribable,
-    WritesExternalAssets,
-    Configurable,
-    Triggerable,
-    AsyncDevice,
-]
+Device = (
+    Checkable
+    | Flyable
+    | HasHints
+    | HasName
+    | HasParent
+    | Movable
+    | Pausable
+    | Readable
+    | Stageable
+    | Stoppable
+    | Subscribable
+    | WritesExternalAssets
+    | Configurable
+    | Triggerable
+    | AsyncDevice
+)
 
 #: Protocols defining interface to hardware
 BLUESKY_PROTOCOLS = list(Device.__args__)  # type: ignore
@@ -62,19 +63,19 @@ def is_bluesky_compatible_device(obj: Any) -> bool:
     return is_object and _follows_bluesky_protocols(obj)
 
 
-def is_bluesky_compatible_device_type(cls: Type[Any]) -> bool:
+def is_bluesky_compatible_device_type(cls: type[Any]) -> bool:
     # We must separately check if Obj refers to an class rather than an
     # instance, as both follow the protocols but only one is a type.
     return inspect.isclass(cls) and _follows_bluesky_protocols(cls)
 
 
 def _follows_bluesky_protocols(obj: Any) -> bool:
-    return any(map(lambda protocol: isinstance(obj, protocol), BLUESKY_PROTOCOLS))
+    return any(isinstance(obj, protocol) for protocol in BLUESKY_PROTOCOLS)
 
 
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
     try:
-        return get_type_hints(func).get("return") is MsgGenerator
+        return get_type_hints(func).get("return") == MsgGenerator
     except TypeError:
         # get_type_hints fails on some objects (such as Union or Optional)
         return False
@@ -86,10 +87,10 @@ class Plan(BlueapiBaseModel):
     """
 
     name: str = Field(description="Referenceable name of the plan")
-    description: Optional[str] = Field(
+    description: str | None = Field(
         description="Description/docstring of the plan", default=None
     )
-    model: Type[BaseModel] = Field(
+    model: type[BaseModel] = Field(
         description="Validation model of the parameters for the plan"
     )
 

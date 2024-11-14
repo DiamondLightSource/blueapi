@@ -9,8 +9,19 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "pydantic"
+        versions: [">=2.0"]

@@ -1,47 +1,106 @@
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Dict, Set
 
-from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Body,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
+from observability_utils.tracing import (
+    add_span_attributes,
+    get_tracer,
+    start_as_current_span,
+)
+from opentelemetry.context import attach
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.propagate import get_global_textmap
+from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
-from blueapi.worker import RunPlan, TrackableTask, WorkerState
+from blueapi.service import interface
+from blueapi.worker import Task, TrackableTask, WorkerState
+from blueapi.worker.event import TaskStatusEnum
 
-from .handler import get_handler, setup_handler, teardown_handler
-from .handler_base import BlueskyHandler
 from .model import (
     DeviceModel,
     DeviceResponse,
+    EnvironmentResponse,
     PlanModel,
     PlanResponse,
     StateChangeRequest,
     TaskResponse,
+    TasksListResponse,
     WorkerTask,
 )
+from .runner import WorkerDispatcher
 
-REST_API_VERSION = "0.0.4"
+REST_API_VERSION = "0.0.5"
+
+RUNNER: WorkerDispatcher | None = None
+
+CONTEXT_HEADER = "traceparent"
+
+
+def _runner() -> WorkerDispatcher:
+    """Intended to be used only with FastAPI Depends"""
+    if RUNNER is None:
+        raise ValueError()
+    return RUNNER
+
+
+def setup_runner(config: ApplicationConfig | None = None, use_subprocess: bool = True):
+    global RUNNER
+    runner = WorkerDispatcher(config, use_subprocess)
+    runner.start()
+
+    RUNNER = runner
+
+
+def teardown_runner():
+    global RUNNER
+    if RUNNER is None:
+        return
+    RUNNER.stop()
+    RUNNER = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     config: ApplicationConfig = app.state.config
-    setup_handler(config)
+    setup_runner(config)
     yield
-    teardown_handler()
+    teardown_runner()
 
 
-app = FastAPI(
-    docs_url="/docs",
-    on_shutdown=[teardown_handler],
-    title="BlueAPI Control",
-    lifespan=lifespan,
-    version=REST_API_VERSION,
-)
+router = APIRouter()
 
 
-@app.exception_handler(KeyError)
+def get_app():
+    app = FastAPI(
+        docs_url="/docs",
+        title="BlueAPI Control",
+        lifespan=lifespan,
+        version=REST_API_VERSION,
+    )
+    app.include_router(router)
+    app.add_exception_handler(KeyError, on_key_error_404)
+    app.middleware("http")(add_api_version_header)
+    app.middleware("http")(inject_propagated_observability_context)
+    return app
+
+
+TRACER = get_tracer("interface")
+
+
 async def on_key_error_404(_: Request, __: KeyError):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
@@ -49,118 +108,198 @@ async def on_key_error_404(_: Request, __: KeyError):
     )
 
 
-@app.get("/plans", response_model=PlanResponse)
-def get_plans(handler: BlueskyHandler = Depends(get_handler)):
+@router.get("/environment", response_model=EnvironmentResponse)
+@start_as_current_span(TRACER, "runner")
+def get_environment(
+    runner: WorkerDispatcher = Depends(_runner),
+) -> EnvironmentResponse:
+    """Get the current state of the environment, i.e. initialization state."""
+    return runner.state
+
+
+@router.delete("/environment", response_model=EnvironmentResponse)
+async def delete_environment(
+    background_tasks: BackgroundTasks,
+    runner: WorkerDispatcher = Depends(_runner),
+) -> EnvironmentResponse:
+    """Delete the current environment, causing internal components to be reloaded."""
+
+    if runner.state.initialized or runner.state.error_message is not None:
+        background_tasks.add_task(runner.reload)
+    return EnvironmentResponse(initialized=False)
+
+
+@router.get("/plans", response_model=PlanResponse)
+@start_as_current_span(TRACER)
+def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available plans."""
-    return PlanResponse(plans=handler.plans)
+    plans = runner.run(interface.get_plans)
+    return PlanResponse(plans=plans)
 
 
-@app.get(
+@router.get(
     "/plans/{name}",
     response_model=PlanModel,
 )
-def get_plan_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)):
+@start_as_current_span(TRACER, "name")
+def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a plan by its (unique) name."""
-    return handler.get_plan(name)
+    return runner.run(interface.get_plan, name)
 
 
-@app.get("/devices", response_model=DeviceResponse)
-def get_devices(handler: BlueskyHandler = Depends(get_handler)):
+@router.get("/devices", response_model=DeviceResponse)
+@start_as_current_span(TRACER)
+def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available devices."""
-    return DeviceResponse(devices=handler.devices)
+    devices = runner.run(interface.get_devices)
+    return DeviceResponse(devices=devices)
 
 
-@app.get(
+@router.get(
     "/devices/{name}",
     response_model=DeviceModel,
 )
-def get_device_by_name(name: str, handler: BlueskyHandler = Depends(get_handler)):
+@start_as_current_span(TRACER, "name")
+def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a devices by its (unique) name."""
-    return handler.get_device(name)
+    return runner.run(interface.get_device, name)
 
 
-@app.post(
+example_task = Task(name="count", params={"detectors": ["x"]})
+
+
+@router.post(
     "/tasks",
     response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@start_as_current_span(TRACER, "request", "task.name", "task.params")
 def submit_task(
     request: Request,
     response: Response,
-    task: RunPlan = Body(
-        ..., example=RunPlan(name="count", params={"detectors": ["x"]})
-    ),
-    handler: BlueskyHandler = Depends(get_handler),
+    task: Task = Body(..., example=example_task),
+    runner: WorkerDispatcher = Depends(_runner),
 ):
     """Submit a task to the worker."""
     try:
-        task_id: str = handler.submit_task(task)
+        plan_model = runner.run(interface.get_plan, task.name)
+        task_id: str = runner.run(interface.submit_task, task)
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.errors()
+        errors = e.errors()
+        formatted_errors = "; ".join(
+            [f"{err['loc'][0]}: {err['msg']}" for err in errors]
         )
+        error_detail_response = f"""
+        Input validation failed: {formatted_errors},
+        suppplied params {task.params},
+        do not match the expected params: {plan_model.parameter_schema}
+        """
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=error_detail_response,
+        ) from e
 
 
-@app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+@router.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+@start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
-    handler: BlueskyHandler = Depends(get_handler),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> TaskResponse:
-    return TaskResponse(task_id=handler.clear_pending_task(task_id))
+    return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
-@app.put(
+@start_as_current_span(TRACER, "v")
+def validate_task_status(v: str) -> TaskStatusEnum:
+    v_upper = v.upper()
+    if v_upper not in TaskStatusEnum.__members__:
+        raise ValueError("Invalid status query parameter")
+    return TaskStatusEnum(v_upper)
+
+
+@router.get("/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
+@start_as_current_span(TRACER)
+def get_tasks(
+    task_status: str | None = None,
+    runner: WorkerDispatcher = Depends(_runner),
+) -> TasksListResponse:
+    """
+    Retrieve tasks based on their status.
+    The status of a newly created task is 'unstarted'.
+    """
+    tasks = []
+    if task_status:
+        add_span_attributes({"status": task_status})
+        try:
+            desired_status = validate_task_status(task_status)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid status query parameter",
+            ) from e
+
+        tasks = runner.run(interface.get_tasks_by_status, desired_status)
+    else:
+        tasks = runner.run(interface.get_tasks)
+    return TasksListResponse(tasks=tasks)
+
+
+@router.put(
     "/worker/task",
     response_model=WorkerTask,
     responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
 )
-def update_task(
+@start_as_current_span(TRACER, "task.task_id")
+def set_active_task(
     task: WorkerTask,
-    handler: BlueskyHandler = Depends(get_handler),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerTask:
-    active_task = handler.active_task
+    """Set a task to active status, the worker should begin it as soon as possible.
+    This will return an error response if the worker is not idle."""
+    active_task = runner.run(interface.get_active_task)
     if active_task is not None and not active_task.is_complete:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    handler.begin_task(task)
+    runner.run(interface.begin_task, task)
     return task
 
 
-@app.get(
+@router.get(
     "/tasks/{task_id}",
     response_model=TrackableTask,
 )
+@start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
-    handler: BlueskyHandler = Depends(get_handler),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> TrackableTask:
     """Retrieve a task"""
-    pending = handler.get_pending_task(task_id)
-    if pending is None:
+    task = runner.run(interface.get_task_by_id, task_id)
+    if task is None:
         raise KeyError
-    return pending
+    return task
 
 
-@app.get("/worker/task")
-def get_active_task(handler: BlueskyHandler = Depends(get_handler)) -> WorkerTask:
-    active = handler.active_task
-    if active is not None:
-        return WorkerTask(task_id=active.task_id)
-    else:
-        return WorkerTask(task_id=None)
+@router.get("/worker/task")
+@start_as_current_span(TRACER)
+def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
+    active = runner.run(interface.get_active_task)
+    task_id = active.task_id if active is not None else None
+    return WorkerTask(task_id=task_id)
 
 
-@app.get("/worker/state")
-def get_state(handler: BlueskyHandler = Depends(get_handler)) -> WorkerState:
+@router.get("/worker/state")
+@start_as_current_span(TRACER)
+def get_state(runner: WorkerDispatcher = Depends(_runner)) -> WorkerState:
     """Get the State of the Worker"""
-    return handler.state
+    return runner.run(interface.get_worker_state)
 
 
 # Map of current_state: allowed new_states
-_ALLOWED_TRANSITIONS: Dict[WorkerState, Set[WorkerState]] = {
+_ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
     WorkerState.RUNNING: {
         WorkerState.PAUSED,
         WorkerState.ABORTING,
@@ -174,7 +313,7 @@ _ALLOWED_TRANSITIONS: Dict[WorkerState, Set[WorkerState]] = {
 }
 
 
-@app.put(
+@router.put(
     "/worker/state",
     status_code=status.HTTP_202_ACCEPTED,
     responses={
@@ -182,10 +321,11 @@ _ALLOWED_TRANSITIONS: Dict[WorkerState, Set[WorkerState]] = {
         status.HTTP_202_ACCEPTED: {"detail": "Transition requested"},
     },
 )
+@start_as_current_span(TRACER, "state_change_request.new_state")
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    handler: BlueskyHandler = Depends(get_handler),
+    runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerState:
     """
     Request that the worker is put into a particular state.
@@ -204,19 +344,21 @@ def set_state(
         - If reason is set, the reason will be passed as the reason for the Run failure.
     - **All other transitions return 400: Bad Request**
     """
-    current_state = handler.state
+    current_state = runner.run(interface.get_worker_state)
     new_state = state_change_request.new_state
+    add_span_attributes({"current_state": current_state})
     if (
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
         if new_state == WorkerState.PAUSED:
-            handler.pause_worker(defer=state_change_request.defer)
+            runner.run(interface.pause_worker, state_change_request.defer)
         elif new_state == WorkerState.RUNNING:
-            handler.resume_worker()
+            runner.run(interface.resume_worker)
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
             try:
-                handler.cancel_active_task(
+                runner.run(
+                    interface.cancel_active_task,
                     state_change_request.new_state is WorkerState.ABORTING,
                     state_change_request.reason,
                 )
@@ -225,18 +367,52 @@ def set_state(
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
 
-    return handler.state
+    return runner.run(interface.get_worker_state)
 
 
+@start_as_current_span(TRACER, "config")
 def start(config: ApplicationConfig):
     import uvicorn
+    from uvicorn.config import LOGGING_CONFIG
 
+    LOGGING_CONFIG["formatters"]["default"]["fmt"] = (
+        "%(asctime)s %(levelprefix)s %(message)s"
+    )
+    LOGGING_CONFIG["formatters"]["access"]["fmt"] = (
+        "%(asctime)s %(levelprefix)s %(client_addr)s"
+        + " - '%(request_line)s' %(status_code)s"
+    )
+    app = get_app()
+
+    FastAPIInstrumentor().instrument_app(
+        app,
+        tracer_provider=get_tracer_provider(),
+        http_capture_headers_server_request=[",*"],
+        http_capture_headers_server_response=[",*"],
+    )
     app.state.config = config
+
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 
 
-@app.middleware("http")
-async def add_api_version_header(request: Request, call_next):
+async def add_api_version_header(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+):
     response = await call_next(request)
     response.headers["X-API-Version"] = REST_API_VERSION
+    return response
+
+
+async def inject_propagated_observability_context(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Middleware to extract the any propagated observability context from the
+    HTTP headers and attach it to the local one.
+    """
+    if CONTEXT_HEADER in request.headers:
+        ctx = get_global_textmap().extract(
+            {CONTEXT_HEADER: request.headers[CONTEXT_HEADER]}
+        )
+        attach(ctx)
+    response = await call_next(request)
     return response

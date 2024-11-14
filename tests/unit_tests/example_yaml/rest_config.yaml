@@ -1,0 +1,6 @@
+api:
+  host: a.fake.host
+  port: 12345
+stomp:
+  host: localhost
+  port: 61613

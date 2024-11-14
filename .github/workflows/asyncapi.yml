@@ -16,4 +16,4 @@ jobs:
       - name: check asyncapi.yaml file
         uses: WaleedAshraf/asyncapi-github-action@v0.0.10
         with:
-          filepath: "./docs/user/reference/asyncapi.yaml"
+          filepath: "./docs/reference/asyncapi.yaml"

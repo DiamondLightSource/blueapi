@@ -1,5 +1,5 @@
+from collections.abc import Mapping
 from enum import Enum
-from typing import List, Mapping, Optional, Union
 
 from bluesky.run_engine import RunEngineStateMachine
 from pydantic import Field
@@ -8,7 +8,15 @@ from super_state_machine.extras import PropertyMachine, ProxyString
 from blueapi.utils import BlueapiBaseModel
 
 # The RunEngine can return any of these three types as its state
-RawRunEngineState = Union[PropertyMachine, ProxyString, str]
+RawRunEngineState = type[PropertyMachine | ProxyString | str]
+
+
+# NOTE this is interim until refactor
+class TaskStatusEnum(str, Enum):
+    PENDING = "PENDING"
+    COMPLETE = "COMPLETE"
+    ERROR = "ERROR"
+    RUNNING = "RUNNING"
 
 
 class WorkerState(str, Enum):
@@ -52,13 +60,13 @@ class StatusView(BlueapiBaseModel):
         description="Human-readable name indicating what this status describes",
         default="Unknown",
     )
-    current: Optional[float] = Field(
+    current: float | None = Field(
         description="Current value of operation progress, if known", default=None
     )
-    initial: Optional[float] = Field(
+    initial: float | None = Field(
         description="Initial value of operation progress, if known", default=None
     )
-    target: Optional[float] = Field(
+    target: float | None = Field(
         description="Target value operation of progress, if known", default=None
     )
     unit: str = Field(description="Units of progress", default="units")
@@ -69,14 +77,14 @@ class StatusView(BlueapiBaseModel):
         description="Whether the operation this status describes is complete",
         default=False,
     )
-    percentage: Optional[float] = Field(
+    percentage: float | None = Field(
         description="Percentage of status completion, if known", default=None
     )
-    time_elapsed: Optional[float] = Field(
+    time_elapsed: float | None = Field(
         description="Time elapsed since status operation beginning, if known",
         default=None,
     )
-    time_remaining: Optional[float] = Field(
+    time_remaining: float | None = Field(
         description="Estimated time remaining until operation completion, if known",
         default=None,
     )
@@ -109,9 +117,9 @@ class WorkerEvent(BlueapiBaseModel):
     """
 
     state: WorkerState
-    task_status: Optional[TaskStatus] = None
-    errors: List[str] = Field(default_factory=list)
-    warnings: List[str] = Field(default_factory=list)
+    task_status: TaskStatus | None = None
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
     def is_error(self) -> bool:
         return (self.task_status is not None and self.task_status.task_failed) or bool(

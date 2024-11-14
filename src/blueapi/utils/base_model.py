@@ -1,30 +1,19 @@
-from pydantic import BaseConfig, BaseModel, Extra
+from pydantic import BaseModel, ConfigDict
 
+# Pydantic config for blueapi API models with common config.
+BlueapiModelConfig = ConfigDict(
+    extra="forbid",
+    populate_by_name=True,
+)
 
-class BlueapiModelConfig(BaseConfig):
-    """
-    Pydantic config for blueapi API models with
-    common config.
-    """
-
-    extra = Extra.forbid
-    allow_population_by_field_name = True
-    underscore_attrs_are_private = True
-
-
-class BlueapiPlanModelConfig(BaseConfig):
-    """
-    Pydantic config for plan parameters.
-    Includes arbitrary type config so that devices
-    can be parameters.
-    Validates default arguments, to allow default
-    arguments to be names of devices that are fetched
-    from the context.
-    """
-
-    extra = Extra.forbid
-    arbitrary_types_allowed = True
-    validate_all = True
+# Pydantic config for plan parameters. Includes arbitrary type config so that
+# devices can be parameters. Validates default arguments, to allow default
+# arguments to be names of devices that are fetched from the context.
+BlueapiPlanModelConfig = ConfigDict(
+    extra="forbid",
+    arbitrary_types_allowed=True,
+    validate_default=True,
+)
 
 
 class BlueapiBaseModel(BaseModel):
@@ -47,4 +36,4 @@ class BlueapiBaseModel(BaseModel):
     apischema also did not allow.
     """
 
-    Config = BlueapiModelConfig
+    model_config = BlueapiModelConfig

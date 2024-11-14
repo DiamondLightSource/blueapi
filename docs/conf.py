@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from subprocess import check_output
 
+import requests
+
 import blueapi
 
 # -- General configuration ------------------------------------------------
@@ -42,11 +44,16 @@ extensions = [
     "sphinx_copybutton",
     # For the card element
     "sphinx_design",
+    # So we can write markdown files
+    "myst_parser",
     # OpenAPI directive
     "sphinxcontrib.openapi",
     # For documenting the CLI
     "sphinx_click.ext",
 ]
+
+# So we can use the ::: syntax
+myst_enable_extensions = ["colon_fence"]
 
 # If true, Sphinx will warn about all references where the target cannot
 # be found.
@@ -84,9 +91,6 @@ graphviz_output_format = "svg"
 # role, that is, for text marked up `like this`
 default_role = "any"
 
-# The suffix of source filenames.
-source_suffix = ".rst"
-
 # The master toctree document.
 master_doc = "index"
 
@@ -100,20 +104,10 @@ pygments_style = "sphinx"
 
 # This means you can link things like `str` and `asyncio` to the relevant
 # docs in the python documentation.
-intersphinx_mapping = dict(python=("https://docs.python.org/3/", None))
+intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
 
 # A dictionary of graphviz graph attributes for inheritance diagrams.
-inheritance_graph_attrs = dict(rankdir="TB")
-
-# Common links that should be available on every page
-rst_epilog = """
-.. _Diamond Light Source: http://www.diamond.ac.uk
-.. _black: https://github.com/psf/black
-.. _flake8: https://flake8.pycqa.org/en/latest/
-.. _isort: https://github.com/PyCQA/isort
-.. _mypy: http://mypy-lang.org/
-.. _pre-commit: https://pre-commit.com/
-"""
+inheritance_graph_attrs = {"rankdir": "TB"}
 
 # Ignore localhost links for periodic check that links in docs are valid
 linkcheck_ignore = [r"http://localhost:\d+/"]
@@ -129,13 +123,11 @@ copybutton_prompt_is_regexp = True
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-github_repo = project
+github_repo = "blueapi"
 github_user = "DiamondLightSource"
 switcher_json = f"https://{github_user}.github.io/{github_repo}/switcher.json"
-# Don't check switcher if it doesn't exist, but warn in a non-failing way
-# TODO: Enable this again after all branches have published an updated switcher
-check_switcher = False
-if not check_switcher:
+switcher_exists = requests.get(switcher_json).ok
+if not switcher_exists:
     print(
         "*** Can't read version switcher, is GitHub pages enabled? \n"
         "    Once Docs CI job has successfully run once, set the "
@@ -145,41 +137,43 @@ if not check_switcher:
     )
 
 # Theme options for pydata_sphinx_theme
-html_theme_options = dict(
-    logo=dict(
-        text=project,
-    ),
-    use_edit_page_button=True,
-    github_url=f"https://github.com/{github_user}/{github_repo}",
-    icon_links=[
-        dict(
-            name="PyPI",
-            url=f"https://pypi.org/project/{project}",
-            icon="fas fa-cube",
-        )
+# We don't check switcher because there are 3 possible states for a repo:
+# 1. New project, docs are not published so there is no switcher
+# 2. Existing project with latest skeleton, switcher exists and works
+# 3. Existing project with old skeleton that makes broken switcher,
+#    switcher exists but is broken
+# Point 3 makes checking switcher difficult, because the updated skeleton
+# will fix the switcher at the end of the docs workflow, but never gets a chance
+# to complete as the docs build warns and fails.
+html_theme_options = {
+    "logo": {
+        "text": project,
+    },
+    "use_edit_page_button": True,
+    "github_url": f"https://github.com/{github_user}/{github_repo}",
+    "icon_links": [
+        {
+            "name": "PyPI",
+            "url": f"https://pypi.org/project/{project}",
+            "icon": "fas fa-cube",
+        }
     ],
-    switcher=dict(
-        json_url=switcher_json,
-        version_match=version,
-    ),
-    check_switcher=check_switcher,
-    navbar_end=["theme-switcher", "icon-links", "version-switcher"],
-    external_links=[
-        dict(
-            name="Release Notes",
-            url=f"https://github.com/{github_user}/{github_repo}/releases",
-        )
-    ],
-    navigation_with_keys=True,
-)
+    "switcher": {
+        "json_url": switcher_json,
+        "version_match": version,
+    },
+    "check_switcher": False,
+    "navbar_end": ["theme-switcher", "icon-links", "version-switcher"],
+    "navigation_with_keys": False,
+}
 
 # A dictionary of values to pass into the template engine’s context for all pages
-html_context = dict(
-    github_user=github_user,
-    github_repo=project,
-    github_version=version,
-    doc_path="docs",
-)
+html_context = {
+    "github_user": github_user,
+    "github_repo": project,
+    "github_version": version,
+    "doc_path": "docs",
+}
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 html_show_sphinx = False
@@ -188,5 +182,5 @@ html_show_sphinx = False
 html_show_copyright = False
 
 # Logo
-html_logo = "images/dls-logo.svg"
-html_favicon = "images/dls-favicon.ico"
+html_logo = "images/blueapi-logo.svg"
+html_favicon = html_logo

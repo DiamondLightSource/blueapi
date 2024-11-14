@@ -1,0 +1,7 @@
+---
+stomp:
+  host: "localhost"
+  port: 61613
+  auth:
+    username: "guest"
+    password: "guest"

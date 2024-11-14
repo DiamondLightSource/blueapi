@@ -1,9 +1,11 @@
+from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Generic, Literal, Mapping, Optional, Type, TypeVar, Union
+from typing import Any, Generic, Literal, TypeVar
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, parse_obj_as
+from bluesky_stomp.models import BasicAuthentication
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -18,16 +20,7 @@ class SourceKind(str, Enum):
 
 class Source(BaseModel):
     kind: SourceKind
-    module: Union[Path, str]
-
-
-class BasicAuthentication(BaseModel):
-    """
-    Log in details for when a server uses authentication
-    """
-
-    username: str = "guest"
-    passcode: str = "guest"
+    module: Path | str
 
 
 class StompConfig(BaseModel):
@@ -37,13 +30,7 @@ class StompConfig(BaseModel):
 
     host: str = "localhost"
     port: int = 61613
-    auth: Optional[BasicAuthentication] = None
-
-
-class DataWritingConfig(BlueapiBaseModel):
-    visit_service_url: Optional[str] = None  # e.g. "http://localhost:8088/api"
-    visit_directory: Path = Path("/tmp/0-0")
-    group_name: str = "example"
+    auth: BasicAuthentication | None = None
 
 
 class WorkerEventConfig(BlueapiBaseModel):
@@ -67,7 +54,6 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
     ]
-    data_writing: DataWritingConfig = Field(default_factory=DataWritingConfig)
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
 
 
@@ -81,16 +67,27 @@ class RestConfig(BlueapiBaseModel):
     protocol: str = "http"
 
 
+class ScratchRepository(BlueapiBaseModel):
+    name: str = "example"
+    remote_url: str = "https://github.com/example/example.git"
+
+
+class ScratchConfig(BlueapiBaseModel):
+    root: Path = Path("/tmp/scratch/blueapi")
+    repositories: list[ScratchRepository] = Field(default_factory=list)
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
     config tree.
     """
 
-    stomp: StompConfig = Field(default_factory=StompConfig)
+    stomp: StompConfig | None = None
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
+    scratch: ScratchConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):
@@ -114,12 +111,9 @@ class ConfigLoader(Generic[C]):
     of default values, dictionaries, YAML/JSON files etc.
     """
 
-    _schema: Type[C]
-    _values: Dict[str, Any]
-
-    def __init__(self, schema: Type[C]) -> None:
-        self._schema = schema
-        self._values = {}
+    def __init__(self, schema: type[C]) -> None:
+        self._adapter = TypeAdapter(schema)
+        self._values: dict[str, Any] = {}
 
     def use_values(self, values: Mapping[str, Any]) -> None:
         """
@@ -132,7 +126,7 @@ class ConfigLoader(Generic[C]):
                                         if defaults provided.
         """
 
-        def recursively_update_map(old: Dict[str, Any], new: Mapping[str, Any]) -> None:
+        def recursively_update_map(old: dict[str, Any], new: Mapping[str, Any]) -> None:
             for key in new:
                 if (
                     key in old
@@ -169,8 +163,9 @@ class ConfigLoader(Generic[C]):
         """
 
         try:
-            return parse_obj_as(self._schema, self._values)
+            return self._adapter.validate_python(self._values)
         except ValidationError as exc:
+            error_details = "\n".join(str(e) for e in exc.errors())
             raise InvalidConfigError(
-                "Something is wrong with the configuration file: \n"
+                f"Something is wrong with the configuration file: \n {error_details}"
             ) from exc

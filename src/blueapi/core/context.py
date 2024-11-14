@@ -1,19 +1,12 @@
-import functools
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
-from types import ModuleType
+from types import ModuleType, UnionType
 from typing import (
     Any,
-    Callable,
-    Dict,
     Generic,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     get_args,
@@ -21,25 +14,23 @@ from typing import (
     get_type_hints,
 )
 
-from bluesky.run_engine import RunEngine, call_in_bluesky_event_loop
-from pydantic import create_model
-from pydantic.fields import FieldInfo, ModelField
+from bluesky.run_engine import RunEngine
+from dodal.utils import make_all_devices
+from ophyd_async.core import NotConnected
+from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
+from pydantic.fields import FieldInfo
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema, core_schema
 
 from blueapi.config import EnvironmentConfig, SourceKind
-from blueapi.utils import (
-    BlueapiPlanModelConfig,
-    connect_ophyd_async_devices,
-    load_module_all,
-)
+from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     Device,
     HasName,
-    MsgGenerator,
     Plan,
     PlanGenerator,
-    PlanWrapper,
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )
@@ -59,23 +50,13 @@ class BlueskyContext:
     run_engine: RunEngine = field(
         default_factory=lambda: RunEngine(context_managers=[])
     )
-    plan_wrappers: Sequence[PlanWrapper] = field(default_factory=list)
-    plans: Dict[str, Plan] = field(default_factory=dict)
-    devices: Dict[str, Device] = field(default_factory=dict)
-    plan_functions: Dict[str, PlanGenerator] = field(default_factory=dict)
-    sim: bool = field(default=False)
+    plans: dict[str, Plan] = field(default_factory=dict)
+    devices: dict[str, Device] = field(default_factory=dict)
+    plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
-    _reference_cache: Dict[Type, Type] = field(default_factory=dict)
+    _reference_cache: dict[type, type] = field(default_factory=dict)
 
-    def wrap(self, plan: MsgGenerator) -> MsgGenerator:
-        wrapped_plan = functools.reduce(
-            lambda wrapped, next_wrapper: next_wrapper(wrapped),
-            self.plan_wrappers,
-            plan,
-        )
-        yield from wrapped_plan
-
-    def find_device(self, addr: Union[str, List[str]]) -> Optional[Device]:
+    def find_device(self, addr: str | list[str]) -> Device | None:
         """
         Find a device in this context, allows for recursive search.
 
@@ -104,13 +85,6 @@ class BlueskyContext:
             elif source.kind is SourceKind.DODAL:
                 self.with_dodal_module(mod)
 
-        call_in_bluesky_event_loop(
-            connect_ophyd_async_devices(
-                self.devices.values(),
-                self.sim,
-            )
-        )
-
     def with_plan_module(self, module: ModuleType) -> None:
         """
         Register all functions in the module supplied as plans.
@@ -133,18 +107,26 @@ class BlueskyContext:
 
         for obj in load_module_all(module):
             if is_bluesky_plan_generator(obj):
-                self.plan(obj)
+                self.register_plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
 
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
-        from dodal.utils import make_all_devices
+        devices, exceptions = make_all_devices(module, **kwargs)
 
-        for device in make_all_devices(module, **kwargs).values():
-            self.device(device)
+        for device in devices.values():
+            self.register_device(device)
 
-    def plan(self, plan: PlanGenerator) -> PlanGenerator:
+        # If exceptions have occurred, we log them but we do not make blueapi
+        # fall over
+        if len(exceptions) > 0:
+            LOGGER.warning(
+                f"{len(exceptions)} exceptions occurred while instantiating devices"
+            )
+            LOGGER.exception(NotConnected(exceptions))
+
+    def register_plan(self, plan: PlanGenerator) -> PlanGenerator:
         """
         Register the argument as a plan in the context. Can be used as a decorator e.g.
         @ctx.plan
@@ -172,7 +154,7 @@ class BlueskyContext:
         self.plan_functions[plan.__name__] = plan
         return plan
 
-    def device(self, device: Device, name: Optional[str] = None) -> None:
+    def register_device(self, device: Device, name: str | None = None) -> None:
         """
         Register an device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`
@@ -199,7 +181,7 @@ class BlueskyContext:
 
         self.devices[name] = device
 
-    def _reference(self, target: Type) -> Type:
+    def _reference(self, target: type) -> type:
         """
         Create an intermediate reference type for the required ``target`` type that
         will return an existing device during pydantic deserialisation/validation
@@ -215,22 +197,27 @@ class BlueskyContext:
 
             class Reference(target):
                 @classmethod
-                def __get_validators__(cls):
-                    yield cls.valid
+                def __get_pydantic_core_schema__(
+                    cls, source_type: Any, handler: GetCoreSchemaHandler
+                ) -> CoreSchema:
+                    def valid(value):
+                        val = self.find_device(value)
+                        if not isinstance(val, target):
+                            raise ValueError(f"Device {value} is not of type {target}")
+                        return val
+
+                    return core_schema.no_info_after_validator_function(
+                        valid, handler(str)
+                    )
 
                 @classmethod
-                def valid(cls, value):
-                    val = self.find_device(value)
-                    if not isinstance(val, target):
-                        raise ValueError(f"Device {value} is not of type {target}")
-                    return val
-
-                @classmethod
-                def __modify_schema__(
-                    cls, field_schema: dict[str, Any], field: Optional[ModelField]
-                ):
-                    if field:
-                        field_schema.update({field.name: repr(target)})
+                def __get_pydantic_json_schema__(
+                    cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+                ) -> JsonSchemaValue:
+                    json_schema = handler(core_schema)
+                    json_schema = handler.resolve_ref_schema(json_schema)
+                    json_schema["type"] = f"{target.__module__}.{target.__qualname__}"
+                    return json_schema
 
             self._reference_cache[target] = Reference
 
@@ -238,7 +225,7 @@ class BlueskyContext:
 
     def _type_spec_for_function(
         self, func: Callable[..., Any]
-    ) -> dict[str, Tuple[Type, Any]]:
+    ) -> dict[str, tuple[type, FieldInfo]]:
         """
         Parse a function signature and build map of field types and default
         values that can be used to deserialise arguments from external sources.
@@ -255,7 +242,7 @@ class BlueskyContext:
         """
         args = signature(func).parameters
         types = get_type_hints(func)
-        new_args = {}
+        new_args: dict[str, tuple[type, FieldInfo]] = {}
         for name, para in args.items():
             arg_type = types.get(name, Parameter.empty)
             if arg_type is Parameter.empty:
@@ -271,7 +258,7 @@ class BlueskyContext:
             )
         return new_args
 
-    def _convert_type(self, typ: Type) -> Type:
+    def _convert_type(self, typ: type | Any) -> type:
         """
         Recursively convert a type to something that can be deserialised by
         pydantic. Bluesky protocols (and types that extend them) are replaced
@@ -295,6 +282,8 @@ class BlueskyContext:
         if args:
             new_types = tuple(self._convert_type(i) for i in args)
             root = get_origin(typ)
+            if root == UnionType:
+                root = Union
             return root[new_types] if root else typ
         return typ
 

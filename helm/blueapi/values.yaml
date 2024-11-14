@@ -59,18 +59,21 @@ ingress:
 #  host: foo.diamond.ac.uk  (assumes port = service.port)
 
 # -- Resources to put into the container.
-resources:
-  {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources: {}
+# We usually recommend not to specify default resources and to leave this as a conscious
+# choice for the user. This also increases chances charts run on environments with little
+# resources, such as Minikube. If you do want to specify resources, uncomment the following
+# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+# limits:
+#   cpu: 100m
+#   memory: 128Mi
+# requests:
+#   cpu: 100m
+#   memory: 128Mi
+
+initResources: {}
+# Can optionally specify separate resource constraints for the scratch setup container.
+# If left empty this defaults to the same as resources above.
 
 # -- nodeSelector to put into the container.
 nodeSelector: {}
@@ -81,21 +84,38 @@ tolerations: []
 # -- affinity to put into the container.
 affinity: {}
 
-#existingSecret: see templates/secret.yaml
-
 # -- indicates if the kubernetes objects created by this chart should run on the host network. This may be necessary for example to put values onto PVs, as their associated IOCs may only be accessible via the internal beamline network. Warning: some kubernetes configs may behave unexpectedly if this is set to true.
-hostNetwork: false
+hostNetwork: false # May be needed for talking to arcane protocols such as EPICS
+
+restartOnConfigChange: true
 
 listener:
   enabled: true
   resources: {}
 
-scratch:
-  # -- location of host machine directory to be mounted into the container as a volume. e.g. /usr/local/blueapi-software-scratch
-  hostPath: ""
-  # -- desired location of the mounted volume within the container
-  containerPath: /blueapi-plugins/scratch
+# Additional envVars to mount to the pod as a String
+extraEnvVars: |
+  - name: OTLP_EXPORT_ENABLED
+    value: {{ .Values.tracing.otlp.export_enabled }}
+  - name: OTEL_EXPORTER_OTLP_TRACES_PROTOCOL
+    value: {{ .Values.tracing.otlp.protocol }}
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "{{ .Values.tracing.otlp.host }}:{{ .Values.tracing.otlp.port }}"
+# - name: RABBITMQ_PASSWORD
+#   valueFrom:
+#     secretKeyRef:
+#       name: rabbitmq-password
+#       key: rabbitmq-password
 
+tracing:
+  otlp:
+    export_enabled: false
+    protocol: http/protobuf
+    host: https://daq-services-jaeger # replace with central instance
+    port: 4318
+
+
+# Config for the worker goes here, will be mounted into a config file
 worker:
   api:
     # -- url at which to run blueapi rest server within the pod. Defaults to localhost; this gets exposed via a service and potentially ingress.
@@ -105,14 +125,14 @@ worker:
   env:
     # -- blueapi will look at these python modules and import them differently based on if they contain devices or plans. See the corresponding modules for an example of how this should look like.
     sources:
-      - kind: deviceFunctions
-        module: blueapi.startup.example_devices
-      - kind: planFunctions
-        module: blueapi.startup.example_plans
-      - kind: planFunctions
-        module: dls_bluesky_core.plans
-      - kind: planFunctions
-        module: dls_bluesky_core.stubs
+    - kind: deviceFunctions
+      module: blueapi.startup.example_devices
+    - kind: planFunctions
+      module: blueapi.startup.example_plans
+    - kind: planFunctions
+      module: dls_bluesky_core.plans
+    - kind: planFunctions
+      module: dls_bluesky_core.stubs
   stomp:
     auth:
       # -- username to authenticate to stomp within blueapi server.
@@ -120,8 +140,20 @@ worker:
       # -- passcode to authenticate to stomp within blueapi server. Strongly recommended to inject this as a sealed secret and *remove this line entirely* in your own implementations of this chart for security reasons.
       passcode: guest
     # -- name or url to use to connect to a running rabbitmq instance.
+
     host: rabbitmq
     # -- port to use to connect to a running rabbitmq instance.
     port: 61613
 
-# Config for the worker goes here, will be mounted into a config file
+
+initContainer:
+  scratch:
+    # -- desired location of the mounted volume within the container
+    root: /blueapi-plugins/scratch 
+    repositories: []
+    # - name: "dodal"
+    #   remote_url: https://github.com/DiamondLightSource/dodal.git
+
+# -- Mount path for scratch area from host machine, setting this effectively enables scratch area management
+scratchHostPath: "" # example: /usr/local/blueapi-software-scratch
+

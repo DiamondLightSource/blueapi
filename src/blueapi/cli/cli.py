@@ -1,31 +1,29 @@
 import json
 import logging
-from collections import deque
+import sys
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Optional, Tuple, Union
 
 import click
+from bluesky.callbacks.best_effort import BestEffortCallback
+from bluesky_stomp.messaging import MessageContext, StompClient
+from bluesky_stomp.models import Broker
+from observability_utils.tracing import setup_tracing
+from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__
-from blueapi.cli.amq import AmqClient
+from blueapi.cli.format import OutputFormat
+from blueapi.client.client import BlueapiClient
+from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
+from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ApplicationConfig, ConfigLoader
-from blueapi.core import DataEvent
-from blueapi.messaging import MessageContext
-from blueapi.messaging.stomptemplate import StompMessagingTemplate
-from blueapi.service.main import start
-from blueapi.service.model import WorkerTask
-from blueapi.service.openapi import (
-    DOCS_SCHEMA_LOCATION,
-    generate_schema,
-    print_schema_as_yaml,
-    write_schema_as_yaml,
-)
-from blueapi.worker import ProgressEvent, RunPlan, WorkerEvent, WorkerState
+from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
+from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
-from .rest import BlueapiRestClient
+from .scratch import setup_scratch
+from .updates import CliEventRenderer
 
 
 @click.group(invoke_without_command=True)
@@ -34,7 +32,7 @@ from .rest import BlueapiRestClient
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
 @click.pass_context
-def main(ctx: click.Context, config: Union[Optional[Path], Tuple[Path, ...]]) -> None:
+def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     # if no command is supplied, run with the options passed
 
     config_loader = ConfigLoader(ApplicationConfig)
@@ -50,7 +48,9 @@ def main(ctx: click.Context, config: Union[Optional[Path], Tuple[Path, ...]]) ->
     loaded_config: ApplicationConfig = config_loader.load()
 
     ctx.obj["config"] = loaded_config
-    logging.basicConfig(level=loaded_config.logging.level)
+    logging.basicConfig(
+        format="%(asctime)s - %(message)s", level=loaded_config.logging.level
+    )
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
@@ -65,7 +65,17 @@ def main(ctx: click.Context, config: Union[Optional[Path], Tuple[Path, ...]]) ->
     is_flag=True,
     help="[Development only] update the schema in the documentation",
 )
-def schema(output: Optional[Path] = None, update: bool = False) -> None:
+def schema(output: Path | None = None, update: bool = False) -> None:
+    """Only import the service functions when starting the service or generating
+    the schema, not the controller as a new FastAPI app will be started each time.
+    """
+    from blueapi.service.openapi import (
+        DOCS_SCHEMA_LOCATION,
+        generate_schema,
+        print_schema_as_yaml,
+        write_schema_as_yaml,
+    )
+
     """Generate the schema for the REST API"""
     schema = generate_schema()
 
@@ -83,21 +93,39 @@ def start_application(obj: dict):
     """Run a worker that accepts plans to run"""
     config: ApplicationConfig = obj["config"]
 
+    """Only import the service functions when starting the service or generating
+    the schema, not the controller as a new FastAPI app will be started each time.
+    """
+    from blueapi.service.main import start
+
+    """
+    Set up basic automated instrumentation for the FastAPI app, creating the
+    observability context.
+    """
+    setup_tracing("BlueAPI", OTLP_EXPORT_ENABLED)
     start(config)
 
 
 @main.group()
+@click.option(
+    "-o",
+    "--output",
+    type=click.Choice([o.name.lower() for o in OutputFormat]),
+    default="compact",
+)
 @click.pass_context
-def controller(ctx: click.Context) -> None:
+def controller(ctx: click.Context, output: str) -> None:
     """Client utility for controlling and introspecting the worker"""
 
+    setup_tracing("BlueAPICLI", OTLP_EXPORT_ENABLED)
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
 
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
-    ctx.obj["rest_client"] = BlueapiRestClient(config.api)
+    ctx.obj["fmt"] = OutputFormat(output)
+    ctx.obj["client"] = BlueapiClient.from_config(config)
 
 
 def check_connection(func):
@@ -116,8 +144,8 @@ def check_connection(func):
 @click.pass_obj
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_plans().dict())
+    client: BlueapiClient = obj["client"]
+    obj["fmt"].display(client.get_plans())
 
 
 @controller.command(name="devices")
@@ -125,8 +153,8 @@ def get_plans(obj: dict) -> None:
 @click.pass_obj
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_devices().dict())
+    client: BlueapiClient = obj["client"]
+    obj["fmt"].display(client.get_devices())
 
 
 @controller.command(name="listen")
@@ -135,22 +163,36 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
+    if config.stomp is not None:
+        event_bus_client = EventBusClient(
+            StompClient.for_broker(
+                broker=Broker(
+                    host=config.stomp.host,
+                    port=config.stomp.port,
+                    auth=config.stomp.auth,
+                )
+            )
+        )
+    else:
+        raise RuntimeError("Message bus needs to be configured")
+
+    fmt = obj["fmt"]
 
     def on_event(
+        event: WorkerEvent | ProgressEvent | DataEvent,
         context: MessageContext,
-        event: Union[WorkerEvent, ProgressEvent, DataEvent],
     ) -> None:
-        converted = json.dumps(event.dict(), indent=2)
-        print(converted)
+        fmt.display(event)
 
     print(
         "Subscribing to all bluesky events from "
-        f"{config.stomp.host}:{config.stomp.port}"
+        f"{config.stomp.host}:{config.stomp.port}",
+        file=sys.stderr,
     )
-    with amq_client:
-        amq_client.subscribe_to_all_events(on_event)
-        input("Press enter to exit")
+    with event_bus_client:
+        event_bus_client.subscribe_to_all_events(on_event)
+        print("Press enter to exit", file=sys.stderr)
+        input()
 
 
 @controller.command(name="run")
@@ -166,39 +208,40 @@ def listen_to_events(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: Optional[str], timeout: Optional[float]
+    obj: dict, name: str, parameters: str | None, timeout: float | None
 ) -> None:
     """Run a plan with parameters"""
-    config: ApplicationConfig = obj["config"]
-    client: BlueapiRestClient = obj["rest_client"]
-
-    logger = logging.getLogger(__name__)
-
-    amq_client = AmqClient(StompMessagingTemplate.autoconfigured(config.stomp))
-    finished_event: deque[WorkerEvent] = deque()
-
-    def store_finished_event(event: WorkerEvent) -> None:
-        if event.is_complete():
-            finished_event.append(event)
+    client: BlueapiClient = obj["client"]
 
     parameters = parameters or "{}"
-    task = RunPlan(name=name, params=json.loads(parameters))
+    task_id = ""
+    parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
 
-    resp = client.create_task(task)
-    task_id = resp.task_id
+    progress_bar = CliEventRenderer()
+    callback = BestEffortCallback()
 
-    with amq_client:
-        amq_client.subscribe_to_topics(task_id, on_event=store_finished_event)
-        updated = client.update_worker_task(WorkerTask(task_id=task_id))
+    def on_event(event: AnyEvent) -> None:
+        if isinstance(event, ProgressEvent):
+            progress_bar.on_progress_event(event)
+        elif isinstance(event, DataEvent):
+            callback(event.name, event.doc)
 
-        amq_client.wait_for_complete(timeout=timeout)
+    try:
+        task = Task(name=name, params=parsed_params)
+        resp = client.run_task(task, on_event=on_event)
+    except ValidationError as e:
+        pprint(f"failed to validate the task parameters, {task_id}, error: {e}")
+        return
+    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
+        pprint(f"server error with this message: {e}")
+        return
+    except ValueError:
+        pprint("task could not run")
+        return
 
-        if amq_client.timed_out:
-            logger.error(f"Plan did not complete within {timeout} seconds")
-            return
-
-    process_event_after_finished(finished_event.pop(), logger)
-    pprint(updated.dict())
+    pprint(resp.model_dump())
+    if resp.task_status is not None and not resp.task_status.task_failed:
+        print("Plan Succeeded")
 
 
 @controller.command(name="state")
@@ -207,8 +250,8 @@ def run_plan(
 def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.get_state())
+    client: BlueapiClient = obj["client"]
+    print(client.get_state().name)
 
 
 @controller.command(name="pause")
@@ -218,8 +261,8 @@ def get_state(obj: dict) -> None:
 def pause(obj: dict, defer: bool = False) -> None:
     """Pause the execution of the current task"""
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.set_state(WorkerState.PAUSED, defer=defer))
+    client: BlueapiClient = obj["client"]
+    pprint(client.pause(defer=defer))
 
 
 @controller.command(name="resume")
@@ -228,22 +271,22 @@ def pause(obj: dict, defer: bool = False) -> None:
 def resume(obj: dict) -> None:
     """Resume the execution of the current task"""
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.set_state(WorkerState.RUNNING))
+    client: BlueapiClient = obj["client"]
+    pprint(client.resume())
 
 
 @controller.command(name="abort")
 @check_connection
 @click.argument("reason", type=str, required=False)
 @click.pass_obj
-def abort(obj: dict, reason: Optional[str] = None) -> None:
+def abort(obj: dict, reason: str | None = None) -> None:
     """
     Abort the execution of the current task, marking any ongoing runs as failed,
     with optional reason
     """
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.cancel_current_task(state=WorkerState.ABORTING, reason=reason))
+    client: BlueapiClient = obj["client"]
+    pprint(client.abort(reason=reason))
 
 
 @controller.command(name="stop")
@@ -254,21 +297,52 @@ def stop(obj: dict) -> None:
     Stop the execution of the current task, marking as ongoing runs as success
     """
 
-    client: BlueapiRestClient = obj["rest_client"]
-    pprint(client.cancel_current_task(state=WorkerState.STOPPING))
+    client: BlueapiClient = obj["client"]
+    pprint(client.stop())
 
 
-# helper function
-def process_event_after_finished(event: WorkerEvent, logger: logging.Logger):
-    if event.is_error():
-        logger.info("Failed with errors: \n")
-        for error in event.errors:
-            logger.error(error)
-        return
-    if len(event.warnings) != 0:
-        logger.info("Passed with warnings: \n")
-        for warning in event.warnings:
-            logger.warn(warning)
-        return
+@controller.command(name="env")
+@check_connection
+@click.option(
+    "-r",
+    "--reload",
+    is_flag=True,
+    help="Reload the current environment",
+    default=False,
+)
+@click.option(
+    "-t",
+    "--timeout",
+    type=float,
+    help="Timeout to wait for reload in seconds, defaults to 10",
+    default=10.0,
+)
+@click.pass_obj
+def env(
+    obj: dict,
+    reload: bool,
+    timeout: float | None,
+) -> None:
+    """
+    Inspect or restart the environment
+    """
 
-    logger.info("Plan passed")
+    assert isinstance(client := obj["client"], BlueapiClient)
+    if reload:
+        # Reload the environment if needed
+        print("Reloading environment")
+        status = client.reload_environment(timeout=timeout)
+        print("Environment is initialized")
+    else:
+        status = client.get_environment()
+    print(status)
+
+
+@main.command(name="setup-scratch")
+@click.pass_obj
+def scratch(obj: dict) -> None:
+    config: ApplicationConfig = obj["config"]
+    if config.scratch is not None:
+        setup_scratch(config.scratch)
+    else:
+        raise KeyError("No scratch config supplied")

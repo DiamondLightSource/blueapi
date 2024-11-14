@@ -1,11 +1,13 @@
-from typing import Any, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from bluesky.protocols import HasName
 from pydantic import Field
 
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 from blueapi.utils import BlueapiBaseModel
-from blueapi.worker import Worker, WorkerState
+from blueapi.worker import WorkerState
+from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
 _UNKNOWN_NAME = "UNKNOWN"
 
@@ -16,7 +18,7 @@ class DeviceModel(BlueapiBaseModel):
     """
 
     name: str = Field(description="Name of the device")
-    protocols: List[str] = Field(
+    protocols: list[str] = Field(
         description="Protocols that a device conforms to, indicating its capabilities"
     )
 
@@ -32,6 +34,14 @@ def _protocol_names(device: Device) -> Iterable[str]:
             yield protocol.__name__
 
 
+class TasksListResponse(BlueapiBaseModel):
+    """
+    Diagnostic information on the tasks
+    """
+
+    tasks: list[TrackableTask] = Field(description="List of tasks")
+
+
 class DeviceRequest(BlueapiBaseModel):
     """
     A query for devices
@@ -45,7 +55,7 @@ class DeviceResponse(BlueapiBaseModel):
     Response to a query for devices
     """
 
-    devices: List[DeviceModel] = Field(description="Devices available to use in plans")
+    devices: list[DeviceModel] = Field(description="Devices available to use in plans")
 
 
 class PlanModel(BlueapiBaseModel):
@@ -54,10 +64,8 @@ class PlanModel(BlueapiBaseModel):
     """
 
     name: str = Field(description="Name of the plan")
-    description: Optional[str] = Field(
-        description="Docstring of the plan", default=None
-    )
-    parameter_schema: Optional[dict[str, Any]] = Field(
+    description: str | None = Field(description="Docstring of the plan", default=None)
+    parameter_schema: dict[str, Any] | None = Field(
         description="Schema of the plan's parameters",
         alias="schema",
         default_factory=dict,
@@ -67,7 +75,7 @@ class PlanModel(BlueapiBaseModel):
     def from_plan(cls, plan: Plan) -> "PlanModel":
         return cls(
             name=plan.name,
-            schema=plan.model.schema(),
+            schema=plan.model.model_json_schema(),
             description=plan.description,
         )
 
@@ -85,7 +93,7 @@ class PlanResponse(BlueapiBaseModel):
     Response to a query for plans
     """
 
-    plans: List[PlanModel] = Field(description="Plans available to use by a worker")
+    plans: list[PlanModel] = Field(description="Plans available to use by a worker")
 
 
 class TaskResponse(BlueapiBaseModel):
@@ -101,12 +109,12 @@ class WorkerTask(BlueapiBaseModel):
     Worker's active task ID, can be None
     """
 
-    task_id: Optional[str] = Field(
+    task_id: str | None = Field(
         description="The ID of the current task, None if the worker is idle"
     )
 
     @classmethod
-    def of_worker(cls, worker: Worker) -> "WorkerTask":
+    def of_worker(cls, worker: TaskWorker) -> "WorkerTask":
         active = worker.get_active_task()
         if active is not None:
             return WorkerTask(task_id=active.task_id)
@@ -120,11 +128,24 @@ class StateChangeRequest(BlueapiBaseModel):
     """
 
     new_state: WorkerState = Field()
-    defer: Optional[bool] = Field(
+    defer: bool = Field(
         description="Should worker defer Pausing until the next checkpoint",
         default=False,
     )
-    reason: Optional[str] = Field(
+    reason: str | None = Field(
         description="The reason for the current run to be aborted",
         default=None,
+    )
+
+
+class EnvironmentResponse(BlueapiBaseModel):
+    """
+    State of internal environment.
+    """
+
+    initialized: bool = Field(description="blueapi context initialized")
+    error_message: str | None = Field(
+        default=None,
+        description="If present - error loading context",
+        min_length=1,
     )

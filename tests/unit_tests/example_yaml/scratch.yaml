@@ -1,0 +1,5 @@
+scratch:
+  root: /tmp
+  repositories:
+    - name: dodal
+      remote_url: https://github.com/DiamondLightSource/dodal.git

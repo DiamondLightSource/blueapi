@@ -1,49 +1,14 @@
 import asyncio
+from typing import cast
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
-from typing import Iterator
-from unittest.mock import MagicMock
-
 import pytest
 from bluesky import RunEngine
-from bluesky.run_engine import RunEngineStateMachine, TransitionError
-from fastapi.testclient import TestClient
-
-from blueapi.service.handler import Handler, get_handler
-from blueapi.service.main import app
-from src.blueapi.core import BlueskyContext
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--skip-stomp",
-        action="store_true",
-        default=False,
-        help="skip stomp tests (e.g. because a server is unavailable)",
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "stomp: mark test as requiring stomp broker")
-
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption("--skip-stomp"):
-        skip_stomp = pytest.mark.skip(reason="skipping stomp tests at user request")
-        for item in items:
-            if "stomp" in item.keywords:
-                item.add_marker(skip_stomp)
-
-
-class Client:
-    def __init__(self, handler: Handler) -> None:
-        """Create tester object"""
-        self.handler = handler
-
-    @property
-    def client(self) -> TestClient:
-        app.dependency_overrides[get_handler] = lambda: self.handler
-        return TestClient(app)
+from bluesky.run_engine import TransitionError
+from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.trace import get_tracer_provider
 
 
 @pytest.fixture(scope="function")
@@ -66,16 +31,11 @@ def RE(request):
     return RE
 
 
-@pytest.fixture
-def handler(RE: RunEngine) -> Iterator[Handler]:
-    context: BlueskyContext = BlueskyContext(run_engine=MagicMock())
-    context.run_engine.state = RunEngineStateMachine.States.IDLE
-    handler = Handler(context=context, messaging_template=MagicMock())
-
-    yield handler
-    handler.stop()
-
-
-@pytest.fixture
-def client(handler: Handler) -> TestClient:
-    return Client(handler).client
+@pytest.fixture(scope="session")
+def exporter() -> TracerProvider:
+    setup_tracing("test", False)
+    exporter = JsonObjectSpanExporter()
+    provider = cast(TracerProvider, get_tracer_provider())
+    # Use SimpleSpanProcessor to keep tests quick
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    return exporter

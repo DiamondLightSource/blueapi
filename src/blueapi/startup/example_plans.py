@@ -1,5 +1,3 @@
-from typing import List
-
 from bluesky.protocols import Movable, Readable
 from dls_bluesky_core.core import inject
 from dls_bluesky_core.plans import count
@@ -9,13 +7,14 @@ from blueapi.core import MsgGenerator
 
 
 def stp_snapshot(
-    detectors: List[Readable],
+    detectors: list[Readable],
     temperature: Movable = inject("sample_temperature"),
     pressure: Movable = inject("sample_pressure"),
 ) -> MsgGenerator:
     """
     Moves devices for pressure and temperature (defaults fetched from the context)
     and captures a single frame from a collection of devices
+
     Args:
         detectors (List[Readable]): A list of devices to read while the sample is at STP
         temperature (Optional[Movable]): A device controlling temperature of the sample,

@@ -2,11 +2,13 @@ import itertools
 import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future
+from pathlib import Path
 from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
+from dodal.common.types import UpdatingPathProvider
 from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
@@ -341,7 +343,18 @@ def begin_task_and_wait_until_complete(
 #
 
 
-def test_worker_and_data_events_produce_in_order(worker: TaskWorker) -> None:
+@pytest.fixture
+def path_provider(tmp_path: Path):
+    # Prevents issue with leftover state from beamline tests
+    with patch("dodal.plan_stubs.data_session.get_path_provider") as mock:
+        mock.return_value = MagicMock(spec=UpdatingPathProvider, return_value=tmp_path)
+        mock.return_value.data_session.return_value = "foo"
+        yield
+
+
+def test_worker_and_data_events_produce_in_order(
+    worker: TaskWorker, path_provider
+) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [
             WorkerEvent(

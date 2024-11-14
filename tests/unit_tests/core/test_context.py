@@ -5,7 +5,8 @@ from unittest.mock import patch
 
 import pytest
 from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
-from dls_bluesky_core.core import MsgGenerator, PlanGenerator, inject
+from bluesky.utils import MsgGenerator
+from dodal.common import PlanGenerator, inject
 from ophyd.sim import SynAxis, SynGauss
 from pydantic import TypeAdapter, ValidationError
 from pytest import LogCaptureFixture
@@ -147,7 +148,7 @@ def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
     import tests.unit_tests.core.fake_plan_module as plan_module
 
     empty_context.with_plan_module(plan_module)
-    assert {"scan"} == empty_context.plans.keys()
+    assert {"spec_scan"} == empty_context.plans.keys()
 
 
 def test_add_named_device(empty_context: BlueskyContext, sim_motor: SynAxis) -> None:
@@ -277,7 +278,7 @@ def test_add_devices_and_plans_from_modules_with_config(
         "motor_bundle_a",
         "motor_bundle_b",
     } == empty_context.devices.keys()
-    assert {"scan"} == empty_context.plans.keys()
+    assert {"spec_scan"} == empty_context.plans.keys()
 
 
 def test_function_spec(empty_context: BlueskyContext) -> None:

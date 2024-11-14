@@ -1,1 +1,1 @@
-from dls_bluesky_core.plans import scan  # noqa: F401
+from dodal.plans import spec_scan  # noqa: F401

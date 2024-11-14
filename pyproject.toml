@@ -149,4 +149,5 @@ extend-immutable-calls = [
     "fastapi.Depends",
     "fastapi.Body",
     "fastapi.Task",
+    "dodal.common.inject",
 ]

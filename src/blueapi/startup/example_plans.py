@@ -1,7 +1,7 @@
 from bluesky.protocols import Movable, Readable
 from dodal.common import inject
-from dodal.plans import count
 from dodal.plan_stubs.wrapped import move
+from dodal.plans import count
 
 from blueapi.core import MsgGenerator
 

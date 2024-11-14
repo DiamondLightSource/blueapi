@@ -9,6 +9,7 @@ from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from blueapi.config import ApplicationConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
+from blueapi.service.config_manager import ConfigManager
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
@@ -17,23 +18,12 @@ from blueapi.worker.task_worker import TaskWorker, TrackableTask
 """This module provides interface between web application and underlying Bluesky
 context and worker
 
-the _CONFIG global variable is used by the subprocess only
-
 """
 
-
-_CONFIG: ApplicationConfig = ApplicationConfig()
-
-
-def config() -> ApplicationConfig:
-    return _CONFIG
+config_manager = ConfigManager()
 
 
 def set_config(new_config: ApplicationConfig):
-    """
-    This is a setter function that the main process uses
-    to pass the config into the subprocess
-    """
     global _CONFIG
 
     _CONFIG = new_config
@@ -42,23 +32,23 @@ def set_config(new_config: ApplicationConfig):
 @cache
 def context() -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx.with_config(config().env)
+    env_config = config_manager.get_config().env
+    ctx.with_config(env_config)
     return ctx
 
 
 @cache
 def worker() -> TaskWorker:
-    worker = TaskWorker(
-        context(),
-        broadcast_statuses=config().env.events.broadcast_status_events,
-    )
+    env_config = config_manager.get_config().env
+    should_broadcast_status_events: bool = env_config.events.broadcast_status_events
+    worker = TaskWorker(context(), broadcast_statuses=should_broadcast_status_events)
     worker.start()
     return worker
 
 
 @cache
 def stomp_client() -> StompClient | None:
-    stomp_config = config().stomp
+    stomp_config = config_manager.get_config().stomp
     if stomp_config is not None:
         stomp_client = StompClient.for_broker(
             broker=Broker(
@@ -85,7 +75,7 @@ def stomp_client() -> StompClient | None:
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
 
-    set_config(config)
+    config_manager.set_config(config)
 
     # Eagerly initialize worker and messaging connection
 

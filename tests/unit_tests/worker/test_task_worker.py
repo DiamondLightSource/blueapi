@@ -383,7 +383,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     task: Task | None = None,
     timeout: float = 5.0,
 ) -> None:
-    default_task = Task(name="count", params={"detectors": ["image_det"], "num": 1})
+    default_task = Task(name="count", params={"detectors": {"image_det"}, "num": 1})
     task = task or default_task
 
     event_streams: list[EventStream[Any, int]] = [

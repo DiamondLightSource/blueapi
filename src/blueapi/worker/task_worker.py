@@ -239,10 +239,8 @@ class TaskWorker:
         if self._started.is_set():
             raise WorkerAlreadyStartedError("Worker is already running")
         self._wait_until_stopped()
-        fut = run_worker_in_own_thread(self)
+        run_worker_in_own_thread(self)
         self._wait_until_started()
-
-        add_span_attributes({WORKER_THREAD_STATE: fut._state})
 
     @start_as_current_span(TRACER)
     def stop(self) -> None:

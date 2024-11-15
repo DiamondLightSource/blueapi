@@ -43,7 +43,7 @@ class SynAxisWithMotionEvents(SynAxis):
         distance = value - old_setpoint
         self.sim_state["setpoint"] = value
         self.sim_state["setpoint_ts"] = ttime.time()
-        self.setpoint._run_subs(
+        self.setpoint._run_subs(  # noqa
             sub_type=self.setpoint.SUB_VALUE,
             old_value=old_setpoint,
             value=self.sim_state["setpoint"],
@@ -54,7 +54,7 @@ class SynAxisWithMotionEvents(SynAxis):
             old_readback = self.sim_state["readback"]
             self.sim_state["readback"] = self._readback_func(position)
             self.sim_state["readback_ts"] = ttime.time()
-            self.readback._run_subs(
+            self.readback._run_subs(  # noqa
                 sub_type=self.readback.SUB_VALUE,
                 old_value=old_readback,
                 value=self.sim_state["readback"],

@@ -124,5 +124,3 @@ The plan is executed. While it is running, the `Worker` will publish
 
 If an error occurs during any of the stages from "Request" onwards it is sent back to the user
 over the message bus.
-
-

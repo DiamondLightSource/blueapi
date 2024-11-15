@@ -1,5 +1,5 @@
 import asyncio
-from typing import cast
+from typing import Any, cast
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
 import pytest
@@ -39,3 +39,18 @@ def exporter() -> TracerProvider:
     # Use SimpleSpanProcessor to keep tests quick
     provider.add_span_processor(SimpleSpanProcessor(exporter))
     return exporter
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_exception_interact(call: pytest.CallInfo[Any]):
+    if call.excinfo is not None:
+        raise call.excinfo.value
+    else:
+        raise RuntimeError(
+            f"{call} has no exception data, an unknown error has occurred"
+        )
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
+    raise excinfo.value

@@ -6,7 +6,7 @@ of being written, loaded and run. Take the following plan.
     from typing import Any, List, Mapping, Optional, Union
     
     import bluesky.plans as bp
-    from blueapi.core import MsgGenerator
+    from blueapi.utils import MsgGenerator
     from dodal.common import inject
     from bluesky.protocols import Readable
     

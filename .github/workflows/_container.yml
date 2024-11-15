@@ -106,4 +106,3 @@ jobs:
           helm dependencies update helm/blueapi
           helm package helm/blueapi --version ${GITHUB_REF##*/} -d /tmp/
           helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/diamondlightsource/charts
-          

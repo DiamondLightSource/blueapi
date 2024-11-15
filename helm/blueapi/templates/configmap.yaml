@@ -5,3 +5,16 @@ metadata:
 data:
   config.yaml: |-
     {{- toYaml .Values.worker | nindent 4 }}
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blueapi.fullname" . }}-otel-config
+data:
+{{ if .Values.tracing.otlp.enabled | default false }}
+  OTLP_EXPORT_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: {{ .Values.tracing.otlp.protocol | default "http/protobuff" }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ required "OTLP export enabled but server address not set" .Values.tracing.otlp.server.host }}:{{ .Values.tracing.otlp.server.port | default 4138 }}
+{{ end }}

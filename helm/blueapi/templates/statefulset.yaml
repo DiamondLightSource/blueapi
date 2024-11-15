@@ -97,6 +97,9 @@ spec:
             - "-c"
             - "/config/config.yaml"
             - "serve"
+          envFrom:
+            - configMapRef:
+                name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
       {{- with .Values.nodeSelector }}

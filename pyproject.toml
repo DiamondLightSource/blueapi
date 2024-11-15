@@ -124,13 +124,8 @@ allowlist_externals =
     sphinx-build
     sphinx-autobuild
 commands =
-<<<<<<< HEAD
     pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
-    type-checking: mypy src tests {posargs}
-=======
-    pre-commit: pre-commit run --all-files {posargs}
     type-checking: pyright src tests {posargs}
->>>>>>> ab13661c (switch to pyright, 34 errors left)
     tests: pytest --cov=blueapi --cov-report term --cov-report xml:cov.xml tests/unit_tests {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
     system-test: pytest tests/system_tests {posargs}

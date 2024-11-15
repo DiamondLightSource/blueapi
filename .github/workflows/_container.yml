@@ -27,7 +27,6 @@ jobs:
           if [[ "$ref" =~ $my_regex ]]; then
             echo "SemVer compliant version: $ref"
           else
-            echo 
             echo "Invalid SemVer version: $ref"
             exit 1
           fi

@@ -1,6 +1,7 @@
 name: Build and publish container
 on:
   workflow_call:
+
 env:
   GCR_IMAGE: ghcr.io/diamondlightsource/blueapi
   HELM_VERSION: 3.10.3
@@ -105,3 +106,4 @@ jobs:
           helm dependencies update helm/blueapi
           helm package helm/blueapi --version ${GITHUB_REF##*/} -d /tmp/
           helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/diamondlightsource/charts
+          

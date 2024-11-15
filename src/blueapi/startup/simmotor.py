@@ -91,4 +91,4 @@ class BrokenSynAxis(SynAxis):
         self._timeout = timeout
 
     def set(self, value: float) -> MoveStatus:
-        return MoveStatus(positioner=None, target=None, timeout=self._timeout)
+        return MoveStatus(positioner=self, target=float, timeout=self._timeout)

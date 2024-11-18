@@ -100,4 +100,3 @@ host machine, include the following in your `values.yaml`:
 ```
 
 You can then clone projects into the scratch directory and blueapi will automatically incorporate them on startup. You must still include configuration to load the plans and devices from specific modules within those packages, see above. 
-

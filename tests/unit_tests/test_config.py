@@ -139,8 +139,8 @@ def temp_yaml_config_file(
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
-                    {"kind": "planFunctions", "module": "dls_bluesky_core.plans"},
-                    {"kind": "planFunctions", "module": "dls_bluesky_core.stubs"},
+                    {"kind": "planFunctions", "module": "dodal.plans"},
+                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
             },
             "api": {"host": "0.0.0.0", "port": 8000},
@@ -150,8 +150,8 @@ def temp_yaml_config_file(
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
-                    {"kind": "planFunctions", "module": "dls_bluesky_core.plans"},
-                    {"kind": "planFunctions", "module": "dls_bluesky_core.stubs"},
+                    {"kind": "planFunctions", "module": "dodal.plans"},
+                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
                 "events": {"broadcast_status_events": True},
             },
@@ -192,8 +192,8 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 },
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
-                    {"kind": "planFunctions", "module": "dls_bluesky_core.plans"},
-                    {"kind": "planFunctions", "module": "dls_bluesky_core.stubs"},
+                    {"kind": "planFunctions", "module": "dodal.plans"},
+                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
             },
             "api": {
@@ -221,8 +221,8 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
-                    {"kind": "planFunctions", "module": "dls_bluesky_core.plans"},
-                    {"kind": "planFunctions", "module": "dls_bluesky_core.stubs"},
+                    {"kind": "planFunctions", "module": "dodal.plans"},
+                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
                 "events": {"broadcast_status_events": True},
             },

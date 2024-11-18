@@ -20,6 +20,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         env:
           SEMVER_REGEX: ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$
+
         run: |
           ref="${{ github.ref_name }}"
           my_regex="${{env.SEMVER_REGEX}}"
@@ -42,7 +43,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and export to Docker local cache
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           # Need load and tags so we can test it below
@@ -63,7 +66,9 @@ jobs:
 
       - name: Push cached image to container registry
         if: github.ref_type == 'tag'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
         # This does not build the image again, it will find the image in the
         # Docker cache and publish it
         with:
@@ -101,7 +106,7 @@ jobs:
 
       - name: package chart and push it
         run: |
-          sed -i "$ a appVersion: ${VERSION}" helm/blueapi/Chart.yaml
+          sed -i "$ a appVersion: ${GITHUB_REF##*/}" helm/blueapi/Chart.yaml
           helm dependencies update helm/blueapi
-          helm package helm/blueapi --version ${VERSION} -d /tmp/
-          helm push /tmp/blueapi-${VERSION}.tgz oci://ghcr.io/diamondlightsource/charts
+          helm package helm/blueapi --version ${GITHUB_REF##*/} -d /tmp/
+          helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/diamondlightsource/charts

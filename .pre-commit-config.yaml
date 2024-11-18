@@ -6,6 +6,7 @@ repos:
       - id: check-yaml
         exclude: ^helm\/.*\/templates\/.*|catalog-info.yaml
       - id: check-merge-conflict
+      - id: end-of-file-fixer
 
   - repo: local
     hooks:

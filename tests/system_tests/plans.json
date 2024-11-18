@@ -2,7 +2,7 @@
     "plans": [
         {
             "name": "count",
-            "description": "\n    Take `n` readings from a device\n\n    Args:\n        detectors (Set[Readable]): Readable devices to read\n        num (int, optional): Number of readings to take. Defaults to 1.\n        delay (Optional[Union[float, List[float]]], optional): Delay between readings.\n                                                               Defaults to None.\n        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include\n                                                          in exported data.\n                                                          Defaults to None.\n\n    Returns:\n        MsgGenerator: _description_\n\n    Yields:\n        Iterator[MsgGenerator]: _description_\n    ",
+            "description": "Reads from a number of devices.\n    Wraps bluesky.plans.count(det, num, delay, md=metadata) exposing only serializable\n    parameters and metadata.",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -28,9 +28,6 @@
                                     "type": "number"
                                 },
                                 "type": "array"
-                            },
-                            {
-                                "type": "null"
                             }
                         ],
                         "title": "Delay"
@@ -56,7 +53,7 @@
         },
         {
             "name": "move",
-            "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, Any]): Mapping of Movables to target positions\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target positions\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -113,8 +110,8 @@
             }
         },
         {
-            "name": "scan",
-            "description": "\n    Scan wrapping `bp.scan_nd`\n\n    Args:\n        detectors: Set of readable devices, will take a reading at\n                                    each point\n        axes_to_move: All axes involved in this scan, names and\n            objects\n        spec: ScanSpec modelling the path of the scan\n        metadata: Key-value metadata to include\n                                                          in exported data, defaults to\n                                                          None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "name": "spec_scan",
+            "description": "Generic plan for reading `detectors` at every point of a ScanSpec `Spec`.\n    A `Spec` is an N-dimensional path.\n    ",
             "schema": {
                 "$defs": {
                     "Circle": {
@@ -141,7 +138,7 @@
                             },
                             "radius": {
                                 "description": "Radius of the circle",
-                                "exclusiveMinimum": 0.0,
+                                "exclusiveMinimum": 0,
                                 "title": "Radius",
                                 "type": "number"
                             },
@@ -288,18 +285,18 @@
                             },
                             "x_radius": {
                                 "description": "The radius along the x axis of the ellipse",
-                                "exclusiveMinimum": 0.0,
+                                "exclusiveMinimum": 0,
                                 "title": "X Radius",
                                 "type": "number"
                             },
                             "y_radius": {
                                 "description": "The radius along the y axis of the ellipse",
-                                "exclusiveMinimum": 0.0,
+                                "exclusiveMinimum": 0,
                                 "title": "Y Radius",
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0.0,
+                                "default": 0,
                                 "description": "The angle of the ellipse (degrees)",
                                 "title": "Angle",
                                 "type": "number"
@@ -579,7 +576,7 @@
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0.0,
+                                "default": 0,
                                 "description": "Clockwise rotation angle of the rectangle",
                                 "title": "Angle",
                                 "type": "number"
@@ -798,7 +795,7 @@
                                 "type": "integer"
                             },
                             "rotate": {
-                                "default": 0.0,
+                                "default": 0,
                                 "description": "How much to rotate the angle of the spiral",
                                 "title": "Rotate",
                                 "type": "number"
@@ -990,13 +987,6 @@
                         "type": "array",
                         "uniqueItems": true
                     },
-                    "axes_to_move": {
-                        "additionalProperties": {
-                            "type": "bluesky.protocols.Movable"
-                        },
-                        "title": "Axes To Move",
-                        "type": "object"
-                    },
                     "spec": {
                         "$ref": "#/$defs/Spec"
                     },
@@ -1014,16 +1004,15 @@
                 },
                 "required": [
                     "detectors",
-                    "axes_to_move",
                     "spec"
                 ],
-                "title": "scan",
+                "title": "spec_scan",
                 "type": "object"
             }
         },
         {
             "name": "set_absolute",
-            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -1060,7 +1049,7 @@
         },
         {
             "name": "set_relative",
-            "description": "\n    Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "description": "\n    Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -1097,7 +1086,7 @@
         },
         {
             "name": "move_relative",
-            "description": "\n    Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, Any]): Mapping of Movables to target deltas\n        group (Optional[Group], optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "description": "\n    Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target deltas\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -1144,7 +1133,7 @@
         },
         {
             "name": "wait",
-            "description": "\n    Wait for a group status to complete, wrapper for `bp.wait`\n\n    Args:\n        group (Optional[Group], optional): The name of the group to wait for, defaults\n                                           to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "description": "\n    Wait for a group status to complete, wrapper for `bp.wait`.\n    Does not expose move_on, as when used as a stub will not fail on Timeout.\n\n    Args:\n        group (Group | None, optional): The name of the group to wait for, defaults\n                                           to None, in which case waits for all\n                                           groups that have not yet been awaited.\n        timeout (float | None, default=None): a timeout in seconds\n\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -1158,6 +1147,17 @@
                             }
                         ],
                         "title": "Group"
+                    },
+                    "timeout": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timeout"
                     }
                 },
                 "title": "wait",

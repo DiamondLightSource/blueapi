@@ -30,8 +30,6 @@ channels:
           - $ref: "#/components/messages/taggedDatumDocument"
           - $ref: "#/components/messages/taggedResourceStream"
           - $ref: "#/components/messages/taggedDatumStream"
-          - $ref: "#/components/messages/taggedEventPage"
-          - $ref: "#/components/messages/taggedDatumPage"
 components:
   messages: # Defined as Components to allow referencing from other APIs. # TODO: Define protocol specific correlationId bindings
     taggedStartDocument:
@@ -43,9 +41,9 @@ components:
         type: object
         properties:
           name:
-            type: string
+            const: "start"
           doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/run_start.json"
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.22.1/src/event_model/schemas/run_start.json"
     taggedStopDocument:
       messageId: runStop
       summary: Indicates the completion of a Bluesky run based on a previously specified Plan; describes end conditions and metadata
@@ -55,9 +53,9 @@ components:
         type: object
         properties:
           name:
-            type: string
+            const: "stop"
           doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/run_stop.json"
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.22.1/src/event_model/schemas/run_stop.json"
     taggedDescriptorDocument:
       messageId: eventStreamDescriptor
       summary: Describes the devices to be within a scientifically related stream of measurements
@@ -67,9 +65,9 @@ components:
         type: object
         properties:
           name:
-            type: string
+            const: "descriptor"
           doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/event_descriptor.json"
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.22.1/src/event_model/schemas/event_descriptor.json"
     taggedEventDocument:
       messageId: dataEvent
       summary: Describes a point measurement for a number of scientifically related devices
@@ -79,22 +77,9 @@ components:
         type: object
         properties:
           name:
-            type: string
+            const: "event"
           doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/event.json"
-    taggedEventPage:
-      messageId: eventPage
-      deprecated: true
-      summary: Page style collection of events
-      headers:
-        $ref: "#/components/schemas/contextHeaders"
-      payload:
-        type: object
-        properties:
-          name:
-            type: string
-          doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/event_page.json"
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.22.1/src/event_model/schemas/event.json"
     taggedResourceDocument:
       messageId: resource
       summary: Describes an external resource (file, database entry etc.) that is to be referenced by later datum
@@ -104,9 +89,9 @@ components:
         type: object
         properties:
           name:
-            type: string
+            const: "resource"
           doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/resource.json"
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.22.1/src/event_model/schemas/resource.json"
     taggedDatumDocument:
       messageId: datum
       summary: Describes how to access a point measurement within an external resource
@@ -116,22 +101,9 @@ components:
         type: object
         properties:
           name:
-            type: string
+            const: "datum"
           doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/datum.json"
-    taggedDatumPage:
-      messageId: datumPage
-      deprecated: true
-      summary: Page style collection of datum
-      headers:
-        $ref: "#/components/schemas/contextHeaders"
-      payload:
-        type: object
-        properties:
-          name:
-            type: string
-          doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/datum_page.json"
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.22.1/src/event_model/schemas/datum.json"
     taggedResourceStream:
       messageId: streamResource
       summary: Describes an external resource (file, database entry etc.) that is to be referenced by later Stream Datum
@@ -141,9 +113,9 @@ components:
         type: object
         properties:
           name:
-            type: string
+            const: "stream_resource"
           doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/stream_resource.json"
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.22.1/src/event_model/schemas/stream_resource.json"
     taggedDatumStream:
       messageId: streamDatum
       summary: Describes how to access a slice of an external resource
@@ -153,9 +125,9 @@ components:
         type: object
         properties:
           name:
-            type: string
+            const: "stream_datum"
           doc:
-            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.21.0/event_model/schemas/stream_datum.json"
+            $ref: "https://raw.githubusercontent.com/bluesky/event-model/refs/tags/v1.22.1/src/event_model/schemas/stream_datum.json"
     workerStateEvent:
       messageId: stateEvent
       headers:
@@ -291,4 +263,3 @@ components:
           description: Estimated time remaining until operation completion, if known
           type: number
           format: float
-

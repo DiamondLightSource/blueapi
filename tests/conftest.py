@@ -238,3 +238,18 @@ def mock_authn_server(
 def mock_jwks_fetch(json_web_keyset: JWK):
     mock = Mock(return_value={"keys": [json_web_keyset.export_public(as_dict=True)]})
     return patch("jwt.PyJWKClient.fetch_data", mock)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_exception_interact(call: pytest.CallInfo[Any]):
+    if call.excinfo is not None:
+        raise call.excinfo.value
+    else:
+        raise RuntimeError(
+            f"{call} has no exception data, an unknown error has occurred"
+        )
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
+    raise excinfo.value

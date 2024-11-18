@@ -7,6 +7,7 @@ Technical reference material including APIs and release notes.
 :glob:
 
 reference/*
+API <_api/blueapi>
 genindex
 Release Notes <https://github.com/DiamondLightSource/blueapi/releases>
 ```

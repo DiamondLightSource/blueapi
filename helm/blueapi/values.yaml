@@ -108,9 +108,9 @@ worker:
     - kind: planFunctions
       module: blueapi.startup.example_plans
     - kind: planFunctions
-      module: dls_bluesky_core.plans
+      module: dodal.plans
     - kind: planFunctions
-      module: dls_bluesky_core.stubs
+      module: dodal.plan_stubs.wrapped
   stomp:
     auth:
       username: guest

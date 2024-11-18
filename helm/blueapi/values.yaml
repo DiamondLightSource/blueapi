@@ -76,13 +76,7 @@ listener:
   resources: {}
 
 # Additional envVars to mount to the pod as a String
-extraEnvVars: |
-  - name: OTLP_EXPORT_ENABLED
-    value: {{ .Values.tracing.otlp.export_enabled }}
-  - name: OTEL_EXPORTER_OTLP_TRACES_PROTOCOL
-    value: {{ .Values.tracing.otlp.protocol }}
-  - name: OTEL_EXPORTER_OTLP_ENDPOINT
-    value: "{{ .Values.tracing.otlp.host }}:{{ .Values.tracing.otlp.port }}"
+extraEnvVars: []
 # - name: RABBITMQ_PASSWORD
 #   valueFrom:
 #     secretKeyRef:
@@ -91,10 +85,11 @@ extraEnvVars: |
 
 tracing:
   otlp:
-    export_enabled: false
+    enabled: false
     protocol: http/protobuf
-    host: https://daq-services-jaeger # replace with central instance
-    port: 4318
+    server:
+      host: https://daq-services-jaeger # replace with central instance
+      port: 4318
 
 # Config for the worker goes here, will be mounted into a config file
 worker:

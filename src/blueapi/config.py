@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
@@ -90,7 +90,7 @@ class OIDCConfig(BlueapiBaseModel):
         description="URL to fetch OIDC config from the provider"
     )
     client_id: str = Field(description="Client ID")
-    client_audience: str | Iterable[str] | None = Field(
+    client_audience: str | tuple[str, ...] | None = Field(
         description="Client Audience(s)"
     )
 

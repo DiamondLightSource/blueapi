@@ -142,7 +142,7 @@ class SessionManager:
             data={
                 "client_id": self._server_config.client_id,
                 "scope": "openid profile offline_access",
-                "audience": self._server_config.client_audience,
+                "audience": f"{self._server_config.client_audience}",
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )

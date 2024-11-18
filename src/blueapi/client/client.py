@@ -46,7 +46,8 @@ class BlueapiClient:
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest = BlueapiRestClient(config.api)
-        assert config.stomp is not None, "By this point, the stomp config should be set"
+        if config.stomp is None:
+            return cls(rest)
         client = StompClient.for_broker(
             broker=Broker(
                 host=config.stomp.host,

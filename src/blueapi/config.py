@@ -90,9 +90,7 @@ class OIDCConfig(BlueapiBaseModel):
         description="URL to fetch OIDC config from the provider"
     )
     client_id: str = Field(description="Client ID")
-    client_audience: str | tuple[str, ...] | None = Field(
-        description="Client Audience(s)"
-    )
+    client_audience: str = Field(description="Client Audience")
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:

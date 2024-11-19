@@ -141,8 +141,7 @@ class SessionManager:
             self._server_config.device_authorization_endpoint,
             data={
                 "client_id": self._server_config.client_id,
-                "scope": "openid profile offline_access",
-                "audience": f"{self._server_config.client_audience}",
+                "scope": f"openid profile offline_access {self._server_config.instance}",
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )

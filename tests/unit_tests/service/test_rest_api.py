@@ -10,6 +10,7 @@ from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError
 
+from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import Plan
 from blueapi.service import main
 from blueapi.service.model import (
@@ -27,7 +28,7 @@ from blueapi.worker.task_worker import TrackableTask
 def client() -> Iterator[TestClient]:
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(use_subprocess=False)
-        yield TestClient(main.get_app())
+        yield TestClient(main.get_app(ApplicationConfig()))
         main.teardown_runner()
 
 

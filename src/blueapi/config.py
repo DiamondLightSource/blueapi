@@ -90,9 +90,7 @@ class OIDCConfig(BlueapiBaseModel):
         description="URL to fetch OIDC config from the provider"
     )
     client_id: str = Field(description="Client ID")
-    client_audience: str | tuple[str, ...] | None = Field(
-        description="Client Audience(s)"
-    )
+    client_audience: str = Field(description="Client Audience(s)", default="blueapi")
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
@@ -113,6 +111,10 @@ class OIDCConfig(BlueapiBaseModel):
     @cached_property
     def issuer(self) -> str:
         return cast(str, self._config_from_oidc_url.get("issuer"))
+
+    @cached_property
+    def authorization_endpoint(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("authorization_endpoint"))
 
     @cached_property
     def jwks_uri(self) -> str:

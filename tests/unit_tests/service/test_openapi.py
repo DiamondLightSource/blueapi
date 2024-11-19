@@ -4,6 +4,7 @@ from unittest.mock import Mock, PropertyMock
 import pytest
 import yaml
 
+from blueapi.config import ApplicationConfig
 from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
 
 
@@ -13,7 +14,7 @@ def test_generate_schema(mock_get_app: Mock) -> None:
 
     from blueapi.service.main import get_app
 
-    app = get_app()
+    app = get_app(ApplicationConfig())
 
     title = PropertyMock(return_value="title")
     version = PropertyMock(return_value=app.version)

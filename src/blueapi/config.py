@@ -128,6 +128,10 @@ class OIDCConfig(BlueapiBaseModel):
             list[str],
             self._config_from_oidc_url.get("id_token_signing_alg_values_supported"),
         )
+    
+    @cached_property
+    def introspection_endpoint(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("introspection_endpoint"))
 
 
 class CLIClientConfig(OIDCConfig):

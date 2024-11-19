@@ -22,10 +22,11 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.propagate import get_global_textmap
 from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
+import requests
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service import interface
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
@@ -57,7 +58,7 @@ def _runner() -> WorkerDispatcher:
     return RUNNER
 
 
-def setup_runner(config: ApplicationConfig | None = None, use_subprocess: bool = True):
+def setup_runner(config: ApplicationConfig, use_subprocess: bool = True):
     global RUNNER
     runner = WorkerDispatcher(config, use_subprocess)
     runner.start()
@@ -73,28 +74,31 @@ def teardown_runner():
     RUNNER = None
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    config: ApplicationConfig = app.state.config
-    setup_runner(config)
-    yield
-    teardown_runner()
+def lifespan(config: ApplicationConfig):
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        setup_runner(config)
+        yield
+        teardown_runner()
+    return lifespan
 
 
 router = APIRouter()
 
 
-def get_app():
+def get_app(config: ApplicationConfig):
     app = FastAPI(
         docs_url="/docs",
         title="BlueAPI Control",
-        lifespan=lifespan,
+        lifespan=lifespan(config),
         version=REST_API_VERSION,
     )
     app.include_router(router)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
+    if config.oidc:
+        app.middleware("http")(check_token_validity(config.oidc))
     return app
 
 
@@ -382,7 +386,7 @@ def start(config: ApplicationConfig):
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"
     )
-    app = get_app()
+    app = get_app(config)
 
     FastAPIInstrumentor().instrument_app(
         app,
@@ -390,8 +394,6 @@ def start(config: ApplicationConfig):
         http_capture_headers_server_request=[",*"],
         http_capture_headers_server_response=[",*"],
     )
-    app.state.config = config
-
     uvicorn.run(app, host=config.api.host, port=config.api.port)
 
 
@@ -416,3 +418,30 @@ async def inject_propagated_observability_context(
         attach(ctx)
     response = await call_next(request)
     return response
+
+
+def check_token_validity(config: OIDCConfig):
+    async def check_token_validity(request: Request,
+                                   call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        if "Authorization" not in request.headers:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No Authorization header")
+        authz_header = request.headers["Authorization"]
+        if not authz_header.startswith("Bearer "):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header not Bearer token")
+        access_token = authz_header.removeprefix("Bearer ")
+        
+        response = requests.post(
+            config.introspection_endpoint,
+            data={
+                "token": access_token,
+                "token_type_hint": "access_token"
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+        response.raise_for_status()
+        if not (response.json["active"] is True):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization Bearer token not active")
+        response = await call_next(request)
+        return response
+    return check_token_validity

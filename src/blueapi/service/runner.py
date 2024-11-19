@@ -49,10 +49,10 @@ class WorkerDispatcher:
 
     def __init__(
         self,
-        config: ApplicationConfig | None = None,
+        config: ApplicationConfig,
         use_subprocess: bool = True,
     ) -> None:
-        self._config = config or ApplicationConfig()
+        self._config = config
         self._subprocess = None
         self._use_subprocess = use_subprocess
         self._state = EnvironmentResponse(

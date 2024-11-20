@@ -31,13 +31,13 @@ def RE(request):
 
 
 @pytest.fixture(scope="session")
-def exporter() -> TracerProvider:
+def exporter() -> JsonObjectSpanExporter:
     setup_tracing("test", False)
     exporter = JsonObjectSpanExporter()
     provider = cast(TracerProvider, get_tracer_provider())
     # Use SimpleSpanProcessor to keep tests quick
     provider.add_span_processor(SimpleSpanProcessor(exporter))
-    return provider
+    return exporter
 
 
 @pytest.hookimpl(tryfirst=True)

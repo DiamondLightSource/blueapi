@@ -143,7 +143,11 @@ def test_get_non_existent_plan(client: BlueapiClient):
 
 
 def test_get_devices(client: BlueapiClient, expected_devices: DeviceResponse):
-    assert client.get_devices() == expected_devices
+    retrieved_devices = client.get_devices()
+    retrieved_devices.devices.sort(key=lambda x: x.name)
+    expected_devices.devices.sort(key=lambda x: x.name)
+
+    assert retrieved_devices == expected_devices
 
 
 def test_get_device_by_name(client: BlueapiClient, expected_devices: DeviceResponse):

@@ -74,7 +74,10 @@ class SessionManager:
             token = self._token_manager.load_token()
             requests.get(
                 self._server_config.end_session_endpoint,
-                params={"id_token_hint": token["id_token"]},
+                params={
+                    "id_token_hint": token["id_token"],
+                    "client_id": self._server_config.client_id,
+                },
             )
         except Exception:
             ...  # Swallow any exceptions
@@ -141,8 +144,6 @@ class SessionManager:
             self._server_config.device_authorization_endpoint,
             data={
                 "client_id": self._server_config.client_id,
-                "scope": "openid profile offline_access",
-                "audience": f"{self._server_config.client_audience}",
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )

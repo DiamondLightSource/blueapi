@@ -3,12 +3,12 @@ from dataclasses import dataclass
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
+from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi.config import ApplicationConfig, StompConfig
-from blueapi.core import MsgGenerator
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask

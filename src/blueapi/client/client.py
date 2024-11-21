@@ -46,17 +46,16 @@ class BlueapiClient:
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest = BlueapiRestClient(config.api)
-        if config.stomp is not None:
-            stomp_client = StompClient.for_broker(
-                broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
-                    auth=config.stomp.auth,
-                )
+        if config.stomp is None:
+            return cls(rest)
+        client = StompClient.for_broker(
+            broker=Broker(
+                host=config.stomp.host,
+                port=config.stomp.port,
+                auth=config.stomp.auth,
             )
-            events = EventBusClient(stomp_client)
-        else:
-            events = None
+        )
+        events = EventBusClient(client)
         return cls(rest, events)
 
     @start_as_current_span(TRACER)

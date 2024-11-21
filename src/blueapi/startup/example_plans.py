@@ -5,11 +5,14 @@ from dodal.plans import count
 
 from blueapi.core import MsgGenerator
 
+TEMP: Movable = inject("sample_temperature")
+PRESS: Movable = inject("sample_pressure")
+
 
 def stp_snapshot(
     detectors: list[Readable],
-    temperature: Movable = inject("sample_temperature"),
-    pressure: Movable = inject("sample_pressure"),
+    temperature: Movable = TEMP,
+    pressure: Movable = PRESS,
 ) -> MsgGenerator:
     """
     Moves devices for pressure and temperature (defaults fetched from the context)
@@ -26,5 +29,5 @@ def stp_snapshot(
     Yields:
         Iterator[MsgGenerator]: Bluesky messages
     """
-    yield from move({temperature: 0, pressure: 10**5})
-    yield from count(detectors, 1)
+    yield from move({temperature: 0, pressure: 10**5})  # type: ignore
+    yield from count(set(detectors), 1)

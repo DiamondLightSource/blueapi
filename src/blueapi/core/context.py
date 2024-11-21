@@ -143,10 +143,10 @@ class BlueskyContext:
         if not is_bluesky_plan_generator(plan):
             raise TypeError(f"{plan} is not a valid plan generator function")
 
-        model = create_model(  # type: ignore
+        model = create_model(
             plan.__name__,
             __config__=BlueapiPlanModelConfig,
-            **self._type_spec_for_function(plan),
+            **self._type_spec_for_function(plan),  # type: ignore
         )
         self.plans[plan.__name__] = Plan(
             name=plan.__name__, model=model, description=plan.__doc__
@@ -284,7 +284,7 @@ class BlueskyContext:
             root = get_origin(typ)
             if root == UnionType:
                 root = Union
-            return root[new_types] if root else typ
+            return root[new_types] if root else typ  # type: ignore
         return typ
 
 

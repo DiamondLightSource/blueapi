@@ -16,4 +16,4 @@ github_org: DiamondLightSource
 package_name: blueapi
 pypi: true
 repo_name: blueapi
-type_checker: mypy
+type_checker: pyright

@@ -163,19 +163,16 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    if config.stomp is not None:
-        event_bus_client = EventBusClient(
-            StompClient.for_broker(
-                broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
-                    auth=config.stomp.auth,
-                )
+    assert config.stomp is not None, "Message bus needs to be configured"
+    event_bus_client = EventBusClient(
+        StompClient.for_broker(
+            broker=Broker(
+                host=config.stomp.host,
+                port=config.stomp.port,
+                auth=config.stomp.auth,
             )
         )
-    else:
-        raise RuntimeError("Message bus needs to be configured")
-
+    )
     fmt = obj["fmt"]
 
     def on_event(

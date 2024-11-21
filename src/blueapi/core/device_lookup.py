@@ -1,12 +1,9 @@
-from typing import Any, TypeVar
+from typing import Any
 
 from .bluesky_types import Device, is_bluesky_compatible_device
 
-#: Device obeying Bluesky protocols
-D = TypeVar("D", bound=Device)
 
-
-def find_component(obj: Any, addr: list[str]) -> D | None:
+def find_component(obj: Any, addr: list[str]) -> Device | None:
     """
     Best effort function to locate a child device, either in a dictionary of
     devices or a device with child attributes.

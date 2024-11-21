@@ -180,7 +180,6 @@ def submit_task(
     task: Task = Body(..., example=example_task),
     runner: WorkerDispatcher = Depends(_runner),
 ):
-    plan_model: PlanModel | None = None
     """Submit a task to the worker."""
     plan_model = runner.run(interface.get_plan, task.name)
     try:

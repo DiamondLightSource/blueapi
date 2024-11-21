@@ -18,10 +18,7 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import (
-    ApplicationConfig,
-    ConfigLoader,
-)
+from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 

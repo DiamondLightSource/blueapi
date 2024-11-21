@@ -59,6 +59,7 @@ def test_auth_request_functionality(
         "http://localhost:8000/plans",
         json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
     )
+    result = None
     with mock_authn_server:
         result = rest_with_auth.get_plans()
     assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
@@ -78,6 +79,7 @@ def test_refresh_if_signature_expired(
             json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
         )
     )
+    result = None
     with mock_authn_server:
         result = rest_with_auth.get_plans()
     assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])

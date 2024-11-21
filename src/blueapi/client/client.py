@@ -46,7 +46,10 @@ class BlueapiClient:
 
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
-        rest = BlueapiRestClient(config.api)
+        rest = BlueapiRestClient(
+            config.api,
+            session_manager=SessionManager(config.oidc) if config.oidc else None,
+        )
         if config.stomp is None:
             return cls(rest)
         client = StompClient.for_broker(

@@ -684,11 +684,11 @@ def test_login_edge_cases(
         json={"details": "not found"},
         status=HTTP_400_BAD_REQUEST,
     )
-
+    result = None
     with mock_authn_server:
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
 
-    assert (
+    assert result and (
         "Logging in\nFailed to login: 400 Client Error: Bad Request for url: https://example.com/device_authorization\n"
         == result.output
     )

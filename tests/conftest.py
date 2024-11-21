@@ -9,8 +9,11 @@ from unittest.mock import Mock, patch
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
 import jwt
 import pytest
+import responses
+import yaml
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.run_engine import RunEngine
+from jwcrypto.jwk import JWK
 from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -95,7 +98,7 @@ def json_web_keyset() -> JWK:
 
 @pytest.fixture(scope="session")
 def rsa_private_key(json_web_keyset: JWK) -> str:
-    return json_web_keyset.export_to_pem("private_key", password=None).decode("utf-8")
+    return json_web_keyset.export_to_pem("private_key", password=None).decode("utf-8")  # type: ignore
 
 
 def _make_token(

@@ -119,9 +119,8 @@ def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
 ):
     for get_method in blueapi_client_get_methods:
-        with pytest.raises(BlueskyRemoteControlError) as exception:
+        with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
             getattr(client_without_auth, get_method)()
-        assert str(exception.value) in "<Response [401]>"
 
 
 def test_get_plans(client: BlueapiClient, expected_plans: PlanResponse):

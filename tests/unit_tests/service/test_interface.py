@@ -18,13 +18,13 @@ from blueapi.worker.task_worker import TrackableTask
 
 
 @pytest.fixture
-def mock_connection() -> Connection:
+def connection() -> Connection:
     return Mock(spec=Connection)
 
 
 @pytest.fixture
-def mock_stomp_client(mock_connection: Connection) -> StompClient:
-    stomp_client = StompClient(conn=mock_connection)
+def stomp_client(connection: Connection) -> StompClient:
+    stomp_client = StompClient(conn=connection)
     stomp_client.disconnect = MagicMock()
     return stomp_client
 
@@ -284,10 +284,10 @@ def test_get_task_by_id(context_mock: MagicMock):
     )
 
 
-def test_stomp_config(mock_stomp_client: StompClient):
+def test_stomp_config(stomp_client: StompClient):
     with patch(
         "blueapi.service.interface.StompClient.for_broker",
-        return_value=mock_stomp_client,
+        return_value=stomp_client,
     ):
         interface.set_config(ApplicationConfig(stomp=StompConfig()))
         assert interface.stomp_client() is not None

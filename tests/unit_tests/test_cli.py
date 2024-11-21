@@ -33,13 +33,13 @@ from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerS
 
 
 @pytest.fixture
-def mock_connection() -> Connection:
+def connection() -> Connection:
     return Mock(spec=Connection)
 
 
 @pytest.fixture
-def mock_stomp_client(mock_connection: Connection) -> StompClient:
-    return StompClient(conn=mock_connection)
+def stomp_client(connection: Connection) -> StompClient:
+    return StompClient(conn=connection)
 
 
 @pytest.fixture
@@ -152,11 +152,12 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
 
 @patch("blueapi.cli.cli.StompClient")
 def test_valid_stomp_config_for_listener(
-    mock_stomp_client: StompClient,
+    stomp_client: StompClient,
     runner: CliRunner,
-    mock_connection: Connection,
+    connection: Connection,
 ):
-    mock_connection.is_connected.return_value = True
+    assert isinstance(connection, Mock)
+    connection.is_connected.return_value = True
     result = runner.invoke(
         main,
         [

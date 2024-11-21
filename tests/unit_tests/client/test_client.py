@@ -63,7 +63,7 @@ FAILED_EVENT = WorkerEvent(
 
 
 @pytest.fixture
-def mock_rest() -> BlueapiRestClient:
+def rest_client() -> BlueapiRestClient:
     mock = MagicMock(spec=BlueapiRestClient)
 
     mock.get_plans.return_value = PLANS
@@ -81,7 +81,7 @@ def mock_rest() -> BlueapiRestClient:
 
 
 @pytest.fixture
-def mock_events() -> EventBusClient:
+def events() -> EventBusClient:
     mock_events: EventBusClient = MagicMock(spec=EventBusClient)
     ctx = MagicMock()
     ctx.correlation_id = "foo"
@@ -92,13 +92,13 @@ def mock_events() -> EventBusClient:
 
 
 @pytest.fixture
-def client(mock_rest: BlueapiRestClient) -> BlueapiClient:
-    return BlueapiClient(rest=mock_rest)
+def client(rest_client: BlueapiRestClient) -> BlueapiClient:
+    return BlueapiClient(rest=rest_client)
 
 
 @pytest.fixture
-def client_with_events(mock_rest: BlueapiRestClient, mock_events: EventBusClient):
-    return BlueapiClient(rest=mock_rest, events=mock_events)
+def client_with_events(rest_client: BlueapiRestClient, events: EventBusClient):
+    return BlueapiClient(rest=rest_client, events=events)
 
 
 def test_get_plans(client: BlueapiClient):
@@ -111,9 +111,9 @@ def test_get_plan(client: BlueapiClient):
 
 def test_get_nonexistant_plan(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.get_plan).side_effect = KeyError("Not found")
+    cast(MagicMock, rest_client.get_plan).side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
         client.get_plan("baz")
 
@@ -128,9 +128,9 @@ def test_get_device(client: BlueapiClient):
 
 def test_get_nonexistant_device(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.get_device).side_effect = KeyError("Not found")
+    cast(MagicMock, rest_client.get_device).side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
         client.get_device("baz")
 
@@ -145,9 +145,9 @@ def test_get_task(client: BlueapiClient):
 
 def test_get_nonexistent_task(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.get_task).side_effect = KeyError("Not found")
+    cast(MagicMock, rest_client.get_task).side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
         client.get_task("baz")
 
@@ -166,26 +166,26 @@ def test_get_all_tasks(
 
 def test_create_task(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
     client.create_task(task=Task(name="foo"))
-    cast(MagicMock, mock_rest.create_task).assert_called_once_with(Task(name="foo"))
+    cast(MagicMock, rest_client.create_task).assert_called_once_with(Task(name="foo"))
 
 
 def test_create_task_does_not_start_task(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
     client.create_task(task=Task(name="foo"))
-    cast(MagicMock, mock_rest.update_worker_task).assert_not_called()
+    cast(MagicMock, rest_client.update_worker_task).assert_not_called()
 
 
 def test_clear_task(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
     client.clear_task(task_id="foo")
-    cast(MagicMock, mock_rest.clear_task).assert_called_once_with("foo")
+    cast(MagicMock, rest_client.clear_task).assert_called_once_with("foo")
 
 
 def test_get_active_task(client: BlueapiClient):
@@ -194,43 +194,43 @@ def test_get_active_task(client: BlueapiClient):
 
 def test_start_task(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
     client.start_task(task=WorkerTask(task_id="bar"))
-    cast(MagicMock, mock_rest.update_worker_task).assert_called_once_with(
+    cast(MagicMock, rest_client.update_worker_task).assert_called_once_with(
         WorkerTask(task_id="bar")
     )
 
 
 def test_start_nonexistant_task(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.update_worker_task).side_effect = KeyError("Not found")
+    cast(MagicMock, rest_client.update_worker_task).side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
         client.start_task(task=WorkerTask(task_id="bar"))
 
 
 def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.create_task).return_value = TaskResponse(task_id="baz")
-    cast(MagicMock, mock_rest.update_worker_task).return_value = TaskResponse(
+    cast(MagicMock, rest_client.create_task).return_value = TaskResponse(task_id="baz")
+    cast(MagicMock, rest_client.update_worker_task).return_value = TaskResponse(
         task_id="baz"
     )
     client.create_and_start_task(Task(name="baz"))
-    cast(MagicMock, mock_rest.create_task).assert_called_once_with(Task(name="baz"))
-    cast(MagicMock, mock_rest.update_worker_task).assert_called_once_with(
+    cast(MagicMock, rest_client.create_task).assert_called_once_with(Task(name="baz"))
+    cast(MagicMock, rest_client.update_worker_task).assert_called_once_with(
         WorkerTask(task_id="baz")
     )
 
 
 def test_create_and_start_task_fails_if_task_creation_fails(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.create_task).side_effect = BlueskyRemoteControlError(
+    cast(MagicMock, rest_client.create_task).side_effect = BlueskyRemoteControlError(
         "No can do"
     )
     with pytest.raises(BlueskyRemoteControlError):
@@ -239,10 +239,10 @@ def test_create_and_start_task_fails_if_task_creation_fails(
 
 def test_create_and_start_task_fails_if_task_id_is_wrong(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.create_task).return_value = TaskResponse(task_id="baz")
-    cast(MagicMock, mock_rest.update_worker_task).return_value = TaskResponse(
+    cast(MagicMock, rest_client.create_task).return_value = TaskResponse(task_id="baz")
+    cast(MagicMock, rest_client.update_worker_task).return_value = TaskResponse(
         task_id="bar"
     )
     with pytest.raises(BlueskyRemoteControlError):
@@ -251,11 +251,11 @@ def test_create_and_start_task_fails_if_task_id_is_wrong(
 
 def test_create_and_start_task_fails_if_task_start_fails(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.create_task).return_value = TaskResponse(task_id="baz")
+    cast(MagicMock, rest_client.create_task).return_value = TaskResponse(task_id="baz")
     cast(
-        MagicMock, mock_rest.update_worker_task
+        MagicMock, rest_client.update_worker_task
     ).side_effect = BlueskyRemoteControlError("No can do")
     with pytest.raises(BlueskyRemoteControlError):
         client.create_and_start_task(Task(name="baz"))
@@ -267,18 +267,18 @@ def test_get_environment(client: BlueapiClient):
 
 def test_reload_environment(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
     client.reload_environment()
-    cast(MagicMock, mock_rest.get_environment).assert_called_once()
-    cast(MagicMock, mock_rest.delete_environment).assert_called_once()
+    cast(MagicMock, rest_client.get_environment).assert_called_once()
+    cast(MagicMock, rest_client.delete_environment).assert_called_once()
 
 
 def test_reload_environment_failure(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.get_environment).return_value = EnvironmentResponse(
+    cast(MagicMock, rest_client.get_environment).return_value = EnvironmentResponse(
         initialized=False, error_message="foo"
     )
     with pytest.raises(BlueskyRemoteControlError, match="foo"):
@@ -287,10 +287,10 @@ def test_reload_environment_failure(
 
 def test_abort(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
     client.abort(reason="foo")
-    cast(MagicMock, mock_rest.cancel_current_task).assert_called_once_with(
+    cast(MagicMock, rest_client.cancel_current_task).assert_called_once_with(
         WorkerState.ABORTING,
         reason="foo",
     )
@@ -298,20 +298,20 @@ def test_abort(
 
 def test_stop(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
     client.stop()
-    cast(MagicMock, mock_rest.cancel_current_task).assert_called_once_with(
+    cast(MagicMock, rest_client.cancel_current_task).assert_called_once_with(
         WorkerState.STOPPING
     )
 
 
 def test_pause(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
     client.pause(defer=True)
-    cast(MagicMock, mock_rest.set_state).assert_called_once_with(
+    cast(MagicMock, rest_client.set_state).assert_called_once_with(
         WorkerState.PAUSED,
         defer=True,
     )
@@ -319,10 +319,10 @@ def test_pause(
 
 def test_resume(
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
     client.resume()
-    cast(MagicMock, mock_rest.set_state).assert_called_once_with(
+    cast(MagicMock, rest_client.set_state).assert_called_once_with(
         WorkerState.RUNNING,
         defer=False,
     )
@@ -338,39 +338,39 @@ def test_cannot_run_task_without_message_bus(client: BlueapiClient):
 
 def test_run_task_sets_up_control(
     client_with_events: BlueapiClient,
-    mock_rest: BlueapiRestClient,
-    mock_events: EventBusClient,
+    rest_client: BlueapiRestClient,
+    events: EventBusClient,
 ):
-    cast(MagicMock, mock_rest.create_task).return_value = TaskResponse(task_id="foo")
-    cast(MagicMock, mock_rest.update_worker_task).return_value = TaskResponse(
+    cast(MagicMock, rest_client.create_task).return_value = TaskResponse(task_id="foo")
+    cast(MagicMock, rest_client.update_worker_task).return_value = TaskResponse(
         task_id="foo"
     )
     ctx = MagicMock()
     ctx.correlation_id = "foo"
-    cast(MagicMock, mock_events).subscribe_to_all_events = lambda on_event: on_event(
+    cast(MagicMock, events).subscribe_to_all_events = lambda on_event: on_event(
         COMPLETE_EVENT, ctx
     )
 
     client_with_events.run_task(Task(name="foo"))
-    cast(MagicMock, mock_rest.create_task).assert_called_once_with(Task(name="foo"))
-    cast(MagicMock, mock_rest.update_worker_task).assert_called_once_with(
+    cast(MagicMock, rest_client.create_task).assert_called_once_with(Task(name="foo"))
+    cast(MagicMock, rest_client.update_worker_task).assert_called_once_with(
         WorkerTask(task_id="foo")
     )
 
 
 def test_run_task_fails_on_failing_event(
     client_with_events: BlueapiClient,
-    mock_rest: BlueapiRestClient,
-    mock_events: EventBusClient,
+    rest_client: BlueapiRestClient,
+    events: EventBusClient,
 ):
-    cast(MagicMock, mock_rest.create_task).return_value = TaskResponse(task_id="foo")
-    cast(MagicMock, mock_rest.update_worker_task).return_value = TaskResponse(
+    cast(MagicMock, rest_client.create_task).return_value = TaskResponse(task_id="foo")
+    cast(MagicMock, rest_client.update_worker_task).return_value = TaskResponse(
         task_id="foo"
     )
 
     ctx = MagicMock()
     ctx.correlation_id = "foo"
-    cast(MagicMock, mock_events).subscribe_to_all_events = lambda on_event: on_event(
+    cast(MagicMock, events).subscribe_to_all_events = lambda on_event: on_event(
         FAILED_EVENT, ctx
     )
 
@@ -398,12 +398,12 @@ def test_run_task_fails_on_failing_event(
 )
 def test_run_task_calls_event_callback(
     client_with_events: BlueapiClient,
-    mock_rest: BlueapiRestClient,
-    mock_events: EventBusClient,
+    rest_client: BlueapiRestClient,
+    events: EventBusClient,
     test_event: AnyEvent,
 ):
-    cast(MagicMock, mock_rest.create_task).return_value = TaskResponse(task_id="foo")
-    cast(MagicMock, mock_rest.update_worker_task).return_value = TaskResponse(
+    cast(MagicMock, rest_client.create_task).return_value = TaskResponse(task_id="foo")
+    cast(MagicMock, rest_client.update_worker_task).return_value = TaskResponse(
         task_id="foo"
     )
 
@@ -414,7 +414,7 @@ def test_run_task_calls_event_callback(
         on_event(test_event, ctx)
         on_event(COMPLETE_EVENT, ctx)
 
-    cast(MagicMock, mock_events).subscribe_to_all_events = callback
+    cast(MagicMock, events).subscribe_to_all_events = callback
 
     mock_on_event = MagicMock()
     client_with_events.run_task(Task(name="foo"), on_event=mock_on_event)
@@ -439,12 +439,12 @@ def test_run_task_calls_event_callback(
 )
 def test_run_task_ignores_non_matching_events(
     client_with_events: BlueapiClient,
-    mock_rest: BlueapiRestClient,
-    mock_events: EventBusClient,
+    rest_client: BlueapiRestClient,
+    events: EventBusClient,
     test_event: AnyEvent,
 ):
-    cast(MagicMock, mock_rest.create_task).return_value = TaskResponse(task_id="foo")
-    cast(MagicMock, mock_rest.update_worker_task).return_value = TaskResponse(
+    cast(MagicMock, rest_client.create_task).return_value = TaskResponse(task_id="foo")
+    cast(MagicMock, rest_client.update_worker_task).return_value = TaskResponse(
         task_id="foo"
     )
 
@@ -455,7 +455,7 @@ def test_run_task_ignores_non_matching_events(
         on_event(test_event, ctx)
         on_event(COMPLETE_EVENT, ctx)
 
-    cast(MagicMock, mock_events).subscribe_to_all_events = callback
+    cast(MagicMock, events).subscribe_to_all_events = callback
 
     mock_on_event = MagicMock()
     client_with_events.run_task(Task(name="foo"), on_event=mock_on_event)
@@ -535,10 +535,10 @@ def test_start_task_span_ok(
 def test_create_and_start_task_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: BlueapiRestClient,
+    rest_client: BlueapiRestClient,
 ):
-    cast(MagicMock, mock_rest.create_task).return_value = TaskResponse(task_id="baz")
-    cast(MagicMock, mock_rest.update_worker_task).return_value = TaskResponse(
+    cast(MagicMock, rest_client.create_task).return_value = TaskResponse(task_id="baz")
+    cast(MagicMock, rest_client.update_worker_task).return_value = TaskResponse(
         task_id="baz"
     )
     with asserting_span_exporter(exporter, "create_and_start_task", "task"):

@@ -466,12 +466,10 @@ def take_events_from_streams(
     The type for streams will be any combination of event streams each of a
     given event type, where the event type is generic:
 
-    List[
-        Union[
-            EventStream[WorkerEvent, int],
-            EventStream[DataEvent, int],
-            EventStream[ProgressEvent, int]
-        ]
+    list[
+        EventStream[WorkerEvent, int] |
+        EventStream[DataEvent, int] |
+        EventStream[ProgressEvent, int]
     ]
 
     """

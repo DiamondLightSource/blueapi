@@ -60,7 +60,7 @@ class BlueskyContext:
         Find a device in this context, allows for recursive search.
 
         Args:
-            addr (Union[str, List[str]]): Address of the device, examples:
+            addr (str | list[str]): Address of the device, examples:
                                           "motors", "motors.x"
 
         Returns:

@@ -61,20 +61,20 @@ def default_yaml(package_root: Path) -> Path:
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
 def test_auth_from_env():
-    auth = BasicAuthentication(username="${FOO}", password="baz")
+    auth = BasicAuthentication(username="${FOO}", password="baz")  # type: ignore
     assert auth.username == "bar"
 
 
 @mock.patch.dict(os.environ, {"FOO": "bar", "BAZ": "qux"}, clear=True)
 def test_auth_from_env_repeated_key():
-    auth = BasicAuthentication(username="${FOO}", password="${FOO}")
+    auth = BasicAuthentication(username="${FOO}", password="${FOO}")  # type: ignore
     assert auth.username == "bar"
     assert auth.password.get_secret_value() == "bar"
 
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
 def test_auth_from_env_ignore_case():
-    auth = BasicAuthentication(username="${FOO}", password="${foo}")
+    auth = BasicAuthentication(username="${FOO}", password="${foo}")  # type: ignore
     assert auth.username == "bar"
     assert auth.password.get_secret_value() == "bar"
 
@@ -83,7 +83,7 @@ def test_auth_from_env_ignore_case():
 def test_auth_from_env_throws_when_not_available():
     # Eagerly throws an exception, will fail during initial loading
     with pytest.raises(KeyError):
-        BasicAuthentication(username="${BAZ}", password="baz")
+        BasicAuthentication(username="${BAZ}", password="baz")  # type: ignore
     with pytest.raises(KeyError):
         BasicAuthentication(username="${baz}", passcode="baz")  # type: ignore
 

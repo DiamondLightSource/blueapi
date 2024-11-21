@@ -3,8 +3,8 @@ from typing import Any, cast
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
 import pytest
-from bluesky import RunEngine
-from bluesky.run_engine import TransitionError
+from bluesky._vendor.super_state_machine.errors import TransitionError
+from bluesky.run_engine import RunEngine
 from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -32,7 +32,7 @@ def RE(request):
 
 
 @pytest.fixture(scope="session")
-def exporter() -> TracerProvider:
+def exporter() -> JsonObjectSpanExporter:
     setup_tracing("test", False)
     exporter = JsonObjectSpanExporter()
     provider = cast(TracerProvider, get_tracer_provider())

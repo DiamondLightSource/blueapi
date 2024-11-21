@@ -49,7 +49,10 @@ def has_typeless_params(foo, bar) -> MsgGenerator:  # type: ignore
     ...
 
 
-def has_default_reference(m: Movable = inject(SIM_MOTOR_NAME)) -> MsgGenerator:
+MOTOR: Movable = inject(SIM_MOTOR_NAME)
+
+
+def has_default_reference(m: Movable = MOTOR) -> MsgGenerator:
     yield from []
 
 

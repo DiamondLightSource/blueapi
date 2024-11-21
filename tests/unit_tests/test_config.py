@@ -353,6 +353,9 @@ def test_oauth_config_model_post_init(
         oidc_config.device_authorization_endpoint
         == oidc_well_known["device_authorization_endpoint"]
     )
+    assert (oidc_config.authorization_endpoint) == oidc_well_known[
+        "authorization_endpoint"
+    ]
     assert oidc_config.token_endpoint == oidc_well_known["token_endpoint"]
     assert oidc_config.issuer == oidc_well_known["issuer"]
     assert oidc_config.jwks_uri == oidc_well_known["jwks_uri"]

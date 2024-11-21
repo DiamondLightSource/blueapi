@@ -3,11 +3,13 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import jwt
 import pytest
 import responses
 from starlette.status import HTTP_403_FORBIDDEN
 
 from blueapi.config import CLIClientConfig, OIDCConfig
+from blueapi.service import main
 from blueapi.service.authentication import SessionManager
 
 
@@ -66,3 +68,11 @@ def test_poll_for_token_timeout(
     )
     with pytest.raises(TimeoutError), mock_authn_server:
         session_manager.poll_for_token(device_code, 1, 2)
+
+
+def test_invalid_token_raises_exception_in_server(
+    oidc_config_server, mock_authn_server: responses.RequestsMock
+):
+    inner = main.verify_access_token(oidc_config_server)
+    with pytest.raises(jwt.PyJWTError):
+        inner(access_token="Invalid Token")

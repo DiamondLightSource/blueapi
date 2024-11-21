@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
 
-from blueapi.config import ApplicationConfig, CLIClientConfig
+from blueapi.config import ApplicationConfig, CLIClientConfig, OIDCConfig
 
 
 @pytest.fixture(scope="function")
@@ -64,8 +64,15 @@ def oidc_config(oidc_url: str, tmp_path: Path) -> CLIClientConfig:
     return CLIClientConfig(
         well_known_url=oidc_url,
         client_id="blueapi-client",
-        client_audience="blueapi",
         token_path=tmp_path / "token",
+    )
+
+
+@pytest.fixture
+def oidc_config_server(oidc_url: str, tmp_path: Path) -> OIDCConfig:
+    return OIDCConfig(
+        well_known_url=oidc_url,
+        client_id="blueapi-client",
     )
 
 

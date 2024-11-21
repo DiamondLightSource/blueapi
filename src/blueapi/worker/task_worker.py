@@ -93,7 +93,7 @@ class TaskWorker:
     # but as a box in which to put the "current" task and nothing else
     # So the calling thread can only ever submit one plan at a time.
 
-    _task_channel: Queue  # type: ignore
+    _task_channel: Queue
     _current: TrackableTask | None
     _status_lock: RLock
     _status_snapshot: dict[str, StatusView]
@@ -481,7 +481,7 @@ class TaskWorker:
                 del self._status_snapshot[status_uuid]
                 self._completed_statuses.add(status_uuid)
 
-            status.add_callback(on_complete)  # type: ignore
+            status.add_callback(on_complete)
 
     def _on_status_event(
         self,

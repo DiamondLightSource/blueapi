@@ -322,11 +322,11 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     assert loaded_config.stomp.auth is not None
     assert (
         loaded_config.stomp.auth.password.get_secret_value()
-        == config_data["stomp"]["auth"]["password"]  # noqa: E501
+        == config_data["stomp"]["auth"]["password"]
     )
     # Remove the password field to not compare it again in the full dict comparison
     del target_dict_json["stomp"]["auth"]["password"]
-    del config_data["stomp"]["auth"]["password"]  # noqa: E501
+    del config_data["stomp"]["auth"]["password"]
     # Assert that the remaining config data is identical
     assert (
         target_dict_json == config_data

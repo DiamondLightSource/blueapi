@@ -25,28 +25,28 @@ SIM_DET_NAME = "sim_det"
 #
 
 
-def has_no_params() -> MsgGenerator:  # type: ignore
-    ...
+def has_no_params() -> MsgGenerator:
+    yield from {}
 
 
-def has_one_param(foo: int) -> MsgGenerator:  # type: ignore
-    ...
+def has_one_param(foo: int) -> MsgGenerator:
+    yield from {}
 
 
-def has_some_params(foo: int = 42, bar: str = "bar") -> MsgGenerator:  # type: ignore
-    ...
+def has_some_params(foo: int = 42, bar: str = "bar") -> MsgGenerator:
+    yield from {}
 
 
-def has_typeless_param(foo) -> MsgGenerator:  # type: ignore
-    ...
+def has_typeless_param(foo) -> MsgGenerator:
+    yield from {}
 
 
-def has_typed_and_typeless_params(foo: int, bar) -> MsgGenerator:  # type: ignore
-    ...
+def has_typed_and_typeless_params(foo: int, bar) -> MsgGenerator:
+    yield from {}
 
 
-def has_typeless_params(foo, bar) -> MsgGenerator:  # type: ignore
-    ...
+def has_typeless_params(foo, bar) -> MsgGenerator:
+    yield from {}
 
 
 MOTOR: Movable = inject(SIM_MOTOR_NAME)
@@ -62,7 +62,7 @@ MOVABLE_DEFAULT = [inject(SIM_MOTOR_NAME)]
 def has_default_nested_reference(
     m: list[Movable] = MOVABLE_DEFAULT,
 ) -> MsgGenerator:
-    yield from []
+    yield from {}
 
 
 #
@@ -106,12 +106,11 @@ def devicey_context(sim_motor: SynAxis, sim_detector: SynGauss) -> BlueskyContex
 
 
 class SomeConfigurable:
-    def read_configuration(self) -> SyncOrAsync[dict[str, Reading]]:  # type: ignore
-        ...
+    def read_configuration(self) -> SyncOrAsync[dict[str, Reading]]:
+        return {}
 
-    def describe_configuration(  # type: ignore
-        self,
-    ) -> SyncOrAsync[dict[str, Descriptor]]: ...
+    def describe_configuration(self) -> SyncOrAsync[dict[str, Descriptor]]:
+        return {}
 
 
 @pytest.fixture
@@ -128,11 +127,11 @@ def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
 def test_generated_schema(
     empty_context: BlueskyContext,
 ):
-    def demo_plan(foo: int, mov: Movable) -> MsgGenerator:  # type: ignore
-        ...
+    def demo_plan(foo: int, mov: Movable) -> MsgGenerator:
+        yield from {}
 
     empty_context.register_plan(demo_plan)
-    schema = empty_context.plans["demo_plan"].model.schema()
+    schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
         "mov": {"title": "Mov", "type": "bluesky.protocols.Movable"},
@@ -314,9 +313,7 @@ def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
 def test_reference_type_conversion_union(empty_context: BlueskyContext) -> None:
     movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref
-    assert (
-        empty_context._convert_type(Union[Movable, int]) == Union[movable_ref, int]  # noqa # type: ignore
-    )
+    assert empty_context._convert_type(Union[Movable, int]) == Union[movable_ref, int]
 
 
 def test_reference_type_conversion_new_style_union(
@@ -324,14 +321,12 @@ def test_reference_type_conversion_new_style_union(
 ) -> None:
     movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref
-    assert (
-        empty_context._convert_type(Movable | int) == movable_ref | int  # type: ignore
-    )
+    assert empty_context._convert_type(Movable | int) == movable_ref | int
 
 
 def test_default_device_reference(empty_context: BlueskyContext) -> None:
-    def default_movable(mov: Movable = "demo") -> MsgGenerator:  # type: ignore
-        ...
+    def default_movable(mov: Movable = inject("demo")) -> MsgGenerator:
+        yield from {}
 
     spec = empty_context._type_spec_for_function(default_movable)
     movable_ref = empty_context._reference(Movable)

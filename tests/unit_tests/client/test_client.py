@@ -385,7 +385,7 @@ def test_run_task_calls_event_callback(
         on_event(test_event, ctx)
         on_event(COMPLETE_EVENT, ctx)
 
-    mock_events.subscribe_to_all_events = callback  # type: ignore
+    mock_events.subscribe_to_all_events = callback
 
     mock_on_event = Mock()
     client_with_events.run_task(Task(name="foo"), on_event=mock_on_event)
@@ -414,14 +414,14 @@ def test_run_task_ignores_non_matching_events(
     mock_events: MagicMock,
     test_event: AnyEvent,
 ):
-    mock_rest.create_task.return_value = TaskResponse(task_id="foo")  # type: ignore
-    mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")  # type: ignore
+    mock_rest.create_task.return_value = TaskResponse(task_id="foo")
+    mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
 
     ctx = Mock()
     ctx.correlation_id = "foo"
 
     def callback(on_event: Callable[[AnyEvent, MessageContext], None]):
-        on_event(test_event, ctx)  # type: ignore
+        on_event(test_event, ctx)
         on_event(COMPLETE_EVENT, ctx)
 
     mock_events.subscribe_to_all_events = callback

@@ -54,7 +54,7 @@ Device = (
 )
 
 #: Protocols defining interface to hardware
-BLUESKY_PROTOCOLS = list(Device.__args__)  # type: ignore
+BLUESKY_PROTOCOLS = list(Device.__args__)
 
 
 def is_bluesky_compatible_device(obj: Any) -> bool:

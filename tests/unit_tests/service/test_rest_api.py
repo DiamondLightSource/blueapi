@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -171,19 +172,25 @@ def test_create_task_validation_error(
 
     plan = Plan(name="my-plan", model=MyModel)
     get_plan_mock.return_value = PlanModel.from_plan(plan)
-    submit_task_mock.side_effect = ValidationError.from_exception_data(
-        title="ValueError",
-        line_errors=[
-            InitErrorDetails(
-                type="missing", loc=("id",), msg="value is required for Identifier"
-            )  # type: ignore
-        ],
-    )
+
+    def raise_validation_error(bar: Any):
+        return ValidationError.from_exception_data(
+            title="ValueError",
+            line_errors=[
+                InitErrorDetails(
+                    input=bar,
+                    type="missing",
+                    loc=("id",),
+                )
+            ],
+        )
+
+    submit_task_mock.side_effect = raise_validation_error
     response = client.post("/tasks", json={"name": "my-plan"})
     assert response.status_code == 422
     assert response.json() == {
         "detail": (
-            "\n        Input validation failed: id: Field required,\n"
+            "\n        Input validation failed: task_id: Input should be a valid string,\n"
             "        supplied params {},\n"
             "        do not match the expected params: {'properties': {'id': "
             "{'title': 'Id', 'type': 'string'}}, 'required': ['id'], 'title': "

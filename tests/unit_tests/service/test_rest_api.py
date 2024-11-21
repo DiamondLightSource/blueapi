@@ -174,7 +174,7 @@ def test_create_task_validation_error(
     get_plan_mock.return_value = PlanModel.from_plan(plan)
 
     def raise_validation_error(bar: Any):
-        return ValidationError.from_exception_data(
+        raise ValidationError.from_exception_data(
             title="ValueError",
             line_errors=[
                 InitErrorDetails(
@@ -190,7 +190,7 @@ def test_create_task_validation_error(
     assert response.status_code == 422
     assert response.json() == {
         "detail": (
-            "\n        Input validation failed: task_id: Input should be a valid string,\n"
+            "\n        Input validation failed: id: Field required,\n"
             "        supplied params {},\n"
             "        do not match the expected params: {'properties': {'id': "
             "{'title': 'Id', 'type': 'string'}}, 'required': ['id'], 'title': "

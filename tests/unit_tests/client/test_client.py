@@ -108,7 +108,7 @@ def test_get_plan(client: BlueapiClient):
 
 def test_get_nonexistant_plan(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.get_plan.side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
@@ -125,7 +125,7 @@ def test_get_device(client: BlueapiClient):
 
 def test_get_nonexistant_device(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.get_device.side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
@@ -142,7 +142,7 @@ def test_get_task(client: BlueapiClient):
 
 def test_get_nonexistent_task(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.get_task.side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
@@ -163,7 +163,7 @@ def test_get_all_tasks(
 
 def test_create_task(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     client.create_task(task=Task(name="foo"))
     mock_rest.create_task.assert_called_once_with(Task(name="foo"))
@@ -171,7 +171,7 @@ def test_create_task(
 
 def test_create_task_does_not_start_task(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     client.create_task(task=Task(name="foo"))
     mock_rest.update_worker_task.assert_not_called()
@@ -179,7 +179,7 @@ def test_create_task_does_not_start_task(
 
 def test_clear_task(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     client.clear_task(task_id="foo")
     mock_rest.clear_task.assert_called_once_with("foo")
@@ -191,7 +191,7 @@ def test_get_active_task(client: BlueapiClient):
 
 def test_start_task(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     client.start_task(task=WorkerTask(task_id="bar"))
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="bar"))
@@ -199,7 +199,7 @@ def test_start_task(
 
 def test_start_nonexistant_task(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.update_worker_task.side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
@@ -208,7 +208,7 @@ def test_start_nonexistant_task(
 
 def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="baz")
@@ -219,7 +219,7 @@ def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
 
 def test_create_and_start_task_fails_if_task_creation_fails(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.create_task.side_effect = BlueskyRemoteControlError("No can do")
     with pytest.raises(BlueskyRemoteControlError):
@@ -228,7 +228,7 @@ def test_create_and_start_task_fails_if_task_creation_fails(
 
 def test_create_and_start_task_fails_if_task_id_is_wrong(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="bar")
@@ -238,7 +238,7 @@ def test_create_and_start_task_fails_if_task_id_is_wrong(
 
 def test_create_and_start_task_fails_if_task_start_fails(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.side_effect = BlueskyRemoteControlError("No can do")
@@ -252,7 +252,7 @@ def test_get_environment(client: BlueapiClient):
 
 def test_reload_environment(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     client.reload_environment()
     mock_rest.get_environment.assert_called_once()
@@ -261,7 +261,7 @@ def test_reload_environment(
 
 def test_reload_environment_failure(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.get_environment.return_value = EnvironmentResponse(
         initialized=False, error_message="foo"
@@ -272,7 +272,7 @@ def test_reload_environment_failure(
 
 def test_abort(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     client.abort(reason="foo")
     mock_rest.cancel_current_task.assert_called_once_with(
@@ -283,7 +283,7 @@ def test_abort(
 
 def test_stop(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     client.stop()
     mock_rest.cancel_current_task.assert_called_once_with(WorkerState.STOPPING)
@@ -291,7 +291,7 @@ def test_stop(
 
 def test_pause(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     client.pause(defer=True)
     mock_rest.set_state.assert_called_once_with(
@@ -302,7 +302,7 @@ def test_pause(
 
 def test_resume(
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     client.resume()
     mock_rest.set_state.assert_called_once_with(
@@ -321,7 +321,7 @@ def test_cannot_run_task_without_message_bus(client: BlueapiClient):
 
 def test_run_task_sets_up_control(
     client_with_events: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
     mock_events: MagicMock,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="foo")
@@ -337,7 +337,7 @@ def test_run_task_sets_up_control(
 
 def test_run_task_fails_on_failing_event(
     client_with_events: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
     mock_events: MagicMock,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="foo")
@@ -371,7 +371,7 @@ def test_run_task_fails_on_failing_event(
 )
 def test_run_task_calls_event_callback(
     client_with_events: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
     mock_events: MagicMock,
     test_event: AnyEvent,
 ):
@@ -410,7 +410,7 @@ def test_run_task_calls_event_callback(
 )
 def test_run_task_ignores_non_matching_events(
     client_with_events: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
     mock_events: MagicMock,
     test_event: AnyEvent,
 ):
@@ -473,7 +473,6 @@ def test_get_all_tasks_span_ok(
 def test_create_task_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
     with asserting_span_exporter(exporter, "create_task", "task"):
         client.create_task(task=Task(name="foo"))
@@ -482,7 +481,6 @@ def test_create_task_span_ok(
 def test_clear_task_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
     with asserting_span_exporter(exporter, "clear_task"):
         client.clear_task(task_id="foo")
@@ -498,7 +496,6 @@ def test_get_active_task_span_ok(
 def test_start_task_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
     with asserting_span_exporter(exporter, "start_task", "task"):
         client.start_task(task=WorkerTask(task_id="bar"))
@@ -507,7 +504,7 @@ def test_start_task_span_ok(
 def test_create_and_start_task_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: Mock,
+    mock_rest: BlueapiRestClient,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="baz")
@@ -525,7 +522,6 @@ def test_get_environment_span_ok(
 def test_reload_environment_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
     with asserting_span_exporter(exporter, "reload_environment"):
         client.reload_environment()
@@ -534,7 +530,6 @@ def test_reload_environment_span_ok(
 def test_abort_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
     with asserting_span_exporter(exporter, "abort", "reason"):
         client.abort(reason="foo")
@@ -543,7 +538,6 @@ def test_abort_span_ok(
 def test_stop_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
     with asserting_span_exporter(exporter, "stop"):
         client.stop()
@@ -552,7 +546,6 @@ def test_stop_span_ok(
 def test_pause_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
     with asserting_span_exporter(exporter, "pause"):
         client.pause(defer=True)
@@ -561,7 +554,6 @@ def test_pause_span_ok(
 def test_resume_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
     with asserting_span_exporter(exporter, "resume"):
         client.resume()

@@ -23,7 +23,7 @@ def mock_connection() -> Connection:
 
 
 @pytest.fixture
-def mock_stomp_client(mock_connection: Mock) -> StompClient:
+def mock_stomp_client(mock_connection: Connection) -> StompClient:
     stomp_client = StompClient(conn=mock_connection)
     stomp_client.disconnect = MagicMock()
     return stomp_client

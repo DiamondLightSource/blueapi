@@ -147,10 +147,7 @@ def test_get_non_existent_device_by_name(
 
 
 @patch("blueapi.service.interface.submit_task")
-@patch("blueapi.service.interface.get_plan")
-def test_create_task(
-    get_plan_mock: MagicMock, submit_task_mock: MagicMock, client: TestClient
-) -> None:
+def test_create_task(submit_task_mock: MagicMock, client: TestClient) -> None:
     task = Task(name="count", params={"detectors": ["x"]})
     task_id = str(uuid.uuid4())
 

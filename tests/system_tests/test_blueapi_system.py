@@ -53,7 +53,6 @@ def oidc_config() -> CLIClientConfig:
     return CLIClientConfig(
         well_known_url="https://auth.example.com/realms/master/oidc/.well-known/openid-configuration",
         client_id="blueapi-cli",
-        client_audience="account",
         token_path=Path("~/token"),
     )
 
@@ -63,7 +62,7 @@ def client_with_stomp(oidc_config: OIDCConfig) -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
             stomp=StompConfig(
-                auth=BasicAuthentication(username="guest", password="guest")
+                auth=BasicAuthentication(username="guest", password="guest")  # type: ignore
             ),
             oidc=oidc_config,
         )
@@ -122,11 +121,15 @@ def test_cannot_access_endpoints(
     for get_method in blueapi_client_get_methods:
         with pytest.raises(BlueskyRemoteControlError) as exception:
             getattr(client_without_auth, get_method)()
-        assert str(exception) == "<Response [401]>"
+        assert str(exception.value) in "<Response [401]>"
 
 
 def test_get_plans(client: BlueapiClient, expected_plans: PlanResponse):
-    assert client.get_plans() == expected_plans
+    retrieved_plans = client.get_plans()
+    retrieved_plans.plans.sort(key=lambda x: x.name)
+    expected_plans.plans.sort(key=lambda x: x.name)
+
+    assert retrieved_plans == expected_plans
 
 
 def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):

@@ -216,8 +216,8 @@ def submit_task(
     runner: WorkerDispatcher = Depends(_runner),
 ):
     """Submit a task to the worker."""
+    plan_model = runner.run(interface.get_plan, task.name)
     try:
-        plan_model = runner.run(interface.get_plan, task.name)
         task_id: str = runner.run(interface.submit_task, task)
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
@@ -228,7 +228,7 @@ def submit_task(
         )
         error_detail_response = f"""
         Input validation failed: {formatted_errors},
-        suppplied params {task.params},
+        supplied params {task.params},
         do not match the expected params: {plan_model.parameter_schema}
         """
         raise HTTPException(

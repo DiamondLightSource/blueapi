@@ -1,6 +1,7 @@
 import os
 import stat
 import uuid
+from collections.abc import Generator
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import Mock, call, patch
@@ -12,14 +13,14 @@ from blueapi.config import ScratchConfig, ScratchRepository
 
 
 @pytest.fixture
-def directory_path() -> Path:  # type: ignore
+def directory_path() -> Generator[Path]:
     temporary_directory = TemporaryDirectory()
     yield Path(temporary_directory.name)
     temporary_directory.cleanup()
 
 
 @pytest.fixture
-def file_path(directory_path: Path) -> Path:  # type: ignore
+def file_path(directory_path: Path) -> Generator[Path]:
     file_path = directory_path / str(uuid.uuid4())
     with file_path.open("w") as stream:
         stream.write("foo")

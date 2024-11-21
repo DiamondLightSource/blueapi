@@ -69,7 +69,7 @@ class WorkerDispatcher:
     @start_as_current_span(TRACER)
     def start(self):
         add_span_attributes(
-            {"_use_subprocess": self._use_subprocess, "_config": self._config}
+            {"_use_subprocess": self._use_subprocess, "_config": str(self._config)}
         )
         try:
             if self._use_subprocess:
@@ -176,7 +176,7 @@ def _rpc(
         ctx = get_global_textmap().extract(carrier)
         attach(ctx)
     mod = import_module(module_name)
-    func: Callable[P, T] = _validate_function(
+    func: Callable[..., T] = _validate_function(
         mod.__dict__.get(function_name, None), function_name
     )
     value = func(*args, **kwargs)

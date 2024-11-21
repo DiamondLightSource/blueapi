@@ -6,7 +6,7 @@ from typing import Any
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
@@ -50,11 +50,13 @@ def worker() -> TaskWorker:
 
 @cache
 def stomp_client() -> StompClient | None:
-    stomp_config = config().stomp
+    stomp_config: StompConfig | None = config().stomp
     if stomp_config is not None:
-        stomp_client = StompClient.for_broker(
+        client = StompClient.for_broker(
             broker=Broker(
-                host=stomp_config.host, port=stomp_config.port, auth=stomp_config.auth
+                host=stomp_config.host,
+                port=stomp_config.port,
+                auth=stomp_config.auth,  # type: ignore
             )
         )
 
@@ -68,8 +70,8 @@ def stomp_client() -> StompClient | None:
                 task_worker.data_events: event_topic,
             }
         )
-        stomp_client.connect()
-        return stomp_client
+        client.connect()
+        return client
     else:
         return None
 

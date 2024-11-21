@@ -137,7 +137,7 @@ def test_submit_plan(runner: CliRunner):
 
 def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
-    assert isinstance(result.exception, RuntimeError)
+    assert isinstance(result.exception, AssertionError)
     assert str(result.exception) == "Message bus needs to be configured"
 
 

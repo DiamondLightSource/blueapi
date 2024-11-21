@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 
+import jwt
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -593,3 +594,14 @@ def test_subprocess_enabled_by_default(mp_pool_mock: MagicMock):
     main.setup_runner()
     mp_pool_mock.assert_called_once()
     main.teardown_runner()
+
+
+@patch("blueapi.service.interface.get_device")
+def test_get_without_authentication(
+    get_device_mock: MagicMock, client: TestClient
+) -> None:
+    get_device_mock.side_effect = jwt.PyJWTError
+    response = client.get("/devices/my-device")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json() == {}

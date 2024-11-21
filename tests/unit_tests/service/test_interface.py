@@ -18,7 +18,7 @@ from blueapi.worker.task_worker import TrackableTask
 
 
 @pytest.fixture
-def mock_connection() -> Mock:
+def mock_connection() -> Connection:
     return Mock(spec=Connection)
 
 

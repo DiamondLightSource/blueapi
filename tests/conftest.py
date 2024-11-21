@@ -12,7 +12,7 @@ from opentelemetry.trace import get_tracer_provider
 
 
 @pytest.fixture(scope="function")
-def RE(request):
+def RE(request: pytest.FixtureRequest) -> RunEngine:
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
     RE = RunEngine({}, call_returns_result=True, loop=loop)

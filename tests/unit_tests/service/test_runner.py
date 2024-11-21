@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from typing import Any, Generic, TypeVar
 from unittest import mock
 from unittest.mock import MagicMock, patch
@@ -30,7 +31,7 @@ def runner() -> WorkerDispatcher:
 
 
 @pytest.fixture
-def started_runner(runner: WorkerDispatcher):
+def started_runner(runner: WorkerDispatcher) -> Generator[WorkerDispatcher]:
     runner.start()
     yield runner
     runner.stop()

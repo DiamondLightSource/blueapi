@@ -33,12 +33,12 @@ from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerS
 
 
 @pytest.fixture
-def mock_connection() -> Mock:
+def mock_connection() -> Connection:
     return Mock(spec=Connection)
 
 
 @pytest.fixture
-def mock_stomp_client(mock_connection: Mock) -> StompClient:
+def mock_stomp_client(mock_connection: Connection) -> StompClient:
     return StompClient(conn=mock_connection)
 
 

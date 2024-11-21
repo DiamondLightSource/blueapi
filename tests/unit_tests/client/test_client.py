@@ -63,7 +63,7 @@ FAILED_EVENT = WorkerEvent(
 
 @pytest.fixture
 def mock_rest() -> BlueapiRestClient:
-    mock = Mock(spec=BlueapiRestClient)
+    mock = MagicMock(spec=BlueapiRestClient)
 
     mock.get_plans.return_value = PLANS
     mock.get_plan.return_value = PLAN
@@ -89,12 +89,12 @@ def mock_events() -> EventBusClient:
 
 
 @pytest.fixture
-def client(mock_rest: Mock) -> BlueapiClient:
+def client(mock_rest: BlueapiRestClient) -> BlueapiClient:
     return BlueapiClient(rest=mock_rest)
 
 
 @pytest.fixture
-def client_with_events(mock_rest: Mock, mock_events: MagicMock):
+def client_with_events(mock_rest: BlueapiRestClient, mock_events: EventBusClient):
     return BlueapiClient(rest=mock_rest, events=mock_events)
 
 

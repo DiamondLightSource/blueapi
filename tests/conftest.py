@@ -105,7 +105,7 @@ def _make_token(
     issued_in: float,
     expires_in: float,
     rsa_private_key: str,
-    jwt_access_token=False,
+    jwt_access_token: bool = False,
 ) -> dict[str, str]:
     now = time.time()
 
@@ -124,17 +124,11 @@ def _make_token(
         algorithm="RS256",
         headers={"kid": "secret"},
     )
-    if jwt_access_token:
-        access_token_encoded = jwt_token_encoded
-        id_token_encoded = jwt_access_token
-    else:
-        access_token_encoded = name
-        id_token_encoded = jwt_token_encoded
     response = {
-        "access_token": access_token_encoded,
+        "access_token": jwt_token_encoded if jwt_access_token else name,
         "token_type": "Bearer",
         "refresh_token": "refresh_token",
-        "id_token": id_token_encoded,
+        "id_token": jwt_token_encoded,
     }
     return response
 

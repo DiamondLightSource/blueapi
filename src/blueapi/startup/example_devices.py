@@ -1,6 +1,6 @@
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
 
-from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
+from blueapi.startup.simmotor import BrokenSynAxis, SynAxisWithMotionEvents
 
 
 def x(name="x") -> SynAxisWithMotionEvents:

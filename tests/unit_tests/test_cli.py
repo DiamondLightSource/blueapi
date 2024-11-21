@@ -43,7 +43,7 @@ def mock_stomp_client(mock_connection: Mock) -> StompClient:
 
 
 @pytest.fixture
-def runner():
+def runner() -> CliRunner:
     return CliRunner()
 
 

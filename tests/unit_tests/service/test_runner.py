@@ -20,12 +20,12 @@ from blueapi.service.runner import (
 
 
 @pytest.fixture
-def local_runner():
+def local_runner() -> WorkerDispatcher:
     return WorkerDispatcher(use_subprocess=False)
 
 
 @pytest.fixture
-def runner():
+def runner() -> WorkerDispatcher:
     return WorkerDispatcher()
 
 

@@ -27,10 +27,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig
 from blueapi.service import interface
-from blueapi.worker import Task, TrackableTask, WorkerState
-from blueapi.worker.event import TaskStatusEnum
-
-from .model import (
+from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
@@ -41,7 +38,9 @@ from .model import (
     TasksListResponse,
     WorkerTask,
 )
-from .runner import WorkerDispatcher
+from blueapi.service.runner import WorkerDispatcher
+from blueapi.worker import Task, TrackableTask, WorkerState
+from blueapi.worker.event import TaskStatusEnum
 
 REST_API_VERSION = "0.0.5"
 

@@ -1,6 +1,6 @@
 from typing import Any
 
-from .bluesky_types import Device, is_bluesky_compatible_device
+from blueapi.core.bluesky_types import Device, is_bluesky_compatible_device
 
 
 def find_component(obj: Any, addr: list[str]) -> Device | None:

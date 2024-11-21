@@ -32,8 +32,7 @@ from blueapi.core import (
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
-
-from .event import (
+from blueapi.worker.event import (
     ProgressEvent,
     RawRunEngineState,
     StatusView,
@@ -42,8 +41,8 @@ from .event import (
     WorkerEvent,
     WorkerState,
 )
-from .task import Task
-from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
+from blueapi.worker.task import Task
+from blueapi.worker.worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
 TRACER = get_tracer("task_worker")

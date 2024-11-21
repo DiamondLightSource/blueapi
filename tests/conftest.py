@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
 
-from blueapi.config import ApplicationConfig, CLIClientConfig, OIDCConfig
+from blueapi.config import ApplicationConfig, CLIClientConfig
 
 
 @pytest.fixture(scope="function")
@@ -69,14 +69,6 @@ def oidc_config(oidc_url: str, tmp_path: Path) -> CLIClientConfig:
 
 
 @pytest.fixture
-def oidc_config_server(oidc_url: str, tmp_path: Path) -> OIDCConfig:
-    return OIDCConfig(
-        well_known_url=oidc_url,
-        client_id="blueapi-client",
-    )
-
-
-@pytest.fixture
 def config_with_auth(tmp_path: Path, oidc_config: CLIClientConfig) -> str:
     config = ApplicationConfig(oidc=oidc_config)
     config_path = tmp_path / "auth_config.yaml"
@@ -109,11 +101,15 @@ def rsa_private_key(json_web_keyset: JWK) -> str:
 
 
 def _make_token(
-    name: str, issued_in: float, expires_in: float, rsa_private_key: str
+    name: str,
+    issued_in: float,
+    expires_in: float,
+    rsa_private_key: str,
+    jwt_access_token=False,
 ) -> dict[str, str]:
     now = time.time()
 
-    id_token = {
+    dummy_token = {
         "aud": "blueapi",
         "exp": now + expires_in,
         "iat": now + issued_in,
@@ -122,14 +118,20 @@ def _make_token(
         "name": "Jane Doe",
         "fedid": "jd1",
     }
-    id_token_encoded = jwt.encode(
-        id_token,
+    jwt_token_encoded = jwt.encode(
+        dummy_token,
         key=rsa_private_key,
         algorithm="RS256",
         headers={"kid": "secret"},
     )
+    if jwt_access_token:
+        access_token_encoded = jwt_token_encoded
+        id_token_encoded = jwt_access_token
+    else:
+        access_token_encoded = name
+        id_token_encoded = jwt_token_encoded
     response = {
-        "access_token": name,
+        "access_token": access_token_encoded,
         "token_type": "Bearer",
         "refresh_token": "refresh_token",
         "id_token": id_token_encoded,
@@ -171,6 +173,13 @@ def expired_token(rsa_private_key: str) -> dict[str, Any]:
 @pytest.fixture
 def valid_token(rsa_private_key: str) -> dict[str, Any]:
     return _make_token("valid_token", -900, +900, rsa_private_key)
+
+
+@pytest.fixture
+def valid_token_with_jwt(rsa_private_key: str) -> dict[str, Any]:
+    return _make_token(
+        "valid_token", -900, +900, rsa_private_key, jwt_access_token=True
+    )
 
 
 @pytest.fixture

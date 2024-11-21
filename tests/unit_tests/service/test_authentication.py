@@ -70,9 +70,18 @@ def test_poll_for_token_timeout(
         session_manager.poll_for_token(device_code, 1, 2)
 
 
-def test_invalid_token_raises_exception_in_server(
-    oidc_config_server, mock_authn_server: responses.RequestsMock
+def test_server_raises_exception_for_invalid_token(
+    oidc_config: OIDCConfig, mock_authn_server: responses.RequestsMock
 ):
-    inner = main.verify_access_token(oidc_config_server)
+    inner = main.verify_access_token(oidc_config)
     with pytest.raises(jwt.PyJWTError):
         inner(access_token="Invalid Token")
+
+
+def test_processes_valid_token(
+    oidc_config: OIDCConfig,
+    mock_authn_server: responses.RequestsMock,
+    valid_token_with_jwt,
+):
+    inner = main.verify_access_token(oidc_config)
+    inner(access_token=valid_token_with_jwt["access_token"])

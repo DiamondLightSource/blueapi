@@ -66,7 +66,7 @@ def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
 def test_get_non_existent_plan(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
         client.get_plan("Not exists")
-        assert str(exception) == ("{'detail': 'Item not found'}")
+    assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_get_devices(client: BlueapiClient, expected_devices: DeviceResponse):
@@ -80,8 +80,8 @@ def test_get_device_by_name(client: BlueapiClient, expected_devices: DeviceRespo
 
 def test_get_non_existent_device(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
-        assert client.get_device("Not exists")
-        assert str(exception) == ("{'detail': 'Item not found'}")
+        client.get_device("Not exists")
+    assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_create_task_and_delete_task_by_id(client: BlueapiClient):
@@ -92,7 +92,7 @@ def test_create_task_and_delete_task_by_id(client: BlueapiClient):
 def test_create_task_validation_error(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
         client.create_task(Task(name="Not-exists", params={"Not-exists": 0.0}))
-        assert str(exception) == ("{'detail': 'Item not found'}")
+    assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_get_all_tasks(client: BlueapiClient):
@@ -128,13 +128,13 @@ def test_get_task_by_id(client: BlueapiClient):
 def test_get_non_existent_task(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
         client.get_task("Not-exists")
-        assert str(exception) == "{'detail': 'Item not found'}"
+    assert str(exception) == "{'detail': 'Item not found'}"
 
 
 def test_delete_non_existent_task(client: BlueapiClient):
     with pytest.raises(KeyError) as exception:
         client.clear_task("Not-exists")
-        assert str(exception) == "{'detail': 'Item not found'}"
+    assert str(exception) == "{'detail': 'Item not found'}"
 
 
 def test_put_worker_task(client: BlueapiClient):
@@ -155,7 +155,7 @@ def test_put_worker_task_fails_if_not_idle(client: BlueapiClient):
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.start_task(WorkerTask(task_id=small_task.task_id))
-        assert str(exception) == "<Response [409]>"
+    assert str(exception) == "<Response [409]>"
     client.abort()
     client.clear_task(small_task.task_id)
     client.clear_task(long_task.task_id)
@@ -168,11 +168,11 @@ def test_get_worker_state(client: BlueapiClient):
 def test_set_state_transition_error(client: BlueapiClient):
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.resume()
-        assert str(exception) == "<Response [400]>"
+    assert str(exception) == "<Response [400]>"
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.pause()
-        assert str(exception) == "<Response [400]>"
+    assert str(exception) == "<Response [400]>"
 
 
 def test_get_task_by_status(client: BlueapiClient):

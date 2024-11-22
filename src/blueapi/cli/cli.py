@@ -1,6 +1,7 @@
 import json
 import logging
 import sys
+from collections.abc import Sequence
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
@@ -27,6 +28,25 @@ from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 
+def parse_path_type(path_type: PathType) -> list[Path]:
+    """
+    Parse a PathType parameter and return a list of Path objects.
+
+    :param path_type: The input which can be a Path, str, or a sequence of Path/str.
+    :return: A list of Path objects.
+    """
+    if isinstance(path_type, str | Path):
+        # Single Path or string: Convert to Path and return as a single-element list
+        return [Path(path_type)]
+
+    if isinstance(path_type, Sequence):
+        # Sequence of Paths/strings: Convert each element to a Path
+        return [Path(item) for item in path_type if isinstance(item, str | Path)]
+
+    # If it doesn't match the expected types, raise an error
+    raise TypeError(f"Unsupported PathType: {type(path_type)}")
+
+
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option(
@@ -35,8 +55,15 @@ from .updates import CliEventRenderer
 @click.pass_context
 def main(ctx: click.Context, config: PathType) -> None:
     # Override default yaml_file path in the model_config if `config` is provided
-    ApplicationConfig.model_config["yaml_file"] = config
+    config = parse_path_type(config)
+    assert len(config) != 0, "No configuration file provided"
+    ApplicationConfig.model_config["yaml_file"] = config[0]
+    # todo consider adding as a check if only 1 config
+    # if not(config.exists() and config.is_file()):
+    #     raise FileNotFoundError(f"Configuration file {config} not found")
     app_config = ApplicationConfig()  # Instantiates with customized sources
+    print(f"Loaded configuration {app_config}")
+    ctx.ensure_object(dict)
     ctx.obj["config"] = app_config
 
     # note: this is the key result of the 'main' function, it loaded the config

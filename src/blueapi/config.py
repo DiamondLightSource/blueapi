@@ -78,7 +78,8 @@ class ScratchConfig(BlueapiBaseModel):
     repositories: list[ScratchRepository] = Field(default_factory=list)
 
 
-class ApplicationConfig(BaseSettings, cli_parse_args=True, cli_prog_name="blueapi"):
+# class ApplicationConfig(BaseSettings, cli_parse_args=True, cli_prog_name="blueapi"):
+class ApplicationConfig(BaseSettings):
     """
     Config for the worker application as a whole. Root of
     config tree.

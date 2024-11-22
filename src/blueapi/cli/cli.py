@@ -55,12 +55,7 @@ def parse_path_type(path_type: PathType) -> list[Path]:
 @click.pass_context
 def main(ctx: click.Context, config: PathType) -> None:
     # Override default yaml_file path in the model_config if `config` is provided
-    config = parse_path_type(config)
-    assert len(config) != 0, "No configuration file provided"
-    ApplicationConfig.model_config["yaml_file"] = config[0]
-    # todo consider adding as a check if only 1 config
-    # if not(config.exists() and config.is_file()):
-    #     raise FileNotFoundError(f"Configuration file {config} not found")
+    ApplicationConfig.model_config["yaml_file"] = config
     app_config = ApplicationConfig()  # Instantiates with customized sources
     print(f"Loaded configuration {app_config}")
     ctx.ensure_object(dict)

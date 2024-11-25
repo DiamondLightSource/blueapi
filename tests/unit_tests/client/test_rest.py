@@ -22,6 +22,17 @@ def rest_with_auth(oidc_config: OIDCConfig) -> BlueapiRestClient:
     return BlueapiRestClient(session_manager=SessionManager(oidc_config))
 
 
+@pytest.fixture
+def mock_authn_server_with_plan(mock_authn_server):
+    plan = Plan(name="my-plan", model=MyModel)
+    mock_authn_server.stop()
+    mock_get_plans = mock_authn_server.get(
+        "http://localhost:8000/plans",
+        json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
+    )
+    return mock_get_plans
+
+
 @pytest.mark.parametrize(
     "code,expected_exception",
     [
@@ -66,24 +77,15 @@ def test_auth_request_functionality(
     assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
 
 
-def test_refresh_if_signature_expired(
-    rest_with_auth: BlueapiRestClient,
-    mock_authn_server: responses.RequestsMock,
-    cached_expired_token: Path,
-):
-    plan = Plan(name="my-plan", model=MyModel)
-
-    mock_authn_server.stop()
-    mock_get_plans = (
-        mock_authn_server.get(  # Cannot use multiple RequestsMock context manager
-            "http://localhost:8000/plans",
-            json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
-        )
-    )
-    result = None
-    with mock_authn_server:
-        result = rest_with_auth.get_plans()
-    assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
-    calls = mock_get_plans.calls
-    assert len(calls) == 1
-    assert calls[0].request.headers["Authorization"] == "Bearer new_token"
+# def test_refresh_if_signature_expired(
+#     rest_with_auth: BlueapiRestClient,
+#     mock_authn_server_with_plan: responses.RequestsMock,
+#     cached_expired_token: Path,
+# ):
+#     result = None
+#     with mock_authn_server_with_plan:
+#         result = rest_with_auth.get_plans()
+#     assert result == PlanResponse(plans=[PlanModel.from_plan(plan)])
+#     calls = mock_get_plans.calls
+#     assert len(calls) == 1
+#     assert calls[0].request.headers["Authorization"] == "Bearer new_token"

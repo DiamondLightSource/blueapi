@@ -8,7 +8,7 @@ import pytest
 import responses
 from starlette.status import HTTP_403_FORBIDDEN
 
-from blueapi.config import CLIClientConfig, OIDCConfig
+from blueapi.config import CliClientConfig, OIDCConfig
 from blueapi.service import main
 from blueapi.service.authentication import SessionManager
 
@@ -20,7 +20,7 @@ def session_manager(oidc_config: OIDCConfig) -> SessionManager:
 
 def test_logout(
     session_manager: SessionManager,
-    oidc_config: CLIClientConfig,
+    oidc_config: CliClientConfig,
     cached_valid_token: Path,
 ):
     assert os.path.exists(oidc_config.token_path)
@@ -33,11 +33,11 @@ def test_refresh_auth_token(
     session_manager: SessionManager,
     cached_expired_token: Path,
 ):
-    token = session_manager.get_token()
+    token = session_manager.get_access_token()
     assert token and token["access_token"] == "expired_token"
 
     session_manager.refresh_auth_token()
-    token = session_manager.get_token()
+    token = session_manager.get_access_token()
     assert token and token["access_token"] == "new_token"
 
 

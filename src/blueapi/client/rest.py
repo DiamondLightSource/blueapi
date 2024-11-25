@@ -1,7 +1,6 @@
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
-import jwt
 import requests
 from observability_utils.tracing import (
     get_context_propagator,
@@ -11,11 +10,12 @@ from observability_utils.tracing import (
 from pydantic import TypeAdapter
 
 from blueapi.config import RestConfig
-from blueapi.service.authentication import SessionManager
+from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
+    OIDCConfigResponse,
     PlanModel,
     PlanResponse,
     TaskResponse,
@@ -53,7 +53,7 @@ class BlueapiRestClient:
         session_manager: SessionManager | None = None,
     ) -> None:
         self._config = config or RestConfig()
-        self._session_manager = session_manager
+        self._session_manager = z
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -132,6 +132,9 @@ class BlueapiRestClient:
             "/environment", EnvironmentResponse, method="DELETE"
         )
 
+    def get_oidc_config(self) -> OIDCConfigResponse:
+        return self._request_and_deserialize("/oidc/config", OIDCConfigResponse)
+
     @start_as_current_span(TRACER, "method", "data", "suffix")
     def _request_and_deserialize(
         self,
@@ -144,20 +147,19 @@ class BlueapiRestClient:
         url = self._url(suffix)
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
-        if self._session_manager:
-            # Attach authentication information if present
-            token = self._session_manager.get_token()
-            try:
-                # Check token is not expired
-                self._session_manager.decode_token(token)
-            except jwt.ExpiredSignatureError:
-                token = self._session_manager.refresh_auth_token()
-            carr["Authorization"] = f"Bearer {token['access_token']}"
 
         if data:
-            response = requests.request(method, url, json=data, headers=carr)
+            response = requests.request(
+                method,
+                url,
+                json=data,
+                headers=carr,
+                auth=JWTAuth(self._session_manager),
+            )
         else:
-            response = requests.request(method, url, headers=carr)
+            response = requests.request(
+                method, url, headers=carr, auth=JWTAuth(self._session_manager)
+            )
         exception = get_exception(response)
         if exception is not None:
             raise exception

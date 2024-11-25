@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 from bluesky.protocols import HasName
@@ -149,3 +149,27 @@ class EnvironmentResponse(BlueapiBaseModel):
         description="If present - error loading context",
         min_length=1,
     )
+
+
+class OIDCConfigResponse(BlueapiBaseModel):
+    """
+    Configuration for OIDC
+    """
+
+    well_known_url: str
+    client_id: str
+    client_audience: str
+
+    device_authorization_endpoint: str
+    token_endpoint: str
+    issuer: str
+    authorization_endpoint: str
+    jwks_uri: str
+    end_session_endpoint: str
+    id_token_signing_alg_values_supported: Sequence[str]
+
+
+class Cache(BlueapiBaseModel):
+    oidc_config: OIDCConfigResponse
+    refresh_token: str
+    id_token: str

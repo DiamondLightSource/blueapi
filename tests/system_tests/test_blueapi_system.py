@@ -13,7 +13,7 @@ from blueapi.client.client import (
 from blueapi.client.event_bus import AnyEvent
 from blueapi.config import (
     ApplicationConfig,
-    CLIClientConfig,
+    CliClientConfig,
     OIDCConfig,
     StompConfig,
 )
@@ -49,10 +49,8 @@ def client_without_auth() -> BlueapiClient:
 
 
 @pytest.fixture
-def oidc_config() -> CLIClientConfig:
-    return CLIClientConfig(
-        well_known_url="https://auth.example.com/realms/master/oidc/.well-known/openid-configuration",
-        client_id="blueapi-cli",
+def oidc_config() -> CliClientConfig:
+    return CliClientConfig(
         token_path=Path("~/token"),
     )
 

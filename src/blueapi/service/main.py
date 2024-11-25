@@ -86,6 +86,7 @@ def lifespan(config: ApplicationConfig):
 
 
 router = APIRouter()
+auth_router = APIRouter()
 
 
 def get_app(config: ApplicationConfig):
@@ -95,7 +96,10 @@ def get_app(config: ApplicationConfig):
         lifespan=lifespan(config),
         version=REST_API_VERSION,
     )
-    dependencies = [Depends(verify_access_token(config.oidc))] if config.oidc else []
+    dependencies = []
+    if config.oidc:
+        dependencies = [Depends(verify_access_token(config.oidc))]
+        app.include_router(auth_router)
     app.include_router(router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
@@ -162,6 +166,13 @@ async def delete_environment(
     if runner.state.initialized or runner.state.error_message is not None:
         background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
+
+
+@auth_router.get("/oidc/config", tags=["auth"])
+@start_as_current_span(TRACER)
+def get_oidc_config(runner: WorkerDispatcher = Depends(_runner)) -> OIDCConfig | None:
+    """Get the State of the Worker"""
+    return runner.run(interface.get_oidc_config)
 
 
 @router.get("/plans", response_model=PlanResponse)

@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
@@ -12,7 +12,7 @@ from pydantic import (
     Field,
     TypeAdapter,
     ValidationError,
-    field_serializer,
+    computed_field,
 )
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
@@ -98,46 +98,45 @@ class OIDCConfig(BlueapiBaseModel):
         response.raise_for_status()
         return response.json()
 
+    @computed_field
     @cached_property
     def device_authorization_endpoint(self) -> str:
         return cast(
             str, self._config_from_oidc_url.get("device_authorization_endpoint")
         )
 
+    @computed_field
     @cached_property
     def token_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("token_endpoint"))
 
+    @computed_field
     @cached_property
     def issuer(self) -> str:
         return cast(str, self._config_from_oidc_url.get("issuer"))
 
+    @computed_field
     @cached_property
     def authorization_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("authorization_endpoint"))
 
+    @computed_field
     @cached_property
     def jwks_uri(self) -> str:
         return cast(str, self._config_from_oidc_url.get("jwks_uri"))
 
+    @computed_field
     @cached_property
     def end_session_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("end_session_endpoint"))
 
+    @computed_field
     @cached_property
-    def id_token_signing_alg_values_supported(self) -> list[str]:
+    def id_token_signing_alg_values_supported(self) -> Sequence[str]:
         return cast(
-            list[str],
+            Sequence[str],
             self._config_from_oidc_url.get("id_token_signing_alg_values_supported"),
         )
-
-
-class CLIClientConfig(OIDCConfig):
-    token_path: Path
-
-    @field_serializer("token_path")
-    def serialize_token_path(self, token_path: Path, _info):
-        return f"{token_path}"
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -151,7 +150,8 @@ class ApplicationConfig(BlueapiBaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
-    oidc: OIDCConfig | CLIClientConfig | None = None
+    oidc: OIDCConfig | None = None
+    auth_token_path: Path | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

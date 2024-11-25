@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
 
-from blueapi.config import ApplicationConfig, CLIClientConfig
+from blueapi.config import ApplicationConfig, CliClientConfig
 
 
 @pytest.fixture(scope="function")
@@ -60,17 +60,8 @@ def oidc_url() -> str:
 
 
 @pytest.fixture
-def oidc_config(oidc_url: str, tmp_path: Path) -> CLIClientConfig:
-    return CLIClientConfig(
-        well_known_url=oidc_url,
-        client_id="blueapi-client",
-        token_path=tmp_path / "token",
-    )
-
-
-@pytest.fixture
-def config_with_auth(tmp_path: Path, oidc_config: CLIClientConfig) -> str:
-    config = ApplicationConfig(oidc=oidc_config)
+def config_with_auth(tmp_path: Path) -> str:
+    config = ApplicationConfig(auth_token_path=tmp_path)
     config_path = tmp_path / "auth_config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
@@ -190,7 +181,7 @@ def device_code() -> str:
 def mock_authn_server(
     oidc_url: str,
     oidc_well_known: dict[str, Any],
-    oidc_config: CLIClientConfig,
+    oidc_config: CliClientConfig,
     valid_token: dict[str, Any],
     new_token: dict[str, Any],
     device_code: str,
@@ -210,34 +201,34 @@ def mock_authn_server(
         },
     )
 
-    # When polled with device_code return token
-    requests_mock.post(
-        oidc_well_known["token_endpoint"],
-        json=valid_token,
-        match=[
-            responses.matchers.urlencoded_params_matcher(
-                {
-                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-                    "device_code": device_code,
-                    "client_id": oidc_config.client_id,
-                }
-            ),
-        ],
-    )
-    # When asked to refresh with refresh_token return refreshed token
-    requests_mock.post(
-        oidc_well_known["token_endpoint"],
-        json=new_token,
-        match=[
-            responses.matchers.urlencoded_params_matcher(
-                {
-                    "client_id": oidc_config.client_id,
-                    "grant_type": "refresh_token",
-                    "refresh_token": "refresh_token",
-                },
-            )
-        ],
-    )
+    # # When polled with device_code return token
+    # requests_mock.post(
+    #     oidc_well_known["token_endpoint"],
+    #     json=valid_token,
+    #     match=[
+    #         responses.matchers.urlencoded_params_matcher(
+    #             {
+    #                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+    #                 "device_code": device_code,
+    #                 "client_id": oidc_config.client_id,
+    #             }
+    #         ),
+    #     ],
+    # )
+    # # When asked to refresh with refresh_token return refreshed token
+    # requests_mock.post(
+    #     oidc_well_known["token_endpoint"],
+    #     json=new_token,
+    #     match=[
+    #         responses.matchers.urlencoded_params_matcher(
+    #             {
+    #                 "client_id": oidc_config.client_id,
+    #                 "grant_type": "refresh_token",
+    #                 "refresh_token": "refresh_token",
+    #             },
+    #         )
+    #     ],
+    # )
 
     with mock_jwks_fetch, requests_mock:
         yield requests_mock

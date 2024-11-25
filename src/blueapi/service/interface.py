@@ -6,7 +6,7 @@ from typing import Any
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 
-from blueapi.config import ApplicationConfig, StompConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
@@ -192,3 +192,7 @@ def get_task_by_id(task_id: str) -> TrackableTask | None:
     """Returns a task matching the task ID supplied,
     if the worker knows of it"""
     return worker().get_task_by_id(task_id)
+
+
+def get_oidc_config() -> OIDCConfig | None:
+    return config().oidc

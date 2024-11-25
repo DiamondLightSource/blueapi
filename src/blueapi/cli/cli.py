@@ -20,11 +20,10 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import (
     ApplicationConfig,
-    CLIClientConfig,
     ConfigLoader,
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
-from blueapi.service.authentication import SessionManager
+from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
@@ -354,24 +353,40 @@ def scratch(obj: dict) -> None:
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    if isinstance(config.oidc, CLIClientConfig):
-        print("Logging in")
-        auth: SessionManager = SessionManager(config.oidc)
+    print("Logging in")
+
+    cacheManager = SessionCacheManager(config.auth_token_path)
+    try:
+        cache = cacheManager.load_cache()
+        auth: SessionManager = SessionManager(
+            server_config=cache.oidc_config, cache_manager=cacheManager
+        )
+        auth.get_access_token()
+        print("Cached token still valid, skipping flow")
+    except Exception:
+        client = BlueapiClient.from_config(config)
+        oidc_config = None
+        oidc_config = client.get_oidc_config()
+        auth: SessionManager = SessionManager(oidc_config, cache_manager=cacheManager)
         try:
             auth.start_device_flow()
         except Exception as e:
             print(f"Failed to login: {e}")
-    else:
-        print("Please provide configuration to login!")
 
 
 @main.command(name="logout")
 @click.pass_obj
 def logout(obj: dict) -> None:
+    client: BlueapiClient = obj["client"]
     config: ApplicationConfig = obj["config"]
-    if isinstance(config.oidc, CLIClientConfig):
-        auth: SessionManager = SessionManager(server_config=config.oidc)
+    oidc_config = None
+    try:
+        oidc_config = client.get_oidc_config()
+    except Exception as e:
+        print(e)
+    if oidc_config:
+        auth: SessionManager = SessionManager(oidc_config, config.auth_token_path)
         auth.logout()
         print("Logged out")
     else:
-        print("Please provide configuration to logout!")
+        print("Please provide OIDC configuration to logout!")

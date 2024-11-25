@@ -11,7 +11,7 @@ When added to the blueapi context, `PlanGenerator`'s are formalised into their s
 
 Therefore, `PlanGenerator`'s must only take as arguments [those types which are valid Pydantic fields](https://docs.pydantic.dev/dev/concepts/types) or Device types which implement `BLUESKY_PROTOCOLS` defined in dodal, which are fetched from the context at runtime.
 
-Allowed argument types for Pydantic BaseModels include the primitives, types that extend `BaseModel` and `dict`'s, `list`'s  and other `sequence`'s of supported types. Blueapi will deserialise these types from JSON, so `dict`'s should use `str` keys.
+Allowed argument types for Pydantic BaseModels include the primitives, types that extend `BaseModel` and `dict`'s, `list`'s  and other `sequence`'s of supported types. Blueapi will deserialise these types from JSON, so `dict`'s must use `str` keys.
 
 
 ## Stubs

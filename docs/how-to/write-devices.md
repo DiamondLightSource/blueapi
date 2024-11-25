@@ -30,7 +30,7 @@ The device is created via a function rather than a global to preserve side-effec
 **This is an absolute requirement to write data onto the Diamond Filesystem**. This decorator must be used every time a new data collection is intended to begin. For an example, see below.
 :::
 
-Dodal defines a decorator, `@attach_metadata`, for configuring `ophyd-async` detectors to write data to a common location. 
+Dodal defines a decorator, `@attach_data_session_metadata_decorator()`, for configuring `ophyd-async` detectors to write data to a common location. 
 
 ```python
    @attach_metadata

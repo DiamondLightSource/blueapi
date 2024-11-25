@@ -8,8 +8,8 @@ import bluesky.plans as bp
 
 from typing import Any, List, Mapping, Optional, Union
 
-from blueapi.core import MsgGenerator
 from bluesky.protocols import Readable
+from bluesky.utils import MsgGenerator
 from dodal.beamlines import my_beamline
 
 def count(

@@ -6,6 +6,7 @@ from pathlib import Path
 from pprint import pprint
 
 import click
+import jwt
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -349,39 +350,61 @@ def scratch(obj: dict) -> None:
         raise KeyError("No scratch config supplied")
 
 
+def auth_wrapper(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except ConnectionError:
+            print(
+                f"Failed to {func.__name__}: Unable to establish a connection"
+                "to the FastAPI server."
+            )
+        except OSError as e:
+            print(f"Failed to {func.__name__}: due to OSError {e}")
+        except Exception as e:
+            print(f"Failed to {func.__name__}: {e}")
+
+    return wrapper
+
+
 @main.command(name="login")
+@auth_wrapper
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     print("Logging in")
     auth: SessionManager | None = None
-    try:
-        auth = SessionManager.from_cache(config.auth_token_path)
-        if auth:
-            access_token = auth.get_access_token()
-            assert access_token
-            print("Cached token still valid, skipping flow")
-        else:
-            client = BlueapiClient.from_config(config)
-            oidc_config = client.get_oidc_config()
-            auth = SessionManager(
-                oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
-            )
-            auth.start_device_flow()
-
-    except Exception as e:
-        print(f"Failed to login: {e}")
+    auth = SessionManager.from_cache(config.auth_token_path)
+    if auth:
+        cache = auth.cache_manager.load_cache()
+        if cache:
+            try:
+                auth.decode_jwt(cache.access_token)
+                print("Cached token still valid, skipping flow")
+            except jwt.ExpiredSignatureError:
+                auth.refresh_auth_token(cache.refresh_token)
+                print("Refreshed cached token, skipping flow")
+            except Exception:
+                print("Problem with cached token, starting new session")
+                auth.cache_manager.delete_cache()
+                auth.start_device_flow()
+    else:
+        client = BlueapiClient.from_config(config)
+        oidc_config = client.get_oidc_config()
+        auth = SessionManager(
+            oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
+        )
+        auth.start_device_flow()
 
 
 @main.command(name="logout")
+@auth_wrapper
 @click.pass_obj
 def logout(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     auth: SessionManager | None = None
-    try:
-        auth = SessionManager.from_cache(config.auth_token_path)
-        if auth:
-            auth.logout()
-            print("Logged out")
-    except Exception as e:
-        print(e)
+    auth = SessionManager.from_cache(config.auth_token_path)
+    if auth:
+        auth.logout()
+        print("Logged out")

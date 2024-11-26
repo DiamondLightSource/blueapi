@@ -12,7 +12,6 @@ from pydantic import (
     Field,
     TypeAdapter,
     ValidationError,
-    computed_field,
 )
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError

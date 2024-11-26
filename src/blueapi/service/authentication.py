@@ -73,7 +73,7 @@ class SessionManager:
         self, server_config: OIDCConfigResponse, cache_manager: CacheManager
     ) -> None:
         self._server_config = server_config
-        self._cache_manager: CacheManager = cache_manager
+        self.cache_manager: CacheManager = cache_manager
 
     @classmethod
     def from_cache(cls, auth_token_path: Path | None) -> SessionManager | None:
@@ -85,9 +85,9 @@ class SessionManager:
             )
 
     def get_access_token(self) -> str | None:
-        cache = self._cache_manager.load_cache()
+        cache = self.cache_manager.load_cache()
         if cache:
-            return self.refresh_auth_token(cache.refresh_token)
+            return cache.access_token
 
     @cached_property
     def client(self):
@@ -106,7 +106,7 @@ class SessionManager:
 
     def logout(self) -> None:
         try:
-            cache = self._cache_manager.load_cache()
+            cache = self.cache_manager.load_cache()
             if cache:
                 response = requests.get(
                     self._server_config.end_session_endpoint,
@@ -121,7 +121,7 @@ class SessionManager:
         except Exception as e:
             print(e)
         finally:
-            self._cache_manager.delete_cache()
+            self.cache_manager.delete_cache()
 
     def refresh_auth_token(self, refresh_token: str) -> str:
         response = requests.post(
@@ -135,7 +135,7 @@ class SessionManager:
         )
         response.raise_for_status()
         token = response.json()
-        self._cache_manager.save_cache(
+        self.cache_manager.save_cache(
             Cache(
                 oidc_config=self._server_config,
                 refresh_token=token["refresh_token"],
@@ -165,7 +165,7 @@ class SessionManager:
 
         raise TimeoutError("Polling timed out")
 
-    def _do_device_flow(self) -> None:
+    def start_device_flow(self):
         response: requests.Response = requests.post(
             self._server_config.device_authorization_endpoint,
             data={
@@ -188,7 +188,7 @@ class SessionManager:
         auth_token_json: dict[str, Any] = self.poll_for_token(
             device_code, interval, expires_in
         )
-        self._cache_manager.save_cache(
+        self.cache_manager.save_cache(
             Cache(
                 oidc_config=self._server_config,
                 refresh_token=auth_token_json["refresh_token"],
@@ -197,21 +197,6 @@ class SessionManager:
             )
         )
         print("Logged in and cached new token")
-
-    def start_device_flow(self):
-        cache = self._cache_manager.load_cache()
-        if cache:
-            try:
-                self.decode_jwt(cache.access_token)
-            except jwt.ExpiredSignatureError:
-                self.refresh_auth_token(cache.refresh_token)
-                print("Refreshed cached token, skipping flow")
-            except Exception:
-                print("Problem with cached token, starting new session")
-                self._cache_manager.delete_cache()
-                self._do_device_flow()
-        else:
-            self._do_device_flow()
 
 
 class JWTAuth(AuthBase):

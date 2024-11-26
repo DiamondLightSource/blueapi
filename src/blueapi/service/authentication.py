@@ -73,7 +73,7 @@ class SessionManager:
         self, server_config: OIDCConfigResponse, cache_manager: CacheManager
     ) -> None:
         self._server_config = server_config
-        self.cache_manager: CacheManager = cache_manager
+        self._cache_manager: CacheManager = cache_manager
 
     @classmethod
     def from_cache(cls, auth_token_path: Path | None) -> SessionManager | None:
@@ -84,10 +84,27 @@ class SessionManager:
                 server_config=cache.oidc_config, cache_manager=cacheManager
             )
 
-    def get_access_token(self) -> str | None:
-        cache = self.cache_manager.load_cache()
+    def delete_cache(self) -> None:
+        self._cache_manager.delete_cache()
+
+    def get_valid_access_token(self) -> str:
+        """
+        Retrieves a valid access token.
+
+        Returns:
+            str: A valid access token if successful.
+            "": If the operation fails (no valid token could be fetched or refreshed)
+        """
+        cache = self._cache_manager.load_cache()
         if cache:
-            return cache.access_token
+            try:
+                self.decode_jwt(cache.access_token)
+                return cache.access_token
+            except jwt.ExpiredSignatureError:
+                return self.refresh_auth_token(cache.refresh_token)
+            except Exception:
+                return ""
+        return ""
 
     @cached_property
     def client(self):
@@ -106,7 +123,7 @@ class SessionManager:
 
     def logout(self) -> None:
         try:
-            cache = self.cache_manager.load_cache()
+            cache = self._cache_manager.load_cache()
             if cache:
                 response = requests.get(
                     self._server_config.end_session_endpoint,
@@ -121,7 +138,7 @@ class SessionManager:
         except Exception as e:
             print(e)
         finally:
-            self.cache_manager.delete_cache()
+            self._cache_manager.delete_cache()
 
     def refresh_auth_token(self, refresh_token: str) -> str:
         response = requests.post(
@@ -135,7 +152,7 @@ class SessionManager:
         )
         response.raise_for_status()
         token = response.json()
-        self.cache_manager.save_cache(
+        self._cache_manager.save_cache(
             Cache(
                 oidc_config=self._server_config,
                 refresh_token=token["refresh_token"],
@@ -188,7 +205,7 @@ class SessionManager:
         auth_token_json: dict[str, Any] = self.poll_for_token(
             device_code, interval, expires_in
         )
-        self.cache_manager.save_cache(
+        self._cache_manager.save_cache(
             Cache(
                 oidc_config=self._server_config,
                 refresh_token=auth_token_json["refresh_token"],
@@ -201,13 +218,9 @@ class SessionManager:
 
 class JWTAuth(AuthBase):
     def __init__(self, session_manager: SessionManager | None):
-        access_token = ""
-        if session_manager:
-            try:
-                access_token = session_manager.get_access_token()
-            except Exception:
-                ...
-        self.token: str = access_token if access_token else ""
+        self.token: str = (
+            session_manager.get_valid_access_token() if session_manager else ""
+        )
 
     def __call__(self, request):
         if self.token:

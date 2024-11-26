@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, OIDCConfig
 
 
 @pytest.fixture(scope="function")
@@ -181,7 +181,7 @@ def device_code() -> str:
 def mock_authn_server(
     oidc_url: str,
     oidc_well_known: dict[str, Any],
-    oidc_config: CliClientConfig,
+    oidc_config: OIDCConfig,
     valid_token: dict[str, Any],
     new_token: dict[str, Any],
     device_code: str,

@@ -6,7 +6,6 @@ from pathlib import Path
 from pprint import pprint
 
 import click
-import jwt
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -377,18 +376,13 @@ def login(obj: dict) -> None:
     auth: SessionManager | None = None
     auth = SessionManager.from_cache(config.auth_token_path)
     if auth:
-        cache = auth.cache_manager.load_cache()
-        if cache:
-            try:
-                auth.decode_jwt(cache.access_token)
-                print("Cached token still valid, skipping flow")
-            except jwt.ExpiredSignatureError:
-                auth.refresh_auth_token(cache.refresh_token)
-                print("Refreshed cached token, skipping flow")
-            except Exception:
-                print("Problem with cached token, starting new session")
-                auth.cache_manager.delete_cache()
-                auth.start_device_flow()
+        access_token = auth.get_valid_access_token()
+        if not access_token:
+            print("Problem with cached token, starting new session")
+            auth.delete_cache()
+            auth.start_device_flow()
+        else:
+            print("Logged In")
     else:
         client = BlueapiClient.from_config(config)
         oidc_config = client.get_oidc_config()

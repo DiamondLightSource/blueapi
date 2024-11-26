@@ -10,6 +10,7 @@ from observability_utils.tracing import (
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -46,7 +47,10 @@ class BlueapiClient:
 
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
-        rest = BlueapiRestClient(config.api)
+        rest = BlueapiRestClient(
+            config.api,
+            session_manager=SessionManager.from_cache(config.auth_token_path),
+        )
         if config.stomp is None:
             return cls(rest)
         client = StompClient.for_broker(

@@ -6,9 +6,7 @@ import responses
 from pydantic import BaseModel
 
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
-from blueapi.config import OIDCConfig
 from blueapi.core.bluesky_types import Plan
-from blueapi.service.authentication import SessionManager
 from blueapi.service.model import PlanModel, PlanResponse
 
 
@@ -17,9 +15,9 @@ def rest() -> BlueapiRestClient:
     return BlueapiRestClient()
 
 
-@pytest.fixture
-def rest_with_auth(oidc_config: OIDCConfig) -> BlueapiRestClient:
-    return BlueapiRestClient(session_manager=SessionManager(oidc_config))
+# @pytest.fixture
+# def rest_with_auth(oidc_config: OIDCConfig) -> BlueapiRestClient:
+#     return BlueapiRestClient(session_manager=SessionManager(oidc_config))
 
 
 @pytest.fixture

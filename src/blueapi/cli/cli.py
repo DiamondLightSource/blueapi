@@ -354,39 +354,34 @@ def scratch(obj: dict) -> None:
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     print("Logging in")
-
-    cacheManager = SessionCacheManager(config.auth_token_path)
+    auth: SessionManager | None = None
     try:
-        cache = cacheManager.load_cache()
-        auth: SessionManager = SessionManager(
-            server_config=cache.oidc_config, cache_manager=cacheManager
-        )
-        auth.get_access_token()
-        print("Cached token still valid, skipping flow")
-    except Exception:
-        client = BlueapiClient.from_config(config)
-        oidc_config = None
-        oidc_config = client.get_oidc_config()
-        auth: SessionManager = SessionManager(oidc_config, cache_manager=cacheManager)
-        try:
+        auth = SessionManager.from_cache(config.auth_token_path)
+        if auth:
+            access_token = auth.get_access_token()
+            assert access_token
+            print("Cached token still valid, skipping flow")
+        else:
+            client = BlueapiClient.from_config(config)
+            oidc_config = client.get_oidc_config()
+            auth = SessionManager(
+                oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
+            )
             auth.start_device_flow()
-        except Exception as e:
-            print(f"Failed to login: {e}")
+
+    except Exception as e:
+        print(f"Failed to login: {e}")
 
 
 @main.command(name="logout")
 @click.pass_obj
 def logout(obj: dict) -> None:
-    client: BlueapiClient = obj["client"]
     config: ApplicationConfig = obj["config"]
-    oidc_config = None
+    auth: SessionManager | None = None
     try:
-        oidc_config = client.get_oidc_config()
+        auth = SessionManager.from_cache(config.auth_token_path)
+        if auth:
+            auth.logout()
+            print("Logged out")
     except Exception as e:
         print(e)
-    if oidc_config:
-        auth: SessionManager = SessionManager(oidc_config, config.auth_token_path)
-        auth.logout()
-        print("Logged out")
-    else:
-        print("Please provide OIDC configuration to logout!")

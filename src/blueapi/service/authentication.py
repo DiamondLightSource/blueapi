@@ -9,6 +9,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, cast
 
+import jwt
 import requests
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
@@ -22,7 +23,7 @@ class CacheManager(ABC):
     @abstractmethod
     def save_cache(self, cache: Cache) -> None: ...
     @abstractmethod
-    def load_cache(cache) -> Cache: ...
+    def load_cache(cache) -> Cache | None: ...
     @abstractmethod
     def delete_cache(self) -> None: ...
 
@@ -43,11 +44,14 @@ class SessionCacheManager(CacheManager):
             token_file.write(cache_base64)
         os.chmod(self._file_path, 0o600)
 
-    def load_cache(self) -> Cache:
-        with open(self._file_path, "rb") as cache_file:
-            cache_base64: bytes = cache_file.read()
-            cache_json: str = base64.b64decode(cache_base64).decode("utf-8")
-            return TypeAdapter(Cache).validate_json(cache_json)
+    def load_cache(self) -> Cache | None:
+        try:
+            with open(self._file_path, "rb") as cache_file:
+                cache_base64: bytes = cache_file.read()
+                cache_json: str = base64.b64decode(cache_base64).decode("utf-8")
+                return TypeAdapter(Cache).validate_json(cache_json)
+        except Exception:
+            return None
 
     def delete_cache(self) -> None:
         Path(self._file_path).unlink(missing_ok=True)
@@ -71,24 +75,49 @@ class SessionManager:
         self._server_config = server_config
         self._cache_manager: CacheManager = cache_manager
 
-    def get_access_token(self) -> str:
+    @classmethod
+    def from_cache(cls, auth_token_path: Path | None) -> SessionManager | None:
+        cacheManager = SessionCacheManager(auth_token_path)
+        cache = cacheManager.load_cache()
+        if cache:
+            return SessionManager(
+                server_config=cache.oidc_config, cache_manager=cacheManager
+            )
+
+    def get_access_token(self) -> str | None:
         cache = self._cache_manager.load_cache()
-        print(cache)
-        return self.refresh_auth_token(cache.refresh_token)
+        if cache:
+            return self.refresh_auth_token(cache.refresh_token)
+
+    @cached_property
+    def client(self):
+        return jwt.PyJWKClient(self._server_config.jwks_uri)
+
+    def decode_jwt(self, json_web_token: str):
+        signing_key = self.client.get_signing_key_from_jwt(json_web_token)
+        return jwt.decode(
+            json_web_token,
+            signing_key.key,
+            algorithms=self._server_config.id_token_signing_alg_values_supported,
+            verify=True,
+            audience=self._server_config.client_audience,
+            issuer=self._server_config.issuer,
+        )
 
     def logout(self) -> None:
         try:
             cache = self._cache_manager.load_cache()
-            print(cache)
-            response = requests.get(
-                self._server_config.end_session_endpoint,
-                params={
-                    "id_token_hint": cache.id_token,
-                    "client_id": self._server_config.client_id,
-                },
-            )
-            print(response)
-            response.raise_for_status()
+            if cache:
+                response = requests.get(
+                    self._server_config.end_session_endpoint,
+                    params={
+                        "id_token_hint": cache.id_token,
+                        "client_id": self._server_config.client_id,
+                    },
+                )
+                response.raise_for_status()
+        except FileNotFoundError:
+            ...
         except Exception as e:
             print(e)
         finally:
@@ -111,6 +140,7 @@ class SessionManager:
                 oidc_config=self._server_config,
                 refresh_token=token["refresh_token"],
                 id_token=token["id_token"],
+                access_token=token["access_token"],
             ),
         )
         return token["access_token"]
@@ -140,7 +170,7 @@ class SessionManager:
             self._server_config.device_authorization_endpoint,
             data={
                 "client_id": self._server_config.client_id,
-                "scope": "openid offline_access",
+                "scope": "openid",
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -163,19 +193,36 @@ class SessionManager:
                 oidc_config=self._server_config,
                 refresh_token=auth_token_json["refresh_token"],
                 id_token=auth_token_json["id_token"],
+                access_token=auth_token_json["access_token"],
             )
         )
         print("Logged in and cached new token")
 
     def start_device_flow(self):
-        print("Problem with cached token, starting new session")
-        self._cache_manager.delete_cache()
-        self._do_device_flow()
+        cache = self._cache_manager.load_cache()
+        if cache:
+            try:
+                self.decode_jwt(cache.access_token)
+            except jwt.ExpiredSignatureError:
+                self.refresh_auth_token(cache.refresh_token)
+                print("Refreshed cached token, skipping flow")
+            except Exception:
+                print("Problem with cached token, starting new session")
+                self._cache_manager.delete_cache()
+                self._do_device_flow()
+        else:
+            self._do_device_flow()
 
 
 class JWTAuth(AuthBase):
     def __init__(self, session_manager: SessionManager | None):
-        self.token: str = session_manager.get_access_token() if session_manager else ""
+        access_token = ""
+        if session_manager:
+            try:
+                access_token = session_manager.get_access_token()
+            except Exception:
+                ...
+        self.token: str = access_token if access_token else ""
 
     def __call__(self, request):
         if self.token:

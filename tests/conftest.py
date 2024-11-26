@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
 
-from blueapi.config import ApplicationConfig, CliClientConfig
+from blueapi.config import ApplicationConfig
 
 
 @pytest.fixture(scope="function")

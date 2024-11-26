@@ -98,39 +98,32 @@ class OIDCConfig(BlueapiBaseModel):
         response.raise_for_status()
         return response.json()
 
-    @computed_field
     @cached_property
     def device_authorization_endpoint(self) -> str:
         return cast(
             str, self._config_from_oidc_url.get("device_authorization_endpoint")
         )
 
-    @computed_field
     @cached_property
     def token_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("token_endpoint"))
 
-    @computed_field
     @cached_property
     def issuer(self) -> str:
         return cast(str, self._config_from_oidc_url.get("issuer"))
 
-    @computed_field
     @cached_property
     def authorization_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("authorization_endpoint"))
 
-    @computed_field
     @cached_property
     def jwks_uri(self) -> str:
         return cast(str, self._config_from_oidc_url.get("jwks_uri"))
 
-    @computed_field
     @cached_property
     def end_session_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("end_session_endpoint"))
 
-    @computed_field
     @cached_property
     def id_token_signing_alg_values_supported(self) -> Sequence[str]:
         return cast(

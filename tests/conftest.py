@@ -172,6 +172,25 @@ def cached_invalid_token(
 
 
 @pytest.fixture
+def cached_invalid_refresh(
+    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
+) -> Path:
+    cache_path = tmp_path / CACHE_FILE
+    cache = Cache(
+        oidc_config=oidc_config,
+        access_token=expired_token["access_token"],
+        refresh_token="invalid_refresh",
+        id_token=expired_token["id_token"],
+    )
+    cache_json = cache.model_dump_json()
+    cache_base64 = base64.b64encode(cache_json.encode("utf-8"))
+
+    with open(cache_path, "xb") as cache_file:
+        cache_file.write(cache_base64)
+    return cache_path
+
+
+@pytest.fixture
 def cached_valid_token(
     tmp_path: Path, valid_token_with_jwt: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
@@ -275,6 +294,22 @@ def mock_authn_server(
             )
         ],
     )
+    # When asked to refresh with invalid refresh token return 400 BAD REQUEST
+    requests_mock.post(
+        oidc_well_known["token_endpoint"],
+        status=400,
+        match=[
+            responses.matchers.urlencoded_params_matcher(
+                {
+                    "client_id": oidc_config.client_id,
+                    "grant_type": "refresh_token",
+                    "refresh_token": "invalid_refresh",
+                },
+            )
+        ],
+    )
+    # When asked to logout using end_session_endpoint return 200 OK
+    requests_mock.get(oidc_well_known["end_session_endpoint"], json="")
 
     with mock_jwks_fetch, requests_mock:
         yield requests_mock

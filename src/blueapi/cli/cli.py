@@ -349,26 +349,8 @@ def scratch(obj: dict) -> None:
         raise KeyError("No scratch config supplied")
 
 
-def auth_wrapper(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            func(*args, **kwargs)
-        except ConnectionError:
-            print(
-                f"Failed to {func.__name__}: Unable to establish a connection"
-                "to the FastAPI server."
-            )
-        except Exception as e:
-            print(
-                f"Failed to {func.__name__}:An unexpected error occurred. Details: {e}."
-            )
-
-    return wrapper
-
-
 @main.command(name="login")
-@auth_wrapper
+@check_connection
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
@@ -394,7 +376,6 @@ def login(obj: dict) -> None:
 
 
 @main.command(name="logout")
-@auth_wrapper
 @click.pass_obj
 def logout(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
@@ -402,4 +383,3 @@ def logout(obj: dict) -> None:
     auth = SessionManager.from_cache(config.auth_token_path)
     if auth:
         auth.logout()
-        print("Logged out")

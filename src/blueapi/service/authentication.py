@@ -31,7 +31,7 @@ class CacheManager(ABC):
 
 class SessionCacheManager(CacheManager):
     def __init__(self, token_path: Path | None) -> None:
-        self._token_path: Path = token_path if token_path else self.get_xdg_cache_dir()
+        self._token_path: Path = token_path if token_path else self._get_xdg_cache_dir()
 
     @cached_property
     def _file_path(self) -> str:
@@ -57,7 +57,7 @@ class SessionCacheManager(CacheManager):
     def delete_cache(self) -> None:
         Path(self._file_path).unlink(missing_ok=True)
 
-    def get_xdg_cache_dir(self) -> Path:
+    def _get_xdg_cache_dir(self) -> Path:
         """
         Return the XDG cache directory.
         """
@@ -121,9 +121,10 @@ class SessionManager:
         )
 
     def logout(self) -> None:
-        try:
-            cache = self._cache_manager.load_cache()
-            if cache:
+        cache = self._cache_manager.load_cache()
+        if cache:
+            self.delete_cache()
+            try:
                 response = requests.get(
                     self._server_config.end_session_endpoint,
                     params={
@@ -132,12 +133,12 @@ class SessionManager:
                     },
                 )
                 response.raise_for_status()
-        except FileNotFoundError:
-            ...
-        except Exception as e:
-            print(e)
-        finally:
-            self.delete_cache()
+                print("Logged out")
+            except Exception as e:
+                print(
+                    "An unexpected error occurred while attempting "
+                    f"to log out from the server.{e}"
+                )
 
     def _refresh_auth_token(self, refresh_token: str) -> str:
         response = requests.post(

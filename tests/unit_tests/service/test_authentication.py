@@ -10,7 +10,11 @@ from starlette.status import HTTP_403_FORBIDDEN
 
 from blueapi.config import OIDCConfig
 from blueapi.service import main
-from blueapi.service.authentication import SessionCacheManager, SessionManager
+from blueapi.service.authentication import (
+    BLUEAPI_CACHE_LOCATION,
+    SessionCacheManager,
+    SessionManager,
+)
 
 
 @pytest.fixture
@@ -47,6 +51,22 @@ def test_refresh_auth_token(
 ):
     token = session_manager.get_valid_access_token()
     assert token == "new_token"
+
+
+def test_get_empty_token_if_no_cache(session_manager: SessionManager):
+    token = session_manager.get_valid_access_token()
+    assert token == ""
+
+
+def test_get_empty_token_if_refresh_fails(
+    mock_authn_server: responses.RequestsMock,
+    session_manager: SessionManager,
+    cached_invalid_refresh: Path,
+):
+    assert cached_invalid_refresh.exists()
+    token = session_manager.get_valid_access_token()
+    assert token == ""
+    assert not cached_invalid_refresh.exists()
 
 
 def test_poll_for_token(
@@ -93,3 +113,9 @@ def test_processes_valid_token(
 ):
     inner = main.verify_access_token(oidc_config)
     inner(access_token=valid_token_with_jwt["access_token"])
+
+
+def test_expanduser_fails():
+    with patch("os.path.expanduser", return_value=BLUEAPI_CACHE_LOCATION):
+        with pytest.raises(ValueError, match="Please specify auth_token_path"):
+            SessionCacheManager(token_path=None)

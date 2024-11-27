@@ -676,9 +676,23 @@ def test_logout_success(
     runner: CliRunner,
     config_with_auth: str,
     expired_cache: Path,
+    mock_authn_server: responses.RequestsMock,
 ):
     assert expired_cache.exists()
     result = runner.invoke(main, ["-c", config_with_auth, "logout"])
     assert "Logged out" in result.output
-    assert result.exit_code == 0
+    assert not expired_cache.exists()
+
+
+def test_local_cache_cleared_oidc_unavailable(
+    runner: CliRunner,
+    config_with_auth: str,
+    expired_cache: Path,
+):
+    assert expired_cache.exists()
+    result = runner.invoke(main, ["-c", config_with_auth, "logout"])
+    assert (
+        "An unexpected error occurred while attempting to log out from the server."
+        in result.output
+    )
     assert not expired_cache.exists()

@@ -1,4 +1,4 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
@@ -124,9 +124,9 @@ class OIDCConfig(BlueapiBaseModel):
         return cast(str, self._config_from_oidc_url.get("end_session_endpoint"))
 
     @cached_property
-    def id_token_signing_alg_values_supported(self) -> Sequence[str]:
+    def id_token_signing_alg_values_supported(self) -> list[str]:
         return cast(
-            Sequence[str],
+            list[str],
             self._config_from_oidc_url.get("id_token_signing_alg_values_supported"),
         )
 

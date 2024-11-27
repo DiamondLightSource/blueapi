@@ -189,7 +189,6 @@ def test_get_env(
     assert env.output == "initialized=True error_message=None\n"
 
 
-@pytest.mark.skip
 @responses.activate(assert_all_requests_are_fired=True)
 @patch("blueapi.client.client.time.sleep", return_value=None)
 def test_reset_env_client_behavior(
@@ -236,7 +235,6 @@ def test_reset_env_client_behavior(
                 """)
 
 
-@pytest.mark.skip
 @responses.activate
 @patch("blueapi.client.client.time.sleep", return_value=None)
 def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
@@ -283,7 +281,6 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     )  # Assuming your command exits successfully even on timeout for simplicity
 
 
-@pytest.mark.skip
 @responses.activate
 def test_env_reload_server_side_error(runner: CliRunner):
     # Setup mocked error response from the server

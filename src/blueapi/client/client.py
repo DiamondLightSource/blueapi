@@ -15,7 +15,7 @@ from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
-    OIDCConfigResponse,
+    OIDCConfig,
     PlanModel,
     PlanResponse,
     TaskResponse,
@@ -423,12 +423,12 @@ class BlueapiClient:
         )
 
     @start_as_current_span(TRACER)
-    def get_oidc_config(self) -> OIDCConfigResponse:
+    def get_oidc_config(self) -> OIDCConfig:
         """
         Get oidc config from the server
 
         Returns:
-            OIDCConfigResponse: Details of the oidc Config
+            OIDCConfig: Details of the oidc Config
         """
 
         return self._rest.get_oidc_config()

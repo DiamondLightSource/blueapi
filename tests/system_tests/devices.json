@@ -1,6 +1,38 @@
 {
     "devices": [
         {
+            "name": "current_det",
+            "protocols": [
+                "Checkable",
+                "HasHints",
+                "HasName",
+                "HasParent",
+                "Pausable",
+                "Readable",
+                "Stageable",
+                "Stoppable",
+                "Subscribable",
+                "Configurable",
+                "Triggerable"
+            ]
+        },
+        {
+            "name": "image_det",
+            "protocols": [
+                "Checkable",
+                "HasHints",
+                "HasName",
+                "HasParent",
+                "Pausable",
+                "Readable",
+                "Stageable",
+                "Stoppable",
+                "Subscribable",
+                "Configurable",
+                "Triggerable"
+            ]
+        },
+        {
             "name": "sample_pressure",
             "protocols": [
                 "Checkable",
@@ -18,17 +50,14 @@
             ]
         },
         {
-            "name": "x_err",
+            "name": "sample_temperature",
             "protocols": [
                 "Checkable",
                 "HasHints",
                 "HasName",
                 "HasParent",
                 "Movable",
-                "Pausable",
                 "Readable",
-                "Stageable",
-                "Stoppable",
                 "Subscribable",
                 "Configurable",
                 "Triggerable"
@@ -36,40 +65,6 @@
         },
         {
             "name": "theta",
-            "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
-            ]
-        },
-        {
-            "name": "z",
-            "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
-            ]
-        },
-        {
-            "name": "y",
             "protocols": [
                 "Checkable",
                 "HasHints",
@@ -103,46 +98,51 @@
             ]
         },
         {
-            "name": "current_det",
-            "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
-            ]
-        },
-        {
-            "name": "image_det",
-            "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
-            ]
-        },
-        {
-            "name": "sample_temperature",
+            "name": "x_err",
             "protocols": [
                 "Checkable",
                 "HasHints",
                 "HasName",
                 "HasParent",
                 "Movable",
+                "Pausable",
                 "Readable",
+                "Stageable",
+                "Stoppable",
+                "Subscribable",
+                "Configurable",
+                "Triggerable"
+            ]
+        },
+        {
+            "name": "y",
+            "protocols": [
+                "Checkable",
+                "HasHints",
+                "HasName",
+                "HasParent",
+                "Movable",
+                "Pausable",
+                "Readable",
+                "Stageable",
+                "Stoppable",
+                "Subscribable",
+                "Configurable",
+                "Triggerable"
+            ]
+        },
+        {
+            "name": "z",
+            "protocols": [
+                "Checkable",
+                "HasHints",
+                "HasName",
+                "HasParent",
+                "Movable",
+                "Pausable",
+                "Readable",
+                "Stageable",
+                "Stoppable",
                 "Subscribable",
                 "Configurable",
                 "Triggerable"

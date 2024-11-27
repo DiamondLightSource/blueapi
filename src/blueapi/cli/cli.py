@@ -372,7 +372,6 @@ def auth_wrapper(func):
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    print("Logging in")
     auth: SessionManager | None = None
     auth = SessionManager.from_cache(config.auth_token_path)
     if auth:
@@ -380,15 +379,17 @@ def login(obj: dict) -> None:
         if not access_token:
             print("Problem with cached token, starting new session")
             auth.delete_cache()
+            print("Logging in")
             auth.start_device_flow()
         else:
-            print("Logged In")
+            print("Logged in")
     else:
         client = BlueapiClient.from_config(config)
         oidc_config = client.get_oidc_config()
         auth = SessionManager(
             oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
         )
+        print("Logging in")
         auth.start_device_flow()
 
 

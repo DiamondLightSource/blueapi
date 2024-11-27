@@ -14,7 +14,8 @@ import requests
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
 
-from blueapi.service.model import Cache, OIDCConfigResponse
+from blueapi.config import OIDCConfig
+from blueapi.service.model import Cache
 
 BLUEAPI_CACHE_LOCATION = "~/.cache/blueapi_cache"
 
@@ -69,9 +70,7 @@ class SessionCacheManager(CacheManager):
 
 
 class SessionManager:
-    def __init__(
-        self, server_config: OIDCConfigResponse, cache_manager: CacheManager
-    ) -> None:
+    def __init__(self, server_config: OIDCConfig, cache_manager: CacheManager) -> None:
         self._server_config = server_config
         self._cache_manager: CacheManager = cache_manager
 
@@ -101,7 +100,7 @@ class SessionManager:
                 self.decode_jwt(cache.access_token)
                 return cache.access_token
             except jwt.ExpiredSignatureError:
-                return self.refresh_auth_token(cache.refresh_token)
+                return self._refresh_auth_token(cache.refresh_token)
             except Exception:
                 return ""
         return ""
@@ -140,7 +139,7 @@ class SessionManager:
         finally:
             self.delete_cache()
 
-    def refresh_auth_token(self, refresh_token: str) -> str:
+    def _refresh_auth_token(self, refresh_token: str) -> str:
         response = requests.post(
             self._server_config.token_endpoint,
             data={
@@ -190,7 +189,7 @@ class SessionManager:
             self._server_config.device_authorization_endpoint,
             data={
                 "client_id": self._server_config.client_id,
-                "scope": "openid",
+                "scope": "openid offline_access",
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )

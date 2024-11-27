@@ -11,7 +11,7 @@ from blueapi.service.authentication import (
     SessionCacheManager,
     SessionManager,
 )
-from blueapi.service.model import OIDCConfigResponse, PlanModel, PlanResponse
+from blueapi.service.model import OIDCConfig, PlanModel, PlanResponse
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def rest() -> BlueapiRestClient:
 
 
 @pytest.fixture
-def rest_with_auth(oidc_config: OIDCConfigResponse, tmp_path) -> BlueapiRestClient:
+def rest_with_auth(oidc_config: OIDCConfig, tmp_path) -> BlueapiRestClient:
     return BlueapiRestClient(
         session_manager=SessionManager(
             server_config=oidc_config,

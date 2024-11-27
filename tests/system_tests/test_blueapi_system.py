@@ -43,37 +43,25 @@ _DATA_PATH = Path(__file__).parent
 
 
 @pytest.fixture
-def client_without_auth() -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig())
+def client_without_auth(tmp_path) -> BlueapiClient:
+    return BlueapiClient.from_config(config=ApplicationConfig(auth_token_path=tmp_path))
 
 
 @pytest.fixture
-def oidc_config() -> OIDCConfig:
-    return OIDCConfig(
-        well_known_url="https://example_auth/realms/master/.well-known/openid-configuration",
-        client_id="blueapi-cli",
-    )
-
-
-@pytest.fixture
-def client_with_stomp(oidc_config: OIDCConfig) -> BlueapiClient:
+def client_with_stomp() -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
             stomp=StompConfig(
                 auth=BasicAuthentication(username="guest", password="guest")  # type: ignore
-            ),
-            oidc=oidc_config,
+            )
         )
     )
 
 
+# This client will have auth enabled if it finds cached valid token
 @pytest.fixture
-def client(oidc_config: OIDCConfig) -> BlueapiClient:
-    return BlueapiClient.from_config(
-        config=ApplicationConfig(
-            oidc=oidc_config,
-        )
-    )
+def client() -> BlueapiClient:
+    return BlueapiClient.from_config(config=ApplicationConfig())
 
 
 @pytest.fixture
@@ -96,7 +84,8 @@ def blueapi_client_get_methods() -> list[str]:
     # This will currently return
     # ['get_plans', 'get_devices', 'get_state', 'resume', 'get_all_tasks',
     # 'get_active_task', 'stop', 'get_environment']
-    return [
+    to_remove = ["resume", "stop", "get_oidc_config"]
+    get_methods = [
         method
         for method in BlueapiClient.__dict__
         if callable(getattr(BlueapiClient, method))
@@ -104,6 +93,7 @@ def blueapi_client_get_methods() -> list[str]:
         and len(inspect.signature(getattr(BlueapiClient, method)).parameters) == 1
         and "self" in inspect.signature(getattr(BlueapiClient, method)).parameters
     ]
+    return [method for method in get_methods if method not in to_remove]
 
 
 @pytest.fixture(autouse=True)
@@ -113,13 +103,19 @@ def clean_existing_tasks(client: BlueapiClient):
     yield
 
 
-@pytest.mark.skip()
 def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
 ):
     for get_method in blueapi_client_get_methods:
         with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
             getattr(client_without_auth, get_method)()
+
+
+def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
+    assert client_without_auth.get_oidc_config() == OIDCConfig(
+        well_known_url="https://example.com/realms/master/.well-known/openid-configuration",
+        client_id="blueapi-cli",
+    )
 
 
 def test_get_plans(client: BlueapiClient, expected_plans: PlanResponse):

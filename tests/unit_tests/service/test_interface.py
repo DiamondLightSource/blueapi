@@ -8,7 +8,7 @@ from bluesky_stomp.messaging import StompClient
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
-from blueapi.config import ApplicationConfig, StompConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
@@ -282,6 +282,11 @@ def test_get_task_by_id(context_mock: MagicMock):
         is_pending=True,
         errors=[],
     )
+
+
+def test_get_oidc_config(oidc_config: OIDCConfig):
+    interface.set_config(ApplicationConfig(oidc=oidc_config))
+    assert interface.get_oidc_config() == oidc_config
 
 
 def test_stomp_config(mock_stomp_client: StompClient):

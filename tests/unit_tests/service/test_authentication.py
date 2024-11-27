@@ -11,7 +11,6 @@ from starlette.status import HTTP_403_FORBIDDEN
 from blueapi.config import OIDCConfig
 from blueapi.service import main
 from blueapi.service.authentication import SessionCacheManager, SessionManager
-from blueapi.service.model import OIDCConfigResponse
 
 
 @pytest.fixture
@@ -21,7 +20,7 @@ def auth_token_path(tmp_path) -> Path:
 
 @pytest.fixture
 def session_manager(
-    oidc_config: OIDCConfigResponse,
+    oidc_config: OIDCConfig,
     auth_token_path,
     mock_authn_server: responses.RequestsMock,
 ) -> SessionManager:
@@ -47,10 +46,7 @@ def test_refresh_auth_token(
     expired_cache: Path,
 ):
     token = session_manager.get_valid_access_token()
-    assert token == ""
-
-    token = session_manager.refresh_auth_token("refresh_token")
-    assert token and token == "new_token"
+    assert token == "new_token"
 
 
 def test_poll_for_token(

@@ -605,3 +605,9 @@ def test_get_without_authentication(
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {}
+
+
+def test_oidc_config_not_found_when_auth_is_disabled(client: TestClient):
+    response = client.get("/oidc/config")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Not Found"}

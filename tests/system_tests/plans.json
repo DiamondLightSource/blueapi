@@ -1,9 +1,38 @@
 {
     "plans": [
         {
+            "name": "move",
+            "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target positions\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "moves": {
+                        "title": "Moves",
+                        "type": "object"
+                    },
+                    "group": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Group"
+                    }
+                },
+                "required": [
+                    "moves"
+                ],
+                "title": "move",
+                "type": "object"
+            }
+        },
+        {
             "name": "count",
             "description": "Reads from a number of devices.\n    Wraps bluesky.plans.count(det, num, delay, md=metadata) exposing only serializable\n    parameters and metadata.",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "detectors": {
@@ -52,38 +81,9 @@
             }
         },
         {
-            "name": "move",
-            "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target positions\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "moves": {
-                        "title": "Moves",
-                        "type": "object"
-                    },
-                    "group": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Group"
-                    }
-                },
-                "required": [
-                    "moves"
-                ],
-                "title": "move",
-                "type": "object"
-            }
-        },
-        {
             "name": "stp_snapshot",
             "description": "\n    Moves devices for pressure and temperature (defaults fetched from the context)\n    and captures a single frame from a collection of devices\n\n    Args:\n        detectors (List[Readable]): A list of devices to read while the sample is at STP\n        temperature (Optional[Movable]): A device controlling temperature of the sample,\n            defaults to fetching a device name \"sample_temperature\" from the context\n        pressure (Optional[Movable]): A device controlling pressure on the sample,\n            defaults to fetching a device name \"sample_pressure\" from the context\n    Returns:\n        MsgGenerator: Plan\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "detectors": {
@@ -112,7 +112,7 @@
         {
             "name": "spec_scan",
             "description": "Generic plan for reading `detectors` at every point of a ScanSpec `Spec`.\n    A `Spec` is an N-dimensional path.\n    ",
-            "schema": {
+            "parameter_schema": {
                 "$defs": {
                     "Circle": {
                         "additionalProperties": false,
@@ -138,16 +138,13 @@
                             },
                             "radius": {
                                 "description": "Radius of the circle",
-                                "exclusiveMinimum": 0,
+                                "exclusiveMinimum": 0.0,
                                 "title": "Radius",
                                 "type": "number"
                             },
                             "type": {
                                 "const": "Circle",
                                 "default": "Circle",
-                                "enum": [
-                                    "Circle"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -177,9 +174,6 @@
                             "type": {
                                 "const": "CombinationOf",
                                 "default": "CombinationOf",
-                                "enum": [
-                                    "CombinationOf"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -218,9 +212,6 @@
                             "type": {
                                 "const": "Concat",
                                 "default": "Concat",
-                                "enum": [
-                                    "Concat"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -247,9 +238,6 @@
                             "type": {
                                 "const": "DifferenceOf",
                                 "default": "DifferenceOf",
-                                "enum": [
-                                    "DifferenceOf"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -285,18 +273,18 @@
                             },
                             "x_radius": {
                                 "description": "The radius along the x axis of the ellipse",
-                                "exclusiveMinimum": 0,
+                                "exclusiveMinimum": 0.0,
                                 "title": "X Radius",
                                 "type": "number"
                             },
                             "y_radius": {
                                 "description": "The radius along the y axis of the ellipse",
-                                "exclusiveMinimum": 0,
+                                "exclusiveMinimum": 0.0,
                                 "title": "Y Radius",
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0,
+                                "default": 0.0,
                                 "description": "The angle of the ellipse (degrees)",
                                 "title": "Angle",
                                 "type": "number"
@@ -304,9 +292,6 @@
                             "type": {
                                 "const": "Ellipse",
                                 "default": "Ellipse",
-                                "enum": [
-                                    "Ellipse"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -337,9 +322,6 @@
                             "type": {
                                 "const": "IntersectionOf",
                                 "default": "IntersectionOf",
-                                "enum": [
-                                    "IntersectionOf"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -378,9 +360,6 @@
                             "type": {
                                 "const": "Line",
                                 "default": "Line",
-                                "enum": [
-                                    "Line"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -415,9 +394,6 @@
                             "type": {
                                 "const": "Mask",
                                 "default": "Mask",
-                                "enum": [
-                                    "Mask"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -462,9 +438,6 @@
                             "type": {
                                 "const": "Polygon",
                                 "default": "Polygon",
-                                "enum": [
-                                    "Polygon"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -493,9 +466,6 @@
                             "type": {
                                 "const": "Product",
                                 "default": "Product",
-                                "enum": [
-                                    "Product"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -528,9 +498,6 @@
                             "type": {
                                 "const": "Range",
                                 "default": "Range",
-                                "enum": [
-                                    "Range"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -576,7 +543,7 @@
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0,
+                                "default": 0.0,
                                 "description": "Clockwise rotation angle of the rectangle",
                                 "title": "Angle",
                                 "type": "number"
@@ -584,9 +551,6 @@
                             "type": {
                                 "const": "Rectangle",
                                 "default": "Rectangle",
-                                "enum": [
-                                    "Rectangle"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -670,9 +634,6 @@
                             "type": {
                                 "const": "Repeat",
                                 "default": "Repeat",
-                                "enum": [
-                                    "Repeat"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -694,9 +655,6 @@
                             "type": {
                                 "const": "Snake",
                                 "default": "Snake",
-                                "enum": [
-                                    "Snake"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -795,7 +753,7 @@
                                 "type": "integer"
                             },
                             "rotate": {
-                                "default": 0,
+                                "default": 0.0,
                                 "description": "How much to rotate the angle of the spiral",
                                 "title": "Rotate",
                                 "type": "number"
@@ -803,9 +761,6 @@
                             "type": {
                                 "const": "Spiral",
                                 "default": "Spiral",
-                                "enum": [
-                                    "Spiral"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -839,9 +794,6 @@
                             "type": {
                                 "const": "Squash",
                                 "default": "Squash",
-                                "enum": [
-                                    "Squash"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -875,9 +827,6 @@
                             "type": {
                                 "const": "Static",
                                 "default": "Static",
-                                "enum": [
-                                    "Static"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -904,9 +853,6 @@
                             "type": {
                                 "const": "SymmetricDifferenceOf",
                                 "default": "SymmetricDifferenceOf",
-                                "enum": [
-                                    "SymmetricDifferenceOf"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -933,9 +879,6 @@
                             "type": {
                                 "const": "UnionOf",
                                 "default": "UnionOf",
-                                "enum": [
-                                    "UnionOf"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -962,9 +905,6 @@
                             "type": {
                                 "const": "Zip",
                                 "default": "Zip",
-                                "enum": [
-                                    "Zip"
-                                ],
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -1013,7 +953,7 @@
         {
             "name": "set_absolute",
             "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -1050,7 +990,7 @@
         {
             "name": "set_relative",
             "description": "\n    Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -1087,7 +1027,7 @@
         {
             "name": "move_relative",
             "description": "\n    Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target deltas\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
@@ -1116,7 +1056,7 @@
         {
             "name": "sleep",
             "description": "\n    Suspend all action for a given time, wrapper for `bp.sleep`\n\n    Args:\n        time (float): Time to wait in seconds\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "time": {
@@ -1134,7 +1074,7 @@
         {
             "name": "wait",
             "description": "\n    Wait for a group status to complete, wrapper for `bp.wait`.\n    Does not expose move_on, as when used as a stub will not fail on Timeout.\n\n    Args:\n        group (Group | None, optional): The name of the group to wait for, defaults\n                                           to None, in which case waits for all\n                                           groups that have not yet been awaited.\n        timeout (float | None, default=None): a timeout in seconds\n\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "schema": {
+            "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
                     "group": {

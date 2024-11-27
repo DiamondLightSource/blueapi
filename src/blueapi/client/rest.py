@@ -15,7 +15,7 @@ from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
-    OIDCConfigResponse,
+    OIDCConfig,
     PlanModel,
     PlanResponse,
     TaskResponse,
@@ -132,8 +132,8 @@ class BlueapiRestClient:
             "/environment", EnvironmentResponse, method="DELETE"
         )
 
-    def get_oidc_config(self) -> OIDCConfigResponse:
-        return self._request_and_deserialize("/oidc/config", OIDCConfigResponse)
+    def get_oidc_config(self) -> OIDCConfig:
+        return self._request_and_deserialize("/oidc/config", OIDCConfig)
 
     @start_as_current_span(TRACER, "method", "data", "suffix")
     def _request_and_deserialize(

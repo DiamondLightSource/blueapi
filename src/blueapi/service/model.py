@@ -152,14 +152,12 @@ class EnvironmentResponse(BlueapiBaseModel):
     )
 
 
-class OIDCConfigResponse(OIDCConfig):
-    """
-    Configuration for OIDC
-    """
-
-
 class Cache(BlueapiBaseModel):
-    oidc_config: OIDCConfigResponse
+    """
+    Represents the cached data required for managing authentication.
+    """
+
+    oidc_config: OIDCConfig
     access_token: str
     refresh_token: str
     id_token: str

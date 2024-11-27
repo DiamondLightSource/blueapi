@@ -18,8 +18,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
 
-from blueapi.config import ApplicationConfig
-from blueapi.service.model import Cache, OIDCConfigResponse
+from blueapi.config import ApplicationConfig, OIDCConfig
+from blueapi.service.model import Cache
 
 
 @pytest.fixture(scope="function")
@@ -60,13 +60,18 @@ def oidc_url() -> str:
 
 
 @pytest.fixture
-def oidc_config(oidc_url: str) -> OIDCConfigResponse:
-    return OIDCConfigResponse(well_known_url=oidc_url, client_id="blueapi-cli")
+def oidc_config(oidc_url: str) -> OIDCConfig:
+    return OIDCConfig(
+        well_known_url=oidc_url, client_id="blueapi-cli", client_audience="blueapi"
+    )
+
+
+CACHE_FILE = "blueapi_cache"
 
 
 @pytest.fixture
 def config_with_auth(tmp_path: Path) -> str:
-    config = ApplicationConfig(auth_token_path=tmp_path / "blueapi_cache")
+    config = ApplicationConfig(auth_token_path=tmp_path / CACHE_FILE)
     config_path = tmp_path / "auth_config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
@@ -129,12 +134,9 @@ def _make_token(
     return response
 
 
-CACHE_FILE = "blueapi_cache"
-
-
 @pytest.fixture
 def expired_cache(
-    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfigResponse
+    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
     cache_path = tmp_path / CACHE_FILE
     cache = Cache(
@@ -152,7 +154,7 @@ def expired_cache(
 
 @pytest.fixture
 def cached_invalid_token(
-    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfigResponse
+    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
     cache_path = tmp_path / CACHE_FILE
     cache = Cache(
@@ -171,14 +173,14 @@ def cached_invalid_token(
 
 @pytest.fixture
 def cached_valid_token(
-    tmp_path: Path, valid_token: dict[str, Any], oidc_config: OIDCConfigResponse
+    tmp_path: Path, valid_token_with_jwt: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
     cache_path = tmp_path / CACHE_FILE
     cache = Cache(
         oidc_config=oidc_config,
-        access_token=valid_token["access_token"],
-        refresh_token=valid_token["refresh_token"],
-        id_token=valid_token["id_token"],
+        access_token=valid_token_with_jwt["access_token"],
+        refresh_token=valid_token_with_jwt["refresh_token"],
+        id_token=valid_token_with_jwt["id_token"],
     )
     cache_json = cache.model_dump_json()
     cache_base64 = base64.b64encode(cache_json.encode("utf-8"))
@@ -190,7 +192,9 @@ def cached_valid_token(
 
 @pytest.fixture
 def expired_token(rsa_private_key: str) -> dict[str, Any]:
-    return _make_token("expired_token", -3600, -1800, rsa_private_key)
+    return _make_token(
+        "expired_token", -3600, -1800, rsa_private_key, jwt_access_token=True
+    )
 
 
 @pytest.fixture
@@ -219,7 +223,7 @@ def device_code() -> str:
 def mock_authn_server(
     oidc_url: str,
     oidc_well_known: dict[str, Any],
-    oidc_config: OIDCConfigResponse,
+    oidc_config: OIDCConfig,
     valid_token: dict[str, Any],
     new_token: dict[str, Any],
     device_code: str,
@@ -228,7 +232,7 @@ def mock_authn_server(
     requests_mock = responses.RequestsMock(assert_all_requests_are_fired=False)
     requests_mock.get(
         "http://localhost:8000/oidc/config",
-        json=oidc_config.model_dump_json(),
+        json=oidc_config.model_dump(),
     )
     # Fetch well-known OIDC flow URLs from server
     requests_mock.get(oidc_url, json=oidc_well_known)

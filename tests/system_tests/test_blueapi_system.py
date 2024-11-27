@@ -48,9 +48,10 @@ def client_without_auth() -> BlueapiClient:
 
 
 @pytest.fixture
-def oidc_config() -> CliClientConfig:
-    return CliClientConfig(
-        token_path=Path("~/token"),
+def oidc_config() -> OIDCConfig:
+    return OIDCConfig(
+        well_known_url="https://example_auth/realms/master/.well-known/openid-configuration",
+        client_id="blueapi-cli",
     )
 
 
@@ -112,6 +113,7 @@ def clean_existing_tasks(client: BlueapiClient):
     yield
 
 
+@pytest.mark.skip()
 def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
 ):

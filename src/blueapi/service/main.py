@@ -171,7 +171,7 @@ async def delete_environment(
 @auth_router.get("/oidc/config", tags=["auth"])
 @start_as_current_span(TRACER)
 def get_oidc_config(runner: WorkerDispatcher = Depends(_runner)) -> OIDCConfig | None:
-    """Get the State of the Worker"""
+    """Retrieve the OpenID Connect (OIDC) configuration for the server."""
     return runner.run(interface.get_oidc_config)
 
 

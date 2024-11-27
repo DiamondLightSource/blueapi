@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import json
 import time
 from pathlib import Path
 from typing import Any, cast
@@ -19,7 +18,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
 
-from blueapi.config import ApplicationConfig, OIDCConfig
+from blueapi.config import ApplicationConfig
+from blueapi.service.model import Cache, OIDCConfigResponse
 
 
 @pytest.fixture(scope="function")
@@ -60,8 +60,13 @@ def oidc_url() -> str:
 
 
 @pytest.fixture
+def oidc_config(oidc_url: str) -> OIDCConfigResponse:
+    return OIDCConfigResponse(well_known_url=oidc_url, client_id="blueapi-cli")
+
+
+@pytest.fixture
 def config_with_auth(tmp_path: Path) -> str:
-    config = ApplicationConfig(auth_token_path=tmp_path)
+    config = ApplicationConfig(auth_token_path=tmp_path / "blueapi_cache")
     config_path = tmp_path / "auth_config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
@@ -124,30 +129,63 @@ def _make_token(
     return response
 
 
-@pytest.fixture
-def cached_expired_token(tmp_path: Path, expired_token: dict[str, Any]) -> Path:
-    token_path = tmp_path / "token"
-    token_json = json.dumps(expired_token)
-    with open(token_path, "w") as token_file:
-        token_file.write(base64.b64encode(token_json.encode("utf-8")).decode("utf-8"))
-    return token_path
+CACHE_FILE = "blueapi_cache"
 
 
 @pytest.fixture
-def cached_invalid_token(tmp_path: Path, expired_token: dict[str, Any]) -> Path:
-    token_path = tmp_path / "token"
-    with open(token_path, "w") as token_file:
-        token_file.write("Invalid Token")
-    return token_path
+def expired_cache(
+    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfigResponse
+) -> Path:
+    cache_path = tmp_path / CACHE_FILE
+    cache = Cache(
+        oidc_config=oidc_config,
+        access_token=expired_token["access_token"],
+        refresh_token=expired_token["refresh_token"],
+        id_token=expired_token["id_token"],
+    )
+    cache_json = cache.model_dump_json()
+    cache_base64 = base64.b64encode(cache_json.encode("utf-8"))
+    with open(cache_path, "xb") as cache_file:
+        cache_file.write(cache_base64)
+    return cache_path
 
 
 @pytest.fixture
-def cached_valid_token(tmp_path: Path, valid_token: dict[str, Any]) -> Path:
-    token_path = tmp_path / "token"
-    token_json = json.dumps(valid_token)
-    with open(token_path, "w") as token_file:
-        token_file.write(base64.b64encode(token_json.encode("utf-8")).decode("utf-8"))
-    return token_path
+def cached_invalid_token(
+    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfigResponse
+) -> Path:
+    cache_path = tmp_path / CACHE_FILE
+    cache = Cache(
+        oidc_config=oidc_config,
+        access_token="Invalid Token",
+        refresh_token=expired_token["refresh_token"],
+        id_token=expired_token["id_token"],
+    )
+    cache_json = cache.model_dump_json()
+    cache_base64 = base64.b64encode(cache_json.encode("utf-8"))
+
+    with open(cache_path, "xb") as cache_file:
+        cache_file.write(cache_base64)
+    return cache_path
+
+
+@pytest.fixture
+def cached_valid_token(
+    tmp_path: Path, valid_token: dict[str, Any], oidc_config: OIDCConfigResponse
+) -> Path:
+    cache_path = tmp_path / CACHE_FILE
+    cache = Cache(
+        oidc_config=oidc_config,
+        access_token=valid_token["access_token"],
+        refresh_token=valid_token["refresh_token"],
+        id_token=valid_token["id_token"],
+    )
+    cache_json = cache.model_dump_json()
+    cache_base64 = base64.b64encode(cache_json.encode("utf-8"))
+
+    with open(cache_path, "xb") as cache_file:
+        cache_file.write(cache_base64)
+    return cache_path
 
 
 @pytest.fixture
@@ -181,13 +219,17 @@ def device_code() -> str:
 def mock_authn_server(
     oidc_url: str,
     oidc_well_known: dict[str, Any],
-    oidc_config: OIDCConfig,
+    oidc_config: OIDCConfigResponse,
     valid_token: dict[str, Any],
     new_token: dict[str, Any],
     device_code: str,
     mock_jwks_fetch,
 ):
     requests_mock = responses.RequestsMock(assert_all_requests_are_fired=False)
+    requests_mock.get(
+        "http://localhost:8000/oidc/config",
+        json=oidc_config.model_dump_json(),
+    )
     # Fetch well-known OIDC flow URLs from server
     requests_mock.get(oidc_url, json=oidc_well_known)
     # When device flow begins, return a device_code
@@ -201,34 +243,34 @@ def mock_authn_server(
         },
     )
 
-    # # When polled with device_code return token
-    # requests_mock.post(
-    #     oidc_well_known["token_endpoint"],
-    #     json=valid_token,
-    #     match=[
-    #         responses.matchers.urlencoded_params_matcher(
-    #             {
-    #                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-    #                 "device_code": device_code,
-    #                 "client_id": oidc_config.client_id,
-    #             }
-    #         ),
-    #     ],
-    # )
-    # # When asked to refresh with refresh_token return refreshed token
-    # requests_mock.post(
-    #     oidc_well_known["token_endpoint"],
-    #     json=new_token,
-    #     match=[
-    #         responses.matchers.urlencoded_params_matcher(
-    #             {
-    #                 "client_id": oidc_config.client_id,
-    #                 "grant_type": "refresh_token",
-    #                 "refresh_token": "refresh_token",
-    #             },
-    #         )
-    #     ],
-    # )
+    # When polled with device_code return token
+    requests_mock.post(
+        oidc_well_known["token_endpoint"],
+        json=valid_token,
+        match=[
+            responses.matchers.urlencoded_params_matcher(
+                {
+                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                    "device_code": device_code,
+                    "client_id": oidc_config.client_id,
+                }
+            ),
+        ],
+    )
+    # When asked to refresh with refresh_token return refreshed token
+    requests_mock.post(
+        oidc_well_known["token_endpoint"],
+        json=new_token,
+        match=[
+            responses.matchers.urlencoded_params_matcher(
+                {
+                    "client_id": oidc_config.client_id,
+                    "grant_type": "refresh_token",
+                    "refresh_token": "refresh_token",
+                },
+            )
+        ],
+    )
 
     with mock_jwks_fetch, requests_mock:
         yield requests_mock

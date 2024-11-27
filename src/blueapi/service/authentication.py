@@ -138,7 +138,7 @@ class SessionManager:
         except Exception as e:
             print(e)
         finally:
-            self._cache_manager.delete_cache()
+            self.delete_cache()
 
     def refresh_auth_token(self, refresh_token: str) -> str:
         response = requests.post(
@@ -150,17 +150,20 @@ class SessionManager:
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
-        response.raise_for_status()
-        token = response.json()
-        self._cache_manager.save_cache(
-            Cache(
-                oidc_config=self._server_config,
-                refresh_token=token["refresh_token"],
-                id_token=token["id_token"],
-                access_token=token["access_token"],
-            ),
-        )
-        return token["access_token"]
+        if response.status_code == HTTPStatus.OK:
+            token = response.json()
+            self._cache_manager.save_cache(
+                Cache(
+                    oidc_config=self._server_config,
+                    refresh_token=token["refresh_token"],
+                    id_token=token["id_token"],
+                    access_token=token["access_token"],
+                ),
+            )
+            return token["access_token"]
+        else:
+            self.delete_cache()
+            return ""
 
     def poll_for_token(
         self, device_code: str, polling_interval: float, expires_in: float

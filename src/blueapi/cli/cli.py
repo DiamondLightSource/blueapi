@@ -359,10 +359,10 @@ def auth_wrapper(func):
                 f"Failed to {func.__name__}: Unable to establish a connection"
                 "to the FastAPI server."
             )
-        except OSError as e:
-            print(f"Failed to {func.__name__}: due to OSError {e}")
         except Exception as e:
-            print(f"Failed to {func.__name__}: {e}")
+            print(
+                f"Failed to {func.__name__}:An unexpected error occurred. Details: {e}."
+            )
 
     return wrapper
 

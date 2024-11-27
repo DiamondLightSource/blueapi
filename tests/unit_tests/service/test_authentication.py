@@ -8,37 +8,49 @@ import pytest
 import responses
 from starlette.status import HTTP_403_FORBIDDEN
 
-from blueapi.config import CliClientConfig, OIDCConfig
+from blueapi.config import OIDCConfig
 from blueapi.service import main
-from blueapi.service.authentication import SessionManager
+from blueapi.service.authentication import SessionCacheManager, SessionManager
+from blueapi.service.model import OIDCConfigResponse
 
 
 @pytest.fixture
-def session_manager(oidc_config: OIDCConfig) -> SessionManager:
-    return SessionManager(oidc_config)
+def auth_token_path(tmp_path) -> Path:
+    return tmp_path / "blueapi_cache"
+
+
+@pytest.fixture
+def session_manager(
+    oidc_config: OIDCConfigResponse,
+    auth_token_path,
+    mock_authn_server: responses.RequestsMock,
+) -> SessionManager:
+    return SessionManager(
+        server_config=oidc_config, cache_manager=SessionCacheManager(auth_token_path)
+    )
 
 
 def test_logout(
     session_manager: SessionManager,
-    oidc_config: CliClientConfig,
+    oidc_config: OIDCConfig,
     cached_valid_token: Path,
+    auth_token_path: Path,
 ):
-    assert os.path.exists(oidc_config.token_path)
+    assert os.path.exists(auth_token_path)
     session_manager.logout()
-    assert not os.path.exists(oidc_config.token_path)
+    assert not os.path.exists(auth_token_path)
 
 
 def test_refresh_auth_token(
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
-    cached_expired_token: Path,
+    expired_cache: Path,
 ):
-    token = session_manager.get_access_token()
-    assert token and token["access_token"] == "expired_token"
+    token = session_manager.get_valid_access_token()
+    assert token == ""
 
-    session_manager.refresh_auth_token()
-    token = session_manager.get_access_token()
-    assert token and token["access_token"] == "new_token"
+    token = session_manager.refresh_auth_token("refresh_token")
+    assert token and token == "new_token"
 
 
 def test_poll_for_token(

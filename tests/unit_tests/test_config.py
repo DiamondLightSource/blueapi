@@ -253,6 +253,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "port": 61613,
                 "auth": {"username": "guest", "password": "guest"},
             },
+            "auth_token_path": None,
             "env": {
                 "events": {
                     "broadcast_status_events": True,
@@ -290,6 +291,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "port": 61613,
                 "auth": {"username": "guest", "password": "guest"},
             },
+            "auth_token_path": None,
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},

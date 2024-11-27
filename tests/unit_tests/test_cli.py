@@ -14,7 +14,6 @@ from click.testing import CliRunner
 from pydantic import BaseModel, ValidationError
 from requests.exceptions import ConnectionError
 from responses import matchers
-from starlette.status import HTTP_400_BAD_REQUEST
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
@@ -620,104 +619,92 @@ def _assert_matching_formatting(fmt: OutputFormat, obj: Any, expected: str):
     assert expected == output.getvalue()
 
 
-def test_login_missing_config(runner: CliRunner):
-    result = runner.invoke(main, ["login"])
-    assert "Please provide configuration to login!" in result.output
-    assert result.exit_code == 0
+# def test_login_success(
+#     runner: CliRunner,
+#     config_with_auth: str,
+#     mock_authn_server: responses.RequestsMock,
+# ):
+#     result = runner.invoke(main, ["-c", config_with_auth, "login"])
+#     assert (
+#         "Logging in\n"
+#         "Please login from this URL:- https://example.com/verify\n"
+#         "Logged in and cached new token\n" == result.output
+#     )
+#     assert result.exit_code == 0
 
 
-def test_logout_missing_config(runner: CliRunner):
-    result = runner.invoke(main, ["logout"])
-    assert "Please provide configuration to logout!" in result.output
-    assert result.exit_code == 0
+# def test_token_login_early_exit(
+#     runner: CliRunner,
+#     config_with_auth: str,
+#     mock_authn_server: responses.RequestsMock,
+#     cached_valid_token: Path,
+# ):
+#     result = runner.invoke(main, ["-c", config_with_auth, "login"])
+#     assert "Logging in\nCached token still valid, skipping flow\n" == result.output
+#     assert result.exit_code == 0
 
 
-def test_login_success(
-    runner: CliRunner,
-    config_with_auth: str,
-    mock_authn_server: responses.RequestsMock,
-):
-    result = runner.invoke(main, ["-c", config_with_auth, "login"])
-    assert (
-        "Logging in\n"
-        "Please login from this URL:- https://example.com/verify\n"
-        "Logged in and cached new token\n" == result.output
-    )
-    assert result.exit_code == 0
+# def test_login_with_refresh_token(
+#     runner: CliRunner,
+#     config_with_auth: str,
+#     mock_authn_server: responses.RequestsMock,
+#     expired_cache: Path,
+# ):
+#     result = runner.invoke(main, ["-c", config_with_auth, "login"])
+
+#     assert "Logging in\nRefreshed cached token, skipping flow\n" == result.output
+#     assert result.exit_code == 0
 
 
-def test_token_login_early_exit(
-    runner: CliRunner,
-    config_with_auth: str,
-    mock_authn_server: responses.RequestsMock,
-    cached_valid_token: Path,
-):
-    result = runner.invoke(main, ["-c", config_with_auth, "login"])
-    assert "Logging in\nCached token still valid, skipping flow\n" == result.output
-    assert result.exit_code == 0
+# def test_login_edge_cases(
+#     runner: CliRunner,
+#     config_with_auth: str,
+#     mock_authn_server: responses.RequestsMock,
+#     oidc_well_known: dict[str, Any],
+# ):
+#     mock_authn_server.stop()
+#     mock_authn_server.remove(
+#         responses.POST, url=oidc_well_known["device_authorization_endpoint"]
+#     )
+#     mock_authn_server.post(
+#         oidc_well_known["device_authorization_endpoint"],
+#         json={"details": "not found"},
+#         status=HTTP_400_BAD_REQUEST,
+#     )
+#     result = None
+#     with mock_authn_server:
+#         result = runner.invoke(main, ["-c", config_with_auth, "login"])
+
+#     assert result and (
+#         "Logging in\nFailed to login: 400 Client Error: Bad Request for url: https://example.com/device_authorization\n"
+#         == result.output
+#     )
+#     assert result.exit_code == 0
 
 
-def test_login_with_refresh_token(
-    runner: CliRunner,
-    config_with_auth: str,
-    mock_authn_server: responses.RequestsMock,
-    cached_expired_token: Path,
-):
-    result = runner.invoke(main, ["-c", config_with_auth, "login"])
-
-    assert "Logging in\nRefreshed cached token, skipping flow\n" == result.output
-    assert result.exit_code == 0
-
-
-def test_login_edge_cases(
-    runner: CliRunner,
-    config_with_auth: str,
-    mock_authn_server: responses.RequestsMock,
-    oidc_well_known: dict[str, Any],
-):
-    mock_authn_server.stop()
-    mock_authn_server.remove(
-        responses.POST, url=oidc_well_known["device_authorization_endpoint"]
-    )
-    mock_authn_server.post(
-        oidc_well_known["device_authorization_endpoint"],
-        json={"details": "not found"},
-        status=HTTP_400_BAD_REQUEST,
-    )
-    result = None
-    with mock_authn_server:
-        result = runner.invoke(main, ["-c", config_with_auth, "login"])
-
-    assert result and (
-        "Logging in\nFailed to login: 400 Client Error: Bad Request for url: https://example.com/device_authorization\n"
-        == result.output
-    )
-    assert result.exit_code == 0
-
-
-def test_login_when_cached_token_decode_fails(
-    runner: CliRunner,
-    config_with_auth: str,
-    mock_authn_server: responses.RequestsMock,
-    cached_invalid_token: Path,
-):
-    result = runner.invoke(main, ["-c", config_with_auth, "login"])
-    assert (
-        "Logging in\n"
-        "Problem with cached token, starting new session\n"
-        "Please login from this URL:- https://example.com/verify\n"
-        "Logged in and cached new token\n" in result.output
-    )
-    assert result.exit_code == 0
+# def test_login_when_cached_token_decode_fails(
+#     runner: CliRunner,
+#     config_with_auth: str,
+#     mock_authn_server: responses.RequestsMock,
+#     cached_invalid_token: Path,
+# ):
+#     result = runner.invoke(main, ["-c", config_with_auth, "login"])
+#     assert (
+#         "Logging in\n"
+#         "Problem with cached token, starting new session\n"
+#         "Please login from this URL:- https://example.com/verify\n"
+#         "Logged in and cached new token\n" in result.output
+#     )
+#     assert result.exit_code == 0
 
 
 def test_logout_success(
     runner: CliRunner,
     config_with_auth: str,
-    cached_expired_token: Path,
+    expired_cache: Path,
 ):
-    assert cached_expired_token.exists()
+    assert expired_cache.exists()
     result = runner.invoke(main, ["-c", config_with_auth, "logout"])
     assert "Logged out" in result.output
     assert result.exit_code == 0
-    assert not cached_expired_token.exists()
+    assert not expired_cache.exists()

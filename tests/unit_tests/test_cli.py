@@ -648,7 +648,7 @@ def test_login_with_refresh_token(
     runner: CliRunner,
     config_with_auth: str,
     mock_authn_server: responses.RequestsMock,
-    expired_cache: Path,
+    cached_valid_refresh: Path,
 ):
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
 
@@ -660,7 +660,7 @@ def test_login_when_cached_token_decode_fails(
     runner: CliRunner,
     config_with_auth: str,
     mock_authn_server: responses.RequestsMock,
-    cached_invalid_token: Path,
+    cached_expired_refresh: Path,
 ):
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
     assert (
@@ -675,24 +675,24 @@ def test_login_when_cached_token_decode_fails(
 def test_logout_success(
     runner: CliRunner,
     config_with_auth: str,
-    expired_cache: Path,
+    cached_valid_refresh: Path,
     mock_authn_server: responses.RequestsMock,
 ):
-    assert expired_cache.exists()
+    assert cached_valid_refresh.exists()
     result = runner.invoke(main, ["-c", config_with_auth, "logout"])
     assert "Logged out" in result.output
-    assert not expired_cache.exists()
+    assert not cached_valid_refresh.exists()
 
 
 def test_local_cache_cleared_oidc_unavailable(
     runner: CliRunner,
     config_with_auth: str,
-    expired_cache: Path,
+    cached_valid_refresh: Path,
 ):
-    assert expired_cache.exists()
+    assert cached_valid_refresh.exists()
     result = runner.invoke(main, ["-c", config_with_auth, "logout"])
     assert (
         "An unexpected error occurred while attempting to log out from the server."
         in result.output
     )
-    assert not expired_cache.exists()
+    assert not cached_valid_refresh.exists()

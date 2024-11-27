@@ -135,7 +135,7 @@ def _make_token(
 
 
 @pytest.fixture
-def expired_cache(
+def cached_valid_refresh(
     tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
     cache_path = tmp_path / CACHE_FILE
@@ -153,33 +153,14 @@ def expired_cache(
 
 
 @pytest.fixture
-def cached_invalid_token(
-    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
-) -> Path:
-    cache_path = tmp_path / CACHE_FILE
-    cache = Cache(
-        oidc_config=oidc_config,
-        access_token="Invalid Token",
-        refresh_token=expired_token["refresh_token"],
-        id_token=expired_token["id_token"],
-    )
-    cache_json = cache.model_dump_json()
-    cache_base64 = base64.b64encode(cache_json.encode("utf-8"))
-
-    with open(cache_path, "xb") as cache_file:
-        cache_file.write(cache_base64)
-    return cache_path
-
-
-@pytest.fixture
-def cached_invalid_refresh(
+def cached_expired_refresh(
     tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
     cache_path = tmp_path / CACHE_FILE
     cache = Cache(
         oidc_config=oidc_config,
         access_token=expired_token["access_token"],
-        refresh_token="invalid_refresh",
+        refresh_token="expired_refresh",
         id_token=expired_token["id_token"],
     )
     cache_json = cache.model_dump_json()
@@ -303,7 +284,7 @@ def mock_authn_server(
                 {
                     "client_id": oidc_config.client_id,
                     "grant_type": "refresh_token",
-                    "refresh_token": "invalid_refresh",
+                    "refresh_token": "expired_refresh",
                 },
             )
         ],

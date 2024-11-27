@@ -47,7 +47,7 @@ def test_logout(
 def test_refresh_auth_token(
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
-    expired_cache: Path,
+    cached_valid_refresh: Path,
 ):
     token = session_manager.get_valid_access_token()
     assert token == "new_token"
@@ -61,12 +61,12 @@ def test_get_empty_token_if_no_cache(session_manager: SessionManager):
 def test_get_empty_token_if_refresh_fails(
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
-    cached_invalid_refresh: Path,
+    cached_expired_refresh: Path,
 ):
-    assert cached_invalid_refresh.exists()
+    assert cached_expired_refresh.exists()
     token = session_manager.get_valid_access_token()
     assert token == ""
-    assert not cached_invalid_refresh.exists()
+    assert not cached_expired_refresh.exists()
 
 
 def test_poll_for_token(

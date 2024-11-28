@@ -9,7 +9,7 @@ Since the `RunEngine` is traditionally used by a human in front of an IPython te
 sometimes assumes intuitive behaviour. The worker replaces the human and so must fill in the
 gaps.
 
-The base engine programmatically emits data events conforming to the `bluesky event model`_. These
+The base engine programmatically emits data events conforming to the [bluesky event model](https://blueskyproject.io/event-model). These
 are meant to be handled by other subscribing code (e.g. databroker) and are decoupled from concerns such as whether
 a plan has started, finished, paused, errored etc. See the example below:
 

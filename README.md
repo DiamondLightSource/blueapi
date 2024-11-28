@@ -22,18 +22,16 @@ inside a server and exposes endpoints to send commands/receive data. Useful for
 installation at labs where multiple people may control equipment, possibly from
 remote locations.
 
-![concept][]
-
 The main premise of blueapi is to minimize the boilerplate required to get plans
 and devices up and running by generating an API for your lab out of
 type-annotated plans. For example, take the following plan:
 
 ```python
-    import bluesky.plans as bp
-    from blueapi.core import MsgGenerator
+import bluesky.plans as bp
+from blueapi.core import MsgGenerator
 
-    def my_plan(foo: str, bar: int) -> MsgGenerator:
-        yield from bp.scan(...)
+def my_plan(foo: str, bar: int) -> MsgGenerator:
+    yield from bp.scan(...)
 ```
 
 Blueapi's job is to detect this plan and automatically add it to the lab's API

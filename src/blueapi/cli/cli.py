@@ -138,7 +138,7 @@ def check_connection(func):
         try:
             func(*args, **kwargs)
         except ConnectionError:
-            print("Failed to establish connection to FastAPI server.")
+            print("Failed to establish connection to Blueapi server.")
 
     return wrapper
 

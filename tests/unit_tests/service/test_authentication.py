@@ -69,6 +69,26 @@ def test_get_empty_token_if_refresh_fails(
     assert not cached_expired_refresh.exists()
 
 
+def test_get_empty_token_if_invalid_cache(
+    mock_authn_server: responses.RequestsMock,
+    session_manager: SessionManager,
+    cache_with_invalid_audience: Path,
+):
+    token = session_manager.get_valid_access_token()
+    assert token == ""
+
+
+def test_get_empty_token_if_exception_in_decode(
+    mock_authn_server: responses.RequestsMock,
+    session_manager: SessionManager,
+    cached_expired_refresh: Path,
+):
+    assert cached_expired_refresh.exists()
+    token = session_manager.get_valid_access_token()
+    assert token == ""
+    assert not cached_expired_refresh.exists()
+
+
 def test_poll_for_token(
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,

@@ -684,7 +684,7 @@ def test_logout_success(
     assert not cached_valid_refresh.exists()
 
 
-def test_local_cache_cleared_oidc_unavailable(
+def test_local_cache_cleared_on_logout_when_oidc_unavailable(
     runner: CliRunner,
     config_with_auth: str,
     cached_valid_refresh: Path,

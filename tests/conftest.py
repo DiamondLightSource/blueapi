@@ -107,11 +107,12 @@ def _make_token(
     expires_in: float,
     rsa_private_key: str,
     jwt_access_token: bool = False,
+    valid_audience: bool = True,
 ) -> dict[str, str]:
     now = time.time()
 
     dummy_token = {
-        "aud": "blueapi",
+        "aud": "blueapi" if valid_audience else "invalid_audience",
         "exp": now + expires_in,
         "iat": now + issued_in,
         "iss": "https://example.com",
@@ -138,17 +139,14 @@ def _make_token(
 def cached_valid_refresh(
     tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
-    cache_path = tmp_path / CACHE_FILE
     cache = Cache(
         oidc_config=oidc_config,
         access_token=expired_token["access_token"],
         refresh_token=expired_token["refresh_token"],
         id_token=expired_token["id_token"],
     )
-    cache_json = cache.model_dump_json()
-    cache_base64 = base64.b64encode(cache_json.encode("utf-8"))
-    with open(cache_path, "xb") as cache_file:
-        cache_file.write(cache_base64)
+    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+        cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
     return cache_path
 
 
@@ -156,18 +154,14 @@ def cached_valid_refresh(
 def cached_expired_refresh(
     tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
-    cache_path = tmp_path / CACHE_FILE
     cache = Cache(
         oidc_config=oidc_config,
         access_token=expired_token["access_token"],
         refresh_token="expired_refresh",
         id_token=expired_token["id_token"],
     )
-    cache_json = cache.model_dump_json()
-    cache_base64 = base64.b64encode(cache_json.encode("utf-8"))
-
-    with open(cache_path, "xb") as cache_file:
-        cache_file.write(cache_base64)
+    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+        cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
     return cache_path
 
 
@@ -175,18 +169,31 @@ def cached_expired_refresh(
 def cached_valid_token(
     tmp_path: Path, valid_token_with_jwt: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
-    cache_path = tmp_path / CACHE_FILE
     cache = Cache(
         oidc_config=oidc_config,
         access_token=valid_token_with_jwt["access_token"],
         refresh_token=valid_token_with_jwt["refresh_token"],
         id_token=valid_token_with_jwt["id_token"],
     )
-    cache_json = cache.model_dump_json()
-    cache_base64 = base64.b64encode(cache_json.encode("utf-8"))
+    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+        cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
+    return cache_path
 
-    with open(cache_path, "xb") as cache_file:
-        cache_file.write(cache_base64)
+
+@pytest.fixture
+def cache_with_invalid_audience(
+    tmp_path: Path,
+    oidc_config: OIDCConfig,
+    valid_token_with_jwt_invalid_audience: dict[str, Any],
+) -> Path:
+    cache = Cache(
+        oidc_config=oidc_config,
+        access_token=valid_token_with_jwt_invalid_audience["access_token"],
+        refresh_token=valid_token_with_jwt_invalid_audience["refresh_token"],
+        id_token=valid_token_with_jwt_invalid_audience["id_token"],
+    )
+    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+        cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
     return cache_path
 
 
@@ -206,6 +213,18 @@ def valid_token(rsa_private_key: str) -> dict[str, Any]:
 def valid_token_with_jwt(rsa_private_key: str) -> dict[str, Any]:
     return _make_token(
         "valid_token", -900, +900, rsa_private_key, jwt_access_token=True
+    )
+
+
+@pytest.fixture
+def valid_token_with_jwt_invalid_audience(rsa_private_key: str) -> dict[str, Any]:
+    return _make_token(
+        "valid_token",
+        -900,
+        +900,
+        rsa_private_key,
+        jwt_access_token=True,
+        valid_audience=False,
     )
 
 

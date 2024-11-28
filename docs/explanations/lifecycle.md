@@ -100,12 +100,11 @@ and executes it as soon as it can.
 
 ## Validation
 
-The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry
-The parameter values in the request are validated against the model, this includes looking up devices
-with names `andor` and `pilatus` or, if detectors was not passed `det`.
+:::{seealso}
+[Type Validators](./type_validators.md) for an in-depth explanation of how blueapi knows when to resolve strings as device names 
+:::
 
-See also [type validators](./type_validators.md)
-
+The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry. The parameter values in the request are validated against the model, this includes looking up devices with names `andor` and `pilatus` or, if detectors was not passed `det`.
 
 ## Execution
 

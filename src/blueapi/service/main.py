@@ -143,7 +143,7 @@ async def on_key_error_404(_: Request, __: Exception):
 async def on_token_error_401(_: Request, __: Exception):
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        content={},
+        content={"detail": "Not authenticated"},
     )
 
 

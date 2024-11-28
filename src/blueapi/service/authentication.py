@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import os
 import time
+import webbrowser
 from abc import ABC, abstractmethod
 from functools import cached_property
 from http import HTTPStatus
@@ -202,10 +203,11 @@ class SessionManager:
         device_code = cast(str, response_json.get("device_code"))
         interval = cast(float, response_json.get("interval"))
         expires_in = cast(float, response_json.get("expires_in"))
-        print(
-            "Please login from this URL:- "
-            f"{response_json['verification_uri_complete']}"
-        )
+        if not webbrowser.open(response_json["verification_uri_complete"], new=2):
+            print(
+                "Please login from this URL:- "
+                f"{response_json['verification_uri_complete']}"
+            )
         auth_token_json: dict[str, Any] = self.poll_for_token(
             device_code, interval, expires_in
         )

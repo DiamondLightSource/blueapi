@@ -144,6 +144,7 @@ async def on_token_error_401(_: Request, __: Exception):
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Not authenticated"},
+        headers={"WWW-Authenticate": "Bearer realm"},
     )
 
 

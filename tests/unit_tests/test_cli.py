@@ -67,7 +67,7 @@ def test_connection_error_caught_by_wrapper_func(
     mock_requests.side_effect = ConnectionError()
     result = runner.invoke(main, ["controller", "plans"])
 
-    assert result.stdout == "Failed to establish connection to FastAPI server.\n"
+    assert result.stdout == "Failed to establish connection to Blueapi server.\n"
 
 
 class MyModel(BaseModel):
@@ -624,13 +624,14 @@ def test_login_success(
     config_with_auth: str,
     mock_authn_server: responses.RequestsMock,
 ):
-    result = runner.invoke(main, ["-c", config_with_auth, "login"])
-    assert (
-        "Logging in\n"
-        "Please login from this URL:- https://example.com/verify\n"
-        "Logged in and cached new token\n" == result.output
-    )
-    assert result.exit_code == 0
+    with patch("webbrowser.open", return_value=False):
+        result = runner.invoke(main, ["-c", config_with_auth, "login"])
+        assert (
+            "Logging in\n"
+            "Please login from this URL:- https://example.com/verify\n"
+            "Logged in and cached new token\n" == result.output
+        )
+        assert result.exit_code == 0
 
 
 def test_token_login_with_valid_token(
@@ -662,14 +663,15 @@ def test_login_when_cached_token_decode_fails(
     mock_authn_server: responses.RequestsMock,
     cached_expired_refresh: Path,
 ):
-    result = runner.invoke(main, ["-c", config_with_auth, "login"])
-    assert (
-        "Problem with cached token, starting new session\n"
-        "Logging in\n"
-        "Please login from this URL:- https://example.com/verify\n"
-        "Logged in and cached new token\n" in result.output
-    )
-    assert result.exit_code == 0
+    with patch("webbrowser.open", return_value=False):
+        result = runner.invoke(main, ["-c", config_with_auth, "login"])
+        assert (
+            "Problem with cached token, starting new session\n"
+            "Logging in\n"
+            "Please login from this URL:- https://example.com/verify\n"
+            "Logged in and cached new token\n" in result.output
+        )
+        assert result.exit_code == 0
 
 
 def test_logout_success(

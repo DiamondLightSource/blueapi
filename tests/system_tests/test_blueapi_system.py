@@ -82,8 +82,8 @@ def expected_devices() -> DeviceResponse:
 def blueapi_client_get_methods() -> list[str]:
     # Get a list of methods that take only one argument (self)
     # This will currently return
-    # ['get_plans', 'get_devices', 'get_state', 'resume', 'get_all_tasks',
-    # 'get_active_task', 'stop', 'get_environment']
+    # ['get_plans', 'get_devices', 'get_state', 'get_all_tasks',
+    # 'get_active_task','get_environment']
     to_remove = ["resume", "stop", "get_oidc_config"]
     get_methods = [
         method

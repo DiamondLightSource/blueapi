@@ -133,7 +133,7 @@ class BlueapiRestClient:
         )
 
     def get_oidc_config(self) -> OIDCConfig:
-        return self._request_and_deserialize("/oidc/config", OIDCConfig)
+        return self._request_and_deserialize("/config/oidc", OIDCConfig)
 
     @start_as_current_span(TRACER, "method", "data", "suffix")
     def _request_and_deserialize(

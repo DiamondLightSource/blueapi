@@ -186,6 +186,7 @@ class SessionManager:
         raise TimeoutError("Polling timed out")
 
     def start_device_flow(self):
+        print("Logging in")
         response: requests.Response = requests.post(
             self._server_config.device_authorization_endpoint,
             data={

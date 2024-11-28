@@ -616,7 +616,7 @@ def test_get_without_authentication(
 
 
 def test_oidc_config_not_found_when_auth_is_disabled(client: TestClient):
-    response = client.get("/oidc/config")
+    response = client.get("/config/oidc")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "Not Found"}
 
@@ -629,6 +629,6 @@ def test_get_oidc_config(
     client_with_auth: TestClient,
 ):
     get_oidc_config.return_value = oidc_config
-    response = client_with_auth.get("/oidc/config")
+    response = client_with_auth.get("/config/oidc")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == oidc_config.model_dump()

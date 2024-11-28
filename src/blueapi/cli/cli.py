@@ -354,14 +354,12 @@ def scratch(obj: dict) -> None:
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    auth: SessionManager | None = None
-    auth = SessionManager.from_cache(config.auth_token_path)
+    auth: SessionManager | None = SessionManager.from_cache(config.auth_token_path)
     if auth:
         access_token = auth.get_valid_access_token()
         if not access_token:
             print("Problem with cached token, starting new session")
             auth.delete_cache()
-            print("Logging in")
             auth.start_device_flow()
         else:
             print("Logged in")
@@ -371,7 +369,6 @@ def login(obj: dict) -> None:
         auth = SessionManager(
             oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
         )
-        print("Logging in")
         auth.start_device_flow()
 
 
@@ -379,7 +376,6 @@ def login(obj: dict) -> None:
 @click.pass_obj
 def logout(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    auth: SessionManager | None = None
-    auth = SessionManager.from_cache(config.auth_token_path)
+    auth: SessionManager | None = SessionManager.from_cache(config.auth_token_path)
     if auth:
         auth.logout()

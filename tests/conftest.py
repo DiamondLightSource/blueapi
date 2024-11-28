@@ -250,7 +250,7 @@ def mock_authn_server(
 ):
     requests_mock = responses.RequestsMock(assert_all_requests_are_fired=False)
     requests_mock.get(
-        "http://localhost:8000/oidc/config",
+        "http://localhost:8000/config/oidc",
         json=oidc_config.model_dump(),
     )
     # Fetch well-known OIDC flow URLs from server

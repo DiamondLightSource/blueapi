@@ -1,30 +1,21 @@
-# Quickstart Guide
+# Quickstart guide
 
 Blueapi acts as a worker that can run bluesky plans against devices for a specific
 laboratory setup. It can control devices to collect data and export events to tell
 downstream services about the data it has collected.
-
-## Start RabbitMQ
-
-The worker requires a running instance of RabbitMQ. The easiest way to start it is
- to execute the provided script:
-
-```
-    src/script/start_rabbitmq.sh
-```
 
 ## Start Worker
 
 To start the worker:
 
 ```
-    blueapi serve
+blueapi serve
 ```
 
 The worker can also be started using a custom config file:
 
 ```
-    blueapi --config path/to/file serve
+blueapi --config path/to/file serve
 ```
 
 An example of a config file that starts STOMP with default values can be found in:
@@ -38,7 +29,7 @@ An example of a config file that starts STOMP with default values can be found i
 Blueapi comes with a CLI so that you can query and control the worker from the terminal.
 
 ```
-    blueapi controller plans
+blueapi controller plans
 ```
 
 The above command should display all plans the worker is capable of running.

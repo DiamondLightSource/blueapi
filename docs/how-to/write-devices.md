@@ -36,7 +36,7 @@ Dodal defines a decorator, `@attach_data_session_metadata_decorator()`, for conf
    @attach_metadata
    def ophyd_async_snapshot(
        detectors: List[Readable],
-       metadata: Optional[Mapping[str, Any]] = None,
+       metadata: Optional[dict[str, Any]] = None,
        ) -> MsgGenerator:
        Configures a number of devices, which may be Ophyd-Async detectors and require
        knowledge of where to write their files, then takes a snapshot with them.
@@ -50,7 +50,7 @@ Dodal defines a decorator, `@attach_data_session_metadata_decorator()`, for conf
 
    def repeated_snapshot(
        detectors: List[Readable],
-       metadata: Optional[Mapping[str, Any]] = None,
+       metadata: Optional[dict[str, Any]] = None,
        ) -> MsgGenerator:
        Configures a number of devices, which may be Ophyd-Async detectors and require
        knowledge of where to write their files, then takes multiple snapshot with them.

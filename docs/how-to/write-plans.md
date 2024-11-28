@@ -22,7 +22,7 @@ def my_plan(
     motor: Movable, 
     steps: int, 
     sample_name: str, 
-    extra_metadata: Mapping[str, Any]) -> MsgGenerator:
+    extra_metadata: dict[str, Any]) -> MsgGenerator:
     
     # logic goes here
     ...
@@ -40,10 +40,10 @@ Some plans are created for specific sets of devices, or will almost always be us
 
 The bluesky event model allows for rich structured metadata to be attached to a scan. To enable this to be used consistently, blueapi encourages a standard form.
 
-Plans ([as opposed to stubs](../explanations/plans.md)) **should** include `metadata` as their final parameter, if they do it **must** have the type `Mapping[str, Any] | None`, [and a default of None](https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python). If the plan calls to a stub/plan which takes metadata, the plan **must** pass down its metadata, which may be a differently named parameter.
+Plans ([as opposed to stubs](../explanations/plans.md)) **should** include `metadata` as their final parameter, if they do it **must** have the type `dict[str, Any] | None`, [and a default of None](https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python). If the plan calls to a stub/plan which takes metadata, the plan **must** pass down its metadata, which may be a differently named parameter.
 
 ```python
-def pass_metadata(x: Movable, metadata: Mapping[str, Any] | None = None) -> MsgGenerator:
+def pass_metadata(x: Movable, metadata: dict[str, Any] | None = None) -> MsgGenerator:
     yield from bp.count{[x], md=metadata or {}}
 ```
 
@@ -58,7 +58,7 @@ def temp_pressure_snapshot(
     pressure: Movable = sample_pressure(),
     target_temperature: float = 273.0,
     target_pressure: float = 10**5,
-    metadata: Optional[Mapping[str, Any]] = None,
+    metadata: Optional[dict[str, Any]] = None,
 ) -> MsgGenerator:
     """
     Moves devices for pressure and temperature (defaults fetched from the context)

@@ -16,7 +16,7 @@ def count(
     detectors: List[Readable] = [my_beamline.det(connect_immediately=False)],
     num: int = 1,
     delay: Optional[Union[float, List[float]]] = None,
-    metadata: Optional[Mapping[str, Any]] = None,
+    metadata: Optional[dict[str, Any]] = None,
 ) -> MsgGenerator:
     """
     Take `n` readings from a collection of detectors
@@ -28,7 +28,7 @@ def count(
         num (int, optional): Number of readings to take. Defaults to 1.
         delay (Optional[Union[float, List[float]]], optional): Delay between readings.
                                                             Defaults to None.
-        metadata (Optional[Mapping[str, Any]], optional): Key-value metadata to include
+        metadata (Optional[dict[str, Any]], optional): Key-value metadata to include
                                                         in exported data.
                                                         Defaults to None.
 
@@ -62,7 +62,7 @@ class CountParameters(BaseModel):
     detectors: List[Readable] = [my_beamline.det(connect_immediately=False)]
     num: int = 1
     delay: Optional[Union[float, List[float]]] = None
-    metadata: Optional[Mapping[str, Any]] = None
+    metadata: Optional[dict[str, Any]] = None
 
     class Config:
         arbitrary_types_allowed = True

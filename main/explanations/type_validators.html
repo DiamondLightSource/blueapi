@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Type Validators &#8212; blueapi 0.6.2.dev2+g86c5905c documentation</title>
+    <title>Type Validators &#8212; blueapi 0.6.2.dev3+g33908fdd documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../_static/documentation_options.js?v=03a193b5"></script>
+    <script src="../_static/documentation_options.js?v=cf4323a1"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Reference" href="../reference.html" />
-    <link rel="prev" title="Lifecycle of a Plan" href="lifecycle.html" />
+    <link rel="prev" title="Plans" href="plans.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -405,7 +405,9 @@
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="events.html">Events Emitted by the Worker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extension-code.html">Home of Plans and Devices</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lifecycle.html">Lifecycle of a Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Type Validators</a></li>
 </ul>
 </div>
@@ -464,83 +466,32 @@
                   
   <section id="type-validators">
 <h1>Type Validators<a class="headerlink" href="#type-validators" title="Link to this heading">#</a></h1>
-<section id="requirement">
-<h2>Requirement<a class="headerlink" href="#requirement" title="Link to this heading">#</a></h2>
-<p>Blueapi takes the parameters of a plan and internally creates a <a class="reference external" href="https://docs.pydantic.dev/">pydantic</a> model for future validation e.g.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span>
-        <span class="o">...</span>
-
-    <span class="c1"># Internally becomes something like</span>
-
-    <span class="k">class</span> <span class="nc">MyPlanModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-        <span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
-        <span class="n">b</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span>
-</pre></div>
+<p>When the <code class="docutils literal notranslate"><span class="pre">context</span></code> loads available plans, it iterates through the type signature and replaces any reference to a bluesky protocol with a new class that extends the original type. Defining a class validator on this new type allows it to check that the string being deserialised is the ID of a device of the correct type.</p>
+<p>These new intermediate types are used only in the deserialisation process. The object returned from validator method is not checked by pydantic so it can be the actual instance and the plan never sees the runtime generated reference type, only the type it was expecting.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This uses the fact that the new types generated at runtime have access to the context that required them via their closure. This circumvents the usual problem of pydantic validation not being able to access external state when validating or deserializing.</p>
 </div>
-<p>That way, when the plan parameters are sent in JSON form, they can be parsed and validated by pydantic.
-However, it must also cover the case where a plan doesn’t take a simple dictionary, list or primitive but
-instead a device, such as a detector.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
-        <span class="o">...</span>
-</pre></div>
-</div>
-<p>An Ophyd object cannot be passed over the network as JSON because it has state.
-Instead, a string is passed, representing an ID of the object known to the <code class="docutils literal notranslate"><span class="pre">BlueskyContext</span></code>.
-At the time a plan’s parameters are validated, blueapi must take all the strings that are supposed
-to be devices and look them up against the context. For example with the request:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="p">{</span>
-        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;detectors&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;andor&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;pilatus&quot;</span>
-            <span class="p">],</span>
-            <span class="s2">&quot;num&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-            <span class="s2">&quot;delay&quot;</span><span class="p">:</span> <span class="mf">0.1</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-</pre></div>
-</div>
-<p><code class="docutils literal notranslate"><span class="pre">andor</span></code> and <code class="docutils literal notranslate"><span class="pre">pilatus</span></code> should be looked up and replaced with Ophyd objects.</p>
-</section>
-<section id="solution">
-<h2>Solution<a class="headerlink" href="#solution" title="Link to this heading">#</a></h2>
-<p>When the context loads available plans, it iterates through the type signature
-and replaces any reference to a bluesky protocol (or instance of a protocol)
-with a new class that extends the original type. Defining a class validator on
-this new type allows it to check that the string being deserialised is the ID of
-a device of the correct type.</p>
-<p>These new intermediate types are used only in the deserialisation process. The
-object returned from validator method is not checked by pydantic so it can be
-the actual instance and the plan never sees the runtime generated reference
-type, only the type it was expecting.</p>
-<blockquote>
-<div><p><strong><em>NOTE:</em></strong> This uses the fact that the new types generated at runtime have access to
-the context that required them via their closure. This circumvents the usual
-problem of pydantic validation not being able to access external state when
-validating or deserialising.</p>
-</div></blockquote>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
-        <span class="o">...</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Readable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
+    <span class="o">...</span>
 
-    <span class="c1"># Becomes</span>
+<span class="c1"># Becomes</span>
 
-    <span class="k">class</span> <span class="nc">MyPlanModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-        <span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
-        <span class="n">b</span><span class="p">:</span> <span class="n">Reference</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span>
+<span class="k">class</span> <span class="nc">MyPlanModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">b</span><span class="p">:</span> <span class="n">Reference</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>This also allows <code class="docutils literal notranslate"><span class="pre">Readable</span></code> to be placed at various type levels. For example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">my_weird_plan</span><span class="p">(</span>
-        <span class="n">a</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
-        <span class="n">b</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-        <span class="n">c</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Readable</span><span class="p">],</span>
-        <span class="n">d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]],</span>
-        <span class="n">e</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="n">Readable</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
-        <span class="o">...</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_weird_plan</span><span class="p">(</span>
+    <span class="n">a</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
+    <span class="n">b</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
+    <span class="n">c</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Readable</span><span class="p">],</span>
+    <span class="n">d</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]],</span>
+    <span class="n">e</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="n">Readable</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
+    <span class="o">...</span>
 </pre></div>
 </div>
-</section>
 </section>
 
 
@@ -554,12 +505,12 @@ validating or deserialising.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="lifecycle.html"
+       href="plans.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Lifecycle of a Plan</p>
+        <p class="prev-next-title">Plans</p>
       </div>
     </a>
     <a class="right-next"
@@ -581,19 +532,6 @@ validating or deserialising.</p>
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-
-  <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirement">Requirement</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solution">Solution</a></li>
-</ul>
-  </nav></div>
 
   <div class="sidebar-secondary-item">
 

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run in a container &#8212; blueapi 0.6.2.dev2+g86c5905c documentation</title>
+    <title>Run in a Container &#8212; blueapi 0.6.2.dev3+g33908fdd documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../_static/documentation_options.js?v=03a193b5"></script>
+    <script src="../_static/documentation_options.js?v=cf4323a1"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
     <link rel="icon" href="../_static/blueapi-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Writing Bluesky plans for Blueapi" href="write-plans.html" />
+    <link rel="next" title="Write Devices for Blueapi" href="write-devices.html" />
     <link rel="prev" title="Control the Worker via the CLI" href="run-cli.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -397,11 +397,14 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="add-plans-and-devices.html">Add Plans and Devices to your Blueapi Environment</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the Application</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="edit-live.html">Edit Plans and Device Live</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-cli.html">Control the Worker via the CLI</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run in a container</a></li>
-<li class="toctree-l1"><a class="reference internal" href="write-plans.html">Writing Bluesky plans for Blueapi</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run in a Container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write-devices.html">Write Devices for Blueapi</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="write-plans.html">Write Bluesky Plans for Blueapi</a></li>
 </ul>
 </div>
 </nav></div>
@@ -440,7 +443,7 @@
     
     <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Run in a container</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Run in a Container</span></li>
   </ul>
 </nav>
 </div>
@@ -458,20 +461,20 @@
                 <article class="bd-article">
                   
   <section id="run-in-a-container">
-<h1>Run in a container<a class="headerlink" href="#run-in-a-container" title="Link to this heading">#</a></h1>
+<h1>Run in a Container<a class="headerlink" href="#run-in-a-container" title="Link to this heading">#</a></h1>
 <p>Pre-built containers with blueapi and its dependencies already
 installed are available on <code class="docutils literal notranslate"><span class="pre">Github</span> <span class="pre">Container</span> <span class="pre">Registry</span> <span class="pre">&lt;https://ghcr.io/DiamondLightSource/blueapi&gt;</span></code>_.</p>
 <section id="starting-the-container">
 <h2>Starting the container<a class="headerlink" href="#starting-the-container" title="Link to this heading">#</a></h2>
 <p>To pull the container from github container registry and run::</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>`docker run ghcr.io/diamondlightsource/blueapi:main --version`
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">run</span> <span class="n">ghcr</span><span class="o">.</span><span class="n">io</span><span class="o">/</span><span class="n">diamondlightsource</span><span class="o">/</span><span class="n">blueapi</span><span class="p">:</span><span class="n">latest</span>
 </pre></div>
 </div>
 <p>with <code class="docutils literal notranslate"><span class="pre">podman</span></code>:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>`podman run ghcr.io/diamondlightsource/blueapi:main --version`
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">podman</span> <span class="n">run</span> <span class="n">ghcr</span><span class="o">.</span><span class="n">io</span><span class="o">/</span><span class="n">diamondlightsource</span><span class="o">/</span><span class="n">blueapi</span><span class="p">:</span><span class="n">latest</span>
 </pre></div>
 </div>
-<p>To get a released version, use a numbered release instead of <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p>
+<p>To get a released version, use a numbered release instead of <code class="docutils literal notranslate"><span class="pre">latest</span></code>.</p>
 </section>
 </section>
 
@@ -495,11 +498,11 @@ installed are available on <code class="docutils literal notranslate"><span clas
       </div>
     </a>
     <a class="right-next"
-       href="write-plans.html"
+       href="write-devices.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Writing Bluesky plans for Blueapi</p>
+        <p class="prev-next-title">Write Devices for Blueapi</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

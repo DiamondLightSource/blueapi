@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Configure the application &#8212; blueapi 0.6.2.dev2+g86c5905c documentation</title>
+    <title>Configure the Application &#8212; blueapi 0.6.2.dev3+g33908fdd documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../_static/documentation_options.js?v=03a193b5"></script>
+    <script src="../_static/documentation_options.js?v=cf4323a1"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -397,11 +397,14 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="add-plans-and-devices.html">Add Plans and Devices to your Blueapi Environment</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Configure the application</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Configure the Application</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="edit-live.html">Edit Plans and Device Live</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-cli.html">Control the Worker via the CLI</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
-<li class="toctree-l1"><a class="reference internal" href="write-plans.html">Writing Bluesky plans for Blueapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a Container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write-devices.html">Write Devices for Blueapi</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="write-plans.html">Write Bluesky Plans for Blueapi</a></li>
 </ul>
 </div>
 </nav></div>
@@ -440,7 +443,7 @@
     
     <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Configure the application</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Configure the Application</span></li>
   </ul>
 </nav>
 </div>
@@ -458,19 +461,13 @@
                 <article class="bd-article">
                   
   <section id="configure-the-application">
-<h1>Configure the application<a class="headerlink" href="#configure-the-application" title="Link to this heading">#</a></h1>
-<p>By default, configuration options are ingested from pydantic BaseModels,
-however the option exists to override these by defining a yaml file which
-can be passed to the <code class="docutils literal notranslate"><span class="pre">blueapi</span></code> command.</p>
-<p>An example of this yaml file is found in <code class="docutils literal notranslate"><span class="pre">config/defaults.yaml</span></code>, which follows
-the schema defined in <code class="docutils literal notranslate"><span class="pre">src/blueapi/config.py</span></code> in the <code class="docutils literal notranslate"><span class="pre">ApplicationConfig</span></code>
-object.</p>
-<p>To set your own application configuration, edit this file (or write your own)
-and simply pass it to the CLI by typing::</p>
-<p><code class="docutils literal notranslate"><span class="pre">blueapi</span> <span class="pre">--config</span> <span class="pre">path/to/file.yaml</span></code></p>
-<p>where <code class="docutils literal notranslate"><span class="pre">path/to/file.yaml</span></code> is the relative path to the configuration file you
-wish to use. Then, any subsequent calls to child commands of blueapi will
-use this file.</p>
+<h1>Configure the Application<a class="headerlink" href="#configure-the-application" title="Link to this heading">#</a></h1>
+<p>Blueapi’s default configuration can be overridden
+by defining a yaml file which can be passed to the <code class="docutils literal notranslate"><span class="pre">blueapi</span></code> command.</p>
+<p>To set your own application configuration create a file and pass it to the CLI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">blueapi</span> <span class="o">--</span><span class="n">config</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">file</span><span class="o">.</span><span class="n">yaml</span> <span class="o">&lt;</span><span class="n">subcommand</span><span class="o">&gt;</span>
+</pre></div>
+</div>
 </section>
 
 

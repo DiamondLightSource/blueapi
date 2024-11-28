@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Quickstart Guide &#8212; blueapi 0.6.2.dev2+g86c5905c documentation</title>
+    <title>Quickstart guide &#8212; blueapi 0.6.2.dev3+g33908fdd documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../_static/documentation_options.js?v=03a193b5"></script>
+    <script src="../_static/documentation_options.js?v=cf4323a1"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
     <link rel="icon" href="../_static/blueapi-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="How-to Guides" href="../how-to.html" />
+    <link rel="next" title="Run with local message bus" href="run-bus.html" />
     <link rel="prev" title="Installation" href="installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -396,9 +396,11 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="dev-run.html">Run/Debug in a Developer Environment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Quickstart Guide</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Quickstart guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-bus.html">Run with local message bus</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-plan.html">Run a Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-with-dev.html">Run/Debug in a Developer Environment</a></li>
 </ul>
 </div>
 </nav></div>
@@ -437,7 +439,7 @@
     
     <li class="breadcrumb-item"><a href="../tutorials.html" class="nav-link">Tutorials</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Quickstart Guide</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Quickstart guide</span></li>
   </ul>
 </nav>
 </div>
@@ -455,26 +457,18 @@
                 <article class="bd-article">
                   
   <section id="quickstart-guide">
-<h1>Quickstart Guide<a class="headerlink" href="#quickstart-guide" title="Link to this heading">#</a></h1>
+<h1>Quickstart guide<a class="headerlink" href="#quickstart-guide" title="Link to this heading">#</a></h1>
 <p>Blueapi acts as a worker that can run bluesky plans against devices for a specific
 laboratory setup. It can control devices to collect data and export events to tell
 downstream services about the data it has collected.</p>
-<section id="start-rabbitmq">
-<h2>Start RabbitMQ<a class="headerlink" href="#start-rabbitmq" title="Link to this heading">#</a></h2>
-<p>The worker requires a running instance of RabbitMQ. The easiest way to start it is
-to execute the provided script:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">src</span><span class="o">/</span><span class="n">script</span><span class="o">/</span><span class="n">start_rabbitmq</span><span class="o">.</span><span class="n">sh</span>
-</pre></div>
-</div>
-</section>
 <section id="start-worker">
 <h2>Start Worker<a class="headerlink" href="#start-worker" title="Link to this heading">#</a></h2>
 <p>To start the worker:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">blueapi</span> <span class="n">serve</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">blueapi</span> <span class="n">serve</span>
 </pre></div>
 </div>
 <p>The worker can also be started using a custom config file:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">blueapi</span> <span class="o">--</span><span class="n">config</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">file</span> <span class="n">serve</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">blueapi</span> <span class="o">--</span><span class="n">config</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">file</span> <span class="n">serve</span>
 </pre></div>
 </div>
 <p>An example of a config file that starts STOMP with default values can be found in:</p>
@@ -485,7 +479,7 @@ to execute the provided script:</p>
 <section id="test-that-the-worker-is-running">
 <h2>Test that the Worker is Running<a class="headerlink" href="#test-that-the-worker-is-running" title="Link to this heading">#</a></h2>
 <p>Blueapi comes with a CLI so that you can query and control the worker from the terminal.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">blueapi</span> <span class="n">controller</span> <span class="n">plans</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">blueapi</span> <span class="n">controller</span> <span class="n">plans</span>
 </pre></div>
 </div>
 <p>The above command should display all plans the worker is capable of running.</p>
@@ -513,11 +507,11 @@ to execute the provided script:</p>
       </div>
     </a>
     <a class="right-next"
-       href="../how-to.html"
+       href="run-bus.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">How-to Guides</p>
+        <p class="prev-next-title">Run with local message bus</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -540,7 +534,6 @@ to execute the provided script:</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-rabbitmq">Start RabbitMQ</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-worker">Start Worker</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-that-the-worker-is-running">Test that the Worker is Running</a></li>
 </ul>

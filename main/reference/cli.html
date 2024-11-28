@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Command-Line Interface &#8212; blueapi 0.6.2.dev2+g86c5905c documentation</title>
+    <title>Command-Line Interface &#8212; blueapi 0.6.2.dev3+g33908fdd documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../_static/documentation_options.js?v=03a193b5"></script>
+    <script src="../_static/documentation_options.js?v=cf4323a1"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -460,7 +460,195 @@
   <section id="command-line-interface">
 <h1>Command-Line Interface<a class="headerlink" href="#command-line-interface" title="Link to this heading">#</a></h1>
 <p>Full reference for the CLI:</p>
-<p>:show-nested:</p>
+<section id="blueapi">
+<h2>blueapi<a class="headerlink" href="#blueapi" title="Link to this heading">#</a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-version">
+<span class="sig-name descname"><span class="pre">--version</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-version" title="Link to this definition">#</a></dt>
+<dd><p>Show the version and exit.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-c">
+<span id="cmdoption-blueapi-config"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;config&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-c" title="Link to this definition">#</a></dt>
+<dd><p>Path to configuration YAML file</p>
+</dd></dl>
+
+<section id="blueapi-controller">
+<h3>controller<a class="headerlink" href="#blueapi-controller" title="Link to this heading">#</a></h3>
+<p>Client utility for controlling and introspecting the worker</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-o">
+<span id="cmdoption-blueapi-controller-output"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--output</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;output&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-controller-o" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Options<span class="colon">:</span></dt>
+<dd class="field-odd"><p>json | full | compact</p>
+</dd>
+</dl>
+</dd></dl>
+
+<section id="blueapi-controller-abort">
+<h4>abort<a class="headerlink" href="#blueapi-controller-abort" title="Link to this heading">#</a></h4>
+<p>Abort the execution of the current task, marking any ongoing runs as failed,
+with optional reason</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>abort<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>REASON<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-abort-arg-REASON">
+<span class="sig-name descname"><span class="pre">REASON</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-controller-abort-arg-REASON" title="Link to this definition">#</a></dt>
+<dd><p>Optional argument</p>
+</dd></dl>
+
+</section>
+<section id="blueapi-controller-devices">
+<h4>devices<a class="headerlink" href="#blueapi-controller-devices" title="Link to this heading">#</a></h4>
+<p>Get a list of devices available for the worker to use</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>devices<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="blueapi-controller-env">
+<h4>env<a class="headerlink" href="#blueapi-controller-env" title="Link to this heading">#</a></h4>
+<p>Inspect or restart the environment</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>env<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-env-r">
+<span id="cmdoption-blueapi-controller-env-reload"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--reload</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-controller-env-r" title="Link to this definition">#</a></dt>
+<dd><p>Reload the current environment</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-env-t">
+<span id="cmdoption-blueapi-controller-env-timeout"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--timeout</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;timeout&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-controller-env-t" title="Link to this definition">#</a></dt>
+<dd><p>Timeout to wait for reload in seconds, defaults to 10</p>
+</dd></dl>
+
+</section>
+<section id="blueapi-controller-listen">
+<h4>listen<a class="headerlink" href="#blueapi-controller-listen" title="Link to this heading">#</a></h4>
+<p>Listen to events output by blueapi</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>listen<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="blueapi-controller-pause">
+<h4>pause<a class="headerlink" href="#blueapi-controller-pause" title="Link to this heading">#</a></h4>
+<p>Pause the execution of the current task</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>pause<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-pause-defer">
+<span class="sig-name descname"><span class="pre">--defer</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-controller-pause-defer" title="Link to this definition">#</a></dt>
+<dd><p>Defer the pause until the next checkpoint</p>
+</dd></dl>
+
+</section>
+<section id="blueapi-controller-plans">
+<h4>plans<a class="headerlink" href="#blueapi-controller-plans" title="Link to this heading">#</a></h4>
+<p>Get a list of plans available for the worker to use</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>plans<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="blueapi-controller-resume">
+<h4>resume<a class="headerlink" href="#blueapi-controller-resume" title="Link to this heading">#</a></h4>
+<p>Resume the execution of the current task</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>resume<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="blueapi-controller-run">
+<h4>run<a class="headerlink" href="#blueapi-controller-run" title="Link to this heading">#</a></h4>
+<p>Run a plan with parameters</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>run<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>NAME<span class="w"> </span><span class="o">[</span>PARAMETERS<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-run-t">
+<span id="cmdoption-blueapi-controller-run-timeout"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--timeout</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;timeout&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-controller-run-t" title="Link to this definition">#</a></dt>
+<dd><p>Timeout for the plan in seconds. None hangs forever</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-run-arg-NAME">
+<span class="sig-name descname"><span class="pre">NAME</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-controller-run-arg-NAME" title="Link to this definition">#</a></dt>
+<dd><p>Required argument</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-run-arg-PARAMETERS">
+<span class="sig-name descname"><span class="pre">PARAMETERS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-controller-run-arg-PARAMETERS" title="Link to this definition">#</a></dt>
+<dd><p>Optional argument</p>
+</dd></dl>
+
+</section>
+<section id="blueapi-controller-state">
+<h4>state<a class="headerlink" href="#blueapi-controller-state" title="Link to this heading">#</a></h4>
+<p>Print the current state of the worker</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>state<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="blueapi-controller-stop">
+<h4>stop<a class="headerlink" href="#blueapi-controller-stop" title="Link to this heading">#</a></h4>
+<p>Stop the execution of the current task, marking as ongoing runs as success</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>stop<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="blueapi-schema">
+<h3>schema<a class="headerlink" href="#blueapi-schema" title="Link to this heading">#</a></h3>
+<p>Only import the service functions when starting the service or generating
+the schema, not the controller as a new FastAPI app will be started each time.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>schema<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-schema-o">
+<span id="cmdoption-blueapi-schema-output"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--output</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;output&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-schema-o" title="Link to this definition">#</a></dt>
+<dd><p>Path to file to save the schema</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-schema-u">
+<span id="cmdoption-blueapi-schema-update"></span><span class="sig-name descname"><span class="pre">-u</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--update</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-schema-u" title="Link to this definition">#</a></dt>
+<dd><p>[Development only] update the schema in the documentation</p>
+</dd></dl>
+
+</section>
+<section id="blueapi-serve">
+<h3>serve<a class="headerlink" href="#blueapi-serve" title="Link to this heading">#</a></h3>
+<p>Run a worker that accepts plans to run</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>serve<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="blueapi-setup-scratch">
+<h3>setup-scratch<a class="headerlink" href="#blueapi-setup-scratch" title="Link to this heading">#</a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>setup-scratch<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+</section>
 </section>
 
 
@@ -501,6 +689,36 @@
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi">blueapi</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller">controller</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-abort">abort</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-devices">devices</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-env">env</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-listen">listen</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-pause">pause</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-plans">plans</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-resume">resume</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-run">run</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-state">state</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-stop">stop</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-schema">schema</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-serve">serve</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-setup-scratch">setup-scratch</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

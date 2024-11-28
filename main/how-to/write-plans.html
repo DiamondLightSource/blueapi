@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Writing Bluesky plans for Blueapi &#8212; blueapi 0.6.2.dev2+g86c5905c documentation</title>
+    <title>Write Bluesky Plans for Blueapi &#8212; blueapi 0.6.2.dev3+g33908fdd documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../_static/documentation_options.js?v=03a193b5"></script>
+    <script src="../_static/documentation_options.js?v=cf4323a1"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Explanations" href="../explanations.html" />
-    <link rel="prev" title="Run in a container" href="run-container.html" />
+    <link rel="prev" title="Write Devices for Blueapi" href="write-devices.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -397,11 +397,14 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="add-plans-and-devices.html">Add Plans and Devices to your Blueapi Environment</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the Application</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="edit-live.html">Edit Plans and Device Live</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-cli.html">Control the Worker via the CLI</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Writing Bluesky plans for Blueapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a Container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write-devices.html">Write Devices for Blueapi</a></li>
+
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Write Bluesky Plans for Blueapi</a></li>
 </ul>
 </div>
 </nav></div>
@@ -440,7 +443,7 @@
     
     <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Writing Bluesky plans for Blueapi</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Write Bluesky Plans for Blueapi</span></li>
   </ul>
 </nav>
 </div>
@@ -457,166 +460,81 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="writing-bluesky-plans-for-blueapi">
-<h1>Writing Bluesky plans for Blueapi<a class="headerlink" href="#writing-bluesky-plans-for-blueapi" title="Link to this heading">#</a></h1>
-<p>For an introduction to bluesky plans and general forms/advice, <code class="docutils literal notranslate"><span class="pre">see</span> <span class="pre">the</span> <span class="pre">bluesky</span> <span class="pre">documentation</span> <span class="pre">&lt;https://nsls-ii.github.io/bluesky/plans.html&gt;</span></code>__. Blueapi has some additional requirements, which are explained below.</p>
-<section id="plans">
-<h2>Plans<a class="headerlink" href="#plans" title="Link to this heading">#</a></h2>
-<p>While the bluesky project uses <code class="docutils literal notranslate"><span class="pre">plan</span></code> in a general sense to refer to any <code class="docutils literal notranslate"><span class="pre">Iterable</span></code> of <code class="docutils literal notranslate"><span class="pre">Msg</span></code>\ s which may be run by the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>, blueapi distinguishes between a <code class="docutils literal notranslate"><span class="pre">plan</span></code> and a <code class="docutils literal notranslate"><span class="pre">stub</span></code>. This distinction is made to allow for a subset of <code class="docutils literal notranslate"><span class="pre">stub</span></code>\ s to be exposed and run, as <code class="docutils literal notranslate"><span class="pre">stub</span></code>\ s may not make sense to run alone.</p>
-<p>Generally, a <code class="docutils literal notranslate"><span class="pre">plan</span></code> includes at least one <code class="docutils literal notranslate"><span class="pre">open_run</span></code> and <code class="docutils literal notranslate"><span class="pre">close_run</span></code> and is a complete description of an experiment. If it does not, it is a <code class="docutils literal notranslate"><span class="pre">stub</span></code>. This distinction is made in the bluesky core library between the <code class="docutils literal notranslate"><span class="pre">plan</span></code>\ s and <code class="docutils literal notranslate"><span class="pre">plan_stub</span></code>\ s modules.</p>
+  <section id="write-bluesky-plans-for-blueapi">
+<h1>Write Bluesky Plans for Blueapi<a class="headerlink" href="#write-bluesky-plans-for-blueapi" title="Link to this heading">#</a></h1>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference external" href="https://blueskyproject.io/bluesky/main/index.html">The bluesky documentation</a> for an introduction to bluesky plans and general forms/advice. Blueapi has some additional requirements, which are explained below.</p>
+</div>
+<section id="format">
+<h2>Format<a class="headerlink" href="#format" title="Link to this heading">#</a></h2>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../explanations/plans.html"><span class="std std-doc">Explanation of why blueapi treats plans in a special way</span></a></p>
+</div>
+<p>Plans in Python files look like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky.protocols</span> <span class="kn">import</span> <span class="n">Readable</span><span class="p">,</span> <span class="n">Movable</span>
+<span class="kn">from</span> <span class="nn">bluesky.utils</span> <span class="kn">import</span> <span class="n">MsgGenerator</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="k">def</span> <span class="nf">my_plan</span><span class="p">(</span>
+    <span class="n">detector</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> 
+    <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span> 
+    <span class="n">steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">sample_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">extra_metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+    
+    <span class="c1"># logic goes here</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>The type annotations (e.g. <code class="docutils literal notranslate"><span class="pre">:</span> <span class="pre">str</span></code>, <code class="docutils literal notranslate"><span class="pre">:</span> <span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">-&gt;</span> <span class="pre">MsgGenerator</span></code>) are required as blueapi uses them to detect that this function is intended to be a plan and generate its runtime API.</p>
+<p><strong>Input annotations should be as broad as possible</strong>, the least specific implementation that is sufficient to accomplish the requirements of the plan. For example, if a plan is written to drive a specific motor (<code class="docutils literal notranslate"><span class="pre">MyMotor</span></code>), but only uses the general methods on the <a class="reference external" href="https://blueskyproject.io/bluesky/main/hardware.html#bluesky.protocols.Movable"><code class="docutils literal notranslate"><span class="pre">Movable</span></code> protocol</a>, it should take <code class="docutils literal notranslate"><span class="pre">Movable</span></code> as a parameter annotation rather than <code class="docutils literal notranslate"><span class="pre">MyMotor</span></code>.</p>
 </section>
-<section id="type-annotations">
-<h2>Type Annotations<a class="headerlink" href="#type-annotations" title="Link to this heading">#</a></h2>
-<p>To be imported into the blueapi context, <code class="docutils literal notranslate"><span class="pre">plan</span></code>\ s and <code class="docutils literal notranslate"><span class="pre">stub</span></code>\ s must be the in the form of a <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>: any function that return a <code class="docutils literal notranslate"><span class="pre">MsgGenerator</span></code> (a python <code class="docutils literal notranslate"><span class="pre">Generator</span></code> that yields <code class="docutils literal notranslate"><span class="pre">Msg</span></code>\ s). <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code> and <code class="docutils literal notranslate"><span class="pre">MsgGenerator</span></code> types are available to import from <code class="docutils literal notranslate"><span class="pre">dodal</span></code>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="k">def</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-       <span class="c1"># The minimum PlanGenerator acceptable to blueapi</span>
-       <span class="k">yield from</span> <span class="p">{}</span>
-</pre></div>
-</div>
-<blockquote>
-<div><p><strong><em>NOTE:</em></strong> <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code> arguments must be annotated to enable blueapi to generate their schema</p>
-</div></blockquote>
-<p><strong>Input annotations should be as broad as possible</strong>, the least specific implementation that is sufficient to accomplish the requirements of the plan.</p>
-<p>For example, if a plan is written to drive a specific implementation of Movable, but never calls any methods on the device and only yields bluesky <code class="docutils literal notranslate"><span class="pre">'set'</span></code> Msgs, it can be generalised to instead use the base protocol <code class="docutils literal notranslate"><span class="pre">Movable</span></code>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="k">def</span> <span class="nf">move_to_each_position</span><span class="p">(</span><span class="n">axis</span><span class="p">:</span> <span class="n">Movable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-       <span class="c1"># Originally written for SpecificImplementationMovable</span>
-       <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
-           <span class="k">yield from</span> <span class="n">abs_set</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">location</span><span class="p">)</span>
-</pre></div>
-</div>
+<section id="injecting-devices">
+<h2>Injecting Devices<a class="headerlink" href="#injecting-devices" title="Link to this heading">#</a></h2>
+<p>Some plans are created for specific sets of devices, or will almost always be used with the same devices, it is useful to be able to specify defaults. <a class="reference external" href="https://diamondlightsource.github.io/dodal/main/how-to/include-devices-in-plans.html">Dodal makes this easy with its factory functions</a>.</p>
 </section>
-<section id="allowed-argument-types">
-<h2>Allowed Argument Types<a class="headerlink" href="#allowed-argument-types" title="Link to this heading">#</a></h2>
-<p>When added to the blueapi context, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>\ s are formalised into their schema- <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">Pydantic</span> <span class="pre">BaseModel</span> <span class="pre">&lt;https://docs.pydantic.dev/1.10/usage/models/&gt;</span></code>__ with the expected argument types and their defaults.</p>
-<p>Therefore, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>\ s must only take as arguments <code class="docutils literal notranslate"><span class="pre">those</span> <span class="pre">types</span> <span class="pre">which</span> <span class="pre">are</span> <span class="pre">valid</span> <span class="pre">Pydantic</span> <span class="pre">fields</span> <span class="pre">&lt;https://docs.pydantic.dev/dev/concepts/types/&gt;</span></code>__ or Device types which implement <code class="docutils literal notranslate"><span class="pre">BLUESKY_PROTOCOLS</span></code> defined in dodal, which are fetched from the context at runtime.</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Allowed argument types for Pydantic BaseModels include the primitives, types that extend `BaseModel` and `dict`\ s, `list`\ s  and other `sequence`\ s of supported types. Blueapi will deserialise these types from JSON, so `dict`\ s should use `str` keys.
-</pre></div>
-</div>
-</section>
-<section id="injecting-defaults">
-<h2>Injecting defaults<a class="headerlink" href="#injecting-defaults" title="Link to this heading">#</a></h2>
-<p>Often when writing a plan, it is known which device the plan will mostly or always be run with, but at the time of writing the plan the device object has not been instantiated: dodal defines device factory functions, but these cannot be injected as default arguments to plans.</p>
-<p>Dodal defines an <code class="docutils literal notranslate"><span class="pre">inject</span></code> function which bypasses the type checking of the constructed schemas, defering to the blueapi contexting fetching of the device when the plan is imported. This allows defaulting devices, so long as there is a device of that name in the context which conforms to the type annotation.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="k">def</span> <span class="nf">touch_synchrotron</span><span class="p">(</span><span class="n">sync</span><span class="p">:</span> <span class="n">Synchrotron</span> <span class="o">=</span> <span class="n">inject</span><span class="p">(</span><span class="s2">&quot;synchrotron&quot;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-       <span class="c1"># There is only one Synchrotron device, so we know which one it will always be.</span>
-       <span class="c1"># If there is no device named &quot;synchrotron&quot; in the blueapi context, it will except.</span>
-       <span class="n">sync</span><span class="o">.</span><span class="n">specific_function</span><span class="p">()</span>
-       <span class="k">yield from</span> <span class="p">{}</span>
-</pre></div>
-</div>
-<section id="metadata">
-<h3>Metadata<a class="headerlink" href="#metadata" title="Link to this heading">#</a></h3>
+<section id="injecting-metadata">
+<h2>Injecting Metadata<a class="headerlink" href="#injecting-metadata" title="Link to this heading">#</a></h2>
 <p>The bluesky event model allows for rich structured metadata to be attached to a scan. To enable this to be used consistently, blueapi encourages a standard form.</p>
-<blockquote>
-<div><p><strong><em>NOTE:</em></strong> Plans <strong>should</strong> include <code class="docutils literal notranslate"><span class="pre">metadata</span></code> as their final argument, if they do it <strong>must</strong> have the type Optional[Mapping[str, Any]], <code class="docutils literal notranslate"><span class="pre">and</span> <span class="pre">a</span> <span class="pre">default</span> <span class="pre">of</span> <span class="pre">None</span> <span class="pre">&lt;https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python&gt;</span></code>__, with the plan defaulting to an empty dict if passed <code class="docutils literal notranslate"><span class="pre">None</span></code>. If the plan calls to a stub/plan which takes metadata, the plan <strong>must</strong> pass down its metadata, which may be a differently named argument.</p>
-</div></blockquote>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="k">def</span> <span class="nf">pass_metadata</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-       <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">{[</span><span class="n">x</span><span class="p">],</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}}</span>
+<p>Plans (<a class="reference internal" href="../explanations/plans.html"><span class="std std-doc">as opposed to stubs</span></a>) <strong>should</strong> include <code class="docutils literal notranslate"><span class="pre">metadata</span></code> as their final parameter, if they do it <strong>must</strong> have the type <code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">Any]</span> <span class="pre">|</span> <span class="pre">None</span></code>, <a class="reference external" href="https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python">and a default of None</a>. If the plan calls to a stub/plan which takes metadata, the plan <strong>must</strong> pass down its metadata, which may be a differently named parameter.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">pass_metadata</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+    <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">{[</span><span class="n">x</span><span class="p">],</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}}</span>
 </pre></div>
 </div>
-</section>
 </section>
 <section id="docstrings">
 <h2>Docstrings<a class="headerlink" href="#docstrings" title="Link to this heading">#</a></h2>
-<p>Blueapi plan schemas include includes the docstrings of imported Plans. <strong>These should therefore explain as much about the scan as cannot be ascertained from its arguments and name</strong>. This may include units of arguments (e.g. seconds or microseconds), its purpose in the function, the purpose of the plan etc.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="k">def</span> <span class="nf">temp_pressure_snapshot</span><span class="p">(</span>
-       <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-       <span class="n">temperature</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">inject</span><span class="p">(</span><span class="s2">&quot;sample_temperature&quot;</span><span class="p">),</span>
-       <span class="n">pressure</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">inject</span><span class="p">(</span><span class="s2">&quot;sample_pressure&quot;</span><span class="p">),</span>
-       <span class="n">target_temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">273.0</span><span class="p">,</span>
-       <span class="n">target_pressure</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="mi">5</span><span class="p">,</span>
-       <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-<span class="w">       </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">       Moves devices for pressure and temperature (defaults fetched from the context)</span>
-<span class="sd">       and captures a single frame from a collection of devices</span>
-<span class="sd">       Args:</span>
-<span class="sd">           detectors (List[Readable]): A list of devices to read while the sample is at STP</span>
-<span class="sd">           temperature (Optional[Movable]): A device controlling temperature of the sample,</span>
-<span class="sd">               defaults to fetching a device name &quot;sample_temperature&quot; from the context</span>
-<span class="sd">           pressure (Optional[Movable]): A device controlling pressure on the sample,</span>
-<span class="sd">               defaults to fetching a device name &quot;sample_pressure&quot; from the context</span>
-<span class="sd">           target_pressure (Optional[float]): target temperature in Kelvin. Default 273</span>
-<span class="sd">           target_pressure (Optional[float]): target pressure in Pa. Default 10**5</span>
-<span class="sd">       Returns:</span>
-<span class="sd">           MsgGenerator: Plan</span>
-<span class="sd">       Yields:</span>
-<span class="sd">           Iterator[MsgGenerator]: Bluesky messages</span>
-<span class="sd">       &quot;&quot;&quot;</span>
-       <span class="k">yield from</span> <span class="n">move</span><span class="p">({</span><span class="n">temperature</span><span class="p">:</span> <span class="n">target_temperature</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="n">target_pressure</span><span class="p">})</span>
-       <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
+<p>Blueapi exposes the docstrings of plans to clients, along with the parameter types. It is therefore worthwhile to make these detailed and descriptive. This may include units of arguments (e.g. seconds or microseconds), its purpose in the function, the purpose of the plan etc.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">temp_pressure_snapshot</span><span class="p">(</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">sample_temperature</span><span class="p">(),</span>
+    <span class="n">pressure</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">sample_pressure</span><span class="p">(),</span>
+    <span class="n">target_temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">273.0</span><span class="p">,</span>
+    <span class="n">target_pressure</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Moves devices for pressure and temperature (defaults fetched from the context)</span>
+<span class="sd">    and captures a single frame from a collection of devices</span>
+<span class="sd">    Args:</span>
+<span class="sd">        detectors (List[Readable]): A list of devices to read while the sample is at STP</span>
+<span class="sd">        temperature (Optional[Movable]): A device controlling temperature of the sample,</span>
+<span class="sd">            defaults to fetching a device name &quot;sample_temperature&quot; from the context</span>
+<span class="sd">        pressure (Optional[Movable]): A device controlling pressure on the sample,</span>
+<span class="sd">            defaults to fetching a device name &quot;sample_pressure&quot; from the context</span>
+<span class="sd">        target_pressure (Optional[float]): target temperature in Kelvin. Default 273</span>
+<span class="sd">        target_pressure (Optional[float]): target pressure in Pa. Default 10**5</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        MsgGenerator: Plan</span>
+<span class="sd">    Yields:</span>
+<span class="sd">        Iterator[MsgGenerator]: Bluesky messages</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">yield from</span> <span class="n">move</span><span class="p">({</span><span class="n">temperature</span><span class="p">:</span> <span class="n">target_temperature</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="n">target_pressure</span><span class="p">})</span>
+    <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
 </pre></div>
 </div>
-<section id="decorators">
-<h3>Decorators<a class="headerlink" href="#decorators" title="Link to this heading">#</a></h3>
-<p>Dodal defines a decorator for configuring any <code class="docutils literal notranslate"><span class="pre">ophyd-async</span></code> devices- which will be the majority of devices at Diamond- to write to a common location.</p>
-<blockquote>
-<div><p><strong><em>NOTE:</em></strong> <strong>This is an absolute requirement to write data onto the Diamond Filesystem</strong>.  This decorator must be used every time a new data collection is intended to begin. For an example, see below.</p>
-</div></blockquote>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="nd">@attach_metadata</span>
-   <span class="k">def</span> <span class="nf">ophyd_async_snapshot</span><span class="p">(</span>
-       <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-       <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="c1">###    ) -&gt; MsgGenerator:</span>
-       <span class="n">Configures</span> <span class="n">a</span> <span class="n">number</span> <span class="n">of</span> <span class="n">devices</span><span class="p">,</span> <span class="n">which</span> <span class="n">may</span> <span class="n">be</span> <span class="n">Ophyd</span><span class="o">-</span><span class="n">Async</span> <span class="n">detectors</span> <span class="ow">and</span> <span class="n">require</span>
-       <span class="n">knowledge</span> <span class="n">of</span> <span class="n">where</span> <span class="n">to</span> <span class="n">write</span> <span class="n">their</span> <span class="n">files</span><span class="p">,</span> <span class="n">then</span> <span class="n">takes</span> <span class="n">a</span> <span class="n">snapshot</span> <span class="k">with</span> <span class="n">them</span><span class="o">.</span>
-       <span class="n">Args</span><span class="p">:</span>
-           <span class="n">detectors</span> <span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]):</span> <span class="n">Devices</span><span class="p">,</span> <span class="n">maybe</span> <span class="n">including</span> <span class="n">Ophyd</span><span class="o">-</span><span class="n">Async</span> <span class="n">detectors</span><span class="o">.</span>
-       <span class="n">Returns</span><span class="p">:</span>
-           <span class="n">MsgGenerator</span><span class="p">:</span> <span class="n">Plan</span>
-       <span class="n">Yields</span><span class="p">:</span>
-<span class="c1">###            Iterator[MsgGenerator]: Bluesky messages</span>
-       <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
-
-   <span class="k">def</span> <span class="nf">repeated_snapshot</span><span class="p">(</span>
-       <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-       <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="c1">###    ) -&gt; MsgGenerator:</span>
-       <span class="n">Configures</span> <span class="n">a</span> <span class="n">number</span> <span class="n">of</span> <span class="n">devices</span><span class="p">,</span> <span class="n">which</span> <span class="n">may</span> <span class="n">be</span> <span class="n">Ophyd</span><span class="o">-</span><span class="n">Async</span> <span class="n">detectors</span> <span class="ow">and</span> <span class="n">require</span>
-       <span class="n">knowledge</span> <span class="n">of</span> <span class="n">where</span> <span class="n">to</span> <span class="n">write</span> <span class="n">their</span> <span class="n">files</span><span class="p">,</span> <span class="n">then</span> <span class="n">takes</span> <span class="n">multiple</span> <span class="n">snapshot</span> <span class="k">with</span> <span class="n">them</span><span class="o">.</span>
-       <span class="n">Args</span><span class="p">:</span>
-           <span class="n">detectors</span> <span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]):</span> <span class="n">Devices</span><span class="p">,</span> <span class="n">maybe</span> <span class="n">including</span> <span class="n">Ophyd</span><span class="o">-</span><span class="n">Async</span> <span class="n">detectors</span><span class="o">.</span>
-       <span class="n">Returns</span><span class="p">:</span>
-           <span class="n">MsgGenerator</span><span class="p">:</span> <span class="n">Plan</span>
-       <span class="n">Yields</span><span class="p">:</span>
-<span class="c1">###            Iterator[MsgGenerator]: Bluesky messages</span>
-       <span class="nd">@attach_metadata</span>
-       <span class="k">def</span> <span class="nf">inner_function</span><span class="p">():</span>
-           <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
-
-
-       <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
-           <span class="k">yield from</span> <span class="n">inner_function</span><span class="p">()</span>
-</pre></div>
-</div>
-</section>
-<section id="stubs">
-<h3>Stubs<a class="headerlink" href="#stubs" title="Link to this heading">#</a></h3>
-<p>Some functionality in your plans may make sense to factor out to allow re-use. These pieces of functionality may or may not make sense outside of the context of a plan. Some will, such as nudging a motor, but others may not, such as waiting to consume data from the previous position, or opening a run without an equivalent closure.</p>
-<p>To enable blueapi to expose the stubs that it makes sense to, but not the others, blueapi will only expose a subset of <code class="docutils literal notranslate"><span class="pre">MsgGenerator</span></code>\ s under the following conditions:</p>
-<p>| <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> in directory has <code class="docutils literal notranslate"><span class="pre">__exports__</span></code>: List[str]: only
-those named in <code class="docutils literal notranslate"><span class="pre">__exports__</span></code>
-| <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> in directory has <code class="docutils literal notranslate"><span class="pre">__all__</span></code>: List[str] but no
-<code class="docutils literal notranslate"><span class="pre">__exports__</span></code>: only those named in <code class="docutils literal notranslate"><span class="pre">__all__</span></code></p>
-<p>This allows other python packages (such as <code class="docutils literal notranslate"><span class="pre">plans</span></code>) to access every function in <code class="docutils literal notranslate"><span class="pre">__all__</span></code>, while only allowing a subset to be called from blueapi as standalone.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># Rehomes all of the beamline&#39;s devices. May require to be run standalone</span>
-    <span class="kn">from</span> <span class="nn">.package</span> <span class="kn">import</span> <span class="n">rehome_devices</span>
-    <span class="c1"># Awaits a standard callback from analysis. Should not be run standalone</span>
-    <span class="kn">from</span> <span class="nn">.package</span> <span class="kn">import</span> <span class="n">await_callback</span>
-
-    <span class="c1"># Exported from the module for use by other modules</span>
-    <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;rehome_devices&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;await_callback&quot;</span><span class="p">,</span>
-    <span class="p">]</span>
-
-    <span class="c1"># Imported by instances of blueapi and allowed to be run</span>
-    <span class="n">__exports__</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;rehome_devices&quot;</span><span class="p">,</span>
-    <span class="p">]</span>
-</pre></div>
-</div>
-</section>
 </section>
 </section>
 
@@ -631,12 +549,12 @@ those named in <code class="docutils literal notranslate"><span class="pre">__ex
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="run-container.html"
+       href="write-devices.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Run in a container</p>
+        <p class="prev-next-title">Write Devices for Blueapi</p>
       </div>
     </a>
     <a class="right-next"
@@ -667,18 +585,10 @@ those named in <code class="docutils literal notranslate"><span class="pre">__ex
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plans">Plans</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#type-annotations">Type Annotations</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#allowed-argument-types">Allowed Argument Types</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#injecting-defaults">Injecting defaults</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#metadata">Metadata</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#docstrings">Docstrings</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#decorators">Decorators</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#stubs">Stubs</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#format">Format</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#injecting-devices">Injecting Devices</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#injecting-metadata">Injecting Metadata</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#docstrings">Docstrings</a></li>
 </ul>
   </nav></div>
 

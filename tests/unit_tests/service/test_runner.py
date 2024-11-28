@@ -1,6 +1,6 @@
+from multiprocessing.pool import Pool as PoolClass
 from typing import Any, Generic, TypeVar
-from unittest import mock
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from observability_utils.tracing import (
@@ -16,17 +16,19 @@ from blueapi.service.runner import (
     InvalidRunnerStateError,
     RpcError,
     WorkerDispatcher,
+    import_and_run_function,
 )
 
 
 @pytest.fixture
-def local_runner():
-    return WorkerDispatcher(use_subprocess=False)
+def mock_subprocess() -> Mock:
+    subprocess = Mock(spec=PoolClass)
+    return subprocess
 
 
 @pytest.fixture
-def runner():
-    return WorkerDispatcher()
+def runner(mock_subprocess: Mock):
+    return WorkerDispatcher(subprocess_factory=lambda: mock_subprocess)
 
 
 @pytest.fixture
@@ -36,13 +38,22 @@ def started_runner(runner: WorkerDispatcher):
     runner.stop()
 
 
-def test_initialize(runner: WorkerDispatcher):
+def test_initialize(runner: WorkerDispatcher, mock_subprocess: Mock):
+    mock_subprocess.apply.return_value = None
+
+    assert runner.state.error_message is None
     assert not runner.state.initialized
     runner.start()
+
+    assert runner.state.error_message is None
     assert runner.state.initialized
+
     # Run a single call to the runner for coverage of dispatch to subprocess
-    assert runner.run(interface.get_worker_state)
+    mock_subprocess.apply.return_value = 123
+    assert runner.run(interface.get_worker_state) == 123
     runner.stop()
+
+    assert runner.state.error_message is None
     assert not runner.state.initialized
 
 
@@ -59,22 +70,20 @@ def test_raises_if_used_before_started(runner: WorkerDispatcher):
         runner.run(interface.get_plans)
 
 
-def test_error_on_runner_setup(local_runner: WorkerDispatcher):
+def test_error_on_runner_setup(runner: WorkerDispatcher, mock_subprocess: Mock):
+    error_message = "Intentional start_worker exception"
     expected_state = EnvironmentResponse(
         initialized=False,
-        error_message="Intentional start_worker exception",
+        error_message=error_message,
     )
+    mock_subprocess.apply.side_effect = Exception(error_message)
 
-    with mock.patch(
-        "blueapi.service.runner.setup",
-        side_effect=Exception("Intentional start_worker exception"),
-    ):
-        # Calling reload here instead of start also indirectly
-        # tests that stop() doesn't raise if there is no error message
-        # and the runner is not yet initialised
-        local_runner.reload()
-        state = local_runner.state
-        assert state == expected_state
+    # Calling reload here instead of start also indirectly
+    # tests that stop() doesn't raise if there is no error message
+    # and the runner is not yet initialised
+    runner.reload()
+    state = runner.state
+    assert state == expected_state
 
 
 def start_worker_mock():
@@ -99,7 +108,7 @@ def test_can_reload_after_an_error(pool_mock: MagicMock):
 
     another_mock.apply.side_effect = subprocess_calls_return_values
 
-    runner = WorkerDispatcher(use_subprocess=True)
+    runner = WorkerDispatcher()
     runner.start()
 
     assert runner.state == EnvironmentResponse(
@@ -109,47 +118,6 @@ def test_can_reload_after_an_error(pool_mock: MagicMock):
     runner.reload()
 
     assert runner.state == EnvironmentResponse(initialized=True, error_message=None)
-
-
-def test_function_not_findable_on_subprocess(started_runner: WorkerDispatcher):
-    from tests.unit_tests.core.fake_device_module import fake_motor_y
-
-    # Valid target on main but not sub process
-    # Change in this process not reflected in subprocess
-    fake_motor_y.__name__ = "not_exported"
-
-    with pytest.raises(
-        RpcError, match="not_exported: No such function in subprocess API"
-    ):
-        started_runner.run(fake_motor_y)
-
-
-def test_non_callable_excepts_in_main_process(started_runner: WorkerDispatcher):
-    # Not a valid target on main or sub process
-    from tests.unit_tests.core.fake_device_module import fetchable_non_callable
-
-    with pytest.raises(
-        RpcError,
-        match="<NonCallableMock id='[0-9]+'> is not Callable, "
-        + "cannot be run in subprocess",
-    ):
-        started_runner.run(fetchable_non_callable)
-
-
-def test_non_callable_excepts_in_sub_process(started_runner: WorkerDispatcher):
-    # Valid target on main but finds non-callable in sub process
-    from tests.unit_tests.core.fake_device_module import (
-        fetchable_callable,
-        fetchable_non_callable,
-    )
-
-    fetchable_callable.__name__ = fetchable_non_callable.__name__
-
-    with pytest.raises(
-        RpcError,
-        match="fetchable_non_callable: Object in subprocess is not a function",
-    ):
-        started_runner.run(fetchable_callable)
 
 
 def test_clear_message_for_anonymous_function(started_runner: WorkerDispatcher):
@@ -162,6 +130,43 @@ def test_clear_message_for_anonymous_function(started_runner: WorkerDispatcher):
         started_runner.run(non_fetchable_callable)
 
 
+def test_function_not_findable_on_subprocess():
+    with pytest.raises(RpcError, match="unknown: No such function in subprocess API"):
+        import_and_run_function("blueapi", "unknown", None, {})
+
+
+def test_module_not_findable_on_subprocess():
+    with pytest.raises(ModuleNotFoundError):
+        import_and_run_function("unknown", "unknown", None, {})
+
+
+def run_rpc_function(
+    func: Callable[..., Any],
+    expected_type: type[Any],
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
+    import_and_run_function(
+        func.__module__,
+        func.__name__,
+        expected_type,
+        {},
+        *args,
+        **kwargs,
+    )
+
+
+def test_non_callable_excepts(started_runner: WorkerDispatcher):
+    # Not a valid target on main or sub process
+    from tests.unit_tests.core.fake_device_module import fetchable_non_callable
+
+    with pytest.raises(
+        RpcError,
+        match="fetchable_non_callable: Object in subprocess is not a function",
+    ):
+        run_rpc_function(fetchable_non_callable, Mock)
+
+
 def test_clear_message_for_wrong_return(started_runner: WorkerDispatcher):
     from tests.unit_tests.core.fake_device_module import wrong_return_type
 
@@ -169,7 +174,7 @@ def test_clear_message_for_wrong_return(started_runner: WorkerDispatcher):
         ValidationError,
         match="1 validation error for int",
     ):
-        started_runner.run(wrong_return_type)
+        run_rpc_function(wrong_return_type, int)
 
 
 T = TypeVar("T")

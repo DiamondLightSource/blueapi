@@ -44,17 +44,19 @@ class WorkerDispatcher:
 
     _config: ApplicationConfig
     _subprocess: PoolClass | None
-    _use_subprocess: bool
     _state: EnvironmentResponse
 
     def __init__(
         self,
         config: ApplicationConfig | None = None,
-        use_subprocess: bool = True,
+        subprocess_factory: Callable[[], PoolClass] | None = None,
     ) -> None:
+        def default_subprocess_factory():
+            return Pool(initializer=_init_worker, processes=1)
+
         self._config = config or ApplicationConfig()
         self._subprocess = None
-        self._use_subprocess = use_subprocess
+        self._subprocess_factory = subprocess_factory or default_subprocess_factory
         self._state = EnvironmentResponse(
             initialized=False,
         )
@@ -68,12 +70,9 @@ class WorkerDispatcher:
 
     @start_as_current_span(TRACER)
     def start(self):
-        add_span_attributes(
-            {"_use_subprocess": self._use_subprocess, "_config": str(self._config)}
-        )
+        add_span_attributes({"_use_subprocess": True, "_config": str(self._config)})
         try:
-            if self._use_subprocess:
-                self._subprocess = Pool(initializer=_init_worker, processes=1)
+            self._subprocess = self._subprocess_factory()
             self.run(setup, self._config)
             self._state = EnvironmentResponse(initialized=True)
         except Exception as e:
@@ -108,39 +107,26 @@ class WorkerDispatcher:
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
-        """Calls the supplied function, which is modified to accept a dict as it's new
-        first param, before being passed to the subprocess runner, or just run in place.
-        """
-        add_span_attributes({"use_subprocess": self._use_subprocess})
-        if self._use_subprocess:
-            return self._run_in_subprocess(function, *args, **kwargs)
-        else:
-            return function(*args, **kwargs)
-
-    @start_as_current_span(TRACER, "function", "args", "kwargs")
-    def _run_in_subprocess(
-        self,
-        function: Callable[P, T],
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> T:
         """Call the supplied function, passing the current Span ID, if one
-        exists,from the observability context inro the _rpc caller function.
+        exists,from the observability context inro the import_and_run_function
+        caller function.
+
         When this is deserialized in and run by the subprocess, this will allow
         its functions to use the corresponding span as their parent span."""
+
+        add_span_attributes({"use_subprocess": True})
+
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")
         if not (hasattr(function, "__name__") and hasattr(function, "__module__")):
             raise RpcError(f"{function} is anonymous, cannot be run in subprocess")
-        if not callable(function):
-            raise RpcError(f"{function} is not Callable, cannot be run in subprocess")
         try:
             return_type = inspect.signature(function).return_annotation
         except TypeError:
             return_type = None
 
         return self._subprocess.apply(
-            _rpc,
+            import_and_run_function,
             (
                 function.__module__,
                 function.__name__,
@@ -164,7 +150,7 @@ class InvalidRunnerStateError(Exception):
 class RpcError(Exception): ...
 
 
-def _rpc(
+def import_and_run_function(
     module_name: str,
     function_name: str,
     expected_type: type[T] | None,

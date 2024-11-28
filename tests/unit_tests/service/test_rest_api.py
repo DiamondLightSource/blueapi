@@ -612,7 +612,7 @@ def test_get_without_authentication(
     response = client.get("/devices/my-device")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json() == {}
+    assert response.json() == {"detail": "Not authenticated"}
 
 
 def test_oidc_config_not_found_when_auth_is_disabled(client: TestClient):

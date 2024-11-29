@@ -11,7 +11,6 @@ from starlette.status import HTTP_403_FORBIDDEN
 from blueapi.config import OIDCConfig
 from blueapi.service import main
 from blueapi.service.authentication import (
-    BLUEAPI_CACHE_LOCATION,
     SessionCacheManager,
     SessionManager,
 )
@@ -133,9 +132,3 @@ def test_processes_valid_token(
 ):
     inner = main.verify_access_token(oidc_config)
     inner(access_token=valid_token_with_jwt["access_token"])
-
-
-def test_expanduser_fails():
-    with patch("os.path.expanduser", return_value=BLUEAPI_CACHE_LOCATION):
-        with pytest.raises(ValueError, match="Please specify auth_token_path"):
-            SessionCacheManager(token_path=None)

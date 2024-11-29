@@ -65,8 +65,6 @@ class SessionCacheManager(CacheManager):
         cache_dir = os.environ.get("XDG_CACHE_HOME")
         if not cache_dir:
             cache_dir = os.path.expanduser(BLUEAPI_CACHE_LOCATION)
-            if cache_dir.startswith("~/"):  # Expansion failed.
-                raise ValueError("Please specify auth_token_path")
         return Path(cache_dir)
 
 

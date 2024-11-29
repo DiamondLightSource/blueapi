@@ -120,6 +120,14 @@ def test_can_reload_after_an_error(pool_mock: MagicMock):
     assert runner.state == EnvironmentResponse(initialized=True, error_message=None)
 
 
+@patch("blueapi.service.runner.Pool")
+def test_subprocess_enabled_by_default(pool_mock: MagicMock):
+    runner = WorkerDispatcher()
+    runner.start()
+    pool_mock.assert_called_once()
+    runner.stop()
+
+
 def test_clear_message_for_anonymous_function(started_runner: WorkerDispatcher):
     non_fetchable_callable = MagicMock()
 

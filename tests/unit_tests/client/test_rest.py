@@ -67,7 +67,6 @@ def test_auth_request_functionality(
     assert len(calls) == 1
     cacheManager = SessionCacheManager(cached_valid_token)
     cache = cacheManager.load_cache()
-    assert cache
     assert calls[0].request.headers["Authorization"] == f"Bearer {cache.access_token}"
 
 

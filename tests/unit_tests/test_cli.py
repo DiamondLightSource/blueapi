@@ -70,6 +70,31 @@ def test_connection_error_caught_by_wrapper_func(
     assert result.stdout == "Failed to establish connection to Blueapi server.\n"
 
 
+@patch("requests.request")
+def test_authentication_error_caught_by_wrapper_func(
+    mock_requests: Mock, runner: CliRunner
+):
+    mock_requests.side_effect = BlueskyRemoteControlError("Response [401]")
+    result = runner.invoke(main, ["controller", "plans"])
+
+    assert (
+        result.stdout
+        == "Access denied. Please check your login status and try again.\n"
+    )
+
+
+@patch("requests.request")
+def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
+    mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
+
+    result = runner.invoke(main, ["controller", "plans"])
+    assert (
+        isinstance(result.exception, BlueskyRemoteControlError)
+        and result.exception.args == ("Response [450]",)
+        and result.exit_code == 1
+    )
+
+
 class MyModel(BaseModel):
     id: str
 
@@ -666,7 +691,6 @@ def test_login_when_cached_token_decode_fails(
     with patch("webbrowser.open", return_value=False):
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
         assert (
-            "Problem with cached token, starting new session\n"
             "Logging in\n"
             "Please login from this URL:- https://example.com/verify\n"
             "Logged in and cached new token\n" in result.output

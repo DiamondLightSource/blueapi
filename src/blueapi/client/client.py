@@ -47,10 +47,12 @@ class BlueapiClient:
 
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
-        rest = BlueapiRestClient(
-            config.api,
-            session_manager=SessionManager.from_cache(config.auth_token_path),
-        )
+        session_manager: SessionManager | None = None
+        try:
+            session_manager = SessionManager.from_cache(config.auth_token_path)
+        except Exception:
+            ...  # Swallow exceptions
+        rest = BlueapiRestClient(config.api, session_manager=session_manager)
         if config.stomp is None:
             return cls(rest)
         client = StompClient.for_broker(

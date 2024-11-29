@@ -25,7 +25,7 @@ class CacheManager(ABC):
     @abstractmethod
     def save_cache(self, cache: Cache) -> None: ...
     @abstractmethod
-    def load_cache(cache) -> Cache | None: ...
+    def load_cache(cache) -> Cache: ...
     @abstractmethod
     def delete_cache(self) -> None: ...
 
@@ -46,14 +46,11 @@ class SessionCacheManager(CacheManager):
             token_file.write(cache_base64)
         os.chmod(self._file_path, 0o600)
 
-    def load_cache(self) -> Cache | None:
-        try:
-            with open(self._file_path, "rb") as cache_file:
-                cache_base64: bytes = cache_file.read()
-                cache_json: str = base64.b64decode(cache_base64).decode("utf-8")
-                return TypeAdapter(Cache).validate_json(cache_json)
-        except Exception:
-            return None
+    def load_cache(self) -> Cache:
+        with open(self._file_path, "rb") as cache_file:
+            cache_base64: bytes = cache_file.read()
+            cache_json: str = base64.b64decode(cache_base64).decode("utf-8")
+            return TypeAdapter(Cache).validate_json(cache_json)
 
     def delete_cache(self) -> None:
         Path(self._file_path).unlink(missing_ok=True)
@@ -74,13 +71,12 @@ class SessionManager:
         self._cache_manager: CacheManager = cache_manager
 
     @classmethod
-    def from_cache(cls, auth_token_path: Path | None) -> SessionManager | None:
+    def from_cache(cls, auth_token_path: Path | None) -> SessionManager:
         cacheManager = SessionCacheManager(auth_token_path)
         cache = cacheManager.load_cache()
-        if cache:
-            return SessionManager(
-                server_config=cache.oidc_config, cache_manager=cacheManager
-            )
+        return SessionManager(
+            server_config=cache.oidc_config, cache_manager=cacheManager
+        )
 
     def delete_cache(self) -> None:
         self._cache_manager.delete_cache()
@@ -93,16 +89,16 @@ class SessionManager:
             str: A valid access token if successful.
             "": If the operation fails (no valid token could be fetched or refreshed)
         """
-        cache = self._cache_manager.load_cache()
-        if cache:
-            try:
-                self.decode_jwt(cache.access_token)
-                return cache.access_token
-            except jwt.ExpiredSignatureError:
-                return self._refresh_auth_token(cache.refresh_token)
-            except Exception:
-                return ""
-        return ""
+        try:
+            cache = self._cache_manager.load_cache()
+            self.decode_jwt(cache.access_token)
+            return cache.access_token
+        except jwt.ExpiredSignatureError:
+            cache = self._cache_manager.load_cache()
+            return self._refresh_auth_token(cache.refresh_token)
+        except Exception:
+            self.delete_cache()
+            return ""
 
     @cached_property
     def client(self):
@@ -121,23 +117,22 @@ class SessionManager:
 
     def logout(self) -> None:
         cache = self._cache_manager.load_cache()
-        if cache:
-            self.delete_cache()
-            try:
-                response = requests.get(
-                    self._server_config.end_session_endpoint,
-                    params={
-                        "id_token_hint": cache.id_token,
-                        "client_id": self._server_config.client_id,
-                    },
-                )
-                response.raise_for_status()
-                print("Logged out")
-            except Exception as e:
-                print(
-                    "An unexpected error occurred while attempting "
-                    f"to log out from the server.{e}"
-                )
+        self.delete_cache()
+        try:
+            response = requests.get(
+                self._server_config.end_session_endpoint,
+                params={
+                    "id_token_hint": cache.id_token,
+                    "client_id": self._server_config.client_id,
+                },
+            )
+            response.raise_for_status()
+            print("Logged out")
+        except Exception as e:
+            print(
+                "An unexpected error occurred while attempting "
+                f"to log out from the server.{e}"
+            )
 
     def _refresh_auth_token(self, refresh_token: str) -> str:
         response = requests.post(

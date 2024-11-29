@@ -139,6 +139,11 @@ def check_connection(func):
             func(*args, **kwargs)
         except ConnectionError:
             print("Failed to establish connection to Blueapi server.")
+        except BlueskyRemoteControlError as e:
+            if str(e) == "<Response [401]>":
+                print("Access denied. Please check your login status and try again.")
+            else:
+                raise e
 
     return wrapper
 
@@ -354,16 +359,12 @@ def scratch(obj: dict) -> None:
 @click.pass_obj
 def login(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    auth: SessionManager | None = SessionManager.from_cache(config.auth_token_path)
-    if auth:
+    try:
+        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
         access_token = auth.get_valid_access_token()
-        if not access_token:
-            print("Problem with cached token, starting new session")
-            auth.delete_cache()
-            auth.start_device_flow()
-        else:
-            print("Logged in")
-    else:
+        assert access_token
+        print("Logged in")
+    except Exception:
         client = BlueapiClient.from_config(config)
         oidc_config = client.get_oidc_config()
         auth = SessionManager(
@@ -376,6 +377,8 @@ def login(obj: dict) -> None:
 @click.pass_obj
 def logout(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
-    auth: SessionManager | None = SessionManager.from_cache(config.auth_token_path)
-    if auth:
+    try:
+        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
         auth.logout()
+    except FileNotFoundError:
+        print("Logged out")

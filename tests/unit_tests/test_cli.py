@@ -74,7 +74,7 @@ def test_connection_error_caught_by_wrapper_func(
 def test_authentication_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
-    mock_requests.side_effect = BlueskyRemoteControlError("Response [401]")
+    mock_requests.side_effect = BlueskyRemoteControlError("<Response [401]>")
     result = runner.invoke(main, ["controller", "plans"])
 
     assert (

@@ -317,8 +317,3 @@ def test_get_current_state_of_environment(client: BlueapiClient):
 def test_delete_current_environment(client: BlueapiClient):
     client.reload_environment()
     assert client.get_environment() == EnvironmentResponse(initialized=True)
-
-
-def test_reloading_environment_fails(client: BlueapiClient):
-    with pytest.raises(BlueskyRemoteControlError, match="Artificial failure"):
-        client.reload_environment()

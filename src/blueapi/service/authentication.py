@@ -19,6 +19,7 @@ from blueapi.config import OIDCConfig
 from blueapi.service.model import Cache
 
 BLUEAPI_CACHE_LOCATION = "~/.cache/blueapi_cache"
+SCOPES = "openid offline_access"
 
 
 class CacheManager(ABC):
@@ -39,18 +40,16 @@ class SessionCacheManager(CacheManager):
         return os.path.expanduser(self._token_path)
 
     def save_cache(self, cache: Cache) -> None:
-        cache_json: str = cache.model_dump_json()
-        cache_base64: bytes = base64.b64encode(cache_json.encode("utf-8"))
         self.delete_cache()
         with open(self._file_path, "xb") as token_file:
-            token_file.write(cache_base64)
+            token_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
         os.chmod(self._file_path, 0o600)
 
     def load_cache(self) -> Cache:
         with open(self._file_path, "rb") as cache_file:
-            cache_base64: bytes = cache_file.read()
-            cache_json: str = base64.b64decode(cache_base64).decode("utf-8")
-            return TypeAdapter(Cache).validate_json(cache_json)
+            return TypeAdapter(Cache).validate_json(
+                base64.b64decode(cache_file.read()).decode("utf-8")
+            )
 
     def delete_cache(self) -> None:
         Path(self._file_path).unlink(missing_ok=True)
@@ -185,7 +184,7 @@ class SessionManager:
             self._server_config.device_authorization_endpoint,
             data={
                 "client_id": self._server_config.client_id,
-                "scope": "openid offline_access",
+                "scope": SCOPES,
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )

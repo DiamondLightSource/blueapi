@@ -710,6 +710,14 @@ def test_logout_success(
     assert not cached_valid_refresh.exists()
 
 
+def test_logout_when_no_cache(
+    runner: CliRunner,
+    config_with_auth: str,
+):
+    result = runner.invoke(main, ["-c", config_with_auth, "logout"])
+    assert "Logged out" in result.output
+
+
 def test_local_cache_cleared_on_logout_when_oidc_unavailable(
     runner: CliRunner,
     config_with_auth: str,

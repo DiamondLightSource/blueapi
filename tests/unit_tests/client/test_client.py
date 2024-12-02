@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from bluesky_stomp.messaging import MessageContext
@@ -257,6 +257,72 @@ def test_reload_environment(
     client.reload_environment()
     mock_rest.get_environment.assert_called_once()
     mock_rest.delete_environment.assert_called_once()
+
+
+@patch("blueapi.client.client.time.time")
+@patch("blueapi.client.client.time.sleep")
+def test_reload_environment_no_timeout(
+    mock_sleep: Mock,
+    mock_time: Mock,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    mock_rest.get_environment.side_effect = [
+        EnvironmentResponse(initialized=False),
+        EnvironmentResponse(initialized=False),
+        EnvironmentResponse(initialized=False),
+        EnvironmentResponse(initialized=True),
+    ]
+    mock_time.return_value = 100.0
+    client.reload_environment(timeout=None)
+    assert mock_sleep.call_count == 3
+
+
+@patch("blueapi.client.client.time.time")
+@patch("blueapi.client.client.time.sleep")
+def test_reload_environment_with_timeout(
+    _: Mock,
+    mock_time: Mock,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    mock_rest.get_environment.side_effect = [
+        EnvironmentResponse(initialized=False),
+        EnvironmentResponse(initialized=False),
+        EnvironmentResponse(initialized=False),
+        EnvironmentResponse(initialized=False),
+    ]
+    mock_time.side_effect = [
+        100.0,
+        100.5,
+        101.0,  # Timeout should occur here
+        101.5,
+    ]
+    with pytest.raises(
+        TimeoutError,
+        match="Failed to reload the environment within 1.0 "
+        "seconds, a server restart is recommended",
+    ):
+        client.reload_environment(timeout=1.0)
+
+
+@patch("blueapi.client.client.time.time")
+@patch("blueapi.client.client.time.sleep")
+def test_reload_environment_ignores_current_environment(
+    mock_sleep: Mock,
+    mock_time: Mock,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    mock_rest.get_environment.side_effect = [
+        EnvironmentResponse(initialized=True),  # This is the old environment
+        EnvironmentResponse(initialized=False),
+        EnvironmentResponse(initialized=False),
+        EnvironmentResponse(initialized=True),  # This is the new environment
+    ]
+    mock_time.return_value = 100.0
+    client.reload_environment(timeout=None)
+    assert mock_sleep.call_count == 3
 
 
 def test_reload_environment_failure(

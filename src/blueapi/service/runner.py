@@ -8,7 +8,6 @@ from multiprocessing.pool import Pool as PoolClass
 from typing import Any, ParamSpec, TypeVar
 
 from observability_utils.tracing import (
-    add_span_attributes,
     get_context_propagator,
     get_tracer,
     start_as_current_span,
@@ -70,7 +69,6 @@ class WorkerDispatcher:
 
     @start_as_current_span(TRACER)
     def start(self):
-        add_span_attributes({"_use_subprocess": True, "_config": str(self._config)})
         try:
             self._subprocess = self._subprocess_factory()
             self.run(setup, self._config)
@@ -108,13 +106,11 @@ class WorkerDispatcher:
         **kwargs: P.kwargs,
     ) -> T:
         """Call the supplied function, passing the current Span ID, if one
-        exists,from the observability context inro the import_and_run_function
+        exists,from the observability context into the import_and_run_function
         caller function.
 
         When this is deserialized in and run by the subprocess, this will allow
         its functions to use the corresponding span as their parent span."""
-
-        add_span_attributes({"use_subprocess": True})
 
         if self._subprocess is None:
             raise InvalidRunnerStateError("Subprocess runner has not been started")

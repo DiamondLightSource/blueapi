@@ -67,7 +67,7 @@ def test_connection_error_caught_by_wrapper_func(
     mock_requests.side_effect = ConnectionError()
     result = runner.invoke(main, ["controller", "plans"])
 
-    assert result.stdout == "Failed to establish connection to Blueapi server.\n"
+    assert result.stdout == "Failed to establish connection to blueapi server.\n"
 
 
 @patch("requests.request")
@@ -649,7 +649,7 @@ def test_login_success(
     config_with_auth: str,
     mock_authn_server: responses.RequestsMock,
 ):
-    with patch("webbrowser.open", return_value=False):
+    with patch("webbrowser.open_new_tab", return_value=False):
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
         assert (
             "Logging in\n"
@@ -688,7 +688,7 @@ def test_login_when_cached_token_decode_fails(
     mock_authn_server: responses.RequestsMock,
     cached_expired_refresh: Path,
 ):
-    with patch("webbrowser.open", return_value=False):
+    with patch("webbrowser.open_new_tab", return_value=False):
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
         assert (
             "Logging in\n"

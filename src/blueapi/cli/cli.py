@@ -138,7 +138,7 @@ def check_connection(func):
         try:
             func(*args, **kwargs)
         except ConnectionError:
-            print("Failed to establish connection to Blueapi server.")
+            print("Failed to establish connection to blueapi server.")
         except BlueskyRemoteControlError as e:
             if str(e) == "<Response [401]>":
                 print("Access denied. Please check your login status and try again.")

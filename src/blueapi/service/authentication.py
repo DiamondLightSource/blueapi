@@ -20,7 +20,6 @@ from blueapi.service.model import Cache
 
 BLUEAPI_CACHE_LOCATION = "~/.cache/blueapi_cache"
 SCOPES = "openid offline_access"
-OPEN_NEW_TAB = 2
 
 
 class CacheManager(ABC):
@@ -196,9 +195,7 @@ class SessionManager:
         device_code = cast(str, response_json.get("device_code"))
         interval = cast(float, response_json.get("interval"))
         expires_in = cast(float, response_json.get("expires_in"))
-        if not webbrowser.open(
-            response_json["verification_uri_complete"], new=OPEN_NEW_TAB
-        ):
+        if not webbrowser.open_new_tab(response_json["verification_uri_complete"]):
             print(
                 "Please login from this URL:- "
                 f"{response_json['verification_uri_complete']}"

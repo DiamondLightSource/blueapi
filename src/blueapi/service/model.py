@@ -4,6 +4,7 @@ from typing import Any
 from bluesky.protocols import HasName
 from pydantic import Field
 
+from blueapi.config import OIDCConfig
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 from blueapi.utils import BlueapiBaseModel
 from blueapi.worker import WorkerState
@@ -149,3 +150,14 @@ class EnvironmentResponse(BlueapiBaseModel):
         description="If present - error loading context",
         min_length=1,
     )
+
+
+class Cache(BlueapiBaseModel):
+    """
+    Represents the cached data required for managing authentication.
+    """
+
+    oidc_config: OIDCConfig
+    access_token: str
+    refresh_token: str
+    id_token: str

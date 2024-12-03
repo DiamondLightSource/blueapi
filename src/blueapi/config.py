@@ -1,11 +1,18 @@
 from collections.abc import Mapping
 from enum import Enum
+from functools import cached_property
 from pathlib import Path
-from typing import Any, Generic, Literal, TypeVar
+from typing import Any, Generic, Literal, TypeVar, cast
 
+import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import (
+    BaseModel,
+    Field,
+    TypeAdapter,
+    ValidationError,
+)
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -77,6 +84,53 @@ class ScratchConfig(BlueapiBaseModel):
     repositories: list[ScratchRepository] = Field(default_factory=list)
 
 
+class OIDCConfig(BlueapiBaseModel):
+    well_known_url: str = Field(
+        description="URL to fetch OIDC config from the provider"
+    )
+    client_id: str = Field(description="Client ID")
+    client_audience: str = Field(description="Client Audience(s)", default="blueapi")
+
+    @cached_property
+    def _config_from_oidc_url(self) -> dict[str, Any]:
+        response: requests.Response = requests.get(self.well_known_url)
+        response.raise_for_status()
+        return response.json()
+
+    @cached_property
+    def device_authorization_endpoint(self) -> str:
+        return cast(
+            str, self._config_from_oidc_url.get("device_authorization_endpoint")
+        )
+
+    @cached_property
+    def token_endpoint(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("token_endpoint"))
+
+    @cached_property
+    def issuer(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("issuer"))
+
+    @cached_property
+    def authorization_endpoint(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("authorization_endpoint"))
+
+    @cached_property
+    def jwks_uri(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("jwks_uri"))
+
+    @cached_property
+    def end_session_endpoint(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("end_session_endpoint"))
+
+    @cached_property
+    def id_token_signing_alg_values_supported(self) -> list[str]:
+        return cast(
+            list[str],
+            self._config_from_oidc_url.get("id_token_signing_alg_values_supported"),
+        )
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -88,6 +142,8 @@ class ApplicationConfig(BlueapiBaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
+    oidc: OIDCConfig | None = None
+    auth_token_path: Path | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

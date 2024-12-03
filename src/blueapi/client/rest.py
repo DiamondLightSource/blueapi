@@ -10,10 +10,12 @@ from observability_utils.tracing import (
 from pydantic import TypeAdapter
 
 from blueapi.config import RestConfig
+from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
+    OIDCConfig,
     PlanModel,
     PlanResponse,
     TaskResponse,
@@ -45,8 +47,13 @@ def _exception(response: requests.Response) -> Exception | None:
 class BlueapiRestClient:
     _config: RestConfig
 
-    def __init__(self, config: RestConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: RestConfig | None = None,
+        session_manager: SessionManager | None = None,
+    ) -> None:
         self._config = config or RestConfig()
+        self._session_manager = session_manager
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -125,6 +132,9 @@ class BlueapiRestClient:
             "/environment", EnvironmentResponse, method="DELETE"
         )
 
+    def get_oidc_config(self) -> OIDCConfig:
+        return self._request_and_deserialize("/config/oidc", OIDCConfig)
+
     @start_as_current_span(TRACER, "method", "data", "suffix")
     def _request_and_deserialize(
         self,
@@ -137,10 +147,19 @@ class BlueapiRestClient:
         url = self._url(suffix)
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
+
         if data:
-            response = requests.request(method, url, json=data, headers=carr)
+            response = requests.request(
+                method,
+                url,
+                json=data,
+                headers=carr,
+                auth=JWTAuth(self._session_manager),
+            )
         else:
-            response = requests.request(method, url, headers=carr)
+            response = requests.request(
+                method, url, headers=carr, auth=JWTAuth(self._session_manager)
+            )
         exception = get_exception(response)
         if exception is not None:
             raise exception

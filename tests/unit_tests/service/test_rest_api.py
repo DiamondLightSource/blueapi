@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 
+import jwt
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -10,6 +11,7 @@ from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError
 
+from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.core.bluesky_types import Plan
 from blueapi.service import main
 from blueapi.service.model import (
@@ -27,7 +29,15 @@ from blueapi.worker.task_worker import TrackableTask
 def client() -> Iterator[TestClient]:
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(use_subprocess=False)
-        yield TestClient(main.get_app())
+        yield TestClient(main.get_app(ApplicationConfig()))
+        main.teardown_runner()
+
+
+@pytest.fixture
+def client_with_auth(oidc_config: OIDCConfig) -> Iterator[TestClient]:
+    with patch("blueapi.service.interface.worker"):
+        main.setup_runner(use_subprocess=False)
+        yield TestClient(main.get_app(ApplicationConfig(oidc=oidc_config)))
         main.teardown_runner()
 
 
@@ -592,3 +602,33 @@ def test_subprocess_enabled_by_default(mp_pool_mock: MagicMock):
     main.setup_runner()
     mp_pool_mock.assert_called_once()
     main.teardown_runner()
+
+
+@patch("blueapi.service.interface.get_device")
+def test_get_without_authentication(
+    get_device_mock: MagicMock, client: TestClient
+) -> None:
+    get_device_mock.side_effect = jwt.PyJWTError
+    response = client.get("/devices/my-device")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json() == {"detail": "Not authenticated"}
+
+
+def test_oidc_config_not_found_when_auth_is_disabled(client: TestClient):
+    response = client.get("/config/oidc")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Not Found"}
+
+
+@patch("blueapi.service.interface.get_oidc_config")
+def test_get_oidc_config(
+    get_oidc_config: MagicMock,
+    oidc_config: OIDCConfig,
+    mock_authn_server,
+    client_with_auth: TestClient,
+):
+    get_oidc_config.return_value = oidc_config
+    response = client_with_auth.get("/config/oidc")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == oidc_config.model_dump()

@@ -36,6 +36,7 @@ dependencies = [
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
+    "pyjwt[crypto]",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -66,6 +67,7 @@ dev = [
     "types-requests",
     "types-urllib3",
     "mock",
+    "jwcrypto",
 ]
 
 [project.scripts]

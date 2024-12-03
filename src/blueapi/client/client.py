@@ -10,10 +10,12 @@ from observability_utils.tracing import (
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
+    OIDCConfig,
     PlanModel,
     PlanResponse,
     TaskResponse,
@@ -45,7 +47,12 @@ class BlueapiClient:
 
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
-        rest = BlueapiRestClient(config.api)
+        session_manager: SessionManager | None = None
+        try:
+            session_manager = SessionManager.from_cache(config.auth_token_path)
+        except Exception:
+            ...  # Swallow exceptions
+        rest = BlueapiRestClient(config.api, session_manager=session_manager)
         if config.stomp is None:
             return cls(rest)
         client = StompClient.for_broker(
@@ -416,3 +423,14 @@ class BlueapiClient:
             f"Failed to reload the environment within {timeout} "
             "seconds, a server restart is recommended"
         )
+
+    @start_as_current_span(TRACER)
+    def get_oidc_config(self) -> OIDCConfig:
+        """
+        Get oidc config from the server
+
+        Returns:
+            OIDCConfig: Details of the oidc Config
+        """
+
+        return self._rest.get_oidc_config()

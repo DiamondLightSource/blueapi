@@ -7,11 +7,12 @@ from typing import Any
 from unittest import mock
 
 import pytest
+import responses
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import ApplicationConfig, ConfigLoader, OIDCConfig
 from blueapi.utils import InvalidConfigError
 
 
@@ -252,6 +253,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "port": 61613,
                 "auth": {"username": "guest", "password": "guest"},
             },
+            "auth_token_path": None,
             "env": {
                 "events": {
                     "broadcast_status_events": True,
@@ -268,6 +270,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "protocol": "http",
             },
             "logging": {"level": "INFO"},
+            "oidc": {
+                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "client_id": "blueapi-client",
+                "client_audience": "aud",
+            },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
                 "repositories": [
@@ -284,6 +291,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "port": 61613,
                 "auth": {"username": "guest", "password": "guest"},
             },
+            "auth_token_path": None,
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
@@ -294,6 +302,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "logging": {"level": "INFO"},
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
+            "oidc": {
+                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "client_id": "blueapi-client",
+                "client_audience": "aud",
+            },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
                 "repositories": [
@@ -331,3 +344,21 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     assert (
         target_dict_json == config_data
     ), f"Expected config {config_data}, but got {target_dict_json}"
+
+
+def test_oauth_config_model_post_init(
+    oidc_well_known: dict[str, Any],
+    oidc_config: OIDCConfig,
+    mock_authn_server: responses.RequestsMock,
+):
+    assert (
+        oidc_config.device_authorization_endpoint
+        == oidc_well_known["device_authorization_endpoint"]
+    )
+    assert (oidc_config.authorization_endpoint) == oidc_well_known[
+        "authorization_endpoint"
+    ]
+    assert oidc_config.token_endpoint == oidc_well_known["token_endpoint"]
+    assert oidc_config.issuer == oidc_well_known["issuer"]
+    assert oidc_config.jwks_uri == oidc_well_known["jwks_uri"]
+    assert oidc_config.end_session_endpoint == oidc_well_known["end_session_endpoint"]

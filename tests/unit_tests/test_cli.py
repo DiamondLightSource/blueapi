@@ -67,7 +67,32 @@ def test_connection_error_caught_by_wrapper_func(
     mock_requests.side_effect = ConnectionError()
     result = runner.invoke(main, ["controller", "plans"])
 
-    assert result.stdout == "Failed to establish connection to FastAPI server.\n"
+    assert result.stdout == "Failed to establish connection to blueapi server.\n"
+
+
+@patch("requests.request")
+def test_authentication_error_caught_by_wrapper_func(
+    mock_requests: Mock, runner: CliRunner
+):
+    mock_requests.side_effect = BlueskyRemoteControlError("<Response [401]>")
+    result = runner.invoke(main, ["controller", "plans"])
+
+    assert (
+        result.stdout
+        == "Access denied. Please check your login status and try again.\n"
+    )
+
+
+@patch("requests.request")
+def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
+    mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
+
+    result = runner.invoke(main, ["controller", "plans"])
+    assert (
+        isinstance(result.exception, BlueskyRemoteControlError)
+        and result.exception.args == ("Response [450]",)
+        and result.exit_code == 1
+    )
 
 
 class MyModel(BaseModel):
@@ -617,3 +642,91 @@ def _assert_matching_formatting(fmt: OutputFormat, obj: Any, expected: str):
     output = StringIO()
     fmt.display(obj, output)
     assert expected == output.getvalue()
+
+
+def test_login_success(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+):
+    with patch("webbrowser.open_new_tab", return_value=False):
+        result = runner.invoke(main, ["-c", config_with_auth, "login"])
+        assert (
+            "Logging in\n"
+            "Please login from this URL:- https://example.com/verify\n"
+            "Logged in and cached new token\n" == result.output
+        )
+        assert result.exit_code == 0
+
+
+def test_token_login_with_valid_token(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,
+):
+    result = runner.invoke(main, ["-c", config_with_auth, "login"])
+    assert "Logged in\n" == result.output
+    assert result.exit_code == 0
+
+
+def test_login_with_refresh_token(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_refresh: Path,
+):
+    result = runner.invoke(main, ["-c", config_with_auth, "login"])
+
+    assert "Logged in\n" == result.output
+    assert result.exit_code == 0
+
+
+def test_login_when_cached_token_decode_fails(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+    cached_expired_refresh: Path,
+):
+    with patch("webbrowser.open_new_tab", return_value=False):
+        result = runner.invoke(main, ["-c", config_with_auth, "login"])
+        assert (
+            "Logging in\n"
+            "Please login from this URL:- https://example.com/verify\n"
+            "Logged in and cached new token\n" in result.output
+        )
+        assert result.exit_code == 0
+
+
+def test_logout_success(
+    runner: CliRunner,
+    config_with_auth: str,
+    cached_valid_refresh: Path,
+    mock_authn_server: responses.RequestsMock,
+):
+    assert cached_valid_refresh.exists()
+    result = runner.invoke(main, ["-c", config_with_auth, "logout"])
+    assert "Logged out" in result.output
+    assert not cached_valid_refresh.exists()
+
+
+def test_logout_when_no_cache(
+    runner: CliRunner,
+    config_with_auth: str,
+):
+    result = runner.invoke(main, ["-c", config_with_auth, "logout"])
+    assert "Logged out" in result.output
+
+
+def test_local_cache_cleared_on_logout_when_oidc_unavailable(
+    runner: CliRunner,
+    config_with_auth: str,
+    cached_valid_refresh: Path,
+):
+    assert cached_valid_refresh.exists()
+    result = runner.invoke(main, ["-c", config_with_auth, "logout"])
+    assert (
+        "An unexpected error occurred while attempting to log out from the server."
+        in result.output
+    )
+    assert not cached_valid_refresh.exists()

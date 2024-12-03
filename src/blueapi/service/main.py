@@ -1,6 +1,7 @@
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 
+import jwt
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -12,6 +13,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -25,7 +27,7 @@ from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service import interface
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
@@ -73,29 +75,59 @@ def teardown_runner():
     RUNNER = None
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    config: ApplicationConfig = app.state.config
-    setup_runner(config)
-    yield
-    teardown_runner()
+def lifespan(config: ApplicationConfig):
+    @asynccontextmanager
+    async def inner(app: FastAPI):
+        setup_runner(config)
+        yield
+        teardown_runner()
+
+    return inner
 
 
 router = APIRouter()
+auth_router = APIRouter()
 
 
-def get_app():
+def get_app(config: ApplicationConfig):
     app = FastAPI(
         docs_url="/docs",
         title="BlueAPI Control",
-        lifespan=lifespan,
+        lifespan=lifespan(config),
         version=REST_API_VERSION,
     )
-    app.include_router(router)
+    dependencies = []
+    if config.oidc:
+        dependencies = [Depends(verify_access_token(config.oidc))]
+        app.include_router(auth_router)
+    app.include_router(router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
+    app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
     return app
+
+
+def verify_access_token(config: OIDCConfig):
+    jwkclient = jwt.PyJWKClient(config.jwks_uri)
+    oauth_scheme = OAuth2AuthorizationCodeBearer(
+        authorizationUrl=config.authorization_endpoint,
+        tokenUrl=config.token_endpoint,
+        refreshUrl=config.token_endpoint,
+    )
+
+    def inner(access_token: str = Depends(oauth_scheme)):
+        signing_key = jwkclient.get_signing_key_from_jwt(access_token)
+        jwt.decode(
+            access_token,
+            signing_key.key,
+            algorithms=config.id_token_signing_alg_values_supported,
+            verify=True,
+            audience=config.client_audience,
+            issuer=config.issuer,
+        )
+
+    return inner
 
 
 TRACER = get_tracer("interface")
@@ -105,6 +137,14 @@ async def on_key_error_404(_: Request, __: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "Item not found"},
+    )
+
+
+async def on_token_error_401(_: Request, __: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "Not authenticated"},
+        headers={"WWW-Authenticate": "Bearer"},
     )
 
 
@@ -127,6 +167,13 @@ async def delete_environment(
     if runner.state.initialized or runner.state.error_message is not None:
         background_tasks.add_task(runner.reload)
     return EnvironmentResponse(initialized=False)
+
+
+@auth_router.get("/config/oidc", tags=["auth"], response_model=OIDCConfig)
+@start_as_current_span(TRACER)
+def get_oidc_config(runner: WorkerDispatcher = Depends(_runner)) -> OIDCConfig | None:
+    """Retrieve the OpenID Connect (OIDC) configuration for the server."""
+    return runner.run(interface.get_oidc_config)
 
 
 @router.get("/plans", response_model=PlanResponse)
@@ -382,7 +429,7 @@ def start(config: ApplicationConfig):
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"
     )
-    app = get_app()
+    app = get_app(config)
 
     FastAPIInstrumentor().instrument_app(
         app,

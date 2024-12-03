@@ -83,9 +83,8 @@ def blueapi_client_get_methods() -> list[str]:
     # Get a list of methods that take only one argument (self)
     # This will currently return
     # ['get_plans', 'get_devices', 'get_state', 'get_all_tasks',
-    # 'get_active_task','get_environment']
-    to_remove = ["resume", "stop", "get_oidc_config"]
-    get_methods = [
+    # 'get_active_task','get_environment','resume', 'stop','get_oidc_config']
+    return [
         method
         for method in BlueapiClient.__dict__
         if callable(getattr(BlueapiClient, method))
@@ -93,7 +92,6 @@ def blueapi_client_get_methods() -> list[str]:
         and len(inspect.signature(getattr(BlueapiClient, method)).parameters) == 1
         and "self" in inspect.signature(getattr(BlueapiClient, method)).parameters
     ]
-    return [method for method in get_methods if method not in to_remove]
 
 
 @pytest.fixture(autouse=True)
@@ -106,6 +104,9 @@ def clean_existing_tasks(client: BlueapiClient):
 def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
 ):
+    blueapi_client_get_methods.remove(
+        "get_oidc_config"
+    )  # get_oidc_config can be accessed without auth
     for get_method in blueapi_client_get_methods:
         with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
             getattr(client_without_auth, get_method)()

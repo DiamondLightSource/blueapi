@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -16,7 +15,11 @@ from typing import (
 )
 
 from bluesky.run_engine import RunEngine
-from dodal.utils import make_all_devices
+from dodal.cli import _connect_devices, _report_successful_devices
+from dodal.utils import (
+    DeviceInitializationController,
+    collect_factories,
+)
 from ophyd_async.core import NotConnected
 from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
 from pydantic.fields import FieldInfo
@@ -114,13 +117,32 @@ class BlueskyContext:
         self.with_dodal_module(module)
 
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
-        devices, exceptions = make_all_devices(module, **kwargs)
+        factories = collect_factories(module, False)
 
-        coros = []
+        real_devices = {
+            name: factory()
+            for name, factory in factories.items()
+            if not isinstance(factory, DeviceInitializationController) or factory._mock  # noqa: SLF001
+        }
+        sim_devices = {
+            name: factory()
+            for name, factory in factories.items()
+            if isinstance(factory, DeviceInitializationController) and factory._mock  # noqa: SLF001
+        }
+
+        # devices, exceptions = make_all_devices(module, **kwargs)
+        real_devices, exceptions = _connect_devices(
+            self.run_engine, real_devices, False
+        )
+        _report_successful_devices(real_devices, False)
+
+        sim_devices, _ = _connect_devices(self.run_engine, sim_devices, True)
+        _report_successful_devices(sim_devices, True)
+
+        devices = {**real_devices, **sim_devices}
         for device in devices.values():
-            coros.append(device.connect())
             self.register_device(device)
-        asyncio.gather(*coros)
+
         # If exceptions have occurred, we log them but we do not make blueapi
         # fall over
         if len(exceptions) > 0:

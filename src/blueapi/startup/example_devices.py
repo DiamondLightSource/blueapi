@@ -1,5 +1,3 @@
-from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
-
 from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
 
 
@@ -31,47 +29,47 @@ def sample_pressure(name="sample_pressure") -> SynAxisWithMotionEvents:
     )
 
 
-def sample_temperature(
-    x: SynAxisWithMotionEvents,
-    y: SynAxisWithMotionEvents,
-    z: SynAxisWithMotionEvents,
-    name="sample_temperature",
-) -> SynSignal:
-    return SynSignal(
-        func=lambda: ((x.position + y.position + z.position) / 1000.0) + 20.0,
-        name=name,
-    )
+# def sample_temperature(
+#     x: SynAxisWithMotionEvents,
+#     y: SynAxisWithMotionEvents,
+#     z: SynAxisWithMotionEvents,
+#     name="sample_temperature",
+# ) -> SynSignal:
+#     return SynSignal(
+#         func=lambda: ((x.position + y.position + z.position) / 1000.0) + 20.0,
+#         name=name,
+#     )
 
 
-def image_det(
-    x: SynAxisWithMotionEvents,
-    y: SynAxisWithMotionEvents,
-    name="image_det",
-) -> Syn2DGauss:
-    return Syn2DGauss(
-        name=name,
-        motor0=x,
-        motor_field0="x",
-        motor1=y,
-        motor_field1="y",
-        center=(0, 0),
-        Imax=1,
-        labels={"detectors"},
-    )
+# def image_det(
+#     x: SynAxisWithMotionEvents,
+#     y: SynAxisWithMotionEvents,
+#     name="image_det",
+# ) -> Syn2DGauss:
+#     return Syn2DGauss(
+#         name=name,
+#         motor0=x,
+#         motor_field0="x",
+#         motor1=y,
+#         motor_field1="y",
+#         center=(0, 0),
+#         Imax=1,
+#         labels={"detectors"},
+#     )
 
 
-def current_det(
-    x: SynAxisWithMotionEvents,
-    name="current_det",
-) -> SynGauss:
-    return SynGauss(
-        name=name,
-        motor=x,
-        motor_field="x",
-        center=0.0,
-        Imax=1,
-        labels={"detectors"},
-    )
+# def current_det(
+#     x: SynAxisWithMotionEvents,
+#     name="current_det",
+# ) -> SynGauss:
+#     return SynGauss(
+#         name=name,
+#         motor=x,
+#         motor_field="x",
+#         center=0.0,
+#         Imax=1,
+#         labels={"detectors"},
+#     )
 
 
 def unplugged_motor(name="unplugged_motor") -> SynAxisWithMotionEvents:

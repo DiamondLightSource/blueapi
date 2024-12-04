@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -115,9 +116,11 @@ class BlueskyContext:
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         devices, exceptions = make_all_devices(module, **kwargs)
 
+        coros = []
         for device in devices.values():
+            coros.append(device.connect())
             self.register_device(device)
-
+        asyncio.gather(*coros)
         # If exceptions have occurred, we log them but we do not make blueapi
         # fall over
         if len(exceptions) > 0:

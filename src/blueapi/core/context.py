@@ -128,19 +128,19 @@ class BlueskyContext:
     ):
         factories = collect_factories(module, include_skipped=False)
 
+        def is_simulated_device(name, factory, **kwargs):
+            device = devices.get(name, None)
+            mock_flag = kwargs.get("mock", kwargs.get("fake_with_ophyd_sim", False))
+            return device is not None and (
+                isinstance(factory, DeviceInitializationController)
+                and factory._mock  # noqa: SLF001
+                or (mock_flag and isinstance(device, OphydV1Device | OphydV2Device))
+            )
+
         sim_devices = {
             name: devices.get(name)
             for name, factory in factories.items()
-            if isinstance(factory, DeviceInitializationController)
-            and factory._mock  # noqa: SLF001
-            and kwargs.get(
-                "mock",
-                kwargs.get(
-                    "fake_with_ophyd_sim",
-                    False,
-                ),
-            )
-            and devices.get(name, None) is not None
+            if is_simulated_device(name, factory, **kwargs)
         }
         real_devices = {
             name: device

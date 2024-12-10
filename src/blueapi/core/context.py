@@ -146,7 +146,7 @@ class BlueskyContext:
             name: device
             for name, device in devices.items()
             if sim_devices.get(name, None) is None
-            and (isinstance(device, OphydV1Device) or isinstance(device, OphydV2Device))
+            and (isinstance(device, OphydV1Device | OphydV2Device))
         }
 
         if len(real_devices) > 0:

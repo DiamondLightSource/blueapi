@@ -7,6 +7,7 @@ from types import ModuleType, UnionType
 from typing import (
     Any,
     Generic,
+    TypeAlias,
     TypeVar,
     Union,
     get_args,
@@ -19,7 +20,10 @@ from dodal.cli import _connect_devices, _report_successful_devices
 from dodal.utils import (
     DeviceInitializationController,
     collect_factories,
+    make_all_devices,
 )
+from ophyd.device import Device as OphydV1Device
+from ophyd_async.core import Device as OphydV2Device
 from ophyd_async.core import NotConnected
 from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
 from pydantic.fields import FieldInfo
@@ -41,6 +45,9 @@ from .bluesky_types import (
 from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
+
+
+AnyDevice: TypeAlias = OphydV1Device | OphydV2Device
 
 
 @dataclass
@@ -116,30 +123,37 @@ class BlueskyContext:
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
 
-    def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
-        factories = collect_factories(module, False)
+    def _connect_devices(self, module: ModuleType, devices: dict[str, AnyDevice]):
+        factories = collect_factories(module, include_skipped=False)
 
-        real_devices = {
-            name: factory()
-            for name, factory in factories.items()
-            if not isinstance(factory, DeviceInitializationController) or factory._mock  # noqa: SLF001
-        }
         sim_devices = {
-            name: factory()
+            name: devices.get(name)
             for name, factory in factories.items()
-            if isinstance(factory, DeviceInitializationController) and factory._mock  # noqa: SLF001
+            if isinstance(factory, DeviceInitializationController)
+            and factory._mock  # noqa: SLF001
+            and devices.get(name, None) is not None
+        }
+        real_devices = {
+            name: device
+            for name, device in devices.items()
+            if sim_devices.get(name, None) is None
+            and (isinstance(device, OphydV1Device) or isinstance(device, OphydV2Device))
         }
 
-        # devices, exceptions = make_all_devices(module, **kwargs)
-        real_devices, exceptions = _connect_devices(
-            self.run_engine, real_devices, False
-        )
-        _report_successful_devices(real_devices, False)
+        if len(real_devices) > 0:
+            real_devices, exceptions = _connect_devices(
+                self.run_engine, real_devices, False
+            )
+            _report_successful_devices(real_devices, False)
+        if len(sim_devices) > 0:
+            sim_devices, _ = _connect_devices(self.run_engine, sim_devices, True)  # type: ignore
+            _report_successful_devices(sim_devices, True)
 
-        sim_devices, _ = _connect_devices(self.run_engine, sim_devices, True)
-        _report_successful_devices(sim_devices, True)
+    def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
+        devices, exceptions = make_all_devices(module, **kwargs)
 
-        devices = {**real_devices, **sim_devices}
+        self._connect_devices(module, devices)
+
         for device in devices.values():
             self.register_device(device)
 

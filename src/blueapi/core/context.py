@@ -133,8 +133,8 @@ class BlueskyContext:
             mock_flag = kwargs.get("mock", kwargs.get("fake_with_ophyd_sim", False))
             return device is not None and (
                 isinstance(factory, DeviceInitializationController)
-                and factory._mock  # noqa: SLF001
-                or (mock_flag and isinstance(device, OphydV1Device | OphydV2Device))
+                and (factory._mock or mock_flag)  # noqa: SLF001
+                and isinstance(device, OphydV1Device | OphydV2Device)
             )
 
         sim_devices = {

@@ -371,7 +371,7 @@ def test_str_default(
 
     spec = empty_context._type_spec_for_function(has_default_reference)
     assert spec["m"][0] is movable_ref
-    assert (df := spec["m"][1].default_factory) and df() == SIM_MOTOR_NAME
+    assert (df := spec["m"][1].default_factory) and df() == SIM_MOTOR_NAME  # type: ignore
 
     assert has_default_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_reference.__name__].model
@@ -390,7 +390,7 @@ def test_nested_str_default(
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
     assert spec["m"][0] == list[movable_ref]  # type: ignore
-    assert (df := spec["m"][1].default_factory) and df() == [SIM_MOTOR_NAME]
+    assert (df := spec["m"][1].default_factory) and df() == [SIM_MOTOR_NAME]  # type: ignore
 
     assert has_default_nested_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_nested_reference.__name__].model

@@ -123,7 +123,9 @@ class BlueskyContext:
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
 
-    def _connect_devices(self, module: ModuleType, devices: dict[str, AnyDevice]):
+    def _connect_devices(
+        self, module: ModuleType, devices: dict[str, AnyDevice], **kwargs
+    ):
         factories = collect_factories(module, include_skipped=False)
 
         sim_devices = {
@@ -131,6 +133,13 @@ class BlueskyContext:
             for name, factory in factories.items()
             if isinstance(factory, DeviceInitializationController)
             and factory._mock  # noqa: SLF001
+            and kwargs.get(
+                "mock",
+                kwargs.get(
+                    "fake_with_ophyd_sim",
+                    False,
+                ),
+            )
             and devices.get(name, None) is not None
         }
         real_devices = {
@@ -152,7 +161,7 @@ class BlueskyContext:
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         devices, exceptions = make_all_devices(module, **kwargs)
 
-        self._connect_devices(module, devices)
+        self._connect_devices(module, devices, **kwargs)
 
         for device in devices.values():
             self.register_device(device)

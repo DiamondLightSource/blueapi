@@ -18,7 +18,7 @@ def fake_motor_x() -> EpicsMotor:
 
 @device_factory(mock=True)
 def ppump() -> WatsonMarlow323Pump:
-    return WatsonMarlow323Pump("EA-PUMP-01:")
+    return WatsonMarlow323Pump("ppump")
 
 
 def fake_motor_y() -> EpicsMotor:

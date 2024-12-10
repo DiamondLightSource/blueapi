@@ -25,7 +25,7 @@ def theta(name="theta") -> SynAxisWithMotionEvents:
 
 @device_factory(mock=True)
 def ppump() -> WatsonMarlow323Pump:
-    return WatsonMarlow323Pump("EA-PUMP-01:")
+    return WatsonMarlow323Pump("ppump")
 
 
 def x_err(name="x_err") -> BrokenSynAxis:

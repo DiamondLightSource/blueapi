@@ -1,5 +1,3 @@
-from dodal.common.beamlines.beamline_utils import device_factory
-from dodal.devices.watsonmarlow323_pump import WatsonMarlow323Pump
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
 
 from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
@@ -21,11 +19,6 @@ def theta(name="theta") -> SynAxisWithMotionEvents:
     return SynAxisWithMotionEvents(
         name=name, delay=0.2, events_per_move=12, egu="degrees"
     )
-
-
-@device_factory(mock=True)
-def ppump() -> WatsonMarlow323Pump:
-    return WatsonMarlow323Pump("ppump")
 
 
 def x_err(name="x_err") -> BrokenSynAxis:

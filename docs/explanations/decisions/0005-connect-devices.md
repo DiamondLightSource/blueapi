@@ -1,4 +1,4 @@
-# 5. Connect dodal device during startup
+# 5. Connect all dodal devices during startup
 
 Date: 10-12-2024
 

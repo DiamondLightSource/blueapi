@@ -4,32 +4,17 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
 from types import ModuleType, UnionType
-from typing import (
-    Any,
-    Generic,
-    TypeAlias,
-    TypeVar,
-    Union,
-    get_args,
-    get_origin,
-    get_type_hints,
-)
+from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.run_engine import RunEngine
-from dodal.cli import _connect_devices, _report_successful_devices
-from dodal.utils import (
-    DeviceInitializationController,
-    collect_factories,
-    make_all_devices,
-)
-from ophyd.device import Device as OphydV1Device
-from ophyd_async.core import Device as OphydV2Device
+from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
 from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
 
+from blueapi import utils
 from blueapi.config import EnvironmentConfig, SourceKind
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
@@ -45,9 +30,6 @@ from .bluesky_types import (
 from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
-
-
-AnyDevice: TypeAlias = OphydV1Device | OphydV2Device
 
 
 @dataclass
@@ -123,45 +105,10 @@ class BlueskyContext:
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
 
-    def _connect_devices(
-        self, module: ModuleType, devices: dict[str, AnyDevice], **kwargs
-    ):
-        factories = collect_factories(module, include_skipped=False)
-
-        def is_simulated_device(name, factory, **kwargs):
-            device = devices.get(name, None)
-            mock_flag = kwargs.get("mock", kwargs.get("fake_with_ophyd_sim", False))
-            return device is not None and (
-                isinstance(factory, DeviceInitializationController)
-                and (factory._mock or mock_flag)  # noqa: SLF001
-                and isinstance(device, OphydV1Device | OphydV2Device)
-            )
-
-        sim_devices = {
-            name: devices.get(name)
-            for name, factory in factories.items()
-            if is_simulated_device(name, factory, **kwargs)
-        }
-        real_devices = {
-            name: device
-            for name, device in devices.items()
-            if sim_devices.get(name, None) is None
-            and (isinstance(device, OphydV1Device | OphydV2Device))
-        }
-
-        if len(real_devices) > 0:
-            real_devices, exceptions = _connect_devices(
-                self.run_engine, real_devices, False
-            )
-            _report_successful_devices(real_devices, False)
-        if len(sim_devices) > 0:
-            sim_devices, _ = _connect_devices(self.run_engine, sim_devices, True)  # type: ignore
-            _report_successful_devices(sim_devices, True)
-
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         devices, exceptions = make_all_devices(module, **kwargs)
 
-        self._connect_devices(module, devices, **kwargs)
+        utils.connect_devices(self.run_engine, module, devices, **kwargs)
 
         for device in devices.values():
             self.register_device(device)

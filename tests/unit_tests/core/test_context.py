@@ -190,7 +190,7 @@ def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
         "motor_y",
         "motor_bundle_a",
         "motor_bundle_b",
-        "ppump",
+        "device_a",
     } == empty_context.devices.keys()
 
 
@@ -281,7 +281,7 @@ def test_add_devices_and_plans_from_modules_with_config(
         "motor_y",
         "motor_bundle_a",
         "motor_bundle_b",
-        "ppump",
+        "device_a",
     } == empty_context.devices.keys()
     assert {"spec_scan"} == empty_context.plans.keys()
 

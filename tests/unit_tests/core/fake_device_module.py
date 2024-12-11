@@ -1,8 +1,9 @@
 from unittest.mock import MagicMock, NonCallableMock
 
 from dodal.common.beamlines.beamline_utils import device_factory
-from dodal.devices.watsonmarlow323_pump import WatsonMarlow323Pump
 from ophyd import EpicsMotor
+from ophyd_async.core import StandardReadable
+from ophyd_async.epics.motor import Motor
 
 
 def fake_motor_bundle_b(
@@ -16,9 +17,16 @@ def fake_motor_x() -> EpicsMotor:
     return _mock_with_name("motor_x")
 
 
+class Device_a(StandardReadable):
+    def __init__(self, name: str = "") -> None:
+        with self.add_children_as_readables():
+            self.motor = Motor("X:SIZE")
+        super().__init__(name)
+
+
 @device_factory(mock=True)
-def ppump() -> WatsonMarlow323Pump:
-    return WatsonMarlow323Pump("ppump")
+def device_a() -> Device_a:
+    return Device_a()
 
 
 def fake_motor_y() -> EpicsMotor:

@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Mapping
 from types import ModuleType
 
@@ -11,6 +12,8 @@ from dodal.utils import (
 from ophyd_async.core import NotConnected
 from ophyd_async.plan_stubs import ensure_connected
 
+LOGGER = logging.getLogger(__name__)
+
 
 def _report_successful_devices(
     devices: Mapping[str, AnyDevice],
@@ -21,8 +24,8 @@ def _report_successful_devices(
         sorted([f"\t{device_name}" for device_name in devices.keys()])
     )
 
-    print(f"{len(devices)} devices connected{sim_statement}:")
-    print(connected_devices)
+    LOGGER.info(f"{len(devices)} devices connected{sim_statement}:")
+    LOGGER.info(connected_devices)
 
 
 def _establish_device_connections(

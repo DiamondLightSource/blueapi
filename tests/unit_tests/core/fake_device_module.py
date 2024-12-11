@@ -1,8 +1,9 @@
 from unittest.mock import MagicMock, NonCallableMock
 
 from dodal.common.beamlines.beamline_utils import device_factory
+from dodal.utils import OphydV1Device, OphydV2Device
 from ophyd import EpicsMotor
-from ophyd_async.core import StandardReadable
+from ophyd_async.core import DEFAULT_TIMEOUT, LazyMock, StandardReadable
 from ophyd_async.epics.motor import Motor
 
 
@@ -27,6 +28,33 @@ class Device_a(StandardReadable):
 @device_factory(mock=True)
 def device_a() -> Device_a:
     return Device_a()
+
+
+class UnconnectableOphydDevice(OphydV1Device):
+    def wait_for_connection(
+        self,
+        all_signals: bool = False,
+        timeout: float = 2.0,
+    ) -> None:
+        raise RuntimeError(f"{self.name}: fake connection error for tests")
+
+
+def ophyd_device() -> UnconnectableOphydDevice:
+    return UnconnectableOphydDevice(name="ophyd_device")
+
+
+class UnconnectableOphydAsyncDevice(OphydV2Device):
+    async def connect(
+        self,
+        mock: bool | LazyMock = False,
+        timeout: float = DEFAULT_TIMEOUT,
+        force_reconnect: bool = False,
+    ) -> None:
+        raise RuntimeError(f"{self.name}: fake connection error for tests")
+
+
+def ophyd_async_device() -> UnconnectableOphydAsyncDevice:
+    return UnconnectableOphydAsyncDevice(name="ophyd_async_device")
 
 
 def fake_motor_y() -> EpicsMotor:

@@ -115,18 +115,6 @@
             ]
         },
         {
-            "name": "ppump",
-            "protocols": [
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Readable",
-                "Stageable",
-                "Configurable",
-                "Device"
-            ]
-        },
-        {
             "name": "y",
             "protocols": [
                 "Checkable",

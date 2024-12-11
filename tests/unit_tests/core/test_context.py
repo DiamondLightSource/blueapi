@@ -191,6 +191,8 @@ def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
         "motor_bundle_a",
         "motor_bundle_b",
         "device_a",
+        "ophyd_device",
+        "ophyd_async_device",
     } == empty_context.devices.keys()
 
 
@@ -282,6 +284,8 @@ def test_add_devices_and_plans_from_modules_with_config(
         "motor_bundle_a",
         "motor_bundle_b",
         "device_a",
+        "ophyd_device",
+        "ophyd_async_device",
     } == empty_context.devices.keys()
     assert {"spec_scan"} == empty_context.plans.keys()
 

@@ -4,15 +4,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
 from types import ModuleType, UnionType
-from typing import (
-    Any,
-    Generic,
-    TypeVar,
-    Union,
-    get_args,
-    get_origin,
-    get_type_hints,
-)
+from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.run_engine import RunEngine
 from dodal.utils import make_all_devices
@@ -22,6 +14,7 @@ from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
 
+from blueapi import utils
 from blueapi.config import EnvironmentConfig, SourceKind
 from blueapi.utils import BlueapiPlanModelConfig, load_module_all
 
@@ -114,6 +107,8 @@ class BlueskyContext:
 
     def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
         devices, exceptions = make_all_devices(module, **kwargs)
+
+        utils.connect_devices(self.run_engine, module, devices, **kwargs)
 
         for device in devices.values():
             self.register_device(device)

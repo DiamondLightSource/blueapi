@@ -10,10 +10,7 @@ from starlette.status import HTTP_403_FORBIDDEN
 
 from blueapi.config import OIDCConfig
 from blueapi.service import main
-from blueapi.service.authentication import (
-    SessionCacheManager,
-    SessionManager,
-)
+from blueapi.service.authentication import SessionCacheManager, SessionManager
 
 
 @pytest.fixture
@@ -132,3 +129,12 @@ def test_processes_valid_token(
 ):
     inner = main.verify_access_token(oidc_config)
     inner(access_token=valid_token_with_jwt["access_token"])
+
+
+def test_session_cache_manager_returns_writable_file_path(tmp_path):
+    with patch("os.environ.get") as xdg_directory:
+        xdg_directory.return_value = tmp_path
+        cache = SessionCacheManager(token_path=None)
+        with open(cache._file_path, "xb") as token_file:
+            assert token_file.writable()
+        assert cache._file_path == f"{tmp_path}/blueapi_cache"

@@ -39,8 +39,8 @@ VISIT_NOT_MOUNTED_MESSAGE = f"""
 def training_rig_config() -> ApplicationConfig:
     return ApplicationConfig(
         stomp=StompConfig(
-            host="daq-rabbitmq",
-            auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
+            host="172.23.168.198",
+            auth=BasicAuthentication(username="p46", password="64p"),  # type: ignore
         ),
         api=RestConfig(host="p46-blueapi.diamond.ac.uk", port=443, protocol="https"),
     )
@@ -58,10 +58,30 @@ STEP_SCAN = Task(
         "motor": "sample_stage",
     },
 )
+SPEC_SCAN = Task(
+    name="spec_scan",
+    params={
+        "detectors": ["det"],
+        "spec": {
+            "axis": "sample_stage.x",
+            "start": 1.0,
+            "stop": 10.0,
+            "num": 10,
+            "type": "Line",
+        },
+    },
+)
+CONNECT_DEVICES = Task(
+    name="connect_devices",
+    params={"devices": ["det", "sample_stage"]},
+)
 
 
 @disable_side_effects
-def test_step_scan_task(client: BlueapiClient, plan: str = "plan_step_scan"):
+def test_spec_scan_task(client: BlueapiClient, plan: str = "spec_scan"):
+    # assert client.get_plan("connect_devices")
+    # assert client.create_and_start_task(CONNECT_DEVICES)
+
     assert client.get_plan(plan), f"In {plan} is available"
 
     all_events: list[AnyEvent] = []
@@ -69,7 +89,7 @@ def test_step_scan_task(client: BlueapiClient, plan: str = "plan_step_scan"):
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client.run_task(STEP_SCAN, on_event=on_event)
+    client.run_task(SPEC_SCAN, on_event=on_event)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [

@@ -60,12 +60,12 @@ class SessionCacheManager(CacheManager):
         """
         Return the XDG cache file path.
         """
-        cache = os.environ.get("XDG_CACHE_HOME")
-        if not cache:
-            cache = os.path.expanduser(BLUEAPI_CACHE_LOCATION)
-        elif os.path.isdir(cache):
-            cache = Path(cache) / "blueapi_cache"
-        return Path(cache)
+        cache_path = os.environ.get("XDG_CACHE_HOME")
+        if not cache_path:
+            cache_path = os.path.expanduser(BLUEAPI_CACHE_LOCATION)
+        elif os.path.isdir(cache_path):
+            cache_path = Path(cache_path) / "blueapi_cache"
+        return Path(cache_path)
 
 
 class SessionManager:

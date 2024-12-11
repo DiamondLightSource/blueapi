@@ -192,7 +192,7 @@ pytest-asyncio==0.24.0
 pytest-cov==6.0.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
-python-multipart==0.0.17
+python-multipart==0.0.18
 pytz==2024.2
 PyYAML==6.0.2
 questionary==2.0.1

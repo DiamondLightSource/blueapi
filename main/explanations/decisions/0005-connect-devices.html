@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>4. API Model Case &#8212; blueapi 0.6.2rc2.dev2+g211bb49c documentation</title>
+    <title>5. Connect all dodal devices during startup &#8212; blueapi 0.6.2rc2.dev2+g211bb49c documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/decisions/0004-api-case';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/decisions/0005-connect-devices';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
@@ -57,8 +57,8 @@
     <link rel="icon" href="../../_static/blueapi-logo.svg"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="5. Connect all dodal devices during startup" href="0005-connect-devices.html" />
-    <link rel="prev" title="3. No Queues" href="0003-no-queues.html" />
+    <link rel="next" title="Events Emitted by the Worker" href="../events.html" />
+    <link rel="prev" title="4. API Model Case" href="0004-api-case.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -401,8 +401,8 @@
 <li class="toctree-l2"><a class="reference internal" href="0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0002-switched-to-python-copier-template.html">2. Adopt python-copier-template for project structure</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0003-no-queues.html">3. No Queues</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">4. API Model Case</a></li>
-<li class="toctree-l2"><a class="reference internal" href="0005-connect-devices.html">5. Connect all dodal devices during startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="0004-api-case.html">4. API Model Case</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">5. Connect all dodal devices during startup</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="../events.html">Events Emitted by the Worker</a></li>
@@ -451,7 +451,7 @@
     
     <li class="breadcrumb-item"><a href="../decisions.html" class="nav-link">Architectural Decision Records</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">4. API Model Case</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">5. Connect all dodal devices during startup</span></li>
   </ul>
 </nav>
 </div>
@@ -468,26 +468,27 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="api-model-case">
-<h1>4. API Model Case<a class="headerlink" href="#api-model-case" title="Link to this heading">#</a></h1>
-<p>Date: 2023-05-23</p>
+  <section id="connect-all-dodal-devices-during-startup">
+<h1>5. Connect all dodal devices during startup<a class="headerlink" href="#connect-all-dodal-devices-during-startup" title="Link to this heading">#</a></h1>
+<p>Date: 10-12-2024</p>
 <section id="status">
 <h2>Status<a class="headerlink" href="#status" title="Link to this heading">#</a></h2>
 <p>Accepted</p>
 </section>
 <section id="context">
 <h2>Context<a class="headerlink" href="#context" title="Link to this heading">#</a></h2>
-<p>Considering whether keys in JSON blobs from the API should be in snake_case or camelCase.
-This includes plan parameters which may be user-defined.</p>
+<p>Currently, Dodal devices are not automatically connected when they are created.</p>
 </section>
 <section id="decision">
 <h2>Decision<a class="headerlink" href="#decision" title="Link to this heading">#</a></h2>
-<p>The priority is not to confuse users, so we will not alias any field names defined in Python.</p>
+<p>All Dodal devices will be configured to automatically connect upon creation, ensuring they are ready for use immediately after initialization.</p>
 </section>
 <section id="consequences">
 <h2>Consequences<a class="headerlink" href="#consequences" title="Link to this heading">#</a></h2>
-<p>Most code will be written with pep8 enforcers which means most field names will be snake_case.
-Some user defined ones may differ.</p>
+<ul class="simple">
+<li><p>Devices that fail to connect during startup will remain disconnected.</p></li>
+<li><p>Additional measures will need to be implemented to ensure such devices are identified and reconnected promptly.</p></li>
+</ul>
 </section>
 </section>
 
@@ -502,20 +503,20 @@ Some user defined ones may differ.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="0003-no-queues.html"
+       href="0004-api-case.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">3. No Queues</p>
+        <p class="prev-next-title">4. API Model Case</p>
       </div>
     </a>
     <a class="right-next"
-       href="0005-connect-devices.html"
+       href="../events.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">5. Connect all dodal devices during startup</p>
+        <p class="prev-next-title">Events Emitted by the Worker</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -549,7 +550,7 @@ Some user defined ones may differ.</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/explanations/decisions/0004-api-case.md">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/explanations/decisions/0005-connect-devices.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -564,7 +565,7 @@ Some user defined ones may differ.</p>
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../../_sources/explanations/decisions/0004-api-case.md.txt">
+    <a href="../../_sources/explanations/decisions/0005-connect-devices.md.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

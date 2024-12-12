@@ -18,7 +18,7 @@ from requests.auth import AuthBase
 from blueapi.config import OIDCConfig
 from blueapi.service.model import Cache
 
-BLUEAPI_CACHE_LOCATION = "~/.cache/"
+DEFAULT_CAHCE_DIR = "~/.cache/"
 SCOPES = "openid offline_access"
 
 
@@ -60,7 +60,7 @@ class SessionCacheManager(CacheManager):
         """
         Return the default cache file path.
         """
-        cache_path = os.environ.get("XDG_CACHE_HOME", BLUEAPI_CACHE_LOCATION)
+        cache_path = os.environ.get("XDG_CACHE_HOME", DEFAULT_CAHCE_DIR)
         return Path(cache_path).expanduser() / "blueapi_cache"
 
 

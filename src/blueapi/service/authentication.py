@@ -18,7 +18,7 @@ from requests.auth import AuthBase
 from blueapi.config import OIDCConfig
 from blueapi.service.model import Cache
 
-BLUEAPI_CACHE_LOCATION = "~/.cache/blueapi_cache"
+DEFAULT_CAHCE_DIR = "~/.cache/"
 SCOPES = "openid offline_access"
 
 
@@ -33,7 +33,9 @@ class CacheManager(ABC):
 
 class SessionCacheManager(CacheManager):
     def __init__(self, token_path: Path | None) -> None:
-        self._token_path: Path = token_path if token_path else self._get_xdg_cache_dir()
+        self._token_path: Path = (
+            token_path if token_path else self._default_token_cache_path()
+        )
 
     @cached_property
     def _file_path(self) -> str:
@@ -54,14 +56,12 @@ class SessionCacheManager(CacheManager):
     def delete_cache(self) -> None:
         Path(self._file_path).unlink(missing_ok=True)
 
-    def _get_xdg_cache_dir(self) -> Path:
+    def _default_token_cache_path(self) -> Path:
         """
-        Return the XDG cache directory.
+        Return the default cache file path.
         """
-        cache_dir = os.environ.get("XDG_CACHE_HOME")
-        if not cache_dir:
-            cache_dir = os.path.expanduser(BLUEAPI_CACHE_LOCATION)
-        return Path(cache_dir)
+        cache_path = os.environ.get("XDG_CACHE_HOME", DEFAULT_CAHCE_DIR)
+        return Path(cache_path).expanduser() / "blueapi_cache"
 
 
 class SessionManager:

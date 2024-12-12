@@ -132,9 +132,8 @@ def test_processes_valid_token(
 
 
 def test_session_cache_manager_returns_writable_file_path(tmp_path):
-    with patch("os.environ.get") as xdg_directory:
-        xdg_directory.return_value = tmp_path
-        cache = SessionCacheManager(token_path=None)
-        with open(cache._file_path, "xb") as token_file:
-            assert token_file.writable()
-        assert cache._file_path == f"{tmp_path}/blueapi_cache"
+    os.environ["XDG_CACHE_HOME"] = str(tmp_path)
+    cache = SessionCacheManager(token_path=None)
+    Path(cache._file_path).touch()
+    assert os.path.isfile(cache._file_path)
+    assert cache._file_path == f"{tmp_path}/blueapi_cache"

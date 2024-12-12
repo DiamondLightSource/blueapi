@@ -18,7 +18,7 @@ def fake_motor_x() -> EpicsMotor:
     return _mock_with_name("motor_x")
 
 
-class Device_a(StandardReadable):
+class DeviceA(StandardReadable):
     def __init__(self, name: str = "") -> None:
         with self.add_children_as_readables():
             self.motor = Motor("X:SIZE")
@@ -26,8 +26,8 @@ class Device_a(StandardReadable):
 
 
 @device_factory(mock=True)
-def device_a() -> Device_a:
-    return Device_a()
+def device_a() -> DeviceA:
+    return DeviceA()
 
 
 class UnconnectableOphydDevice(OphydV1Device):

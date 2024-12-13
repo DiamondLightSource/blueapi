@@ -190,6 +190,9 @@ def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
         "motor_y",
         "motor_bundle_a",
         "motor_bundle_b",
+        "device_a",
+        "ophyd_device",
+        "ophyd_async_device",
     } == empty_context.devices.keys()
 
 
@@ -280,6 +283,9 @@ def test_add_devices_and_plans_from_modules_with_config(
         "motor_y",
         "motor_bundle_a",
         "motor_bundle_b",
+        "device_a",
+        "ophyd_device",
+        "ophyd_async_device",
     } == empty_context.devices.keys()
     assert {"spec_scan"} == empty_context.plans.keys()
 
@@ -371,7 +377,7 @@ def test_str_default(
 
     spec = empty_context._type_spec_for_function(has_default_reference)
     assert spec["m"][0] is movable_ref
-    assert (df := spec["m"][1].default_factory) and df() == SIM_MOTOR_NAME
+    assert (df := spec["m"][1].default_factory) and df() == SIM_MOTOR_NAME  # type: ignore
 
     assert has_default_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_reference.__name__].model
@@ -390,7 +396,7 @@ def test_nested_str_default(
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
     assert spec["m"][0] == list[movable_ref]  # type: ignore
-    assert (df := spec["m"][1].default_factory) and df() == [SIM_MOTOR_NAME]
+    assert (df := spec["m"][1].default_factory) and df() == [SIM_MOTOR_NAME]  # type: ignore
 
     assert has_default_nested_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_nested_reference.__name__].model

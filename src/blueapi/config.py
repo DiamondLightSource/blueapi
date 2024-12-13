@@ -40,6 +40,15 @@ class StompConfig(BaseModel):
     auth: BasicAuthentication | None = None
 
 
+class TiledConfig(BaseModel):
+    """
+    Config for connecting to a tiled instance
+    """
+
+    uri: str
+    api_key: str
+
+
 class WorkerEventConfig(BlueapiBaseModel):
     """
     Config for event broadcasting via the message bus
@@ -138,6 +147,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     stomp: StompConfig | None = None
+    tiled: TiledConfig | None = None
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)

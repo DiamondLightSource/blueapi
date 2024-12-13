@@ -13,6 +13,10 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
+    "tiled",
+    "json_merge_patch",
+    "jsonpatch",
+    "pyarrow",
     "bluesky>=1.13",
     "ophyd",
     "nslsii",

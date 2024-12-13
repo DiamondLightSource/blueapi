@@ -3,10 +3,12 @@ from collections.abc import Mapping
 from functools import cache
 from typing import Any
 
+from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from tiled.client import from_uri
 
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
@@ -49,6 +51,19 @@ def worker() -> TaskWorker:
 
 
 @cache
+def tiled_inserter():
+    tiled_config: TiledConfig | None = config().tiled
+    if tiled_config is not None:
+        client = from_uri(tiled_config.uri, api_key=tiled_config.api_key)
+
+        ctx = context()
+        ctx.run_engine.subscribe(TiledWriter(client))
+        return client
+    else:
+        return None
+
+
+@cache
 def stomp_client() -> StompClient | None:
     stomp_config: StompConfig | None = config().stomp
     if stomp_config is not None:
@@ -86,6 +101,7 @@ def setup(config: ApplicationConfig) -> None:
     logging.basicConfig(format="%(asctime)s - %(message)s", level=config.logging.level)
     worker()
     stomp_client()
+    tiled_inserter()
 
 
 def teardown() -> None:

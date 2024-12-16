@@ -559,11 +559,8 @@ def test_subprocess_enabled_by_default(mp_pool_mock: MagicMock):
     main.teardown_runner()
 
 
-@patch("blueapi.service.interface.get_device")
-def test_get_without_authentication(
-    get_device_mock: MagicMock, client: TestClient
-) -> None:
-    get_device_mock.side_effect = jwt.PyJWTError
+def test_get_without_authentication(mock_runner: Mock, client: TestClient) -> None:
+    mock_runner.run.side_effect = jwt.PyJWTError
     response = client.get("/devices/my-device")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -576,14 +573,13 @@ def test_oidc_config_not_found_when_auth_is_disabled(client: TestClient):
     assert response.json() == {"detail": "Not Found"}
 
 
-@patch("blueapi.service.interface.get_oidc_config")
 def test_get_oidc_config(
-    get_oidc_config: MagicMock,
+    mock_runner: Mock,
     oidc_config: OIDCConfig,
     mock_authn_server,
     client_with_auth: TestClient,
 ):
-    get_oidc_config.return_value = oidc_config
+    mock_runner.run.return_value = oidc_config
     response = client_with_auth.get("/config/oidc")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == oidc_config.model_dump()

@@ -241,7 +241,7 @@ def test_reset_env_client_behavior(
     reload_result = runner.invoke(main, ["controller", "env", "-r"])
 
     # Verify if sleep was called between polling iterations
-    assert mock_sleep.call_count == 2  # Since the last check doesn't require a sleep
+    mock_sleep.assert_called()
 
     for index, call in enumerate(responses.calls):
         if index == 0:

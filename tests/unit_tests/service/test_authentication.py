@@ -111,7 +111,7 @@ def test_poll_for_token_timeout(
         status=HTTP_403_FORBIDDEN,
     )
     with pytest.raises(TimeoutError), mock_authn_server:
-        session_manager.poll_for_token(device_code, 1, 2)
+        session_manager.poll_for_token(device_code, 0.01, 0.1)
 
 
 def test_server_raises_exception_for_invalid_token(

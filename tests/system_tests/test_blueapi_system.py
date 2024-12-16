@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
+from requests.exceptions import ConnectionError
 
 from blueapi.client.client import (
     BlueapiClient,
@@ -43,7 +44,7 @@ _DATA_PATH = Path(__file__).parent
 
 
 @pytest.fixture
-def client_without_auth(tmp_path) -> BlueapiClient:
+def client_without_auth(tmp_path: Path) -> BlueapiClient:
     return BlueapiClient.from_config(config=ApplicationConfig(auth_token_path=tmp_path))
 
 
@@ -56,6 +57,22 @@ def client_with_stomp() -> BlueapiClient:
             )
         )
     )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def wait_for_server():
+    client = BlueapiClient.from_config(config=ApplicationConfig())
+
+    attempts_remaining = 20
+    while attempts_remaining > 0:
+        try:
+            client.get_environment()
+            return
+        except ConnectionError:
+            ...
+        attempts_remaining -= 1
+        time.sleep(0.5)
+    raise TimeoutError("No connection to the blueapi server")
 
 
 # This client will have auth enabled if it finds cached valid token

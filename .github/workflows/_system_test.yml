@@ -26,7 +26,7 @@ jobs:
           plugins: rabbitmq_stomp
 
       - name: Start Blueapi Server
-        run: blueapi serve &
+        run: blueapi -c ${{ github.workspace }}/tests/unit_tests/example_yaml/valid_stomp_config.yaml serve &
 
       - name: Run tests
         run: tox -e system-test

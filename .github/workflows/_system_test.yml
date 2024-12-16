@@ -10,12 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Start RabbitMQ
-        uses: namoshek/rabbitmq-github-action@v1
-        with:
-          ports: "61613:61613"
-          plugins: rabbitmq_stomp
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -24,6 +18,15 @@ jobs:
 
       - name: Install python packages
         uses: ./.github/actions/install_requirements
-  
+
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@v1
+        with:
+          ports: "61613:61613"
+          plugins: rabbitmq_stomp
+
+      - name: Start Blueapi Server
+        run: blueapi serve &
+
       - name: Run tests
         run: tox -e system-test

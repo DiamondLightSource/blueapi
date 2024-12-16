@@ -16,9 +16,6 @@ on:
 env:
   # https://github.com/pytest-dev/pytest/issues/2042
   PY_IGNORE_IMPORTMISMATCH: "1"
-  BLUEAPI_TEST_STOMP_PORTS: "[61613,61614]"
-
-
 
 jobs:
   run:

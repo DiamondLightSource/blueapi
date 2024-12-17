@@ -63,14 +63,12 @@ def client_with_stomp() -> BlueapiClient:
 def wait_for_server():
     client = BlueapiClient.from_config(config=ApplicationConfig())
 
-    attempts_remaining = 20
-    while attempts_remaining > 0:
+    for _ in range(20):
         try:
             client.get_environment()
             return
         except ConnectionError:
             ...
-        attempts_remaining -= 1
         time.sleep(0.5)
     raise TimeoutError("No connection to the blueapi server")
 

@@ -118,6 +118,7 @@ def clean_existing_tasks(client: BlueapiClient):
     yield
 
 
+@pytest.mark.xfail(reason="https://github.com/DiamondLightSource/blueapi/issues/676")
 def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
 ):
@@ -129,6 +130,7 @@ def test_cannot_access_endpoints(
             getattr(client_without_auth, get_method)()
 
 
+@pytest.mark.xfail(reason="https://github.com/DiamondLightSource/blueapi/issues/676")
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
     assert client_without_auth.get_oidc_config() == OIDCConfig(
         well_known_url="https://example.com/realms/master/.well-known/openid-configuration",

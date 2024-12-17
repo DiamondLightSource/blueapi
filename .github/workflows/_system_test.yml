@@ -1,0 +1,32 @@
+on:
+  workflow_call:
+
+env:
+  # https://github.com/pytest-dev/pytest/issues/2042
+  PY_IGNORE_IMPORTMISMATCH: "1"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Need this to get version number from last tag
+          fetch-depth: 0
+
+      - name: Install python packages
+        uses: ./.github/actions/install_requirements
+
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@v1
+        with:
+          ports: "61613:61613"
+          plugins: rabbitmq_stomp
+
+      - name: Start Blueapi Server
+        run: blueapi -c ${{ github.workspace }}/tests/unit_tests/example_yaml/valid_stomp_config.yaml serve &
+
+      - name: Run tests
+        run: tox -e system-test

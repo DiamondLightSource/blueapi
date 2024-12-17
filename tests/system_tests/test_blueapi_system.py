@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
+from requests.exceptions import ConnectionError
 
 from blueapi.client.client import (
     BlueapiClient,
@@ -32,6 +33,13 @@ _LONG_TASK = Task(name="sleep", params={"time": 1.0})
 
 _DATA_PATH = Path(__file__).parent
 
+_REQUIRES_AUTH_MESSAGE = """
+Authentication credentials are required to run this test.
+The test has been skipped because authentication is currently disabled.
+For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
+To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
+"""
+
 # Step 1: Ensure a message bus that supports stomp is running and available:
 #   src/script/start_rabbitmq.sh
 #
@@ -43,7 +51,7 @@ _DATA_PATH = Path(__file__).parent
 
 
 @pytest.fixture
-def client_without_auth(tmp_path) -> BlueapiClient:
+def client_without_auth(tmp_path: Path) -> BlueapiClient:
     return BlueapiClient.from_config(config=ApplicationConfig(auth_token_path=tmp_path))
 
 
@@ -56,6 +64,20 @@ def client_with_stomp() -> BlueapiClient:
             )
         )
     )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def wait_for_server():
+    client = BlueapiClient.from_config(config=ApplicationConfig())
+
+    for _ in range(20):
+        try:
+            client.get_environment()
+            return
+        except ConnectionError:
+            ...
+        time.sleep(0.5)
+    raise TimeoutError("No connection to the blueapi server")
 
 
 # This client will have auth enabled if it finds cached valid token
@@ -101,6 +123,7 @@ def clean_existing_tasks(client: BlueapiClient):
     yield
 
 
+@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
 ):
@@ -112,6 +135,7 @@ def test_cannot_access_endpoints(
             getattr(client_without_auth, get_method)()
 
 
+@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
     assert client_without_auth.get_oidc_config() == OIDCConfig(
         well_known_url="https://example.com/realms/master/.well-known/openid-configuration",

@@ -1,11 +1,8 @@
-import inspect
 import time
-from pathlib import Path
 
+import backoff
 import pytest
-from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
-from requests.exceptions import ConnectionError
 
 from blueapi.client.client import (
     BlueapiClient,
@@ -13,9 +10,7 @@ from blueapi.client.client import (
 )
 from blueapi.client.event_bus import AnyEvent
 from blueapi.config import (
-    ApplicationConfig,
     OIDCConfig,
-    StompConfig,
 )
 from blueapi.service.model import (
     DeviceResponse,
@@ -27,103 +22,14 @@ from blueapi.service.model import (
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
-
-_SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
-_LONG_TASK = Task(name="sleep", params={"time": 1.0})
-
-_DATA_PATH = Path(__file__).parent
-
-_REQUIRES_AUTH_MESSAGE = """
-Authentication credentials are required to run this test.
-The test has been skipped because authentication is currently disabled.
-For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
-To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
-"""
-
-# Step 1: Ensure a message bus that supports stomp is running and available:
-#   src/script/start_rabbitmq.sh
-#
-# Step 2: Start the BlueAPI server with valid configuration:
-#   blueapi -c tests/unit_tests/example_yaml/valid_stomp_config.yaml serve
-#
-# Step 3: Run the system tests using tox:
-#   tox -e system-test
+from tests.system_tests.common import (
+    clean_existing_tasks,
+    disable_side_effects,
+    requires_auth,
+)
 
 
-@pytest.fixture
-def client_without_auth(tmp_path: Path) -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig(auth_token_path=tmp_path))
-
-
-@pytest.fixture
-def client_with_stomp() -> BlueapiClient:
-    return BlueapiClient.from_config(
-        config=ApplicationConfig(
-            stomp=StompConfig(
-                auth=BasicAuthentication(username="guest", password="guest")  # type: ignore
-            )
-        )
-    )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def wait_for_server():
-    client = BlueapiClient.from_config(config=ApplicationConfig())
-
-    for _ in range(20):
-        try:
-            client.get_environment()
-            return
-        except ConnectionError:
-            ...
-        time.sleep(0.5)
-    raise TimeoutError("No connection to the blueapi server")
-
-
-# This client will have auth enabled if it finds cached valid token
-@pytest.fixture
-def client() -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig())
-
-
-@pytest.fixture
-def expected_plans() -> PlanResponse:
-    return TypeAdapter(PlanResponse).validate_json(
-        (_DATA_PATH / "plans.json").read_text()
-    )
-
-
-@pytest.fixture
-def expected_devices() -> DeviceResponse:
-    return TypeAdapter(DeviceResponse).validate_json(
-        (_DATA_PATH / "devices.json").read_text()
-    )
-
-
-@pytest.fixture
-def blueapi_client_get_methods() -> list[str]:
-    # Get a list of methods that take only one argument (self)
-    # This will currently return
-    # ['get_plans', 'get_devices', 'get_state', 'get_all_tasks',
-    # 'get_active_task','get_environment','resume', 'stop','get_oidc_config']
-    return [
-        method
-        for method in BlueapiClient.__dict__
-        if callable(getattr(BlueapiClient, method))
-        and not method.startswith("__")
-        and len(inspect.signature(getattr(BlueapiClient, method)).parameters) == 1
-        and "self" in inspect.signature(getattr(BlueapiClient, method)).parameters
-    ]
-
-
-@pytest.fixture(autouse=True)
-def clean_existing_tasks(client: BlueapiClient):
-    for task in client.get_all_tasks().tasks:
-        client.clear_task(task.task_id)
-    yield
-
-
-@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
+@requires_auth
 def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
 ):
@@ -135,7 +41,7 @@ def test_cannot_access_endpoints(
             getattr(client_without_auth, get_method)()
 
 
-@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
+@requires_auth
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
     assert client_without_auth.get_oidc_config() == OIDCConfig(
         well_known_url="https://example.com/realms/master/.well-known/openid-configuration",
@@ -179,8 +85,11 @@ def test_get_non_existent_device(client: BlueapiClient):
         client.get_device("Not exists")
 
 
-def test_create_task_and_delete_task_by_id(client: BlueapiClient):
-    create_task = client.create_task(_SIMPLE_TASK)
+@disable_side_effects
+def test_create_task_and_delete_task_by_id(
+    client: BlueapiClient, task_definition: dict[str, Task]
+):
+    create_task = client.create_task(task_definition["simple_plan"])
     client.clear_task(create_task.task_id)
 
 
@@ -189,9 +98,11 @@ def test_create_task_validation_error(client: BlueapiClient):
         client.create_task(Task(name="Not-exists", params={"Not-exists": 0.0}))
 
 
-def test_get_all_tasks(client: BlueapiClient):
+@disable_side_effects
+def test_get_all_tasks(client: BlueapiClient, task_definition: dict[str, Task]):
+    clean_existing_tasks(client)
     created_tasks: list[TaskResponse] = []
-    for task in [_SIMPLE_TASK, _LONG_TASK]:
+    for task in [task_definition["simple_plan"], task_definition["long_plan"]]:
         created_task = client.create_task(task)
         created_tasks.append(created_task)
     task_ids = [task.task_id for task in created_tasks]
@@ -205,8 +116,9 @@ def test_get_all_tasks(client: BlueapiClient):
         client.clear_task(task_id)
 
 
-def test_get_task_by_id(client: BlueapiClient):
-    created_task = client.create_task(_SIMPLE_TASK)
+@disable_side_effects
+def test_get_task_by_id(client: BlueapiClient, task_definition: dict[str, Task]):
+    created_task = client.create_task(task_definition["simple_plan"])
 
     get_task = client.get_task(created_task.task_id)
     assert (
@@ -229,17 +141,21 @@ def test_delete_non_existent_task(client: BlueapiClient):
         client.clear_task("Not-exists")
 
 
-def test_put_worker_task(client: BlueapiClient):
-    created_task = client.create_task(_SIMPLE_TASK)
+@disable_side_effects
+def test_put_worker_task(client: BlueapiClient, task_definition: dict[str, Task]):
+    created_task = client.create_task(task_definition["simple_plan"])
     client.start_task(WorkerTask(task_id=created_task.task_id))
     active_task = client.get_active_task()
     assert active_task.task_id == created_task.task_id
     client.clear_task(created_task.task_id)
 
 
-def test_put_worker_task_fails_if_not_idle(client: BlueapiClient):
-    small_task = client.create_task(_SIMPLE_TASK)
-    long_task = client.create_task(_LONG_TASK)
+@disable_side_effects
+def test_put_worker_task_fails_if_not_idle(
+    client: BlueapiClient, task_definition: dict[str, Task]
+):
+    small_task = client.create_task(task_definition["simple_plan"])
+    long_task = client.create_task(task_definition["long_plan"])
 
     client.start_task(WorkerTask(task_id=long_task.task_id))
     active_task = client.get_active_task()
@@ -257,6 +173,7 @@ def test_get_worker_state(client: BlueapiClient):
     assert client.get_state() == WorkerState.IDLE
 
 
+@disable_side_effects
 def test_set_state_transition_error(client: BlueapiClient):
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.resume()
@@ -266,9 +183,11 @@ def test_set_state_transition_error(client: BlueapiClient):
     assert "<Response [400]>" in str(exception)
 
 
-def test_get_task_by_status(client: BlueapiClient):
-    task_1 = client.create_task(_SIMPLE_TASK)
-    task_2 = client.create_task(_SIMPLE_TASK)
+@disable_side_effects
+def test_get_task_by_status(client: BlueapiClient, task_definition: dict[str, Task]):
+    clean_existing_tasks(client)
+    task_1 = client.create_task(task_definition["simple_plan"])
+    task_2 = client.create_task(task_definition["simple_plan"])
     task_by_pending = client.get_all_tasks()
     # https://github.com/DiamondLightSource/blueapi/issues/680
     # task_by_pending = client.get_tasks_by_status(TaskStatusEnum.PENDING)
@@ -297,13 +216,16 @@ def test_get_task_by_status(client: BlueapiClient):
     client.clear_task(task_id=task_2.task_id)
 
 
-def test_progress_with_stomp(client_with_stomp: BlueapiClient):
+@disable_side_effects
+def test_progress_with_stomp(
+    client_with_stomp: BlueapiClient, task_definition: dict[str, Task]
+):
     all_events: list[AnyEvent] = []
 
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
+    client_with_stomp.run_task(task_definition["simple_plan"], on_event=on_event)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [
@@ -338,6 +260,30 @@ def test_get_current_state_of_environment(client: BlueapiClient):
     assert client.get_environment() == EnvironmentResponse(initialized=True)
 
 
+@pytest.mark.xfail(
+    reason="""
+    client.reload_environment does not currently wait for the environment to fully
+    reload This causes the test to fail intermittently.
+    More details can be found in the related issue: https://github.com/DiamondLightSource/blueapi/issues/742.
+    """
+)
 def test_delete_current_environment(client: BlueapiClient):
     client.reload_environment()
+
+    # The client may return an initialized environment immediately after reload,
+    # but the reload process takes time to fully complete. Adding a brief wait.
+    time.sleep(1)
+
+    @backoff.on_predicate(
+        backoff.expo, lambda x: x != EnvironmentResponse(initialized=True), max_time=10
+    )
+    def wait_for_reload() -> EnvironmentResponse:
+        return client.get_environment()
+
+    # Wait for the environment to report as initialized,
+    # retrying with exponential backoff
+    assert wait_for_reload() == EnvironmentResponse(initialized=True)
+
+    # The first successful response might be premature; wait briefly to ensure stability
+    time.sleep(1)
     assert client.get_environment() == EnvironmentResponse(initialized=True)

@@ -68,6 +68,8 @@ dev = [
     "types-urllib3",
     "mock",
     "jwcrypto",
+    "pytest-env",
+    "backoff"
 ]
 
 [project.scripts]
@@ -99,6 +101,9 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
+env= [
+    "BEAMLINE=",
+]
 
 [tool.coverage.run]
 data_file = "/tmp/blueapi.coverage"

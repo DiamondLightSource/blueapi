@@ -106,7 +106,6 @@ jobs:
 
       - name: package chart and push it
         run: |
-          sed -i "$ a appVersion: ${GITHUB_REF##*/}" helm/blueapi/Chart.yaml
           helm dependencies update helm/blueapi
-          helm package helm/blueapi --version ${GITHUB_REF##*/} -d /tmp/
+          helm package helm/blueapi --version ${GITHUB_REF##*/} --app-version ${GITHUB_REF##*/} -d /tmp/
           helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/diamondlightsource/charts

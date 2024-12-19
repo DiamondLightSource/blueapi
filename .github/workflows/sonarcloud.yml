@@ -21,7 +21,7 @@ jobs:
       - name: SonarCloud Scan
         # Skip SonarCloud Scan if the pull request is from a forked repository
         if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: sonarsource/sonarcloud-github-action@v3.0.0
+        uses: sonarsource/sonarcloud-github-action@v4.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_ORG_KEY: ${{ secrets.SONAR_ORG_KEY }}

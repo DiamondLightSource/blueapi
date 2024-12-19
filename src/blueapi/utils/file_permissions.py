@@ -18,3 +18,16 @@ def is_sgid_enabled(path: Path) -> bool:
 
     mask = os.stat(path).st_mode
     return bool(mask & stat.S_ISGID)
+
+
+def get_owner_gid(path: Path) -> int:
+    """Get the GID of the owner of a file
+
+    Args:
+        path: Path to the file to check
+
+    Returns:
+        bool: The GID of the file owner
+    """
+
+    return os.stat(path).st_gid

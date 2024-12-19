@@ -81,6 +81,7 @@ class ScratchRepository(BlueapiBaseModel):
 
 class ScratchConfig(BlueapiBaseModel):
     root: Path = Path("/tmp/scratch/blueapi")
+    required_gid: int | None = None
     repositories: list[ScratchRepository] = Field(default_factory=list)
 
 

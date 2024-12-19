@@ -76,9 +76,6 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
 
     _validate_directory(path)
 
-    # Set umask to DLS standard
-    os.umask(stat.S_IWOTH)
-
     logging.info(f"Installing {path}")
     process = Popen(
         [

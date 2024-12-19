@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import stat
 import sys
 from functools import wraps
 from pathlib import Path
@@ -38,6 +40,9 @@ from .updates import CliEventRenderer
 @click.pass_context
 def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     # if no command is supplied, run with the options passed
+
+    # Set umask to DLS standard
+    os.umask(stat.S_IWOTH)
 
     config_loader = ConfigLoader(ApplicationConfig)
     if config is not None:

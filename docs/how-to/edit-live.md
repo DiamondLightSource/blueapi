@@ -11,6 +11,8 @@ Blueapi can be configured to install editable Python packages from a chosen dire
 
 scratch:
     root: /path/to/my/scratch/directory
+    # Required GID for the scratch area
+    required_gid: 12345
     repositories:
         # Repository for DLS devices
         - name: dodal
@@ -20,6 +22,9 @@ scratch:
         - name: mx-bluesky
           remote_url: https://github.com/DiamondLightSource/mx-bluesky.git
 ```
+
+Note the `required_gid` field, which is useful for stopping blueapi from locking the files it clones
+to a particular owner.
 
 ## Synchronization
 

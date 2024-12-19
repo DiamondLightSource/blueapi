@@ -10,6 +10,7 @@ import pytest
 
 from blueapi.cli.scratch import ensure_repo, scratch_install, setup_scratch
 from blueapi.config import ScratchConfig, ScratchRepository
+from blueapi.utils import get_owner_gid
 
 
 @pytest.fixture
@@ -164,6 +165,32 @@ def test_setup_scratch_fails_on_non_sgid_root(
     config = ScratchConfig(root=directory_path_no_permissions, repositories=[])
     with pytest.raises(PermissionError):
         setup_scratch(config)
+
+
+def test_setup_scratch_fails_on_wrong_gid(
+    directory_path: Path,
+):
+    config = ScratchConfig(
+        root=directory_path,
+        required_gid=12345,
+        repositories=[],
+    )
+    assert get_owner_gid(directory_path) != 12345
+    with pytest.raises(PermissionError):
+        setup_scratch(config)
+
+
+def test_setup_scratch_succeeds_on_required_gid(
+    directory_path: Path,
+):
+    os.chown(directory_path, uid=12345, gid=12345)
+    config = ScratchConfig(
+        root=directory_path,
+        required_gid=12345,
+        repositories=[],
+    )
+    assert get_owner_gid(directory_path) == 12345
+    setup_scratch(config)
 
 
 @patch("blueapi.cli.scratch.ensure_repo")

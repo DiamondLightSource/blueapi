@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from blueapi.utils import is_sgid_enabled
+from blueapi.utils import get_owner_gid, is_sgid_enabled
 
 
 @pytest.mark.parametrize(
@@ -50,3 +50,10 @@ def _mocked_is_sgid_enabled(mock_stat: Mock, bits: int) -> bool:
     (mock_stat_for_file := Mock()).st_mode = bits
     mock_stat.return_value = mock_stat_for_file
     return is_sgid_enabled(Path("/doesnt/matter"))
+
+
+@patch("blueapi.utils.file_permissions.os.stat")
+def test_get_owner_gid(mock_stat: Mock):
+    (mock_stat_for_file := Mock()).st_gid = 12345
+    mock_stat.return_value = mock_stat_for_file
+    assert get_owner_gid(Path("/doesnt/matter")) == 12345

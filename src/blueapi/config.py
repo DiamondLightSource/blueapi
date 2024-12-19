@@ -1,3 +1,4 @@
+import textwrap
 from collections.abc import Mapping
 from enum import Enum
 from functools import cached_property
@@ -75,13 +76,34 @@ class RestConfig(BlueapiBaseModel):
 
 
 class ScratchRepository(BlueapiBaseModel):
-    name: str = "example"
-    remote_url: str = "https://github.com/example/example.git"
+    name: str = Field(
+        description="Unique name for this repository in the scratch directory",
+        default="example",
+    )
+    remote_url: str = Field(
+        description="URL to clone from",
+        default="https://github.com/example/example.git",
+    )
 
 
 class ScratchConfig(BlueapiBaseModel):
-    root: Path = Path("/tmp/scratch/blueapi")
-    repositories: list[ScratchRepository] = Field(default_factory=list)
+    root: Path = Field(
+        description="The root directory of the scratch area, all repositories will "
+        "be cloned under this directory.",
+        default=Path("/tmp/scratch/blueapi"),
+    )
+    required_gid: int | None = Field(
+        description=textwrap.dedent("""
+    Required owner GID for the scratch directory. If supplied the setup-scratch
+    command will check the scratch area ownership and raise an error if it is
+    not owned by <GID>.
+    """),
+        default=None,
+    )
+    repositories: list[ScratchRepository] = Field(
+        description="Details of repositories to be cloned and imported into blueapi",
+        default_factory=list,
+    )
 
 
 class OIDCConfig(BlueapiBaseModel):

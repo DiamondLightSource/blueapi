@@ -1,12 +1,14 @@
 import logging
 import os
 import stat
+import textwrap
 from pathlib import Path
 from subprocess import Popen
 
 from git import Repo
 
 from blueapi.config import ScratchConfig
+from blueapi.utils import is_sgid_enabled
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
@@ -23,7 +25,7 @@ def setup_scratch(
         install_timeout: Timeout for installing packages
     """
 
-    _validate_directory(config.root)
+    _validate_root_directory(config.root)
 
     logging.info(f"Setting up scratch area: {config.root}")
 
@@ -92,6 +94,23 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
     process.wait(timeout=timeout)
     if process.returncode != 0:
         raise RuntimeError(f"Failed to install {path}: Exit Code: {process.returncode}")
+
+
+def _validate_root_directory(root_path: Path) -> None:
+    _validate_directory(root_path)
+
+    if not is_sgid_enabled(root_path):
+        raise PermissionError(
+            textwrap.dedent(f"""
+        The scratch area root directory ({root_path}) needs to have the
+        SGID permission bit enabled. This allows blueapi to clone
+        repositories into it while retaining the ability for
+        other users in an approved group to edit/delete them.
+
+        See https://www.redhat.com/en/blog/suid-sgid-sticky-bit for how to
+        enable the SGID bit.
+        """)
+        )
 
 
 def _validate_directory(path: Path) -> None:

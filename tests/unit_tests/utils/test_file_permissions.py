@@ -1,3 +1,4 @@
+import stat
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -9,17 +10,20 @@ from blueapi.utils import get_owner_gid, is_sgid_set
 @pytest.mark.parametrize(
     "bits",
     [
-        33152,  # -rw-------.
-        33279,  # -rwxrwxrwx.
-        32768,  # ----------.
-        33188,  # -rw-r--r--.
-        33024,  # -r--------.
-        33206,  # -rw-rw-rw-.
-        33060,  # -r--r--r--.
-        16895,  # drwxrwxrwx.
-        16384,  # d---------.
-        16768,  # drw-------.
+        # Files
+        0o10_0600,  # -rw-------.
+        0o10_0777,  # -rwxrwxrwx.
+        0o10_0000,  # ----------.
+        0o10_0644,  # -rw-r--r--.
+        0o10_0400,  # -r--------.
+        0o10_0666,  # -rw-rw-rw-.
+        0o10_0444,  # -r--r--r--.
+        # Directories
+        0o04_0777,  # drwxrwxrwx.
+        0o04_0000,  # d---------.
+        0o04_0600,  # drw-------.
     ],
+    ids=lambda p: f"{p:06o} ({stat.filemode(p)})",
 )
 def test_is_sgid_set_should_be_disabled(bits: int):
     assert not _mocked_is_sgid_set(bits)
@@ -28,17 +32,20 @@ def test_is_sgid_set_should_be_disabled(bits: int):
 @pytest.mark.parametrize(
     "bits",
     [
-        34303,  # -rwxrwsrwx.
-        33792,  # ------S---.
-        34212,  # -rw-r-Sr--.
-        34176,  # -rw---S---.
-        34048,  # -r----S---.
-        34230,  # -rw-rwSrw-.
-        34084,  # -r--r-Sr--.
-        17919,  # drwxrwsrwx.
-        17408,  # d-----S---.
-        17792,  # drw---S---.
+        # Files
+        0o10_2777,  # -rwxrwsrwx.
+        0o10_2000,  # ------S---.
+        0o10_2644,  # -rw-r-Sr--.
+        0o10_2600,  # -rw---S---.
+        0o10_2400,  # -r----S---.
+        0o10_2666,  # -rw-rwSrw-.
+        0o10_2444,  # -r--r-Sr--.
+        # Directories
+        0o04_2777,  # drwxrwsrwx.
+        0o04_2000,  # d-----S---.
+        0o04_2600,  # drw---S---.
     ],
+    ids=lambda p: f"{p:06o} ({stat.filemode(p)})",
 )
 def test_is_sgid_set_should_be_enabled(bits: int):
     assert _mocked_is_sgid_set(bits)

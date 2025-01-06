@@ -8,7 +8,7 @@ from subprocess import Popen
 from git import Repo
 
 from blueapi.config import ScratchConfig
-from blueapi.utils import get_owner_gid, is_sgid_enabled
+from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
@@ -96,7 +96,7 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:
     _validate_directory(root_path)
 
-    if not is_sgid_enabled(root_path):
+    if not is_sgid_set(root_path):
         raise PermissionError(
             textwrap.dedent(f"""
         The scratch area root directory ({root_path}) needs to have the

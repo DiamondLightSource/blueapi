@@ -118,7 +118,7 @@ def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:
 
         getent group 1000 | cut -d: -f1
 
-        You can transfer ownership, if you have sufficient permissions, with the chown
+        You can transfer ownership, if you have sufficient permissions, with the chgrp
         command.
         """)
         )

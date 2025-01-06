@@ -100,12 +100,12 @@ def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:
         raise PermissionError(
             textwrap.dedent(f"""
         The scratch area root directory ({root_path}) needs to have the
-        SGID permission bit enabled. This allows blueapi to clone
+        SGID permission bit set. This allows blueapi to clone
         repositories into it while retaining the ability for
         other users in an approved group to edit/delete them.
 
         See https://www.redhat.com/en/blog/suid-sgid-sticky-bit for how to
-        enable the SGID bit.
+        set the SGID bit.
         """)
         )
     elif required_gid is not None and get_owner_gid(root_path) != required_gid:

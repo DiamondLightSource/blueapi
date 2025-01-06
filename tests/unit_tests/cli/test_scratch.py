@@ -14,24 +14,24 @@ from blueapi.utils import get_owner_gid
 
 
 @pytest.fixture
-def directory_path_no_permissions() -> Generator[Path]:
+def directory_path() -> Generator[Path]:
     temporary_directory = TemporaryDirectory()
     yield Path(temporary_directory.name)
     temporary_directory.cleanup()
 
 
 @pytest.fixture
-def directory_path(directory_path_no_permissions: Path) -> Path:
+def directory_path_with_sgid(directory_path: Path) -> Path:
     os.chmod(
-        directory_path_no_permissions,
-        os.stat(directory_path_no_permissions).st_mode + stat.S_ISGID,
+        directory_path,
+        os.stat(directory_path).st_mode + stat.S_ISGID,
     )
-    return directory_path_no_permissions
+    return directory_path
 
 
 @pytest.fixture
-def file_path(directory_path: Path) -> Generator[Path]:
-    file_path = directory_path / str(uuid.uuid4())
+def file_path(directory_path_with_sgid: Path) -> Generator[Path]:
+    file_path = directory_path_with_sgid / str(uuid.uuid4())
     with file_path.open("w") as stream:
         stream.write("foo")
     yield file_path
@@ -39,8 +39,8 @@ def file_path(directory_path: Path) -> Generator[Path]:
 
 
 @pytest.fixture
-def nonexistant_path(directory_path: Path) -> Path:
-    file_path = directory_path / str(uuid.uuid4())
+def nonexistant_path(directory_path_with_sgid: Path) -> Path:
+    file_path = directory_path_with_sgid / str(uuid.uuid4())
     assert not file_path.exists()
     return file_path
 
@@ -48,13 +48,13 @@ def nonexistant_path(directory_path: Path) -> Path:
 @patch("blueapi.cli.scratch.Popen")
 def test_scratch_install_installs_path(
     mock_popen: Mock,
-    directory_path: Path,
+    directory_path_with_sgid: Path,
 ):
     mock_process = Mock()
     mock_process.returncode = 0
     mock_popen.return_value = mock_process
 
-    scratch_install(directory_path, timeout=1.0)
+    scratch_install(directory_path_with_sgid, timeout=1.0)
 
     mock_popen.assert_called_once_with(
         [
@@ -64,7 +64,7 @@ def test_scratch_install_installs_path(
             "install",
             "--no-deps",
             "-e",
-            str(directory_path),
+            str(directory_path_with_sgid),
         ]
     )
 
@@ -83,7 +83,7 @@ def test_scratch_install_fails_on_nonexistant_path(nonexistant_path: Path):
 @pytest.mark.parametrize("code", [1, 2, 65536])
 def test_scratch_install_fails_on_non_zero_exit_code(
     mock_popen: Mock,
-    directory_path: Path,
+    directory_path_with_sgid: Path,
     code: int,
 ):
     mock_process = Mock()
@@ -91,16 +91,16 @@ def test_scratch_install_fails_on_non_zero_exit_code(
     mock_popen.return_value = mock_process
 
     with pytest.raises(RuntimeError):
-        scratch_install(directory_path, timeout=1.0)
+        scratch_install(directory_path_with_sgid, timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Repo")
 def test_repo_not_cloned_and_validated_if_found_locally(
     mock_repo: Mock,
-    directory_path: Path,
+    directory_path_with_sgid: Path,
 ):
-    ensure_repo("http://example.com/foo.git", directory_path)
-    mock_repo.assert_called_once_with(directory_path)
+    ensure_repo("http://example.com/foo.git", directory_path_with_sgid)
+    mock_repo.assert_called_once_with(directory_path_with_sgid)
     mock_repo.clone_from.assert_not_called()
 
 
@@ -119,9 +119,9 @@ def test_repo_cloned_if_not_found_locally(
 @patch("blueapi.cli.scratch.Repo")
 def test_repo_cloned_with_correct_umask(
     mock_repo: Mock,
-    directory_path: Path,
+    directory_path_with_sgid: Path,
 ):
-    repo_root = directory_path / "foo"
+    repo_root = directory_path_with_sgid / "foo"
     file_path = repo_root / "a"
 
     def write_repo_files():
@@ -160,36 +160,36 @@ def test_setup_scratch_fails_on_non_directory_root(
 
 
 def test_setup_scratch_fails_on_non_sgid_root(
-    directory_path_no_permissions: Path,
+    directory_path: Path,
 ):
-    config = ScratchConfig(root=directory_path_no_permissions, repositories=[])
+    config = ScratchConfig(root=directory_path, repositories=[])
     with pytest.raises(PermissionError):
         setup_scratch(config)
 
 
 def test_setup_scratch_fails_on_wrong_gid(
-    directory_path: Path,
+    directory_path_with_sgid: Path,
 ):
     config = ScratchConfig(
-        root=directory_path,
+        root=directory_path_with_sgid,
         required_gid=12345,
         repositories=[],
     )
-    assert get_owner_gid(directory_path) != 12345
+    assert get_owner_gid(directory_path_with_sgid) != 12345
     with pytest.raises(PermissionError):
         setup_scratch(config)
 
 
 def test_setup_scratch_succeeds_on_required_gid(
-    directory_path: Path,
+    directory_path_with_sgid: Path,
 ):
-    os.chown(directory_path, uid=12345, gid=12345)
+    os.chown(directory_path_with_sgid, uid=12345, gid=12345)
     config = ScratchConfig(
-        root=directory_path,
+        root=directory_path_with_sgid,
         required_gid=12345,
         repositories=[],
     )
-    assert get_owner_gid(directory_path) == 12345
+    assert get_owner_gid(directory_path_with_sgid) == 12345
     setup_scratch(config)
 
 
@@ -198,10 +198,10 @@ def test_setup_scratch_succeeds_on_required_gid(
 def test_setup_scratch_iterates_repos(
     mock_scratch_install: Mock,
     mock_ensure_repo: Mock,
-    directory_path: Path,
+    directory_path_with_sgid: Path,
 ):
     config = ScratchConfig(
-        root=directory_path,
+        root=directory_path_with_sgid,
         repositories=[
             ScratchRepository(
                 name="foo",
@@ -217,15 +217,15 @@ def test_setup_scratch_iterates_repos(
 
     mock_ensure_repo.assert_has_calls(
         [
-            call("http://example.com/foo.git", directory_path / "foo"),
-            call("http://example.com/bar.git", directory_path / "bar"),
+            call("http://example.com/foo.git", directory_path_with_sgid / "foo"),
+            call("http://example.com/bar.git", directory_path_with_sgid / "bar"),
         ]
     )
 
     mock_scratch_install.assert_has_calls(
         [
-            call(directory_path / "foo", timeout=120.0),
-            call(directory_path / "bar", timeout=120.0),
+            call(directory_path_with_sgid / "foo", timeout=120.0),
+            call(directory_path_with_sgid / "bar", timeout=120.0),
         ]
     )
 
@@ -235,10 +235,10 @@ def test_setup_scratch_iterates_repos(
 def test_setup_scratch_continues_after_failure(
     mock_scratch_install: Mock,
     mock_ensure_repo: Mock,
-    directory_path: Path,
+    directory_path_with_sgid: Path,
 ):
     config = ScratchConfig(
-        root=directory_path,
+        root=directory_path_with_sgid,
         repositories=[
             ScratchRepository(
                 name="foo",

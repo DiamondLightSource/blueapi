@@ -183,13 +183,16 @@ def test_setup_scratch_fails_on_wrong_gid(
 def test_setup_scratch_succeeds_on_required_gid(
     directory_path_with_sgid: Path,
 ):
-    os.chown(directory_path_with_sgid, uid=12345, gid=12345)
+    # We may not own the temp root in some environments
+    root = directory_path_with_sgid / "a-root"
+    os.makedirs(root)
+    os.chown(root, uid=12345, gid=12345)
     config = ScratchConfig(
-        root=directory_path_with_sgid,
+        root=root,
         required_gid=12345,
         repositories=[],
     )
-    assert get_owner_gid(directory_path_with_sgid) == 12345
+    assert get_owner_gid(root) == 12345
     setup_scratch(config)
 
 

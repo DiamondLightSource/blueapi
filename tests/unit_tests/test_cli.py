@@ -15,7 +15,6 @@ from pydantic import BaseModel, ValidationError
 from requests.exceptions import ConnectionError
 from responses import matchers
 from stomp.connect import StompConnection11 as Connection
-from tests import current_umask
 
 from blueapi import __version__
 from blueapi.cli.cli import main
@@ -63,15 +62,17 @@ def test_main_no_params():
 
 @patch("blueapi.service.main.start")
 @patch("blueapi.cli.scratch.setup_scratch")
+@patch("blueapi.cli.cli.os.umask")
 @pytest.mark.parametrize("subcommand", ["serve", "setup-scratch"])
 def test_runs_with_umask_002(
+    mock_umask: Mock,
     mock_setup_scratch: Mock,
     mock_start: Mock,
     runner: CliRunner,
     subcommand: str,
 ):
     runner.invoke(main, [subcommand])
-    assert current_umask() == 0o002
+    mock_umask.assert_called_once_with(0o002)
 
 
 @patch("requests.request")

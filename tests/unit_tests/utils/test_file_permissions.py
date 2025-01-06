@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -21,9 +21,8 @@ from blueapi.utils import get_owner_gid, is_sgid_set
         16768,  # drw-------.
     ],
 )
-@patch("blueapi.utils.file_permissions.os.stat")
-def test_is_sgid_set_should_be_disabled(mock_stat: Mock, bits: int):
-    assert not _mocked_is_sgid_set(mock_stat, bits)
+def test_is_sgid_set_should_be_disabled(bits: int):
+    assert not _mocked_is_sgid_set(bits)
 
 
 @pytest.mark.parametrize(
@@ -41,19 +40,19 @@ def test_is_sgid_set_should_be_disabled(mock_stat: Mock, bits: int):
         17792,  # drw---S---.
     ],
 )
-@patch("blueapi.utils.file_permissions.os.stat")
-def test_is_sgid_set_should_be_enabled(mock_stat: Mock, bits: int):
-    assert _mocked_is_sgid_set(mock_stat, bits)
+def test_is_sgid_set_should_be_enabled(bits: int):
+    assert _mocked_is_sgid_set(bits)
 
 
-def _mocked_is_sgid_set(mock_stat: Mock, bits: int) -> bool:
-    (mock_stat_for_file := Mock()).st_mode = bits
-    mock_stat.return_value = mock_stat_for_file
-    return is_sgid_set(Path("/doesnt/matter"))
+def _mocked_is_sgid_set(bits: int) -> bool:
+    path = Mock(spec=Path)
+    path.stat().st_mode = bits
+
+    return is_sgid_set(path)
 
 
-@patch("blueapi.utils.file_permissions.os.stat")
-def test_get_owner_gid(mock_stat: Mock):
-    (mock_stat_for_file := Mock()).st_gid = 12345
-    mock_stat.return_value = mock_stat_for_file
-    assert get_owner_gid(Path("/doesnt/matter")) == 12345
+def test_get_owner_gid():
+    path = Mock(spec=Path)
+    path.stat().st_gid = 12345
+
+    assert get_owner_gid(path) == 12345

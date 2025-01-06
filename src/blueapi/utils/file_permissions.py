@@ -1,4 +1,3 @@
-import os
 import stat
 from pathlib import Path
 
@@ -16,7 +15,7 @@ def is_sgid_set(path: Path) -> bool:
         bool: True if the SGID bit is set
     """
 
-    mask = os.stat(path).st_mode
+    mask = path.stat().st_mode
     return bool(mask & stat.S_ISGID)
 
 
@@ -30,4 +29,4 @@ def get_owner_gid(path: Path) -> int:
         bool: The GID of the file owner
     """
 
-    return os.stat(path).st_gid
+    return path.stat().st_gid

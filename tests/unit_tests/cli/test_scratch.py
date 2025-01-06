@@ -180,6 +180,15 @@ def test_setup_scratch_fails_on_wrong_gid(
         setup_scratch(config)
 
 
+@pytest.mark.skip(
+    reason="""
+We can't chown a tempfile in all environments, in particular it
+seems to be broken in GH actions at the moment. We should
+rewrite these tests to use mocks.
+
+See https://github.com/DiamondLightSource/blueapi/issues/770
+"""
+)
 def test_setup_scratch_succeeds_on_required_gid(
     directory_path_with_sgid: Path,
 ):

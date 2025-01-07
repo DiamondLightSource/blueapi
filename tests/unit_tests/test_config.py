@@ -277,6 +277,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
+                "required_gid": None,
                 "repositories": [
                     {
                         "name": "dodal",
@@ -309,6 +310,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
+                "required_gid": None,
                 "repositories": [
                     {
                         "name": "dodal",

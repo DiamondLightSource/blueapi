@@ -1,12 +1,14 @@
 import logging
 import os
 import stat
+import textwrap
 from pathlib import Path
 from subprocess import Popen
 
 from git import Repo
 
 from blueapi.config import ScratchConfig
+from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
@@ -23,7 +25,7 @@ def setup_scratch(
         install_timeout: Timeout for installing packages
     """
 
-    _validate_directory(config.root)
+    _validate_root_directory(config.root, config.required_gid)
 
     logging.info(f"Setting up scratch area: {config.root}")
 
@@ -74,9 +76,6 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
 
     _validate_directory(path)
 
-    # Set umask to DLS standard
-    os.umask(stat.S_IWOTH)
-
     logging.info(f"Installing {path}")
     process = Popen(
         [
@@ -92,6 +91,37 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
     process.wait(timeout=timeout)
     if process.returncode != 0:
         raise RuntimeError(f"Failed to install {path}: Exit Code: {process.returncode}")
+
+
+def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:
+    _validate_directory(root_path)
+
+    if not is_sgid_set(root_path):
+        raise PermissionError(
+            textwrap.dedent(f"""
+        The scratch area root directory ({root_path}) needs to have the
+        SGID permission bit set. This allows blueapi to clone
+        repositories into it while retaining the ability for
+        other users in an approved group to edit/delete them.
+
+        See https://www.redhat.com/en/blog/suid-sgid-sticky-bit for how to
+        set the SGID bit.
+        """)
+        )
+    elif required_gid is not None and get_owner_gid(root_path) != required_gid:
+        raise PermissionError(
+            textwrap.dedent(f"""
+        The configuration requires that {root_path} be owned by the group with
+        ID {required_gid}.
+        You may be able to find this group's name by running the following
+        in the terminal.
+
+        getent group 1000 | cut -d: -f1
+
+        You can transfer ownership, if you have sufficient permissions, with the chgrp
+        command.
+        """)
+        )
 
 
 def _validate_directory(path: Path) -> None:

@@ -34,6 +34,11 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  system-test:
+    needs: check
+    if: needs.check.outputs.branch-pr == ''
+    uses: ./.github/workflows/_system_test.yml
+
   container:
     needs: check
     if: needs.check.outputs.branch-pr == ''

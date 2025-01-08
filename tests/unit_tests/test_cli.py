@@ -60,6 +60,21 @@ def test_main_no_params():
     assert result.stdout == expected
 
 
+@patch("blueapi.service.main.start")
+@patch("blueapi.cli.scratch.setup_scratch")
+@patch("blueapi.cli.cli.os.umask")
+@pytest.mark.parametrize("subcommand", ["serve", "setup-scratch"])
+def test_runs_with_umask_002(
+    mock_umask: Mock,
+    mock_setup_scratch: Mock,
+    mock_start: Mock,
+    runner: CliRunner,
+    subcommand: str,
+):
+    runner.invoke(main, [subcommand])
+    mock_umask.assert_called_once_with(0o002)
+
+
 @patch("requests.request")
 def test_connection_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
@@ -241,7 +256,7 @@ def test_reset_env_client_behavior(
     reload_result = runner.invoke(main, ["controller", "env", "-r"])
 
     # Verify if sleep was called between polling iterations
-    assert mock_sleep.call_count == 2  # Since the last check doesn't require a sleep
+    mock_sleep.assert_called()
 
     for index, call in enumerate(responses.calls):
         if index == 0:

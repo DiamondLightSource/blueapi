@@ -99,7 +99,8 @@ addopts = """
     --ignore=src/blueapi/startup
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
-filterwarnings = ["error", "ignore::DeprecationWarning"]
+# Unignore UserWarning after Pydantic warning removed from bluesky/bluesky and release
+filterwarnings = ["error", "ignore::DeprecationWarning", "ignore::UserWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"

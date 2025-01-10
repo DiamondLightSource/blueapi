@@ -3,18 +3,17 @@ from collections.abc import Mapping
 from functools import cache
 from typing import Any
 
-from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
-from tiled.client import from_uri
 
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
+from blueapi.worker.tiled import TiledConnection
 
 """This module provides interface between web application and underlying Bluesky
 context and worker"""
@@ -42,25 +41,14 @@ def context() -> BlueskyContext:
 
 @cache
 def worker() -> TaskWorker:
+    conf = config()
     worker = TaskWorker(
         context(),
-        broadcast_statuses=config().env.events.broadcast_status_events,
+        broadcast_statuses=conf.env.events.broadcast_status_events,
+        tiled_inserter=TiledConnection(conf.tiled) if conf.tiled else None,
     )
     worker.start()
     return worker
-
-
-@cache
-def tiled_inserter():
-    tiled_config: TiledConfig | None = config().tiled
-    if tiled_config is not None:
-        client = from_uri(tiled_config.uri, api_key=tiled_config.api_key)
-
-        ctx = context()
-        ctx.run_engine.subscribe(TiledWriter(client))
-        return client
-    else:
-        return None
 
 
 @cache
@@ -101,7 +89,6 @@ def setup(config: ApplicationConfig) -> None:
     logging.basicConfig(format="%(asctime)s - %(message)s", level=config.logging.level)
     worker()
     stomp_client()
-    tiled_inserter()
 
 
 def teardown() -> None:

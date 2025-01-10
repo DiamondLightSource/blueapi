@@ -46,8 +46,8 @@ class TiledConfig(BaseModel):
     Config for connecting to a tiled instance
     """
 
-    uri: str
-    api_key: str
+    host: str
+    port: int
 
 
 class WorkerEventConfig(BlueapiBaseModel):

@@ -9,6 +9,7 @@ from threading import Event, RLock
 from typing import Any, Generic, TypeVar
 
 from bluesky.protocols import Status
+from httpx import Headers
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -32,6 +33,7 @@ from blueapi.core import (
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
+from blueapi.worker.tiled import TiledConnection
 
 from .event import (
     ProgressEvent,
@@ -112,9 +114,11 @@ class TaskWorker:
         ctx: BlueskyContext,
         start_stop_timeout: float = DEFAULT_START_STOP_TIMEOUT,
         broadcast_statuses: bool = True,
+        tiled_inserter: TiledConnection | None = None,
     ) -> None:
         self._ctx = ctx
         self._start_stop_timeout = start_stop_timeout
+        self._tiled_inserter = tiled_inserter
 
         self._tasks = {}
 
@@ -194,12 +198,24 @@ class TaskWorker:
         return current
 
     @start_as_current_span(TRACER, "task_id")
-    def begin_task(self, task_id: str) -> None:
+    def begin_task(self, task_id: str, headers: Headers | None) -> None:
         task = self._tasks.get(task_id)
+        data_subs: list[int] = []
         if task is not None:
-            self._submit_trackable_task(task)
+            if self._tiled_inserter:
+                data_subs.append(self._authorize_running_task(headers))
+            self._submit_trackable_task(task, data_subs)
+
         else:
             raise KeyError(f"No pending task with ID {task_id}")
+
+    def _authorize_running_task(self, headers: Headers | None) -> int:
+        assert self._tiled_inserter
+        # https://github.com/DiamondLightSource/blueapi/issues/774
+        # If users should only be able to run their own scans, pass headers
+        # as part of submitting a task, cache in TrackableTask field and check
+        # that token belongs to same user (but may be newer token!)
+        return self.data_events.subscribe(self._tiled_inserter(headers))
 
     @start_as_current_span(TRACER, "task.name", "task.params")
     def submit_task(self, task: Task) -> str:
@@ -218,7 +234,9 @@ class TaskWorker:
         "trackable_task.task.name",
         "trackable_task.task.params",
     )
-    def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
+    def _submit_trackable_task(
+        self, trackable_task: TrackableTask, data_subs: list[int] | None = None
+    ) -> None:
         if self.state is not WorkerState.IDLE:
             raise WorkerBusyError(f"Worker is in state {self.state}")
 
@@ -235,17 +253,18 @@ class TaskWorker:
         sub = self.worker_events.subscribe(mark_task_as_started)
         try:
             self._current_task_otel_context = get_current()
-            sub = self.worker_events.subscribe(mark_task_as_started)
             """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
-            task_started.wait(timeout=5.0)
-            if not task_started.is_set():
+            if not task_started.wait(timeout=5.0):
                 raise TimeoutError("Failed to start plan within timeout")
         except Full as f:
             LOGGER.error("Cannot submit task while another is running")
             raise WorkerBusyError("Cannot submit task while another is running") from f
         finally:
             self.worker_events.unsubscribe(sub)
+            if data_subs:
+                for data_sub in data_subs:
+                    self.data_events.unsubscribe(data_sub)
 
     @start_as_current_span(TRACER)
     def start(self) -> None:

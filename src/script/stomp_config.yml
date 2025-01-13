@@ -1,7 +1,20 @@
----
 stomp:
   host: "localhost"
   port: 61613
   auth:
     username: "guest"
     password: "guest"
+api:
+  port: 3000
+tiled:
+  host: "http://localhost"
+  port: 4000
+oidc:
+  well_known_url: http://localhost:8080/foo/.well-known/openid-configuration
+  client_id: blueapi
+env:
+  sources:
+    - kind: dodal
+      module: dodal.beamlines.i22
+    - kind: planFunctions
+      module: dodal.plans

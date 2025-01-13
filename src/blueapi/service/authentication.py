@@ -110,7 +110,7 @@ class SessionManager:
             signing_key.key,
             algorithms=self._server_config.id_token_signing_alg_values_supported,
             verify=True,
-            audience=self._server_config.client_audience,
+            # audience=self._server_config.client_audience,
             issuer=self._server_config.issuer,
         )
 
@@ -169,6 +169,7 @@ class SessionManager:
                     "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                     "device_code": device_code,
                     "client_id": self._server_config.client_id,
+                    "client_secret": "secret",
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
@@ -184,6 +185,7 @@ class SessionManager:
             self._server_config.device_authorization_endpoint,
             data={
                 "client_id": self._server_config.client_id,
+                "client_secret": "secret",
                 "scope": SCOPES,
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},

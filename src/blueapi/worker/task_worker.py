@@ -9,7 +9,6 @@ from threading import Event, RLock
 from typing import Any, Generic, TypeVar
 
 from bluesky.protocols import Status
-from httpx import Headers
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -198,24 +197,24 @@ class TaskWorker:
         return current
 
     @start_as_current_span(TRACER, "task_id")
-    def begin_task(self, task_id: str, headers: Headers | None) -> None:
+    def begin_task(self, task_id: str, token: str | None) -> None:
         task = self._tasks.get(task_id)
         data_subs: list[int] = []
         if task is not None:
             if self._tiled_inserter:
-                data_subs.append(self._authorize_running_task(headers))
+                data_subs.append(self._authorize_running_task(token))
             self._submit_trackable_task(task, data_subs)
 
         else:
             raise KeyError(f"No pending task with ID {task_id}")
 
-    def _authorize_running_task(self, headers: Headers | None) -> int:
+    def _authorize_running_task(self, token: str | None) -> int:
         assert self._tiled_inserter
         # https://github.com/DiamondLightSource/blueapi/issues/774
         # If users should only be able to run their own scans, pass headers
         # as part of submitting a task, cache in TrackableTask field and check
         # that token belongs to same user (but may be newer token!)
-        return self.data_events.subscribe(self._tiled_inserter(headers))
+        return self.data_events.subscribe(self._tiled_inserter(token))
 
     @start_as_current_span(TRACER, "task.name", "task.params")
     def submit_task(self, task: Task) -> str:
@@ -249,8 +248,14 @@ class TaskWorker:
             ):
                 task_started.set()
 
+        def unsubscribe_watchers(event: WorkerEvent, _: str | None) -> None:
+            if event.task_status and event.task_status.task_complete and data_subs:
+                for data_sub in data_subs:
+                    self.data_events.unsubscribe(data_sub)
+
         LOGGER.info(f"Submitting: {trackable_task}")
         sub = self.worker_events.subscribe(mark_task_as_started)
+        self.worker_events.subscribe(unsubscribe_watchers)
         try:
             self._current_task_otel_context = get_current()
             """ Cache the current trace context as the one for this task id """
@@ -262,9 +267,6 @@ class TaskWorker:
             raise WorkerBusyError("Cannot submit task while another is running") from f
         finally:
             self.worker_events.unsubscribe(sub)
-            if data_subs:
-                for data_sub in data_subs:
-                    self.data_events.unsubscribe(data_sub)
 
     @start_as_current_span(TRACER)
     def start(self) -> None:

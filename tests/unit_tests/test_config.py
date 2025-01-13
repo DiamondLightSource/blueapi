@@ -224,6 +224,7 @@ def temp_yaml_config_file(
             "logging": {"level": "INFO"},
             "api": {"host": "0.0.0.0", "port": 8000, "protocol": "http"},
             "scratch": None,
+            "tiled": None,
         },
     ],
     indirect=True,
@@ -285,6 +286,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     }
                 ],
             },
+            "tiled": None,
         },
         {
             "stomp": {
@@ -318,6 +320,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     }
                 ],
             },
+            "tiled": None,
         },
     ],
     indirect=True,

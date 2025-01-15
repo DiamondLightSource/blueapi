@@ -575,3 +575,26 @@ def test_begin_task_span_ok(
     task_id = worker.submit_task(_SIMPLE_TASK)
     with asserting_span_exporter(exporter, "begin_task", "task_id"):
         worker.begin_task(task_id)
+
+
+def test_injected_devices_are_found(
+    fake_device: FakeDevice,
+    context: BlueskyContext,
+):
+    def injected_device_plan(dev: FakeDevice = fake_device.name) -> MsgGenerator:  # type: ignore
+        yield from ()
+
+    context.register_plan(injected_device_plan)
+    params = Task(name="injected_device_plan").prepare_params(context)
+    assert params["dev"] == fake_device
+
+
+def test_missing_injected_devices_fail_early(
+    context: BlueskyContext,
+):
+    def missing_injection(dev: FakeDevice = "does_not_exist") -> MsgGenerator:  # type: ignore
+        yield from ()
+
+    context.register_plan(missing_injection)
+    with pytest.raises(ValueError):
+        Task(name="missing_injection").prepare_params(context)

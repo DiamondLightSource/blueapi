@@ -22,7 +22,8 @@ class Task(BlueapiBaseModel):
 
     def prepare_params(self, ctx: BlueskyContext) -> Mapping[str, Any]:
         model = _lookup_params(ctx, self)
-        return _model_to_kwargs(model)
+        # Re-create dict manually to avoid nesting in model_dump output
+        return {field: getattr(model, field) for field in model.__pydantic_fields__}
 
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(f"Asked to run plan {self.name} with {self.params}")
@@ -49,22 +50,3 @@ def _lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:
     model = plan.model
     adapter = TypeAdapter(model)
     return adapter.validate_python(task.params)
-
-
-def _model_to_kwargs(model: BaseModel) -> Mapping[str, Any]:
-    """
-    Converts an instance of BaseModel back to a dictionary that
-    can be passed as **kwargs.
-    Used instead of BaseModel.model_dump() because we don't want
-    the dumping to be nested and because it fires UserWarnings
-    about data types it is unfamiliar with
-    (such as ophyd devices).
-
-    Args:
-        model: Pydantic model to convert to kwargs
-
-    Returns:
-        Mapping[str, Any]: Dictionary that can be passed as **kwargs
-    """
-
-    return {name: getattr(model, name) for name in model.model_fields_set}

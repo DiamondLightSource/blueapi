@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 import responses
+import yaml
 from bluesky_stomp.messaging import StompClient
 from click.testing import CliRunner
 from pydantic import BaseModel, ValidationError
@@ -20,7 +21,7 @@ from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ScratchConfig, ScratchRepository
+from blueapi.config import ApplicationConfig, ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import DataEvent, Plan
 from blueapi.service.model import (
     DeviceModel,
@@ -329,9 +330,9 @@ def test_env_reload_server_side_error(runner: CliRunner):
     )
 
     result = runner.invoke(main, ["controller", "env", "-r"])
-    assert isinstance(
-        result.exception, BlueskyRemoteControlError
-    ), "Expected a BlueskyRemoteError from cli runner"
+    assert isinstance(result.exception, BlueskyRemoteControlError), (
+        "Expected a BlueskyRemoteError from cli runner"
+    )
     assert result.exception.args[0] == "Failed to tear down the environment"
 
     # Check if the endpoints were hit as expected
@@ -745,3 +746,33 @@ def test_local_cache_cleared_on_logout_when_oidc_unavailable(
         in result.output
     )
     assert not cached_valid_refresh.exists()
+
+
+def test_wrapper_is_a_directory_error(
+    runner: CliRunner, mock_authn_server: responses.RequestsMock, tmp_path
+):
+    config: ApplicationConfig = ApplicationConfig(auth_token_path=tmp_path)
+    config_path = tmp_path / "config.yaml"
+    with open(config_path, mode="w") as valid_auth_config_file:
+        valid_auth_config_file.write(yaml.dump(config.model_dump()))
+    result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
+    assert (
+        "Invalid path: a directory path was provided instead of a file path\n"
+        == result.stdout
+    )
+
+
+def test_wrapper_permission_error(
+    runner: CliRunner, mock_authn_server: responses.RequestsMock, tmp_path
+):
+    token_file: Path = tmp_path / "dir/token"
+    token_file.parent.mkdir()
+    # Change the dir permissions to read-only
+    (tmp_path / "dir").chmod(0o400)
+
+    config: ApplicationConfig = ApplicationConfig(auth_token_path=token_file)
+    config_path = tmp_path / "config.yaml"
+    with open(config_path, mode="w") as valid_auth_config_file:
+        valid_auth_config_file.write(yaml.dump(config.model_dump()))
+    result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
+    assert f"Permission denied: Cannot write to {token_file}\n" == result.stdout

@@ -9,7 +9,7 @@ BlueAPI provides a secure and efficient way to interact with its services. This 
 [Configure the Application](./configure-app.md)
 :::
 
-Here is an example configuration  for authenticating to p46-blueapi:
+Here is an example configuration for authenticating to p46-blueapi:
 
 ```yaml
 api:

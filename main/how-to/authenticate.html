@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Installation &#8212; blueapi 0.7.2.dev2+g92ba17bc documentation</title>
+    <title>Authenticate to BlueAPI &#8212; blueapi 0.7.2.dev2+g92ba17bc documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/installation';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/authenticate';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
@@ -57,8 +57,8 @@
     <link rel="icon" href="../_static/blueapi-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Quickstart guide" href="quickstart.html" />
-    <link rel="prev" title="Tutorials" href="../tutorials.html" />
+    <link rel="next" title="Configure the Application" href="configure-app.html" />
+    <link rel="prev" title="Add Plans and Devices to your Blueapi Environment" href="add-plans-and-devices.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -145,14 +145,14 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../how-to.html">
     How-to Guides
   </a>
@@ -293,14 +293,14 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../how-to.html">
     How-to Guides
   </a>
@@ -396,11 +396,16 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-bus.html">Run with local message bus</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-plan.html">Run a Plan</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-with-dev.html">Run/Debug in a Developer Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="add-plans-and-devices.html">Add Plans and Devices to your Blueapi Environment</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Authenticate to BlueAPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="edit-live.html">Edit Plans and Device Live</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-cli.html">Control the Worker via the CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a Container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write-devices.html">Write Devices for Blueapi</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="write-plans.html">Write Bluesky Plans for Blueapi</a></li>
 </ul>
 </div>
 </nav></div>
@@ -437,9 +442,9 @@
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../tutorials.html" class="nav-link">Tutorials</a></li>
+    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Installation</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Authenticate to BlueAPI</span></li>
   </ul>
 </nav>
 </div>
@@ -456,41 +461,77 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h1>
-<section id="check-your-version-of-python">
-<h2>Check your version of python<a class="headerlink" href="#check-your-version-of-python" title="Link to this heading">#</a></h2>
-<p>You will need python 3.10 or later. You can check your version of python by
-typing into a terminal:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">--</span><span class="n">version</span>
-</pre></div>
-</div>
+  <section id="authenticate-to-blueapi">
+<h1>Authenticate to BlueAPI<a class="headerlink" href="#authenticate-to-blueapi" title="Link to this heading">#</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">#</a></h2>
+<p>BlueAPI provides a secure and efficient way to interact with its services. This guide walks you through the steps to log in and log out using BlueAPI with OpenID Connect (OIDC) authentication.</p>
 </section>
-<section id="create-a-virtual-environment">
-<h2>Create a virtual environment<a class="headerlink" href="#create-a-virtual-environment" title="Link to this heading">#</a></h2>
-<p>It is recommended that you install into a “virtual environment” so this
-installation will not interfere with any existing Python software:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">venv</span>
-<span class="n">source</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="configure-app.html"><span class="std std-doc">Configure the Application</span></a></p>
+</div>
+<p>Here is an example configuration for authenticating to p46-blueapi:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">api</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;p46-blueapi.diamond.ac.uk&quot;</span>
+<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">443</span>
+<span class="w">  </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https&quot;</span>
+
+<span class="nt">auth_token_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;~/.cache/blueapi_cache&quot;</span><span class="w">  </span><span class="c1"># Optional: Custom path to store the token</span>
 </pre></div>
 </div>
+<ul class="simple">
+<li><p><strong>auth_token_path</strong>: (Optional) Specify where to save the token. If omitted, the default is <code class="docutils literal notranslate"><span class="pre">~/.cache/blueapi_cache</span></code> or <code class="docutils literal notranslate"><span class="pre">$XDG_CACHE_HOME/blueapi_cache</span></code> if <code class="docutils literal notranslate"><span class="pre">XDG_CACHE_HOME</span></code> is set.</p></li>
+</ul>
 </section>
-<section id="installing-the-library">
-<h2>Installing the library<a class="headerlink" href="#installing-the-library" title="Link to this heading">#</a></h2>
-<p>You can now use <code class="docutils literal notranslate"><span class="pre">pip</span></code> to install the library and its dependencies:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">blueapi</span>
+<hr class="docutils" />
+<section id="log-in">
+<h2>Log In<a class="headerlink" href="#log-in" title="Link to this heading">#</a></h2>
+<ol class="arabic">
+<li><p>Execute the login command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>blueapi<span class="w"> </span>-c<span class="w"> </span>config.yaml<span class="w"> </span>login
 </pre></div>
 </div>
-<p>If you require a feature that is not currently released you can also install
-from github:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">DiamondLightSource</span><span class="o">/</span><span class="n">blueapi</span><span class="o">.</span><span class="n">git</span>
+</li>
+<li><p><strong>Authenticate</strong>:</p>
+<ul class="simple">
+<li><p>Follow the prompts from your OIDC provider to log in.</p></li>
+<li><p>Provide your credentials and complete any additional verification steps required by the provider.</p></li>
+</ul>
+</li>
+<li><p><strong>Success Message</strong>:
+Upon successful authentication, you see the following message:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Logged</span> <span class="ow">in</span> <span class="ow">and</span> <span class="n">cached</span> <span class="n">new</span> <span class="n">token</span>
 </pre></div>
 </div>
-<p>The library should now be installed and the commandline interface on your path.
-You can check the version that has been installed by typing:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">blueapi</span> <span class="o">--</span><span class="n">version</span>
+</li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="log-out">
+<h2>Log Out<a class="headerlink" href="#log-out" title="Link to this heading">#</a></h2>
+<p>To log out and securely remove the cached access token, follow these steps:</p>
+<ol class="arabic">
+<li><p>Execute the logout command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>blueapi<span class="w"> </span><span class="nb">logout</span>
 </pre></div>
 </div>
+</li>
+<li><p><strong>Logout Process</strong>:</p>
+<ul class="simple">
+<li><p>This command uses the OIDC flow to log you out from the OIDC provider.</p></li>
+<li><p>It also deletes the cached token from the specified <code class="docutils literal notranslate"><span class="pre">auth_token_path</span></code>.</p></li>
+</ul>
+</li>
+<li><p><strong>Success Message</strong>:
+If the token is successfully removed or if it does not exist, you see the message:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Logged</span> <span class="n">out</span>
+</pre></div>
+</div>
+</li>
+</ol>
 </section>
 </section>
 
@@ -505,20 +546,20 @@ You can check the version that has been installed by typing:</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../tutorials.html"
+       href="add-plans-and-devices.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Tutorials</p>
+        <p class="prev-next-title">Add Plans and Devices to your Blueapi Environment</p>
       </div>
     </a>
     <a class="right-next"
-       href="quickstart.html"
+       href="configure-app.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Quickstart guide</p>
+        <p class="prev-next-title">Configure the Application</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -541,9 +582,10 @@ You can check the version that has been installed by typing:</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#check-your-version-of-python">Check your version of python</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-a-virtual-environment">Create a virtual environment</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installing-the-library">Installing the library</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction">Introduction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#log-in">Log In</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#log-out">Log Out</a></li>
 </ul>
   </nav></div>
 
@@ -551,7 +593,7 @@ You can check the version that has been installed by typing:</p>
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/tutorials/installation.md">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/how-to/authenticate.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -566,7 +608,7 @@ You can check the version that has been installed by typing:</p>
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/tutorials/installation.md.txt">
+    <a href="../_sources/how-to/authenticate.md.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

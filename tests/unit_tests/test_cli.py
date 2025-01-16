@@ -310,7 +310,7 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     assert responses.calls[0].request.url == "http://localhost:8000/environment"
 
     # Remaining calls should all be GET
-    for call in responses.calls[1:]:  # Skip the first DELETE request
+    for call in responses.calls[1:]:  # Skip the first DELETE request # type: ignore
         assert call.request.method == "GET"
         assert call.request.url == "http://localhost:8000/environment"
 
@@ -329,9 +329,9 @@ def test_env_reload_server_side_error(runner: CliRunner):
     )
 
     result = runner.invoke(main, ["controller", "env", "-r"])
-    assert isinstance(
-        result.exception, BlueskyRemoteControlError
-    ), "Expected a BlueskyRemoteError from cli runner"
+    assert isinstance(result.exception, BlueskyRemoteControlError), (
+        "Expected a BlueskyRemoteError from cli runner"
+    )
     assert result.exception.args[0] == "Failed to tear down the environment"
 
     # Check if the endpoints were hit as expected

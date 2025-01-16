@@ -25,7 +25,7 @@ def fmt_dict(t: dict[str, Any] | Any, ind: int = 1) -> str:
     if not isinstance(t, dict):
         return f" {t}"
     pre = " " * (ind * 4)
-    return NL + NL.join(f"{pre}{k}:{fmt_dict(v, ind+1)}" for k, v in t.items() if v)
+    return NL + NL.join(f"{pre}{k}:{fmt_dict(v, ind + 1)}" for k, v in t.items() if v)
 
 
 class OutputFormat(str, enum.Enum):
@@ -126,14 +126,14 @@ def _describe_type(spec: dict[Any, Any], required: bool = False):
         case None:
             if all_of := spec.get("allOf"):
                 items = (_describe_type(f, False) for f in all_of)
-                disp += f'{" & ".join(items)}'
+                disp += f"{' & '.join(items)}"
             elif any_of := spec.get("anyOf"):
                 items = (_describe_type(f, False) for f in any_of)
 
                 # Special case: Where the type is <something> | null,
                 # we should just print <something>
                 items = (item for item in items if item != "null" or len(any_of) != 2)
-                disp += f'{" | ".join(items)}'
+                disp += f"{' | '.join(items)}"
             else:
                 disp += "Any"
         case "array":

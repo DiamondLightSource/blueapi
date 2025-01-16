@@ -7,6 +7,7 @@ import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
+from scanspec.specs import Line
 
 from blueapi.client.client import (
     BlueapiClient,
@@ -366,7 +367,17 @@ def test_delete_current_environment(client: BlueapiClient):
                 ],
                 "num": 5,
             },
-        )
+        ),
+        Task(
+            name="spec_scan",
+            params={
+                "detectors": [
+                    "image_det",
+                    "current_det",
+                ],
+                "spec": Line("x", 0.0, 10.0, 10) * Line("y", 5.0, 15.0, 20),
+            },
+        ),
     ],
 )
 def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):

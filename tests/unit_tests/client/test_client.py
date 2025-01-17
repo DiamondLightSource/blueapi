@@ -78,7 +78,9 @@ def mock_rest() -> BlueapiRestClient:
     mock.get_all_tasks.return_value = TASKS
     mock.get_active_task.return_value = ACTIVE_TASK
     mock.get_environment.return_value = ENV
-    mock.delete_environment.return_value = ENV
+    mock.delete_environment.return_value = EnvironmentResponse(
+        environment_id=ENVIRONMENT_ID, initialized=False
+    )
     return mock
 
 

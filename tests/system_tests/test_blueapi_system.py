@@ -338,5 +338,7 @@ def test_get_current_state_of_environment(client: BlueapiClient):
 
 
 def test_delete_current_environment(client: BlueapiClient):
+    current_env = client.get_environment()
     client.reload_environment()
-    assert client.get_environment().initialized
+    new_env = client.get_environment()
+    assert new_env.initialized and new_env != current_env

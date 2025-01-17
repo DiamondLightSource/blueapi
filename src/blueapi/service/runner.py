@@ -71,17 +71,17 @@ class WorkerDispatcher:
 
     @start_as_current_span(TRACER)
     def start(self):
-        new_environment_id = uuid.uuid4()
+        environment_id = uuid.uuid4()
         try:
             self._subprocess = self._subprocess_factory()
             self.run(setup, self._config)
             self._state = EnvironmentResponse(
-                environment_id=new_environment_id,
+                environment_id=environment_id,
                 initialized=True,
             )
         except Exception as e:
             self._state = EnvironmentResponse(
-                environment_id=new_environment_id,
+                environment_id=environment_id,
                 initialized=False,
                 error_message=str(e),
             )
@@ -89,20 +89,20 @@ class WorkerDispatcher:
 
     @start_as_current_span(TRACER)
     def stop(self):
-        existing_environment_id = self._state.environment_id
+        environment_id = self._state.environment_id
         try:
             self.run(teardown)
             if self._subprocess is not None:
                 self._subprocess.close()
                 self._subprocess.join()
             self._state = EnvironmentResponse(
-                environment_id=existing_environment_id,
+                environment_id=environment_id,
                 initialized=False,
                 error_message=self._state.error_message,
             )
         except Exception as e:
             self._state = EnvironmentResponse(
-                environment_id=existing_environment_id,
+                environment_id=environment_id,
                 initialized=False,
                 error_message=str(e),
             )

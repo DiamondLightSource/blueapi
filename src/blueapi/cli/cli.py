@@ -343,8 +343,10 @@ def env(
         # Reload the environment if needed
         print("Reloading environment")
         status = client.reload_environment(timeout=timeout)
+        print("Environment is initialized")
     else:
         status = client.get_environment()
+
     print(status)
 
 

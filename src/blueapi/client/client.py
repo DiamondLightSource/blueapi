@@ -417,9 +417,9 @@ class BlueapiClient:
                     f"Error reloading environment: {status.error_message}"
                 )
             elif (
-                status.initialized and status.environment_id != previous_environment_id
+                status.initialized is True
+                and status.environment_id != previous_environment_id
             ):
-                print("Environment is initialized")
                 return status
             time.sleep(polling_interval)
         # If the function did not raise or return early, it timed out

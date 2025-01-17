@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Callable
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -42,7 +43,8 @@ DEVICE = DeviceModel(name="foo", protocols=[])
 TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
 TASKS = TasksListResponse(tasks=[TASK])
 ACTIVE_TASK = WorkerTask(task_id="bar")
-ENV = EnvironmentResponse(initialized=True)
+ENVIRONMENT_ID = uuid.uuid4()
+ENV = EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=True)
 COMPLETE_EVENT = WorkerEvent(
     state=WorkerState.IDLE,
     task_status=TaskStatus(
@@ -74,7 +76,9 @@ def mock_rest() -> BlueapiRestClient:
     mock.get_all_tasks.return_value = TASKS
     mock.get_active_task.return_value = ACTIVE_TASK
     mock.get_environment.return_value = ENV
-    mock.delete_environment.return_value = EnvironmentResponse(initialized=False)
+    mock.delete_environment.return_value = EnvironmentResponse(
+        environment_id=ENVIRONMENT_ID, initialized=False
+    )
 
     return mock
 
@@ -268,10 +272,10 @@ def test_reload_environment_no_timeout(
     mock_rest: Mock,
 ):
     mock_rest.get_environment.side_effect = [
-        EnvironmentResponse(initialized=False),
-        EnvironmentResponse(initialized=False),
-        EnvironmentResponse(initialized=False),
-        EnvironmentResponse(initialized=True),
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=True),
     ]
     mock_time.return_value = 100.0
     client.reload_environment(timeout=None)
@@ -287,10 +291,10 @@ def test_reload_environment_with_timeout(
     mock_rest: Mock,
 ):
     mock_rest.get_environment.side_effect = [
-        EnvironmentResponse(initialized=False),
-        EnvironmentResponse(initialized=False),
-        EnvironmentResponse(initialized=False),
-        EnvironmentResponse(initialized=False),
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
     ]
     mock_time.side_effect = [
         100.0,
@@ -315,10 +319,14 @@ def test_reload_environment_ignores_current_environment(
     mock_rest: Mock,
 ):
     mock_rest.get_environment.side_effect = [
-        EnvironmentResponse(initialized=True),  # This is the old environment
-        EnvironmentResponse(initialized=False),
-        EnvironmentResponse(initialized=False),
-        EnvironmentResponse(initialized=True),  # This is the new environment
+        EnvironmentResponse(
+            environment_id=ENVIRONMENT_ID, initialized=True
+        ),  # This is the old environment
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
+        EnvironmentResponse(
+            environment_id=ENVIRONMENT_ID, initialized=True
+        ),  # This is the new environment
     ]
     mock_time.return_value = 100.0
     client.reload_environment(timeout=None)
@@ -330,7 +338,7 @@ def test_reload_environment_failure(
     mock_rest: Mock,
 ):
     mock_rest.get_environment.return_value = EnvironmentResponse(
-        initialized=False, error_message="foo"
+        environment_id=ENVIRONMENT_ID, initialized=False, error_message="foo"
     )
     with pytest.raises(BlueskyRemoteControlError, match="foo"):
         client.reload_environment()

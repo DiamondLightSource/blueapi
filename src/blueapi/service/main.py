@@ -166,10 +166,11 @@ async def delete_environment(
     runner: WorkerDispatcher = Depends(_runner),
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
-
     if runner.state.initialized or runner.state.error_message is not None:
         background_tasks.add_task(runner.reload)
-    return EnvironmentResponse(initialized=False)
+    return EnvironmentResponse(
+        environment_id=runner.state.environment_id, initialized=False
+    )
 
 
 @auth_router.get("/config/oidc", tags=["auth"], response_model=OIDCConfig)

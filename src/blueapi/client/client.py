@@ -386,7 +386,9 @@ class BlueapiClient:
         """
 
         try:
+            # _ = self._rest.get_environment()
             status = self._rest.delete_environment()
+
         except Exception as e:
             raise BlueskyRemoteControlError(
                 "Failed to tear down the environment"

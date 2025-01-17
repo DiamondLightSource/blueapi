@@ -19,7 +19,6 @@ from blueapi.config import (
 )
 from blueapi.service.model import (
     DeviceResponse,
-    EnvironmentResponse,
     PlanResponse,
     TaskResponse,
     WorkerTask,
@@ -335,9 +334,9 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
 
 
 def test_get_current_state_of_environment(client: BlueapiClient):
-    assert client.get_environment() == EnvironmentResponse(initialized=True)
+    assert client.get_environment().initialized
 
 
 def test_delete_current_environment(client: BlueapiClient):
     client.reload_environment()
-    assert client.get_environment() == EnvironmentResponse(initialized=True)
+    assert client.get_environment().initialized

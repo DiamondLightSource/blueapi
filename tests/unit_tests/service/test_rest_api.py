@@ -535,12 +535,15 @@ def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
 
 
 def test_get_environment_idle(mock_runner: Mock, client: TestClient) -> None:
+    environment_id = uuid.uuid4()
     mock_runner.state = EnvironmentResponse(
+        environment_id=environment_id,
         initialized=True,
         error_message=None,
     )
 
     assert client.get("/environment").json() == {
+        "environment_id": str(environment_id),
         "initialized": True,
         "error_message": None,
     }

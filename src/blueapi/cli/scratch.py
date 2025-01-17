@@ -57,8 +57,7 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
         logging.info(f"Found {local_directory}")
     else:
         raise KeyError(
-            f"Unable to open {local_directory} as a git repository because "
-            "it is a file"
+            f"Unable to open {local_directory} as a git repository because it is a file"
         )
 
 

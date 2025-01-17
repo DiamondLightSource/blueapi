@@ -363,6 +363,9 @@ def scratch(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def login(obj: dict) -> None:
+    """
+    Authenticate with the blueapi using the OIDC (OpenID Connect) flow.
+    """
     config: ApplicationConfig = obj["config"]
     try:
         auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
@@ -381,6 +384,9 @@ def login(obj: dict) -> None:
 @main.command(name="logout")
 @click.pass_obj
 def logout(obj: dict) -> None:
+    """
+    Logs out from the OIDC provider and removes the cached access token.
+    """
     config: ApplicationConfig = obj["config"]
     try:
         auth: SessionManager = SessionManager.from_cache(config.auth_token_path)

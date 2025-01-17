@@ -24,6 +24,8 @@ SCOPES = "openid offline_access"
 
 class CacheManager(ABC):
     @abstractmethod
+    def can_access_cache(self) -> bool: ...
+    @abstractmethod
     def save_cache(self, cache: Cache) -> None: ...
     @abstractmethod
     def load_cache(cache) -> Cache: ...
@@ -62,6 +64,18 @@ class SessionCacheManager(CacheManager):
         """
         cache_path = os.environ.get("XDG_CACHE_HOME", DEFAULT_CAHCE_DIR)
         return Path(cache_path).expanduser() / "blueapi_cache"
+
+    def can_access_cache(self) -> bool:
+        assert self._token_path
+        try:
+            self._token_path.write_text("")
+        except IsADirectoryError:
+            print("Invalid path: a directory path was provided instead of a file path")
+            return False
+        except PermissionError:
+            print(f"Permission denied: Cannot write to {self._token_path.absolute()}")
+            return False
+        return True
 
 
 class SessionManager:
@@ -179,6 +193,7 @@ class SessionManager:
         raise TimeoutError("Polling timed out")
 
     def start_device_flow(self):
+        assert self._cache_manager.can_access_cache()
         print("Logging in")
         response: requests.Response = requests.post(
             self._server_config.device_authorization_endpoint,

@@ -44,7 +44,9 @@ TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
 TASKS = TasksListResponse(tasks=[TASK])
 ACTIVE_TASK = WorkerTask(task_id="bar")
 ENVIRONMENT_ID = uuid.uuid4()
+NEW_ENVIRONMENT_ID = uuid.uuid4()
 ENV = EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=True)
+NEW_ENV = EnvironmentResponse(environment_id=NEW_ENVIRONMENT_ID, initialized=True)
 COMPLETE_EVENT = WorkerEvent(
     state=WorkerState.IDLE,
     task_status=TaskStatus(
@@ -76,10 +78,7 @@ def mock_rest() -> BlueapiRestClient:
     mock.get_all_tasks.return_value = TASKS
     mock.get_active_task.return_value = ACTIVE_TASK
     mock.get_environment.return_value = ENV
-    mock.delete_environment.return_value = EnvironmentResponse(
-        environment_id=ENVIRONMENT_ID, initialized=False
-    )
-
+    mock.delete_environment.return_value = ENV
     return mock
 
 
@@ -258,9 +257,11 @@ def test_reload_environment(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
-    client.reload_environment()
+    mock_rest.get_environment.return_value = NEW_ENV
+    environment = client.reload_environment()
     mock_rest.get_environment.assert_called_once()
     mock_rest.delete_environment.assert_called_once()
+    assert environment == NEW_ENV
 
 
 @patch("blueapi.client.client.time.time")
@@ -271,12 +272,7 @@ def test_reload_environment_no_timeout(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
-    mock_rest.get_environment.side_effect = [
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=True),
-    ]
+    mock_rest.get_environment.side_effect = [ENV, ENV, ENV, NEW_ENV]
     mock_time.return_value = 100.0
     client.reload_environment(timeout=None)
     assert mock_sleep.call_count == 3
@@ -319,14 +315,10 @@ def test_reload_environment_ignores_current_environment(
     mock_rest: Mock,
 ):
     mock_rest.get_environment.side_effect = [
-        EnvironmentResponse(
-            environment_id=ENVIRONMENT_ID, initialized=True
-        ),  # This is the old environment
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
-        EnvironmentResponse(
-            environment_id=ENVIRONMENT_ID, initialized=True
-        ),  # This is the new environment
+        ENV,  # This is the old environment
+        ENV,
+        ENV,
+        NEW_ENV,  # This is the new environment
     ]
     mock_time.return_value = 100.0
     client.reload_environment(timeout=None)
@@ -601,6 +593,7 @@ def test_reload_environment_span_ok(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
+    mock_rest.get_environment.return_value = NEW_ENV
     with asserting_span_exporter(exporter, "reload_environment"):
         client.reload_environment()
 

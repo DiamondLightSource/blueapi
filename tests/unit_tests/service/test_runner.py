@@ -1,3 +1,4 @@
+import uuid
 from multiprocessing.pool import Pool as PoolClass
 from typing import Any, Generic, TypeVar
 from unittest.mock import MagicMock, Mock, patch
@@ -72,7 +73,9 @@ def test_raises_if_used_before_started(runner: WorkerDispatcher):
 
 def test_error_on_runner_setup(runner: WorkerDispatcher, mock_subprocess: Mock):
     error_message = "Intentional start_worker exception"
+    environment_id = uuid.uuid4()
     expected_state = EnvironmentResponse(
+        environment_id=environment_id,
         initialized=False,
         error_message=error_message,
     )
@@ -83,6 +86,7 @@ def test_error_on_runner_setup(runner: WorkerDispatcher, mock_subprocess: Mock):
     # and the runner is not yet initialised
     runner.reload()
     state = runner.state
+    expected_state.environment_id = state.environment_id
     assert state == expected_state
 
 
@@ -110,14 +114,17 @@ def test_can_reload_after_an_error(pool_mock: MagicMock):
 
     runner = WorkerDispatcher()
     runner.start()
-
+    current_env = runner.state.environment_id
     assert runner.state == EnvironmentResponse(
-        initialized=False, error_message="invalid code"
+        environment_id=current_env, initialized=False, error_message="invalid code"
     )
 
     runner.reload()
-
-    assert runner.state == EnvironmentResponse(initialized=True, error_message=None)
+    new_env = runner.state.environment_id
+    assert runner.state == EnvironmentResponse(
+        environment_id=new_env, initialized=True, error_message=None
+    )
+    assert current_env != new_env
 
 
 @patch("blueapi.service.runner.Pool")

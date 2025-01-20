@@ -57,7 +57,7 @@ jobs:
 
       - name: Create tags for publishing image
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.6.1
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -85,10 +85,10 @@ jobs:
     needs: build_container
     steps:
       - name: checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install helm
-        uses: Azure/setup-helm@v3
+        uses: Azure/setup-helm@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
         id: install
@@ -98,7 +98,7 @@ jobs:
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ${{ env.GCR_IMAGE }} --username ${{ github.repository_owner }} --password-stdin
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea
+        uses: docker/metadata-action@8e1d5461f02b7886d3c1a774bfbd873650445aa2
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |

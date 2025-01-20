@@ -550,9 +550,19 @@ def test_get_environment_idle(mock_runner: Mock, client: TestClient) -> None:
 
 
 def test_delete_environment(mock_runner: Mock, client: TestClient) -> None:
-    # response = client.delete("/environment")
-    # assert response.status_code is status.HTTP_200_OK
-    ...
+    environment_id = uuid.uuid4()
+    mock_runner.state = EnvironmentResponse(
+        environment_id=environment_id,
+        initialized=True,
+        error_message=None,
+    )
+    response = client.delete("/environment")
+    assert response.status_code is status.HTTP_200_OK
+    assert response.json() == {
+        "environment_id": str(environment_id),
+        "initialized": False,
+        "error_message": None,
+    }
 
 
 @patch("blueapi.service.runner.Pool")

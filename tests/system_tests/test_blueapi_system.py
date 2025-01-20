@@ -341,4 +341,7 @@ def test_delete_current_environment(client: BlueapiClient):
     current_env = client.get_environment()
     client.reload_environment()
     new_env = client.get_environment()
-    assert new_env.initialized and new_env != current_env
+    assert (
+        new_env.initialized is True
+        and new_env.environment_id != current_env.environment_id
+    )

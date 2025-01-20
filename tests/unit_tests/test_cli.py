@@ -232,8 +232,9 @@ def test_get_env(
 
     env = runner.invoke(main, ["controller", "env"])
     assert (
-        env.output
-        == f"environment_id=UUID('{environment_id}') initialized=True error_message=None\n"  # noqa: E501
+        env.output == f"environment_id=UUID('{environment_id}') "
+        "initialized=True "
+        "error_message=None\n"
     )
 
 

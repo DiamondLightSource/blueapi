@@ -276,8 +276,9 @@ def test_reload_environment_no_timeout(
 ):
     mock_rest.get_environment.side_effect = [ENV, ENV, ENV, NEW_ENV]
     mock_time.return_value = 100.0
-    client.reload_environment(timeout=None)
+    environment = client.reload_environment(timeout=None)
     assert mock_sleep.call_count == 3
+    assert environment == NEW_ENV
 
 
 @patch("blueapi.client.client.time.time")
@@ -323,8 +324,9 @@ def test_reload_environment_ignores_current_environment(
         NEW_ENV,  # This is the new environment
     ]
     mock_time.return_value = 100.0
-    client.reload_environment(timeout=None)
+    environment = client.reload_environment(timeout=None)
     assert mock_sleep.call_count == 3
+    assert environment == NEW_ENV
 
 
 def test_reload_environment_failure(

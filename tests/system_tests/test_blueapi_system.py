@@ -1,4 +1,5 @@
 import inspect
+import textwrap
 import time
 from pathlib import Path
 
@@ -6,6 +7,7 @@ import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
+from scanspec.specs import Line
 
 from blueapi.client.client import (
     BlueapiClient,
@@ -338,6 +340,44 @@ def test_get_current_state_of_environment(client: BlueapiClient):
     assert client.get_environment() == EnvironmentResponse(initialized=True)
 
 
+@pytest.mark.skip(
+    reason=textwrap.dedent("""
+The client should block until environment reload is complete but it does not,
+this interferes with subsequent tests. See
+https://github.com/DiamondLightSource/blueapi/issues/742
+""")
+)
 def test_delete_current_environment(client: BlueapiClient):
     client.reload_environment()
     assert client.get_environment() == EnvironmentResponse(initialized=True)
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        Task(
+            name="count",
+            params={
+                "detectors": [
+                    "image_det",
+                    "current_det",
+                ],
+                "num": 5,
+            },
+        ),
+        Task(
+            name="spec_scan",
+            params={
+                "detectors": [
+                    "image_det",
+                    "current_det",
+                ],
+                "spec": Line("x", 0.0, 10.0, 10) * Line("y", 5.0, 15.0, 20),
+            },
+        ),
+    ],
+)
+def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):
+    final_event = client_with_stomp.run_task(task)
+    assert final_event.is_complete() and not final_event.is_error()
+    assert final_event.state is WorkerState.IDLE

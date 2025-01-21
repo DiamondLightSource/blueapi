@@ -1,6 +1,22 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from dodal.common.beamlines.beamline_utils import set_path_provider
+from dodal.common.visit import LocalDirectoryServiceClient, StaticVisitPathProvider
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
 
 from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
+
+# Some of our plans such as "count" and "spec_scan" require this global
+# singleton to be set
+_tmp_dir = Path(TemporaryDirectory().name)
+set_path_provider(
+    StaticVisitPathProvider(
+        "t01",
+        _tmp_dir,
+        client=LocalDirectoryServiceClient(),
+    )
+)
 
 
 def x(name="x") -> SynAxisWithMotionEvents:

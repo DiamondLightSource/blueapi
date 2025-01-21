@@ -343,9 +343,9 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     del target_dict_json["stomp"]["auth"]["password"]
     del config_data["stomp"]["auth"]["password"]  # noqa: E501
     # Assert that the remaining config data is identical
-    assert (
-        target_dict_json == config_data
-    ), f"Expected config {config_data}, but got {target_dict_json}"
+    assert target_dict_json == config_data, (
+        f"Expected config {config_data}, but got {target_dict_json}"
+    )
 
 
 def test_oauth_config_model_post_init(

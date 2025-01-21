@@ -290,11 +290,8 @@ def test_reload_environment_with_timeout(
     mock_rest: Mock,
 ):
     mock_rest.get_environment.side_effect = [
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
-        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False),
-    ]
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False)
+    ] * 4
     mock_time.side_effect = [
         100.0,
         100.5,

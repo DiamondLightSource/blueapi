@@ -417,8 +417,7 @@ class BlueapiClient:
                     f"Error reloading environment: {status.error_message}"
                 )
             elif (
-                status.initialized is True
-                and status.environment_id != previous_environment_id
+                status.initialized and status.environment_id != previous_environment_id
             ):
                 return status
             time.sleep(polling_interval)

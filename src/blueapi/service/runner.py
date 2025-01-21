@@ -1,6 +1,7 @@
 import inspect
 import logging
 import signal
+import uuid
 from collections.abc import Callable
 from importlib import import_module
 from multiprocessing import Pool, set_start_method
@@ -57,6 +58,7 @@ class WorkerDispatcher:
         self._subprocess = None
         self._subprocess_factory = subprocess_factory or default_subprocess_factory
         self._state = EnvironmentResponse(
+            environment_id=uuid.uuid4(),
             initialized=False,
         )
 
@@ -69,12 +71,17 @@ class WorkerDispatcher:
 
     @start_as_current_span(TRACER)
     def start(self):
+        environment_id = uuid.uuid4()
         try:
             self._subprocess = self._subprocess_factory()
             self.run(setup, self._config)
-            self._state = EnvironmentResponse(initialized=True)
+            self._state = EnvironmentResponse(
+                environment_id=environment_id,
+                initialized=True,
+            )
         except Exception as e:
             self._state = EnvironmentResponse(
+                environment_id=environment_id,
                 initialized=False,
                 error_message=str(e),
             )
@@ -82,17 +89,20 @@ class WorkerDispatcher:
 
     @start_as_current_span(TRACER)
     def stop(self):
+        environment_id = self._state.environment_id
         try:
             self.run(teardown)
             if self._subprocess is not None:
                 self._subprocess.close()
                 self._subprocess.join()
             self._state = EnvironmentResponse(
+                environment_id=environment_id,
                 initialized=False,
                 error_message=self._state.error_message,
             )
         except Exception as e:
             self._state = EnvironmentResponse(
+                environment_id=environment_id,
                 initialized=False,
                 error_message=str(e),
             )

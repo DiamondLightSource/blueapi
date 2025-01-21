@@ -407,6 +407,7 @@ class BlueapiClient:
         teardown_complete_time = time.time()
         too_late = teardown_complete_time + timeout if timeout is not None else None
 
+        previous_environment_id = status.environment_id
         # Wait forever if there was no timeout
         while too_late is None or time.time() < too_late:
             # Poll until the environment is restarted or the timeout is reached
@@ -415,7 +416,9 @@ class BlueapiClient:
                 raise BlueskyRemoteControlError(
                     f"Error reloading environment: {status.error_message}"
                 )
-            elif status.initialized:
+            elif (
+                status.initialized and status.environment_id != previous_environment_id
+            ):
                 return status
             time.sleep(polling_interval)
         # If the function did not raise or return early, it timed out

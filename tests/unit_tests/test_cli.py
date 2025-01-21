@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 from io import StringIO
@@ -219,15 +220,22 @@ def test_valid_stomp_config_for_listener(
 def test_get_env(
     runner: CliRunner,
 ):
+    environment_id = uuid.uuid4()
     responses.add(
         responses.GET,
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=True).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=True
+        ).model_dump(mode="json"),
         status=200,
     )
 
     env = runner.invoke(main, ["controller", "env"])
-    assert env.output == "initialized=True error_message=None\n"
+    assert (
+        env.output == f"environment_id=UUID('{environment_id}') "
+        "initialized=True "
+        "error_message=None\n"
+    )
 
 
 @responses.activate(assert_all_requests_are_fired=True)
@@ -236,20 +244,25 @@ def test_reset_env_client_behavior(
     mock_sleep: Mock,
     runner: CliRunner,
 ):
+    environment_id = uuid.uuid4()
     responses.add(
         responses.DELETE,
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=False).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=False
+        ).model_dump(mode="json"),
         status=200,
     )
 
     env_state = [False, False, True]
-
+    environment_id = uuid.uuid4()
     for state in env_state:
         responses.add(
             responses.GET,
             "http://localhost:8000/environment",
-            json=EnvironmentResponse(initialized=state).model_dump(),
+            json=EnvironmentResponse(
+                environment_id=environment_id, initialized=state
+            ).model_dump(mode="json"),
             status=200,
         )
 
@@ -269,28 +282,33 @@ def test_reset_env_client_behavior(
 
     # Check if the final environment status is printed correctly
     # assert "Environment is initialized." in result.output
-    assert reload_result.output == dedent("""\
+    assert reload_result.output == dedent(f"""\
                 Reloading environment
                 Environment is initialized
-                initialized=True error_message=None
-                """)
+                environment_id=UUID('{environment_id}') initialized=True error_message=None
+                """)  # noqa: E501
 
 
 @responses.activate
 @patch("blueapi.client.client.time.sleep", return_value=None)
 def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     # Setup mocked responses for the REST endpoints
+    environment_id = uuid.uuid4()
     responses.add(
         responses.DELETE,
         "http://localhost:8000/environment",
         status=200,
-        json=EnvironmentResponse(initialized=False).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=False
+        ).model_dump(mode="json"),
     )
     # Add responses for each polling attempt, all indicating not initialized
     responses.add(
         responses.GET,
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=False).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=False
+        ).model_dump(mode="json"),
         status=200,
     )
 

@@ -1,5 +1,6 @@
+import uuid
 from collections.abc import Callable
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from bluesky_stomp.messaging import MessageContext
@@ -42,7 +43,10 @@ DEVICE = DeviceModel(name="foo", protocols=[])
 TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
 TASKS = TasksListResponse(tasks=[TASK])
 ACTIVE_TASK = WorkerTask(task_id="bar")
-ENV = EnvironmentResponse(initialized=True)
+ENVIRONMENT_ID = uuid.uuid4()
+NEW_ENVIRONMENT_ID = uuid.uuid4()
+ENV = EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=True)
+NEW_ENV = EnvironmentResponse(environment_id=NEW_ENVIRONMENT_ID, initialized=True)
 COMPLETE_EVENT = WorkerEvent(
     state=WorkerState.IDLE,
     task_status=TaskStatus(
@@ -74,8 +78,9 @@ def mock_rest() -> BlueapiRestClient:
     mock.get_all_tasks.return_value = TASKS
     mock.get_active_task.return_value = ACTIVE_TASK
     mock.get_environment.return_value = ENV
-    mock.delete_environment.return_value = EnvironmentResponse(initialized=False)
-
+    mock.delete_environment.return_value = EnvironmentResponse(
+        environment_id=ENVIRONMENT_ID, initialized=False
+    )
     return mock
 
 
@@ -254,9 +259,71 @@ def test_reload_environment(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
-    client.reload_environment()
+    mock_rest.get_environment.return_value = NEW_ENV
+    environment = client.reload_environment()
     mock_rest.get_environment.assert_called_once()
     mock_rest.delete_environment.assert_called_once()
+    assert environment == NEW_ENV
+
+
+@patch("blueapi.client.client.time.time")
+@patch("blueapi.client.client.time.sleep")
+def test_reload_environment_no_timeout(
+    mock_sleep: Mock,
+    mock_time: Mock,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    mock_rest.get_environment.side_effect = [ENV, ENV, ENV, NEW_ENV]
+    mock_time.return_value = 100.0
+    environment = client.reload_environment(timeout=None)
+    assert mock_sleep.call_count == 3
+    assert environment == NEW_ENV
+
+
+@patch("blueapi.client.client.time.time")
+@patch("blueapi.client.client.time.sleep")
+def test_reload_environment_with_timeout(
+    _: Mock,
+    mock_time: Mock,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    mock_rest.get_environment.side_effect = [
+        EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=False)
+    ] * 4
+    mock_time.side_effect = [
+        100.0,
+        100.5,
+        101.0,  # Timeout should occur here
+        101.5,
+    ]
+    with pytest.raises(
+        TimeoutError,
+        match="Failed to reload the environment within 1.0 "
+        "seconds, a server restart is recommended",
+    ):
+        client.reload_environment(timeout=1.0)
+
+
+@patch("blueapi.client.client.time.time")
+@patch("blueapi.client.client.time.sleep")
+def test_reload_environment_ignores_current_environment(
+    mock_sleep: Mock,
+    mock_time: Mock,
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    mock_rest.get_environment.side_effect = [
+        ENV,  # This is the old environment
+        ENV,
+        ENV,
+        NEW_ENV,  # This is the new environment
+    ]
+    mock_time.return_value = 100.0
+    environment = client.reload_environment(timeout=None)
+    assert mock_sleep.call_count == 3
+    assert environment == NEW_ENV
 
 
 def test_reload_environment_failure(
@@ -264,7 +331,7 @@ def test_reload_environment_failure(
     mock_rest: Mock,
 ):
     mock_rest.get_environment.return_value = EnvironmentResponse(
-        initialized=False, error_message="foo"
+        environment_id=ENVIRONMENT_ID, initialized=False, error_message="foo"
     )
     with pytest.raises(BlueskyRemoteControlError, match="foo"):
         client.reload_environment()
@@ -527,6 +594,7 @@ def test_reload_environment_span_ok(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
+    mock_rest.get_environment.return_value = NEW_ENV
     with asserting_span_exporter(exporter, "reload_environment"):
         client.reload_environment()
 

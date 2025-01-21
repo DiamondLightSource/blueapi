@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -53,16 +54,21 @@ def test_auth_request_functionality(
     mock_authn_server: responses.RequestsMock,
     cached_valid_token: Path,
 ):
+    environment_id = uuid.uuid4()
     mock_authn_server.stop()  # Cannot use multiple RequestsMock context manager
     mock_get_env = mock_authn_server.get(
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=True).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=True
+        ).model_dump(mode="json"),
         status=200,
     )
     result = None
     with mock_authn_server:
         result = rest_with_auth.get_environment()
-    assert result == EnvironmentResponse(initialized=True)
+    assert result == EnvironmentResponse(
+        environment_id=environment_id, initialized=True
+    )
     calls = mock_get_env.calls
     assert len(calls) == 1
     cacheManager = SessionCacheManager(cached_valid_token)
@@ -75,16 +81,21 @@ def test_refresh_if_signature_expired(
     mock_authn_server: responses.RequestsMock,
     cached_valid_refresh: Path,
 ):
+    environment_id = uuid.uuid4()
     mock_authn_server.stop()  # Cannot use multiple RequestsMock context manager
     mock_get_env = mock_authn_server.get(
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=True).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=True
+        ).model_dump(mode="json"),
         status=200,
     )
     result = None
     with mock_authn_server:
         result = rest_with_auth.get_environment()
-    assert result == EnvironmentResponse(initialized=True)
+    assert result == EnvironmentResponse(
+        environment_id=environment_id, initialized=True
+    )
     calls = mock_get_env.calls
     assert len(calls) == 1
     assert calls[0].request.headers["Authorization"] == "Bearer new_token"

@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Iterable
 from typing import Any
 
@@ -144,6 +145,10 @@ class EnvironmentResponse(BlueapiBaseModel):
     State of internal environment.
     """
 
+    environment_id: uuid.UUID = Field(
+        description="Unique ID for the environment instance, can be used to "
+        "differentiate between a new environment and old that has been torn down"
+    )
     initialized: bool = Field(description="blueapi context initialized")
     error_message: str | None = Field(
         default=None,

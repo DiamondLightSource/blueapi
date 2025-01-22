@@ -31,7 +31,7 @@ class Source(BaseModel):
     module: Path | str
 
 
-class StompConfig(BaseModel):
+class StompConfig(BlueapiBaseModel):
     """
     Config for connecting to stomp broker
     """

@@ -150,8 +150,6 @@ def test_auth_from_env_throws_when_not_available():
     # Eagerly throws an exception, will fail during initial loading
     with pytest.raises(KeyError):
         BasicAuthentication(username="${BAZ}", password="baz")  # type: ignore
-    with pytest.raises(KeyError):
-        BasicAuthentication(username="${baz}", passcode="baz")  # type: ignore
 
 
 def is_subset(subset: Mapping[str, Any], superset: Mapping[str, Any]) -> bool:
@@ -364,3 +362,17 @@ def test_oauth_config_model_post_init(
     assert oidc_config.issuer == oidc_well_known["issuer"]
     assert oidc_config.jwks_uri == oidc_well_known["jwks_uri"]
     assert oidc_config.end_session_endpoint == oidc_well_known["end_session_endpoint"]
+
+
+def test_extra_fields_are_forbidden_for_application_config(tmp_path: Path):
+    for model_field in ApplicationConfig.model_fields.keys():
+        # Skip auth_token_path as it cannot have extra fields
+        if model_field == "auth_token_path":
+            continue
+        with tmp_path.joinpath("config.yaml").open("w") as file:
+            yaml.dump({model_field: {"foo": "foo"}}, file)
+
+        loader = ConfigLoader(ApplicationConfig)
+        loader.use_values_from_yaml(tmp_path.joinpath("config.yaml"))
+        with pytest.raises(InvalidConfigError, match="extra_forbidden"):
+            loader.load()

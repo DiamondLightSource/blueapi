@@ -379,13 +379,11 @@ def check_no_extra_fields(model_class: Any) -> None:
 
 
 def validate_field_annotations(model_class: Any, model_field: str) -> None:
-    extracted_annotations = getattr(
-        model_class.model_fields[model_field].annotation,
-        "__args__",
-        model_class.model_fields[model_field].annotation,
-    )
-    if not isinstance(extracted_annotations, Iterable):
-        check_no_extra_fields(extracted_annotations)
+    field_annotation = model_class.model_fields[model_field].annotation
+    extracted_annotations = getattr(field_annotation, "__args__", field_annotation)
+
+    if isinstance(extracted_annotations, Iterable):
+        for annotation in extracted_annotations:
+            check_no_extra_fields(annotation)
     else:
-        for i in extracted_annotations:
-            check_no_extra_fields(i)
+        check_no_extra_fields(extracted_annotations)

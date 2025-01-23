@@ -26,7 +26,7 @@ class SourceKind(str, Enum):
     DODAL = "dodal"
 
 
-class Source(BaseModel):
+class Source(BlueapiBaseModel):
     kind: SourceKind
     module: Path | str
 

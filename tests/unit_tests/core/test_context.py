@@ -18,6 +18,17 @@ from blueapi.core.context import DefaultFactory
 SIM_MOTOR_NAME = "sim"
 ALT_MOTOR_NAME = "alt"
 SIM_DET_NAME = "sim_det"
+EXPECTED_PLANS = {
+    "plan_a",
+    "plan_b",
+    "plan_c",
+    "plan_d",
+    "plan_e",
+    "plan_f",
+    "plan_g",
+    "plan_h",
+    "plan_i",
+}
 
 
 #
@@ -151,15 +162,7 @@ def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
     import tests.unit_tests.core.fake_plan_module as plan_module
 
     empty_context.with_plan_module(plan_module)
-    assert {
-        "plan_a",
-        "plan_b",
-        "plan_c",
-        "plan_d",
-        "plan_e",
-        "plan_f",
-        "plan_g",
-    } == empty_context.plans.keys()
+    assert EXPECTED_PLANS == empty_context.plans.keys()
 
 
 def test_add_named_device(empty_context: BlueskyContext, sim_motor: SynAxis) -> None:
@@ -295,15 +298,7 @@ def test_add_devices_and_plans_from_modules_with_config(
         "ophyd_device",
         "ophyd_async_device",
     } == empty_context.devices.keys()
-    assert {
-        "plan_a",
-        "plan_b",
-        "plan_c",
-        "plan_d",
-        "plan_e",
-        "plan_f",
-        "plan_g",
-    } == empty_context.plans.keys()
+    assert EXPECTED_PLANS == empty_context.plans.keys()
 
 
 def test_function_spec(empty_context: BlueskyContext) -> None:

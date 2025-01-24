@@ -1,6 +1,5 @@
 import inspect
-from collections.abc import Callable, Mapping
-from collections.abc import Generator as ConcreteGenerator
+from collections.abc import Callable, Generator, Mapping
 from typing import (
     Any,
     Protocol,
@@ -80,8 +79,8 @@ def _follows_bluesky_protocols(obj: Any) -> bool:
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
     try:
         return_type = get_type_hints(func).get("return")
-        return (get_origin(return_type) is ConcreteGenerator) and (
-            Msg in get_args(return_type)
+        return (get_origin(return_type) is Generator) and (
+            get_args(return_type)[0] is Msg
         )
     except TypeError:
         # get_type_hints fails on some objects (such as Union or Optional)

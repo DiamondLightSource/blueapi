@@ -784,13 +784,11 @@ def test_wrapper_permission_error(
     runner: CliRunner, mock_authn_server: responses.RequestsMock, tmp_path
 ):
     token_file: Path = tmp_path / "dir/token"
-    token_file.parent.mkdir()
-    # Change the dir permissions to read-only
-    (tmp_path / "dir").chmod(0o400)
 
     config: ApplicationConfig = ApplicationConfig(auth_token_path=token_file)
     config_path = tmp_path / "config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
-    result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
+    with patch.object(Path, "write_text", side_effect=PermissionError):
+        result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
     assert f"Permission denied: Cannot write to {token_file}\n" == result.stdout

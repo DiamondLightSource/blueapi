@@ -1,8 +1,11 @@
 import inspect
 from collections.abc import Callable, Mapping
+from collections.abc import Generator as ConcreteGenerator
 from typing import (
     Any,
     Protocol,
+    get_args,
+    get_origin,
     get_type_hints,
     runtime_checkable,
 )
@@ -24,7 +27,7 @@ from bluesky.protocols import (
     Triggerable,
     WritesExternalAssets,
 )
-from bluesky.utils import MsgGenerator
+from bluesky.utils import Msg, MsgGenerator
 from dodal.common import PlanGenerator
 from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel, Field
@@ -76,7 +79,10 @@ def _follows_bluesky_protocols(obj: Any) -> bool:
 
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
     try:
-        return get_type_hints(func).get("return") == MsgGenerator
+        return_type = get_type_hints(func).get("return")
+        return (get_origin(return_type) is ConcreteGenerator) and (
+            Msg in get_args(return_type)
+        )
     except TypeError:
         # get_type_hints fails on some objects (such as Union or Optional)
         return False

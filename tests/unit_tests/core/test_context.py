@@ -151,7 +151,15 @@ def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
     import tests.unit_tests.core.fake_plan_module as plan_module
 
     empty_context.with_plan_module(plan_module)
-    assert {"foo", "bar", "baz"} == empty_context.plans.keys()
+    assert {
+        "plan_a",
+        "plan_b",
+        "plan_c",
+        "plan_d",
+        "plan_e",
+        "plan_f",
+        "plan_g",
+    } == empty_context.plans.keys()
 
 
 def test_add_named_device(empty_context: BlueskyContext, sim_motor: SynAxis) -> None:
@@ -287,7 +295,15 @@ def test_add_devices_and_plans_from_modules_with_config(
         "ophyd_device",
         "ophyd_async_device",
     } == empty_context.devices.keys()
-    assert {"foo", "bar", "baz"} == empty_context.plans.keys()
+    assert {
+        "plan_a",
+        "plan_b",
+        "plan_c",
+        "plan_d",
+        "plan_e",
+        "plan_f",
+        "plan_g",
+    } == empty_context.plans.keys()
 
 
 def test_function_spec(empty_context: BlueskyContext) -> None:

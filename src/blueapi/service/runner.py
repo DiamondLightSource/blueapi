@@ -30,6 +30,8 @@ TRACER = get_tracer("runner")
 P = ParamSpec("P")
 T = TypeVar("T")
 
+BLANK_REPORT = "The source message was blank"
+
 
 def _init_worker():
     # Replace sigint to allow subprocess to be terminated
@@ -80,12 +82,12 @@ class WorkerDispatcher:
                 initialized=True,
             )
         except Exception as e:
+            LOGGER.exception(e)
             self._state = EnvironmentResponse(
                 environment_id=environment_id,
                 initialized=False,
-                error_message=str(e),
+                error_message=_safe_exception_message(e),
             )
-            LOGGER.exception(e)
 
     @start_as_current_span(TRACER)
     def stop(self):
@@ -98,15 +100,17 @@ class WorkerDispatcher:
             self._state = EnvironmentResponse(
                 environment_id=environment_id,
                 initialized=False,
-                error_message=self._state.error_message,
+                error_message=_safe_message(
+                    type(self).__name__, self._state.error_message
+                ),
             )
         except Exception as e:
+            LOGGER.exception(e)
             self._state = EnvironmentResponse(
                 environment_id=environment_id,
                 initialized=False,
-                error_message=str(e),
+                error_message=_safe_exception_message(e),
             )
-            LOGGER.exception(e)
 
     @start_as_current_span(TRACER, "function", "args", "kwargs")
     def run(
@@ -188,3 +192,11 @@ def _validate_function(func: Any, function_name: str) -> Callable:
     elif not callable(func):
         raise RpcError(f"{function_name}: Object in subprocess is not a function")
     return func
+
+
+def _safe_exception_message(e: Exception) -> str:
+    return _safe_message(type(e).__name__, str(e))
+
+
+def _safe_message(owner: str, message: str | None) -> str:
+    return f"{owner}: {BLANK_REPORT if (not message or message.isspace()) else message}"

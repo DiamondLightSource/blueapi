@@ -17,6 +17,7 @@ from blueapi.service.runner import (
     InvalidRunnerStateError,
     RpcError,
     WorkerDispatcher,
+    _safe_exception_message,
     import_and_run_function,
 )
 
@@ -54,7 +55,9 @@ def test_initialize(runner: WorkerDispatcher, mock_subprocess: Mock):
     assert runner.run(interface.get_worker_state) == 123
     runner.stop()
 
-    assert runner.state.error_message is None
+    assert (
+        runner.state.error_message == "WorkerDispatcher: The source message was blank"
+    )
     assert not runner.state.initialized
 
 
@@ -71,19 +74,33 @@ def test_raises_if_used_before_started(runner: WorkerDispatcher):
         runner.run(interface.get_plans)
 
 
-def test_error_on_runner_setup(runner: WorkerDispatcher, mock_subprocess: Mock):
-    error_message = "Intentional start_worker exception"
-    environment_id = uuid.uuid4()
-    expected_state = EnvironmentResponse(
-        environment_id=environment_id,
-        initialized=False,
-        error_message=error_message,
+@pytest.mark.parametrize(
+    "message",
+    [
+        None,
+        "",
+        "    ",
+        "Intentional start_worker exception",
+    ],
+)
+def test_using_safe_exception_message_copes_with_all_message_types_on_runner_setup(
+    runner: WorkerDispatcher, mock_subprocess: Mock, message: str | None
+):
+    try:
+        raise Exception() if message is None else Exception(message)
+    except Exception as e:
+        expected_state = EnvironmentResponse(
+            environment_id=uuid.uuid4(),
+            initialized=False,
+            error_message=_safe_exception_message(e),
+        )
+    mock_subprocess.apply.side_effect = (
+        Exception() if message is None else Exception(message)
     )
-    mock_subprocess.apply.side_effect = Exception(error_message)
 
-    # Calling reload here instead of start also indirectly
-    # tests that stop() doesn't raise if there is no error message
-    # and the runner is not yet initialised
+    # Calling reload here instead of start also indirectly tests
+    # that stop() doesn't raise if there is no error message and the
+    # runner is not yet initialised.
     runner.reload()
     state = runner.state
     expected_state.environment_id = state.environment_id
@@ -116,7 +133,9 @@ def test_can_reload_after_an_error(pool_mock: MagicMock):
     runner.start()
     current_env = runner.state.environment_id
     assert runner.state == EnvironmentResponse(
-        environment_id=current_env, initialized=False, error_message="invalid code"
+        environment_id=current_env,
+        initialized=False,
+        error_message="SyntaxError: invalid code",
     )
 
     runner.reload()

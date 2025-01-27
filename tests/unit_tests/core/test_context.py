@@ -30,6 +30,9 @@ EXPECTED_PLANS = {
     "plan_i",
     "plan_j",
     "plan_k",
+    "plan_l",
+    "plan_m",
+    "plan_n",
 }
 
 

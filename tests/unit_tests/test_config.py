@@ -1,7 +1,8 @@
+import inspect
 import json
 import os
 import tempfile
-from collections.abc import Generator, Mapping
+from collections.abc import Generator, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -150,8 +151,6 @@ def test_auth_from_env_throws_when_not_available():
     # Eagerly throws an exception, will fail during initial loading
     with pytest.raises(KeyError):
         BasicAuthentication(username="${BAZ}", password="baz")  # type: ignore
-    with pytest.raises(KeyError):
-        BasicAuthentication(username="${baz}", passcode="baz")  # type: ignore
 
 
 def is_subset(subset: Mapping[str, Any], superset: Mapping[str, Any]) -> bool:
@@ -364,3 +363,27 @@ def test_oauth_config_model_post_init(
     assert oidc_config.issuer == oidc_well_known["issuer"]
     assert oidc_config.jwks_uri == oidc_well_known["jwks_uri"]
     assert oidc_config.end_session_endpoint == oidc_well_known["end_session_endpoint"]
+
+
+def test_extra_fields_are_forbidden_for_application_config():
+    check_no_extra_fields(ApplicationConfig)
+
+
+def check_no_extra_fields(model_class: Any) -> None:
+    if not inspect.isclass(model_class):
+        return
+    if issubclass(model_class, BaseModel):
+        assert model_class.model_config.get("extra") == "forbid"
+        for field in model_class.model_fields.keys():
+            validate_field_annotations(model_class, field)
+
+
+def validate_field_annotations(model_class: Any, model_field: str) -> None:
+    field_annotation = model_class.model_fields[model_field].annotation
+    extracted_annotations = getattr(field_annotation, "__args__", field_annotation)
+
+    if isinstance(extracted_annotations, Iterable):
+        for annotation in extracted_annotations:
+            check_no_extra_fields(annotation)
+    else:
+        check_no_extra_fields(extracted_annotations)

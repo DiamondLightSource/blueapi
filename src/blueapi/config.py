@@ -26,12 +26,12 @@ class SourceKind(str, Enum):
     DODAL = "dodal"
 
 
-class Source(BaseModel):
+class Source(BlueapiBaseModel):
     kind: SourceKind
     module: Path | str
 
 
-class StompConfig(BaseModel):
+class StompConfig(BlueapiBaseModel):
     """
     Config for connecting to stomp broker
     """

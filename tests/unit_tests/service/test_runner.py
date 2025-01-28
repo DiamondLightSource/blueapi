@@ -14,7 +14,6 @@ from pydantic import BaseModel, ValidationError
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
 from blueapi.service.runner import (
-    BLANK_REPORT,
     InvalidRunnerStateError,
     RpcError,
     WorkerDispatcher,
@@ -56,7 +55,7 @@ def test_initialize(runner: WorkerDispatcher, mock_subprocess: Mock):
     assert runner.run(interface.get_worker_state) == 123
     runner.stop()
 
-    assert runner.state.error_message == f"{type(runner).__name__}: {BLANK_REPORT}"
+    assert runner.state.error_message is None
     assert not runner.state.initialized
 
 

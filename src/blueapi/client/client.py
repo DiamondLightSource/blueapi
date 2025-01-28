@@ -22,7 +22,6 @@ from blueapi.service.model import (
     TasksListResponse,
     WorkerTask,
 )
-from blueapi.service.runner import BLANK_REPORT
 from blueapi.worker import Task, TrackableTask, WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 
@@ -413,10 +412,7 @@ class BlueapiClient:
         while too_late is None or time.time() < too_late:
             # Poll until the environment is restarted or the timeout is reached
             status = self._rest.get_environment()
-            if (
-                status.error_message is not None
-                and BLANK_REPORT not in status.error_message
-            ):
+            if status.error_message is not None:
                 raise BlueskyRemoteControlError(
                     f"Error reloading environment: {status.error_message}"
                 )

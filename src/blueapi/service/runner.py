@@ -100,9 +100,7 @@ class WorkerDispatcher:
             self._state = EnvironmentResponse(
                 environment_id=environment_id,
                 initialized=False,
-                error_message=_safe_message(
-                    type(self).__name__, self._state.error_message
-                ),
+                error_message=self._state.error_message,
             )
         except Exception as e:
             LOGGER.exception(e)

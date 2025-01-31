@@ -103,6 +103,11 @@ class BlueskyContext:
         """
 
         for obj in load_module_all(module):
+            # The rule here is that we only inspect objects defined in the module
+            # (as opposed to objects imported from other modules) to determine if
+            # they are valid plans, unless there is an __all__ defined in the module,
+            # in which case we only inspect objects listed there, regardless of their
+            # original source module.
             if (
                 hasattr(module, "__all__") or is_sourced_from_module(obj, module)
             ) and is_bluesky_plan_generator(obj):

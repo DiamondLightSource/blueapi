@@ -15,14 +15,13 @@ def test_imports_everything_without_all():
 
 def test_source_is_in_module():
     module = import_module(".functions_b", package="tests.unit_tests.utils")
-    assert is_function_sourced_from_module(module.__dict__["c"], module)
+    c = module.__dict__["c"]
+    assert callable(c)
+    assert is_function_sourced_from_module(c, module)
 
 
 def test_source_is_not_in_module():
     module = import_module(".functions_b", package="tests.unit_tests.utils")
-    assert not is_function_sourced_from_module(module.__dict__["a"], module)
-
-
-def test_source_check_on_non_function():
-    module = import_module(".functions_b", package="tests.unit_tests.utils")
-    assert not is_function_sourced_from_module(module.__dict__["e"], module)
+    a = module.__dict__["a"]
+    assert callable(a)
+    assert not is_function_sourced_from_module(a, module)

@@ -108,10 +108,10 @@ class BlueskyContext:
             # they are valid plans, unless there is an __all__ defined in the module,
             # in which case we only inspect objects listed there, regardless of their
             # original source module.
-            if (
+            if is_bluesky_plan_generator(obj) and (
                 hasattr(module, "__all__")
                 or is_function_sourced_from_module(obj, module)
-            ) and is_bluesky_plan_generator(obj):
+            ):
                 self.register_plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:

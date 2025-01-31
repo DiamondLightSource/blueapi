@@ -16,7 +16,11 @@ from pydantic_core import CoreSchema, core_schema
 
 from blueapi import utils
 from blueapi.config import EnvironmentConfig, SourceKind
-from blueapi.utils import BlueapiPlanModelConfig, load_module_all
+from blueapi.utils import (
+    BlueapiPlanModelConfig,
+    is_sourced_from_module,
+    load_module_all,
+)
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
@@ -99,7 +103,9 @@ class BlueskyContext:
         """
 
         for obj in load_module_all(module):
-            if is_bluesky_plan_generator(obj):
+            if (
+                hasattr(module, "__all__") or is_sourced_from_module(obj, module)
+            ) and is_bluesky_plan_generator(obj):
                 self.register_plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:

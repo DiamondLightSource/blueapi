@@ -1,3 +1,4 @@
+import importlib
 from collections.abc import Iterable
 from types import ModuleType
 from typing import Any
@@ -34,3 +35,15 @@ def load_module_all(mod: ModuleType) -> Iterable[Any]:
         for name, value in mod.__dict__.items():
             if not name.startswith("_"):
                 yield value
+
+
+def is_sourced_from_module(obj: Any, module: ModuleType) -> bool:
+    """
+    Check if an object is originally from a particular module, useful to detect
+    whether it actually comes from a nested import.
+
+    Args:
+        obj: Object to check
+        module: Module to check against object
+    """
+    return importlib.import_module(obj.__module__) is module

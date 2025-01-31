@@ -16,7 +16,11 @@ from pydantic_core import CoreSchema, core_schema
 
 from blueapi import utils
 from blueapi.config import EnvironmentConfig, SourceKind
-from blueapi.utils import BlueapiPlanModelConfig, load_module_all
+from blueapi.utils import (
+    BlueapiPlanModelConfig,
+    is_function_sourced_from_module,
+    load_module_all,
+)
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
@@ -99,7 +103,15 @@ class BlueskyContext:
         """
 
         for obj in load_module_all(module):
-            if is_bluesky_plan_generator(obj):
+            # The rule here is that we only inspect objects defined in the module
+            # (as opposed to objects imported from other modules) to determine if
+            # they are valid plans, unless there is an __all__ defined in the module,
+            # in which case we only inspect objects listed there, regardless of their
+            # original source module.
+            if is_bluesky_plan_generator(obj) and (
+                hasattr(module, "__all__")
+                or is_function_sourced_from_module(obj, module)
+            ):
                 self.register_plan(obj)
 
     def with_device_module(self, module: ModuleType) -> None:

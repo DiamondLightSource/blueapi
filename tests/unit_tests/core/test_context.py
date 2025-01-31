@@ -170,6 +170,20 @@ def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
     assert EXPECTED_PLANS == empty_context.plans.keys()
 
 
+def test_only_plans_from_source_module_detected(empty_context: BlueskyContext) -> None:
+    import tests.unit_tests.core.fake_plan_module_with_imports as plan_module
+
+    empty_context.with_plan_module(plan_module)
+    assert {"plan_c", "plan_d"} == empty_context.plans.keys()
+
+
+def test_only_plans_from_all_in_module_detected(empty_context: BlueskyContext) -> None:
+    import tests.unit_tests.core.fake_plan_module_with_all as plan_module
+
+    empty_context.with_plan_module(plan_module)
+    assert {"plan_a", "plan_d"} == empty_context.plans.keys()
+
+
 def test_add_named_device(empty_context: BlueskyContext, sim_motor: SynAxis) -> None:
     empty_context.register_device(sim_motor)
     assert empty_context.devices[SIM_MOTOR_NAME] is sim_motor

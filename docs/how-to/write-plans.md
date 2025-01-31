@@ -30,7 +30,7 @@ def my_plan(
 
 ## Detection
 
-The type annotations in the example above (e.g. `: str`, `: int`, `-> MsgGenerator`) are required as blueapi uses them to detect that this function is intended to be a plan and generate its runtime API. If there is an [`__all__` dunder](https://docs.python.org/3/tutorial/modules.html#importing-from-a-package) present in the module, blueapi will read that and import anything within that qualifies as a plan, per its type annotations. If not it will simpyl read everything in the module that hasn't been imported, for example it will ignore a plan imported from another module.
+The type annotations in the example above (e.g. `: str`, `: int`, `-> MsgGenerator`) are required as blueapi uses them to detect that this function is intended to be a plan and generate its runtime API. If there is an [`__all__` dunder](https://docs.python.org/3/tutorial/modules.html#importing-from-a-package) present in the module, blueapi will read that and import anything within that qualifies as a plan, per its type annotations. If not it will read everything in the module that hasn't been imported, for example it will ignore a plan imported from another module.
 
 **Input annotations should be as broad as possible**, the least specific implementation that is sufficient to accomplish the requirements of the plan. For example, if a plan is written to drive a specific motor (`MyMotor`), but only uses the general methods on the [`Movable` protocol](https://blueskyproject.io/bluesky/main/hardware.html#bluesky.protocols.Movable), it should take `Movable` as a parameter annotation rather than `MyMotor`.
 

@@ -2,7 +2,7 @@ from .base_model import BlueapiBaseModel, BlueapiModelConfig, BlueapiPlanModelCo
 from .connect_devices import connect_devices
 from .file_permissions import get_owner_gid, is_sgid_set
 from .invalid_config_error import InvalidConfigError
-from .modules import is_sourced_from_module, load_module_all
+from .modules import is_function_sourced_from_module, load_module_all
 from .serialization import serialize
 from .thread_exception import handle_all_exceptions
 
@@ -17,5 +17,5 @@ __all__ = [
     "connect_devices",
     "is_sgid_set",
     "get_owner_gid",
-    "is_sourced_from_module",
+    "is_function_sourced_from_module",
 ]

@@ -18,7 +18,7 @@ from blueapi import utils
 from blueapi.config import EnvironmentConfig, SourceKind
 from blueapi.utils import (
     BlueapiPlanModelConfig,
-    is_sourced_from_module,
+    is_function_sourced_from_module,
     load_module_all,
 )
 
@@ -109,7 +109,8 @@ class BlueskyContext:
             # in which case we only inspect objects listed there, regardless of their
             # original source module.
             if (
-                hasattr(module, "__all__") or is_sourced_from_module(obj, module)
+                hasattr(module, "__all__")
+                or is_function_sourced_from_module(obj, module)
             ) and is_bluesky_plan_generator(obj):
                 self.register_plan(obj)
 

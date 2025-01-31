@@ -38,14 +38,14 @@ def load_module_all(mod: ModuleType) -> Iterable[Any]:
 
 
 def is_function_sourced_from_module(
-    obj: Callable[..., Any], module: ModuleType
+    func: Callable[..., Any], module: ModuleType
 ) -> bool:
     """
-    Check if an object is originally from a particular module, useful to detect
+    Check if a function is originally from a particular module, useful to detect
     whether it actually comes from a nested import.
 
     Args:
-        obj: Object to check
+        func: Object to check
         module: Module to check against object
     """
-    return importlib.import_module(obj.__module__) is module
+    return importlib.import_module(func.__module__) is module

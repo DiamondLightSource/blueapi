@@ -1,5 +1,4 @@
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from dodal.common.beamlines.beamline_utils import set_path_provider
 from dodal.common.visit import LocalDirectoryServiceClient, StaticVisitPathProvider
@@ -9,7 +8,9 @@ from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
 
 # Some of our plans such as "count" and "spec_scan" require this global
 # singleton to be set
-_tmp_dir = Path(TemporaryDirectory().name)
+
+# Workaround for https://github.com/DiamondLightSource/blueapi/issues/784
+_tmp_dir = Path("/does/not/exist")
 set_path_provider(
     StaticVisitPathProvider(
         "t01",

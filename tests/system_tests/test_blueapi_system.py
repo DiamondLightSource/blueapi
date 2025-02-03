@@ -1,4 +1,5 @@
 import inspect
+import textwrap
 import time
 from pathlib import Path
 
@@ -6,6 +7,7 @@ import pytest
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
+from scanspec.specs import Line
 
 from blueapi.client.client import (
     BlueapiClient,
@@ -147,7 +149,7 @@ def test_get_plans(client: BlueapiClient, expected_plans: PlanResponse):
     retrieved_plans.plans.sort(key=lambda x: x.name)
     expected_plans.plans.sort(key=lambda x: x.name)
 
-    assert retrieved_plans == expected_plans
+    assert retrieved_plans.model_dump() == expected_plans.model_dump()
 
 
 def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
@@ -337,11 +339,54 @@ def test_get_current_state_of_environment(client: BlueapiClient):
     assert client.get_environment().initialized
 
 
+@pytest.mark.skip(
+    reason=textwrap.dedent("""
+The client should block until environment reload is complete but it does not,
+this interferes with subsequent tests. See
+https://github.com/DiamondLightSource/blueapi/issues/742
+""")
+)
 def test_delete_current_environment(client: BlueapiClient):
-    current_env = client.get_environment()
+    old_env = client.get_environment()
     client.reload_environment()
     new_env = client.get_environment()
-    assert (
-        new_env.initialized is True
-        and new_env.environment_id != current_env.environment_id
-    )
+    assert new_env.initialized
+    assert new_env.environment_id != old_env.environment_id
+    assert new_env.error_message is None
+
+
+@pytest.mark.xfail()
+@pytest.mark.parametrize(
+    "task",
+    [
+        Task(
+            name="count",
+            params={
+                "detectors": [
+                    "image_det",
+                    "current_det",
+                ],
+                "num": 5,
+            },
+        ),
+        pytest.param(
+            Task(
+                name="spec_scan",
+                params={
+                    "detectors": [
+                        "image_det",
+                        "current_det",
+                    ],
+                    "spec": Line("x", 0.0, 10.0, 10) * Line("y", 5.0, 15.0, 20),
+                },
+            ),
+            marks=pytest.mark.xfail(
+                reason="https://github.com/DiamondLightSource/blueapi/issues/782"
+            ),
+        ),
+    ],
+)
+def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):
+    final_event = client_with_stomp.run_task(task)
+    assert final_event.is_complete() and not final_event.is_error()
+    assert final_event.state is WorkerState.IDLE

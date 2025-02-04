@@ -1,5 +1,4 @@
 import inspect
-import textwrap
 import time
 from pathlib import Path
 
@@ -339,13 +338,6 @@ def test_get_current_state_of_environment(client: BlueapiClient):
     assert client.get_environment().initialized
 
 
-@pytest.mark.skip(
-    reason=textwrap.dedent("""
-The client should block until environment reload is complete but it does not,
-this interferes with subsequent tests. See
-https://github.com/DiamondLightSource/blueapi/issues/742
-""")
-)
 def test_delete_current_environment(client: BlueapiClient):
     old_env = client.get_environment()
     client.reload_environment()
@@ -355,7 +347,6 @@ def test_delete_current_environment(client: BlueapiClient):
     assert new_env.error_message is None
 
 
-@pytest.mark.xfail()
 @pytest.mark.parametrize(
     "task",
     [
@@ -369,20 +360,15 @@ def test_delete_current_environment(client: BlueapiClient):
                 "num": 5,
             },
         ),
-        pytest.param(
-            Task(
-                name="spec_scan",
-                params={
-                    "detectors": [
-                        "image_det",
-                        "current_det",
-                    ],
-                    "spec": Line("x", 0.0, 10.0, 10) * Line("y", 5.0, 15.0, 20),
-                },
-            ),
-            marks=pytest.mark.xfail(
-                reason="https://github.com/DiamondLightSource/blueapi/issues/782"
-            ),
+        Task(
+            name="spec_scan",
+            params={
+                "detectors": [
+                    "image_det",
+                    "current_det",
+                ],
+                "spec": Line("x", 0.0, 10.0, 2) * Line("y", 5.0, 15.0, 3),
+            },
         ),
     ],
 )

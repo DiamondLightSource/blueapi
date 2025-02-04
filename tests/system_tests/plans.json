@@ -1,38 +1,38 @@
 {
     "plans": [
         {
-            "name": "move",
-            "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target positions\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "name": "stp_snapshot",
+            "description": "\n    Moves devices for pressure and temperature (defaults fetched from the context)\n    and captures a single frame from a collection of devices\n\n    Args:\n        detectors (List[Readable]): A list of devices to read while the sample is at STP\n        temperature (Optional[Movable]): A device controlling temperature of the sample,\n            defaults to fetching a device name \"sample_temperature\" from the context\n        pressure (Optional[Movable]): A device controlling pressure on the sample,\n            defaults to fetching a device name \"sample_pressure\" from the context\n    Returns:\n        MsgGenerator: Plan\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
-                    "moves": {
-                        "title": "Moves",
-                        "type": "object"
+                    "detectors": {
+                        "items": {
+                            "type": "bluesky.protocols.Readable"
+                        },
+                        "title": "Detectors",
+                        "type": "array"
                     },
-                    "group": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Group"
+                    "temperature": {
+                        "title": "Temperature",
+                        "type": "bluesky.protocols.Movable"
+                    },
+                    "pressure": {
+                        "title": "Pressure",
+                        "type": "bluesky.protocols.Movable"
                     }
                 },
                 "required": [
-                    "moves"
+                    "detectors"
                 ],
-                "title": "move",
+                "title": "stp_snapshot",
                 "type": "object"
             }
         },
         {
             "name": "count",
             "description": "Reads from a number of devices.\n    Wraps bluesky.plans.count(det, num, delay, md=metadata) exposing only serializable\n    parameters and metadata.",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "detectors": {
@@ -81,50 +81,23 @@
             }
         },
         {
-            "name": "stp_snapshot",
-            "description": "\n    Moves devices for pressure and temperature (defaults fetched from the context)\n    and captures a single frame from a collection of devices\n\n    Args:\n        detectors (List[Readable]): A list of devices to read while the sample is at STP\n        temperature (Optional[Movable]): A device controlling temperature of the sample,\n            defaults to fetching a device name \"sample_temperature\" from the context\n        pressure (Optional[Movable]): A device controlling pressure on the sample,\n            defaults to fetching a device name \"sample_pressure\" from the context\n    Returns:\n        MsgGenerator: Plan\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "detectors": {
-                        "items": {
-                            "type": "bluesky.protocols.Readable"
-                        },
-                        "title": "Detectors",
-                        "type": "array"
-                    },
-                    "temperature": {
-                        "title": "Temperature",
-                        "type": "bluesky.protocols.Movable"
-                    },
-                    "pressure": {
-                        "title": "Pressure",
-                        "type": "bluesky.protocols.Movable"
-                    }
-                },
-                "required": [
-                    "detectors"
-                ],
-                "title": "stp_snapshot",
-                "type": "object"
-            }
-        },
-        {
             "name": "spec_scan",
             "description": "Generic plan for reading `detectors` at every point of a ScanSpec `Spec`.\n    A `Spec` is an N-dimensional path.\n    ",
-            "parameter_schema": {
+            "schema": {
                 "$defs": {
-                    "Circle": {
+                    "Circle_Reference_": {
                         "additionalProperties": false,
                         "description": "Mask contains points of axis within an xy circle of given radius.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 1, 3, 10) * ~Line(\"x\", 0, 2, 10)\n    spec = grid & Circle(\"x\", \"y\", 1, 2, 0.9)",
                         "properties": {
                             "x_axis": {
                                 "description": "The name matching the x axis of the spec",
-                                "title": "X Axis"
+                                "title": "X Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "The name matching the y axis of the spec",
-                                "title": "Y Axis"
+                                "title": "Y Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "x_middle": {
                                 "description": "The central x point of the circle",
@@ -138,7 +111,7 @@
                             },
                             "radius": {
                                 "description": "Radius of the circle",
-                                "exclusiveMinimum": 0.0,
+                                "exclusiveMinimum": 0,
                                 "title": "Radius",
                                 "type": "number"
                             },
@@ -159,7 +132,7 @@
                         "title": "Circle",
                         "type": "object"
                     },
-                    "CombinationOf": {
+                    "CombinationOf_Reference_": {
                         "additionalProperties": false,
                         "description": "Abstract baseclass for a combination of two regions, left and right.",
                         "properties": {
@@ -185,7 +158,7 @@
                         "title": "CombinationOf",
                         "type": "object"
                     },
-                    "Concat": {
+                    "Concat_Reference_": {
                         "additionalProperties": false,
                         "description": "Concatenate two Specs together, running one after the other.\n\nEach Dimension of left and right must contain the same axes. Typically\nformed using `Spec.concat`.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"x\", 1, 3, 3).concat(Line(\"x\", 4, 5, 5))",
                         "properties": {
@@ -223,7 +196,7 @@
                         "title": "Concat",
                         "type": "object"
                     },
-                    "DifferenceOf": {
+                    "DifferenceOf_Reference_": {
                         "additionalProperties": false,
                         "description": "A point is in DifferenceOf(a, b) if in a and not in b.\n\nTypically created with the ``-`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) - Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False, False, False])",
                         "properties": {
@@ -249,17 +222,19 @@
                         "title": "DifferenceOf",
                         "type": "object"
                     },
-                    "Ellipse": {
+                    "Ellipse_Reference_": {
                         "additionalProperties": false,
                         "description": "Mask contains points of axis within an xy ellipse of given radius.\n\n.. example_spec::\n\n    from scanspec.regions import Ellipse\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 3, 8, 10) * ~Line(\"x\", 1 ,8, 10)\n    spec = grid & Ellipse(\"x\", \"y\", 5, 5, 2, 3, 75)",
                         "properties": {
                             "x_axis": {
                                 "description": "The name matching the x axis of the spec",
-                                "title": "X Axis"
+                                "title": "X Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "The name matching the y axis of the spec",
-                                "title": "Y Axis"
+                                "title": "Y Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "x_middle": {
                                 "description": "The central x point of the ellipse",
@@ -273,18 +248,18 @@
                             },
                             "x_radius": {
                                 "description": "The radius along the x axis of the ellipse",
-                                "exclusiveMinimum": 0.0,
+                                "exclusiveMinimum": 0,
                                 "title": "X Radius",
                                 "type": "number"
                             },
                             "y_radius": {
                                 "description": "The radius along the y axis of the ellipse",
-                                "exclusiveMinimum": 0.0,
+                                "exclusiveMinimum": 0,
                                 "title": "Y Radius",
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0.0,
+                                "default": 0,
                                 "description": "The angle of the ellipse (degrees)",
                                 "title": "Angle",
                                 "type": "number"
@@ -307,7 +282,7 @@
                         "title": "Ellipse",
                         "type": "object"
                     },
-                    "IntersectionOf": {
+                    "IntersectionOf_Reference_": {
                         "additionalProperties": false,
                         "description": "A point is in IntersectionOf(a, b) if in both a and b.\n\nTypically created with the ``&`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) & Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False, False,  True, False, False])",
                         "properties": {
@@ -333,13 +308,14 @@
                         "title": "IntersectionOf",
                         "type": "object"
                     },
-                    "Line": {
+                    "Line_Reference_": {
                         "additionalProperties": false,
                         "description": "Linearly spaced frames with start and stop as first and last midpoints.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"x\", 1, 2, 5)",
                         "properties": {
                             "axis": {
                                 "description": "An identifier for what to move",
-                                "title": "Axis"
+                                "title": "Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "start": {
                                 "description": "Midpoint of the first point of the line",
@@ -373,7 +349,7 @@
                         "title": "Line",
                         "type": "object"
                     },
-                    "Mask": {
+                    "Mask_Reference_": {
                         "additionalProperties": false,
                         "description": "Restrict Spec to only midpoints that fall inside the given Region.\n\nTypically created with the ``&`` operator. It also pushes down the\n``& | ^ -`` operators to its `Region` to avoid the need for brackets on\ncombinations of Regions.\n\nIf a Region spans multiple Frames objects, they will be squashed together.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * Line(\"x\", 3, 5, 5) & Circle(\"x\", \"y\", 4, 2, 1.2)\n\nSee Also: `why-squash-can-change-path`",
                         "properties": {
@@ -405,17 +381,19 @@
                         "title": "Mask",
                         "type": "object"
                     },
-                    "Polygon": {
+                    "Polygon_Reference_": {
                         "additionalProperties": false,
                         "description": "Mask contains points of axis within a rotated xy polygon.\n\n.. example_spec::\n\n    from scanspec.regions import Polygon\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 3, 8, 10) * ~Line(\"x\", 1 ,8, 10)\n    spec = grid & Polygon(\"x\", \"y\", [1.0, 6.0, 8.0, 2.0], [4.0, 10.0, 6.0, 1.0])",
                         "properties": {
                             "x_axis": {
                                 "description": "The name matching the x axis of the spec",
-                                "title": "X Axis"
+                                "title": "X Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "The name matching the y axis of the spec",
-                                "title": "Y Axis"
+                                "title": "Y Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "x_verts": {
                                 "description": "The Nx1 x coordinates of the polygons vertices",
@@ -451,7 +429,7 @@
                         "title": "Polygon",
                         "type": "object"
                     },
-                    "Product": {
+                    "Product_Reference_": {
                         "additionalProperties": false,
                         "description": "Outer product of two Specs, nesting inner within outer.\n\nThis means that inner will run in its entirety at each point in outer.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 2, 3) * Line(\"x\", 3, 4, 12)",
                         "properties": {
@@ -477,13 +455,14 @@
                         "title": "Product",
                         "type": "object"
                     },
-                    "Range": {
+                    "Range_Reference_": {
                         "additionalProperties": false,
                         "description": "Mask contains points of axis >= min and <= max.\n\n>>> r = Range(\"x\", 1, 2)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True,  True, False, False])",
                         "properties": {
                             "axis": {
                                 "description": "The name matching the axis to mask in spec",
-                                "title": "Axis"
+                                "title": "Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "min": {
                                 "description": "The minimum inclusive value in the region",
@@ -510,17 +489,19 @@
                         "title": "Range",
                         "type": "object"
                     },
-                    "Rectangle": {
+                    "Rectangle_Reference_": {
                         "additionalProperties": false,
                         "description": "Mask contains points of axis within a rotated xy rectangle.\n\n.. example_spec::\n\n    from scanspec.regions import Rectangle\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 1, 3, 10) * ~Line(\"x\", 0, 2, 10)\n    spec = grid & Rectangle(\"x\", \"y\", 0, 1.1, 1.5, 2.1, 30)",
                         "properties": {
                             "x_axis": {
                                 "description": "The name matching the x axis of the spec",
-                                "title": "X Axis"
+                                "title": "X Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "The name matching the y axis of the spec",
-                                "title": "Y Axis"
+                                "title": "Y Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "x_min": {
                                 "description": "Minimum inclusive x value in the region",
@@ -543,7 +524,7 @@
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0.0,
+                                "default": 0,
                                 "description": "Clockwise rotation angle of the rectangle",
                                 "title": "Angle",
                                 "type": "number"
@@ -569,53 +550,53 @@
                     "Region": {
                         "discriminator": {
                             "mapping": {
-                                "Circle": "#/$defs/Circle",
-                                "CombinationOf": "#/$defs/CombinationOf",
-                                "DifferenceOf": "#/$defs/DifferenceOf",
-                                "Ellipse": "#/$defs/Ellipse",
-                                "IntersectionOf": "#/$defs/IntersectionOf",
-                                "Polygon": "#/$defs/Polygon",
-                                "Range": "#/$defs/Range",
-                                "Rectangle": "#/$defs/Rectangle",
-                                "SymmetricDifferenceOf": "#/$defs/SymmetricDifferenceOf",
-                                "UnionOf": "#/$defs/UnionOf"
+                                "Circle": "#/$defs/Circle_Reference_",
+                                "CombinationOf": "#/$defs/CombinationOf_Reference_",
+                                "DifferenceOf": "#/$defs/DifferenceOf_Reference_",
+                                "Ellipse": "#/$defs/Ellipse_Reference_",
+                                "IntersectionOf": "#/$defs/IntersectionOf_Reference_",
+                                "Polygon": "#/$defs/Polygon_Reference_",
+                                "Range": "#/$defs/Range_Reference_",
+                                "Rectangle": "#/$defs/Rectangle_Reference_",
+                                "SymmetricDifferenceOf": "#/$defs/SymmetricDifferenceOf_Reference_",
+                                "UnionOf": "#/$defs/UnionOf_Reference_"
                             },
                             "propertyName": "type"
                         },
                         "oneOf": [
                             {
-                                "$ref": "#/$defs/CombinationOf"
+                                "$ref": "#/$defs/CombinationOf_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/UnionOf"
+                                "$ref": "#/$defs/UnionOf_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/IntersectionOf"
+                                "$ref": "#/$defs/IntersectionOf_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/DifferenceOf"
+                                "$ref": "#/$defs/DifferenceOf_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/SymmetricDifferenceOf"
+                                "$ref": "#/$defs/SymmetricDifferenceOf_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Range"
+                                "$ref": "#/$defs/Range_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Rectangle"
+                                "$ref": "#/$defs/Rectangle_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Polygon"
+                                "$ref": "#/$defs/Polygon_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Circle"
+                                "$ref": "#/$defs/Circle_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Ellipse"
+                                "$ref": "#/$defs/Ellipse_Reference_"
                             }
                         ]
                     },
-                    "Repeat": {
+                    "Repeat_Reference_": {
                         "additionalProperties": false,
                         "description": "Repeat an empty frame num times.\n\nCan be used on the outside of a scan to repeat the same scan many times.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = 2 * ~Line.bounded(\"x\", 3, 4, 1)\n\nIf you want snaked axes to have no gap between iterations you can do:\n\n.. example_spec::\n\n    from scanspec.specs import Line, Repeat\n\n    spec = Repeat(2, gap=False) * ~Line.bounded(\"x\", 3, 4, 1)\n\n.. note:: There is no turnaround arrow at x=4",
                         "properties": {
@@ -644,7 +625,7 @@
                         "title": "Repeat",
                         "type": "object"
                     },
-                    "Snake": {
+                    "Snake_Reference_": {
                         "additionalProperties": false,
                         "description": "Run the Spec in reverse on every other iteration when nested.\n\nTypically created with the ``~`` operator.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * ~Line(\"x\", 3, 5, 5)",
                         "properties": {
@@ -668,63 +649,65 @@
                     "Spec": {
                         "discriminator": {
                             "mapping": {
-                                "Concat": "#/$defs/Concat",
-                                "Line": "#/$defs/Line",
-                                "Mask": "#/$defs/Mask",
-                                "Product": "#/$defs/Product",
-                                "Repeat": "#/$defs/Repeat",
-                                "Snake": "#/$defs/Snake",
-                                "Spiral": "#/$defs/Spiral",
-                                "Squash": "#/$defs/Squash",
-                                "Static": "#/$defs/Static",
-                                "Zip": "#/$defs/Zip"
+                                "Concat": "#/$defs/Concat_Reference_",
+                                "Line": "#/$defs/Line_Reference_",
+                                "Mask": "#/$defs/Mask_Reference_",
+                                "Product": "#/$defs/Product_Reference_",
+                                "Repeat": "#/$defs/Repeat_Reference_",
+                                "Snake": "#/$defs/Snake_Reference_",
+                                "Spiral": "#/$defs/Spiral_Reference_",
+                                "Squash": "#/$defs/Squash_Reference_",
+                                "Static": "#/$defs/Static_Reference_",
+                                "Zip": "#/$defs/Zip_Reference_"
                             },
                             "propertyName": "type"
                         },
                         "oneOf": [
                             {
-                                "$ref": "#/$defs/Product"
+                                "$ref": "#/$defs/Product_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Repeat"
+                                "$ref": "#/$defs/Repeat_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Zip"
+                                "$ref": "#/$defs/Zip_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Mask"
+                                "$ref": "#/$defs/Mask_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Snake"
+                                "$ref": "#/$defs/Snake_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Concat"
+                                "$ref": "#/$defs/Concat_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Squash"
+                                "$ref": "#/$defs/Squash_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Line"
+                                "$ref": "#/$defs/Line_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Static"
+                                "$ref": "#/$defs/Static_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Spiral"
+                                "$ref": "#/$defs/Spiral_Reference_"
                             }
                         ]
                     },
-                    "Spiral": {
+                    "Spiral_Reference_": {
                         "additionalProperties": false,
                         "description": "Archimedean spiral of \"x_axis\" and \"y_axis\".\n\nStarts at centre point (\"x_start\", \"y_start\") with angle \"rotate\". Produces\n\"num\" points in a spiral spanning width of \"x_range\" and height of \"y_range\"\n\n.. example_spec::\n\n    from scanspec.specs import Spiral\n\n    spec = Spiral(\"x\", \"y\", 1, 5, 10, 50, 30)",
                         "properties": {
                             "x_axis": {
                                 "description": "An identifier for what to move for x",
-                                "title": "X Axis"
+                                "title": "X Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "An identifier for what to move for y",
-                                "title": "Y Axis"
+                                "title": "Y Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "x_start": {
                                 "description": "x centre of the spiral",
@@ -753,7 +736,7 @@
                                 "type": "integer"
                             },
                             "rotate": {
-                                "default": 0.0,
+                                "default": 0,
                                 "description": "How much to rotate the angle of the spiral",
                                 "title": "Rotate",
                                 "type": "number"
@@ -777,7 +760,7 @@
                         "title": "Spiral",
                         "type": "object"
                     },
-                    "Squash": {
+                    "Squash_Reference_": {
                         "additionalProperties": false,
                         "description": "Squash a stack of Frames together into a single expanded Frames object.\n\nSee Also:\n    `why-squash-can-change-path`\n\n.. example_spec::\n\n    from scanspec.specs import Line, Squash\n\n    spec = Squash(Line(\"y\", 1, 2, 3) * Line(\"x\", 0, 1, 4))",
                         "properties": {
@@ -804,13 +787,14 @@
                         "title": "Squash",
                         "type": "object"
                     },
-                    "Static": {
+                    "Static_Reference_": {
                         "additionalProperties": false,
                         "description": "A static frame, repeated num times, with axis at value.\n\nCan be used to set axis=value at every point in a scan.\n\n.. example_spec::\n\n    from scanspec.specs import Line, Static\n\n    spec = Line(\"y\", 1, 2, 3).zip(Static(\"x\", 3))",
                         "properties": {
                             "axis": {
                                 "description": "An identifier for what to move",
-                                "title": "Axis"
+                                "title": "Axis",
+                                "type": "bluesky.protocols.Movable"
                             },
                             "value": {
                                 "description": "The value at each point",
@@ -838,7 +822,7 @@
                         "title": "Static",
                         "type": "object"
                     },
-                    "SymmetricDifferenceOf": {
+                    "SymmetricDifferenceOf_Reference_": {
                         "additionalProperties": false,
                         "description": "A point is in SymmetricDifferenceOf(a, b) if in either a or b, but not both.\n\nTypically created with the ``^`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) ^ Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False,  True, False])",
                         "properties": {
@@ -864,7 +848,7 @@
                         "title": "SymmetricDifferenceOf",
                         "type": "object"
                     },
-                    "UnionOf": {
+                    "UnionOf_Reference_": {
                         "additionalProperties": false,
                         "description": "A point is in UnionOf(a, b) if in either a or b.\n\nTypically created with the ``|`` operator\n\n>>> r = Range(\"x\", 0.5, 2.5) | Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True,  True,  True, False])",
                         "properties": {
@@ -890,7 +874,7 @@
                         "title": "UnionOf",
                         "type": "object"
                     },
-                    "Zip": {
+                    "Zip_Reference_": {
                         "additionalProperties": false,
                         "description": "Run two Specs in parallel, merging their midpoints together.\n\nTypically formed using `Spec.zip`.\n\nStacks of Frames are merged by:\n\n- If right creates a stack of a single Frames object of size 1, expand it to\n  the size of the fastest Frames object created by left\n- Merge individual Frames objects together from fastest to slowest\n\nThis means that Zipping a Spec producing stack [l2, l1] with a Spec\nproducing stack [r1] will assert len(l1)==len(r1), and produce\nstack [l2, l1.zip(r1)].\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"z\", 1, 2, 3) * Line(\"y\", 3, 4, 5).zip(Line(\"x\", 4, 5, 5))",
                         "properties": {
@@ -953,7 +937,7 @@
         {
             "name": "set_absolute",
             "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -990,7 +974,7 @@
         {
             "name": "set_relative",
             "description": "\n    Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -1025,9 +1009,38 @@
             }
         },
         {
+            "name": "move",
+            "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target positions\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "moves": {
+                        "title": "Moves",
+                        "type": "object"
+                    },
+                    "group": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Group"
+                    }
+                },
+                "required": [
+                    "moves"
+                ],
+                "title": "move",
+                "type": "object"
+            }
+        },
+        {
             "name": "move_relative",
             "description": "\n    Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target deltas\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
@@ -1056,7 +1069,7 @@
         {
             "name": "sleep",
             "description": "\n    Suspend all action for a given time, wrapper for `bp.sleep`\n\n    Args:\n        time (float): Time to wait in seconds\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "time": {
@@ -1074,7 +1087,7 @@
         {
             "name": "wait",
             "description": "\n    Wait for a group status to complete, wrapper for `bp.wait`.\n    Does not expose move_on, as when used as a stub will not fail on Timeout.\n\n    Args:\n        group (Group | None, optional): The name of the group to wait for, defaults\n                                           to None, in which case waits for all\n                                           groups that have not yet been awaited.\n        timeout (float | None, default=None): a timeout in seconds\n\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "group": {

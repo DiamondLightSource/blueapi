@@ -13,6 +13,7 @@ from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
+from blueapi.worker.tiled import TiledConnection
 
 """This module provides interface between web application and underlying Bluesky
 context and worker"""
@@ -40,9 +41,11 @@ def context() -> BlueskyContext:
 
 @cache
 def worker() -> TaskWorker:
+    conf = config()
     worker = TaskWorker(
         context(),
-        broadcast_statuses=config().env.events.broadcast_status_events,
+        broadcast_statuses=conf.env.events.broadcast_status_events,
+        tiled_inserter=TiledConnection(conf.tiled) if conf.tiled else None,
     )
     worker.start()
     return worker

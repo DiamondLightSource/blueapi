@@ -1,6 +1,6 @@
 # Edit Plans and Device Live
 
-You may want to tweak/edit your palns and devices live, i.e. without having to make a new release of a Python module, `pip install` it and restart blueapi. Blueapi can be configured to use a special directory called the "scratch area" where source code can be checked out and installed in [development mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html).
+You may want to tweak/edit your plans and devices live, i.e. without having to make a new release of a Python module, `pip install` it and restart blueapi. Blueapi can be configured to use a special directory called the "scratch area" where source code can be checked out and installed in [development mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html).
 
 ## Configuration
 

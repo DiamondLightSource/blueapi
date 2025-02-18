@@ -1,0 +1,18 @@
+---
+stomp:
+  host: "localhost"
+  port: 61613
+  auth:
+    username: "guest"
+    password: "guest"
+# New config
+numtracker:
+  url: https://numtracker.diamond.ac.uk/graphql
+env:
+  # New config
+  metadata:
+    data_session: cm37271-2
+    instrument: i22
+oidc:
+  well_known_url: "https://authn.diamond.ac.uk/realms/master/.well-known/openid-configuration"
+  client_id: "blueapi-cli"

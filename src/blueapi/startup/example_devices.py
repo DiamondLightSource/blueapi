@@ -1,7 +1,8 @@
-from pathlib import Path
 
-from dodal.common.beamlines.beamline_utils import set_path_provider
-from dodal.common.visit import LocalDirectoryServiceClient, StaticVisitPathProvider
+from dodal.common.beamlines.beamline_utils import (
+    StartDocumentBasedPathProvider,
+    set_path_provider,
+)
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
 
 from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
@@ -10,14 +11,7 @@ from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
 # singleton to be set
 
 # Workaround for https://github.com/DiamondLightSource/blueapi/issues/784
-_tmp_dir = Path("/does/not/exist")
-set_path_provider(
-    StaticVisitPathProvider(
-        "t01",
-        _tmp_dir,
-        client=LocalDirectoryServiceClient(),
-    )
-)
+set_path_provider(StartDocumentBasedPathProvider())
 
 
 def x(name="x") -> SynAxisWithMotionEvents:

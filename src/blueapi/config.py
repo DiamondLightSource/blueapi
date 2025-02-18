@@ -49,6 +49,14 @@ class WorkerEventConfig(BlueapiBaseModel):
     broadcast_status_events: bool = True
 
 
+class MetadataConfig(BlueapiBaseModel):
+    # TODO: Reconcile data_session (bluesky term) with instrument_session (DLS term)
+    data_session: str = "aa123456"
+
+    # TODO: Does/should this conflict with the ${BEAMLINE} environment variable
+    instrument: str = "p01"
+
+
 class EnvironmentConfig(BlueapiBaseModel):
     """
     Config for the RunEngine environment
@@ -63,6 +71,7 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
     ]
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
+    metadata: MetadataConfig = Field(default_factory=MetadataConfig)
 
 
 class LoggingConfig(BlueapiBaseModel):
@@ -153,6 +162,10 @@ class OIDCConfig(BlueapiBaseModel):
         )
 
 
+class NumtrackerConfig(BlueapiBaseModel):
+    url: str = "http://localhost:8000/graphql"
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -166,6 +179,7 @@ class ApplicationConfig(BlueapiBaseModel):
     scratch: ScratchConfig | None = None
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
+    numtracker: NumtrackerConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

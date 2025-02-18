@@ -1,12 +1,29 @@
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 from bluesky.protocols import Movable, Readable
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.common.beamlines.beamline_utils import get_path_provider
 from dodal.plan_stubs.wrapped import move
 from dodal.plans import count
 
-from blueapi.core import MsgGenerator
-
 TEMP: Movable = inject("sample_temperature")
 PRESS: Movable = inject("sample_pressure")
+
+
+def file_writing() -> MsgGenerator[None]:
+    detectors = ["d1", "d2", "d3"]
+    provider = get_path_provider()
+
+    @bpp.run_decorator()
+    def inner() -> MsgGenerator[None]:
+        yield from bps.sleep(0.1)
+        for detector in detectors:
+            path_info = provider(detector)
+            print(f"{detector} -> {path_info}")
+        yield from bps.sleep(0.1)
+
+    yield from inner()
 
 
 def stp_snapshot(

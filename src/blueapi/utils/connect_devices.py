@@ -29,7 +29,7 @@ def _report_successful_devices(
 
 
 def _establish_device_connections(
-    run_engine: RunEngine,
+    RE: RunEngine,
     devices: Mapping[str, AnyDevice],
     sim_backend: bool,
 ) -> tuple[Mapping[str, AnyDevice], Mapping[str, Exception]]:
@@ -45,7 +45,7 @@ def _establish_device_connections(
 
     # Connect ophyd-async devices
     try:
-        run_engine(ensure_connected(*ophyd_async_devices.values(), mock=sim_backend))
+        RE(ensure_connected(*ophyd_async_devices.values(), mock=sim_backend))
     except NotConnected as ex:
         exceptions = {**exceptions, **ex.sub_errors}
 

@@ -456,7 +456,7 @@ async def add_api_version_header(
 async def inject_propagated_observability_context(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    """Middleware to extract the any propagated observability context from the
+    """Middleware to extract any propagated observability context from the
     HTTP headers and attach it to the local one.
     """
     if CONTEXT_HEADER in request.headers:

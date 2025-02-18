@@ -18,7 +18,7 @@ from requests.auth import AuthBase
 from blueapi.config import OIDCConfig
 from blueapi.service.model import Cache
 
-DEFAULT_CAHCE_DIR = "~/.cache/"
+DEFAULT_CACHE_DIR = "~/.cache/"
 SCOPES = "openid offline_access"
 
 
@@ -28,7 +28,7 @@ class CacheManager(ABC):
     @abstractmethod
     def save_cache(self, cache: Cache) -> None: ...
     @abstractmethod
-    def load_cache(cache) -> Cache: ...
+    def load_cache(self) -> Cache: ...
     @abstractmethod
     def delete_cache(self) -> None: ...
 
@@ -58,11 +58,12 @@ class SessionCacheManager(CacheManager):
     def delete_cache(self) -> None:
         Path(self._file_path).unlink(missing_ok=True)
 
-    def _default_token_cache_path(self) -> Path:
+    @staticmethod
+    def _default_token_cache_path() -> Path:
         """
         Return the default cache file path.
         """
-        cache_path = os.environ.get("XDG_CACHE_HOME", DEFAULT_CAHCE_DIR)
+        cache_path = os.environ.get("XDG_CACHE_HOME", DEFAULT_CACHE_DIR)
         return Path(cache_path).expanduser() / "blueapi_cache"
 
     def can_access_cache(self) -> bool:
@@ -85,10 +86,10 @@ class SessionManager:
 
     @classmethod
     def from_cache(cls, auth_token_path: Path | None) -> SessionManager:
-        cacheManager = SessionCacheManager(auth_token_path)
-        cache = cacheManager.load_cache()
+        cache_manager = SessionCacheManager(auth_token_path)
+        cache = cache_manager.load_cache()
         return SessionManager(
-            server_config=cache.oidc_config, cache_manager=cacheManager
+            server_config=cache.oidc_config, cache_manager=cache_manager
         )
 
     def delete_cache(self) -> None:

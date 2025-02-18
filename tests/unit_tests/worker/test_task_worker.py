@@ -93,7 +93,7 @@ def test_stop_doesnt_hang(inert_worker: TaskWorker) -> None:
     inert_worker.stop()
 
 
-def test_stop_is_idempontent_if_worker_not_started(inert_worker: TaskWorker) -> None:
+def test_stop_is_idempotent_if_worker_not_started(inert_worker: TaskWorker) -> None:
     inert_worker.stop()
 
 

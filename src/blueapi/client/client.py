@@ -309,7 +309,7 @@ class BlueapiClient:
         Instruct the worker to start a stored task immediately
 
         Args:
-            task_id: ID for the task
+            task: WorkerTask to start
 
         Returns:
             WorkerTask: Acknowledgement of request

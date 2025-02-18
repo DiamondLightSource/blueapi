@@ -70,7 +70,7 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
 
     Args:
         path: Path to the checked out repository
-        timeout: Time to wait for for installation subprocess
+        timeout: Time to wait for installation subprocess
     """
 
     _validate_directory(path)

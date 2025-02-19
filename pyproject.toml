@@ -13,6 +13,10 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
+    "tiled",
+    "json_merge_patch",
+    "jsonpatch",
+    "pyarrow",
     "bluesky>=1.13",
     "ophyd",
     "nslsii",
@@ -95,7 +99,8 @@ addopts = """
     --ignore=src/blueapi/startup
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
-filterwarnings = ["error", "ignore::DeprecationWarning"]
+# Unignore UserWarning after Pydantic warning removed from bluesky/bluesky and release
+filterwarnings = ["error", "ignore::DeprecationWarning", "ignore::UserWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"

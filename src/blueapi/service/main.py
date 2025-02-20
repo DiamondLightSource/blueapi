@@ -215,6 +215,18 @@ def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     return runner.run(interface.get_device, name)
 
 
+@router.get(
+    "/devices/",  # Endpoint to filter devices by protocol
+    response_model=list[str],
+)
+@start_as_current_span(TRACER, "protocol_name")
+def get_devices_by_protocol(
+    protocol_name: str, runner: WorkerDispatcher = Depends(_runner)
+):
+    """Retrieve all devices that implement the given protocol."""
+    return runner.run(get_devices_by_protocol(protocol_name))
+
+
 example_task = Task(name="count", params={"detectors": ["x"]})
 
 

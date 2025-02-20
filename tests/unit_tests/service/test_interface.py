@@ -152,6 +152,35 @@ def test_get_device(context_mock: MagicMock):
 
 
 @patch("blueapi.service.interface.context")
+def test_get_devices_by_protocol(context_mock: MagicMock):
+    context = BlueskyContext()
+    context.register_device(SynAxis(name="my_axis"))
+    context_mock.return_value = context
+
+    assert interface.get_all_devices_using_interface("Pausable") == [
+        DeviceModel(
+            name="my_axis",
+            protocols=[
+                "Checkable",
+                "HasHints",
+                "HasName",
+                "HasParent",
+                "Movable",
+                "Pausable",
+                "Readable",
+                "Stageable",
+                "Stoppable",
+                "Subscribable",
+                "Configurable",
+                "Triggerable",
+            ],
+        ),
+    ]
+
+    assert interface.get_all_devices_using_interface("non_existing_interface") == []
+
+
+@patch("blueapi.service.interface.context")
 def test_submit_task(context_mock: MagicMock):
     context = BlueskyContext()
     context.register_plan(my_plan)

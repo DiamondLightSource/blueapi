@@ -134,6 +134,20 @@ def get_device(name: str) -> DeviceModel:
     return DeviceModel.from_device(context().devices[name])
 
 
+def get_all_devices_using_interface(interface_name: str) -> list[DeviceModel]:
+    """Retrieve device by protocol from the BlueskyContext"""
+    interface_class = globals().get(interface_name)
+    if interface_class is None:
+        return []
+    devices = context().devices
+    results: list[DeviceModel] = []
+    for device in devices.values():
+        if isinstance(device, interface_class):
+            results.append(DeviceModel.from_device(device))
+
+    return results
+
+
 def submit_task(task: Task) -> str:
     """Submit a task to be run on begin_task"""
     return worker().submit_task(task)

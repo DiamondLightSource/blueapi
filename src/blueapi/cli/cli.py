@@ -208,6 +208,7 @@ def listen_to_events(obj: dict) -> None:
 
 @controller.command(name="run")
 @click.argument("name", type=str)
+@click.argument("instrument_session", type=str)
 @click.argument("parameters", type=str, required=False)
 @click.option(
     "-t",
@@ -219,7 +220,11 @@ def listen_to_events(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: str | None, timeout: float | None
+    obj: dict,
+    name: str,
+    instrument_session: str,
+    parameters: str | None,
+    timeout: float | None,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
@@ -239,7 +244,7 @@ def run_plan(
 
     try:
         task = Task(name=name, params=parsed_params)
-        resp = client.run_task(task, on_event=on_event)
+        resp = client.run_task(task, instrument_session, on_event=on_event)
     except ValidationError as e:
         pprint(f"failed to validate the task parameters, {task_id}, error: {e}")
         return

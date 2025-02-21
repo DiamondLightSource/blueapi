@@ -193,6 +193,7 @@ class BlueapiClient:
     def run_task(
         self,
         task: Task,
+        instrument_session: str,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> WorkerEvent:
@@ -249,11 +250,13 @@ class BlueapiClient:
 
         with self._events:
             self._events.subscribe_to_all_events(inner_on_event)
-            self.start_task(WorkerTask(task_id=task_id))
+            self.start_task(WorkerTask(task_id=task_id), instrument_session)
             return complete.result(timeout=timeout)
 
     @start_as_current_span(TRACER, "task")
-    def create_and_start_task(self, task: Task) -> TaskResponse:
+    def create_and_start_task(
+        self, task: Task, instrument_session: str
+    ) -> TaskResponse:
         """
         Create a new task and instruct the worker to start it
         immediately.
@@ -266,7 +269,9 @@ class BlueapiClient:
         """
 
         response = self.create_task(task)
-        worker_response = self.start_task(WorkerTask(task_id=response.task_id))
+        worker_response = self.start_task(
+            WorkerTask(task_id=response.task_id), instrument_session
+        )
         if worker_response.task_id == response.task_id:
             return response
         else:
@@ -304,7 +309,7 @@ class BlueapiClient:
         return self._rest.clear_task(task_id)
 
     @start_as_current_span(TRACER, "task")
-    def start_task(self, task: WorkerTask) -> WorkerTask:
+    def start_task(self, task: WorkerTask, instrument_session: str) -> WorkerTask:
         """
         Instruct the worker to start a stored task immediately
 
@@ -315,7 +320,7 @@ class BlueapiClient:
             WorkerTask: Acknowledgement of request
         """
 
-        return self._rest.update_worker_task(task)
+        return self._rest.update_worker_task(task, instrument_session)
 
     @start_as_current_span(TRACER, "reason")
     def abort(self, reason: str | None = None) -> WorkerState:

@@ -104,11 +104,14 @@ class BlueapiRestClient:
             f"/tasks/{task_id}", TaskResponse, method="DELETE"
         )
 
-    def update_worker_task(self, task: WorkerTask) -> WorkerTask:
+    def update_worker_task(
+        self, task: WorkerTask, instrument_session: str
+    ) -> WorkerTask:
         return self._request_and_deserialize(
             "/worker/task",
             WorkerTask,
             method="PUT",
+            params={"instrument_session": instrument_session},
             data=task.model_dump(),
         )
 
@@ -141,6 +144,7 @@ class BlueapiRestClient:
         suffix: str,
         target_type: type[T],
         data: Mapping[str, Any] | None = None,
+        params: Mapping[str, Any] | None = None,
         method="GET",
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
     ) -> T:
@@ -148,18 +152,14 @@ class BlueapiRestClient:
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
 
-        if data:
-            response = requests.request(
-                method,
-                url,
-                json=data,
-                headers=carr,
-                auth=JWTAuth(self._session_manager),
-            )
-        else:
-            response = requests.request(
-                method, url, headers=carr, auth=JWTAuth(self._session_manager)
-            )
+        response = requests.request(
+            method,
+            url,
+            json=data,
+            params=params,
+            headers=carr,
+            auth=JWTAuth(self._session_manager),
+        )
         exception = get_exception(response)
         if exception is not None:
             raise exception

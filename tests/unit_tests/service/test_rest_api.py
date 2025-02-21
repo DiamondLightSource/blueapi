@@ -64,6 +64,11 @@ def client_with_auth(
         main.teardown_runner()
 
 
+@pytest.fixture
+def instrument_session() -> str:
+    return "cm12345-1"
+
+
 def test_get_plans(mock_runner: Mock, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
@@ -211,16 +216,22 @@ def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> 
     }
 
 
-def test_put_plan_begins_task(client: TestClient) -> None:
+def test_put_plan_begins_task(client: TestClient, instrument_session: str) -> None:
     task_id = "04cd9aa6-b902-414b-ae4b-49ea4200e957"
 
-    resp = client.put("/worker/task", json={"task_id": task_id})
+    resp = client.put(
+        "/worker/task",
+        json={"task_id": task_id},
+        params={"instrument_session": instrument_session},
+    )
 
     assert resp.status_code == status.HTTP_200_OK
     assert resp.json() == {"task_id": task_id}
 
 
-def test_put_plan_fails_if_not_idle(mock_runner: Mock, client: TestClient) -> None:
+def test_put_plan_fails_if_not_idle(
+    mock_runner: Mock, client: TestClient, instrument_session: str
+) -> None:
     task_id_current = "260f7de3-b608-4cdc-a66c-257e95809792"
     task_id_new = "07e98d68-21b5-4ad7-ac34-08b2cb992d42"
 
@@ -229,7 +240,11 @@ def test_put_plan_fails_if_not_idle(mock_runner: Mock, client: TestClient) -> No
         task=None, task_id=task_id_current, is_complete=False
     )
 
-    resp = client.put("/worker/task", json={"task_id": task_id_new})
+    resp = client.put(
+        "/worker/task",
+        json={"task_id": task_id_new},
+        params={"instrument_session": instrument_session},
+    )
 
     assert resp.status_code == status.HTTP_409_CONFLICT
     assert resp.json() == {"detail": "Worker already active"}
@@ -312,18 +327,22 @@ def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:
     assert response.json() == {"task_id": f"{task_id}"}
 
 
-def test_set_active_task(client: TestClient) -> None:
+def test_set_active_task(client: TestClient, instrument_session: str) -> None:
     task_id = str(uuid.uuid4())
     task = WorkerTask(task_id=task_id)
 
-    response = client.put("/worker/task", json=task.model_dump())
+    response = client.put(
+        "/worker/task",
+        json=task.model_dump(),
+        params={"instrument_session": instrument_session},
+    )
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"task_id": f"{task_id}"}
 
 
 def test_set_active_task_active_task_complete(
-    mock_runner: Mock, client: TestClient
+    mock_runner: Mock, client: TestClient, instrument_session: str
 ) -> None:
     task_id = str(uuid.uuid4())
     task = WorkerTask(task_id=task_id)
@@ -335,14 +354,18 @@ def test_set_active_task_active_task_complete(
         is_pending=False,
     )
 
-    response = client.put("/worker/task", json=task.model_dump())
+    response = client.put(
+        "/worker/task",
+        json=task.model_dump(),
+        params={"instrument_session": instrument_session},
+    )
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"task_id": f"{task_id}"}
 
 
 def test_set_active_task_worker_already_running(
-    mock_runner: Mock, client: TestClient
+    mock_runner: Mock, client: TestClient, instrument_session: str
 ) -> None:
     task_id = str(uuid.uuid4())
     task = WorkerTask(task_id=task_id)
@@ -354,7 +377,11 @@ def test_set_active_task_worker_already_running(
         is_pending=False,
     )
 
-    response = client.put("/worker/task", json=task.model_dump())
+    response = client.put(
+        "/worker/task",
+        json=task.model_dump(),
+        params={"instrument_session": instrument_session},
+    )
 
     assert response.status_code == status.HTTP_409_CONFLICT
     assert response.json() == {"detail": "Worker already active"}

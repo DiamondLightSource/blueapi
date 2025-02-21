@@ -304,6 +304,7 @@ def get_tasks(
 @start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
     task: WorkerTask,
+    instrument_session: str,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
@@ -313,7 +314,7 @@ def set_active_task(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    runner.run(interface.begin_task, task)
+    runner.run(interface.begin_task, task, instrument_session)
     return task
 
 

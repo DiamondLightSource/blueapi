@@ -144,10 +144,10 @@ def clear_task(task_id: str) -> str:
     return worker().clear_task(task_id)
 
 
-def begin_task(task: WorkerTask) -> WorkerTask:
+def begin_task(task: WorkerTask, instrument_session: str) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
     if task.task_id is not None:
-        worker().begin_task(task.task_id)
+        worker().begin_task(task.task_id, instrument_session)
     return task
 
 

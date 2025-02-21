@@ -112,7 +112,7 @@ def get_app(config: ApplicationConfig):
 
 
 def verify_access_token(config: OIDCConfig):
-    jwkclient = jwt.PyJWKClient(config.jwks_uri)
+    jwk_client = jwt.PyJWKClient(config.jwks_uri)
     oauth_scheme = OAuth2AuthorizationCodeBearer(
         authorizationUrl=config.authorization_endpoint,
         tokenUrl=config.token_endpoint,
@@ -120,7 +120,7 @@ def verify_access_token(config: OIDCConfig):
     )
 
     def inner(access_token: str = Depends(oauth_scheme)):
-        signing_key = jwkclient.get_signing_key_from_jwt(access_token)
+        signing_key = jwk_client.get_signing_key_from_jwt(access_token)
         jwt.decode(
             access_token,
             signing_key.key,

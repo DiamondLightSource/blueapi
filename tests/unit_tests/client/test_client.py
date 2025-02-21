@@ -111,7 +111,7 @@ def test_get_plan(client: BlueapiClient):
     assert client.get_plan("foo") == PLAN
 
 
-def test_get_nonexistant_plan(
+def test_get_nonexistent_plan(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
@@ -128,7 +128,7 @@ def test_get_device(client: BlueapiClient):
     assert client.get_device("foo") == DEVICE
 
 
-def test_get_nonexistant_device(
+def test_get_nonexistent_device(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
@@ -202,7 +202,7 @@ def test_start_task(
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="bar"))
 
 
-def test_start_nonexistant_task(
+def test_start_nonexistent_task(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
@@ -642,5 +642,5 @@ def test_cannot_run_task_span_ok(
         RuntimeError,
         match="Cannot run plans without Stomp configuration to track progress",
     ):
-        with asserting_span_exporter(exporter, "grun_task"):
+        with asserting_span_exporter(exporter, "run_task"):
             client.run_task(Task(name="foo"))

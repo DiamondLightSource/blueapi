@@ -124,17 +124,16 @@ def get_plan(name: str) -> PlanModel:
     return PlanModel.from_plan(context().plans[name])
 
 
-def get_devices() -> list[DeviceModel]:
-    """Get all available devices in the BlueskyContext"""
-    return [DeviceModel.from_device(device) for device in context().devices.values()]
-
-
 def get_device(name: str) -> DeviceModel:
     """Retrieve device by name from the BlueskyContext"""
     return DeviceModel.from_device(context().devices[name])
 
 
-def get_all_devices_using_interface(interface_name: str) -> list[DeviceModel]:
+def get_devices(interface_name: str | None = None) -> list[DeviceModel]:
+    if interface_name is None:
+        return [
+            DeviceModel.from_device(device) for device in context().devices.values()
+        ]
     """Retrieve device by protocol from the BlueskyContext"""
     interface_class = globals().get(interface_name)
     if interface_class is None:

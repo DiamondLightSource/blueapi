@@ -157,7 +157,7 @@ def test_get_devices_by_protocol(context_mock: MagicMock):
     context.register_device(SynAxis(name="my_axis"))
     context_mock.return_value = context
 
-    assert interface.get_all_devices_using_interface("Pausable") == [
+    assert interface.get_devices("Pausable") == [
         DeviceModel(
             name="my_axis",
             protocols=[
@@ -177,7 +177,7 @@ def test_get_devices_by_protocol(context_mock: MagicMock):
         ),
     ]
 
-    assert interface.get_all_devices_using_interface("non_existing_interface") == []
+    assert interface.get_devices("non_existing_interface") == []
 
 
 @patch("blueapi.service.interface.context")

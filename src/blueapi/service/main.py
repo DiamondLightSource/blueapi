@@ -9,6 +9,7 @@ from fastapi import (
     Depends,
     FastAPI,
     HTTPException,
+    Query,
     Request,
     Response,
     status,
@@ -199,9 +200,17 @@ def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
 
 @router.get("/devices", response_model=DeviceResponse)
 @start_as_current_span(TRACER)
-def get_devices(runner: WorkerDispatcher = Depends(_runner)):
+def get_devices(
+    runner: WorkerDispatcher = Depends(_runner),
+    protocol_name: str | None = Query(
+        None, description="Filter devices by protocol name"
+    ),
+):
     """Retrieve information about all available devices."""
-    devices = runner.run(interface.get_devices)
+    if protocol_name:
+        devices = runner.run(lambda: interface.get_devices(protocol_name))
+    else:
+        devices = runner.run(interface.get_devices)
     return DeviceResponse(devices=devices)
 
 
@@ -213,18 +222,6 @@ def get_devices(runner: WorkerDispatcher = Depends(_runner)):
 def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about a devices by its (unique) name."""
     return runner.run(interface.get_device, name)
-
-
-@router.get(
-    "/devices/",  # Endpoint to filter devices by protocol
-    response_model=list[str],
-)
-@start_as_current_span(TRACER, "protocol_name")
-def get_devices_by_protocol(
-    protocol_name: str, runner: WorkerDispatcher = Depends(_runner)
-):
-    """Retrieve all devices that implement the given protocol."""
-    return runner.run(get_devices_by_protocol(protocol_name))
 
 
 example_task = Task(name="count", params={"detectors": ["x"]})

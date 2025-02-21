@@ -45,7 +45,7 @@ from .model import (
 )
 from .runner import WorkerDispatcher
 
-REST_API_VERSION = "0.0.5"
+REST_API_VERSION = "0.0.6"
 
 RUNNER: WorkerDispatcher | None = None
 

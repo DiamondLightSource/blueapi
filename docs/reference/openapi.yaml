@@ -252,7 +252,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.5
+  version: 0.0.6
 openapi: 3.1.0
 paths:
   /devices:
@@ -527,6 +527,13 @@ paths:
 
         This will return an error response if the worker is not idle.'
       operationId: set_active_task_worker_task_put
+      parameters:
+      - in: query
+        name: instrument_session
+        required: true
+        schema:
+          title: Instrument Session
+          type: string
       requestBody:
         content:
           application/json:

@@ -170,7 +170,8 @@ def test_submit_plan(runner: CliRunner):
 
     config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
     runner.invoke(
-        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+        main,
+        ["-c", config_path, "controller", "run", "sleep", "cm12345-1", '{"time": 5}'],
     )
 
     assert response.call_count == 1

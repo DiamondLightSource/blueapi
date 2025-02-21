@@ -123,6 +123,11 @@ def clean_existing_tasks(client: BlueapiClient):
     yield
 
 
+@pytest.fixture
+def instrument_session() -> str:
+    return "cm12345-1"
+
+
 @pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
@@ -229,24 +234,26 @@ def test_delete_non_existent_task(client: BlueapiClient):
         client.clear_task("Not-exists")
 
 
-def test_put_worker_task(client: BlueapiClient):
+def test_put_worker_task(client: BlueapiClient, instrument_session: str):
     created_task = client.create_task(_SIMPLE_TASK)
-    client.start_task(WorkerTask(task_id=created_task.task_id))
+    client.start_task(WorkerTask(task_id=created_task.task_id), instrument_session)
     active_task = client.get_active_task()
     assert active_task.task_id == created_task.task_id
     client.clear_task(created_task.task_id)
 
 
-def test_put_worker_task_fails_if_not_idle(client: BlueapiClient):
+def test_put_worker_task_fails_if_not_idle(
+    client: BlueapiClient, instrument_session: str
+):
     small_task = client.create_task(_SIMPLE_TASK)
     long_task = client.create_task(_LONG_TASK)
 
-    client.start_task(WorkerTask(task_id=long_task.task_id))
+    client.start_task(WorkerTask(task_id=long_task.task_id), instrument_session)
     active_task = client.get_active_task()
     assert active_task.task_id == long_task.task_id
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
-        client.start_task(WorkerTask(task_id=small_task.task_id))
+        client.start_task(WorkerTask(task_id=small_task.task_id), instrument_session)
     assert "<Response [409]>" in str(exception)
     client.abort()
     client.clear_task(small_task.task_id)
@@ -266,7 +273,7 @@ def test_set_state_transition_error(client: BlueapiClient):
     assert "<Response [400]>" in str(exception)
 
 
-def test_get_task_by_status(client: BlueapiClient):
+def test_get_task_by_status(client: BlueapiClient, instrument_session: str):
     task_1 = client.create_task(_SIMPLE_TASK)
     task_2 = client.create_task(_SIMPLE_TASK)
     task_by_pending = client.get_all_tasks()
@@ -278,10 +285,10 @@ def test_get_task_by_status(client: BlueapiClient):
         trackable_task = TypeAdapter(TrackableTask).validate_python(task)
         assert trackable_task.is_complete is False and trackable_task.is_pending is True
 
-    client.start_task(WorkerTask(task_id=task_1.task_id))
+    client.start_task(WorkerTask(task_id=task_1.task_id), instrument_session)
     while not client.get_task(task_1.task_id).is_complete:
         time.sleep(0.1)
-    client.start_task(WorkerTask(task_id=task_2.task_id))
+    client.start_task(WorkerTask(task_id=task_2.task_id), instrument_session)
     while not client.get_task(task_2.task_id).is_complete:
         time.sleep(0.1)
     task_by_completed = client.get_all_tasks()
@@ -297,13 +304,13 @@ def test_get_task_by_status(client: BlueapiClient):
     client.clear_task(task_id=task_2.task_id)
 
 
-def test_progress_with_stomp(client_with_stomp: BlueapiClient):
+def test_progress_with_stomp(client_with_stomp: BlueapiClient, instrument_session: str):
     all_events: list[AnyEvent] = []
 
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
+    client_with_stomp.run_task(_SIMPLE_TASK, instrument_session, on_event=on_event)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [
@@ -372,7 +379,9 @@ def test_delete_current_environment(client: BlueapiClient):
         ),
     ],
 )
-def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):
-    final_event = client_with_stomp.run_task(task)
+def test_plan_runs(
+    client_with_stomp: BlueapiClient, task: Task, instrument_session: str
+):
+    final_event = client_with_stomp.run_task(task, instrument_session)
     assert final_event.is_complete() and not final_event.is_error()
     assert final_event.state is WorkerState.IDLE

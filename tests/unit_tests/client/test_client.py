@@ -103,6 +103,11 @@ def client_with_events(mock_rest: Mock, mock_events: MagicMock):
     return BlueapiClient(rest=mock_rest, events=mock_events)
 
 
+@pytest.fixture
+def instrument_session() -> str:
+    return "cm12345-1"
+
+
 def test_get_plans(client: BlueapiClient):
     assert client.get_plans() == PLANS
 
@@ -194,61 +199,65 @@ def test_get_active_task(client: BlueapiClient):
     assert client.get_active_task() == ACTIVE_TASK
 
 
-def test_start_task(
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    client.start_task(task=WorkerTask(task_id="bar"))
-    mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="bar"))
+def test_start_task(client: BlueapiClient, mock_rest: Mock, instrument_session: str):
+    client.start_task(WorkerTask(task_id="bar"), instrument_session)
+    mock_rest.update_worker_task.assert_called_once_with(
+        WorkerTask(task_id="bar"), instrument_session
+    )
 
 
 def test_start_nonexistent_task(
-    client: BlueapiClient,
-    mock_rest: Mock,
+    client: BlueapiClient, mock_rest: Mock, instrument_session: str
 ):
     mock_rest.update_worker_task.side_effect = KeyError("Not found")
     with pytest.raises(KeyError):
-        client.start_task(task=WorkerTask(task_id="bar"))
+        client.start_task(WorkerTask(task_id="bar"), instrument_session)
 
 
 def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
     client: BlueapiClient,
     mock_rest: Mock,
+    instrument_session: str,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="baz")
-    client.create_and_start_task(Task(name="baz"))
+    client.create_and_start_task(Task(name="baz"), instrument_session)
     mock_rest.create_task.assert_called_once_with(Task(name="baz"))
-    mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="baz"))
+    mock_rest.update_worker_task.assert_called_once_with(
+        WorkerTask(task_id="baz"), instrument_session
+    )
 
 
 def test_create_and_start_task_fails_if_task_creation_fails(
     client: BlueapiClient,
     mock_rest: Mock,
+    instrument_session: str,
 ):
     mock_rest.create_task.side_effect = BlueskyRemoteControlError("No can do")
     with pytest.raises(BlueskyRemoteControlError):
-        client.create_and_start_task(Task(name="baz"))
+        client.create_and_start_task(Task(name="baz"), instrument_session)
 
 
 def test_create_and_start_task_fails_if_task_id_is_wrong(
     client: BlueapiClient,
     mock_rest: Mock,
+    instrument_session: str,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="bar")
     with pytest.raises(BlueskyRemoteControlError):
-        client.create_and_start_task(Task(name="baz"))
+        client.create_and_start_task(Task(name="baz"), instrument_session)
 
 
 def test_create_and_start_task_fails_if_task_start_fails(
     client: BlueapiClient,
     mock_rest: Mock,
+    instrument_session: str,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.side_effect = BlueskyRemoteControlError("No can do")
     with pytest.raises(BlueskyRemoteControlError):
-        client.create_and_start_task(Task(name="baz"))
+        client.create_and_start_task(Task(name="baz"), instrument_session)
 
 
 def test_get_environment(client: BlueapiClient):
@@ -378,18 +387,21 @@ def test_resume(
     )
 
 
-def test_cannot_run_task_without_message_bus(client: BlueapiClient):
+def test_cannot_run_task_without_message_bus(
+    client: BlueapiClient, instrument_session: str
+):
     with pytest.raises(
         RuntimeError,
         match="Cannot run plans without Stomp configuration to track progress",
     ):
-        client.run_task(Task(name="foo"))
+        client.run_task(Task(name="foo"), instrument_session)
 
 
 def test_run_task_sets_up_control(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
+    instrument_session: str,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="foo")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
@@ -397,15 +409,18 @@ def test_run_task_sets_up_control(
     ctx.correlation_id = "foo"
     mock_events.subscribe_to_all_events = lambda on_event: on_event(COMPLETE_EVENT, ctx)
 
-    client_with_events.run_task(Task(name="foo"))
+    client_with_events.run_task(Task(name="foo"), instrument_session)
     mock_rest.create_task.assert_called_once_with(Task(name="foo"))
-    mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="foo"))
+    mock_rest.update_worker_task.assert_called_once_with(
+        WorkerTask(task_id="foo"), instrument_session
+    )
 
 
 def test_run_task_fails_on_failing_event(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
+    instrument_session: str,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="foo")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
@@ -416,7 +431,9 @@ def test_run_task_fails_on_failing_event(
 
     on_event = Mock()
     with pytest.raises(BlueskyStreamingError):
-        client_with_events.run_task(Task(name="foo"), on_event=on_event)
+        client_with_events.run_task(
+            Task(name="foo"), instrument_session, on_event=on_event
+        )
 
     on_event.assert_called_with(FAILED_EVENT)
 
@@ -441,6 +458,7 @@ def test_run_task_calls_event_callback(
     mock_rest: Mock,
     mock_events: MagicMock,
     test_event: AnyEvent,
+    instrument_session: str,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="foo")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
@@ -455,7 +473,9 @@ def test_run_task_calls_event_callback(
     mock_events.subscribe_to_all_events = callback  # type: ignore
 
     mock_on_event = Mock()
-    client_with_events.run_task(Task(name="foo"), on_event=mock_on_event)
+    client_with_events.run_task(
+        Task(name="foo"), instrument_session, on_event=mock_on_event
+    )
 
     assert mock_on_event.mock_calls == [call(test_event), call(COMPLETE_EVENT)]
 
@@ -480,6 +500,7 @@ def test_run_task_ignores_non_matching_events(
     mock_rest: Mock,
     mock_events: MagicMock,
     test_event: AnyEvent,
+    instrument_session: str,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="foo")  # type: ignore
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")  # type: ignore
@@ -494,7 +515,9 @@ def test_run_task_ignores_non_matching_events(
     mock_events.subscribe_to_all_events = callback
 
     mock_on_event = Mock()
-    client_with_events.run_task(Task(name="foo"), on_event=mock_on_event)
+    client_with_events.run_task(
+        Task(name="foo"), instrument_session, on_event=mock_on_event
+    )
 
     mock_on_event.assert_called_once_with(COMPLETE_EVENT)
 
@@ -566,20 +589,22 @@ def test_start_task_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
     mock_rest: Mock,
+    instrument_session: str,
 ):
     with asserting_span_exporter(exporter, "start_task", "task"):
-        client.start_task(task=WorkerTask(task_id="bar"))
+        client.start_task(WorkerTask(task_id="bar"), instrument_session)
 
 
 def test_create_and_start_task_span_ok(
     exporter: JsonObjectSpanExporter,
     client: BlueapiClient,
     mock_rest: Mock,
+    instrument_session: str,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="baz")
     with asserting_span_exporter(exporter, "create_and_start_task", "task"):
-        client.create_and_start_task(Task(name="baz"))
+        client.create_and_start_task(Task(name="baz"), instrument_session)
 
 
 def test_get_environment_span_ok(
@@ -636,11 +661,11 @@ def test_resume_span_ok(
 
 
 def test_cannot_run_task_span_ok(
-    exporter: JsonObjectSpanExporter, client: BlueapiClient
+    exporter: JsonObjectSpanExporter, client: BlueapiClient, instrument_session: str
 ):
     with pytest.raises(
         RuntimeError,
         match="Cannot run plans without Stomp configuration to track progress",
     ):
         with asserting_span_exporter(exporter, "run_task"):
-            client.run_task(Task(name="foo"))
+            client.run_task(Task(name="foo"), instrument_session)

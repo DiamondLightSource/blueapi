@@ -6,10 +6,11 @@ from typing import Any
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 
+from blueapi.cli.scratch import get_scratch_info
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
-from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
+from blueapi.service.model import DeviceModel, PlanModel, ScratchResponse, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -196,3 +197,10 @@ def get_task_by_id(task_id: str) -> TrackableTask | None:
 
 def get_oidc_config() -> OIDCConfig | None:
     return config().oidc
+
+
+def get_scratch_packages() -> ScratchResponse:
+    if _CONFIG.scratch is None:
+        return ScratchResponse(package_name=[], version=[], is_dirty=[])
+    else:
+        return get_scratch_info(config=_CONFIG.scratch)

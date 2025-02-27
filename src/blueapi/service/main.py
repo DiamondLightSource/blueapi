@@ -38,6 +38,7 @@ from .model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+    ScratchResponse,
     StateChangeRequest,
     TaskResponse,
     TasksListResponse,
@@ -418,6 +419,12 @@ def set_state(
         response.status_code = status.HTTP_400_BAD_REQUEST
 
     return runner.run(interface.get_worker_state)
+
+
+@router.get("/scratch", response_model=ScratchResponse)
+@start_as_current_span(TRACER)
+def get_scratch_packages(runner: WorkerDispatcher = Depends(_runner)):
+    return runner.run(interface.get_scratch_packages)
 
 
 @start_as_current_span(TRACER, "config")

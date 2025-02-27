@@ -157,6 +157,18 @@ class EnvironmentResponse(BlueapiBaseModel):
     )
 
 
+class ScratchResponse(BlueapiBaseModel):
+    """
+    State of the scratch area.
+    """
+
+    package_name: list[str] = Field(description="Name of the package")
+    version: list[str] = Field(description="Version of the package")
+    is_dirty: list[bool] = Field(
+        description="Does the package have uncommitted changes"
+    )
+
+
 class Cache(BlueapiBaseModel):
     """
     Represents the cached data required for managing authentication.

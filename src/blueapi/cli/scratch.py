@@ -8,6 +8,7 @@ from subprocess import Popen
 from git import Repo
 
 from blueapi.config import ScratchConfig
+from blueapi.service.model import ScratchResponse
 from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
@@ -128,3 +129,23 @@ def _validate_directory(path: Path) -> None:
         raise KeyError(f"{path}: No such file or directory")
     elif path.is_file():
         raise KeyError(f"{path}: Is a file, not a directory")
+
+
+def get_scratch_info(config: ScratchConfig) -> ScratchResponse:
+    _validate_directory(config.root)
+    scratch_responses = ScratchResponse(package_name=[], version=[], is_dirty=[])
+    for repo in config.repositories:
+        local_directory = config.root / repo.name
+        repo = Repo(local_directory)
+        try:
+            branch = repo.active_branch.name
+        except TypeError:
+            branch = repo.head.commit.hexsha
+
+        is_dirty = repo.is_dirty()
+
+        scratch_responses.package_name.append(repo.remotes.origin.url)
+        scratch_responses.version.append(branch)
+        scratch_responses.is_dirty.append(is_dirty)
+
+    return scratch_responses

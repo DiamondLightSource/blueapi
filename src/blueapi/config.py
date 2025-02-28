@@ -71,6 +71,7 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
     ]
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
+    metadata: MetadataConfig = Field(default_factory=MetadataConfig)
 
 
 class LoggingConfig(BlueapiBaseModel):

@@ -1,8 +1,12 @@
 # Devices to use for worker tests
 
+from typing import TypeVar
+
 from bluesky.protocols import Movable
 from ophyd import Device, DeviceStatus
 from ophyd.status import Status
+
+T = TypeVar("T")
 
 
 class AdditionalUpdateStatus(DeviceStatus):
@@ -39,7 +43,7 @@ class AdditionalUpdateStatus(DeviceStatus):
             )
 
 
-class AdditionalStatusDevice(Device, Movable):
+class AdditionalStatusDevice(Device, Movable[float]):
     def set(self, value: float) -> Status:  # type: ignore
         status = AdditionalUpdateStatus(self)
         return status  # type: ignore

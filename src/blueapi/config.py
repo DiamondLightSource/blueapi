@@ -60,6 +60,8 @@ class EnvironmentConfig(BlueapiBaseModel):
         ),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="blueapi.startup.example_plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plans"),
+        # This plan is not JSON serializable specifically bluesky.Moveable
+        # https://github.com/DiamondLightSource/dodal/blob/a3b1b8c540cea6a4180471818c258e53577856af/src/dodal/plan_stubs/wrapped.py#L18
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
     ]
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)

@@ -6,6 +6,7 @@ from typing import Any
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 
+from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
@@ -13,7 +14,6 @@ from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
-from blueapi.client.numtracker import NumtrackerClient
 
 """This module provides interface between web application and underlying Bluesky
 context and worker"""
@@ -76,6 +76,7 @@ def stomp_client() -> StompClient | None:
     else:
         return None
 
+
 @cache
 def numtracker_client() -> NumtrackerClient | None:
     conf = config()
@@ -95,6 +96,7 @@ def _update_scan_num(md: dict[str, Any]) -> int:
     scan = numtracker.create_scan(md["data_session"], md["instrument"])
     md["data_session_directory"] = str(scan.scan.visit.directory)
     return scan.scan.scan_number
+
 
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
@@ -172,11 +174,13 @@ def begin_task(task: WorkerTask, pass_through_headers: Mapping[str, str]) -> Wor
         worker().begin_task(task.task_id)
     return task
 
+
 def _try_configure_numtracker(pass_through_headers: Mapping[str, str]) -> None:
     numtracker = numtracker_client()
     if numtracker is not None:
         # TODO: Make a setter in NumtrackerClient
-        numtracker._headers = pass_through_headers
+        numtracker._headers = pass_through_headers  # noqa:SLF001
+
 
 def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
     """Retrieve a list of tasks based on their status."""

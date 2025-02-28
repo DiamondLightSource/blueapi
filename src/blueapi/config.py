@@ -161,6 +161,7 @@ class OIDCConfig(BlueapiBaseModel):
             self._config_from_oidc_url.get("id_token_signing_alg_values_supported"),
         )
 
+
 class NumtrackerConfig(BlueapiBaseModel):
     url: str = "http://localhost:8002/graphql"
 

@@ -106,6 +106,7 @@ class BlueskyContext:
             return find_component(self.devices, addr)
 
     def with_config(self, config: EnvironmentConfig) -> None:
+        self.run_engine.md |= config.metadata.model_dump()
         for source in config.sources:
             mod = import_module(str(source.module))
 

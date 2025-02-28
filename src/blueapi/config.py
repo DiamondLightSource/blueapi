@@ -178,6 +178,7 @@ class ApplicationConfig(BlueapiBaseModel):
     scratch: ScratchConfig | None = None
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
+    numtracker: NumtrackerConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

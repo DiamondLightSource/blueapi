@@ -49,6 +49,14 @@ class WorkerEventConfig(BlueapiBaseModel):
     broadcast_status_events: bool = True
 
 
+class MetadataConfig(BlueapiBaseModel):
+    # TODO: Reconcile data_session (bluesky term) with instrument_session (DLS term)
+    data_session: str = "aa123456"
+
+    # TODO: Does/should this conflict with the ${BEAMLINE} environment variable
+    instrument: str = "p01"
+
+
 class EnvironmentConfig(BlueapiBaseModel):
     """
     Config for the RunEngine environment
@@ -151,6 +159,9 @@ class OIDCConfig(BlueapiBaseModel):
             list[str],
             self._config_from_oidc_url.get("id_token_signing_alg_values_supported"),
         )
+
+class NumtrackerConfig(BlueapiBaseModel):
+    url: str = "http://localhost:8002/graphql"
 
 
 class ApplicationConfig(BlueapiBaseModel):

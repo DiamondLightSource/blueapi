@@ -32,7 +32,7 @@ class NumtrackerClient:
         self._url = url
         self._headers = headers
 
-    def set_headers(self, pass_through_headers: Mapping[str, str])-> None:
+    def set_headers(self, pass_through_headers: Mapping[str, str]) -> None:
         self._headers = pass_through_headers
 
     # TODO: Could make this async, but since it's called from RE.scan_id_source, we

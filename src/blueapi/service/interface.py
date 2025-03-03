@@ -166,9 +166,12 @@ def clear_task(task_id: str) -> str:
     return worker().clear_task(task_id)
 
 
-def begin_task(task: WorkerTask, pass_through_headers: Mapping[str, str]) -> WorkerTask:
+def begin_task(
+    task: WorkerTask, pass_through_headers: Mapping[str, str] | None = None
+) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
-    _try_configure_numtracker(pass_through_headers)
+    if pass_through_headers:
+        _try_configure_numtracker(pass_through_headers)
 
     if task.task_id is not None:
         worker().begin_task(task.task_id)

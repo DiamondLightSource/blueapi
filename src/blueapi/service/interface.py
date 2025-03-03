@@ -178,8 +178,7 @@ def begin_task(task: WorkerTask, pass_through_headers: Mapping[str, str]) -> Wor
 def _try_configure_numtracker(pass_through_headers: Mapping[str, str]) -> None:
     numtracker = numtracker_client()
     if numtracker is not None:
-        # TODO: Make a setter in NumtrackerClient
-        numtracker._headers = pass_through_headers  # noqa:SLF001
+        numtracker.set_headers(pass_through_headers)
 
 
 def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:

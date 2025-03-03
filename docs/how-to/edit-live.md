@@ -54,10 +54,19 @@ The helm chart can be configured to mount a scratch area from the
 host machine, include the following in your `values.yaml`:
 
 ```yaml 
-  scratch:
-    hostPath: path/to/scratch/area  # e.g. /dls_sw/<my_beamline>/software/blueapi/scratch
+  scratchHostPath: path/to/scratch/area  # e.g. /dls_sw/<my_beamline>/software/blueapi/scratch
 ```
 
 :::{note}
 If you do this then the value of `scratch.root` in your blueapi configuration is no longer particularly important, it only specifies where to mount the scratch area _inside_ the container.
 :::
+
+The scratch folder that you're pointing to must exist, not already have a dodal deployment and have correct permissions e.g.
+
+```
+cd /dls_sw/<my_beamline>/software/blueapi/
+mkdir scratch
+chmod o+wrX -R scratch
+```
+
+BlueAPI will then checkout the `main` branch of any specified repos into this scratch folder.

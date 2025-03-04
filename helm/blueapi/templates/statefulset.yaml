@@ -40,10 +40,10 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
-      {{- if .Values.scratchHostPath }}
+      {{- if .Values.initContainer.scratch.root }}
       - name: scratch-host
         hostPath:
-          path: {{ .Values.scratchHostPath }}
+          path: {{ .Values.initContainer.scratch.root }}
           type: Directory
       - name: venv
         emptyDir:

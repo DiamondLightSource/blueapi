@@ -18,6 +18,7 @@ from blueapi.service.model import (
     OIDCConfig,
     PlanModel,
     PlanResponse,
+    ScratchResponse,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -437,3 +438,14 @@ class BlueapiClient:
         """
 
         return self._rest.get_oidc_config()
+
+    @start_as_current_span(TRACER)
+    def get_scratch(self) -> ScratchResponse:
+        """
+        Get scratch packages from the server
+
+        Returns:
+            ScratchResponse: Details of the scratch packages
+        """
+
+        return self._rest.get_scratch_packages()

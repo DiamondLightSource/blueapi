@@ -157,7 +157,7 @@ def check_connection(func):
 @check_connection
 @click.pass_obj
 def get_plans(obj: dict) -> None:
-    """Get a list of plans available for the worker to use"""
+    """Get the scratch configuration for the worker"""
     client: BlueapiClient = obj["client"]
     obj["fmt"].display(client.get_plans())
 
@@ -357,6 +357,15 @@ def scratch(obj: dict) -> None:
         setup_scratch(config.scratch)
     else:
         raise KeyError("No scratch config supplied")
+
+
+@controller.command(name="get-scratch")
+@check_connection
+@click.pass_obj
+def get_scratch(obj: dict) -> None:
+    """Get the scratch configuration for the worker"""
+    client: BlueapiClient = obj["client"]
+    obj["fmt"].display(client.get_scratch())
 
 
 @main.command(name="login")

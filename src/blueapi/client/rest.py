@@ -18,6 +18,7 @@ from blueapi.service.model import (
     OIDCConfig,
     PlanModel,
     PlanResponse,
+    ScratchResponse,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -135,8 +136,8 @@ class BlueapiRestClient:
     def get_oidc_config(self) -> OIDCConfig:
         return self._request_and_deserialize("/config/oidc", OIDCConfig)
 
-    def get_scratch_packages(self) -> dict:
-        return self._request_and_deserialize("/scratch/", dict)
+    def get_scratch_packages(self) -> ScratchResponse:
+        return self._request_and_deserialize("/scratch/", ScratchResponse)
 
     @start_as_current_span(TRACER, "method", "data", "suffix")
     def _request_and_deserialize(

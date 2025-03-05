@@ -254,9 +254,11 @@ class BlueskyContext:
                     json_schema = handler(core_schema)
                     json_schema = handler.resolve_ref_schema(json_schema)
                     json_schema["type"] = qualified_name(target)
-                    if target or cls.origin is Movable:
+                    if target is Movable or cls.origin is Movable:
                         json_schema["axis"] = (
-                            {"type": qualified_name(cls.args[0])} if cls.args else {}
+                            {"type": qualified_name(cls.args[0])}
+                            if cls.args and not isinstance(cls.args[0], TypeVar)
+                            else {}
                         )
                     return json_schema
 

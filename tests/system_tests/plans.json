@@ -14,10 +14,16 @@
                         "type": "array"
                     },
                     "temperature": {
+                        "axis": {
+                            "type": "float"
+                        },
                         "title": "Temperature",
                         "type": "bluesky.protocols.Movable"
                     },
                     "pressure": {
+                        "axis": {
+                            "type": "float"
+                        },
                         "title": "Pressure",
                         "type": "bluesky.protocols.Movable"
                     }
@@ -954,6 +960,7 @@
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
+                        "axis": {},
                         "title": "Movable",
                         "type": "bluesky.protocols.Movable"
                     },
@@ -991,6 +998,7 @@
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
+                        "axis": {},
                         "title": "Movable",
                         "type": "bluesky.protocols.Movable"
                     },

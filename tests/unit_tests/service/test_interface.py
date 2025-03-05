@@ -1,14 +1,14 @@
 import uuid
 from dataclasses import dataclass
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
+from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
-from blueapi.config import ApplicationConfig, StompConfig
-from blueapi.core import MsgGenerator
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
@@ -23,10 +23,10 @@ def mock_connection() -> Mock:
 
 
 @pytest.fixture
-def template(mock_connection: Mock) -> StompClient:
-    template = StompClient(conn=mock_connection)
-    template.disconnect = MagicMock()
-    return template
+def mock_stomp_client(mock_connection: Mock) -> StompClient:
+    stomp_client = StompClient(conn=mock_connection)
+    stomp_client.disconnect = MagicMock()
+    return stomp_client
 
 
 @pytest.fixture(autouse=True)
@@ -52,8 +52,8 @@ def my_second_plan(repeats: int) -> MsgGenerator:
 @patch("blueapi.service.interface.context")
 def test_get_plans(context_mock: MagicMock):
     context = BlueskyContext()
-    context.plan(my_plan)
-    context.plan(my_second_plan)
+    context.register_plan(my_plan)
+    context.register_plan(my_second_plan)
     context_mock.return_value = context
 
     assert interface.get_plans() == [
@@ -84,8 +84,8 @@ def test_get_plans(context_mock: MagicMock):
 @patch("blueapi.service.interface.context")
 def test_get_plan(context_mock: MagicMock):
     context = BlueskyContext()
-    context.plan(my_plan)
-    context.plan(my_second_plan)
+    context.register_plan(my_plan)
+    context.register_plan(my_second_plan)
     context_mock.return_value = context
 
     assert interface.get_plan("my_plan") == PlanModel(
@@ -111,8 +111,8 @@ class MyDevice:
 @patch("blueapi.service.interface.context")
 def test_get_devices(context_mock: MagicMock):
     context = BlueskyContext()
-    context.device(MyDevice(name="my_device"))
-    context.device(SynAxis(name="my_axis"))
+    context.register_device(MyDevice(name="my_device"))
+    context.register_device(SynAxis(name="my_axis"))
     context_mock.return_value = context
 
     assert interface.get_devices() == [
@@ -140,7 +140,7 @@ def test_get_devices(context_mock: MagicMock):
 @patch("blueapi.service.interface.context")
 def test_get_device(context_mock: MagicMock):
     context = BlueskyContext()
-    context.device(MyDevice(name="my_device"))
+    context.register_device(MyDevice(name="my_device"))
     context_mock.return_value = context
 
     assert interface.get_device("my_device") == DeviceModel(
@@ -154,7 +154,7 @@ def test_get_device(context_mock: MagicMock):
 @patch("blueapi.service.interface.context")
 def test_submit_task(context_mock: MagicMock):
     context = BlueskyContext()
-    context.plan(my_plan)
+    context.register_plan(my_plan)
     task = Task(name="my_plan")
     context_mock.return_value = context
     mock_uuid_value = "8dfbb9c2-7a15-47b6-bea8-b6b77c31d3d9"
@@ -167,7 +167,7 @@ def test_submit_task(context_mock: MagicMock):
 @patch("blueapi.service.interface.context")
 def test_clear_task(context_mock: MagicMock):
     context = BlueskyContext()
-    context.plan(my_plan)
+    context.register_plan(my_plan)
     task = Task(name="my_plan")
     context_mock.return_value = context
     mock_uuid_value = "3d858a62-b40a-400f-82af-8d2603a4e59a"
@@ -269,13 +269,14 @@ def test_get_tasks(get_tasks_mock: MagicMock):
 @patch("blueapi.service.interface.context")
 def test_get_task_by_id(context_mock: MagicMock):
     context = BlueskyContext()
-    context.plan(my_plan)
+    context.register_plan(my_plan)
     context_mock.return_value = context
 
     task_id = interface.submit_task(Task(name="my_plan"))
 
-    assert interface.get_task_by_id(task_id) == TrackableTask(
+    assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
+        request_id=ANY,
         task=Task(name="my_plan", params={}),
         is_complete=False,
         is_pending=True,
@@ -283,9 +284,15 @@ def test_get_task_by_id(context_mock: MagicMock):
     )
 
 
-def test_stomp_config(template: StompClient):
+def test_get_oidc_config(oidc_config: OIDCConfig):
+    interface.set_config(ApplicationConfig(oidc=oidc_config))
+    assert interface.get_oidc_config() == oidc_config
+
+
+def test_stomp_config(mock_stomp_client: StompClient):
     with patch(
-        "blueapi.service.interface.StompClient.for_broker", return_value=template
+        "blueapi.service.interface.StompClient.for_broker",
+        return_value=mock_stomp_client,
     ):
         interface.set_config(ApplicationConfig(stomp=StompConfig()))
-        assert interface.messaging_template() is not None
+        assert interface.stomp_client() is not None

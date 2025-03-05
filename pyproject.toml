@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,16 +9,17 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky",
+    "bluesky>=1.13",
     "ophyd",
     "nslsii",
     "pyepics",
     "aioca",
     "pydantic>=2.0",
-    "scanspec>=0.7.2",
+    "scanspec>=0.7.8",
     "pydantic-settings",
     "stomp-py",
     "aiohttp",
@@ -27,11 +28,15 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-bluesky-core",     #requires ophyd-async
-    "dls-dodal>=1.31.0",
-    "super-state-machine",  # See GH issue 553
+    "dls-dodal>=1.36.2",
+    "super-state-machine",  # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
-    "bluesky-stomp>=0.1.2",
+    "bluesky-stomp>=0.1.4",
+    "event-model==1.22.1",    # https://github.com/DiamondLightSource/blueapi/issues/684
+    "opentelemetry-distro>=0.48b0",
+    "opentelemetry-instrumentation-fastapi>=0.48b0",
+    "observability-utils>=0.1.4",
+    "pyjwt[crypto]",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -45,7 +50,8 @@ dev = [
     "pipdeptree",
     "pre-commit>=3.8.0",
     "pydata-sphinx-theme>=0.15.4",
-    "mypy",
+    "pytest",
+    "pyright",
     "pytest-cov",
     "pytest-asyncio",
     "responses",
@@ -61,6 +67,7 @@ dev = [
     "types-requests",
     "types-urllib3",
     "mock",
+    "jwcrypto",
 ]
 
 [project.scripts]
@@ -75,11 +82,11 @@ name = "Callum Forrester"
 
 
 [tool.setuptools_scm]
-write_to = "src/blueapi/_version.py"
+version_file = "src/blueapi/_version.py"
 
-[tool.mypy]
-ignore_missing_imports = true # Ignore missing stubs in imported modules
-namespace_packages = false    # rely only on __init__ files to determine fully qualified module names.
+[tool.pyright]
+typeCheckingMode = "standard"
+reportMissingImports = false  # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
@@ -115,12 +122,12 @@ passenv = *
 allowlist_externals =
     pytest
     pre-commit
-    mypy
+    pyright
     sphinx-build
     sphinx-autobuild
 commands =
-    pre-commit: pre-commit run --all-files {posargs}
-    type-checking: mypy src tests {posargs}
+    pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
+    type-checking: pyright src tests {posargs}
     tests: pytest --cov=blueapi --cov-report term --cov-report xml:cov.xml tests/unit_tests {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
     system-test: pytest tests/system_tests {posargs}
@@ -130,13 +137,14 @@ commands =
 src = ["src", "tests"]
 line-length = 88
 lint.select = [
-    "B",  # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "C4", # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-    "E",  # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-    "F",  # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "W",  # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-    "I",  # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP", # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "SLF", # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
 ]
 
 [tool.ruff.lint.flake8-bugbear]
@@ -144,5 +152,11 @@ extend-immutable-calls = [
     "fastapi.Depends",
     "fastapi.Body",
     "fastapi.Task",
-    "dls_bluesky_core.core.inject",
+    "dodal.common.inject",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# By default, private member access is allowed in tests
+# See https://github.com/DiamondLightSource/python-copier-template/issues/154
+# Remove this line to forbid private member access in tests
+"tests/**/*" = ["SLF001"]

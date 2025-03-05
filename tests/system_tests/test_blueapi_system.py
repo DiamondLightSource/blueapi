@@ -1,26 +1,30 @@
+import inspect
 import time
 from pathlib import Path
 
 import pytest
-import requests
-from fastapi import status
+from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
+from requests.exceptions import ConnectionError
+from scanspec.specs import Line
 
 from blueapi.client.client import (
     BlueapiClient,
     BlueskyRemoteControlError,
 )
 from blueapi.client.event_bus import AnyEvent
-from blueapi.config import ApplicationConfig, StompConfig
+from blueapi.config import (
+    ApplicationConfig,
+    OIDCConfig,
+    StompConfig,
+)
 from blueapi.service.model import (
     DeviceResponse,
-    EnvironmentResponse,
     PlanResponse,
     TaskResponse,
-    TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker.event import TaskStatus, TaskStatusEnum, WorkerEvent, WorkerState
+from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -29,15 +33,57 @@ _LONG_TASK = Task(name="sleep", params={"time": 1.0})
 
 _DATA_PATH = Path(__file__).parent
 
+_REQUIRES_AUTH_MESSAGE = """
+Authentication credentials are required to run this test.
+The test has been skipped because authentication is currently disabled.
+For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
+To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
+"""
+
+# Step 1: Ensure a message bus that supports stomp is running and available:
+#   src/script/start_rabbitmq.sh
+#
+# Step 2: Start the BlueAPI server with valid configuration:
+#   blueapi -c tests/unit_tests/example_yaml/valid_stomp_config.yaml serve
+#
+# Step 3: Run the system tests using tox:
+#   tox -e system-test
+
 
 @pytest.fixture
-def client() -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig())
+def client_without_auth(tmp_path: Path) -> BlueapiClient:
+    return BlueapiClient.from_config(config=ApplicationConfig(auth_token_path=tmp_path))
 
 
 @pytest.fixture
 def client_with_stomp() -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig(stomp=StompConfig()))
+    return BlueapiClient.from_config(
+        config=ApplicationConfig(
+            stomp=StompConfig(
+                auth=BasicAuthentication(username="guest", password="guest")  # type: ignore
+            )
+        )
+    )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def wait_for_server():
+    client = BlueapiClient.from_config(config=ApplicationConfig())
+
+    for _ in range(20):
+        try:
+            client.get_environment()
+            return
+        except ConnectionError:
+            ...
+        time.sleep(0.5)
+    raise TimeoutError("No connection to the blueapi server")
+
+
+# This client will have auth enabled if it finds cached valid token
+@pytest.fixture
+def client() -> BlueapiClient:
+    return BlueapiClient.from_config(config=ApplicationConfig())
 
 
 @pytest.fixture
@@ -54,8 +100,55 @@ def expected_devices() -> DeviceResponse:
     )
 
 
+@pytest.fixture
+def blueapi_client_get_methods() -> list[str]:
+    # Get a list of methods that take only one argument (self)
+    # This will currently return
+    # ['get_plans', 'get_devices', 'get_state', 'get_all_tasks',
+    # 'get_active_task','get_environment','resume', 'stop','get_oidc_config']
+    return [
+        method
+        for method in BlueapiClient.__dict__
+        if callable(getattr(BlueapiClient, method))
+        and not method.startswith("__")
+        and len(inspect.signature(getattr(BlueapiClient, method)).parameters) == 1
+        and "self" in inspect.signature(getattr(BlueapiClient, method)).parameters
+    ]
+
+
+@pytest.fixture(autouse=True)
+def clean_existing_tasks(client: BlueapiClient):
+    for task in client.get_all_tasks().tasks:
+        client.clear_task(task.task_id)
+    yield
+
+
+@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
+def test_cannot_access_endpoints(
+    client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
+):
+    blueapi_client_get_methods.remove(
+        "get_oidc_config"
+    )  # get_oidc_config can be accessed without auth
+    for get_method in blueapi_client_get_methods:
+        with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
+            getattr(client_without_auth, get_method)()
+
+
+@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
+def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
+    assert client_without_auth.get_oidc_config() == OIDCConfig(
+        well_known_url="https://example.com/realms/master/.well-known/openid-configuration",
+        client_id="blueapi-cli",
+    )
+
+
 def test_get_plans(client: BlueapiClient, expected_plans: PlanResponse):
-    assert client.get_plans() == expected_plans
+    retrieved_plans = client.get_plans()
+    retrieved_plans.plans.sort(key=lambda x: x.name)
+    expected_plans.plans.sort(key=lambda x: x.name)
+
+    assert retrieved_plans.model_dump() == expected_plans.model_dump()
 
 
 def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
@@ -64,13 +157,16 @@ def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
 
 
 def test_get_non_existent_plan(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
         client.get_plan("Not exists")
-        assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_get_devices(client: BlueapiClient, expected_devices: DeviceResponse):
-    assert client.get_devices() == expected_devices
+    retrieved_devices = client.get_devices()
+    retrieved_devices.devices.sort(key=lambda x: x.name)
+    expected_devices.devices.sort(key=lambda x: x.name)
+
+    assert retrieved_devices == expected_devices
 
 
 def test_get_device_by_name(client: BlueapiClient, expected_devices: DeviceResponse):
@@ -79,9 +175,8 @@ def test_get_device_by_name(client: BlueapiClient, expected_devices: DeviceRespo
 
 
 def test_get_non_existent_device(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
-        assert client.get_device("Not exists")
-        assert str(exception) == ("{'detail': 'Item not found'}")
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+        client.get_device("Not exists")
 
 
 def test_create_task_and_delete_task_by_id(client: BlueapiClient):
@@ -90,9 +185,8 @@ def test_create_task_and_delete_task_by_id(client: BlueapiClient):
 
 
 def test_create_task_validation_error(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
         client.create_task(Task(name="Not-exists", params={"Not-exists": 0.0}))
-        assert str(exception) == ("{'detail': 'Item not found'}")
 
 
 def test_get_all_tasks(client: BlueapiClient):
@@ -126,15 +220,13 @@ def test_get_task_by_id(client: BlueapiClient):
 
 
 def test_get_non_existent_task(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
         client.get_task("Not-exists")
-        assert str(exception) == "{'detail': 'Item not found'}"
 
 
 def test_delete_non_existent_task(client: BlueapiClient):
-    with pytest.raises(KeyError) as exception:
+    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
         client.clear_task("Not-exists")
-        assert str(exception) == "{'detail': 'Item not found'}"
 
 
 def test_put_worker_task(client: BlueapiClient):
@@ -155,7 +247,7 @@ def test_put_worker_task_fails_if_not_idle(client: BlueapiClient):
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.start_task(WorkerTask(task_id=small_task.task_id))
-        assert str(exception) == "<Response [409]>"
+    assert "<Response [409]>" in str(exception)
     client.abort()
     client.clear_task(small_task.task_id)
     client.clear_task(long_task.task_id)
@@ -168,25 +260,20 @@ def test_get_worker_state(client: BlueapiClient):
 def test_set_state_transition_error(client: BlueapiClient):
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.resume()
-        assert str(exception) == "<Response [400]>"
-
+    assert "<Response [400]>" in str(exception)
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.pause()
-        assert str(exception) == "<Response [400]>"
+    assert "<Response [400]>" in str(exception)
 
 
 def test_get_task_by_status(client: BlueapiClient):
     task_1 = client.create_task(_SIMPLE_TASK)
     task_2 = client.create_task(_SIMPLE_TASK)
-    task_by_pending_request = requests.get(
-        client._rest._url("/tasks"), params={"task_status": TaskStatusEnum.PENDING}
-    )
-    assert task_by_pending_request.status_code == status.HTTP_200_OK
-    task_by_pending = TypeAdapter(TasksListResponse).validate_python(
-        task_by_pending_request.json()
-    )
-
+    task_by_pending = client.get_all_tasks()
+    # https://github.com/DiamondLightSource/blueapi/issues/680
+    # task_by_pending = client.get_tasks_by_status(TaskStatusEnum.PENDING)
     assert len(task_by_pending.tasks) == 2
+    # Check if all the tasks are pending
     for task in task_by_pending.tasks:
         trackable_task = TypeAdapter(TrackableTask).validate_python(task)
         assert trackable_task.is_complete is False and trackable_task.is_pending is True
@@ -197,13 +284,11 @@ def test_get_task_by_status(client: BlueapiClient):
     client.start_task(WorkerTask(task_id=task_2.task_id))
     while not client.get_task(task_2.task_id).is_complete:
         time.sleep(0.1)
-    task_by_completed_request = requests.get(
-        client._rest._url("/tasks"), params={"task_status": TaskStatusEnum.COMPLETE}
-    )
-    task_by_completed = TypeAdapter(TasksListResponse).validate_python(
-        task_by_completed_request.json()
-    )
+    task_by_completed = client.get_all_tasks()
+    # https://github.com/DiamondLightSource/blueapi/issues/680
+    # task_by_pending = client.get_tasks_by_status(TaskStatusEnum.COMPLETE)
     assert len(task_by_completed.tasks) == 2
+    # Check if all the tasks are completed
     for task in task_by_completed.tasks:
         trackable_task = TypeAdapter(TrackableTask).validate_python(task)
         assert trackable_task.is_complete is True and trackable_task.is_pending is False
@@ -250,9 +335,44 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
 
 
 def test_get_current_state_of_environment(client: BlueapiClient):
-    assert client.get_environment() == EnvironmentResponse(initialized=True)
+    assert client.get_environment().initialized
 
 
 def test_delete_current_environment(client: BlueapiClient):
+    old_env = client.get_environment()
     client.reload_environment()
-    assert client.get_environment() == EnvironmentResponse(initialized=True)
+    new_env = client.get_environment()
+    assert new_env.initialized
+    assert new_env.environment_id != old_env.environment_id
+    assert new_env.error_message is None
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        Task(
+            name="count",
+            params={
+                "detectors": [
+                    "image_det",
+                    "current_det",
+                ],
+                "num": 5,
+            },
+        ),
+        Task(
+            name="spec_scan",
+            params={
+                "detectors": [
+                    "image_det",
+                    "current_det",
+                ],
+                "spec": Line("x", 0.0, 10.0, 2) * Line("y", 5.0, 15.0, 3),
+            },
+        ),
+    ],
+)
+def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):
+    final_event = client_with_stomp.run_task(task)
+    assert final_event.is_complete() and not final_event.is_error()
+    assert final_event.state is WorkerState.IDLE

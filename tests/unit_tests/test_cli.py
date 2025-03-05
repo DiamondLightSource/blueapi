@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 from io import StringIO
@@ -9,6 +10,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 import responses
+import yaml
 from bluesky_stomp.messaging import StompClient
 from click.testing import CliRunner
 from pydantic import BaseModel, ValidationError
@@ -20,7 +22,7 @@ from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ScratchConfig, ScratchRepository
+from blueapi.config import ApplicationConfig, ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import DataEvent, Plan
 from blueapi.service.model import (
     DeviceModel,
@@ -38,7 +40,7 @@ def mock_connection() -> Mock:
 
 
 @pytest.fixture
-def template(mock_connection: Mock) -> StompClient:
+def mock_stomp_client(mock_connection: Mock) -> StompClient:
     return StompClient(conn=mock_connection)
 
 
@@ -60,6 +62,21 @@ def test_main_no_params():
     assert result.stdout == expected
 
 
+@patch("blueapi.service.main.start")
+@patch("blueapi.cli.scratch.setup_scratch")
+@patch("blueapi.cli.cli.os.umask")
+@pytest.mark.parametrize("subcommand", ["serve", "setup-scratch"])
+def test_runs_with_umask_002(
+    mock_umask: Mock,
+    mock_setup_scratch: Mock,
+    mock_start: Mock,
+    runner: CliRunner,
+    subcommand: str,
+):
+    runner.invoke(main, [subcommand])
+    mock_umask.assert_called_once_with(0o002)
+
+
 @patch("requests.request")
 def test_connection_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
@@ -67,7 +84,32 @@ def test_connection_error_caught_by_wrapper_func(
     mock_requests.side_effect = ConnectionError()
     result = runner.invoke(main, ["controller", "plans"])
 
-    assert result.stdout == "Failed to establish connection to FastAPI server.\n"
+    assert result.stdout == "Failed to establish connection to blueapi server.\n"
+
+
+@patch("requests.request")
+def test_authentication_error_caught_by_wrapper_func(
+    mock_requests: Mock, runner: CliRunner
+):
+    mock_requests.side_effect = BlueskyRemoteControlError("<Response [401]>")
+    result = runner.invoke(main, ["controller", "plans"])
+
+    assert (
+        result.stdout
+        == "Access denied. Please check your login status and try again.\n"
+    )
+
+
+@patch("requests.request")
+def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
+    mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
+
+    result = runner.invoke(main, ["controller", "plans"])
+    assert (
+        isinstance(result.exception, BlueskyRemoteControlError)
+        and result.exception.args == ("Response [450]",)
+        and result.exit_code == 1
+    )
 
 
 class MyModel(BaseModel):
@@ -136,7 +178,7 @@ def test_submit_plan(runner: CliRunner):
 
 def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
-    assert isinstance(result.exception, RuntimeError)
+    assert isinstance(result.exception, AssertionError)
     assert str(result.exception) == "Message bus needs to be configured"
 
 
@@ -152,7 +194,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
 
 @patch("blueapi.cli.cli.StompClient")
 def test_valid_stomp_config_for_listener(
-    template: StompClient,
+    mock_stomp_client: StompClient,
     runner: CliRunner,
     mock_connection: Mock,
 ):
@@ -178,15 +220,22 @@ def test_valid_stomp_config_for_listener(
 def test_get_env(
     runner: CliRunner,
 ):
+    environment_id = uuid.uuid4()
     responses.add(
         responses.GET,
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=True).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=True
+        ).model_dump(mode="json"),
         status=200,
     )
 
     env = runner.invoke(main, ["controller", "env"])
-    assert env.output == "initialized=True error_message=None\n"
+    assert (
+        env.output == f"environment_id=UUID('{environment_id}') "
+        "initialized=True "
+        "error_message=None\n"
+    )
 
 
 @responses.activate(assert_all_requests_are_fired=True)
@@ -195,20 +244,25 @@ def test_reset_env_client_behavior(
     mock_sleep: Mock,
     runner: CliRunner,
 ):
+    environment_id = uuid.uuid4()
     responses.add(
         responses.DELETE,
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=False).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=False
+        ).model_dump(mode="json"),
         status=200,
     )
 
     env_state = [False, False, True]
-
+    environment_id = uuid.uuid4()
     for state in env_state:
         responses.add(
             responses.GET,
             "http://localhost:8000/environment",
-            json=EnvironmentResponse(initialized=state).model_dump(),
+            json=EnvironmentResponse(
+                environment_id=environment_id, initialized=state
+            ).model_dump(mode="json"),
             status=200,
         )
 
@@ -216,7 +270,7 @@ def test_reset_env_client_behavior(
     reload_result = runner.invoke(main, ["controller", "env", "-r"])
 
     # Verify if sleep was called between polling iterations
-    assert mock_sleep.call_count == 2  # Since the last check doesn't require a sleep
+    mock_sleep.assert_called()
 
     for index, call in enumerate(responses.calls):
         if index == 0:
@@ -228,28 +282,33 @@ def test_reset_env_client_behavior(
 
     # Check if the final environment status is printed correctly
     # assert "Environment is initialized." in result.output
-    assert reload_result.output == dedent("""\
+    assert reload_result.output == dedent(f"""\
                 Reloading environment
                 Environment is initialized
-                initialized=True error_message=None
-                """)
+                environment_id=UUID('{environment_id}') initialized=True error_message=None
+                """)  # noqa: E501
 
 
 @responses.activate
 @patch("blueapi.client.client.time.sleep", return_value=None)
 def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     # Setup mocked responses for the REST endpoints
+    environment_id = uuid.uuid4()
     responses.add(
         responses.DELETE,
         "http://localhost:8000/environment",
         status=200,
-        json=EnvironmentResponse(initialized=False).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=False
+        ).model_dump(mode="json"),
     )
     # Add responses for each polling attempt, all indicating not initialized
     responses.add(
         responses.GET,
         "http://localhost:8000/environment",
-        json=EnvironmentResponse(initialized=False).model_dump(),
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=False
+        ).model_dump(mode="json"),
         status=200,
     )
 
@@ -270,7 +329,7 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     assert responses.calls[0].request.url == "http://localhost:8000/environment"
 
     # Remaining calls should all be GET
-    for call in responses.calls[1:]:  # Skip the first DELETE request
+    for call in responses.calls[1:]:  # Skip the first DELETE request # type: ignore
         assert call.request.method == "GET"
         assert call.request.url == "http://localhost:8000/environment"
 
@@ -289,9 +348,9 @@ def test_env_reload_server_side_error(runner: CliRunner):
     )
 
     result = runner.invoke(main, ["controller", "env", "-r"])
-    assert isinstance(
-        result.exception, BlueskyRemoteControlError
-    ), "Expected a BlueskyRemoteError from cli runner"
+    assert isinstance(result.exception, BlueskyRemoteControlError), (
+        "Expected a BlueskyRemoteError from cli runner"
+    )
     assert result.exception.args[0] == "Failed to tear down the environment"
 
     # Check if the endpoints were hit as expected
@@ -617,3 +676,119 @@ def _assert_matching_formatting(fmt: OutputFormat, obj: Any, expected: str):
     output = StringIO()
     fmt.display(obj, output)
     assert expected == output.getvalue()
+
+
+def test_login_success(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+):
+    with patch("webbrowser.open_new_tab", return_value=False):
+        result = runner.invoke(main, ["-c", config_with_auth, "login"])
+        assert (
+            "Logging in\n"
+            "Please login from this URL:- https://example.com/verify\n"
+            "Logged in and cached new token\n" == result.output
+        )
+        assert result.exit_code == 0
+
+
+def test_token_login_with_valid_token(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,
+):
+    result = runner.invoke(main, ["-c", config_with_auth, "login"])
+    assert "Logged in\n" == result.output
+    assert result.exit_code == 0
+
+
+def test_login_with_refresh_token(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_refresh: Path,
+):
+    result = runner.invoke(main, ["-c", config_with_auth, "login"])
+
+    assert "Logged in\n" == result.output
+    assert result.exit_code == 0
+
+
+def test_login_when_cached_token_decode_fails(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+    cached_expired_refresh: Path,
+):
+    with patch("webbrowser.open_new_tab", return_value=False):
+        result = runner.invoke(main, ["-c", config_with_auth, "login"])
+        assert (
+            "Logging in\n"
+            "Please login from this URL:- https://example.com/verify\n"
+            "Logged in and cached new token\n" in result.output
+        )
+        assert result.exit_code == 0
+
+
+def test_logout_success(
+    runner: CliRunner,
+    config_with_auth: str,
+    cached_valid_refresh: Path,
+    mock_authn_server: responses.RequestsMock,
+):
+    assert cached_valid_refresh.exists()
+    result = runner.invoke(main, ["-c", config_with_auth, "logout"])
+    assert "Logged out" in result.output
+    assert not cached_valid_refresh.exists()
+
+
+def test_logout_when_no_cache(
+    runner: CliRunner,
+    config_with_auth: str,
+):
+    result = runner.invoke(main, ["-c", config_with_auth, "logout"])
+    assert "Logged out" in result.output
+
+
+def test_local_cache_cleared_on_logout_when_oidc_unavailable(
+    runner: CliRunner,
+    config_with_auth: str,
+    cached_valid_refresh: Path,
+):
+    assert cached_valid_refresh.exists()
+    result = runner.invoke(main, ["-c", config_with_auth, "logout"])
+    assert (
+        "An unexpected error occurred while attempting to log out from the server."
+        in result.output
+    )
+    assert not cached_valid_refresh.exists()
+
+
+def test_wrapper_is_a_directory_error(
+    runner: CliRunner, mock_authn_server: responses.RequestsMock, tmp_path
+):
+    config: ApplicationConfig = ApplicationConfig(auth_token_path=tmp_path)
+    config_path = tmp_path / "config.yaml"
+    with open(config_path, mode="w") as valid_auth_config_file:
+        valid_auth_config_file.write(yaml.dump(config.model_dump()))
+    result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
+    assert (
+        "Invalid path: a directory path was provided instead of a file path\n"
+        == result.stdout
+    )
+
+
+def test_wrapper_permission_error(
+    runner: CliRunner, mock_authn_server: responses.RequestsMock, tmp_path
+):
+    token_file: Path = tmp_path / "dir/token"
+
+    config: ApplicationConfig = ApplicationConfig(auth_token_path=token_file)
+    config_path = tmp_path / "config.yaml"
+    with open(config_path, mode="w") as valid_auth_config_file:
+        valid_auth_config_file.write(yaml.dump(config.model_dump()))
+    with patch.object(Path, "write_text", side_effect=PermissionError):
+        result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
+    assert f"Permission denied: Cannot write to {token_file}\n" == result.stdout

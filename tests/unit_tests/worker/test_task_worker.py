@@ -2,11 +2,17 @@ import itertools
 import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future
+from pathlib import Path
 from queue import Full
 from typing import Any, TypeVar
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
+from dodal.common.types import UpdatingPathProvider
+from observability_utils.tracing import (
+    JsonObjectSpanExporter,
+    asserting_span_exporter,
+)
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream, MsgGenerator
@@ -64,8 +70,8 @@ def context(fake_device: FakeDevice) -> BlueskyContext:
     ctx_config.sources.append(
         Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
     )
-    ctx.plan(failing_plan)
-    ctx.device(fake_device)
+    ctx.register_plan(failing_plan)
+    ctx.register_device(fake_device)
     ctx.with_config(ctx_config)
     return ctx
 
@@ -87,7 +93,7 @@ def test_stop_doesnt_hang(inert_worker: TaskWorker) -> None:
     inert_worker.stop()
 
 
-def test_stop_is_idempontent_if_worker_not_started(inert_worker: TaskWorker) -> None:
+def test_stop_is_idempotent_if_worker_not_started(inert_worker: TaskWorker) -> None:
     inert_worker.stop()
 
 
@@ -111,20 +117,34 @@ def test_multi_start(inert_worker: TaskWorker) -> None:
     inert_worker.stop()
 
 
-def test_submit_task(worker: TaskWorker) -> None:
+def test_submit_task(
+    worker: TaskWorker,
+) -> None:
     assert worker.get_tasks() == []
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
+    assert worker.get_tasks() == [
+        TrackableTask.model_construct(
+            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
+        )
+    ]
 
 
 def test_submit_multiple_tasks(worker: TaskWorker) -> None:
     assert worker.get_tasks() == []
     task_id_1 = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK)]
+    assert worker.get_tasks() == [
+        TrackableTask.model_construct(
+            task_id=task_id_1, request_id=ANY, task=_SIMPLE_TASK
+        )
+    ]
     task_id_2 = worker.submit_task(_LONG_TASK)
     assert worker.get_tasks() == [
-        TrackableTask(task_id=task_id_1, task=_SIMPLE_TASK),
-        TrackableTask(task_id=task_id_2, task=_LONG_TASK),
+        TrackableTask.model_construct(
+            task_id=task_id_1, request_id=ANY, task=_SIMPLE_TASK
+        ),
+        TrackableTask.model_construct(
+            task_id=task_id_2, request_id=ANY, task=_LONG_TASK
+        ),
     ]
 
 
@@ -136,27 +156,43 @@ def test_stop_with_task_pending(inert_worker: TaskWorker) -> None:
 
 def test_restart_leaves_task_pending(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
+    assert worker.get_tasks() == [
+        TrackableTask.model_construct(
+            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
+        )
+    ]
     worker.stop()
     worker.start()
-    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
+    assert worker.get_tasks() == [
+        TrackableTask.model_construct(
+            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
+        )
+    ]
 
 
 def test_submit_before_start_pending(inert_worker: TaskWorker) -> None:
     task_id = inert_worker.submit_task(_SIMPLE_TASK)
     inert_worker.start()
     assert inert_worker.get_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
+        TrackableTask.model_construct(
+            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
+        )
     ]
     inert_worker.stop()
     assert inert_worker.get_tasks() == [
-        TrackableTask(task_id=task_id, task=_SIMPLE_TASK)
+        TrackableTask.model_construct(
+            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
+        )
     ]
 
 
 def test_clear_task(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [TrackableTask(task_id=task_id, task=_SIMPLE_TASK)]
+    assert worker.get_tasks() == [
+        TrackableTask.model_construct(
+            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
+        )
+    ]
     assert worker.clear_task(task_id)
     assert worker.get_tasks() == []
 
@@ -307,7 +343,18 @@ def begin_task_and_wait_until_complete(
 #
 
 
-def test_worker_and_data_events_produce_in_order(worker: TaskWorker) -> None:
+@pytest.fixture
+def path_provider(tmp_path: Path):
+    # Prevents issue with leftover state from beamline tests
+    with patch("dodal.plan_stubs.data_session.get_path_provider") as mock:
+        mock.return_value = MagicMock(spec=UpdatingPathProvider, return_value=tmp_path)
+        mock.return_value.data_session.return_value = "foo"
+        yield
+
+
+def test_worker_and_data_events_produce_in_order(
+    worker: TaskWorker, path_provider
+) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [
             WorkerEvent(
@@ -349,7 +396,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     task: Task | None = None,
     timeout: float = 5.0,
 ) -> None:
-    default_task = Task(name="count", params={"detectors": ["image_det"], "num": 1})
+    default_task = Task(name="count", params={"detectors": {"image_det"}, "num": 1})
     task = task or default_task
 
     event_streams: list[EventStream[Any, int]] = [
@@ -487,3 +534,67 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
     result_ids = [task_id for task_id, task in worker._tasks.items() if task in result]
 
     assert result_ids == expected_task_ids
+
+
+def test_start_span_ok(
+    exporter: JsonObjectSpanExporter, inert_worker: TaskWorker
+) -> None:
+    with asserting_span_exporter(exporter, "start"):
+        inert_worker.start()
+    inert_worker.stop()
+
+
+def test_stop_span_ok(
+    exporter: JsonObjectSpanExporter, inert_worker: TaskWorker
+) -> None:
+    inert_worker.start()
+    with asserting_span_exporter(exporter, "stop"):
+        inert_worker.stop()
+
+
+def test_submit_task_span_ok(
+    exporter: JsonObjectSpanExporter,
+    worker: TaskWorker,
+) -> None:
+    assert worker.get_tasks() == []
+    with asserting_span_exporter(exporter, "submit_task", "task.name", "task.params"):
+        worker.submit_task(_SIMPLE_TASK)
+
+
+def test_clear_task_span_ok(
+    exporter: JsonObjectSpanExporter, worker: TaskWorker
+) -> None:
+    with pytest.raises(KeyError):
+        with asserting_span_exporter(exporter, "clear_task", "task_id"):
+            worker.clear_task("foo")
+
+
+def test_begin_task_span_ok(
+    exporter: JsonObjectSpanExporter, worker: TaskWorker
+) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    with asserting_span_exporter(exporter, "begin_task", "task_id"):
+        worker.begin_task(task_id)
+
+
+def test_injected_devices_are_found(
+    fake_device: FakeDevice,
+    context: BlueskyContext,
+):
+    def injected_device_plan(dev: FakeDevice = fake_device.name) -> MsgGenerator:  # type: ignore
+        yield from ()
+
+    context.register_plan(injected_device_plan)
+    params = Task(name="injected_device_plan").prepare_params(context)
+    assert params["dev"] == fake_device
+
+
+def test_missing_injected_devices_fail_early(
+    context: BlueskyContext,
+):
+    def missing_injection(dev: FakeDevice = "does_not_exist") -> MsgGenerator:  # type: ignore
+        yield from ()
+
+    context.register_plan(missing_injection)
+    with pytest.raises(ValueError):
+        Task(name="missing_injection").prepare_params(context)

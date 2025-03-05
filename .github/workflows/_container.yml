@@ -1,8 +1,13 @@
+name: Build and publish container
 on:
   workflow_call:
 
+env:
+  GCR_IMAGE: ghcr.io/diamondlightsource/blueapi
+  HELM_VERSION: 3.10.3
+
 jobs:
-  build:
+  build_container:
     runs-on: ubuntu-latest
 
     steps:
@@ -11,7 +16,20 @@ jobs:
         with:
           # Need this to get version number from last tag
           fetch-depth: 0
+      - name: Validate SemVer2 version compliance
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          SEMVER_REGEX: ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$
 
+        run: |
+          ref="${{ github.ref_name }}"
+          my_regex="${{env.SEMVER_REGEX}}"
+          if [[ "$ref" =~ $my_regex ]]; then
+            echo "SemVer compliant version: $ref"
+          else
+            echo "Invalid SemVer version: $ref"
+            exit 1
+          fi
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
@@ -25,7 +43,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and export to Docker local cache
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           # Need load and tags so we can test it below
@@ -46,7 +66,9 @@ jobs:
 
       - name: Push cached image to container registry
         if: github.ref_type == 'tag'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
         # This does not build the image again, it will find the image in the
         # Docker cache and publish it
         with:
@@ -54,3 +76,36 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  helm_publish:
+    name: publish gcr
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    environment: prod
+    needs: build_container
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+
+      - name: install helm
+        uses: Azure/setup-helm@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+        id: install
+
+      - name: login to gcr using helm
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ${{ env.GCR_IMAGE }} --username ${{ github.repository_owner }} --password-stdin
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+
+      - name: package chart and push it
+        run: |
+          helm dependencies update helm/blueapi
+          helm package helm/blueapi --version ${GITHUB_REF##*/} --app-version ${GITHUB_REF##*/} -d /tmp/
+          helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/diamondlightsource/charts

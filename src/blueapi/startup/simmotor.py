@@ -3,7 +3,7 @@ import time as ttime
 from collections.abc import Callable
 
 from ophyd.sim import SynAxis
-from ophyd.status import MoveStatus, Status
+from ophyd.status import MoveStatus
 
 
 class SynAxisWithMotionEvents(SynAxis):
@@ -27,8 +27,8 @@ class SynAxisWithMotionEvents(SynAxis):
         super().__init__(
             name=name,
             readback_func=readback_func,
-            value=value,
-            delay=delay,
+            value=value,  # type: ignore
+            delay=delay,  # type: ignore
             precision=precision,
             parent=parent,
             labels=labels,
@@ -38,12 +38,12 @@ class SynAxisWithMotionEvents(SynAxis):
         self._events_per_move = events_per_move
         self.egu = egu
 
-    def set(self, value: float) -> None:
+    def set(self, value: float) -> MoveStatus:
         old_setpoint = self.sim_state["setpoint"]
         distance = value - old_setpoint
         self.sim_state["setpoint"] = value
         self.sim_state["setpoint_ts"] = ttime.time()
-        self.setpoint._run_subs(
+        self.setpoint._run_subs(  # noqa
             sub_type=self.setpoint.SUB_VALUE,
             old_value=old_setpoint,
             value=self.sim_state["setpoint"],
@@ -54,7 +54,7 @@ class SynAxisWithMotionEvents(SynAxis):
             old_readback = self.sim_state["readback"]
             self.sim_state["readback"] = self._readback_func(position)
             self.sim_state["readback_ts"] = ttime.time()
-            self.readback._run_subs(
+            self.readback._run_subs(  # noqa
                 sub_type=self.readback.SUB_VALUE,
                 old_value=old_readback,
                 value=self.sim_state["readback"],
@@ -90,5 +90,5 @@ class BrokenSynAxis(SynAxis):
         super().__init__(**kwargs)
         self._timeout = timeout
 
-    def set(self, value: float) -> Status:
-        return Status(timeout=self._timeout)
+    def set(self, value: float) -> MoveStatus:
+        return MoveStatus(positioner=self, target=value, timeout=self._timeout)

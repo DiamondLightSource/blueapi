@@ -1,4 +1,5 @@
-from collections.abc import Iterable
+import importlib
+from collections.abc import Callable, Iterable
 from types import ModuleType
 from typing import Any
 
@@ -34,3 +35,17 @@ def load_module_all(mod: ModuleType) -> Iterable[Any]:
         for name, value in mod.__dict__.items():
             if not name.startswith("_"):
                 yield value
+
+
+def is_function_sourced_from_module(
+    func: Callable[..., Any], module: ModuleType
+) -> bool:
+    """
+    Check if a function is originally from a particular module, useful to detect
+    whether it actually comes from a nested import.
+
+    Args:
+        func: Object to check
+        module: Module to check against object
+    """
+    return importlib.import_module(func.__module__) is module

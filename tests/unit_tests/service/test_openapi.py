@@ -4,12 +4,17 @@ from unittest.mock import Mock, PropertyMock
 import pytest
 import yaml
 
+from blueapi.config import ApplicationConfig
 from blueapi.service.openapi import DOCS_SCHEMA_LOCATION, generate_schema
 
 
-@mock.patch("blueapi.service.openapi.app")
-def test_generate_schema(mock_app: Mock) -> None:
-    from blueapi.service.main import app
+@mock.patch("blueapi.service.openapi.get_app")
+def test_generate_schema(mock_get_app: Mock) -> None:
+    mock_app = mock_get_app()
+
+    from blueapi.service.main import get_app
+
+    app = get_app(ApplicationConfig())
 
     title = PropertyMock(return_value="title")
     version = PropertyMock(return_value=app.version)
@@ -22,8 +27,6 @@ def test_generate_schema(mock_app: Mock) -> None:
     type(mock_app).openapi_version = openapi_version
     type(mock_app).description = description
     type(mock_app).routes = routes
-
-    # from blueapi.service.openapi import generate_schema
 
     assert generate_schema() == {
         "openapi": openapi_version(),

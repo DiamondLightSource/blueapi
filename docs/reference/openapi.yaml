@@ -37,6 +37,12 @@ components:
       additionalProperties: false
       description: State of internal environment.
       properties:
+        environment_id:
+          description: Unique ID for the environment instance, can be used to differentiate
+            between a new environment and old that has been torn down
+          format: uuid
+          title: Environment Id
+          type: string
         error_message:
           anyOf:
           - minLength: 1
@@ -49,6 +55,7 @@ components:
           title: Initialized
           type: boolean
       required:
+      - environment_id
       - initialized
       title: EnvironmentResponse
       type: object
@@ -179,6 +186,10 @@ components:
           default: true
           title: Is Pending
           type: boolean
+        request_id:
+          default: ''
+          title: Request Id
+          type: string
         task:
           title: Task
         task_id:

@@ -9,11 +9,21 @@ from threading import Event, RLock
 from typing import Any, Generic, TypeVar
 
 from bluesky.protocols import Status
+from observability_utils.tracing import (
+    add_span_attributes,
+    get_tracer,
+    setup_tracing,
+    start_as_current_span,
+)
+from opentelemetry.baggage import get_baggage
+from opentelemetry.context import Context, get_current
+from opentelemetry.trace import SpanKind
 from pydantic import Field
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import LoggingConfig
 from blueapi.core import (
+    OTLP_EXPORT_ENABLED,
     BlueskyContext,
     DataEvent,
     EventPublisher,
@@ -39,8 +49,11 @@ from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 LOGGER = logging.getLogger(__name__)
 logging_config = LoggingConfig()
 
+TRACER = get_tracer("task_worker")
+""" Initialise a Tracer for this module provided by the app's global TracerProvider. """
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
+WORKER_THREAD_STATE = "worker thread state"
 
 T = TypeVar("T")
 
@@ -52,6 +65,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
 
     task_id: str
     task: T
+    request_id: str = ""
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
@@ -75,6 +89,14 @@ class TaskWorker:
     _state: WorkerState
     _errors: list[str]
     _warnings: list[str]
+
+    # The queue is actually a channel between 2 threads
+    # most programming languages have a separate abstraction for this
+    # but Python reuses Queue
+    # So it's not used as a standard queue,
+    # but as a box in which to put the "current" task and nothing else
+    # So the calling thread can only ever submit one plan at a time.
+
     _task_channel: Queue  # type: ignore
     _current: TrackableTask | None
     _status_lock: RLock
@@ -86,6 +108,7 @@ class TaskWorker:
     _started: Event
     _stopping: Event
     _stopped: Event
+    _current_task_otel_context: Context | None
 
     def __init__(
         self,
@@ -98,7 +121,9 @@ class TaskWorker:
 
         self._tasks = {}
 
-        self._state = WorkerState.from_bluesky_state(ctx.run_engine.state)
+        assert ctx.run_engine.state is not None, "RunEngine state is not set"
+        state: RawRunEngineState = str(ctx.run_engine.state)
+        self._state = WorkerState.from_bluesky_state(state)
         self._errors = []
         self._warnings = []
         self._task_channel = Queue(maxsize=1)
@@ -114,32 +139,43 @@ class TaskWorker:
         self._stopped = Event()
         self._stopped.set()
         self._broadcast_statuses = broadcast_statuses
+        self._current_task_otel_context = None
+        setup_tracing("BlueAPIWorker", OTLP_EXPORT_ENABLED)
 
+    @start_as_current_span(TRACER, "task_id")
     def clear_task(self, task_id: str) -> str:
         task = self._tasks.pop(task_id)
         return task.task_id
 
+    @start_as_current_span(TRACER)
     def cancel_active_task(
         self,
         failure: bool = False,
         reason: str | None = None,
     ) -> str:
         if self._current is None:
-            # Persuades mypy that self._current is not None
+            # Persuades type checker that self._current is not None
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
         if failure:
-            self._ctx.run_engine.abort(reason)
+            default_reason = "Task failed for unknown reason"
+            self._ctx.run_engine.abort(reason or default_reason)
+            add_span_attributes({"Task aborted": reason or default_reason})
         else:
             self._ctx.run_engine.stop()
+            default_reason = "Cancellation successful: Task stopped without error"
+            add_span_attributes({"Task stopped": reason or default_reason})
         return self._current.task_id
 
+    @start_as_current_span(TRACER)
     def get_tasks(self) -> list[TrackableTask]:
         return list(self._tasks.values())
 
+    @start_as_current_span(TRACER, "task_id")
     def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         return self._tasks.get(task_id)
 
+    @start_as_current_span(TRACER, "status")
     def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
         if status == TaskStatusEnum.RUNNING:
             return [
@@ -153,9 +189,14 @@ class TaskWorker:
             return [task for task in self._tasks.values() if task.is_complete]
         return []
 
+    @start_as_current_span(TRACER)
     def get_active_task(self) -> TrackableTask[Task] | None:
-        return self._current
+        current = self._current
+        if current is not None:
+            add_span_attributes({"Active Task": current.task_id})
+        return current
 
+    @start_as_current_span(TRACER, "task_id")
     def begin_task(self, task_id: str) -> None:
         task = self._tasks.get(task_id)
         if task is not None:
@@ -163,13 +204,23 @@ class TaskWorker:
         else:
             raise KeyError(f"No pending task with ID {task_id}")
 
+    @start_as_current_span(TRACER, "task.name", "task.params")
     def submit_task(self, task: Task) -> str:
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
-        trackable_task = TrackableTask(task_id=task_id, task=task)
+        add_span_attributes({"TaskId": task_id})
+        trackable_task = TrackableTask(
+            task_id=task_id, request_id=str(get_baggage("correlation_id")), task=task
+        )
         self._tasks[task_id] = trackable_task
         return task_id
 
+    @start_as_current_span(
+        TRACER,
+        "trackable_task.task_id",
+        "trackable_task.task.name",
+        "trackable_task.task.params",
+    )
     def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
         if self.state is not WorkerState.IDLE:
             raise WorkerBusyError(f"Worker is in state {self.state}")
@@ -184,8 +235,11 @@ class TaskWorker:
                 task_started.set()
 
         LOGGER.info(f"Submitting: {trackable_task}")
+        sub = self.worker_events.subscribe(mark_task_as_started)
         try:
+            self._current_task_otel_context = get_current()
             sub = self.worker_events.subscribe(mark_task_as_started)
+            """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
             task_started.wait(timeout=5.0)
             if not task_started.is_set():
@@ -196,6 +250,7 @@ class TaskWorker:
         finally:
             self.worker_events.unsubscribe(sub)
 
+    @start_as_current_span(TRACER)
     def start(self) -> None:
         if self._started.is_set():
             raise WorkerAlreadyStartedError("Worker is already running")
@@ -203,6 +258,7 @@ class TaskWorker:
         run_worker_in_own_thread(self)
         self._wait_until_started()
 
+    @start_as_current_span(TRACER)
     def stop(self) -> None:
         LOGGER.info("Attempting to stop worker")
 
@@ -211,15 +267,18 @@ class TaskWorker:
             self._task_channel.put(KillSignal())
         else:
             LOGGER.info("Stopping worker: nothing to do")
-        LOGGER.info("Stopped")
         self._wait_until_stopped()
+        add_span_attributes({WORKER_THREAD_STATE: "STOPPED"})
+        LOGGER.info("Stopped")
 
+    @start_as_current_span(TRACER)
     def _wait_until_started(self) -> None:
         if not self._started.wait(timeout=self._start_stop_timeout):
             raise TimeoutError(
                 f"Worker did not start within {self._start_stop_timeout} seconds"
             )
 
+    @start_as_current_span(TRACER)
     def _wait_until_stopped(self) -> None:
         if not self._stopped.wait(timeout=self._start_stop_timeout):
             raise TimeoutError(
@@ -230,12 +289,13 @@ class TaskWorker:
     def state(self) -> WorkerState:
         return self._state
 
+    @start_as_current_span(TRACER)
     def run(self) -> None:
         LOGGER.info("Worker starting")
-        self._ctx.run_engine.state_hook = self._on_state_change
+        self._ctx.run_engine.state_hook = self._on_state_change  # type: ignore
         self._ctx.run_engine.subscribe(self._on_document)
         if self._broadcast_statuses:
-            self._ctx.run_engine.waiting_hook = self._waiting_hook
+            self._ctx.run_engine.waiting_hook = self._waiting_hook  # type: ignore
 
         self._stopped.clear()
         self._started.set()
@@ -245,38 +305,55 @@ class TaskWorker:
         self._stopping.clear()
         self._stopped.set()
 
+    @start_as_current_span(TRACER, "defer")
     def pause(self, defer=False):
         LOGGER.info("Requesting to pause the worker")
         self._ctx.run_engine.request_pause(defer)
 
+    @start_as_current_span(TRACER)
     def resume(self):
         LOGGER.info("Requesting to resume the worker")
         self._ctx.run_engine.resume()
 
+    @start_as_current_span(TRACER)
     def _cycle_with_error_handling(self) -> None:
         try:
             self._cycle()
         except Exception as ex:
             self._report_error(ex)
 
+    @start_as_current_span(TRACER)
     def _cycle(self) -> None:
         try:
             LOGGER.info("Awaiting task")
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
-                LOGGER.info(f"Got new task: {next_task}")
-                self._current = next_task  # Informing mypy that the task is not None
-                self._current.is_pending = False
-                self._current.task.do_task(self._ctx)
+                if self._current_task_otel_context is not None:
+                    with TRACER.start_as_current_span(
+                        "_cycle",
+                        context=self._current_task_otel_context,
+                        kind=SpanKind.SERVER,
+                    ):
+                        LOGGER.info(f"Got new task: {next_task}")
+                        self._current = next_task
+                        self._current_task_otel_context = get_current()
+                        add_span_attributes({"next_task.task_id": next_task.task_id})
+
+                        self._current.is_pending = False
+                        self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't
                 # want it to be part of the worker's public API
                 self._stopping.set()
+                add_span_attributes({"server shutting down": "true"})
             else:
                 raise KeyError(f"Unknown command: {next_task}")
         except Exception as err:
             self._report_error(err)
+        finally:
+            if self._current_task_otel_context is not None:
+                self._current_task_otel_context = None
 
         if self._current is not None:
             self._current.is_complete = True
@@ -297,6 +374,7 @@ class TaskWorker:
     def data_events(self) -> EventStream[DataEvent, int]:
         return self._data_events
 
+    @start_as_current_span(TRACER, "raw_new_state", "raw_old_state")
     def _on_state_change(
         self,
         raw_new_state: RawRunEngineState,
@@ -317,6 +395,7 @@ class TaskWorker:
             self._current.errors.append(str(err))
         self._errors.append(str(err))
 
+    @start_as_current_span(TRACER)
     def _report_status(
         self,
     ) -> None:
@@ -330,6 +409,13 @@ class TaskWorker:
                 task_failed=bool(self._current.errors),
             )
             correlation_id = self._current.task_id
+            add_span_attributes(
+                {
+                    "task_id": self._current.task_id,
+                    "task_complete": self._current.is_complete,
+                    "task_failed": self._current.errors,
+                }
+            )
         else:
             task_status = None
             correlation_id = None
@@ -344,10 +430,35 @@ class TaskWorker:
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
-            correlation_id = self._current.task_id
-            self._data_events.publish(
-                DataEvent(name=name, doc=document), correlation_id
-            )
+            if self._current_task_otel_context is not None:
+                with TRACER.start_as_current_span(
+                    "_on_document",
+                    context=self._current_task_otel_context,
+                    kind=SpanKind.PRODUCER,
+                ):
+                    """
+                    Start a new span but inject the context cached when the current task
+                    was created. This will make the documents received part of the same
+                    trace.
+                    """
+                    add_span_attributes(
+                        {
+                            "task_id": self._current.task_id,
+                            "name": name,
+                            "document": str(document),
+                        }
+                    )
+
+                    correlation_id = self._current.request_id
+                    self._data_events.publish(
+                        DataEvent(name=name, doc=document), correlation_id
+                    )
+            else:
+                raise ValueError(
+                    "There is no context set for tracing despite the fact that a task"
+                    " is running, something has gone wrong..."
+                )
+
         else:
             raise KeyError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"

@@ -1,12 +1,12 @@
 import logging
 from collections.abc import Mapping
-from functools import lru_cache
+from functools import cache
 from typing import Any
 
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
@@ -31,14 +31,14 @@ def set_config(new_config: ApplicationConfig):
     _CONFIG = new_config
 
 
-@lru_cache
+@cache
 def context() -> BlueskyContext:
     ctx = BlueskyContext()
     ctx.with_config(config().env)
     return ctx
 
 
-@lru_cache
+@cache
 def worker() -> TaskWorker:
     worker = TaskWorker(
         context(),
@@ -48,13 +48,15 @@ def worker() -> TaskWorker:
     return worker
 
 
-@lru_cache
-def messaging_template() -> StompClient | None:
-    stomp_config = config().stomp
+@cache
+def stomp_client() -> StompClient | None:
+    stomp_config: StompConfig | None = config().stomp
     if stomp_config is not None:
-        template = StompClient.for_broker(
+        client = StompClient.for_broker(
             broker=Broker(
-                host=stomp_config.host, port=stomp_config.port, auth=stomp_config.auth
+                host=stomp_config.host,
+                port=stomp_config.port,
+                auth=stomp_config.auth,  # type: ignore
             )
         )
 
@@ -68,8 +70,8 @@ def messaging_template() -> StompClient | None:
                 task_worker.data_events: event_topic,
             }
         )
-        template.connect()
-        return template
+        client.connect()
+        return client
     else:
         return None
 
@@ -81,18 +83,18 @@ def setup(config: ApplicationConfig) -> None:
 
     # Eagerly initialize worker and messaging connection
 
-    logging.basicConfig(level=config.logging.level)
+    logging.basicConfig(format="%(asctime)s - %(message)s", level=config.logging.level)
     worker()
-    messaging_template()
+    stomp_client()
 
 
 def teardown() -> None:
     worker().stop()
-    if (template := messaging_template()) is not None:
-        template.disconnect()
+    if (stomp_client_ref := stomp_client()) is not None:
+        stomp_client_ref.disconnect()
     context.cache_clear()
     worker.cache_clear()
-    messaging_template.cache_clear()
+    stomp_client.cache_clear()
 
 
 def _publish_event_streams(
@@ -104,8 +106,10 @@ def _publish_event_streams(
 
 def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> None:
     def forward_message(event: Any, correlation_id: str | None) -> None:
-        if (template := messaging_template()) is not None:
-            template.send(destination, event, None, correlation_id=correlation_id)
+        if (stomp_client_ref := stomp_client()) is not None:
+            stomp_client_ref.send(
+                destination, event, None, correlation_id=correlation_id
+            )
 
     stream.subscribe(forward_message)
 
@@ -188,3 +192,7 @@ def get_task_by_id(task_id: str) -> TrackableTask | None:
     """Returns a task matching the task ID supplied,
     if the worker knows of it"""
     return worker().get_task_by_id(task_id)
+
+
+def get_oidc_config() -> OIDCConfig | None:
+    return config().oidc

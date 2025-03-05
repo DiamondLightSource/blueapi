@@ -1,4 +1,6 @@
 import json
+import os
+import stat
 import sys
 from functools import wraps
 from pathlib import Path
@@ -8,6 +10,7 @@ import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from observability_utils.tracing import setup_tracing
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
@@ -16,16 +19,14 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ApplicationConfig, ConfigLoader, LoggingConfig
-from blueapi.core import DataEvent
-from blueapi.log import do_default_logging_setup
-from blueapi.service.main import start
-from blueapi.service.openapi import (
-    DOCS_SCHEMA_LOCATION,
-    generate_schema,
-    print_schema_as_yaml,
-    write_schema_as_yaml,
+from blueapi.config import (
+    ApplicationConfig,
+    ConfigLoader,
+    LoggingConfig,
 )
+from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
+from blueapi.log import do_default_logging_setup
+from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
@@ -33,6 +34,7 @@ from .updates import CliEventRenderer
 
 logging_config = LoggingConfig()
 do_default_logging_setup(logging_config.logging_dev_mode)
+
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
@@ -42,6 +44,9 @@ do_default_logging_setup(logging_config.logging_dev_mode)
 @click.pass_context
 def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     # if no command is supplied, run with the options passed
+
+    # Set umask to DLS standard
+    os.umask(stat.S_IWOTH)
 
     config_loader = ConfigLoader(ApplicationConfig)
     if config is not None:
@@ -71,6 +76,16 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     help="[Development only] update the schema in the documentation",
 )
 def schema(output: Path | None = None, update: bool = False) -> None:
+    """Only import the service functions when starting the service or generating
+    the schema, not the controller as a new FastAPI app will be started each time.
+    """
+    from blueapi.service.openapi import (
+        DOCS_SCHEMA_LOCATION,
+        generate_schema,
+        print_schema_as_yaml,
+        write_schema_as_yaml,
+    )
+
     """Generate the schema for the REST API"""
     schema = generate_schema()
 
@@ -88,6 +103,16 @@ def start_application(obj: dict):
     """Run a worker that accepts plans to run"""
     config: ApplicationConfig = obj["config"]
 
+    """Only import the service functions when starting the service or generating
+    the schema, not the controller as a new FastAPI app will be started each time.
+    """
+    from blueapi.service.main import start
+
+    """
+    Set up basic automated instrumentation for the FastAPI app, creating the
+    observability context.
+    """
+    setup_tracing("BlueAPI", OTLP_EXPORT_ENABLED)
     start(config)
 
 
@@ -102,6 +127,7 @@ def start_application(obj: dict):
 def controller(ctx: click.Context, output: str) -> None:
     """Client utility for controlling and introspecting the worker"""
 
+    setup_tracing("BlueAPICLI", OTLP_EXPORT_ENABLED)
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
         return
@@ -118,7 +144,12 @@ def check_connection(func):
         try:
             func(*args, **kwargs)
         except ConnectionError:
-            print("Failed to establish connection to FastAPI server.")
+            print("Failed to establish connection to blueapi server.")
+        except BlueskyRemoteControlError as e:
+            if str(e) == "<Response [401]>":
+                print("Access denied. Please check your login status and try again.")
+            else:
+                raise e
 
     return wrapper
 
@@ -147,19 +178,16 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    if config.stomp is not None:
-        event_bus_client = EventBusClient(
-            StompClient.for_broker(
-                broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
-                    auth=config.stomp.auth,
-                )
+    assert config.stomp is not None, "Message bus needs to be configured"
+    event_bus_client = EventBusClient(
+        StompClient.for_broker(
+            broker=Broker(
+                host=config.stomp.host,
+                port=config.stomp.port,
+                auth=config.stomp.auth,
             )
         )
-    else:
-        raise RuntimeError("Message bus needs to be configured")
-
+    )
     fmt = obj["fmt"]
 
     def on_event(
@@ -330,3 +358,39 @@ def scratch(obj: dict) -> None:
         setup_scratch(config.scratch)
     else:
         raise KeyError("No scratch config supplied")
+
+
+@main.command(name="login")
+@check_connection
+@click.pass_obj
+def login(obj: dict) -> None:
+    """
+    Authenticate with the blueapi using the OIDC (OpenID Connect) flow.
+    """
+    config: ApplicationConfig = obj["config"]
+    try:
+        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
+        access_token = auth.get_valid_access_token()
+        assert access_token
+        print("Logged in")
+    except Exception:
+        client = BlueapiClient.from_config(config)
+        oidc_config = client.get_oidc_config()
+        auth = SessionManager(
+            oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
+        )
+        auth.start_device_flow()
+
+
+@main.command(name="logout")
+@click.pass_obj
+def logout(obj: dict) -> None:
+    """
+    Logs out from the OIDC provider and removes the cached access token.
+    """
+    config: ApplicationConfig = obj["config"]
+    try:
+        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
+        auth.logout()
+    except FileNotFoundError:
+        print("Logged out")

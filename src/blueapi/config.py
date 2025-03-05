@@ -1,11 +1,19 @@
+import textwrap
 from collections.abc import Mapping
 from enum import Enum
+from functools import cached_property
 from pathlib import Path
-from typing import Any, Generic, Literal, TypeVar
+from typing import Any, Generic, Literal, TypeVar, cast
 
+import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import (
+    BaseModel,
+    Field,
+    TypeAdapter,
+    ValidationError,
+)
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -18,12 +26,12 @@ class SourceKind(str, Enum):
     DODAL = "dodal"
 
 
-class Source(BaseModel):
+class Source(BlueapiBaseModel):
     kind: SourceKind
     module: Path | str
 
 
-class StompConfig(BaseModel):
+class StompConfig(BlueapiBaseModel):
     """
     Config for connecting to stomp broker
     """
@@ -51,8 +59,8 @@ class EnvironmentConfig(BlueapiBaseModel):
             kind=SourceKind.DEVICE_FUNCTIONS, module="blueapi.startup.example_devices"
         ),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="blueapi.startup.example_plans"),
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.plans"),
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dls_bluesky_core.stubs"),
+        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plans"),
+        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
     ]
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
 
@@ -70,13 +78,81 @@ class RestConfig(BlueapiBaseModel):
 
 
 class ScratchRepository(BlueapiBaseModel):
-    name: str = "example"
-    remote_url: str = "https://github.com/example/example.git"
+    name: str = Field(
+        description="Unique name for this repository in the scratch directory",
+        default="example",
+    )
+    remote_url: str = Field(
+        description="URL to clone from",
+        default="https://github.com/example/example.git",
+    )
 
 
 class ScratchConfig(BlueapiBaseModel):
-    root: Path = Path("/tmp/scratch/blueapi")
-    repositories: list[ScratchRepository] = Field(default_factory=list)
+    root: Path = Field(
+        description="The root directory of the scratch area, all repositories will "
+        "be cloned under this directory.",
+        default=Path("/tmp/scratch/blueapi"),
+    )
+    required_gid: int | None = Field(
+        description=textwrap.dedent("""
+    Required owner GID for the scratch directory. If supplied the setup-scratch
+    command will check the scratch area ownership and raise an error if it is
+    not owned by <GID>.
+    """),
+        default=None,
+    )
+    repositories: list[ScratchRepository] = Field(
+        description="Details of repositories to be cloned and imported into blueapi",
+        default_factory=list,
+    )
+
+
+class OIDCConfig(BlueapiBaseModel):
+    well_known_url: str = Field(
+        description="URL to fetch OIDC config from the provider"
+    )
+    client_id: str = Field(description="Client ID")
+    client_audience: str = Field(description="Client Audience(s)", default="blueapi")
+
+    @cached_property
+    def _config_from_oidc_url(self) -> dict[str, Any]:
+        response: requests.Response = requests.get(self.well_known_url)
+        response.raise_for_status()
+        return response.json()
+
+    @cached_property
+    def device_authorization_endpoint(self) -> str:
+        return cast(
+            str, self._config_from_oidc_url.get("device_authorization_endpoint")
+        )
+
+    @cached_property
+    def token_endpoint(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("token_endpoint"))
+
+    @cached_property
+    def issuer(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("issuer"))
+
+    @cached_property
+    def authorization_endpoint(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("authorization_endpoint"))
+
+    @cached_property
+    def jwks_uri(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("jwks_uri"))
+
+    @cached_property
+    def end_session_endpoint(self) -> str:
+        return cast(str, self._config_from_oidc_url.get("end_session_endpoint"))
+
+    @cached_property
+    def id_token_signing_alg_values_supported(self) -> list[str]:
+        return cast(
+            list[str],
+            self._config_from_oidc_url.get("id_token_signing_alg_values_supported"),
+        )
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -90,6 +166,8 @@ class ApplicationConfig(BlueapiBaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
+    oidc: OIDCConfig | None = None
+    auth_token_path: Path | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):
@@ -167,6 +245,7 @@ class ConfigLoader(Generic[C]):
         try:
             return self._adapter.validate_python(self._values)
         except ValidationError as exc:
+            error_details = "\n".join(str(e) for e in exc.errors())
             raise InvalidConfigError(
-                "Something is wrong with the configuration file: \n"
+                f"Something is wrong with the configuration file: \n {error_details}"
             ) from exc

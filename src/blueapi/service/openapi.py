@@ -7,12 +7,14 @@ import yaml
 from fastapi.openapi.utils import get_openapi
 from pyparsing import Any
 
-from blueapi.service.main import app
+from blueapi.config import ApplicationConfig
+from blueapi.service.main import get_app
 
 DOCS_SCHEMA_LOCATION = Path(__file__).parents[3] / "docs" / "reference" / "openapi.yaml"
 
 
 def generate_schema() -> Mapping[str, Any]:
+    app = get_app(ApplicationConfig())
     return get_openapi(
         title=app.title,
         version=app.version,

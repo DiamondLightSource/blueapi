@@ -1,9 +1,11 @@
+import uuid
 from collections.abc import Iterable
 from typing import Any
 
 from bluesky.protocols import HasName
 from pydantic import Field
 
+from blueapi.config import OIDCConfig
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 from blueapi.utils import BlueapiBaseModel
 from blueapi.worker import WorkerState
@@ -143,9 +145,24 @@ class EnvironmentResponse(BlueapiBaseModel):
     State of internal environment.
     """
 
+    environment_id: uuid.UUID = Field(
+        description="Unique ID for the environment instance, can be used to "
+        "differentiate between a new environment and old that has been torn down"
+    )
     initialized: bool = Field(description="blueapi context initialized")
     error_message: str | None = Field(
         default=None,
         description="If present - error loading context",
         min_length=1,
     )
+
+
+class Cache(BlueapiBaseModel):
+    """
+    Represents the cached data required for managing authentication.
+    """
+
+    oidc_config: OIDCConfig
+    access_token: str
+    refresh_token: str
+    id_token: str

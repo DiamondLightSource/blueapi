@@ -83,6 +83,14 @@ extraEnvVars: []
 #       name: rabbitmq-password
 #       key: rabbitmq-password
 
+tracing:
+  otlp:
+    enabled: false
+    protocol: http/protobuf
+    server:
+      host: https://daq-services-jaeger # replace with central instance
+      port: 4318
+
 # Config for the worker goes here, will be mounted into a config file
 worker:
   api:
@@ -95,9 +103,9 @@ worker:
     - kind: planFunctions
       module: blueapi.startup.example_plans
     - kind: planFunctions
-      module: dls_bluesky_core.plans
+      module: dodal.plans
     - kind: planFunctions
-      module: dls_bluesky_core.stubs
+      module: dodal.plan_stubs.wrapped
   stomp:
     auth:
       username: guest

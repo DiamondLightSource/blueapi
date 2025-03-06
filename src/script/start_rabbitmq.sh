@@ -1,6 +1,6 @@
 #!/bin/bash
 SCRIPT_DIR=$( cd -- "$( dirname -- "$BASH_SOURCE[0]" )" &> /dev/null && pwd )
-RABBITMQ_VERSION="rabbitmq:management"
+RABBITMQ_VERSION="docker.io/rabbitmq:4.0-management"
 cmd1='run -it --rm --name rabbitmq -v '\
 $SCRIPT_DIR'/rabbitmq_setup/enabled_plugins:/etc/rabbitmq/enabled_plugins:z'\
 ' -p 5672:5672 -p 15672:15672 -p 61613:61613 '$RABBITMQ_VERSION

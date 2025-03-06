@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Mapping
 from pathlib import Path
+from textwrap import dedent
 
 import requests
 from pydantic import Field
@@ -9,14 +10,15 @@ from blueapi.utils import BlueapiBaseModel
 
 
 class NumtrackerNewScanVisit(BlueapiBaseModel):
-    beamline: str
-    directory: Path
+    instrument: str
+    instrument_session: str = Field(alias="instrumentSession")
+    path: Path
 
 
 class NumtrackerNewScanScan(BlueapiBaseModel):
     scan_file: str = Field(alias="scanFile")
     scan_number: int = Field(alias="scanNumber")
-    visit: NumtrackerNewScanVisit
+    directory: NumtrackerNewScanVisit
 
 
 class NumtrackerNewScan(BlueapiBaseModel):
@@ -39,8 +41,24 @@ class NumtrackerClient:
     # would need to change the RE to accept an async function in the scan_id_source
     # hook. It's a 1-line change but would need to be reviewed etc.
     def create_scan(self, visit: str, beamline: str) -> NumtrackerNewScan:
+        # query = {
+        #     "query": f'mutation{{scan(instrument: "{beamline}", instrumentSession: "{visit}") {{scanFile scanNumber instrumentSession{{instrument directory}}}}}}'  # noqa:E501
+        # }
+
         query = {
-            "query": f'mutation{{scan(beamline: "{beamline}", visit: "{visit}") {{scanFile scanNumber visit{{beamline directory}}}}}}'  # noqa:E501
+            "query": dedent(f"""
+            mutation{{
+                scan(instrument: "{beamline}", instrumentSession: "{visit}") {{
+                    directory{{
+                        instrumentSession
+                        instrument
+                        path
+                    }}
+                    scanFile
+                    scanNumber
+                }}
+            }}
+            """)
         }
 
         response = requests.post(

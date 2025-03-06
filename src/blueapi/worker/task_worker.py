@@ -62,7 +62,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
 
     task_id: str
     task: T
-    request_id: str = ""
+    request_id: str
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)

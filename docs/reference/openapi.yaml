@@ -187,7 +187,6 @@ components:
           title: Is Pending
           type: boolean
         request_id:
-          default: ''
           title: Request Id
           type: string
         task:
@@ -198,6 +197,7 @@ components:
       required:
       - task_id
       - task
+      - request_id
       title: TrackableTask
       type: object
     ValidationError:

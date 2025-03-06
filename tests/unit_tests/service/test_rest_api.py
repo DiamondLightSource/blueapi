@@ -226,10 +226,7 @@ def test_put_plan_fails_if_not_idle(mock_runner: Mock, client: TestClient) -> No
 
     # Set to non idle
     mock_runner.run.return_value = TrackableTask(
-        task=None,
-        task_id=task_id_current,
-        is_complete=False,
-        request_id="0",
+        task=None, task_id=task_id_current, is_complete=False
     )
 
     resp = client.put("/worker/task", json={"task_id": task_id_new})
@@ -240,17 +237,12 @@ def test_put_plan_fails_if_not_idle(mock_runner: Mock, client: TestClient) -> No
 
 def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
     tasks = [
-        TrackableTask(
-            task_id="0",
-            task=Task(name="sleep", params={"time": 0.0}),
-            request_id="0",
-        ),
+        TrackableTask(task_id="0", task=Task(name="sleep", params={"time": 0.0})),
         TrackableTask(
             task_id="1",
             task=Task(name="first_task"),
             is_complete=False,
             is_pending=True,
-            request_id="1",
         ),
     ]
 
@@ -265,7 +257,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
-                "request_id": "0",
+                "request_id": None,
                 "task": {"name": "sleep", "params": {"time": 0.0}},
                 "task_id": "0",
             },
@@ -273,7 +265,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
-                "request_id": "1",
+                "request_id": None,
                 "task": {"name": "first_task", "params": {}},
                 "task_id": "1",
             },
@@ -288,7 +280,6 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
             task=Task(name="third_task"),
             is_complete=True,
             is_pending=False,
-            request_id="0",
         ),
     ]
 
@@ -301,7 +292,7 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": True,
                 "is_pending": False,
-                "request_id": "0",
+                "request_id": None,
                 "task": {"name": "third_task", "params": {}},
                 "task_id": "3",
             }
@@ -342,7 +333,6 @@ def test_set_active_task_active_task_complete(
         task=Task(name="a_completed_task"),
         is_complete=True,
         is_pending=False,
-        request_id="0",
     )
 
     response = client.put("/worker/task", json=task.model_dump())
@@ -362,7 +352,6 @@ def test_set_active_task_worker_already_running(
         task=Task(name="a_running_task"),
         is_complete=False,
         is_pending=False,
-        request_id="0",
     )
 
     response = client.put("/worker/task", json=task.model_dump())
@@ -376,7 +365,6 @@ def test_get_task(mock_runner: Mock, client: TestClient):
     task = TrackableTask(
         task_id=task_id,
         task=Task(name="third_task"),
-        request_id="0",
     )
 
     mock_runner.run.return_value = task
@@ -386,7 +374,7 @@ def test_get_task(mock_runner: Mock, client: TestClient):
         "errors": [],
         "is_complete": False,
         "is_pending": True,
-        "request_id": "0",
+        "request_id": None,
         "task": {"name": "third_task", "params": {}},
         "task_id": f"{task_id}",
     }
@@ -398,7 +386,6 @@ def test_get_all_tasks(mock_runner: Mock, client: TestClient):
         TrackableTask(
             task_id=task_id,
             task=Task(name="third_task"),
-            request_id="0",
         )
     ]
 
@@ -412,7 +399,7 @@ def test_get_all_tasks(mock_runner: Mock, client: TestClient):
                 "task": {"name": "third_task", "params": {}},
                 "is_complete": False,
                 "is_pending": True,
-                "request_id": "0",
+                "request_id": None,
                 "errors": [],
             }
         ]
@@ -432,7 +419,6 @@ def test_get_active_task(mock_runner: Mock, client: TestClient):
     task = TrackableTask(
         task_id=task_id,
         task=Task(name="third_task"),
-        request_id="0",
     )
     mock_runner.run.return_value = task
 

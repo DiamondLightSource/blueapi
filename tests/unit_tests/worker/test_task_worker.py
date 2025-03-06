@@ -511,7 +511,6 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
             ),
             is_complete=False,
             is_pending=False,
-            request_id="0",
         ),
         "task2": TrackableTask(
             task_id="task2",
@@ -520,7 +519,6 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
             ),
             is_complete=False,
             is_pending=True,
-            request_id="1",
         ),
         "task3": TrackableTask(
             task_id="task3",
@@ -529,7 +527,6 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
             ),
             is_complete=True,
             is_pending=False,
-            request_id="2",
         ),
     }
 

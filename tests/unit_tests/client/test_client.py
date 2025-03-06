@@ -40,7 +40,7 @@ DEVICES = DeviceResponse(
     ]
 )
 DEVICE = DeviceModel(name="foo", protocols=[])
-TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}), request_id="bar")
+TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
 TASKS = TasksListResponse(tasks=[TASK])
 ACTIVE_TASK = WorkerTask(task_id="bar")
 ENVIRONMENT_ID = uuid.uuid4()

@@ -5,7 +5,7 @@ from concurrent.futures import Future
 from pathlib import Path
 from queue import Full
 from typing import Any, TypeVar
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from dodal.common.types import UpdatingPathProvider
@@ -559,6 +559,19 @@ def test_submit_task_span_ok(
     assert worker.get_tasks() == []
     with asserting_span_exporter(exporter, "submit_task", "task.name", "task.params"):
         worker.submit_task(_SIMPLE_TASK)
+
+
+@patch("blueapi.worker.task_worker.get_baggage")
+def test_submit_task_with_correlation_id(
+    mock_get_baggage: Mock,
+    exporter: JsonObjectSpanExporter,
+    worker: TaskWorker,
+) -> None:
+    mock_get_baggage.return_value = "foo"
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    trackable_task = worker.get_task_by_id(task_id)
+    assert trackable_task is not None
+    assert trackable_task.request_id == "foo"
 
 
 def test_clear_task_span_ok(

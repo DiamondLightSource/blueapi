@@ -36,6 +36,27 @@
             }
         },
         {
+            "name": "motor_plan",
+            "description": null,
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "motor": {
+                        "axis": {
+                            "type": "str"
+                        },
+                        "title": "Motor",
+                        "type": "bluesky.protocols.Movable"
+                    }
+                },
+                "required": [
+                    "motor"
+                ],
+                "title": "motor_plan",
+                "type": "object"
+            }
+        },
+        {
             "name": "count",
             "description": "Reads from a number of devices.\n    Wraps bluesky.plans.count(det, num, delay, md=metadata) exposing only serializable\n    parameters and metadata.",
             "schema": {
@@ -955,7 +976,7 @@
         },
         {
             "name": "set_absolute",
-            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable[T]): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
             "schema": {
                 "additionalProperties": false,
                 "properties": {

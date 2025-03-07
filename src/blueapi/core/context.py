@@ -1,4 +1,3 @@
-import inspect
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -38,22 +37,30 @@ from .device_lookup import find_component
 LOGGER = logging.getLogger(__name__)
 
 
-def is_compatible(val: Any, origin_or_type: type, args: tuple[type, ...] | None):
-    return isinstance(val, origin_or_type) and is_compatible_args(val, args)
+def is_compatible(val: Device, origin_or_type: type, args: tuple[type, ...] | None):
+    return isinstance(val, origin_or_type) and is_compatible_args(
+        val, origin_or_type, args
+    )
 
 
-def is_compatible_args(val: Any, args: tuple[type, ...] | None):
-    return (not args) or (isinstance(val, Movable) and is_compatible_axis(val, args[0]))
+def generic_bounds(val: Device, origin_or_type: type) -> tuple[type, ...]:
+    for base in getattr(val, "__orig_bases__", ()):
+        if getattr(base, "__name__", None) == origin_or_type.__name__:
+            return get_args(base)
+    return ()
 
 
-def is_compatible_axis(movable: Movable, axis_type: type):
-    return (
-        axis_type is Any
-        or type(axis_type) is TypeVar
-        or (params := inspect.signature(movable.set).parameters)
-        and "value" in params
-        and (param := params["value"])
-        and (issubclass(param.annotation, axis_type) or param.annotation == axis_type)
+def is_compatible_args(
+    val: Device, origin_or_type: type, args: tuple[type, ...] | None
+):
+    return (not args) or all(
+        actual is Any
+        or type(actual) is TypeVar
+        or expected == actual
+        or issubclass(actual, expected)
+        for expected, actual in zip(
+            args, generic_bounds(val, origin_or_type), strict=True
+        )
     )
 
 
@@ -239,7 +246,9 @@ class BlueskyContext:
                 ) -> CoreSchema:
                     def valid(value):
                         val = self.find_device(value)
-                        if not is_compatible(val, cls.origin or target, cls.args):
+                        if not val or not is_compatible(
+                            val, cls.origin or target, cls.args
+                        ):
                             raise ValueError(f"Device {value} is not of type {target}")
                         return val
 

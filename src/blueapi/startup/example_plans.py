@@ -4,9 +4,11 @@ from dodal.plan_stubs.wrapped import move
 from dodal.plans import count
 
 from blueapi.core import MsgGenerator
+from blueapi.startup.example_devices import MotorPositions
 
 TEMP: Movable[float] = inject("sample_temperature")
 PRESS: Movable[float] = inject("sample_pressure")
+MOTOR: Movable[MotorPositions] = inject("dynamic_motor")
 
 
 def stp_snapshot(
@@ -33,3 +35,7 @@ def stp_snapshot(
     """
     yield from move({temperature: 0, pressure: 10**5})
     yield from count(set(detectors), 1)
+
+
+def motor_plan(motor: Movable[str]) -> MsgGenerator:
+    yield from []

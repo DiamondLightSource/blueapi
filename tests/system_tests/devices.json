@@ -1,6 +1,21 @@
 {
     "devices": [
         {
+            "name": "dynamic_motor",
+            "protocols": [
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": [
+                        "MotorPositions"
+                    ]
+                }
+            ]
+        },
+        {
             "name": "movable_motor",
             "protocols": [
                 {

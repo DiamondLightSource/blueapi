@@ -5,7 +5,10 @@ from typing import Any
 
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from dodal.common.beamlines.beamline_utils import get_path_provider
+from dodal.common.visit import StartDocumentBasedPathProvider
 
+from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
@@ -76,6 +79,27 @@ def stomp_client() -> StompClient | None:
         return None
 
 
+@cache
+def numtracker_client() -> NumtrackerClient | None:
+    conf = config()
+    cxt = context()
+    if conf.numtracker is not None:
+        client = NumtrackerClient(url=conf.numtracker.url, headers={})
+        cxt.run_engine.scan_id_source = _update_scan_num
+        return client
+    else:
+        return None
+
+
+def _update_scan_num(md: dict[str, Any]) -> int:
+    numtracker = numtracker_client()
+    if numtracker is None:
+        raise RuntimeError("No idea how you got here?")
+    scan = numtracker.create_scan(md["data_session"], md["instrument"])
+    md["data_session_directory"] = str(scan.scan.directory.path)
+    return scan.scan.scan_number
+
+
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
 
@@ -86,6 +110,17 @@ def setup(config: ApplicationConfig) -> None:
     logging.basicConfig(format="%(asctime)s - %(message)s", level=config.logging.level)
     worker()
     stomp_client()
+    _hook_run_engine_and_path_provider()
+
+
+# TODO: Make the path provider ourselves and inject it into dodal,
+#         leaving BL modules to define their own offline default
+def _hook_run_engine_and_path_provider() -> None:
+    path_provider = get_path_provider()
+    run_engine = context().run_engine
+
+    if isinstance(path_provider, StartDocumentBasedPathProvider):
+        run_engine.subscribe(path_provider.update_run, "start")
 
 
 def teardown() -> None:
@@ -144,11 +179,22 @@ def clear_task(task_id: str) -> str:
     return worker().clear_task(task_id)
 
 
-def begin_task(task: WorkerTask) -> WorkerTask:
+def begin_task(
+    task: WorkerTask, pass_through_headers: Mapping[str, str] | None = None
+) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
+    if pass_through_headers:
+        _try_configure_numtracker(pass_through_headers)
+
     if task.task_id is not None:
         worker().begin_task(task.task_id)
     return task
+
+
+def _try_configure_numtracker(pass_through_headers: Mapping[str, str]) -> None:
+    numtracker = numtracker_client()
+    if numtracker is not None:
+        numtracker.set_headers(pass_through_headers)
 
 
 def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:

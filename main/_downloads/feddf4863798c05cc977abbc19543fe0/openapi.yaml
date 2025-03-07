@@ -187,9 +187,10 @@ components:
           title: Is Pending
           type: boolean
         request_id:
-          default: ''
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Request Id
-          type: string
         task:
           title: Task
         task_id:

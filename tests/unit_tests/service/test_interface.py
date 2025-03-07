@@ -11,7 +11,7 @@ from stomp.connect import StompConnection11 as Connection
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
-from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
+from blueapi.service.model import DeviceModel, PlanModel, ProtocolInfo, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
@@ -116,22 +116,22 @@ def test_get_devices(context_mock: MagicMock):
     context_mock.return_value = context
 
     assert interface.get_devices() == [
-        DeviceModel(name="my_device", protocols=["HasName"]),
+        DeviceModel(name="my_device", protocols=[ProtocolInfo(name="HasName")]),
         DeviceModel(
             name="my_axis",
             protocols=[
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable",
+                ProtocolInfo(name="Checkable"),
+                ProtocolInfo(name="HasHints"),
+                ProtocolInfo(name="HasName"),
+                ProtocolInfo(name="HasParent"),
+                ProtocolInfo(name="Movable"),
+                ProtocolInfo(name="Pausable"),
+                ProtocolInfo(name="Readable"),
+                ProtocolInfo(name="Stageable"),
+                ProtocolInfo(name="Stoppable"),
+                ProtocolInfo(name="Subscribable"),
+                ProtocolInfo(name="Configurable"),
+                ProtocolInfo(name="Triggerable"),
             ],
         ),
     ]
@@ -144,7 +144,7 @@ def test_get_device(context_mock: MagicMock):
     context_mock.return_value = context
 
     assert interface.get_device("my_device") == DeviceModel(
-        name="my_device", protocols=["HasName"]
+        name="my_device", protocols=[ProtocolInfo(name="HasName")]
     )
 
     with pytest.raises(KeyError):

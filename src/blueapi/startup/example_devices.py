@@ -1,8 +1,12 @@
+from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeVar
 
+from bluesky.protocols import Movable
 from dodal.common.beamlines.beamline_utils import set_path_provider
 from dodal.common.visit import LocalDirectoryServiceClient, StaticVisitPathProvider
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
+from ophyd_async.core import AsyncStatus
 
 from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
 
@@ -96,3 +100,18 @@ def unplugged_motor(name="unplugged_motor") -> SynAxisWithMotionEvents:
         "This device is supposed to fail, blueapi "
         "will mark it as not present and start up regardless"
     )
+
+
+ComplexType = TypeVar("ComplexType")
+
+
+@dataclass
+class MyDevice(Movable[ComplexType]):
+    name: str
+
+    @AsyncStatus.wrap
+    async def set(self, value: ComplexType): ...
+
+
+def movable_motor(name="movable_motor") -> MyDevice:
+    return MyDevice(name=name)

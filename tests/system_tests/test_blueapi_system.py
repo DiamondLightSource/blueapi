@@ -370,6 +370,25 @@ def test_delete_current_environment(client: BlueapiClient):
                 "spec": Line("x", 0.0, 10.0, 2) * Line("y", 5.0, 15.0, 3),
             },
         ),
+        Task(
+            name="set_absolute",
+            params={
+                "movable": "dynamic_motor",
+                "value": "bar",
+            },
+        ),
+        Task(
+            name="motor_plan",
+            params={
+                "motor": "movable_motor",
+            },
+        ),
+        Task(
+            name="motor_plan",
+            params={
+                "motor": "dynamic_motor",
+            },
+        ),
     ],
 )
 def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):

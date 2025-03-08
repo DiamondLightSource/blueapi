@@ -46,7 +46,7 @@ deepdiff==8.2.0
 deepmerge==2.0
 Deprecated==1.2.18
 distlib==0.3.9
-dls-dodal==1.40.0
+dls-dodal==1.41.0
 dnspython==2.7.0
 docopt==0.6.2
 doct==1.1.0
@@ -56,7 +56,7 @@ dunamai==1.23.0
 email_validator==2.2.0
 entrypoints==0.4
 epicscorelibs==7.0.7.99.1.1
-event-model==1.22.1
+event-model==1.22.3
 executing==2.2.0
 fastapi==0.115.11
 fastapi-cli==0.0.7
@@ -84,10 +84,10 @@ identify==2.6.8
 idna==3.10
 imageio==2.37.0
 imagesize==1.4.1
-importlib_metadata==8.5.0
+importlib_metadata==8.6.1
 importlib_resources==6.5.2
 iniconfig==2.0.0
-intake==0.6.4
+intake==2.0.8
 ipython==9.0.1
 ipython_pygments_lexers==1.1.1
 ipywidgets==8.1.5
@@ -123,7 +123,7 @@ nodeenv==1.9.1
 nose2==0.15.1
 nslsii==0.10.7
 numcodecs==0.15.1
-numpy==1.26.4
+numpy==2.2.3
 observability-utils==0.1.4
 opencv-python==4.11.0.86
 opencv-python-headless==4.11.0.86
@@ -178,8 +178,8 @@ pycryptodome==3.21.0
 pydantic==2.10.6
 pydantic-extra-types==2.10.2
 pydantic-settings==2.8.1
-pydantic_core==2.27.2
-pydantic_numpy==5.0.2
+pydantic_core==2.30.0
+pydantic_numpy==8.0.1
 pydata-sphinx-theme==0.16.1
 pyepics==3.5.7
 Pygments==2.19.1
@@ -243,7 +243,7 @@ suitcase-utils==0.5.4
 super-state-machine==2.0.2
 tifffile==2025.2.18
 toolz==1.0.0
-tox==3.28.0
+tox==4.24.1
 tox-direct==0.4
 tqdm==4.67.1
 traitlets==5.14.3
@@ -271,6 +271,6 @@ wrapt==1.17.2
 xarray==2025.1.2
 yarl==1.18.3
 zarr==3.0.4
-zict==2.2.0
+zict==3.0.0
 zipp==3.21.0
 zocalo==1.2.0

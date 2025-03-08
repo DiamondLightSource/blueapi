@@ -1,0 +1,13 @@
+---
+stomp:
+  host: "localhost"
+  port: 61613
+  auth:
+    username: "guest"
+    password: "guest"
+numtracker:
+  url: http://localhost:8002/graphql
+env:
+  metadata:
+    data_session: cm123456
+    instrument: i22

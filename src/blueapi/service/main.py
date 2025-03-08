@@ -45,7 +45,7 @@ from .model import (
 )
 from .runner import WorkerDispatcher
 
-REST_API_VERSION = "0.0.5"
+REST_API_VERSION = "0.0.6"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -112,7 +112,7 @@ def get_app(config: ApplicationConfig):
 
 
 def verify_access_token(config: OIDCConfig):
-    jwkclient = jwt.PyJWKClient(config.jwks_uri)
+    jwk_client = jwt.PyJWKClient(config.jwks_uri)
     oauth_scheme = OAuth2AuthorizationCodeBearer(
         authorizationUrl=config.authorization_endpoint,
         tokenUrl=config.token_endpoint,
@@ -120,7 +120,7 @@ def verify_access_token(config: OIDCConfig):
     )
 
     def inner(access_token: str = Depends(oauth_scheme)):
-        signing_key = jwkclient.get_signing_key_from_jwt(access_token)
+        signing_key = jwk_client.get_signing_key_from_jwt(access_token)
         jwt.decode(
             access_token,
             signing_key.key,
@@ -304,6 +304,7 @@ def get_tasks(
 @start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
     task: WorkerTask,
+    instrument_session: str,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
@@ -313,7 +314,7 @@ def set_active_task(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    runner.run(interface.begin_task, task)
+    runner.run(interface.begin_task, task, instrument_session)
     return task
 
 

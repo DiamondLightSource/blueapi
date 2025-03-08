@@ -194,10 +194,10 @@ class TaskWorker:
         return current
 
     @start_as_current_span(TRACER, "task_id")
-    def begin_task(self, task_id: str) -> None:
+    def begin_task(self, task_id: str, instrument_session: str) -> None:
         task = self._tasks.get(task_id)
         if task is not None:
-            self._submit_trackable_task(task)
+            self._submit_trackable_task(task, instrument_session)
         else:
             raise KeyError(f"No pending task with ID {task_id}")
 
@@ -224,8 +224,11 @@ class TaskWorker:
         "trackable_task.task_id",
         "trackable_task.task.name",
         "trackable_task.task.params",
+        "instrument_session",
     )
-    def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
+    def _submit_trackable_task(
+        self, trackable_task: TrackableTask, instrument_session: str
+    ) -> None:
         if self.state is not WorkerState.IDLE:
             raise WorkerBusyError(f"Worker is in state {self.state}")
 
@@ -242,7 +245,6 @@ class TaskWorker:
         sub = self.worker_events.subscribe(mark_task_as_started)
         try:
             self._current_task_otel_context = get_current()
-            sub = self.worker_events.subscribe(mark_task_as_started)
             """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
             task_started.wait(timeout=5.0)

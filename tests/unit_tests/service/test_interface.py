@@ -39,6 +39,11 @@ def ensure_worker_stopped():
     interface.teardown()
 
 
+@pytest.fixture
+def instrument_session() -> str:
+    return "cm12345-1"
+
+
 def my_plan() -> MsgGenerator:
     """My plan does cool stuff."""
     yield from {}
@@ -180,18 +185,18 @@ def test_clear_task(context_mock: MagicMock):
 
 
 @patch("blueapi.service.interface.TaskWorker.begin_task")
-def test_begin_task(worker_mock: MagicMock):
+def test_begin_task(worker_mock: MagicMock, instrument_session: str):
     uuid_value = "350043fd-597e-41a7-9a92-5d5478232cf7"
     task = WorkerTask(task_id=uuid_value)
-    returned_task = interface.begin_task(task)
+    returned_task = interface.begin_task(task, instrument_session)
     assert task == returned_task
-    worker_mock.assert_called_once_with(uuid_value)
+    worker_mock.assert_called_once_with(uuid_value, instrument_session)
 
 
 @patch("blueapi.service.interface.TaskWorker.begin_task")
-def test_begin_task_no_task_id(worker_mock: MagicMock):
+def test_begin_task_no_task_id(worker_mock: MagicMock, instrument_session: str):
     task = WorkerTask(task_id=None)
-    returned_task = interface.begin_task(task)
+    returned_task = interface.begin_task(task, instrument_session)
     assert task == returned_task
     worker_mock.assert_not_called()
 

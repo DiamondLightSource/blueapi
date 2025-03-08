@@ -88,6 +88,11 @@ def worker(inert_worker: TaskWorker) -> Iterable[TaskWorker]:
     inert_worker.stop()
 
 
+@pytest.fixture
+def instrument_session() -> str:
+    return "cm12345-1"
+
+
 def test_stop_doesnt_hang(inert_worker: TaskWorker) -> None:
     inert_worker.start()
     inert_worker.stop()
@@ -204,6 +209,7 @@ def test_clear_nonexistent_task(worker: TaskWorker) -> None:
 
 def test_does_not_allow_simultaneous_running_tasks(
     worker: TaskWorker,
+    instrument_session: str,
     fake_device: FakeDevice,
 ) -> None:
     task_ids = [
@@ -212,26 +218,30 @@ def test_does_not_allow_simultaneous_running_tasks(
     ]
     with pytest.raises(WorkerBusyError):
         for task_id in task_ids:
-            worker.begin_task(task_id)
+            worker.begin_task(task_id, instrument_session)
     fake_device.event.set()
 
 
-def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
+def test_begin_task_blocks_until_current_task_set(
+    worker: TaskWorker, instrument_session: str
+):
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_active_task() is None
-    worker.begin_task(task_id)
+    worker.begin_task(task_id, instrument_session)
     active_task = worker.get_active_task()
     assert active_task is not None
     assert active_task.task == _SIMPLE_TASK
 
 
-def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
+def test_plan_failure_recorded_in_active_task(
+    worker: TaskWorker, instrument_session: str
+):
     task_id = worker.submit_task(_FAILING_TASK)
     events_future: Future[list[WorkerEvent]] = take_events(
         worker.worker_events,
         lambda event: event.task_status is not None and event.task_status.task_failed,
     )
-    worker.begin_task(task_id)
+    worker.begin_task(task_id, instrument_session)
     events = events_future.result(timeout=5.0)
     assert events[-1].task_status is not None
     assert events[-1].task_status.task_failed
@@ -243,12 +253,14 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
 
 
 @pytest.mark.parametrize("num_runs", [0, 1, 2])
-def test_produces_worker_events(worker: TaskWorker, num_runs: int) -> None:
+def test_produces_worker_events(
+    worker: TaskWorker, num_runs: int, instrument_session: str
+):
     task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
     event_sequences = [_sleep_events(task_id) for task_id in task_ids]
 
     for task_id, events in zip(task_ids, event_sequences, strict=False):
-        assert_run_produces_worker_events(events, worker, task_id)
+        assert_run_produces_worker_events(events, worker, task_id, instrument_session)
 
 
 def _sleep_events(task_id: str) -> list[WorkerEvent]:
@@ -280,7 +292,9 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
     ]
 
 
-def test_no_additional_progress_events_after_complete(worker: TaskWorker):
+def test_no_additional_progress_events_after_complete(
+    worker: TaskWorker, instrument_session: str
+):
     """
     See https://github.com/bluesky/ophyd/issues/1115
     """
@@ -290,7 +304,7 @@ def test_no_additional_progress_events_after_complete(worker: TaskWorker):
 
     task: Task = Task(name="move", params={"moves": {"additional_status_device": 5.0}})
     task_id = worker.submit_task(task)
-    begin_task_and_wait_until_complete(worker, task_id)
+    begin_task_and_wait_until_complete(worker, task_id, instrument_session)
 
     # Extract all the display_name fields from the events
     list_of_dict_keys = [pe.statuses.values() for pe in progress_events]
@@ -301,14 +315,16 @@ def test_no_additional_progress_events_after_complete(worker: TaskWorker):
 
 
 @patch("queue.Queue.put_nowait")
-def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: TaskWorker):
-    def raise_full(item):
+def test_full_queue_raises_WorkerBusyError(
+    put_nowait: MagicMock, worker: TaskWorker, instrument_session: str
+):
+    def raise_full(_):
         raise Full()
 
     put_nowait.side_effect = raise_full
     task = worker.submit_task(_SIMPLE_TASK)
     with pytest.raises(WorkerBusyError):
-        worker.begin_task(task)
+        worker.begin_task(task, instrument_session)
 
 
 #
@@ -320,13 +336,18 @@ def assert_run_produces_worker_events(
     expected_events: list[WorkerEvent],
     worker: TaskWorker,
     task_id: str,
+    instrument_session: str,
 ) -> None:
-    assert begin_task_and_wait_until_complete(worker, task_id) == expected_events
+    assert (
+        begin_task_and_wait_until_complete(worker, task_id, instrument_session)
+        == expected_events
+    )
 
 
 def begin_task_and_wait_until_complete(
     worker: TaskWorker,
     task_id: str,
+    instrument_session: str,
     timeout: float = 5.0,
 ) -> list[WorkerEvent]:
     events: Future[list[WorkerEvent]] = take_events(
@@ -334,7 +355,7 @@ def begin_task_and_wait_until_complete(
         lambda event: event.is_complete(),
     )
 
-    worker.begin_task(task_id)
+    worker.begin_task(task_id, instrument_session)
     return events.result(timeout=timeout)
 
 
@@ -353,7 +374,7 @@ def path_provider(tmp_path: Path):
 
 
 def test_worker_and_data_events_produce_in_order(
-    worker: TaskWorker, path_provider
+    worker: TaskWorker, instrument_session: str
 ) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [
@@ -387,12 +408,14 @@ def test_worker_and_data_events_produce_in_order(
             ),
         ],
         worker,
+        instrument_session,
     )
 
 
 def assert_running_count_plan_produces_ordered_worker_and_data_events(
     expected_events: list[WorkerEvent | DataEvent],
     worker: TaskWorker,
+    instrument_session: str,
     task: Task | None = None,
     timeout: float = 5.0,
 ) -> None:
@@ -411,7 +434,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     )
 
     task_id = worker.submit_task(task)
-    worker.begin_task(task_id)
+    worker.begin_task(task_id, instrument_session)
     results = events.result(timeout=timeout)
 
     for actual, expected in itertools.zip_longest(results, expected_events):
@@ -583,11 +606,11 @@ def test_clear_task_span_ok(
 
 
 def test_begin_task_span_ok(
-    exporter: JsonObjectSpanExporter, worker: TaskWorker
+    exporter: JsonObjectSpanExporter, worker: TaskWorker, instrument_session: str
 ) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
     with asserting_span_exporter(exporter, "begin_task", "task_id"):
-        worker.begin_task(task_id)
+        worker.begin_task(task_id, instrument_session)
 
 
 def test_injected_devices_are_found(

@@ -25,8 +25,23 @@ jobs:
           ports: "61613:61613"
           plugins: rabbitmq_stomp
 
+      - name: Checkout containerised example IOCs
+        uses: actions/checkout@v4
+        with:
+          repository: epics-containers/example-services
+          path: example-services
+
+      - name: Run containerised IOCs
+        uses: hoverkraft-tech/compose-action@v2.0.1
+        with:
+          compose-file: example-services/compose.yaml
+        env:
+          EPICS_CA_ADDR_LIST: 127.0.0.1:5094
+
       - name: Start Blueapi Server
-        run: blueapi -c ${{ github.workspace }}/tests/unit_tests/example_yaml/valid_stomp_config.yaml serve &
+        run: blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
+        env:
+          EPICS_CA_ADDR_LIST: 127.0.0.1:5094
 
       - name: Run tests
         run: tox -e system-test

@@ -7,6 +7,7 @@ import jwt
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from ophyd.sim import SynAxis
 from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError
@@ -158,6 +159,39 @@ def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
         "name": "my-device",
         "protocols": ["HasName"],
     }
+
+
+def test_get_devices_by_protocol(mock_runner: Mock, client: TestClient) -> None:
+    sya = SynAxis(name="my_axis")
+    mock_runner.run.return_value = DeviceModel.from_device(sya)
+    response = client.get("/devices?protocol_name=Pausable")
+
+    mock_runner.run.assert_called_once_with(test_get_devices_by_protocol, "Pausable")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {
+        "name": "my_axis",
+        "protocols": [
+            "Checkable",
+            "HasHints",
+            "HasName",
+            "HasParent",
+            "Movable",
+            "Pausable",
+            "Readable",
+            "Stageable",
+            "Stoppable",
+            "Subscribable",
+            "Configurable",
+            "Triggerable",
+        ],
+    }
+
+    response = client.get("/devices?protocol_name=Non_Existing_Protocol")
+    mock_runner.run.assert_called_once_with(
+        test_get_devices_by_protocol, "Non_Existing_Protocol"
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {}
 
 
 def test_get_non_existent_device_by_name(mock_runner: Mock, client: TestClient) -> None:

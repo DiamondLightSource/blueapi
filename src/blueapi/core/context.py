@@ -59,7 +59,7 @@ def is_compatible_args(
         or expected == actual
         or issubclass(actual, expected)
         for expected, actual in zip(
-            args, generic_bounds(val, origin_or_type), strict=True
+            args, generic_bounds(val, origin_or_type), strict=False
         )
     )
 

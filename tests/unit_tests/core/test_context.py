@@ -148,10 +148,28 @@ def test_generated_schema(
         ...
 
     empty_context.register_plan(demo_plan)
-    schema = empty_context.plans["demo_plan"].model.schema()
+    schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
-        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable"},
+        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable", "axis": {}},
+    }
+
+
+def test_generated_schema_with_generic_bounds(
+    empty_context: BlueskyContext,
+):
+    def demo_plan(foo: int, mov: Movable[int]) -> MsgGenerator:  # type: ignore
+        ...
+
+    empty_context.register_plan(demo_plan)
+    schema = empty_context.plans["demo_plan"].model.model_json_schema()
+    assert schema["properties"] == {
+        "foo": {"title": "Foo", "type": "integer"},
+        "mov": {
+            "title": "Mov",
+            "type": "bluesky.protocols.Movable",
+            "axis": {"type": "int"},
+        },
     }
 
 
@@ -338,12 +356,29 @@ def test_device_reference_cache(empty_context: BlueskyContext) -> None:
     assert empty_context._reference(Movable) is not empty_context._reference(Readable)
 
 
+def test_device_reference_cache_with_generics(empty_context: BlueskyContext) -> None:
+    motor = Movable[float]
+    assert empty_context._reference(motor) is empty_context._reference(motor)
+    assert empty_context._reference(motor) is not empty_context._reference(Movable[int])
+    assert empty_context._reference(motor) is not empty_context._reference(Movable)
+
+
 def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
     movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref
     assert (
         empty_context._convert_type(dict[Movable, list[tuple[int, Movable]]])
         == dict[movable_ref, list[tuple[int, movable_ref]]]  # type: ignore
+    )
+
+
+def test_generic_reference_type_conversion(empty_context: BlueskyContext) -> None:
+    motor = Movable[float]
+    motor_ref: type = empty_context._reference(motor)
+    assert empty_context._convert_type(motor) == motor_ref
+    assert (
+        empty_context._convert_type(dict[motor, list[tuple[int, motor]]])
+        == dict[motor_ref, list[tuple[int, motor_ref]]]  # type: ignore
     )
 
 
@@ -372,6 +407,16 @@ def test_default_device_reference(empty_context: BlueskyContext) -> None:
     spec = empty_context._type_spec_for_function(default_movable)
     movable_ref = empty_context._reference(Movable)
     assert spec["mov"][0] == movable_ref
+    assert spec["mov"][1].default_factory == DefaultFactory("demo")
+
+
+def test_generic_default_device_reference(empty_context: BlueskyContext) -> None:
+    def default_movable(mov: Movable[float] = "demo") -> MsgGenerator:  # type: ignore
+        ...
+
+    spec = empty_context._type_spec_for_function(default_movable)
+    motor_ref = empty_context._reference(Movable[float])
+    assert spec["mov"][0] == motor_ref
     assert spec["mov"][1].default_factory == DefaultFactory("demo")
 
 

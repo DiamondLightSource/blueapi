@@ -5,14 +5,16 @@ from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from textwrap import dedent
-from typing import Any
+from typing import Any, TypeVar
 from unittest.mock import Mock, patch
 
 import pytest
 import responses
 import yaml
+from bluesky.protocols import Movable
 from bluesky_stomp.messaging import StompClient
 from click.testing import CliRunner
+from ophyd_async.core import AsyncStatus
 from pydantic import BaseModel, ValidationError
 from requests.exceptions import ConnectionError
 from responses import matchers
@@ -116,9 +118,15 @@ class MyModel(BaseModel):
     id: str
 
 
+ComplexType = TypeVar("ComplexType")
+
+
 @dataclass
-class MyDevice:
+class MyDevice(Movable[ComplexType]):
     name: str
+
+    @AsyncStatus.wrap
+    async def set(self, value: ComplexType): ...
 
 
 @responses.activate
@@ -150,7 +158,7 @@ def test_get_devices(runner: CliRunner):
 
     plans = runner.invoke(main, ["controller", "devices"])
     assert response.call_count == 1
-    assert plans.output == "my-device\n    HasName\n"
+    assert plans.output == "my-device\n    HasName , Movable ['ComplexType']\n"
 
 
 def test_invalid_config_path_handling(runner: CliRunner):
@@ -405,7 +413,7 @@ def test_device_output_formatting():
 
     compact = dedent("""\
                 my-device
-                    HasName
+                    HasName , Movable ['ComplexType']
                 """)
 
     _assert_matching_formatting(OutputFormat.COMPACT, devices, compact)
@@ -415,7 +423,16 @@ def test_device_output_formatting():
                   {
                     "name": "my-device",
                     "protocols": [
-                      "HasName"
+                      {
+                        "name": "HasName",
+                        "types": []
+                      },
+                      {
+                        "name": "Movable",
+                        "types": [
+                          "ComplexType"
+                        ]
+                      }
                     ]
                   }
                 ]
@@ -425,7 +442,8 @@ def test_device_output_formatting():
 
     full = dedent("""\
             my-device
-                HasName
+                name='HasName' types=[]
+                name='Movable' types=['ComplexType']
             """)
     _assert_matching_formatting(OutputFormat.FULL, devices, full)
 

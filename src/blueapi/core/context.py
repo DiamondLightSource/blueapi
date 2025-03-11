@@ -56,6 +56,7 @@ def is_compatible_args(
     return (not args) or all(
         actual is Any
         or type(actual) is TypeVar
+        or type(expected) is TypeVar
         or expected == actual
         or issubclass(actual, expected)
         for expected, actual in zip(

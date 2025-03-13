@@ -359,6 +359,15 @@ def scratch(obj: dict) -> None:
         raise KeyError("No scratch config supplied")
 
 
+@controller.command(name="get-scratch")
+@check_connection
+@click.pass_obj
+def get_scratch(obj: dict) -> None:
+    """Get the scratch configuration for the worker"""
+    client: BlueapiClient = obj["client"]
+    obj["fmt"].display(client.get_scratch())
+
+
 @main.command(name="login")
 @check_connection
 @click.pass_obj

@@ -11,7 +11,7 @@ from typing import Any, TextIO
 from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.model import DeviceResponse, PlanResponse
+from blueapi.service.model import DeviceResponse, PlanResponse, ScratchResponse
 from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 FALLBACK = pprint
@@ -71,6 +71,9 @@ def display_full(obj: Any, stream: Stream):
         case BaseModel():
             print(obj.__class__.__name__, end="")
             print(fmt_dict(obj.model_dump()))
+        case ScratchResponse():
+            # Need to think about this
+            ...
         case other:
             FALLBACK(other, stream=stream)
 
@@ -84,6 +87,9 @@ def display_json(obj: Any, stream: Stream):
             print(json.dumps([d.model_dump() for d in devices], indent=2))
         case BaseModel():
             print(json.dumps(obj.model_dump()))
+        case ScratchResponse():
+            # Need to think about this
+            ...
         case _:
             print(json.dumps(obj))
 
@@ -116,6 +122,9 @@ def display_compact(obj: Any, stream: Stream):
                 else "???"
             )
             print(f"Progress: {prog}%")
+        case ScratchResponse():
+            # Need to think about this
+            ...
         case other:
             FALLBACK(other, stream=stream)
 

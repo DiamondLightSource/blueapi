@@ -119,7 +119,3 @@ initContainer:
     repositories: []
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
-
-# Mount path for scratch area from host machine, setting
-# this effectively enables scratch area management
-scratchHostPath: "" # example: /usr/local/blueapi-software-scratch

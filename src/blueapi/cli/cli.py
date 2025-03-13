@@ -157,7 +157,7 @@ def check_connection(func):
 @check_connection
 @click.pass_obj
 def get_plans(obj: dict) -> None:
-    """Get the scratch configuration for the worker"""
+    """Get a list of plans available for the worker to use"""
     client: BlueapiClient = obj["client"]
     obj["fmt"].display(client.get_plans())
 

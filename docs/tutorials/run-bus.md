@@ -37,4 +37,4 @@ blueapi --config /path/to/stomp.yaml serve
 ```
 
 The server should print a connection message to the console. If there is an error, it will print an error message instead.
-There is an example STOMP config present in `src/script/stomp_config.yml`
+When checking out the repository, there is an example STOMP config present in `src/script/stomp_config.yml`

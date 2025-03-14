@@ -64,10 +64,12 @@ def is_compatible_args(
     )
 
 
-def qualified_name(target: type):
-    if target.__module__ != "builtins":
-        return f"{target.__module__}.{target.__qualname__}"
-    return f"{target.__qualname__}"
+def qualified_name(target: type) -> str:
+    module_name = f"{target.__module__}." if target.__module__ != "builtins" else ""
+    name = target.__qualname__ if hasattr(target, "__qualname__") else target.__name__
+    if isinstance(target, TypeVar):
+        return "Any"
+    return f"{module_name}{name}"
 
 
 @dataclass

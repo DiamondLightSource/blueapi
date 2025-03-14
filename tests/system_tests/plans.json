@@ -998,7 +998,12 @@
                 "properties": {
                     "movable": {
                         "title": "Movable",
-                        "type": "bluesky.protocols.Movable"
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            [
+                                "Any"
+                            ]
+                        ]
                     },
                     "value": {
                         "title": "Value"
@@ -1035,7 +1040,12 @@
                 "properties": {
                     "movable": {
                         "title": "Movable",
-                        "type": "bluesky.protocols.Movable"
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            [
+                                "Any"
+                            ]
+                        ]
                     },
                     "value": {
                         "title": "Value"

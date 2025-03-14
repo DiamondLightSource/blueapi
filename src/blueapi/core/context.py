@@ -6,7 +6,6 @@ from inspect import Parameter, signature
 from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
-from bluesky.protocols import Movable
 from bluesky.run_engine import RunEngine
 from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
@@ -264,12 +263,10 @@ class BlueskyContext:
                     json_schema = handler(core_schema)
                     json_schema = handler.resolve_ref_schema(json_schema)
                     json_schema["type"] = qualified_name(target)
-                    if target is Movable or cls.origin is Movable:
-                        json_schema["axis"] = (
-                            {"type": qualified_name(cls.args[0])}
-                            if cls.args and not isinstance(cls.args[0], TypeVar)
-                            else {}
-                        )
+                    if cls.args:
+                        json_schema["types"] = [
+                            {qualified_name(arg)} for arg in cls.args
+                        ]
                     return json_schema
 
             self._reference_cache[target] = Reference

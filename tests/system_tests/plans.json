@@ -992,7 +992,7 @@
         },
         {
             "name": "set_absolute",
-            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable[T]): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
             "schema": {
                 "additionalProperties": false,
                 "properties": {

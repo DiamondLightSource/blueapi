@@ -24,6 +24,8 @@ def demo(foo: int, /, bar: int) -> MsgGenerator:
 ```
 This plan will raise `pydantic missing_positional_only_argument Validation Error`.
 
+> **Note**: Variadic arguments like `*args`, `**kwargs` are also disallowed plan arguments.
+
 ## Stubs
 
 Some functionality in your plans may make sense to factor out to allow re-use. These pieces of functionality may or may not make sense outside of the context of a plan. Some will, such as nudging a motor, but others may not, such as waiting to consume data from the previous position, or opening a run without an equivalent closure.

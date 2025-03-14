@@ -131,6 +131,12 @@ components:
       additionalProperties: false
       description: Task that will run a plan
       properties:
+        instrument_session:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Instrument session to write data to, required if writing data
+          title: Instrument Session
         name:
           description: Name of plan to run
           title: Name
@@ -253,7 +259,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.5
+  version: 0.0.6
 openapi: 3.1.0
 paths:
   /devices:
@@ -390,6 +396,7 @@ paths:
         content:
           application/json:
             example:
+              instrument_session: cm12345-1
               name: count
               params:
                 detectors:

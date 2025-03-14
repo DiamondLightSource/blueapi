@@ -201,7 +201,9 @@ class TaskWorker:
         else:
             raise KeyError(f"No pending task with ID {task_id}")
 
-    @start_as_current_span(TRACER, "task.name", "task.params")
+    @start_as_current_span(
+        TRACER, "task.name", "task.params", "task.instrument_session"
+    )
     def submit_task(self, task: Task) -> str:
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())

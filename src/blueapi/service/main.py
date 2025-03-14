@@ -45,7 +45,7 @@ from .model import (
 )
 from .runner import WorkerDispatcher
 
-REST_API_VERSION = "0.0.5"
+REST_API_VERSION = "0.0.6"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -215,7 +215,9 @@ def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     return runner.run(interface.get_device, name)
 
 
-example_task = Task(name="count", params={"detectors": ["x"]})
+example_task = Task(
+    name="count", params={"detectors": ["x"]}, instrument_session="cm12345-1"
+)
 
 
 @router.post(

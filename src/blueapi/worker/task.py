@@ -19,6 +19,10 @@ class Task(BlueapiBaseModel):
     params: Mapping[str, Any] = Field(
         description="Values for parameters to plan, if any", default_factory=dict
     )
+    instrument_session: str | None = Field(
+        description="Instrument session to write data to, required if writing data",
+        default=None,
+    )
 
     def prepare_params(self, ctx: BlueskyContext) -> Mapping[str, Any]:
         model = _lookup_params(ctx, self)

@@ -25,7 +25,7 @@ python3 -m pip install blueapi
 ```
 
 If you require a feature that is not currently released you can also install
-from github:
+from GitHub:
 ``` 
 python3 -m pip install git+https://github.com/DiamondLightSource/blueapi.git
 ```

@@ -20,7 +20,7 @@ def my_detector(name: str) -> MyTypeOfDetector:
     return MyTypeOfDetector(name, {"other_config": "foo"})
 ```
 
-The return type annotation `-> MyTypeOfDetector` is required as blueapi uses it to determine that this function creates a device. Meaning you can have a Python file where only some functions create devices and they will be automatically picked up. Similarly, these functions can be organized per-preference into files. 
+The return type annotation `-> MyTypeOfDetector` is required as blueapi uses it to determine that this function creates a device. Meaning you can have a Python file where only some functions create devices, and they will be automatically picked up. Similarly, these functions can be organized per-preference into files. 
 
 The device is created via a function rather than a global to preserve side-effect-free imports. Each device must have its own factory function.
 

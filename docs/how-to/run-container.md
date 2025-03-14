@@ -1,12 +1,12 @@
 # Run in a Container
 
 Pre-built containers with blueapi and its dependencies already
-installed are available on `Github Container Registry
+installed are available on `GitHub Container Registry
 <https://ghcr.io/DiamondLightSource/blueapi>`_.
 
 ## Starting the container
 
-To pull the container from github container registry and run::
+To pull the container from GitHub container registry and run::
 
 ```
 docker run ghcr.io/diamondlightsource/blueapi:latest

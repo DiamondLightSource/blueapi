@@ -33,7 +33,8 @@ stomp:
 ## Run the Server
 
 ```
-blueapi --config stomp.yaml serve
+blueapi --config /path/to/stomp.yaml serve
 ```
 
-It should print a message about being connected to the console, otherwise it will print an error.
+The server should print a connection message to the console. If there is an error, it will print an error message instead.
+When checking out the repository, there is an example STOMP config present in `src/script/stomp_config.yml`

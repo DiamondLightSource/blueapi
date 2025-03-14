@@ -7,12 +7,24 @@ Generally, a `plan` includes at least one `open_run` and `close_run` and is a co
 
 ## Allowed Argument Types
 
-When added to the blueapi context, `PlanGenerator`'s are formalised into their schema - [a Pydantic BaseModel](https://docs.pydantic.dev/1.10/usage/models) with the expected argument types and their defaults. 
+When added to the blueapi context, `PlanGenerator`'s are formalised into their schema - [a Pydantic BaseModel](https://docs.pydantic.dev/2.10/concepts/models/) with the expected argument types and their defaults. 
 
 Therefore, `PlanGenerator`'s must only take as arguments [those types which are valid Pydantic fields](https://docs.pydantic.dev/dev/concepts/types) or Device types which implement `BLUESKY_PROTOCOLS` defined in dodal, which are fetched from the context at runtime.
 
-Allowed argument types for Pydantic BaseModels include the primitives, types that extend `BaseModel` and `dict`'s, `list`'s  and other `sequence`'s of supported types. Blueapi will deserialise these types from JSON, so `dict`'s must use `str` keys.
+Allowed argument types for Pydantic BaseModels include the primitives, types that extend `BaseModel` and `dict`'s, `list`'s  and other `sequence`'s of supported types. Blueapi will deserialize these types from JSON, so `dict`'s must use `str` keys.
 
+### Disallowed Plan arguments
+
+Positional-only arguments are not supported because plan parameters are passed as keyword arguments.
+
+Example of unsupported plan arguments
+```python
+def demo(foo: int, /, bar: int) -> MsgGenerator:
+    yield from ()
+```
+This plan will raise `pydantic missing_positional_only_argument Validation Error`.
+
+> **Note**: Variadic arguments like `*args`, `**kwargs` are also disallowed plan arguments.
 
 ## Stubs
 

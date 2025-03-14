@@ -389,6 +389,12 @@ def test_delete_current_environment(client: BlueapiClient):
                 "motor": "dynamic_motor",
             },
         ),
+        Task(
+            name="dataclass_motor_plan",
+            params={
+                "motor": "data_class_motor",
+            },
+        ),
     ],
 )
 def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):

@@ -1,6 +1,21 @@
 {
     "devices": [
         {
+            "name": "data_class_motor",
+            "protocols": [
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": [
+                        "DataClassType"
+                    ]
+                }
+            ]
+        },
+        {
             "name": "dynamic_motor",
             "protocols": [
                 {

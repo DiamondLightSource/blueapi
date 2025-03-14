@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import TypeVar
@@ -105,6 +106,12 @@ def unplugged_motor(name="unplugged_motor") -> SynAxisWithMotionEvents:
 ComplexType = TypeVar("ComplexType")
 
 
+@dataclass
+class DataClassType:
+    foo: int
+    bar: str
+
+
 class MyDevice(Movable[ComplexType]):
     def __init__(self, name: str):
         self.name = name
@@ -130,5 +137,17 @@ class DynamicMotor(Movable[MotorPositions]):
     async def set(self, value: MotorPositions): ...
 
 
+class DataClassMotor(Movable[DataClassType]):
+    def __init__(self, name: str):
+        self.name = name
+
+    @AsyncStatus.wrap
+    async def set(self, value: DataClassType): ...
+
+
 def dynamic_motor(name="dynamic_motor") -> DynamicMotor:
     return DynamicMotor(name=name)
+
+
+def data_class_motor(name="data_class_motor") -> DataClassMotor:
+    return DataClassMotor(name=name)

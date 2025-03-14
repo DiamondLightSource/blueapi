@@ -151,7 +151,7 @@ def test_generated_schema(
     schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
-        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable", "axis": {}},
+        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable"},
     }
 
 
@@ -168,7 +168,7 @@ def test_generated_schema_with_generic_bounds(
         "mov": {
             "title": "Mov",
             "type": "bluesky.protocols.Movable",
-            "axis": {"type": "int"},
+            "types": [{"int"}],
         },
     }
 

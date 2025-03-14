@@ -15,7 +15,7 @@ Allowed argument types for Pydantic BaseModels include the primitives, types tha
 
 ### Disallowed Plan arguments
 
-Currently, positional-only arguments are not supported because plan parameters are passed as keyword arguments.
+Positional-only arguments are not supported because plan parameters are passed as keyword arguments.
 
 Example of unsupported plan arguments
 ```python

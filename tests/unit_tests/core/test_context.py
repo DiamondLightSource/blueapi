@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Union
+from dataclasses import dataclass
+from typing import Generic, TypeVar, Union
 from unittest.mock import patch
 
 import pytest
@@ -13,7 +14,7 @@ from pytest import LogCaptureFixture
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
-from blueapi.core.context import DefaultFactory
+from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 
 SIM_MOTOR_NAME = "sim"
 ALT_MOTOR_NAME = "alt"
@@ -490,3 +491,77 @@ def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:
     empty_context.register_plan(a_plan)
     with pytest.raises(ValidationError):
         empty_context.plans[a_plan.__name__].model(fooBar=1, baz="test")
+
+
+def test_generic_bounds_with_generic_base() -> None:
+    T = TypeVar("T")
+
+    class Base(Generic[T]):
+        pass
+
+    class Derived(Base[int]):
+        pass
+
+    derived_instance = Derived()
+    assert generic_bounds(derived_instance, Base) == (int,)  # type: ignore
+
+
+def test_generic_bounds_with_multiple_bases() -> None:
+    T = TypeVar("T")
+
+    class Base1(Generic[T]):
+        pass
+
+    class Base2:
+        pass
+
+    class Derived(Base1[int], Base2):
+        pass
+
+    derived_instance = Derived()
+    assert generic_bounds(derived_instance, Base1) == (int,)  # type: ignore
+    assert generic_bounds(derived_instance, Base2) == ()  #  type: ignore
+
+
+def test_generic_bounds_with_no_bases() -> None:
+    class Base:
+        pass
+
+    class Derived:
+        pass
+
+    derived_instance = Derived()
+    assert generic_bounds(derived_instance, Base) == ()  # type: ignore
+
+
+T = TypeVar("T")
+
+
+class CustomClass: ...
+
+
+class GenericClass(Generic[T]): ...
+
+
+@dataclass
+class OuterClass:
+    class InnerClass: ...
+
+
+qualified_name_test_data = [
+    (int, "int"),
+    (float, "float"),
+    (str, "str"),
+    (list[GenericClass], "list"),
+    (list[int], "list"),
+    (dict[str, int], "dict"),
+    (CustomClass, "core.test_context.CustomClass"),
+    (T, "Any"),
+    (GenericClass, "core.test_context.GenericClass"),
+    (OuterClass.InnerClass, "core.test_context.OuterClass.InnerClass"),
+]
+
+
+@pytest.mark.parametrize("type,expected", qualified_name_test_data)
+def test_qualified_name_with_types(type: type, expected: str) -> None:
+    assert qualified_name(type) == expected

@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, get_args
 
 from bluesky.protocols import HasName
 from pydantic import Field
@@ -14,13 +14,18 @@ from blueapi.worker.task_worker import TaskWorker, TrackableTask
 _UNKNOWN_NAME = "UNKNOWN"
 
 
+class ProtocolInfo(BlueapiBaseModel):
+    name: str
+    types: list[str] = []
+
+
 class DeviceModel(BlueapiBaseModel):
     """
     Representation of a device
     """
 
     name: str = Field(description="Name of the device")
-    protocols: list[str] = Field(
+    protocols: list[ProtocolInfo] = Field(
         description="Protocols that a device conforms to, indicating its capabilities"
     )
 
@@ -30,10 +35,19 @@ class DeviceModel(BlueapiBaseModel):
         return cls(name=name, protocols=list(_protocol_names(device)))
 
 
-def _protocol_names(device: Device) -> Iterable[str]:
+def generic_bounds(device, protocol) -> list[str]:
+    for base in getattr(device, "__orig_bases__", ()):
+        if getattr(base, "__name__", None) == protocol.__name__:
+            return [arg.__name__ for arg in get_args(base)]
+    return []
+
+
+def _protocol_names(device: Device) -> Iterable[ProtocolInfo]:
     for protocol in BLUESKY_PROTOCOLS:
         if isinstance(device, protocol):
-            yield protocol.__name__
+            yield ProtocolInfo(
+                name=protocol.__name__, types=generic_bounds(device, protocol)
+            )
 
 
 class TasksListResponse(BlueapiBaseModel):

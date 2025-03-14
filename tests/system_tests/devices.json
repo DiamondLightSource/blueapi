@@ -1,151 +1,505 @@
 {
     "devices": [
         {
-            "name": "current_det",
+            "name": "data_class_motor",
             "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": [
+                        "DataClassType"
+                    ]
+                }
             ]
         },
         {
-            "name": "image_det",
+            "name": "dynamic_motor",
             "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": [
+                        "MotorPositions"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "movable_motor",
+            "protocols": [
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": [
+                        "ComplexType"
+                    ]
+                }
             ]
         },
         {
             "name": "sample_pressure",
             "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
-            ]
-        },
-        {
-            "name": "sample_temperature",
-            "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Readable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
-            ]
-        },
-        {
-            "name": "theta",
-            "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
-            ]
-        },
-        {
-            "name": "x",
-            "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "HasHints",
+                    "types": []
+                },
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "HasParent",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Pausable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Triggerable",
+                    "types": []
+                }
             ]
         },
         {
             "name": "x_err",
             "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "HasHints",
+                    "types": []
+                },
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "HasParent",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Pausable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Triggerable",
+                    "types": []
+                }
             ]
         },
         {
-            "name": "y",
+            "name": "theta",
             "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "HasHints",
+                    "types": []
+                },
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "HasParent",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Pausable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Triggerable",
+                    "types": []
+                }
             ]
         },
         {
             "name": "z",
             "protocols": [
-                "Checkable",
-                "HasHints",
-                "HasName",
-                "HasParent",
-                "Movable",
-                "Pausable",
-                "Readable",
-                "Stageable",
-                "Stoppable",
-                "Subscribable",
-                "Configurable",
-                "Triggerable"
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "HasHints",
+                    "types": []
+                },
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "HasParent",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Pausable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Triggerable",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "y",
+            "protocols": [
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "HasHints",
+                    "types": []
+                },
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "HasParent",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Pausable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Triggerable",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "x",
+            "protocols": [
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "HasHints",
+                    "types": []
+                },
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "HasParent",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Pausable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Triggerable",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "current_det",
+            "protocols": [
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "HasHints",
+                    "types": []
+                },
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "HasParent",
+                    "types": []
+                },
+                {
+                    "name": "Pausable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Triggerable",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "image_det",
+            "protocols": [
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "HasHints",
+                    "types": []
+                },
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "HasParent",
+                    "types": []
+                },
+                {
+                    "name": "Pausable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Triggerable",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "sample_temperature",
+            "protocols": [
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "HasHints",
+                    "types": []
+                },
+                {
+                    "name": "HasName",
+                    "types": []
+                },
+                {
+                    "name": "HasParent",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Triggerable",
+                    "types": []
+                }
             ]
         }
     ]

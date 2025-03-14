@@ -13,7 +13,7 @@ Therefore, `PlanGenerator`'s must only take as arguments [those types which are 
 
 Allowed argument types for Pydantic BaseModels include the primitives, types that extend `BaseModel` and `dict`'s, `list`'s  and other `sequence`'s of supported types. Blueapi will deserialize these types from JSON, so `dict`'s must use `str` keys.
 
-### Unsupported Plan arguments
+### Disallowed Plan arguments
 
 Currently, positional-only arguments are not supported because plan parameters are passed as keyword arguments.
 

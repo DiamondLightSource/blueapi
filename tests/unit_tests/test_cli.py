@@ -861,6 +861,11 @@ def test_get_scratch_formatting():
 
     _assert_matching_formatting(OutputFormat.FULL, scratch_config, full)
 
+    scratch_config = ScratchResponse()
+
+    output = "No scratch packages found\n"
+    _assert_matching_formatting(OutputFormat.FULL, scratch_config, output)
+
 
 @responses.activate
 def test_get_scratch_with_empty_response(runner: CliRunner):

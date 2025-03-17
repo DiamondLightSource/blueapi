@@ -1,4 +1,5 @@
 import logging
+import os
 
 import colorlog
 from bluesky.log import logger as bluesky_logger
@@ -40,6 +41,14 @@ DEFAULT_FORMATTER = ColoredFormatterWithDeviceName(
 )
 
 
+class BeamlineFilter(logging.Filter):
+    beamline: str | None = os.environ.get("BEAMLINE")
+
+    def filter(self, record):
+        record.beamline = self.beamline if self.beamline else "dev"
+        return True
+
+
 def do_default_logging_setup(dev_mode=False) -> None:
     """Configure package level logger for blueapi.
 
@@ -60,6 +69,7 @@ def do_default_logging_setup(dev_mode=False) -> None:
         LOGGER, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
     )
     integrate_bluesky_and_ophyd_logging(dodal_logger)
+    LOGGER.addFilter(BeamlineFilter())
 
 
 def integrate_bluesky_and_ophyd_logging(parent_logger: logging.Logger):

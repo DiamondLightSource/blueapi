@@ -11,7 +11,16 @@ from dodal.log import (
 from blueapi.config import LoggingConfig
 
 
-def do_default_logging_setup(dev_mode=False):
+def do_default_logging_setup(dev_mode=False) -> None:
+    """Configure package level logger for blueapi.
+
+    Configures logger with name `blueapi`. Any logger within the blueapi package
+    instantiated with `logging.getLogger(__name__)` will propogate to this logger
+    assuming the default `logger.propagate` is True, and no filters block it.
+
+    Args:
+        dev_mode: bool which sets graylog config to localhost:5555
+    """
     logging_config = LoggingConfig()
 
     LOGGER = logging.getLogger("blueapi")

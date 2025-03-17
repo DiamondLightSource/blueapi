@@ -1,8 +1,11 @@
+import logging
 from unittest.mock import patch
 
 import pytest
 
-from blueapi.log import LOGGER, do_default_logging_setup
+from blueapi.log import do_default_logging_setup
+
+LOGGER = logging.getLogger("blueapi")
 
 
 @pytest.fixture
@@ -24,6 +27,7 @@ def test_logger_emits(mock_graylog_emit):
     LOGGER.info("FOO")
     mock_graylog_emit.assert_called()
 
+
 def test_stream_handler_emits(mock_stream_handler_emit):
     do_default_logging_setup(dev_mode=True)
     LOGGER.info("FOO")
@@ -34,8 +38,10 @@ def test_messages_are_tagged_with_application_name():
     raise NotImplementedError
 
 
-def test_messages_are_tagged_with_beamline():
-    raise NotImplementedError
+def test_messages_are_tagged_with_beamline(mock_stream_handler_emit):
+    do_default_logging_setup(dev_mode=True)
+    LOGGER.info("FOO")
+    assert mock_stream_handler_emit.call_args[0][0].beamline == "dev"
 
 
 def test_messages_are_tagged_with_correlation_id():

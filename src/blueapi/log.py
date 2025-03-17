@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import (
@@ -18,8 +17,6 @@ LOGGER = logging.getLogger("blueapi")
 LOGGER.setLevel(logging_config.level)
 LOGGER.parent = dodal_logger
 
-__logger_handlers: DodalLogHandlers | None = None
-
 
 def do_default_logging_setup(dev_mode=False):
     handlers = {}
@@ -28,5 +25,3 @@ def do_default_logging_setup(dev_mode=False):
         LOGGER, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
     )
     integrate_bluesky_and_ophyd_logging(dodal_logger)
-    global __logger_handlers
-    __logger_handlers = handlers

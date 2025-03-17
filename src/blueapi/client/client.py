@@ -448,4 +448,4 @@ class BlueapiClient:
             ScratchResponse: Details of the scratch packages
         """
 
-        return self._rest.get_scratch_packages()
+        return self._rest.get_scratch()

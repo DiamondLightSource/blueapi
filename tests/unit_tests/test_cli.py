@@ -792,3 +792,54 @@ def test_wrapper_permission_error(
     with patch.object(Path, "write_text", side_effect=PermissionError):
         result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
     assert f"Permission denied: Cannot write to {token_file}\n" == result.stdout
+
+
+@responses.activate
+def test_get_scratch(runner: CliRunner):
+    scratch_config = {
+        "package_info": [
+            {
+                "repository_name": "https://github.com/example/foo.git",
+                "version": "18ec206e",
+                "is_dirty": "true",
+            },
+            {
+                "repository_name": "https://github.com/example/bar.git",
+                "version": "main",
+                "is_dirty": "false",
+            },
+        ]
+    }
+    response = responses.add(
+        responses.GET,
+        "http://localhost:8000/scratch",
+        json=scratch_config,
+        status=200,
+    )
+
+    result = runner.invoke(main, ["controller", "get-scratch"])
+    assert response.call_count == 1
+    assert result.exit_code == 0
+    assert result.output == dedent("""\
+Scratch Status:
+  - repository: https://github.com/example/foo.git version: 18ec206e Dirty: Yes
+  - repository: https://github.com/example/bar.git version: main Dirty: No
+ """)
+
+
+@responses.activate
+def test_get_scratch_with_empty_response(runner: CliRunner):
+    scratch_config = {"package_info": []}
+    response = responses.add(
+        responses.GET,
+        "http://localhost:8000/scratch",
+        json=scratch_config,
+        status=200,
+    )
+
+    result = runner.invoke(main, ["controller", "get-scratch"])
+    assert response.call_count == 1
+    assert result.exit_code == 0
+    assert result.output == dedent("""\
+No scratch packages found
+""")

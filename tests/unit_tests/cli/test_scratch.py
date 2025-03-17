@@ -8,8 +8,14 @@ from unittest.mock import Mock, call, patch
 
 import pytest
 
-from blueapi.cli.scratch import ensure_repo, scratch_install, setup_scratch
+from blueapi.cli.scratch import (
+    ensure_repo,
+    get_scratch_info,
+    scratch_install,
+    setup_scratch,
+)
 from blueapi.config import ScratchConfig, ScratchRepository
+from blueapi.service.model import RepositoryStatus
 from blueapi.utils import get_owner_gid
 
 
@@ -269,3 +275,54 @@ def test_setup_scratch_continues_after_failure(
     mock_ensure_repo.side_effect = [None, RuntimeError("bar"), None]
     with pytest.raises(RuntimeError, match="bar"):
         setup_scratch(config)
+
+
+@patch("blueapi.cli.scratch.Repo")
+def test_get_scratch_info_success(mock_repo: Mock, directory_path_with_sgid: Path):
+    config = ScratchConfig(
+        root=directory_path_with_sgid,
+        repositories=[
+            ScratchRepository(
+                name="foo",
+                remote_url="http://example.com/foo.git",
+            ),
+            ScratchRepository(
+                name="bar",
+                remote_url="http://example.com/bar.git",
+            ),
+        ],
+    )
+
+    mock_repo_instance = Mock()
+    mock_repo_instance.active_branch.name = "main"
+    mock_repo_instance.is_dirty.return_value = False
+    mock_repo_instance.remotes.origin.url = "http://example.com/foo.git"
+    mock_repo.return_value = mock_repo_instance
+
+    response = get_scratch_info(config)
+
+    assert len(response.package_info) == 2
+    assert response.package_info[0] == RepositoryStatus(
+        repository_name="http://example.com/foo.git",
+        version="main",
+        is_dirty=False,
+    )
+
+
+@patch("blueapi.cli.scratch.Repo")
+def test_get_scratch_info_fails_on_invalid_root(
+    mock_repo: Mock, nonexistant_path: Path
+):
+    config = ScratchConfig(
+        root=nonexistant_path,
+        repositories=[
+            ScratchRepository(
+                name="foo",
+                remote_url="http://example.com/foo.git",
+            ),
+        ],
+    )
+
+    response = get_scratch_info(config)
+
+    assert response.package_info == []

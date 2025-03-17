@@ -135,7 +135,7 @@ def display_compact(obj: Any, stream: Stream):
                 for package in package_info:
                     print(
                         f"  - repository: {package.repository_name} "
-                        + f"version: {package.version}"
+                        + f"version: {package.version} "
                         + f"Dirty: {'Yes' if package.is_dirty else 'No'}"
                     )
         case other:

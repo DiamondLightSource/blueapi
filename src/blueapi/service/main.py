@@ -424,7 +424,7 @@ def set_state(
 @router.get("/scratch", response_model=ScratchResponse)
 @start_as_current_span(TRACER)
 def get_scratch_packages(runner: WorkerDispatcher = Depends(_runner)):
-    return runner.run(interface.get_scratch_packages)
+    return runner.run(interface.get_scratch)
 
 
 @start_as_current_span(TRACER, "config")

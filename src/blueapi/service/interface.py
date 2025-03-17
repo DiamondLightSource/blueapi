@@ -199,8 +199,8 @@ def get_oidc_config() -> OIDCConfig | None:
     return config().oidc
 
 
-def get_scratch_packages() -> ScratchResponse:
+def get_scratch() -> ScratchResponse:
     if _CONFIG.scratch is None:
-        return ScratchResponse(package_name=[], version=[], is_dirty=[])
+        return ScratchResponse()
     else:
         return get_scratch_info(config=_CONFIG.scratch)

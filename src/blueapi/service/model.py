@@ -157,15 +157,19 @@ class EnvironmentResponse(BlueapiBaseModel):
     )
 
 
+class RepositoryStatus(BlueapiBaseModel):
+    repository_name: str = Field(description="Name of the repository")
+    version: str = Field(description="Branch or tag of the repository")
+    is_dirty: bool = Field(description="Does the repository have uncommitted changes")
+
+
 class ScratchResponse(BlueapiBaseModel):
     """
     State of the scratch area.
     """
 
-    package_name: list[str] = Field(description="Name of the package")
-    version: list[str] = Field(description="Version of the package")
-    is_dirty: list[bool] = Field(
-        description="Does the package have uncommitted changes"
+    package_info: list[RepositoryStatus] = Field(
+        description="package information", default=[]
     )
 
 

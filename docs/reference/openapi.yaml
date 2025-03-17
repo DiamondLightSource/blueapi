@@ -106,32 +106,38 @@ components:
       - plans
       title: PlanResponse
       type: object
+    RepositoryStatus:
+      additionalProperties: false
+      properties:
+        is_dirty:
+          description: Does the repository have uncommitted changes
+          title: Is Dirty
+          type: boolean
+        repository_name:
+          description: Name of the repository
+          title: Repository Name
+          type: string
+        version:
+          description: Branch or tag of the repository
+          title: Version
+          type: string
+      required:
+      - repository_name
+      - version
+      - is_dirty
+      title: RepositoryStatus
+      type: object
     ScratchResponse:
       additionalProperties: false
       description: State of the scratch area.
       properties:
-        is_dirty:
-          description: Does the package have uncommitted changes
+        package_info:
+          default: []
+          description: package information
           items:
-            type: boolean
-          title: Is Dirty
+            $ref: '#/components/schemas/RepositoryStatus'
+          title: Package Info
           type: array
-        package_name:
-          description: Name of the package
-          items:
-            type: string
-          title: Package Name
-          type: array
-        version:
-          description: Version of the package
-          items:
-            type: string
-          title: Version
-          type: array
-      required:
-      - package_name
-      - version
-      - is_dirty
       title: ScratchResponse
       type: object
     StateChangeRequest:

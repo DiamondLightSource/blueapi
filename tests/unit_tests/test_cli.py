@@ -30,6 +30,8 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+    RepositoryStatus,
+    ScratchResponse,
 )
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
@@ -820,11 +822,44 @@ def test_get_scratch(runner: CliRunner):
     result = runner.invoke(main, ["controller", "get-scratch"])
     assert response.call_count == 1
     assert result.exit_code == 0
+
     assert result.output == dedent("""\
-Scratch Status:
-  - repository: https://github.com/example/foo.git version: 18ec206e Dirty: Yes
-  - repository: https://github.com/example/bar.git version: main Dirty: No
- """)
+        Scratch Status:
+        - repository: https://github.com/example/foo.git version: 18ec206e Dirty: Yes
+        - repository: https://github.com/example/bar.git version: main Dirty: No
+                                   """)
+
+
+def test_get_scratch_formatting():
+    scratch_config = ScratchResponse(
+        package_info=[
+            RepositoryStatus(
+                repository_name="https://github.com/example/foo.git",
+                version="18ec206e",
+                is_dirty=True,
+            ),
+            RepositoryStatus(
+                repository_name="https://github.com/example/bar.git",
+                version="main",
+                is_dirty=False,
+            ),
+        ]
+    )
+
+    compact = dedent("""\
+        Scratch Status:
+        - repository: https://github.com/example/foo.git version: 18ec206e Dirty: Yes
+        - repository: https://github.com/example/bar.git version: main Dirty: No
+                    """)
+    _assert_matching_formatting(OutputFormat.COMPACT, scratch_config, compact)
+
+    full = dedent("""\
+    Scratch Status:
+    - Repository: https://github.com/example/foo.git Version: 18ec206e Dirty: Yes
+    - Repository: https://github.com/example/bar.git Version: main Dirty: No
+                """)
+
+    _assert_matching_formatting(OutputFormat.FULL, scratch_config, full)
 
 
 @responses.activate

@@ -68,9 +68,6 @@ def display_full(obj: Any, stream: Stream):
             )
         case ProgressEvent():
             print(f"Progress:{fmt_dict(obj.model_dump())}")
-        case BaseModel():
-            print(obj.__class__.__name__, end="")
-            print(fmt_dict(obj.model_dump()))
         case ScratchResponse(package_info=package_info):
             if not package_info:
                 print("No scratch packages found")
@@ -78,10 +75,13 @@ def display_full(obj: Any, stream: Stream):
                 print("Scratch Status:")
                 for package in package_info:
                     print(
-                        f"  - Package: {package.repository_name} "
+                        f"- Repository: {package.repository_name} "
                         + f"Version: {package.version} "
                         + f"Dirty: {'Yes' if package.is_dirty else 'No'}"
                     )
+        case BaseModel():
+            print(obj.__class__.__name__, end="")
+            print(fmt_dict(obj.model_dump()))
         case other:
             FALLBACK(other, stream=stream)
 
@@ -134,7 +134,7 @@ def display_compact(obj: Any, stream: Stream):
                 print("Scratch Status:")
                 for package in package_info:
                     print(
-                        f"  - repository: {package.repository_name} "
+                        f"- repository: {package.repository_name} "
                         + f"version: {package.version} "
                         + f"Dirty: {'Yes' if package.is_dirty else 'No'}"
                     )

@@ -26,6 +26,8 @@ from blueapi.service.model import (
     DeviceModel,
     EnvironmentResponse,
     PlanModel,
+    RepositoryStatus,
+    ScratchResponse,
     StateChangeRequest,
     WorkerTask,
 )
@@ -597,3 +599,15 @@ def test_get_oidc_config(
     response = client_with_auth.get("/config/oidc")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == oidc_config.model_dump()
+
+
+def test_get_scratch_packages(mock_runner: Mock, client: TestClient) -> None:
+    packages = ScratchResponse(
+        package_info=[
+            RepositoryStatus(repository_name="foo", version="1.0.0", is_dirty=False)
+        ]
+    )
+    mock_runner.run.return_value = packages
+    response = client.get("/scratch")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == packages.model_dump()

@@ -61,15 +61,14 @@ def do_default_logging_setup(dev_mode=False) -> None:
     """
     logging_config = LoggingConfig()
 
-    LOGGER = logging.getLogger("blueapi")
-    LOGGER.setLevel(logging_config.level)
-    LOGGER.parent = dodal_logger
-    set_up_stream_handler(LOGGER)
+    logger = logging.getLogger("blueapi")
+    logger.setLevel(logging_config.level)
+    set_up_stream_handler(logger)
     set_up_graylog_handler(
-        LOGGER, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
+        logger, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
     )
-    integrate_bluesky_and_ophyd_logging(dodal_logger)
-    LOGGER.addFilter(BeamlineFilter())
+    integrate_bluesky_and_ophyd_logging(logger)
+    logger.addFilter(BeamlineFilter())
 
 
 def integrate_bluesky_and_ophyd_logging(parent_logger: logging.Logger):

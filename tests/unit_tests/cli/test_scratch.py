@@ -4,7 +4,7 @@ import uuid
 from collections.abc import Generator
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, PropertyMock, call, patch
 
 import pytest
 
@@ -320,7 +320,7 @@ def test_get_scratch_info_on_commit_success(
     )
 
     mock_repo_instance = Mock()
-    mock_repo_instance.active_branch.name.side_effect = [TypeError()]
+    type(mock_repo_instance.active_branch).name = PropertyMock(side_effect=TypeError)
     mock_repo_instance.head.commit.hexsha = "adsad23123"
     mock_repo_instance.is_dirty.return_value = False
     mock_repo_instance.remotes.origin.url = "http://example.com/foo.git"

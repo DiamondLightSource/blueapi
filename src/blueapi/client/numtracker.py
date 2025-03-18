@@ -9,20 +9,20 @@ from pydantic import Field
 from blueapi.utils import BlueapiBaseModel
 
 
-class NumtrackerNewScanVisit(BlueapiBaseModel):
+class DirectoryPath(BlueapiBaseModel):
     instrument: str
     instrument_session: str = Field(alias="instrumentSession")
     path: Path
 
 
-class NumtrackerNewScanScan(BlueapiBaseModel):
+class ScanPaths(BlueapiBaseModel):
     scan_file: str = Field(alias="scanFile")
     scan_number: int = Field(alias="scanNumber")
-    directory: NumtrackerNewScanVisit
+    directory: DirectoryPath
 
 
-class NumtrackerNewScan(BlueapiBaseModel):
-    scan: NumtrackerNewScanScan
+class NumtrackerScanMutationResponse(BlueapiBaseModel):
+    scan: ScanPaths
 
 
 class NumtrackerClient:
@@ -40,7 +40,7 @@ class NumtrackerClient:
     # TODO: Could make this async, but since it's called from RE.scan_id_source, we
     # would need to change the RE to accept an async function in the scan_id_source
     # hook. It's a 1-line change but would need to be reviewed etc.
-    def create_scan(self, visit: str, beamline: str) -> NumtrackerNewScan:
+    def create_scan(self, visit: str, beamline: str) -> NumtrackerScanMutationResponse:
         query = {
             "query": dedent(f"""
             mutation{{
@@ -67,7 +67,7 @@ class NumtrackerClient:
         json = response.json()
 
         if json["data"] is not None:
-            new_collection = NumtrackerNewScan.model_validate(json["data"])
+            new_collection = NumtrackerScanMutationResponse.model_validate(json["data"])
             logging.debug("New NumtrackerNewScan: %s", new_collection)
             return new_collection
         else:

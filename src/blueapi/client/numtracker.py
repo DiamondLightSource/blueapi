@@ -40,11 +40,16 @@ class NumtrackerClient:
     # TODO: Could make this async, but since it's called from RE.scan_id_source, we
     # would need to change the RE to accept an async function in the scan_id_source
     # hook. It's a 1-line change but would need to be reviewed etc.
-    def create_scan(self, visit: str, beamline: str) -> NumtrackerScanMutationResponse:
+    def create_scan(
+        self, instrument_session: str, instrument: str
+    ) -> NumtrackerScanMutationResponse:
         query = {
             "query": dedent(f"""
             mutation{{
-                scan(instrument: "{beamline}", instrumentSession: "{visit}") {{
+                scan(
+                    instrument: "{instrument}",
+                    instrumentSession: "{instrument_session}"
+                    ) {{
                     directory{{
                         instrumentSession
                         instrument

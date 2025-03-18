@@ -258,7 +258,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     "broadcast_status_events": True,
                 },
                 "metadata": {
-                    "data_session": "aa123456",
+                    "instrument_session": "aa123456",
                     "instrument": "p01",
                 },
                 "sources": [
@@ -305,7 +305,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 ],
                 "events": {"broadcast_status_events": True},
                 "metadata": {
-                    "data_session": "aa123456",
+                    "instrument_session": "aa123456",
                     "instrument": "p01",
                 },
             },

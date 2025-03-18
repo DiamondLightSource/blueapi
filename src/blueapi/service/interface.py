@@ -200,7 +200,8 @@ def get_oidc_config() -> OIDCConfig | None:
 
 
 def get_scratch() -> ScratchResponse:
-    if _CONFIG.scratch is None:
+    scratch = config().scratch
+    if scratch is None:
         return ScratchResponse()
     else:
-        return get_scratch_info(config=_CONFIG.scratch)
+        return get_scratch_info(config=scratch)

@@ -169,7 +169,7 @@ class ScratchResponse(BlueapiBaseModel):
     """
 
     package_info: list[RepositoryStatus] = Field(
-        description="package information", default=[]
+        description="package information", default_factory=list
     )
 
 

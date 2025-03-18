@@ -77,7 +77,7 @@ def display_full(obj: Any, stream: Stream):
                     print(
                         f"- Repository: {package.repository_name} "
                         + f"Version: {package.version} "
-                        + f"Dirty: {'Yes' if package.is_dirty else 'No'}"
+                        + f"Dirty: {package.is_dirty}"
                     )
         case BaseModel():
             print(obj.__class__.__name__, end="")
@@ -134,9 +134,9 @@ def display_compact(obj: Any, stream: Stream):
                 print("Scratch Status:")
                 for package in package_info:
                     print(
-                        f"- repository: {package.repository_name} "
-                        + f"version: {package.version} "
-                        + f"Dirty: {'Yes' if package.is_dirty else 'No'}"
+                        f"- {package.repository_name} "
+                        + f"@ {package.version} "
+                        + f"{'(Dirty)' if package.is_dirty else ''}"
                     )
         case other:
             FALLBACK(other, stream=stream)

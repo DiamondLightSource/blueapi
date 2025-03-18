@@ -40,5 +40,11 @@ def test_messages_are_tagged_with_beamline(mock_stream_handler_emit):
     assert mock_stream_handler_emit.call_args[0][0].beamline == "dev"
 
 
+def test_messages_are_tagged_with_instrument(mock_stream_handler_emit):
+    do_default_logging_setup(dev_mode=True)
+    LOGGER.info("FOO")
+    assert mock_stream_handler_emit.call_args[0][0].instrument == "dev"
+
+
 def test_messages_are_tagged_with_plan_name(mock_stream_handler_emit):
     raise NotImplementedError()

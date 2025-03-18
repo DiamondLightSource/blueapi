@@ -9,6 +9,12 @@ from blueapi.log import do_default_logging_setup
 LOGGER = logging.getLogger("blueapi")
 
 
+def clear_all_loggers_and_handlers():
+    for handler in LOGGER.handlers:
+        handler.close()
+    LOGGER.handlers.clear()
+
+
 @pytest.fixture
 def mock_graylog_emit():
     with patch("dodal.log.GELFTCPHandler.emit") as graylog_emit:
@@ -42,9 +48,11 @@ def test_logger_emits_to_graylog(mock_graylog_emit):
 
 
 def test_logger_does_not_emit_to_graylog(mock_graylog_emit, mock_logger_config):
+    clear_all_loggers_and_handlers()
     do_default_logging_setup(dev_mode=False)
     LOGGER.info("FOO")
     mock_graylog_emit.assert_not_called()
+    clear_all_loggers_and_handlers()
 
 
 def test_stream_handler_emits(mock_stream_handler_emit):

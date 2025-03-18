@@ -50,8 +50,7 @@ class WorkerEventConfig(BlueapiBaseModel):
 
 
 class MetadataConfig(BlueapiBaseModel):
-    # TODO: Reconcile data_session (bluesky term) with instrument_session (DLS term)
-    data_session: str
+    instrument_session: str
     # TODO: Does/should this conflict with the ${BEAMLINE} environment variable
     instrument: str
 

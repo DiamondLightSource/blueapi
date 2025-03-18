@@ -95,8 +95,8 @@ def _update_scan_num(md: dict[str, Any]) -> int:
     numtracker = numtracker_client()
     if numtracker is None:
         raise RuntimeError("No idea how you got here?")
-    scan = numtracker.create_scan(md["data_session"], md["instrument"])
-    md["data_session_directory"] = str(scan.scan.directory.path)
+    scan = numtracker.create_scan(md["instrument_session"], md["instrument"])
+    md["instrument_session_directory"] = str(scan.scan.directory.path)
     return scan.scan.scan_number
 
 

@@ -10,7 +10,7 @@ Ensure you are inside your virtual environment:
 source venv/bin/activate
 ```
 
-You will need to follow the instructions for setting up RabbitMQ as in [run cli instructions](../how-to/run-cli.md).
+You will need to follow the instructions for setting up RabbitMQ as in [instructions for setting up RabbitMQ](run-bus.md).
 
 The worker will be available from the command line (`blueapi serve`), but can be started from vscode with additional
 debugging capabilities.

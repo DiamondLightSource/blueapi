@@ -10,7 +10,7 @@ For specific advice on creating new device types and adding them to new or exist
 Plans and devices can be in any pip-installable package, such as:
 
 * A package on pypi
-* A Github repository
+* A GitHub repository
 * A local directory via the [scratch area](../how-to/edit-live.md).
 
 The easiest place to put the code is a repository created with the [`python-copier-template`](https://diamondlightsource.github.io/python-copier-template/main/index.html). Which can then become any of the above. [Example for the I22 beamline](https://github.com/DiamondLightSource/i22-bluesky).

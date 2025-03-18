@@ -1,8 +1,8 @@
 # Type Validators
 
-When the `context` loads available plans, it iterates through the type signature and replaces any reference to a bluesky protocol with a new class that extends the original type. Defining a class validator on this new type allows it to check that the string being deserialised is the ID of a device of the correct type.
+When the `context` loads available plans, it iterates through the type signature and replaces any reference to a bluesky protocol with a new class that extends the original type. Defining a class validator on this new type allows it to check that the string being deserialized is the ID of a device of the correct type.
 
-These new intermediate types are used only in the deserialisation process. The object returned from validator method is not checked by pydantic so it can be the actual instance and the plan never sees the runtime generated reference type, only the type it was expecting.
+These new intermediate types are used only in the deserialization process. The object returned from validator method is not checked by pydantic so it can be the actual instance and the plan never sees the runtime generated reference type, only the type it was expecting.
 
 :::{note}
 This uses the fact that the new types generated at runtime have access to the context that required them via their closure. This circumvents the usual problem of pydantic validation not being able to access external state when validating or deserializing.

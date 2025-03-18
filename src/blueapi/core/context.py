@@ -36,10 +36,8 @@ from .device_lookup import find_component
 LOGGER = logging.getLogger(__name__)
 
 
-def is_compatible(val: Device, origin_or_type: type, args: tuple[type, ...] | None):
-    return isinstance(val, origin_or_type) and is_compatible_args(
-        val, origin_or_type, args
-    )
+def is_compatible(val: Device, target: type, args: tuple[type, ...] | None):
+    return isinstance(val, target) and is_compatible_args(val, target, args)
 
 
 def generic_bounds(val: Device, origin_or_type: type) -> tuple[type, ...]:

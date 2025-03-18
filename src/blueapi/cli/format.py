@@ -108,8 +108,7 @@ def display_compact(obj: Any, stream: Stream):
                     indent(
                         textwrap.fill(
                             ", ".join(
-                                f"{proto.name} "
-                                f"{str(proto.types) if proto.types else ''}"
+                                f"{proto.name}{proto.types or ''}"
                                 for proto in dev.protocols
                             ),
                             80,

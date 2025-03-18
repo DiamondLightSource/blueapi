@@ -158,7 +158,7 @@ def test_get_devices(runner: CliRunner):
 
     plans = runner.invoke(main, ["controller", "devices"])
     assert response.call_count == 1
-    assert plans.output == "my-device\n    HasName , Movable ['ComplexType']\n"
+    assert plans.output == "my-device\n    HasName, Movable['ComplexType']\n"
 
 
 def test_invalid_config_path_handling(runner: CliRunner):
@@ -413,7 +413,7 @@ def test_device_output_formatting():
 
     compact = dedent("""\
                 my-device
-                    HasName , Movable ['ComplexType']
+                    HasName, Movable['ComplexType']
                 """)
 
     _assert_matching_formatting(OutputFormat.COMPACT, devices, compact)

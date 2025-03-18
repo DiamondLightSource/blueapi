@@ -40,9 +40,9 @@ def is_compatible(val: Device, target: type, args: tuple[type, ...] | None):
     return isinstance(val, target) and is_compatible_args(val, target, args)
 
 
-def generic_bounds(val: Device, origin_or_type: type) -> tuple[type, ...]:
+def generic_bounds(val: Device, target: type) -> tuple[type, ...]:
     for base in getattr(val, "__orig_bases__", ()):
-        if (get_origin(base) or base) == origin_or_type:
+        if (get_origin(base) or base) == target:
             return get_args(base)
     return ()
 
@@ -64,6 +64,10 @@ def qualified_name(target: type) -> str:
     if isinstance(target, TypeVar):
         return "Any"
     return f"{module_name}{name}"
+
+
+def is_bluesky_type(typ: type):
+    return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
 
 
 @dataclass
@@ -319,13 +323,7 @@ class BlueskyContext:
             A Type that can be deserialised by Pydantic
         """
         origin = get_origin(typ)
-        if (
-            typ in BLUESKY_PROTOCOLS
-            or any(isinstance(typ, dev) for dev in BLUESKY_PROTOCOLS)
-            or origin is not None
-            and origin in BLUESKY_PROTOCOLS
-            or any(isinstance(origin, dev) for dev in BLUESKY_PROTOCOLS)
-        ):
+        if is_bluesky_type(typ) or (origin is not None and is_bluesky_type(origin)):
             return self._reference(typ)
         args = get_args(typ)
         if args:

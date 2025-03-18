@@ -107,7 +107,7 @@ def display_compact(obj: Any, stream: Stream):
                 print(
                     indent(
                         textwrap.fill(
-                            ", ".join(f"{proto}" for proto in dev.protocols),
+                            ", ".join(str(proto) for proto in dev.protocols),
                             80,
                         ),
                         "    ",

@@ -17,18 +17,14 @@
                         "title": "Temperature",
                         "type": "bluesky.protocols.Movable",
                         "types": [
-                            [
-                                "float"
-                            ]
+                            "float"
                         ]
                     },
                     "pressure": {
                         "title": "Pressure",
                         "type": "bluesky.protocols.Movable",
                         "types": [
-                            [
-                                "float"
-                            ]
+                            "float"
                         ]
                     }
                 },
@@ -49,9 +45,7 @@
                         "title": "Motor",
                         "type": "bluesky.protocols.Movable",
                         "types": [
-                            [
-                                "str"
-                            ]
+                            "str"
                         ]
                     }
                 },
@@ -72,9 +66,7 @@
                         "title": "Motor",
                         "type": "bluesky.protocols.Movable",
                         "types": [
-                            [
-                                "blueapi.startup.example_devices.DataClassType"
-                            ]
+                            "blueapi.startup.example_devices.DataClassType"
                         ]
                     }
                 },
@@ -1000,9 +992,7 @@
                         "title": "Movable",
                         "type": "bluesky.protocols.Movable",
                         "types": [
-                            [
-                                "Any"
-                            ]
+                            "Any"
                         ]
                     },
                     "value": {
@@ -1042,9 +1032,7 @@
                         "title": "Movable",
                         "type": "bluesky.protocols.Movable",
                         "types": [
-                            [
-                                "Any"
-                            ]
+                            "Any"
                         ]
                     },
                     "value": {

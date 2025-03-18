@@ -169,7 +169,7 @@ def test_generated_schema_with_generic_bounds(
         "mov": {
             "title": "Mov",
             "type": "bluesky.protocols.Movable",
-            "types": [{"int"}],
+            "types": ["int"],
         },
     }
 

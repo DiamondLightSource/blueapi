@@ -47,18 +47,14 @@ def generic_bounds(val: Device, origin_or_type: type) -> tuple[type, ...]:
     return ()
 
 
-def is_compatible_args(
-    val: Device, origin_or_type: type, args: tuple[type, ...] | None
-):
+def is_compatible_args(val: Device, target: type, args: tuple[type, ...] | None):
     return (not args) or all(
         actual is Any
         or type(actual) is TypeVar
         or type(expected) is TypeVar
         or expected == actual
         or issubclass(actual, expected)
-        for expected, actual in zip(
-            args, generic_bounds(val, origin_or_type), strict=False
-        )
+        for expected, actual in zip(args, generic_bounds(val, target), strict=False)
     )
 
 
@@ -264,9 +260,7 @@ class BlueskyContext:
                     json_schema = handler.resolve_ref_schema(json_schema)
                     json_schema["type"] = qualified_name(target)
                     if cls.args:
-                        json_schema["types"] = [
-                            {qualified_name(arg)} for arg in cls.args
-                        ]
+                        json_schema["types"] = [qualified_name(arg) for arg in cls.args]
                     return json_schema
 
             self._reference_cache[target] = Reference
@@ -324,10 +318,11 @@ class BlueskyContext:
         Returns:
             A Type that can be deserialised by Pydantic
         """
+        origin = get_origin(typ)
         if (
             typ in BLUESKY_PROTOCOLS
             or any(isinstance(typ, dev) for dev in BLUESKY_PROTOCOLS)
-            or (origin := get_origin(typ))
+            or origin is not None
             and origin in BLUESKY_PROTOCOLS
             or any(isinstance(origin, dev) for dev in BLUESKY_PROTOCOLS)
         ):

@@ -59,7 +59,7 @@ def display_full(obj: Any, stream: Stream):
             for dev in devices:
                 print(dev.name)
                 for proto in dev.protocols:
-                    print("    " + str(proto))
+                    print(f"    {proto}")
         case DataEvent(name=name, doc=doc):
             print(f"{name.title()}:{fmt_dict(doc)}")
         case WorkerEvent(state=st, task_status=task):

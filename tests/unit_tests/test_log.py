@@ -55,6 +55,10 @@ def test_logger_does_not_emit_to_graylog(mock_graylog_emit, mock_logger_config):
     clear_all_loggers_and_handlers()
 
 
+def test_graylog_formats_to_json():
+    raise NotImplementedError()
+
+
 def test_stream_handler_emits(mock_stream_handler_emit):
     do_default_logging_setup(dev_mode=True)
     LOGGER.info("FOO")

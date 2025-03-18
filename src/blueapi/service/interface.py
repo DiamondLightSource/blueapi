@@ -82,10 +82,8 @@ def stomp_client() -> StompClient | None:
 @cache
 def numtracker_client() -> NumtrackerClient | None:
     conf = config()
-    cxt = context()
     if conf.numtracker is not None:
         client = NumtrackerClient(url=conf.numtracker.url, headers={})
-        cxt.run_engine.scan_id_source = _update_scan_num
         return client
     else:
         return None
@@ -93,11 +91,15 @@ def numtracker_client() -> NumtrackerClient | None:
 
 def _update_scan_num(md: dict[str, Any]) -> int:
     numtracker = numtracker_client()
-    if numtracker is None:
-        raise RuntimeError("No idea how you got here?")
-    scan = numtracker.create_scan(md["instrument_session"], md["instrument"])
-    md["instrument_session_directory"] = str(scan.scan.directory.path)
-    return scan.scan.scan_number
+    if numtracker is not None:
+        scan = numtracker.create_scan(md["instrument_session"], md["instrument"])
+        md["instrument_session_directory"] = str(scan.scan.directory.path)
+        return scan.scan.scan_number
+    else:
+        raise OSError(
+            "Blueapi was configured to talk to numtracker but numtracker is not"
+            "configured, this should not happen, please contact the DAQ team"
+        )
 
 
 def setup(config: ApplicationConfig) -> None:
@@ -110,6 +112,8 @@ def setup(config: ApplicationConfig) -> None:
     logging.basicConfig(format="%(asctime)s - %(message)s", level=config.logging.level)
     worker()
     stomp_client()
+    if numtracker_client() is not None:
+        context().run_engine.scan_id_source = _update_scan_num
     _hook_run_engine_and_path_provider()
 
 

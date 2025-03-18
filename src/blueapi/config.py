@@ -67,6 +67,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
 class LoggingConfig(BlueapiBaseModel):
     level: LogLevel = "INFO"
+    graylog_export_enabled: bool = True
     graylog_port: int = 12232
     logging_dev_mode: bool = False
 

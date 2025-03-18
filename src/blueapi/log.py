@@ -70,11 +70,16 @@ def do_default_logging_setup(dev_mode=False) -> None:
     logging_config = LoggingConfig()
 
     logger = logging.getLogger("blueapi")
+
     logger.setLevel(logging_config.level)
+
     set_up_stream_handler(logger)
-    set_up_graylog_handler(
-        logger, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
-    )
+
+    if logging_config.graylog_export_enabled:
+        set_up_graylog_handler(
+            logger, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
+        )
+
     integrate_bluesky_and_ophyd_logging(logger)
     logger.addFilter(BeamlineFilter())
     logger.addFilter(InstrumentFilter())

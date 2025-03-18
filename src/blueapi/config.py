@@ -51,10 +51,9 @@ class WorkerEventConfig(BlueapiBaseModel):
 
 class MetadataConfig(BlueapiBaseModel):
     # TODO: Reconcile data_session (bluesky term) with instrument_session (DLS term)
-    data_session: str = "aa123456"
-
+    data_session: str
     # TODO: Does/should this conflict with the ${BEAMLINE} environment variable
-    instrument: str = "p01"
+    instrument: str
 
 
 class EnvironmentConfig(BlueapiBaseModel):
@@ -71,7 +70,7 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
     ]
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
-    metadata: MetadataConfig = Field(default_factory=MetadataConfig)
+    metadata: MetadataConfig | None = Field(default=None)
 
 
 class LoggingConfig(BlueapiBaseModel):

@@ -13,8 +13,8 @@ from blueapi.service.main import get_app
 DOCS_SCHEMA_LOCATION = Path(__file__).parents[3] / "docs" / "reference" / "openapi.yaml"
 
 
-def generate_schema() -> Mapping[str, Any]:
-    app = get_app(ApplicationConfig())
+def generate_schema(conf: ApplicationConfig | None = None) -> Mapping[str, Any]:
+    app = get_app(conf or ApplicationConfig())
     return get_openapi(
         title=app.title,
         version=app.version,

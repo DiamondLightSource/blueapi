@@ -18,6 +18,9 @@ class ProtocolInfo(BlueapiBaseModel):
     name: str
     types: list[str] = []
 
+    def __str__(self):
+        return f"{self.name}{self.types or ''}"
+
 
 class DeviceModel(BlueapiBaseModel):
     """

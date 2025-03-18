@@ -42,7 +42,7 @@ def is_compatible(val: Device, target: type, args: tuple[type, ...] | None):
 
 def generic_bounds(val: Device, origin_or_type: type) -> tuple[type, ...]:
     for base in getattr(val, "__orig_bases__", ()):
-        if getattr(base, "__name__", None) == origin_or_type.__name__:
+        if (get_origin(base) or base) == origin_or_type:
             return get_args(base)
     return ()
 
@@ -328,7 +328,8 @@ class BlueskyContext:
             typ in BLUESKY_PROTOCOLS
             or any(isinstance(typ, dev) for dev in BLUESKY_PROTOCOLS)
             or (origin := get_origin(typ))
-            and any(isinstance(origin, dev) for dev in BLUESKY_PROTOCOLS)
+            and origin in BLUESKY_PROTOCOLS
+            or any(isinstance(origin, dev) for dev in BLUESKY_PROTOCOLS)
         ):
             return self._reference(typ)
         args = get_args(typ)

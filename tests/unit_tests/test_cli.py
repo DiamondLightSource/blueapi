@@ -442,8 +442,8 @@ def test_device_output_formatting():
 
     full = dedent("""\
             my-device
-                name='HasName' types=[]
-                name='Movable' types=['ComplexType']
+                HasName
+                Movable['ComplexType']
             """)
     _assert_matching_formatting(OutputFormat.FULL, devices, full)
 

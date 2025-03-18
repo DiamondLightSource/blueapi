@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run with local message bus &#8212; blueapi 0.7.6.dev3+g18ec206e documentation</title>
+    <title>Run with local message bus &#8212; blueapi 0.7.6a2.dev1+gf4d724e7 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=859fd2c8"></script>
+    <script src="../_static/documentation_options.js?v=bbaf317e"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -493,10 +493,11 @@ to execute the provided script:</p>
 </section>
 <section id="run-the-server">
 <h2>Run the Server<a class="headerlink" href="#run-the-server" title="Link to this heading">#</a></h2>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">blueapi</span> <span class="o">--</span><span class="n">config</span> <span class="n">stomp</span><span class="o">.</span><span class="n">yaml</span> <span class="n">serve</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">blueapi</span> <span class="o">--</span><span class="n">config</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">stomp</span><span class="o">.</span><span class="n">yaml</span> <span class="n">serve</span>
 </pre></div>
 </div>
-<p>It should print a message about being connected to the console, otherwise it will print an error.</p>
+<p>The server should print a connection message to the console. If there is an error, it will print an error message instead.
+When checking out the repository, there is an example STOMP config present in <code class="docutils literal notranslate"><span class="pre">src/script/stomp_config.yml</span></code></p>
 </section>
 </section>
 

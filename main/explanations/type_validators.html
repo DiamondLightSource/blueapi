@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Type Validators &#8212; blueapi 0.7.6.dev3+g18ec206e documentation</title>
+    <title>Type Validators &#8212; blueapi 0.7.6a2.dev1+gf4d724e7 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=859fd2c8"></script>
+    <script src="../_static/documentation_options.js?v=bbaf317e"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -473,8 +473,8 @@
                   
   <section id="type-validators">
 <h1>Type Validators<a class="headerlink" href="#type-validators" title="Link to this heading">#</a></h1>
-<p>When the <code class="docutils literal notranslate"><span class="pre">context</span></code> loads available plans, it iterates through the type signature and replaces any reference to a bluesky protocol with a new class that extends the original type. Defining a class validator on this new type allows it to check that the string being deserialised is the ID of a device of the correct type.</p>
-<p>These new intermediate types are used only in the deserialisation process. The object returned from validator method is not checked by pydantic so it can be the actual instance and the plan never sees the runtime generated reference type, only the type it was expecting.</p>
+<p>When the <code class="docutils literal notranslate"><span class="pre">context</span></code> loads available plans, it iterates through the type signature and replaces any reference to a bluesky protocol with a new class that extends the original type. Defining a class validator on this new type allows it to check that the string being deserialized is the ID of a device of the correct type.</p>
+<p>These new intermediate types are used only in the deserialization process. The object returned from validator method is not checked by pydantic so it can be the actual instance and the plan never sees the runtime generated reference type, only the type it was expecting.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This uses the fact that the new types generated at runtime have access to the context that required them via their closure. This circumvents the usual problem of pydantic validation not being able to access external state when validating or deserializing.</p>

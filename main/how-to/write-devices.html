@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Write Devices for Blueapi &#8212; blueapi 0.7.6.dev3+g18ec206e documentation</title>
+    <title>Write Devices for Blueapi &#8212; blueapi 0.7.6a2.dev1+gf4d724e7 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=859fd2c8"></script>
+    <script src="../_static/documentation_options.js?v=bbaf317e"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -486,7 +486,7 @@
     <span class="k">return</span> <span class="n">MyTypeOfDetector</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;other_config&quot;</span><span class="p">:</span> <span class="s2">&quot;foo&quot;</span><span class="p">})</span>
 </pre></div>
 </div>
-<p>The return type annotation <code class="docutils literal notranslate"><span class="pre">-&gt;</span> <span class="pre">MyTypeOfDetector</span></code> is required as blueapi uses it to determine that this function creates a device. Meaning you can have a Python file where only some functions create devices and they will be automatically picked up. Similarly, these functions can be organized per-preference into files.</p>
+<p>The return type annotation <code class="docutils literal notranslate"><span class="pre">-&gt;</span> <span class="pre">MyTypeOfDetector</span></code> is required as blueapi uses it to determine that this function creates a device. Meaning you can have a Python file where only some functions create devices, and they will be automatically picked up. Similarly, these functions can be organized per-preference into files.</p>
 <p>The device is created via a function rather than a global to preserve side-effect-free imports. Each device must have its own factory function.</p>
 </section>
 </section>

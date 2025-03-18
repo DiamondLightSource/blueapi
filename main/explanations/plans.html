@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Plans &#8212; blueapi 0.7.6.dev3+g18ec206e documentation</title>
+    <title>Plans &#8212; blueapi 0.7.6a2.dev1+gf4d724e7 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=859fd2c8"></script>
+    <script src="../_static/documentation_options.js?v=bbaf317e"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -477,9 +477,22 @@
 <p>Generally, a <code class="docutils literal notranslate"><span class="pre">plan</span></code> includes at least one <code class="docutils literal notranslate"><span class="pre">open_run</span></code> and <code class="docutils literal notranslate"><span class="pre">close_run</span></code> and is a complete description of an experiment. If it does not, it is a <code class="docutils literal notranslate"><span class="pre">stub</span></code>. This distinction is made in the bluesky core library between the <code class="docutils literal notranslate"><span class="pre">plan</span></code>’s and <code class="docutils literal notranslate"><span class="pre">plan_stub</span></code>’s modules.</p>
 <section id="allowed-argument-types">
 <h2>Allowed Argument Types<a class="headerlink" href="#allowed-argument-types" title="Link to this heading">#</a></h2>
-<p>When added to the blueapi context, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>’s are formalised into their schema - <a class="reference external" href="https://docs.pydantic.dev/1.10/usage/models">a Pydantic BaseModel</a> with the expected argument types and their defaults.</p>
+<p>When added to the blueapi context, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>’s are formalised into their schema - <a class="reference external" href="https://docs.pydantic.dev/2.10/concepts/models/">a Pydantic BaseModel</a> with the expected argument types and their defaults.</p>
 <p>Therefore, <code class="docutils literal notranslate"><span class="pre">PlanGenerator</span></code>’s must only take as arguments <a class="reference external" href="https://docs.pydantic.dev/dev/concepts/types">those types which are valid Pydantic fields</a> or Device types which implement <code class="docutils literal notranslate"><span class="pre">BLUESKY_PROTOCOLS</span></code> defined in dodal, which are fetched from the context at runtime.</p>
-<p>Allowed argument types for Pydantic BaseModels include the primitives, types that extend <code class="docutils literal notranslate"><span class="pre">BaseModel</span></code> and <code class="docutils literal notranslate"><span class="pre">dict</span></code>’s, <code class="docutils literal notranslate"><span class="pre">list</span></code>’s  and other <code class="docutils literal notranslate"><span class="pre">sequence</span></code>’s of supported types. Blueapi will deserialise these types from JSON, so <code class="docutils literal notranslate"><span class="pre">dict</span></code>’s must use <code class="docutils literal notranslate"><span class="pre">str</span></code> keys.</p>
+<p>Allowed argument types for Pydantic BaseModels include the primitives, types that extend <code class="docutils literal notranslate"><span class="pre">BaseModel</span></code> and <code class="docutils literal notranslate"><span class="pre">dict</span></code>’s, <code class="docutils literal notranslate"><span class="pre">list</span></code>’s  and other <code class="docutils literal notranslate"><span class="pre">sequence</span></code>’s of supported types. Blueapi will deserialize these types from JSON, so <code class="docutils literal notranslate"><span class="pre">dict</span></code>’s must use <code class="docutils literal notranslate"><span class="pre">str</span></code> keys.</p>
+<section id="disallowed-plan-arguments">
+<h3>Disallowed Plan arguments<a class="headerlink" href="#disallowed-plan-arguments" title="Link to this heading">#</a></h3>
+<p>Positional-only arguments are not supported because plan parameters are passed as keyword arguments.</p>
+<p>Example of unsupported plan arguments</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">demo</span><span class="p">(</span><span class="n">foo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">bar</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+    <span class="k">yield from</span> <span class="p">()</span>
+</pre></div>
+</div>
+<p>This plan will raise <code class="docutils literal notranslate"><span class="pre">pydantic</span> <span class="pre">missing_positional_only_argument</span> <span class="pre">Validation</span> <span class="pre">Error</span></code>.</p>
+<blockquote>
+<div><p><strong>Note</strong>: Variadic arguments like <code class="docutils literal notranslate"><span class="pre">*args</span></code>, <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> are also disallowed plan arguments.</p>
+</div></blockquote>
+</section>
 </section>
 <section id="stubs">
 <h2>Stubs<a class="headerlink" href="#stubs" title="Link to this heading">#</a></h2>
@@ -557,7 +570,10 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#allowed-argument-types">Allowed Argument Types</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#allowed-argument-types">Allowed Argument Types</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#disallowed-plan-arguments">Disallowed Plan arguments</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stubs">Stubs</a></li>
 </ul>
   </nav></div>

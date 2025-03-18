@@ -51,7 +51,6 @@ class WorkerEventConfig(BlueapiBaseModel):
 
 class MetadataConfig(BlueapiBaseModel):
     instrument_session: str
-    # TODO: Does/should this conflict with the ${BEAMLINE} environment variable
     instrument: str
 
 

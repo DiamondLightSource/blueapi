@@ -74,7 +74,10 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     is_flag=True,
     help="[Development only] update the schema in the documentation",
 )
-def schema(output: Path | None = None, update: bool = False) -> None:
+@click.pass_context
+def schema(
+    ctx: click.Context, output: Path | None = None, update: bool = False
+) -> None:
     """Only import the service functions when starting the service or generating
     the schema, not the controller as a new FastAPI app will be started each time.
     """
@@ -86,7 +89,7 @@ def schema(output: Path | None = None, update: bool = False) -> None:
     )
 
     """Generate the schema for the REST API"""
-    schema = generate_schema()
+    schema = generate_schema(ctx.obj["config"])
 
     if update:
         output = DOCS_SCHEMA_LOCATION

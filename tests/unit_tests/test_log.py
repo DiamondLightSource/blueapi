@@ -12,6 +12,9 @@ def clear_all_loggers_and_handlers(logger):
         handler.close()
     logger.handlers.clear()
 
+    if logger.parent and logger.parent != logging.RootLogger:
+        clear_all_loggers_and_handlers(logger.parent)
+
 
 LOGGER_NAMES = ["blueapi", "blueapi.test"]
 
@@ -39,8 +42,7 @@ def logger(logger_with_graylog):
 
 @pytest.fixture
 def mock_graylog_emit():
-    with patch("dodal.log.GELFTCPHandler.emit") as graylog_emit:
-        graylog_emit.reset_mock()
+    with patch("blueapi.log.GELFTCPHandler.emit") as graylog_emit:
         yield graylog_emit
 
 
@@ -51,17 +53,19 @@ def mock_logger_config() -> LoggingConfig:
 
 @pytest.fixture
 def mock_stream_handler_emit():
-    with patch("dodal.log.StreamHandler.emit") as stream_handler_emit:
+    with patch("blueapi.log.logging.StreamHandler.emit") as stream_handler_emit:
         stream_handler_emit.reset_mock()
         yield stream_handler_emit
 
 
 def test_logger_emits_to_graylog(logger_with_graylog, mock_graylog_emit):
+    mock_graylog_emit.assert_not_called()
     logger_with_graylog.info("FOO")
-    mock_graylog_emit.assert_called()
+    mock_graylog_emit.assert_called_once()
 
 
 def test_logger_does_not_emit_to_graylog(logger_without_graylog, mock_graylog_emit):
+    mock_graylog_emit.assert_not_called()
     logger_without_graylog.info("FOO")
     mock_graylog_emit.assert_not_called()
 

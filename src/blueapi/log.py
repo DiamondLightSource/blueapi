@@ -72,16 +72,22 @@ def do_default_logging_setup(logging_config: LoggingConfig) -> None:
 
     logger.setLevel(logging_config.level)
 
-    set_up_stream_handler(logger)
+    handlers = []
+
+    stream_handler = set_up_stream_handler(logger)
+    handlers.append(stream_handler)
 
     if logging_config.graylog_export_enabled:
-        set_up_graylog_handler(
+        graylog_handler = set_up_graylog_handler(
             logger, logging_config.graylog_host, logging_config.graylog_port
         )
+        handlers.append(graylog_handler)
 
     integrate_bluesky_and_ophyd_logging(logger)
-    logger.addFilter(BeamlineFilter())
-    logger.addFilter(InstrumentFilter())
+
+    for handler in handlers:
+        handler.addFilter(BeamlineFilter())
+        handler.addFilter(InstrumentFilter())
 
 
 def integrate_bluesky_and_ophyd_logging(parent_logger: logging.Logger):

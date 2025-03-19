@@ -2,7 +2,7 @@
     "plans": [
         {
             "name": "stp_snapshot",
-            "description": "\n    Moves devices for pressure and temperature (defaults fetched from the context)\n    and captures a single frame from a collection of devices\n\n    Args:\n        detectors (List[Readable]): A list of devices to read while the sample is at STP\n        temperature (Optional[Movable]): A device controlling temperature of the sample,\n            defaults to fetching a device name \"sample_temperature\" from the context\n        pressure (Optional[Movable]): A device controlling pressure on the sample,\n            defaults to fetching a device name \"sample_pressure\" from the context\n    Returns:\n        MsgGenerator: Plan\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "description": "\n    Moves devices for pressure and temperature (defaults fetched from the context)\n    and captures a single frame from a collection of devices\n\n    Args:\n        detectors (List[Readable]): A list of devices to read while the sample is at STP\n        temperature (Optional[Movable[float]]): A device controlling temperature of the\n            sample, defaults to fetching a device name \"sample_temperature\" from the\n            context\n        pressure (Optional[Movable[float]]): A device controlling pressure on the\n            sample, defaults to fetching a device name \"sample_pressure\" from the\n            context\n    Returns:\n        MsgGenerator: Plan\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -15,17 +15,65 @@
                     },
                     "temperature": {
                         "title": "Temperature",
-                        "type": "bluesky.protocols.Movable"
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            "float"
+                        ]
                     },
                     "pressure": {
                         "title": "Pressure",
-                        "type": "bluesky.protocols.Movable"
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            "float"
+                        ]
                     }
                 },
                 "required": [
                     "detectors"
                 ],
                 "title": "stp_snapshot",
+                "type": "object"
+            }
+        },
+        {
+            "name": "motor_plan",
+            "description": null,
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "motor": {
+                        "title": "Motor",
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            "str"
+                        ]
+                    }
+                },
+                "required": [
+                    "motor"
+                ],
+                "title": "motor_plan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "dataclass_motor_plan",
+            "description": null,
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "motor": {
+                        "title": "Motor",
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            "blueapi.startup.example_devices.DataClassType"
+                        ]
+                    }
+                },
+                "required": [
+                    "motor"
+                ],
+                "title": "dataclass_motor_plan",
                 "type": "object"
             }
         },
@@ -936,13 +984,16 @@
         },
         {
             "name": "set_absolute",
-            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
+            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable[T]): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
                         "title": "Movable",
-                        "type": "bluesky.protocols.Movable"
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            "Any"
+                        ]
                     },
                     "value": {
                         "title": "Value"
@@ -979,7 +1030,10 @@
                 "properties": {
                     "movable": {
                         "title": "Movable",
-                        "type": "bluesky.protocols.Movable"
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            "Any"
+                        ]
                     },
                     "value": {
                         "title": "Value"

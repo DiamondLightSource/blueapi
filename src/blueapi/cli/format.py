@@ -59,7 +59,7 @@ def display_full(obj: Any, stream: Stream):
             for dev in devices:
                 print(dev.name)
                 for proto in dev.protocols:
-                    print("    " + proto)
+                    print(f"    {proto}")
         case DataEvent(name=name, doc=doc):
             print(f"{name.title()}:{fmt_dict(doc)}")
         case WorkerEvent(state=st, task_status=task):
@@ -115,7 +115,15 @@ def display_compact(obj: Any, stream: Stream):
         case DeviceResponse(devices=devices):
             for dev in devices:
                 print(dev.name)
-                print(indent(textwrap.fill(", ".join(dev.protocols), 80), "    "))
+                print(
+                    indent(
+                        textwrap.fill(
+                            ", ".join(str(proto) for proto in dev.protocols),
+                            80,
+                        ),
+                        "    ",
+                    )
+                )
         case DataEvent(name=name):
             print(f"Data Event: {name}")
         case WorkerEvent(state=state):

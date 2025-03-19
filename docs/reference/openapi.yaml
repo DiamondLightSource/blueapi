@@ -11,7 +11,7 @@ components:
         protocols:
           description: Protocols that a device conforms to, indicating its capabilities
           items:
-            type: string
+            $ref: '#/components/schemas/ProtocolInfo'
           title: Protocols
           type: array
       required:
@@ -106,6 +106,7 @@ components:
       - plans
       title: PlanResponse
       type: object
+
     RepositoryStatus:
       additionalProperties: false
       properties:
@@ -139,6 +140,23 @@ components:
           title: Package Info
           type: array
       title: ScratchResponse
+
+    ProtocolInfo:
+      additionalProperties: false
+      properties:
+        name:
+          title: Name
+          type: string
+        types:
+          default: []
+          items:
+            type: string
+          title: Types
+          type: array
+      required:
+      - name
+      title: ProtocolInfo
+
       type: object
     StateChangeRequest:
       additionalProperties: false

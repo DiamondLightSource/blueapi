@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 
@@ -58,22 +57,6 @@ class InstrumentFilter(logging.Filter):
         return True
 
 
-class GraylogJSONFormatter(logging.Formatter):
-    def format(self, record: logging.LogRecord) -> str:
-        message = super().format(record)
-
-        json_dict = {
-            "message": message,
-            "beamline": record.beamline,
-            "instrument": record.instrument,
-            "level": record.levelname,
-            "timestamp": record.created,
-            "logger": record.name,
-        }
-
-        return json.dumps(json_dict)
-
-
 def do_default_logging_setup(dev_mode=False) -> None:
     """Configure package level logger for blueapi.
 
@@ -93,11 +76,9 @@ def do_default_logging_setup(dev_mode=False) -> None:
     set_up_stream_handler(logger)
 
     if logging_config.graylog_export_enabled:
-        graylog_handler = set_up_graylog_handler(
+        set_up_graylog_handler(
             logger, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
         )
-
-        graylog_handler.setFormatter(GraylogJSONFormatter())
 
     integrate_bluesky_and_ophyd_logging(logger)
     logger.addFilter(BeamlineFilter())
@@ -107,7 +88,7 @@ def do_default_logging_setup(dev_mode=False) -> None:
 def integrate_bluesky_and_ophyd_logging(parent_logger: logging.Logger):
     # Temporarily duplicated https://github.com/bluesky/ophyd-async/issues/550
     ophyd_async_logger = logging.getLogger("ophyd_async")
-    for logger in [ophyd_logger, bluesky_logger, ophyd_async_logger]:
+    for logger in [ophyd_logger, bluesky_logger, ophyd_async_logger, dodal_logger]:
         logger.parent = parent_logger
         logger.setLevel(logging.DEBUG)
 

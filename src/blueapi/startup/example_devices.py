@@ -1,8 +1,13 @@
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
+from typing import TypeVar
 
+from bluesky.protocols import Movable
 from dodal.common.beamlines.beamline_utils import set_path_provider
 from dodal.common.visit import LocalDirectoryServiceClient, StaticVisitPathProvider
 from ophyd.sim import Syn2DGauss, SynGauss, SynSignal
+from ophyd_async.core import AsyncStatus
 
 from .simmotor import BrokenSynAxis, SynAxisWithMotionEvents
 
@@ -96,3 +101,53 @@ def unplugged_motor(name="unplugged_motor") -> SynAxisWithMotionEvents:
         "This device is supposed to fail, blueapi "
         "will mark it as not present and start up regardless"
     )
+
+
+ComplexType = TypeVar("ComplexType")
+
+
+@dataclass
+class DataClassType:
+    foo: int
+    bar: str
+
+
+class MyDevice(Movable[ComplexType]):
+    def __init__(self, name: str):
+        self.name = name
+
+    @AsyncStatus.wrap
+    async def set(self, value: ComplexType): ...
+
+
+class MotorPositions(str, Enum):
+    foo = "bar"
+    baz = "qux"
+
+
+def movable_motor(name="movable_motor") -> MyDevice:
+    return MyDevice[str](name=name)
+
+
+class DynamicMotor(Movable[MotorPositions]):
+    def __init__(self, name: str):
+        self.name = name
+
+    @AsyncStatus.wrap
+    async def set(self, value: MotorPositions): ...
+
+
+class DataClassMotor(Movable[DataClassType]):
+    def __init__(self, name: str):
+        self.name = name
+
+    @AsyncStatus.wrap
+    async def set(self, value: DataClassType): ...
+
+
+def dynamic_motor(name="dynamic_motor") -> DynamicMotor:
+    return DynamicMotor(name=name)
+
+
+def data_class_motor(name="data_class_motor") -> DataClassMotor:
+    return DataClassMotor(name=name)

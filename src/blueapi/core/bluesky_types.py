@@ -56,7 +56,7 @@ Device = (
 )
 
 #: Protocols defining interface to hardware
-BLUESKY_PROTOCOLS = list(Device.__args__)  # type: ignore
+BLUESKY_PROTOCOLS = tuple(Device.__args__)  # type: ignore
 
 
 def is_bluesky_compatible_device(obj: Any) -> bool:
@@ -73,7 +73,7 @@ def is_bluesky_compatible_device_type(cls: type[Any]) -> bool:
 
 
 def _follows_bluesky_protocols(obj: Any) -> bool:
-    return any(isinstance(obj, protocol) for protocol in BLUESKY_PROTOCOLS)
+    return isinstance(obj, BLUESKY_PROTOCOLS)
 
 
 def is_bluesky_plan_generator(func: PlanGenerator) -> bool:

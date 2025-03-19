@@ -36,6 +36,40 @@ from .device_lookup import find_component
 LOGGER = logging.getLogger(__name__)
 
 
+def is_compatible(val: Device, target: type, args: tuple[type, ...] | None):
+    return isinstance(val, target) and is_compatible_args(val, target, args)
+
+
+def generic_bounds(val: Device, target: type) -> tuple[type, ...]:
+    for base in getattr(val, "__orig_bases__", ()):
+        if (get_origin(base) or base) == target:
+            return get_args(base)
+    return ()
+
+
+def is_compatible_args(val: Device, target: type, args: tuple[type, ...] | None):
+    return (not args) or all(
+        actual is Any
+        or type(actual) is TypeVar
+        or type(expected) is TypeVar
+        or expected == actual
+        or issubclass(actual, expected)
+        for expected, actual in zip(args, generic_bounds(val, target), strict=False)
+    )
+
+
+def qualified_name(target: type) -> str:
+    module_name = f"{target.__module__}." if target.__module__ != "builtins" else ""
+    name = target.__qualname__ if hasattr(target, "__qualname__") else target.__name__
+    if isinstance(target, TypeVar):
+        return "Any"
+    return f"{module_name}{name}"
+
+
+def is_bluesky_type(typ: type):
+    return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
+
+
 @dataclass
 class BlueskyContext:
     """
@@ -203,13 +237,18 @@ class BlueskyContext:
         if target not in self._reference_cache:
 
             class Reference(target):
+                origin = get_origin(target)
+                args = get_args(target)
+
                 @classmethod
                 def __get_pydantic_core_schema__(
                     cls, source_type: Any, handler: GetCoreSchemaHandler
                 ) -> CoreSchema:
                     def valid(value):
                         val = self.find_device(value)
-                        if not isinstance(val, target):
+                        if not val or not is_compatible(
+                            val, cls.origin or target, cls.args
+                        ):
                             raise ValueError(f"Device {value} is not of type {target}")
                         return val
 
@@ -223,7 +262,9 @@ class BlueskyContext:
                 ) -> JsonSchemaValue:
                     json_schema = handler(core_schema)
                     json_schema = handler.resolve_ref_schema(json_schema)
-                    json_schema["type"] = f"{target.__module__}.{target.__qualname__}"
+                    json_schema["type"] = qualified_name(target)
+                    if cls.args:
+                        json_schema["types"] = [qualified_name(arg) for arg in cls.args]
                     return json_schema
 
             self._reference_cache[target] = Reference
@@ -281,9 +322,8 @@ class BlueskyContext:
         Returns:
             A Type that can be deserialised by Pydantic
         """
-        if typ in BLUESKY_PROTOCOLS or any(
-            isinstance(typ, dev) for dev in BLUESKY_PROTOCOLS
-        ):
+        origin = get_origin(typ)
+        if is_bluesky_type(typ) or (origin is not None and is_bluesky_type(origin)):
             return self._reference(typ)
         args = get_args(typ)
         if args:

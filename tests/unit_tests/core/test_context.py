@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Union
+from dataclasses import dataclass
+from typing import Generic, TypeVar, Union
 from unittest.mock import patch
 
 import pytest
@@ -13,7 +14,7 @@ from pytest import LogCaptureFixture
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
-from blueapi.core.context import DefaultFactory
+from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 
 SIM_MOTOR_NAME = "sim"
 ALT_MOTOR_NAME = "alt"
@@ -148,10 +149,28 @@ def test_generated_schema(
         ...
 
     empty_context.register_plan(demo_plan)
-    schema = empty_context.plans["demo_plan"].model.schema()
+    schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
         "mov": {"title": "Mov", "type": "bluesky.protocols.Movable"},
+    }
+
+
+def test_generated_schema_with_generic_bounds(
+    empty_context: BlueskyContext,
+):
+    def demo_plan(foo: int, mov: Movable[int]) -> MsgGenerator:  # type: ignore
+        ...
+
+    empty_context.register_plan(demo_plan)
+    schema = empty_context.plans["demo_plan"].model.model_json_schema()
+    assert schema["properties"] == {
+        "foo": {"title": "Foo", "type": "integer"},
+        "mov": {
+            "title": "Mov",
+            "type": "bluesky.protocols.Movable",
+            "types": ["int"],
+        },
     }
 
 
@@ -338,12 +357,29 @@ def test_device_reference_cache(empty_context: BlueskyContext) -> None:
     assert empty_context._reference(Movable) is not empty_context._reference(Readable)
 
 
+def test_device_reference_cache_with_generics(empty_context: BlueskyContext) -> None:
+    motor = Movable[float]
+    assert empty_context._reference(motor) is empty_context._reference(motor)
+    assert empty_context._reference(motor) is not empty_context._reference(Movable[int])
+    assert empty_context._reference(motor) is not empty_context._reference(Movable)
+
+
 def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
     movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref
     assert (
         empty_context._convert_type(dict[Movable, list[tuple[int, Movable]]])
         == dict[movable_ref, list[tuple[int, movable_ref]]]  # type: ignore
+    )
+
+
+def test_generic_reference_type_conversion(empty_context: BlueskyContext) -> None:
+    motor = Movable[float]
+    motor_ref: type = empty_context._reference(motor)
+    assert empty_context._convert_type(motor) == motor_ref
+    assert (
+        empty_context._convert_type(dict[motor, list[tuple[int, motor]]])
+        == dict[motor_ref, list[tuple[int, motor_ref]]]  # type: ignore
     )
 
 
@@ -372,6 +408,16 @@ def test_default_device_reference(empty_context: BlueskyContext) -> None:
     spec = empty_context._type_spec_for_function(default_movable)
     movable_ref = empty_context._reference(Movable)
     assert spec["mov"][0] == movable_ref
+    assert spec["mov"][1].default_factory == DefaultFactory("demo")
+
+
+def test_generic_default_device_reference(empty_context: BlueskyContext) -> None:
+    def default_movable(mov: Movable[float] = "demo") -> MsgGenerator:  # type: ignore
+        ...
+
+    spec = empty_context._type_spec_for_function(default_movable)
+    motor_ref = empty_context._reference(Movable[float])
+    assert spec["mov"][0] == motor_ref
     assert spec["mov"][1].default_factory == DefaultFactory("demo")
 
 
@@ -445,3 +491,77 @@ def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:
     empty_context.register_plan(a_plan)
     with pytest.raises(ValidationError):
         empty_context.plans[a_plan.__name__].model(fooBar=1, baz="test")
+
+
+def test_generic_bounds_with_generic_base() -> None:
+    T = TypeVar("T")
+
+    class Base(Generic[T]):
+        pass
+
+    class Derived(Base[int]):
+        pass
+
+    derived_instance = Derived()
+    assert generic_bounds(derived_instance, Base) == (int,)  # type: ignore
+
+
+def test_generic_bounds_with_multiple_bases() -> None:
+    T = TypeVar("T")
+
+    class Base1(Generic[T]):
+        pass
+
+    class Base2:
+        pass
+
+    class Derived(Base1[int], Base2):
+        pass
+
+    derived_instance = Derived()
+    assert generic_bounds(derived_instance, Base1) == (int,)  # type: ignore
+    assert generic_bounds(derived_instance, Base2) == ()  #  type: ignore
+
+
+def test_generic_bounds_with_no_bases() -> None:
+    class Base:
+        pass
+
+    class Derived:
+        pass
+
+    derived_instance = Derived()
+    assert generic_bounds(derived_instance, Base) == ()  # type: ignore
+
+
+T = TypeVar("T")
+
+
+class CustomClass: ...
+
+
+class GenericClass(Generic[T]): ...
+
+
+@dataclass
+class OuterClass:
+    class InnerClass: ...
+
+
+qualified_name_test_data = [
+    (int, "int"),
+    (float, "float"),
+    (str, "str"),
+    (list[GenericClass], "list"),
+    (list[int], "list"),
+    (dict[str, int], "dict"),
+    (CustomClass, "core.test_context.CustomClass"),
+    (T, "Any"),
+    (GenericClass, "core.test_context.GenericClass"),
+    (OuterClass.InnerClass, "core.test_context.OuterClass.InnerClass"),
+]
+
+
+@pytest.mark.parametrize("type,expected", qualified_name_test_data)
+def test_qualified_name_with_types(type: type, expected: str) -> None:
+    assert qualified_name(type) == expected

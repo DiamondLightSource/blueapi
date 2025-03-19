@@ -27,7 +27,7 @@ dependencies = [
     "uvicorn",
     "requests",
     "dls-dodal>=1.36.2",
-    "super-state-machine",  # https://github.com/DiamondLightSource/blueapi/issues/553
+    "super-state-machine",  # https://github.com/DiamondLightSource/blueapi/issues/555
     "GitPython",
     "bluesky-stomp>=0.1.4",
     "event-model==1.22.1",    # https://github.com/DiamondLightSource/blueapi/issues/684
@@ -66,6 +66,7 @@ dev = [
     "types-urllib3",
     "mock",
     "jwcrypto",
+    "matplotlib"
 ]
 
 [project.scripts]

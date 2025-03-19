@@ -6,6 +6,7 @@ from pathlib import Path
 from subprocess import Popen
 
 from git import Repo
+from pip._internal.operations import freeze
 
 from blueapi.config import ScratchConfig
 from blueapi.service.model import RepositoryStatus, ScratchResponse
@@ -138,6 +139,7 @@ def get_scratch_info(config: ScratchConfig) -> ScratchResponse:
     except Exception as e:
         logging.error(f"Failed to get scratch info: {e}")
         return scratch_responses
+    scratch_responses.installed_packages = list(freeze.freeze())
     for repo in config.repositories:
         local_directory = config.root / repo.name
         repo = Repo(local_directory)

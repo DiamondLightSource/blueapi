@@ -188,6 +188,9 @@ class ScratchResponse(BlueapiBaseModel):
     package_info: list[RepositoryStatus] = Field(
         description="package information", default_factory=list
     )
+    installed_packages: list[str] = Field(
+        description="List of installed packages", default_factory=list
+    )
 
 
 class Cache(BlueapiBaseModel):

@@ -19,6 +19,7 @@ from opentelemetry.baggage import get_baggage
 from opentelemetry.context import Context, get_current
 from opentelemetry.trace import SpanKind
 from pydantic import Field
+from pydantic.json_schema import SkipJsonSchema
 from super_state_machine.errors import TransitionError
 
 from blueapi.core import (
@@ -62,7 +63,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
 
     task_id: str
     task: T
-    request_id: str | None = None
+    request_id: str | SkipJsonSchema[None] = None
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)

@@ -45,8 +45,8 @@ The bluesky event model allows for rich structured metadata to be attached to a 
 Plans ([as opposed to stubs](../explanations/plans.md)) **should** include `metadata` as their final parameter, if they do it **must** have the type `dict[str, Any] | None`, [and a default of None](https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python). If the plan calls to a stub/plan which takes metadata, the plan **must** pass down its metadata, which may be a differently named parameter.
 
 ```python
-def pass_metadata(x: Movable, metadata: dict[str, Any] | None = None) -> MsgGenerator:
-    yield from bp.count{[x], md=metadata or {}}
+def pass_metadata(det: Readable, metadata: dict[str, Any] | None = None) -> MsgGenerator:
+    yield from bp.count{[det], md=metadata or {}}
 ```
 
 ## Docstrings

@@ -70,10 +70,6 @@ def test_logger_does_not_emit_to_graylog(logger_without_graylog, mock_graylog_em
     mock_graylog_emit.assert_not_called()
 
 
-def test_graylog_formats_to_json():
-    raise NotImplementedError()
-
-
 def test_stream_handler_emits(logger, mock_stream_handler_emit):
     logger.info("FOO")
     mock_stream_handler_emit.assert_called()
@@ -87,7 +83,3 @@ def test_messages_are_tagged_with_beamline(logger, mock_stream_handler_emit):
 def test_messages_are_tagged_with_instrument(logger, mock_stream_handler_emit):
     logger.info("FOO")
     assert mock_stream_handler_emit.call_args[0][0].instrument == "dev"
-
-
-def test_messages_are_tagged_with_plan_name(logger, mock_stream_handler_emit):
-    raise NotImplementedError()

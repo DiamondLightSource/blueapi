@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=build /venv/ /venv/
 ENV PATH=/venv/bin:$PATH
 ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
+ENV MPLCONFIGDIR=/tmp/matplotlib
 
 RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip
 

@@ -74,13 +74,11 @@ def do_default_logging_setup(logging_config: LoggingConfig) -> None:
 
     handlers = []
 
-    stream_handler = set_up_stream_handler(logger)
+    stream_handler = set_up_stream_handler(logger, logging_config)
     handlers.append(stream_handler)
 
     if logging_config.graylog_export_enabled:
-        graylog_handler = set_up_graylog_handler(
-            logger, logging_config.graylog_host, logging_config.graylog_port
-        )
+        graylog_handler = set_up_graylog_handler(logger, logging_config)
         handlers.append(graylog_handler)
 
     integrate_bluesky_and_ophyd_logging(logger)
@@ -104,19 +102,17 @@ def _add_handler(logger: logging.Logger, handler: logging.Handler):
     logger.addHandler(handler)
 
 
-def set_up_stream_handler(logger: logging.Logger):
+def set_up_stream_handler(logger: logging.Logger, logging_config: LoggingConfig):
     stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.INFO)
+    stream_handler.setLevel(logging_config.level)
     _add_handler(logger, stream_handler)
     return stream_handler
 
 
-def set_up_graylog_handler(logger: logging.Logger, host: str, port: int):
-    """Set up a graylog handler for the logger, at "INFO" level, with the at the
-    specified address and host. get_graylog_configuration() can provide these values
-    for prod and dev respectively.
-    """
-    graylog_handler = GELFTCPHandler(host, port)
-    graylog_handler.setLevel(logging.INFO)
+def set_up_graylog_handler(logger: logging.Logger, logging_config: LoggingConfig):
+    graylog_handler = GELFTCPHandler(
+        logging_config.graylog_host, logging_config.graylog_port
+    )
+    graylog_handler.setLevel(logging_config.level)
     _add_handler(logger, graylog_handler)
     return graylog_handler

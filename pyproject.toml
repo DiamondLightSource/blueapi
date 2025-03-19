@@ -13,7 +13,7 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky>=1.13.1",
+    "bluesky[plotting]>=1.13.1",
     "ophyd",
     "aioca",
     "pydantic>=2.0",
@@ -66,7 +66,6 @@ dev = [
     "types-urllib3",
     "mock",
     "jwcrypto",
-    "matplotlib"
 ]
 
 [project.scripts]

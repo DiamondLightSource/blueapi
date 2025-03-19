@@ -149,9 +149,10 @@ def get_scratch_info(config: ScratchConfig) -> ScratchResponse:
             branch = repo.head.commit.hexsha
 
         is_dirty = repo.is_dirty()
+
         scratch_responses.package_info.append(
             RepositoryStatus(
-                repository_name=repo.remotes.origin.url,
+                remote_url=repo.remotes[0].url if repo.remotes else "UNKNOWN REMOTE",
                 version=branch,
                 is_dirty=is_dirty,
             )

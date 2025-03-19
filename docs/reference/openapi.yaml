@@ -129,16 +129,16 @@ components:
           description: Does the repository have uncommitted changes
           title: Is Dirty
           type: boolean
-        repository_name:
-          description: Name of the repository
-          title: Repository Name
+        remote_url:
+          description: URL of a repository on a remote server
+          title: Remote Url
           type: string
         version:
           description: Branch or tag of the repository
           title: Version
           type: string
       required:
-      - repository_name
+      - remote_url
       - version
       - is_dirty
       title: RepositoryStatus
@@ -147,6 +147,12 @@ components:
       additionalProperties: false
       description: State of the scratch area.
       properties:
+        installed_packages:
+          description: List of installed packages
+          items:
+            type: string
+          title: Installed Packages
+          type: array
         package_info:
           description: package information
           items:

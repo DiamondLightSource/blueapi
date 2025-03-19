@@ -819,16 +819,17 @@ def test_get_scratch(runner: CliRunner):
     scratch_config = {
         "package_info": [
             {
-                "repository_name": "https://github.com/example/foo.git",
+                "remote_url": "https://github.com/example/foo.git",
                 "version": "18ec206e",
                 "is_dirty": "true",
             },
             {
-                "repository_name": "https://github.com/example/bar.git",
+                "remote_url": "https://github.com/example/bar.git",
                 "version": "main",
                 "is_dirty": "false",
             },
-        ]
+        ],
+        "installed_packages": [],
     }
     response = responses.add(
         responses.GET,
@@ -845,6 +846,8 @@ def test_get_scratch(runner: CliRunner):
         Scratch Status:
         - https://github.com/example/foo.git @ 18ec206e (Dirty)
         - https://github.com/example/bar.git @ main
+        installed packages:
+        []
                     """)
 
 
@@ -852,12 +855,12 @@ def test_get_scratch_formatting():
     scratch_config = ScratchResponse(
         package_info=[
             RepositoryStatus(
-                repository_name="https://github.com/example/foo.git",
+                remote_url="https://github.com/example/foo.git",
                 version="18ec206e",
                 is_dirty=True,
             ),
             RepositoryStatus(
-                repository_name="https://github.com/example/bar.git",
+                remote_url="https://github.com/example/bar.git",
                 version="main",
                 is_dirty=False,
             ),
@@ -868,13 +871,17 @@ def test_get_scratch_formatting():
         Scratch Status:
         - https://github.com/example/foo.git @ 18ec206e (Dirty)
         - https://github.com/example/bar.git @ main
+        installed packages:
+        []
                     """)
     _assert_matching_formatting(OutputFormat.COMPACT, scratch_config, compact)
 
     full = dedent("""\
     Scratch Status:
-    - Repository: https://github.com/example/foo.git Version: 18ec206e Dirty: True
-    - Repository: https://github.com/example/bar.git Version: main Dirty: False
+    - Remote URL: https://github.com/example/foo.git Version: 18ec206e Dirty: True
+    - Remote URL: https://github.com/example/bar.git Version: main Dirty: False
+    installed packages:
+    []
                 """)
 
     _assert_matching_formatting(OutputFormat.FULL, scratch_config, full)

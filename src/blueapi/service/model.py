@@ -175,7 +175,7 @@ class EnvironmentResponse(BlueapiBaseModel):
 
 
 class RepositoryStatus(BlueapiBaseModel):
-    repository_name: str = Field(description="Name of the repository")
+    remote_url: str = Field(description="URL of a repository on a remote server")
     version: str = Field(description="Branch or tag of the repository")
     is_dirty: bool = Field(description="Does the repository have uncommitted changes")
 

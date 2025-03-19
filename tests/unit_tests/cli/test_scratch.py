@@ -292,14 +292,14 @@ def test_get_scratch_info_success(mock_repo: Mock, directory_path_with_sgid: Pat
     mock_repo_instance = Mock()
     mock_repo_instance.active_branch.name = "main"
     mock_repo_instance.is_dirty.return_value = False
-    mock_repo_instance.remotes.origin.url = "http://example.com/foo.git"
+    mock_repo_instance.remotes = []
     mock_repo.return_value = mock_repo_instance
 
     response = get_scratch_info(config)
 
     assert len(response.package_info) == 1
     assert response.package_info[0] == RepositoryStatus(
-        repository_name="http://example.com/foo.git",
+        remote_url="UNKNOWN REMOTE",
         version="main",
         is_dirty=False,
     )
@@ -323,14 +323,16 @@ def test_get_scratch_info_on_commit_success(
     type(mock_repo_instance.active_branch).name = PropertyMock(side_effect=TypeError)
     mock_repo_instance.head.commit.hexsha = "adsad23123"
     mock_repo_instance.is_dirty.return_value = False
-    mock_repo_instance.remotes.origin.url = "http://example.com/foo.git"
+    mock_remote = Mock()
+    mock_remote.url = "http://example.com/foo.git"
+    mock_repo_instance.remotes = [mock_remote]
     mock_repo.return_value = mock_repo_instance
 
     response = get_scratch_info(config)
 
     assert len(response.package_info) == 1
     assert response.package_info[0] == RepositoryStatus(
-        repository_name="http://example.com/foo.git",
+        remote_url="http://example.com/foo.git",
         version="adsad23123",
         is_dirty=False,
     )

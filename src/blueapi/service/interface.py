@@ -6,7 +6,7 @@ from typing import Any
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from dodal.common.beamlines.beamline_utils import get_path_provider
-from dodal.common.visit import StartDocumentBasedPathProvider
+from dodal.common.visit import StartDocumentPathProvider
 
 from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
@@ -117,13 +117,13 @@ def setup(config: ApplicationConfig) -> None:
     _hook_run_engine_and_path_provider()
 
 
-# TODO: Make the path provider ourselves and inject it into dodal,
+# TODO: Make the path provider ourselves and inject it into dodal,tox -e pre
 #         leaving BL modules to define their own offline default
 def _hook_run_engine_and_path_provider() -> None:
     path_provider = get_path_provider()
     run_engine = context().run_engine
 
-    if isinstance(path_provider, StartDocumentBasedPathProvider):
+    if isinstance(path_provider, StartDocumentPathProvider):
         run_engine.subscribe(path_provider.update_run, "start")
 
 

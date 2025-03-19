@@ -57,7 +57,7 @@ class InstrumentFilter(logging.Filter):
         return True
 
 
-def do_default_logging_setup(dev_mode=False) -> None:
+def do_default_logging_setup(logging_config: LoggingConfig) -> None:
     """Configure package level logger for blueapi.
 
     Configures logger with name `blueapi`. Any logger within the blueapi package
@@ -67,7 +67,6 @@ def do_default_logging_setup(dev_mode=False) -> None:
     Args:
         dev_mode: bool which sets graylog config to localhost:5555
     """
-    logging_config = LoggingConfig()
 
     logger = logging.getLogger("blueapi")
 
@@ -77,7 +76,7 @@ def do_default_logging_setup(dev_mode=False) -> None:
 
     if logging_config.graylog_export_enabled:
         set_up_graylog_handler(
-            logger, *get_graylog_configuration(dev_mode, logging_config.graylog_port)
+            logger, logging_config.graylog_host, logging_config.graylog_port
         )
 
     integrate_bluesky_and_ophyd_logging(logger)
@@ -91,23 +90,6 @@ def integrate_bluesky_and_ophyd_logging(parent_logger: logging.Logger):
     for logger in [ophyd_logger, bluesky_logger, ophyd_async_logger, dodal_logger]:
         logger.parent = parent_logger
         logger.setLevel(logging.DEBUG)
-
-
-def get_graylog_configuration(
-    dev_mode: bool, graylog_port: int | None = None
-) -> tuple[str, int]:
-    """Get the host and port for the graylog handler.
-
-    If running in dev mode, this switches to localhost. Otherwise it publishes to the
-    DLS graylog.
-
-    Returns:
-        (host, port): A tuple of the relevant host and port for graylog.
-    """
-    if dev_mode:
-        return "localhost", 5555
-    else:
-        return "graylog-log-target.diamond.ac.uk", graylog_port or DEFAULT_GRAYLOG_PORT
 
 
 def _add_handler(logger: logging.Logger, handler: logging.Handler):

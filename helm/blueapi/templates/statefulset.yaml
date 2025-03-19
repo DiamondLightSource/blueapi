@@ -40,7 +40,7 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
-      {{- if .Values.initContainer.scratch.root }}
+      {{- if .Values.initContainer.enabled | default false}}
       - name: scratch-host
         hostPath:
           path: {{ .Values.initContainer.scratch.root }}
@@ -50,7 +50,7 @@ spec:
           sizeLimit: 5Gi
       {{- end }}
       initContainers:
-      {{- if .Values.initContainer.scratch.root }}
+      {{- if .Values.initContainer.enabled | default false}}
       - name: setup-scratch
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -86,7 +86,7 @@ spec:
             - name: worker-config
               mountPath: "/config"
               readOnly: true
-            {{- if .Values.initContainer.scratch.root }}
+            {{- if .Values.initContainer.enabled | default false }}
             - name: scratch-host
               mountPath: {{ .Values.initContainer.scratch.root }}
               mountPropagation: HostToContainer

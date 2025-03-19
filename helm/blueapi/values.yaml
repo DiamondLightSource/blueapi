@@ -114,6 +114,7 @@ worker:
     port: 61613
 
 initContainer:
+  enabled: false
   scratch:
     root: /blueapi-plugins/scratch
     repositories: []

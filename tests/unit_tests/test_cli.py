@@ -843,9 +843,9 @@ def test_get_scratch(runner: CliRunner):
 
     assert result.output == dedent("""\
         Scratch Status:
-        - repository: https://github.com/example/foo.git version: 18ec206e Dirty: Yes
-        - repository: https://github.com/example/bar.git version: main Dirty: No
-                                   """)
+        - https://github.com/example/foo.git @ 18ec206e (Dirty)
+        - https://github.com/example/bar.git @ main
+                    """)
 
 
 def test_get_scratch_formatting():
@@ -866,15 +866,15 @@ def test_get_scratch_formatting():
 
     compact = dedent("""\
         Scratch Status:
-        - repository: https://github.com/example/foo.git version: 18ec206e Dirty: Yes
-        - repository: https://github.com/example/bar.git version: main Dirty: No
+        - https://github.com/example/foo.git @ 18ec206e (Dirty)
+        - https://github.com/example/bar.git @ main
                     """)
     _assert_matching_formatting(OutputFormat.COMPACT, scratch_config, compact)
 
     full = dedent("""\
     Scratch Status:
-    - Repository: https://github.com/example/foo.git Version: 18ec206e Dirty: Yes
-    - Repository: https://github.com/example/bar.git Version: main Dirty: No
+    - Repository: https://github.com/example/foo.git Version: 18ec206e Dirty: True
+    - Repository: https://github.com/example/bar.git Version: main Dirty: False
                 """)
 
     _assert_matching_formatting(OutputFormat.FULL, scratch_config, full)

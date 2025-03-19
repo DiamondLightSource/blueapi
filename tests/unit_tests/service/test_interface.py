@@ -11,18 +11,15 @@ from stomp.connect import StompConnection11 as Connection
 from blueapi.config import ApplicationConfig, OIDCConfig, ScratchConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
-
 from blueapi.service.interface import get_scratch, set_config
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,
+    ProtocolInfo,
     RepositoryStatus,
     ScratchResponse,
     WorkerTask,
 )
-
-from blueapi.service.model import DeviceModel, PlanModel, ProtocolInfo, WorkerTask
-
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask

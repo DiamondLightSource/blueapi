@@ -142,9 +142,9 @@ def display_compact(obj: Any, stream: Stream):
                 print("Scratch Status:")
                 for package in package_info:
                     print(
-                        f"- {package.repository_name} "
-                        + f"@ {package.version} "
-                        + f"{'(Dirty)' if package.is_dirty else ''}"
+                        f"- {package.repository_name}"
+                        + f" @ {package.version}"
+                        + f"{' (Dirty)' if package.is_dirty else ''}"
                     )
         case other:
             FALLBACK(other, stream=stream)

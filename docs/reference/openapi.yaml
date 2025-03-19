@@ -106,7 +106,22 @@ components:
       - plans
       title: PlanResponse
       type: object
-
+    ProtocolInfo:
+      additionalProperties: false
+      properties:
+        name:
+          title: Name
+          type: string
+        types:
+          default: []
+          items:
+            type: string
+          title: Types
+          type: array
+      required:
+      - name
+      title: ProtocolInfo
+      type: object
     RepositoryStatus:
       additionalProperties: false
       properties:
@@ -133,30 +148,12 @@ components:
       description: State of the scratch area.
       properties:
         package_info:
-          default: []
           description: package information
           items:
             $ref: '#/components/schemas/RepositoryStatus'
           title: Package Info
           type: array
       title: ScratchResponse
-
-    ProtocolInfo:
-      additionalProperties: false
-      properties:
-        name:
-          title: Name
-          type: string
-        types:
-          default: []
-          items:
-            type: string
-          title: Types
-          type: array
-      required:
-      - name
-      title: ProtocolInfo
-
       type: object
     StateChangeRequest:
       additionalProperties: false

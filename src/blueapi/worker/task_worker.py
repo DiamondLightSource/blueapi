@@ -21,7 +21,6 @@ from opentelemetry.trace import SpanKind
 from pydantic import Field
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import LoggingConfig
 from blueapi.core import (
     OTLP_EXPORT_ENABLED,
     BlueskyContext,
@@ -47,7 +46,6 @@ from .task import Task
 from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
-logging_config = LoggingConfig()
 
 TRACER = get_tracer("task_worker")
 """ Initialise a Tracer for this module provided by the app's global TracerProvider. """

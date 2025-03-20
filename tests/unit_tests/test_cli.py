@@ -847,8 +847,7 @@ def test_get_scratch(runner: CliRunner):
         - https://github.com/example/foo.git @ 18ec206e (Dirty)
         - https://github.com/example/bar.git @ main
         installed packages:
-        []
-                    """)
+        """)
 
 
 def test_get_scratch_formatting():
@@ -872,8 +871,7 @@ def test_get_scratch_formatting():
         - https://github.com/example/foo.git @ 18ec206e (Dirty)
         - https://github.com/example/bar.git @ main
         installed packages:
-        []
-                    """)
+                     """)
     _assert_matching_formatting(OutputFormat.COMPACT, scratch_config, compact)
 
     full = dedent("""\
@@ -881,7 +879,6 @@ def test_get_scratch_formatting():
     - Remote URL: https://github.com/example/foo.git Version: 18ec206e Dirty: True
     - Remote URL: https://github.com/example/bar.git Version: main Dirty: False
     installed packages:
-    []
                 """)
 
     _assert_matching_formatting(OutputFormat.FULL, scratch_config, full)

@@ -81,7 +81,9 @@ def display_full(obj: Any, stream: Stream):
                         + f"Version: {package.version} "
                         + f"Dirty: {package.is_dirty}"
                     )
-                print(f"installed packages:\n{installed_packages}")
+                print("installed packages:")
+                for package in installed_packages:
+                    print(f"{package}")
         case BaseModel():
             print(obj.__class__.__name__, end="")
             print(fmt_dict(obj.model_dump()))
@@ -151,7 +153,9 @@ def display_compact(obj: Any, stream: Stream):
                         + f" @ {package.version}"
                         + f"{' (Dirty)' if package.is_dirty else ''}"
                     )
-                print(f"installed packages:\n{installed_packages}")
+                print("installed packages:")
+                for package in installed_packages:
+                    print(f"{package}")
         case other:
             FALLBACK(other, stream=stream)
 

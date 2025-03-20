@@ -6,6 +6,8 @@ import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
+from dodal.common.beamlines.beamline_utils import set_path_provider
+from dodal.common.visit import StartDocumentPathProvider
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
@@ -337,11 +339,14 @@ def test_configure_numtracker():
 @patch("blueapi.service.interface.StompClient")
 def test_setup(mock_stomp: MagicMock):
     conf = ApplicationConfig(
-        env = EnvironmentConfig(
+        env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
-            ),
-        numtracker=NumtrackerConfig()
-        )
+        ),
+        numtracker=NumtrackerConfig(),
+    )
+
+    set_path_provider(StartDocumentPathProvider())
+
     interface.set_config(conf)
     interface.setup(conf)
 

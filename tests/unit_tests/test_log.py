@@ -41,21 +41,29 @@ def logger(logger_with_graylog):
 
 
 @pytest.fixture
+def mock_stream_handler_emit():
+    with patch("blueapi.log.logging.StreamHandler.emit") as stream_handler_emit:
+        stream_handler_emit.reset_mock()
+        yield stream_handler_emit
+
+
+@pytest.fixture
 def mock_graylog_emit():
     with patch("blueapi.log.GELFTCPHandler.emit") as graylog_emit:
         yield graylog_emit
 
 
 @pytest.fixture
-def mock_logger_config() -> LoggingConfig:
-    return LoggingConfig(graylog_export_enabled=False)
+def mock_handlers_emits(mock_stream_handler_emit, mock_graylog_emit):
+    return [
+        mock_stream_handler_emit,
+        mock_graylog_emit,
+    ]
 
 
 @pytest.fixture
-def mock_stream_handler_emit():
-    with patch("blueapi.log.logging.StreamHandler.emit") as stream_handler_emit:
-        stream_handler_emit.reset_mock()
-        yield stream_handler_emit
+def mock_logger_config() -> LoggingConfig:
+    return LoggingConfig(graylog_export_enabled=False)
 
 
 def test_logger_emits_to_graylog(logger_with_graylog, mock_graylog_emit):

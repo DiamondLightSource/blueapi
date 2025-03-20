@@ -95,6 +95,7 @@ def test_messages_are_tagged_with_instrument(logger, mock_handler_emit):
     assert mock_handler_emit.call_args[0][0].instrument == "dev"
 
 
+# Temporarily duplicated https://github.com/bluesky/ophyd-async/issues/550
 @pytest.mark.parametrize(
     "library_logger",
     [bluesky_logger, dodal_logger, ophyd_logger, logging.getLogger("ophyd_async")],

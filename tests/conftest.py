@@ -338,3 +338,31 @@ if os.getenv("PYTEST_RAISE", "0") == "1":
     @pytest.hookimpl(tryfirst=True)
     def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
         raise excinfo.value
+
+
+@pytest.fixture
+def mock_numtracker_server() -> responses.RequestsMock:  # type: ignore
+    requests_mock = responses.RequestsMock()
+
+    response = {
+        "data": {
+            "scan": {
+                "scanFile": "p46-11",
+                "scanNumber": 11,
+                "directory": {
+                    "instrument": "p46",
+                    "instrumentSession": "p46-1",
+                    "path": "/exports/mybeamline/data/2025",
+                },
+            }
+        }
+    }
+
+    # When device flow begins, return a device_code
+    requests_mock.post(
+        "https://numtracker-example.com/graphql",
+        json=response,
+    )
+
+    with requests_mock:
+        yield requests_mock  # type: ignore

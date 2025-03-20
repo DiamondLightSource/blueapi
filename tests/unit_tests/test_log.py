@@ -16,11 +16,11 @@ def clear_all_loggers_and_handlers(logger):
     logger.handlers.clear()
 
     # pytest adds handlers to root logger. Hopefully this doesn't break anything...
-    if logger.parent and logger.parent:
+    if logger.parent:
         clear_all_loggers_and_handlers(logger.parent)
 
 
-LOGGER_NAMES = ["blueapi", "blueapi.test"]
+LOGGER_NAMES = ["", "blueapi", "blueapi.test"]
 
 
 @pytest.fixture(params=LOGGER_NAMES)
@@ -74,16 +74,16 @@ def mock_logger_config() -> LoggingConfig:
     return LoggingConfig(graylog_export_enabled=False)
 
 
-def test_logger_does_not_emit_to_graylog(logger_without_graylog, mock_graylog_emit):
-    mock_graylog_emit.assert_not_called()
-    logger_without_graylog.info("FOO")
-    mock_graylog_emit.assert_not_called()
-
-
 def test_loggers_emits_to_all_handlers(logger, mock_handler_emit):
     mock_handler_emit.assert_not_called()
     logger.info("FOO")
     mock_handler_emit.assert_called()
+
+
+def test_logger_does_not_emit_to_graylog(logger_without_graylog, mock_graylog_emit):
+    mock_graylog_emit.assert_not_called()
+    logger_without_graylog.info("FOO")
+    mock_graylog_emit.assert_not_called()
 
 
 def test_messages_are_tagged_with_beamline(logger, mock_handler_emit):

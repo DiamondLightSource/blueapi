@@ -77,9 +77,12 @@ def set_up_stream_handler(logger: logging.Logger, logging_config: LoggingConfig)
 
 
 def set_up_graylog_handler(logger: logging.Logger, logging_config: LoggingConfig):
-    graylog_handler = GELFTCPHandler(
-        logging_config.graylog_host, logging_config.graylog_port
-    )
+    if logging_config.logging_dev_mode:
+        graylog_handler = GELFTCPHandler("localhost", 5555)
+    else:
+        graylog_handler = GELFTCPHandler(
+            logging_config.graylog_host, logging_config.graylog_port
+        )
     graylog_handler.setLevel(logging_config.level)
     _add_handler(logger, graylog_handler)
     return graylog_handler

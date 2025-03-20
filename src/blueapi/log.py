@@ -25,7 +25,7 @@ class InstrumentTagFilter(logging.Filter):
         return True
 
 
-def do_default_logging_setup(logging_config: LoggingConfig) -> None:
+def setup_logging(logging_config: LoggingConfig) -> None:
     """Configure package level logger for blueapi.
 
     Configures logger with name `blueapi`. Any logger within the blueapi package

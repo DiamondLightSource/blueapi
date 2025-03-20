@@ -25,7 +25,7 @@ from blueapi.config import (
     LoggingConfig,
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
-from blueapi.log import do_default_logging_setup
+from blueapi.log import setup_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
@@ -33,7 +33,7 @@ from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 logging_config = LoggingConfig()
-do_default_logging_setup(logging_config)
+setup_logging(logging_config)
 
 
 @click.group(invoke_without_command=True)

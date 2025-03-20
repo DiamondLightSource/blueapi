@@ -33,7 +33,7 @@ def setup_logging(logging_config: LoggingConfig) -> None:
     assuming the default `logger.propagate` is True, and no filters block it.
 
     Args:
-        dev_mode: bool which sets graylog config to localhost:5555
+        logging_config: LoggingConfig
     """
 
     logger = logging.getLogger("blueapi")

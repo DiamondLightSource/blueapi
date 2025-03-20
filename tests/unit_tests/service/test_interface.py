@@ -9,7 +9,8 @@ from bluesky_stomp.messaging import StompClient
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
+from blueapi.client.numtracker import NumtrackerClient
+from blueapi.config import ApplicationConfig, NumtrackerConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import DeviceModel, PlanModel, ProtocolInfo, WorkerTask
@@ -311,3 +312,16 @@ def test_stomp_config(mock_stomp_client: StompClient):
     ):
         interface.set_config(ApplicationConfig(stomp=StompConfig()))
         assert interface.stomp_client() is not None
+
+
+def test_configure_numtracker():
+    conf = ApplicationConfig(numtracker=NumtrackerConfig())
+    interface.set_config(conf)
+    headers = {"a": "b"}
+
+    interface._try_configure_numtracker(headers)
+    nt = interface.numtracker_client()
+
+    assert isinstance(nt, NumtrackerClient)
+    assert nt._headers == {"a": "b"}
+    assert nt._url == "http://localhost:8002/graphql"

@@ -6,8 +6,11 @@ from pathlib import Path
 from subprocess import Popen
 
 from git import Repo
-from pip._internal.operations import freeze
 
+try:
+    from pip._internal.operations import freeze
+except ImportError:  # pip < 10.0
+    from pip.operations import freeze
 from blueapi.config import ScratchConfig
 from blueapi.service.model import RepositoryStatus, ScratchResponse
 from blueapi.utils import get_owner_gid, is_sgid_set

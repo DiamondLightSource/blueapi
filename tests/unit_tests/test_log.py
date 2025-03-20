@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from blueapi.config import LoggingConfig
-from blueapi.log import do_default_logging_setup
+from blueapi.log import setup_logging
 
 
 def clear_all_loggers_and_handlers(logger):
@@ -22,7 +22,7 @@ LOGGER_NAMES = ["blueapi", "blueapi.test"]
 @pytest.fixture(params=LOGGER_NAMES)
 def logger_with_graylog(request):
     logger = logging.getLogger(request.param)
-    do_default_logging_setup(LoggingConfig(graylog_export_enabled=True))
+    setup_logging(LoggingConfig(graylog_export_enabled=True))
     yield logger
     clear_all_loggers_and_handlers(logger)
 
@@ -30,7 +30,7 @@ def logger_with_graylog(request):
 @pytest.fixture(params=LOGGER_NAMES)
 def logger_without_graylog(request):
     logger = logging.getLogger(request.param)
-    do_default_logging_setup(LoggingConfig(graylog_export_enabled=False))
+    setup_logging(LoggingConfig(graylog_export_enabled=False))
     yield logger
     clear_all_loggers_and_handlers(logger)
 
@@ -43,7 +43,7 @@ def logger(logger_with_graylog):
 @pytest.fixture
 def mock_stream_handler_emit():
     with patch("blueapi.log.logging.StreamHandler.emit") as stream_handler_emit:
-        stream_handler_emit.reset_mock()
+        # stream_handler_emit.reset_mock()
         yield stream_handler_emit
 
 
@@ -53,12 +53,16 @@ def mock_graylog_emit():
         yield graylog_emit
 
 
-@pytest.fixture
-def mock_handlers_emits(mock_stream_handler_emit, mock_graylog_emit):
-    return [
-        mock_stream_handler_emit,
-        mock_graylog_emit,
-    ]
+MOCK_HANDLER_EMIT_STRINGS = [
+    "blueapi.log.logging.StreamHandler.emit",
+    "blueapi.log.GELFTCPHandler.emit",
+]
+
+
+@pytest.fixture(params=MOCK_HANDLER_EMIT_STRINGS)
+def mock_handler_emit(request):
+    with patch(request.param) as mock_emit:
+        yield mock_emit
 
 
 @pytest.fixture
@@ -79,8 +83,9 @@ def test_logger_does_not_emit_to_graylog(logger_without_graylog, mock_graylog_em
 
 
 def test_stream_handler_emits(logger, mock_stream_handler_emit):
+    mock_stream_handler_emit.assert_not_called()
     logger.info("FOO")
-    mock_stream_handler_emit.assert_called()
+    mock_stream_handler_emit.assert_called_once()
 
 
 def test_messages_are_tagged_with_beamline(logger, mock_stream_handler_emit):
@@ -106,4 +111,8 @@ def test_ophyd_async_logger_intergrated():
 
 
 def test_bluesky_logger_intergrated():
+    raise NotImplementedError()
+
+
+def test_cli_main_sets_up_logging():
     raise NotImplementedError()

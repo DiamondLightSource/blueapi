@@ -33,7 +33,7 @@ from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 logging_config = LoggingConfig()
-do_default_logging_setup(logging_config.logging_dev_mode)
+do_default_logging_setup(logging_config)
 
 
 @click.group(invoke_without_command=True)

@@ -42,7 +42,7 @@ The goal of synchronization is to make the scratch directory resemble the YAML s
 This will abort any running plan and delete and re-initialize all ophyd devices
 :::
 
-If you add or remove packages from the scratch area, you will need to restart blueapi. However if you edit code that is already checked out you can tell the server to perform a hot reload via
+If you add or remove packages from the scratch area, you will need to restart blueapi. However, if you edit code that is already checked out you can tell the server to perform a hot reload via
 
 ```
 blueapi controller env -r

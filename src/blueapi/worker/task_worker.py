@@ -63,7 +63,7 @@ class TrackableTask(BlueapiBaseModel, Generic[T]):
 
     task_id: str
     task: T
-    request_id: str = ""
+    request_id: str | None = None
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
@@ -207,8 +207,15 @@ class TaskWorker:
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         add_span_attributes({"TaskId": task_id})
+        request_id = get_baggage("correlation_id")
+        # If request id is not a string, we do not pass it into a TrackableTask
+        if not isinstance(request_id, str):
+            logging.warning(f"Invalid correlation id detected: {request_id}")
+            request_id = None
         trackable_task = TrackableTask(
-            task_id=task_id, request_id=str(get_baggage("correlation_id")), task=task
+            task_id=task_id,
+            request_id=request_id,
+            task=task,
         )
         self._tasks[task_id] = trackable_task
         return task_id

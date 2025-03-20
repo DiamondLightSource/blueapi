@@ -11,7 +11,7 @@ components:
         protocols:
           description: Protocols that a device conforms to, indicating its capabilities
           items:
-            type: string
+            $ref: '#/components/schemas/ProtocolInfo'
           title: Protocols
           type: array
       required:
@@ -106,6 +106,22 @@ components:
       - plans
       title: PlanResponse
       type: object
+    ProtocolInfo:
+      additionalProperties: false
+      properties:
+        name:
+          title: Name
+          type: string
+        types:
+          default: []
+          items:
+            type: string
+          title: Types
+          type: array
+      required:
+      - name
+      title: ProtocolInfo
+      type: object
     StateChangeRequest:
       additionalProperties: false
       description: Request to change the state of the worker.
@@ -187,9 +203,10 @@ components:
           title: Is Pending
           type: boolean
         request_id:
-          default: ''
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Request Id
-          type: string
         task:
           title: Task
         task_id:

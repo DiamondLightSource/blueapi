@@ -136,7 +136,7 @@ def test_get_devices(mock_runner: Mock, client: TestClient) -> None:
         "devices": [
             {
                 "name": "my-device",
-                "protocols": ["HasName"],
+                "protocols": [{"name": "HasName", "types": []}],
             }
         ]
     }
@@ -156,7 +156,7 @@ def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "name": "my-device",
-        "protocols": ["HasName"],
+        "protocols": [{"name": "HasName", "types": []}],
     }
 
 
@@ -257,7 +257,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
-                "request_id": "",
+                "request_id": None,
                 "task": {"name": "sleep", "params": {"time": 0.0}},
                 "task_id": "0",
             },
@@ -265,7 +265,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
-                "request_id": "",
+                "request_id": None,
                 "task": {"name": "first_task", "params": {}},
                 "task_id": "1",
             },
@@ -292,7 +292,7 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": True,
                 "is_pending": False,
-                "request_id": "",
+                "request_id": None,
                 "task": {"name": "third_task", "params": {}},
                 "task_id": "3",
             }
@@ -374,7 +374,7 @@ def test_get_task(mock_runner: Mock, client: TestClient):
         "errors": [],
         "is_complete": False,
         "is_pending": True,
-        "request_id": "",
+        "request_id": None,
         "task": {"name": "third_task", "params": {}},
         "task_id": f"{task_id}",
     }
@@ -399,7 +399,7 @@ def test_get_all_tasks(mock_runner: Mock, client: TestClient):
                 "task": {"name": "third_task", "params": {}},
                 "is_complete": False,
                 "is_pending": True,
-                "request_id": "",
+                "request_id": None,
                 "errors": [],
             }
         ]

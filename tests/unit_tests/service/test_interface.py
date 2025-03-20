@@ -221,6 +221,20 @@ def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
     assert interface.get_tasks_by_status(TaskStatusEnum.COMPLETE) == []
 
 
+@patch("blueapi.service.interface._try_configure_numtracker")
+@patch("blueapi.service.interface.TaskWorker.begin_task")
+def test_begin_task_with_headers(worker_mock: MagicMock, mock_configure: MagicMock):
+    uuid_value = "350043fd-597e-41a7-9a92-5d5478232cf7"
+    task = WorkerTask(task_id=uuid_value)
+    headers = {"a": "b"}
+
+    returned_task = interface.begin_task(task, headers)
+    mock_configure.assert_called_once_with(headers)
+
+    assert task == returned_task
+    worker_mock.assert_called_once_with(uuid_value)
+
+
 def test_get_active_task():
     assert interface.get_active_task() is None
 

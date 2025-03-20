@@ -15,7 +15,8 @@ def clear_all_loggers_and_handlers(logger):
         handler.close()
     logger.handlers.clear()
 
-    if logger.parent and logger.parent != logging.RootLogger:
+    # pytest adds handlers to root logger. Hopefully this doesn't break anything...
+    if logger.parent and logger.parent:
         clear_all_loggers_and_handlers(logger.parent)
 
 

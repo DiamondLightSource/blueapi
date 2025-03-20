@@ -351,7 +351,7 @@ def mock_numtracker_server() -> responses.RequestsMock:  # type: ignore
                 "scanNumber": 11,
                 "directory": {
                     "instrument": "p46",
-                    "instrumentSession": "p46-1",
+                    "instrumentSession": "ab123",
                     "path": "/exports/mybeamline/data/2025",
                 },
             }

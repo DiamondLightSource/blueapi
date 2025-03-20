@@ -20,14 +20,14 @@ def test_create_scan(
     numtracker: NumtrackerClient,
     mock_numtracker_server: responses.RequestsMock,
 ):
-    scan = numtracker.create_scan("cm12345-1", "i22")
+    scan = numtracker.create_scan("ab123", "p46")
     assert scan == NumtrackerScanMutationResponse(
         scan=ScanPaths(
             scanFile="p46-11",
             scanNumber=11,
             directory=DirectoryPath(
                 instrument="p46",
-                instrumentSession="p46-1",
+                instrumentSession="ab123",
                 path=Path("/exports/mybeamline/data/2025"),
             ),
         )

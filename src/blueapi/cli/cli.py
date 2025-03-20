@@ -25,7 +25,7 @@ from blueapi.config import (
     LoggingConfig,
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
-from blueapi.log import setup_logging
+from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
@@ -57,7 +57,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
 
-    setup_logging(loaded_config.logging or LoggingConfig())
+    set_up_logging(loaded_config.logging or LoggingConfig())
 
     ctx.obj["config"] = loaded_config
 

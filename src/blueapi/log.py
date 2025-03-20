@@ -33,7 +33,7 @@ class InstrumentTagFilter(logging.Filter):
         return True
 
 
-def setup_logging(logging_config: LoggingConfig) -> None:
+def set_up_logging(logging_config: LoggingConfig) -> None:
     """Configure root level logger for blueapi.
 
     Configures root logger. Any other logger will propogate to this logger assuming the

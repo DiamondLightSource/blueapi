@@ -8,8 +8,6 @@ from ophyd.log import logger as ophyd_logger
 
 from blueapi.config import LoggingConfig
 
-DEFAULT_GRAYLOG_PORT = 12231
-
 
 class BeamlineFilter(logging.Filter):
     beamline: str | None = os.environ.get("BEAMLINE")

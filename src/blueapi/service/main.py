@@ -28,7 +28,7 @@ from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, LoggingConfig, OIDCConfig
+from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service import interface
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
@@ -50,7 +50,6 @@ REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None
 
-logging_config = LoggingConfig()
 LOGGER = logging.getLogger(__name__)
 CONTEXT_HEADER = "traceparent"
 

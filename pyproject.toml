@@ -37,7 +37,6 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
     "pyjwt[crypto]",
-    "colorlog"
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

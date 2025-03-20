@@ -1,7 +1,6 @@
 import logging
 import os
 
-import colorlog
 from bluesky.log import logger as bluesky_logger
 from dodal.log import LOGGER as dodal_logger
 from graypy import GELFTCPHandler
@@ -10,35 +9,6 @@ from ophyd.log import logger as ophyd_logger
 from blueapi.config import LoggingConfig
 
 DEFAULT_GRAYLOG_PORT = 12231
-
-# Temporarily duplicated https://github.com/bluesky/ophyd-async/issues/550
-DEFAULT_FORMAT = (
-    "%(log_color)s[%(levelname)1.1s %(asctime)s.%(msecs)03d "
-    "%(module)s:%(lineno)d] %(message)s"
-)
-
-DEFAULT_DATE_FORMAT = "%y%m%d %H:%M:%S"
-
-DEFAULT_LOG_COLORS = {
-    "DEBUG": "cyan",
-    "INFO": "green",
-    "WARNING": "yellow",
-    "ERROR": "red",
-    "CRITICAL": "red,bg_white",
-}
-
-
-class ColoredFormatterWithDeviceName(colorlog.ColoredFormatter):
-    def format(self, record):
-        message = super().format(record)
-        if device_name := getattr(record, "ophyd_async_device_name", None):
-            message = f"[{device_name}]{message}"
-        return message
-
-
-DEFAULT_FORMATTER = ColoredFormatterWithDeviceName(
-    fmt=DEFAULT_FORMAT, datefmt=DEFAULT_DATE_FORMAT, log_colors=DEFAULT_LOG_COLORS
-)
 
 
 class BeamlineFilter(logging.Filter):
@@ -98,7 +68,6 @@ def integrate_bluesky_and_ophyd_logging(parent_logger: logging.Logger):
 
 def _add_handler(logger: logging.Logger, handler: logging.Handler):
     print(f"adding handler {handler} to logger {logger}, at level: {handler.level}")
-    handler.setFormatter(DEFAULT_FORMATTER)
     logger.addHandler(handler)
 
 

@@ -1,10 +1,7 @@
 import logging
 import os
 
-from bluesky.log import logger as bluesky_logger
-from dodal.log import LOGGER as dodal_logger
 from graypy import GELFTCPHandler
-from ophyd.log import logger as ophyd_logger
 
 from blueapi.config import LoggingConfig
 
@@ -36,7 +33,7 @@ def setup_logging(logging_config: LoggingConfig) -> None:
         logging_config: LoggingConfig
     """
 
-    logger = logging.getLogger("blueapi")
+    logger = logging.getLogger()
 
     logger.setLevel(logging_config.level)
 
@@ -52,16 +49,6 @@ def setup_logging(logging_config: LoggingConfig) -> None:
     for handler in handlers:
         handler.addFilter(BeamlineTagFilter())
         handler.addFilter(InstrumentTagFilter())
-
-    integrate_bluesky_and_ophyd_logging(logger)
-
-
-def integrate_bluesky_and_ophyd_logging(parent_logger: logging.Logger):
-    # Temporarily duplicated https://github.com/bluesky/ophyd-async/issues/550
-    ophyd_async_logger = logging.getLogger("ophyd_async")
-    for logger in [ophyd_logger, bluesky_logger, ophyd_async_logger, dodal_logger]:
-        logger.parent = parent_logger
-        logger.setLevel(logging.DEBUG)
 
 
 def _add_handler(logger: logging.Logger, handler: logging.Handler):

@@ -2,6 +2,9 @@ import logging
 from unittest.mock import patch
 
 import pytest
+from bluesky.log import logger as bluesky_logger
+from dodal.log import LOGGER as dodal_logger
+from ophyd.log import logger as ophyd_logger
 
 from blueapi.config import LoggingConfig
 from blueapi.log import setup_logging
@@ -92,21 +95,11 @@ def test_messages_are_tagged_with_instrument(logger, mock_handler_emit):
     assert mock_handler_emit.call_args[0][0].instrument == "dev"
 
 
-def test_dodal_logger_intergrated():
-    raise NotImplementedError()
-
-
-def test_ophyd_logger_intergrated():
-    raise NotImplementedError()
-
-
-def test_ophyd_async_logger_intergrated():
-    raise NotImplementedError()
-
-
-def test_bluesky_logger_intergrated():
-    raise NotImplementedError()
-
-
-def test_cli_main_sets_up_logging():
-    raise NotImplementedError()
+@pytest.mark.parametrize(
+    "library_logger",
+    [bluesky_logger, dodal_logger, ophyd_logger, logging.getLogger("ophyd_async")],
+)
+def test_library_logger_intergrations(logger, library_logger, mock_handler_emit):
+    mock_handler_emit.assert_not_called()
+    library_logger.info("FOO")
+    mock_handler_emit.assert_called()

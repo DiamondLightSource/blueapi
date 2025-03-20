@@ -46,9 +46,12 @@ def setup_logging(logging_config: LoggingConfig) -> None:
         graylog_handler = set_up_graylog_handler(logger, logging_config)
         handlers.append(graylog_handler)
 
-    for handler in handlers:
-        handler.addFilter(BeamlineTagFilter())
-        handler.addFilter(InstrumentTagFilter())
+    filters = [
+        BeamlineTagFilter(),
+        InstrumentTagFilter(),
+    ]
+
+    add_all_filters_to_all_handlers(handlers, filters)
 
 
 def set_up_stream_handler(logger: logging.Logger, logging_config: LoggingConfig):
@@ -68,3 +71,11 @@ def set_up_graylog_handler(logger: logging.Logger, logging_config: LoggingConfig
     graylog_handler.setLevel(logging_config.level)
     logger.addHandler(graylog_handler)
     return graylog_handler
+
+
+def add_all_filters_to_all_handlers(
+    handlers: list[logging.Handler], filters: list[logging.Filter]
+):
+    for handler in handlers:
+        for filter in filters:
+            handler.addFilter(filter)

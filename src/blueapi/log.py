@@ -34,11 +34,10 @@ class InstrumentTagFilter(logging.Filter):
 
 
 def setup_logging(logging_config: LoggingConfig) -> None:
-    """Configure package level logger for blueapi.
+    """Configure root level logger for blueapi.
 
-    Configures logger with name `blueapi`. Any logger within the blueapi package
-    instantiated with `logging.getLogger(__name__)` will propogate to this logger
-    assuming the default `logger.propagate` is True, and no filters block it.
+    Configures root logger. Any other logger will propogate to this logger assuming the
+    default `logger.propagate` is True, and no filters block it.
 
     Args:
         logging_config: LoggingConfig

@@ -49,11 +49,11 @@ def setup_logging(logging_config: LoggingConfig) -> None:
         graylog_handler = set_up_graylog_handler(logger, logging_config)
         handlers.append(graylog_handler)
 
-    integrate_bluesky_and_ophyd_logging(logger)
-
     for handler in handlers:
         handler.addFilter(BeamlineTagFilter())
         handler.addFilter(InstrumentTagFilter())
+
+    integrate_bluesky_and_ophyd_logging(logger)
 
 
 def integrate_bluesky_and_ophyd_logging(parent_logger: logging.Logger):

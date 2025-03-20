@@ -209,6 +209,7 @@ def listen_to_events(obj: dict) -> None:
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.argument("parameters", type=str, required=False)
+@click.argument("instrument_session", type=str, required=False)
 @click.option(
     "-t",
     "--timeout",
@@ -219,13 +220,16 @@ def listen_to_events(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: str | None, timeout: float | None
+    obj: dict,
+    name: str,
+    parameters: str | None,
+    instrument_session: str | None,
+    timeout: float | None,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
 
     parameters = parameters or "{}"
-    task_id = ""
     parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
 
     progress_bar = CliEventRenderer()
@@ -238,16 +242,18 @@ def run_plan(
             callback(event.name, event.doc)
 
     try:
-        task = Task(name=name, params=parsed_params)
-        resp = client.run_task(task, on_event=on_event)
+        task = Task(
+            name=name, params=parsed_params, instrument_session=instrument_session
+        )
+        resp = client.run_task(task, on_event=on_event, timeout=timeout)
     except ValidationError as e:
-        pprint(f"failed to validate the task parameters, {task_id}, error: {e}")
+        pprint(f"Failed to validate task parameters: {e}")
         return
     except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
-        pprint(f"server error with this message: {e}")
+        pprint(f"Server error with this message: {e}")
         return
     except ValueError:
-        pprint("task could not run")
+        pprint("Task could not run")
         return
 
     pprint(resp.model_dump())

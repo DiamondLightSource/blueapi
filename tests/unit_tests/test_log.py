@@ -82,14 +82,14 @@ def test_loggers_emits_to_all_handlers(logger, mock_handler_emit):
     mock_handler_emit.assert_called()
 
 
-def test_messages_are_tagged_with_beamline(logger, mock_stream_handler_emit):
+def test_messages_are_tagged_with_beamline(logger, mock_handler_emit):
     logger.info("FOO")
-    assert mock_stream_handler_emit.call_args[0][0].beamline == "dev"
+    assert mock_handler_emit.call_args[0][0].beamline == "dev"
 
 
-def test_messages_are_tagged_with_instrument(logger, mock_stream_handler_emit):
+def test_messages_are_tagged_with_instrument(logger, mock_handler_emit):
     logger.info("FOO")
-    assert mock_stream_handler_emit.call_args[0][0].instrument == "dev"
+    assert mock_handler_emit.call_args[0][0].instrument == "dev"
 
 
 def test_dodal_logger_intergrated():

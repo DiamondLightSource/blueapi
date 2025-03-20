@@ -5,12 +5,9 @@ import textwrap
 from pathlib import Path
 from subprocess import Popen
 
+import pkg_resources
 from git import Repo
 
-try:
-    from pip._internal.operations import freeze
-except ImportError:  # pip < 10.0
-    from pip.operations import freeze
 from blueapi.config import ScratchConfig
 from blueapi.service.model import RepositoryStatus, ScratchResponse
 from blueapi.utils import get_owner_gid, is_sgid_set
@@ -135,6 +132,14 @@ def _validate_directory(path: Path) -> None:
         raise KeyError(f"{path}: Is a file, not a directory")
 
 
+def _list_packages_with_versions_and_locations() -> list[str]:
+    installed_packages = pkg_resources.working_set
+    return [
+        f"{package.project_name} ({package.version}) => {package.location}"
+        for package in sorted(installed_packages, key=lambda x: x.project_name.lower())
+    ]
+
+
 def get_scratch_info(config: ScratchConfig) -> ScratchResponse:
     scratch_responses = ScratchResponse()
     try:
@@ -142,7 +147,7 @@ def get_scratch_info(config: ScratchConfig) -> ScratchResponse:
     except Exception as e:
         logging.error(f"Failed to get scratch info: {e}")
         return scratch_responses
-    scratch_responses.installed_packages = list(freeze.freeze())
+    scratch_responses.installed_packages = _list_packages_with_versions_and_locations()
     for repo in config.repositories:
         local_directory = config.root / repo.name
         repo = Repo(local_directory)

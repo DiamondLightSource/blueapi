@@ -51,15 +51,10 @@ def setup_logging(logging_config: LoggingConfig) -> None:
         handler.addFilter(InstrumentTagFilter())
 
 
-def _add_handler(logger: logging.Logger, handler: logging.Handler):
-    print(f"adding handler {handler} to logger {logger}, at level: {handler.level}")
-    logger.addHandler(handler)
-
-
 def set_up_stream_handler(logger: logging.Logger, logging_config: LoggingConfig):
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging_config.level)
-    _add_handler(logger, stream_handler)
+    logger.addHandler(stream_handler)
     return stream_handler
 
 
@@ -71,5 +66,5 @@ def set_up_graylog_handler(logger: logging.Logger, logging_config: LoggingConfig
             logging_config.graylog_host, logging_config.graylog_port
         )
     graylog_handler.setLevel(logging_config.level)
-    _add_handler(logger, graylog_handler)
+    logger.addHandler(graylog_handler)
     return graylog_handler

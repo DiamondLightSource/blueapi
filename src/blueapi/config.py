@@ -70,7 +70,7 @@ class LoggingConfig(BlueapiBaseModel):
     graylog_export_enabled: bool = True
     graylog_host: str = "graylog-log-target.diamond.ac.uk"
     graylog_port: int = 12232
-    logging_dev_mode: bool = False
+    logging_dev_mode: bool = True
 
 
 class RestConfig(BlueapiBaseModel):

@@ -32,9 +32,6 @@ from blueapi.worker import ProgressEvent, Task, WorkerEvent
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
-logging_config = LoggingConfig()
-setup_logging(logging_config)
-
 
 @click.group(invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="blueapi")
@@ -59,6 +56,8 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
 
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
+
+    setup_logging(loaded_config.logging or LoggingConfig())
 
     ctx.obj["config"] = loaded_config
 

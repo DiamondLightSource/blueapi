@@ -10,7 +10,14 @@ from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi.client.numtracker import NumtrackerClient
-from blueapi.config import ApplicationConfig, NumtrackerConfig, OIDCConfig, StompConfig
+from blueapi.config import (
+    ApplicationConfig,
+    EnvironmentConfig,
+    MetadataConfig,
+    NumtrackerConfig,
+    OIDCConfig,
+    StompConfig,
+)
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import DeviceModel, PlanModel, ProtocolInfo, WorkerTask
@@ -325,3 +332,18 @@ def test_configure_numtracker():
     assert isinstance(nt, NumtrackerClient)
     assert nt._headers == {"a": "b"}
     assert nt._url == "http://localhost:8002/graphql"
+
+
+@patch("blueapi.service.interface.StompClient")
+def test_setup(mock_stomp: MagicMock):
+    conf = ApplicationConfig(
+        env = EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+            ),
+        numtracker=NumtrackerConfig()
+        )
+    interface.set_config(conf)
+    interface.setup(conf)
+
+    assert interface.worker()._ctx is not None
+    assert interface.context().run_engine.scan_id_source == interface._update_scan_num

@@ -359,7 +359,6 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
         }
     }
 
-    # When device flow begins, return a device_code
     requests_mock.post(
         "https://numtracker-example.com/graphql",
         json=response,

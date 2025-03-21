@@ -5,9 +5,11 @@ import textwrap
 from pathlib import Path
 from subprocess import Popen
 
+import pkg_resources
 from git import Repo
 
 from blueapi.config import ScratchConfig
+from blueapi.service.model import RepositoryStatus, ScratchResponse
 from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
@@ -128,3 +130,40 @@ def _validate_directory(path: Path) -> None:
         raise KeyError(f"{path}: No such file or directory")
     elif path.is_file():
         raise KeyError(f"{path}: Is a file, not a directory")
+
+
+def _list_packages_with_versions_and_locations() -> list[str]:
+    installed_packages = pkg_resources.working_set
+    return [
+        f"{package.project_name} ({package.version}) => {package.location}"
+        for package in sorted(installed_packages, key=lambda x: x.project_name.lower())
+    ]
+
+
+def get_scratch_info(config: ScratchConfig) -> ScratchResponse:
+    scratch_responses = ScratchResponse(enabled=True)
+    try:
+        _validate_directory(config.root)
+    except Exception as e:
+        logging.error(f"Failed to get scratch info: {e}")
+        return scratch_responses
+    scratch_responses.installed_packages = _list_packages_with_versions_and_locations()
+    for repo in config.repositories:
+        local_directory = config.root / repo.name
+        repo = Repo(local_directory)
+        try:
+            branch = repo.active_branch.name
+        except TypeError:
+            branch = repo.head.commit.hexsha
+
+        is_dirty = repo.is_dirty()
+
+        scratch_responses.packages.append(
+            RepositoryStatus(
+                remote_url=repo.remotes[0].url if repo.remotes else "UNKNOWN REMOTE",
+                ref=branch,
+                is_dirty=is_dirty,
+            )
+        )
+
+    return scratch_responses

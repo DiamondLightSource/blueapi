@@ -122,6 +122,50 @@ components:
       - name
       title: ProtocolInfo
       type: object
+    RepositoryStatus:
+      additionalProperties: false
+      properties:
+        is_dirty:
+          description: Does the repository have uncommitted changes
+          title: Is Dirty
+          type: boolean
+        ref:
+          description: Branch or tag of the repository
+          title: Ref
+          type: string
+        remote_url:
+          description: URL of a repository on a remote server
+          title: Remote Url
+          type: string
+      required:
+      - remote_url
+      - ref
+      - is_dirty
+      title: RepositoryStatus
+      type: object
+    ScratchResponse:
+      additionalProperties: false
+      description: State of the scratch area.
+      properties:
+        enabled:
+          default: false
+          description: Scratch area state
+          title: Enabled
+          type: boolean
+        installed_packages:
+          description: List of installed packages
+          items:
+            type: string
+          title: Installed Packages
+          type: array
+        packages:
+          description: Package information
+          items:
+            $ref: '#/components/schemas/RepositoryStatus'
+          title: Packages
+          type: array
+      title: ScratchResponse
+      type: object
     StateChangeRequest:
       additionalProperties: false
       description: Request to change the state of the worker.
@@ -269,7 +313,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.5
+  version: 0.0.6
 openapi: 3.1.0
 paths:
   /devices:
@@ -370,6 +414,18 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Plan By Name
+  /scratch:
+    get:
+      description: Retrieve information about the scratch area.
+      operationId: get_scratch_packages_scratch_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScratchResponse'
+          description: Successful Response
+      summary: Get Scratch Packages
   /tasks:
     get:
       description: 'Retrieve tasks based on their status.

@@ -2,8 +2,9 @@ import asyncio
 import base64
 import os
 import time
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable, cast
+from typing import Any, cast
 from unittest.mock import Mock, patch
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501

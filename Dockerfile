@@ -28,6 +28,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=build /venv/ /venv/
 ENV PATH=/venv/bin:$PATH
 ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
+
+# Set the MPLCONFIGDIR environment variable to a temporary directory to avoid
+# writing to the home directory. This is necessary because the home directory
+# is read-only in the runtime container.
+# https://matplotlib.org/stable/install/environment_variables_faq.html#envvar-MPLCONFIGDIR
+
 ENV MPLCONFIGDIR=/tmp/matplotlib
 
 RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip

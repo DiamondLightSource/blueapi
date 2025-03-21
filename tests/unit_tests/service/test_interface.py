@@ -316,9 +316,7 @@ def test_get_scratch_with_config(mock_get_scratch_info: MagicMock):
     scratch_config = ScratchConfig()
     set_config(ApplicationConfig(scratch=scratch_config))
     mock_response = ScratchResponse(
-        package_info=[
-            RepositoryStatus(remote_url="foo", version="main", is_dirty=False)
-        ]
+        packages=[RepositoryStatus(remote_url="foo", ref="main", is_dirty=False)]
     )
     mock_get_scratch_info.return_value = mock_response
 

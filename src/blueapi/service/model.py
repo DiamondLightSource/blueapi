@@ -176,7 +176,7 @@ class EnvironmentResponse(BlueapiBaseModel):
 
 class RepositoryStatus(BlueapiBaseModel):
     remote_url: str = Field(description="URL of a repository on a remote server")
-    version: str = Field(description="Branch or tag of the repository")
+    ref: str = Field(description="Branch or tag of the repository")
     is_dirty: bool = Field(description="Does the repository have uncommitted changes")
 
 
@@ -185,12 +185,13 @@ class ScratchResponse(BlueapiBaseModel):
     State of the scratch area.
     """
 
-    package_info: list[RepositoryStatus] = Field(
-        description="package information", default_factory=list
+    packages: list[RepositoryStatus] = Field(
+        description="Package information", default_factory=list
     )
     installed_packages: list[str] = Field(
         description="List of installed packages", default_factory=list
     )
+    enabled: bool = Field(description="Scratch area state", default=False)
 
 
 class Cache(BlueapiBaseModel):

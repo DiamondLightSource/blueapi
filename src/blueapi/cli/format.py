@@ -69,16 +69,16 @@ def display_full(obj: Any, stream: Stream):
         case ProgressEvent():
             print(f"Progress:{fmt_dict(obj.model_dump())}")
         case ScratchResponse(
-            package_info=package_info, installed_packages=installed_packages
+            packages=packages, installed_packages=installed_packages, enabled=enabled
         ):
-            if not package_info:
+            print(f"Scratch Status: {'enabled' if enabled else 'disabled'}")
+            if not packages:
                 print("No scratch packages found")
             else:
-                print("Scratch Status:")
-                for package in package_info:
+                for package in packages:
                     print(
                         f"- Remote URL: {package.remote_url} "
-                        + f"Version: {package.version} "
+                        + f"Version: {package.ref} "
                         + f"Dirty: {package.is_dirty}"
                     )
                 print("installed packages:")
@@ -141,21 +141,32 @@ def display_compact(obj: Any, stream: Stream):
             )
             print(f"Progress: {prog}%")
         case ScratchResponse(
-            package_info=package_info, installed_packages=installed_packages
+            packages=packages, installed_packages=installed_packages, enabled=enabled
         ):
-            if not package_info:
+            print(f"Scratch Status: {'enabled' if enabled else 'disabled'}")
+            if not packages:
                 print("No scratch packages found")
             else:
-                print("Scratch Status:")
-                for package in package_info:
+                for package in packages:
                     print(
                         f"- {package.remote_url}"
-                        + f" @ {package.version}"
+                        + f" @ {package.ref}"
                         + f"{' (Dirty)' if package.is_dirty else ''}"
                     )
                 print("installed packages:")
-                for package in installed_packages:
-                    print(f"{package}")
+
+                def display_packages(packages, limit=3):
+                    if len(packages) > 2 * limit:
+                        for package in packages[:limit]:
+                            print(f"{package}")
+                        print(2 * "...\n")
+                        for package in packages[len(packages) - limit :]:
+                            print(f"{package}")
+                    else:
+                        for package in packages:
+                            print(f"{package}")
+
+                display_packages(installed_packages)
         case other:
             FALLBACK(other, stream=stream)
 

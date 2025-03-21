@@ -297,10 +297,10 @@ def test_get_scratch_info_success(mock_repo: Mock, directory_path_with_sgid: Pat
 
     response = get_scratch_info(config)
 
-    assert len(response.package_info) == 1
-    assert response.package_info[0] == RepositoryStatus(
+    assert len(response.packages) == 1
+    assert response.packages[0] == RepositoryStatus(
         remote_url="UNKNOWN REMOTE",
-        version="main",
+        ref="main",
         is_dirty=False,
     )
 
@@ -330,10 +330,10 @@ def test_get_scratch_info_on_commit_success(
 
     response = get_scratch_info(config)
 
-    assert len(response.package_info) == 1
-    assert response.package_info[0] == RepositoryStatus(
+    assert len(response.packages) == 1
+    assert response.packages[0] == RepositoryStatus(
         remote_url="http://example.com/foo.git",
-        version="adsad23123",
+        ref="adsad23123",
         is_dirty=False,
     )
 
@@ -354,4 +354,4 @@ def test_get_scratch_info_fails_on_invalid_root(
 
     response = get_scratch_info(config)
 
-    assert response.package_info == []
+    assert response.packages == []

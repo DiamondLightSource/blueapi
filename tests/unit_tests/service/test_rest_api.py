@@ -603,9 +603,7 @@ def test_get_oidc_config(
 
 def test_get_scratch_packages(mock_runner: Mock, client: TestClient) -> None:
     packages = ScratchResponse(
-        package_info=[
-            RepositoryStatus(remote_url="foo", version="1.0.0", is_dirty=False)
-        ]
+        packages=[RepositoryStatus(remote_url="foo", ref="1.0.0", is_dirty=False)]
     )
     mock_runner.run.return_value = packages
     response = client.get("/scratch")

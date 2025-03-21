@@ -141,7 +141,7 @@ def _list_packages_with_versions_and_locations() -> list[str]:
 
 
 def get_scratch_info(config: ScratchConfig) -> ScratchResponse:
-    scratch_responses = ScratchResponse()
+    scratch_responses = ScratchResponse(enabled=True)
     try:
         _validate_directory(config.root)
     except Exception as e:
@@ -158,10 +158,10 @@ def get_scratch_info(config: ScratchConfig) -> ScratchResponse:
 
         is_dirty = repo.is_dirty()
 
-        scratch_responses.package_info.append(
+        scratch_responses.packages.append(
             RepositoryStatus(
                 remote_url=repo.remotes[0].url if repo.remotes else "UNKNOWN REMOTE",
-                version=branch,
+                ref=branch,
                 is_dirty=is_dirty,
             )
         )

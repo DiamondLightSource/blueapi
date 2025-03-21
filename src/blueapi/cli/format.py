@@ -82,8 +82,7 @@ def display_full(obj: Any, stream: Stream):
                         + f"Dirty: {package.is_dirty}"
                     )
                 print("installed packages:")
-                for package in installed_packages:
-                    print(f"{package}")
+                print("\n".join(installed_packages))
         case BaseModel():
             print(obj.__class__.__name__, end="")
             print(fmt_dict(obj.model_dump()))
@@ -155,17 +154,17 @@ def display_compact(obj: Any, stream: Stream):
                     )
                 print("installed packages:")
 
-                def display_packages(packages, limit=3):
-                    if len(packages) > 2 * limit:
+                def display_packages(installed_packages, limit=3):
+                    if len(installed_packages) > 2 * limit:
                         print(
                             "\n".join(
-                                packages[:limit]
+                                installed_packages[:limit]
                                 + 2 * ["..."]
-                                + packages[len(packages) - limit :]
+                                + installed_packages[len(installed_packages) - limit :]
                             )
                         )
                     else:
-                        print("\n".join(packages))
+                        print("\n".join(installed_packages))
 
                 display_packages(installed_packages)
         case other:

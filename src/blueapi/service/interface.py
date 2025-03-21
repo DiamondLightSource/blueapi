@@ -141,6 +141,7 @@ def teardown() -> None:
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
+    numtracker_client.cache_clear()
 
 
 def _publish_event_streams(

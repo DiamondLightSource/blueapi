@@ -314,6 +314,8 @@ def test_get_oidc_config(oidc_config: OIDCConfig):
     interface.set_config(ApplicationConfig(oidc=oidc_config))
     assert interface.get_oidc_config() == oidc_config
 
+    interface.teardown()
+
 
 def test_stomp_config(mock_stomp_client: StompClient):
     with patch(
@@ -326,20 +328,21 @@ def test_stomp_config(mock_stomp_client: StompClient):
 
 def test_configure_numtracker():
     conf = ApplicationConfig(
-        numtracker=NumtrackerConfig(),
+        numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
         ),
     )
     interface.set_config(conf)
     headers = {"a": "b"}
-
     interface._try_configure_numtracker(headers)
     nt = interface.numtracker_client()
 
     assert isinstance(nt, NumtrackerClient)
     assert nt._headers == {"a": "b"}
-    assert nt._url == "http://localhost:8002/graphql"
+    assert nt._url == "https://numtracker-example.com/graphql"
+
+    interface.teardown()
 
 
 def test_configure_numtracker_with_no_metadata_fails():
@@ -347,8 +350,12 @@ def test_configure_numtracker_with_no_metadata_fails():
     interface.set_config(conf)
     headers = {"a": "b"}
 
+    assert conf.env.metadata is None
+
     with pytest.raises(InvalidConfigError):
         interface._try_configure_numtracker(headers)
+
+    interface.teardown()
 
 
 @patch("blueapi.service.interface.StompClient")
@@ -359,11 +366,11 @@ def test_setup(mock_stomp: MagicMock):
         ),
         numtracker=NumtrackerConfig(),
     )
-
     set_path_provider(StartDocumentPathProvider())
-
     interface.set_config(conf)
     interface.setup(conf)
 
     assert interface.worker()._ctx is not None
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
+
+    interface.teardown()

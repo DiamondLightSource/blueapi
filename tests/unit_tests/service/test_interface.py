@@ -345,6 +345,22 @@ def test_configure_numtracker():
     interface.teardown()
 
 
+def test_configure_numtracker_with_no_numtracker_config_fails():
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+    )
+    interface.set_config(conf)
+    headers = {"a": "b"}
+    interface._try_configure_numtracker(headers)
+    nt = interface.numtracker_client()
+
+    assert nt is None
+
+    interface.teardown()
+
+
 def test_configure_numtracker_with_no_metadata_fails():
     conf = ApplicationConfig(numtracker=NumtrackerConfig())
     interface.set_config(conf)

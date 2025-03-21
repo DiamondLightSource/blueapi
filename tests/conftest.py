@@ -2,6 +2,7 @@ import asyncio
 import base64
 import os
 import time
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, cast
 from unittest.mock import Mock, patch
@@ -338,3 +339,30 @@ if os.getenv("PYTEST_RAISE", "0") == "1":
     @pytest.hookimpl(tryfirst=True)
     def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
         raise excinfo.value
+
+
+@pytest.fixture
+def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
+    requests_mock = responses.RequestsMock()
+
+    response = {
+        "data": {
+            "scan": {
+                "scanFile": "p46-11",
+                "scanNumber": 11,
+                "directory": {
+                    "instrument": "p46",
+                    "instrumentSession": "ab123",
+                    "path": "/exports/mybeamline/data/2025",
+                },
+            }
+        }
+    }
+
+    requests_mock.post(
+        "https://numtracker-example.com/graphql",
+        json=response,
+    )
+
+    with requests_mock:
+        yield requests_mock

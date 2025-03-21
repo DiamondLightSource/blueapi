@@ -5,13 +5,24 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 import pytest
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
+from dodal.common.beamlines.beamline_utils import set_path_provider
+from dodal.common.visit import StartDocumentPathProvider
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
+from blueapi.client.numtracker import NumtrackerClient
+from blueapi.config import (
+    ApplicationConfig,
+    EnvironmentConfig,
+    MetadataConfig,
+    NumtrackerConfig,
+    OIDCConfig,
+    StompConfig,
+)
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import DeviceModel, PlanModel, ProtocolInfo, WorkerTask
+from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
@@ -220,6 +231,20 @@ def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
     assert interface.get_tasks_by_status(TaskStatusEnum.COMPLETE) == []
 
 
+@patch("blueapi.service.interface._try_configure_numtracker")
+@patch("blueapi.service.interface.TaskWorker.begin_task")
+def test_begin_task_with_headers(worker_mock: MagicMock, mock_configure: MagicMock):
+    uuid_value = "350043fd-597e-41a7-9a92-5d5478232cf7"
+    task = WorkerTask(task_id=uuid_value)
+    headers = {"a": "b"}
+
+    returned_task = interface.begin_task(task, headers)
+    mock_configure.assert_called_once_with(headers)
+
+    assert task == returned_task
+    worker_mock.assert_called_once_with(uuid_value)
+
+
 def test_get_active_task():
     assert interface.get_active_task() is None
 
@@ -288,6 +313,8 @@ def test_get_oidc_config(oidc_config: OIDCConfig):
     interface.set_config(ApplicationConfig(oidc=oidc_config))
     assert interface.get_oidc_config() == oidc_config
 
+    interface.teardown()
+
 
 def test_stomp_config(mock_stomp_client: StompClient):
     with patch(
@@ -296,3 +323,69 @@ def test_stomp_config(mock_stomp_client: StompClient):
     ):
         interface.set_config(ApplicationConfig(stomp=StompConfig()))
         assert interface.stomp_client() is not None
+
+
+def test_configure_numtracker():
+    conf = ApplicationConfig(
+        numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+    )
+    interface.set_config(conf)
+    headers = {"a": "b"}
+    interface._try_configure_numtracker(headers)
+    nt = interface.numtracker_client()
+
+    assert isinstance(nt, NumtrackerClient)
+    assert nt._headers == {"a": "b"}
+    assert nt._url == "https://numtracker-example.com/graphql"
+
+    interface.teardown()
+
+
+def test_configure_numtracker_with_no_numtracker_config_fails():
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+    )
+    interface.set_config(conf)
+    headers = {"a": "b"}
+    interface._try_configure_numtracker(headers)
+    nt = interface.numtracker_client()
+
+    assert nt is None
+
+    interface.teardown()
+
+
+def test_configure_numtracker_with_no_metadata_fails():
+    conf = ApplicationConfig(numtracker=NumtrackerConfig())
+    interface.set_config(conf)
+    headers = {"a": "b"}
+
+    assert conf.env.metadata is None
+
+    with pytest.raises(InvalidConfigError):
+        interface._try_configure_numtracker(headers)
+
+    interface.teardown()
+
+
+@patch("blueapi.service.interface.StompClient")
+def test_setup(mock_stomp: MagicMock):
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+        numtracker=NumtrackerConfig(),
+    )
+    set_path_provider(StartDocumentPathProvider())
+    interface.set_config(conf)
+    interface.setup(conf)
+
+    assert interface.worker()._ctx is not None
+    assert interface.context().run_engine.scan_id_source == interface._update_scan_num
+
+    interface.teardown()

@@ -157,14 +157,15 @@ def display_compact(obj: Any, stream: Stream):
 
                 def display_packages(packages, limit=3):
                     if len(packages) > 2 * limit:
-                        for package in packages[:limit]:
-                            print(f"{package}")
-                        print(2 * "...\n")
-                        for package in packages[len(packages) - limit :]:
-                            print(f"{package}")
+                        print(
+                            "\n".join(
+                                packages[:limit]
+                                + 2 * ["..."]
+                                + packages[len(packages) - limit :]
+                            )
+                        )
                     else:
-                        for package in packages:
-                            print(f"{package}")
+                        print("\n".join(packages))
 
                 display_packages(installed_packages)
         case other:

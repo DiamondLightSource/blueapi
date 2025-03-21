@@ -920,9 +920,9 @@ def test_get_scratch_formatting():
         - https://github.com/example/bar.git @ main
         installed packages:
         """)
-    compact += "\n".join(installed_packages[:3])
-    compact += "\n...\n..."
-    compact += "\n".join(installed_packages[len(installed_packages) - 3 :])
+    compact += (
+        "\n".join(installed_packages[:3] + 2 * ["..."] + installed_packages[-3:]) + "\n"
+    )
 
     _assert_matching_formatting(OutputFormat.COMPACT, scratch_config, compact)
 

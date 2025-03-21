@@ -23,6 +23,7 @@ from blueapi.config import (
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import DeviceModel, PlanModel, ProtocolInfo, WorkerTask
+from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
@@ -324,7 +325,12 @@ def test_stomp_config(mock_stomp_client: StompClient):
 
 
 def test_configure_numtracker():
-    conf = ApplicationConfig(numtracker=NumtrackerConfig())
+    conf = ApplicationConfig(
+        numtracker=NumtrackerConfig(),
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+    )
     interface.set_config(conf)
     headers = {"a": "b"}
 
@@ -334,6 +340,15 @@ def test_configure_numtracker():
     assert isinstance(nt, NumtrackerClient)
     assert nt._headers == {"a": "b"}
     assert nt._url == "http://localhost:8002/graphql"
+
+
+def test_configure_numtracker_with_no_metadata_fails():
+    conf = ApplicationConfig(numtracker=NumtrackerConfig())
+    interface.set_config(conf)
+    headers = {"a": "b"}
+
+    with pytest.raises(InvalidConfigError):
+        interface._try_configure_numtracker(headers)
 
 
 @patch("blueapi.service.interface.StompClient")

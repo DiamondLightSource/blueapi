@@ -13,6 +13,7 @@ from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
+from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -83,8 +84,14 @@ def stomp_client() -> StompClient | None:
 def numtracker_client() -> NumtrackerClient | None:
     conf = config()
     if conf.numtracker is not None:
-        client = NumtrackerClient(url=conf.numtracker.url, headers={})
-        return client
+        if conf.env.metadata is not None:
+            client = NumtrackerClient(url=conf.numtracker.url, headers={})
+            return client
+        else:
+            raise InvalidConfigError(
+                "Numtracker url has been configured, but there is no instrument or"
+                " instrument_session in the environment metadata"
+            )
     else:
         return None
 

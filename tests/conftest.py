@@ -3,7 +3,7 @@ import base64
 import os
 import time
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Iterable, cast
 from unittest.mock import Mock, patch
 
 # Based on https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option  # noqa: E501
@@ -341,7 +341,7 @@ if os.getenv("PYTEST_RAISE", "0") == "1":
 
 
 @pytest.fixture
-def mock_numtracker_server() -> responses.RequestsMock:  # type: ignore
+def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
     requests_mock = responses.RequestsMock()
 
     response = {
@@ -365,4 +365,4 @@ def mock_numtracker_server() -> responses.RequestsMock:  # type: ignore
     )
 
     with requests_mock:
-        yield requests_mock  # type: ignore
+        yield requests_mock

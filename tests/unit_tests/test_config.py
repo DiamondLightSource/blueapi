@@ -225,7 +225,6 @@ def temp_yaml_config_file(
                 "graylog_host": "graylog-log-target.diamond.ac.uk",
                 "graylog_port": 12232,
                 "level": "INFO",
-                "logging_dev_mode": True,
             },
             "api": {"host": "0.0.0.0", "port": 8000, "protocol": "http"},
             "scratch": None,
@@ -279,7 +278,6 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "graylog_host": "graylog-log-target.diamond.ac.uk",
                 "graylog_port": 12232,
                 "level": "INFO",
-                "logging_dev_mode": True,
             },
             "oidc": {
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
@@ -317,7 +315,6 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "graylog_host": "graylog-log-target.diamond.ac.uk",
                 "graylog_port": 12232,
                 "level": "INFO",
-                "logging_dev_mode": True,
             },
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
             "oidc": {

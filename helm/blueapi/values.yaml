@@ -93,8 +93,10 @@ tracing:
 
 
 logging:
+    graylog_export_enabled: True,
     graylog_host: "graylog-log-target.diamond.ac.uk"
     graylog_port: 12232
+    level: "INFO"
 
 
 # Config for the worker goes here, will be mounted into a config file

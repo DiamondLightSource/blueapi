@@ -17,3 +17,6 @@ type: application
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # This is updated automatically by CI, the appVersion is automatically inserted by CI
 version: 0.1.0
+
+annotations:
+  fluentd-ignore: "true"

@@ -45,6 +45,7 @@ from .model import (
 )
 from .runner import WorkerDispatcher
 
+#: API version to publish in OpenAPI schema
 REST_API_VERSION = "0.0.5"
 
 RUNNER: WorkerDispatcher | None = None

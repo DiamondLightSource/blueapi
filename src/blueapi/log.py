@@ -88,12 +88,9 @@ def set_up_graylog_handler(
         logger: Logger to attach handler to
         logging_config: LoggingConfig
     """
-    if logging_config.logging_dev_mode:
-        graylog_handler = GELFTCPHandler("localhost", 5555)
-    else:
-        graylog_handler = GELFTCPHandler(
-            logging_config.graylog_host, logging_config.graylog_port
-        )
+    graylog_handler = GELFTCPHandler(
+        logging_config.graylog_host, logging_config.graylog_port
+    )
     graylog_handler.setLevel(logging_config.level)
     logger.addHandler(graylog_handler)
     return graylog_handler

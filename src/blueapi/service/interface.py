@@ -200,6 +200,7 @@ def get_oidc_config() -> OIDCConfig | None:
 
 
 def get_scratch() -> ScratchResponse:
+    """Retrieve information about the scratch area."""
     scratch = config().scratch
     if scratch is None:
         return ScratchResponse()

@@ -141,6 +141,10 @@ def _list_packages_with_versions_and_locations() -> list[str]:
 
 
 def get_scratch_info(config: ScratchConfig) -> ScratchResponse:
+    """
+    Get information about the scratch area. This includes the installed packages
+    and the status of each repository.
+    """
     scratch_responses = ScratchResponse(enabled=True)
     try:
         _validate_directory(config.root)

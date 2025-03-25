@@ -424,7 +424,28 @@ def set_state(
 @router.get("/scratch", response_model=ScratchResponse)
 @start_as_current_span(TRACER)
 def get_scratch_packages(runner: WorkerDispatcher = Depends(_runner)):
-    """Retrieve information about the scratch area."""
+    """
+    Retrieve details about the scratch area.
+
+    - **Behavior**:
+        - If the scratch configuration is not defined (`None`),
+          an empty `ScratchResponse` object is returned.
+        - If the scratch configuration exists but encounters issues,
+          an exception is logged on the server side,
+          and an empty `ScratchResponse` object is returned.
+        - If the scratch configuration is valid,
+          detailed scratch information is fetched.
+
+    - **Returns**:
+        - A `ScratchResponse` object containing the scratch area details.
+        - An empty `ScratchResponse` object
+          if no valid scratch configuration is available.
+
+    - **Exceptions**:
+        - `RuntimeError`: Raised if an error occurs while retrieving
+          scratch information.
+          These exceptions are logged and handled on the server side.
+    """
     return runner.run(interface.get_scratch)
 
 

@@ -363,7 +363,9 @@ def scratch(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def get_scratch(obj: dict) -> None:
-    """Get the scratch configuration for the worker"""
+    """
+    Get the scratch status from the server
+    """
     client: BlueapiClient = obj["client"]
     obj["fmt"].display(client.get_scratch())
 

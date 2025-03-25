@@ -56,10 +56,20 @@ def test_generate_schema(mock_get_app: Mock) -> None:
     }
 
 
+@pytest.mark.skipif(
+    not DOCS_SCHEMA_LOCATION.exists(),
+    reason="If the schema file does not exist, the test is being run"
+    " with a non-editable install",
+)
 def test_schema_updated(reference_schema: Mapping[str, Any]) -> None:
     assert reference_schema == generate_schema()
 
 
+@pytest.mark.skipif(
+    not DOCS_SCHEMA_LOCATION.exists(),
+    reason="If the schema file does not exist, the test is being run"
+    " with a non-editable install",
+)
 def test_schema_version_bump_required(reference_schema: Mapping[str, Any]) -> None:
     current_version = _get_version(generate_schema(), "schema in working tree")
     main_version = _get_version(reference_schema, "schema in main")

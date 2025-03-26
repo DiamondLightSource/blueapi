@@ -26,6 +26,7 @@ from blueapi.config import (
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.service.authentication import SessionCacheManager, SessionManager
+from blueapi.service.model import SourceInfo
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
@@ -360,14 +361,16 @@ def scratch(obj: dict) -> None:
 
 
 @controller.command(name="get-scratch")
+@click.option("--name", type=str, help="Filter by the name of the installed package")
+@click.option("--source", type=SourceInfo, help="Filter by the source type")
 @check_connection
 @click.pass_obj
-def get_scratch(obj: dict) -> None:
+def get_scratch(obj: dict, name: str, source: SourceInfo) -> None:
     """
-    Get the scratch status from the server
+    Retrieve the scratch status from the server
     """
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display(client.get_scratch())
+    obj["fmt"].display(client.get_scratch(name=name, source=source))
 
 
 @main.command(name="login")

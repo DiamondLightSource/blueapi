@@ -68,6 +68,36 @@ components:
           type: array
       title: HTTPValidationError
       type: object
+    PackageInfo:
+      additionalProperties: false
+      properties:
+        is_dirty:
+          description: Does the package have uncommitted changes
+          title: Is Dirty
+          type: boolean
+        location:
+          description: Location of the package
+          title: Location
+          type: string
+        name:
+          description: Name of the package
+          title: Name
+          type: string
+        source:
+          $ref: '#/components/schemas/SourceInfo'
+          default: pypi
+          description: Source of the package
+        version:
+          description: Version of the package
+          title: Version
+          type: string
+      required:
+      - name
+      - version
+      - location
+      - is_dirty
+      title: PackageInfo
+      type: object
     PlanModel:
       additionalProperties: false
       description: Representation of a plan
@@ -122,27 +152,6 @@ components:
       - name
       title: ProtocolInfo
       type: object
-    RepositoryStatus:
-      additionalProperties: false
-      properties:
-        is_dirty:
-          description: Does the repository have uncommitted changes
-          title: Is Dirty
-          type: boolean
-        ref:
-          description: Branch or tag of the repository
-          title: Ref
-          type: string
-        remote_url:
-          description: URL of a repository on a remote server
-          title: Remote Url
-          type: string
-      required:
-      - remote_url
-      - ref
-      - is_dirty
-      title: RepositoryStatus
-      type: object
     ScratchResponse:
       additionalProperties: false
       description: State of the scratch area.
@@ -155,17 +164,17 @@ components:
         installed_packages:
           description: List of installed packages
           items:
-            type: string
+            $ref: '#/components/schemas/PackageInfo'
           title: Installed Packages
-          type: array
-        packages:
-          description: Package information
-          items:
-            $ref: '#/components/schemas/RepositoryStatus'
-          title: Packages
           type: array
       title: ScratchResponse
       type: object
+    SourceInfo:
+      enum:
+      - pypi
+      - scratch
+      title: SourceInfo
+      type: string
     StateChangeRequest:
       additionalProperties: false
       description: Request to change the state of the worker.
@@ -416,8 +425,36 @@ paths:
       summary: Get Plan By Name
   /scratch:
     get:
-      description: Retrieve information about the scratch area.
+      description: "Retrieve details about the scratch area.\n\n- **Behavior**:\n\
+        \    - If the scratch configuration is not defined (`None`),\n      an empty\
+        \ `ScratchResponse` object is returned.\n    - If the scratch configuration\
+        \ exists but encounters issues,\n      an exception is logged on the server\
+        \ side,\n      and an empty `ScratchResponse` object is returned.\n    - If\
+        \ the scratch configuration is valid,\n      detailed scratch information\
+        \ is fetched.\n\n- **Returns**:\n    - A `ScratchResponse` object containing\
+        \ the scratch area details.\n    - An empty `ScratchResponse` object\n   \
+        \   if no valid scratch configuration is available.\n\n- **Exceptions**:\n\
+        \    - `RuntimeError`: Raised if an error occurs while retrieving\n      scratch\
+        \ information.\n      These exceptions are logged and handled on the server\
+        \ side."
       operationId: get_scratch_packages_scratch_get
+      parameters:
+      - in: query
+        name: name
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+      - in: query
+        name: source
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/SourceInfo'
+          - type: 'null'
+          title: Source
       responses:
         '200':
           content:
@@ -425,6 +462,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ScratchResponse'
           description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
       summary: Get Scratch Packages
   /tasks:
     get:

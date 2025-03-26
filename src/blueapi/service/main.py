@@ -39,6 +39,7 @@ from .model import (
     PlanModel,
     PlanResponse,
     ScratchResponse,
+    SourceInfo,
     StateChangeRequest,
     TaskResponse,
     TasksListResponse,
@@ -423,7 +424,11 @@ def set_state(
 
 @router.get("/scratch", response_model=ScratchResponse)
 @start_as_current_span(TRACER)
-def get_scratch_packages(runner: WorkerDispatcher = Depends(_runner)):
+def get_scratch_packages(
+    runner: WorkerDispatcher = Depends(_runner),
+    name: str | None = None,
+    source: SourceInfo | None = None,
+) -> ScratchResponse:
     """
     Retrieve details about the scratch area.
 
@@ -446,7 +451,8 @@ def get_scratch_packages(runner: WorkerDispatcher = Depends(_runner)):
           scratch information.
           These exceptions are logged and handled on the server side.
     """
-    return runner.run(interface.get_scratch)
+
+    return runner.run(interface.get_scratch, name, source)
 
 
 @start_as_current_span(TRACER, "config")

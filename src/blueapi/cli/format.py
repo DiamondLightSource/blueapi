@@ -11,7 +11,12 @@ from typing import Any, TextIO
 from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.model import DeviceResponse, PlanResponse, ScratchResponse
+from blueapi.service.model import (
+    DeviceResponse,
+    PlanResponse,
+    ScratchResponse,
+    SourceInfo,
+)
 from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 FALLBACK = pprint
@@ -68,21 +73,19 @@ def display_full(obj: Any, stream: Stream):
             )
         case ProgressEvent():
             print(f"Progress:{fmt_dict(obj.model_dump())}")
-        case ScratchResponse(
-            packages=packages, installed_packages=installed_packages, enabled=enabled
-        ):
+        case ScratchResponse(installed_packages=installed_packages, enabled=enabled):
             print(f"Scratch Status: {'enabled' if enabled else 'disabled'}")
-            if not packages:
+            if not installed_packages:
                 print("No scratch packages found")
             else:
-                for package in packages:
+                for package in installed_packages:
                     print(
-                        f"- Remote URL: {package.remote_url} "
-                        + f"Version: {package.ref} "
+                        f"- Remote URL: {package.name} "
+                        + f"Version: {package.version} "
                         + f"Dirty: {package.is_dirty}"
+                        + f"Location: {package.location}"
+                        + f"Source: {package.source}"
                     )
-                print("installed packages:")
-                print("\n".join(installed_packages))
         case BaseModel():
             print(obj.__class__.__name__, end="")
             print(fmt_dict(obj.model_dump()))
@@ -139,34 +142,19 @@ def display_compact(obj: Any, stream: Stream):
                 else "???"
             )
             print(f"Progress: {prog}%")
-        case ScratchResponse(
-            packages=packages, installed_packages=installed_packages, enabled=enabled
-        ):
+        case ScratchResponse(installed_packages=installed_packages, enabled=enabled):
             print(f"Scratch Status: {'enabled' if enabled else 'disabled'}")
-            if not packages:
+            if not installed_packages:
                 print("No scratch packages found")
             else:
-                for package in packages:
-                    print(
-                        f"- {package.remote_url}"
-                        + f" @ {package.ref}"
-                        + f"{' (Dirty)' if package.is_dirty else ''}"
-                    )
-                print("installed packages:")
+                for package in installed_packages:
+                    extra = ""
+                    if package.is_dirty:
+                        extra += " (Dirty)"
+                    if package.source == SourceInfo.scratch:
+                        extra += " (Scratch)"
+                    print(f"- {package.name} @ ({package.version}){extra}")
 
-                def display_packages(installed_packages, limit=3):
-                    if len(installed_packages) > 2 * limit:
-                        print(
-                            "\n".join(
-                                installed_packages[:limit]
-                                + 2 * ["..."]
-                                + installed_packages[len(installed_packages) - limit :]
-                            )
-                        )
-                    else:
-                        print("\n".join(installed_packages))
-
-                display_packages(installed_packages)
         case other:
             FALLBACK(other, stream=stream)
 

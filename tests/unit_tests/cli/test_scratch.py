@@ -4,7 +4,7 @@ import uuid
 from collections.abc import Generator
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import Mock, PropertyMock, call, patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 
@@ -15,7 +15,6 @@ from blueapi.cli.scratch import (
     setup_scratch,
 )
 from blueapi.config import ScratchConfig, ScratchRepository
-from blueapi.service.model import RepositoryStatus
 from blueapi.utils import get_owner_gid
 
 
@@ -278,67 +277,6 @@ def test_setup_scratch_continues_after_failure(
 
 
 @patch("blueapi.cli.scratch.Repo")
-def test_get_scratch_info_success(mock_repo: Mock, directory_path_with_sgid: Path):
-    config = ScratchConfig(
-        root=directory_path_with_sgid,
-        repositories=[
-            ScratchRepository(
-                name="foo",
-                remote_url="http://example.com/foo.git",
-            ),
-        ],
-    )
-
-    mock_repo_instance = Mock()
-    mock_repo_instance.active_branch.name = "main"
-    mock_repo_instance.is_dirty.return_value = False
-    mock_repo_instance.remotes = []
-    mock_repo.return_value = mock_repo_instance
-
-    response = get_scratch_info(config)
-
-    assert len(response.packages) == 1
-    assert response.packages[0] == RepositoryStatus(
-        remote_url="UNKNOWN REMOTE",
-        ref="main",
-        is_dirty=False,
-    )
-
-
-@patch("blueapi.cli.scratch.Repo")
-def test_get_scratch_info_on_commit_success(
-    mock_repo: Mock, directory_path_with_sgid: Path
-):
-    config = ScratchConfig(
-        root=directory_path_with_sgid,
-        repositories=[
-            ScratchRepository(
-                name="foo",
-                remote_url="http://example.com/foo.git",
-            ),
-        ],
-    )
-
-    mock_repo_instance = Mock()
-    type(mock_repo_instance.active_branch).name = PropertyMock(side_effect=TypeError)
-    mock_repo_instance.head.commit.hexsha = "adsad23123"
-    mock_repo_instance.is_dirty.return_value = False
-    mock_remote = Mock()
-    mock_remote.url = "http://example.com/foo.git"
-    mock_repo_instance.remotes = [mock_remote]
-    mock_repo.return_value = mock_repo_instance
-
-    response = get_scratch_info(config)
-
-    assert len(response.packages) == 1
-    assert response.packages[0] == RepositoryStatus(
-        remote_url="http://example.com/foo.git",
-        ref="adsad23123",
-        is_dirty=False,
-    )
-
-
-@patch("blueapi.cli.scratch.Repo")
 def test_get_scratch_info_fails_on_invalid_root(
     mock_repo: Mock, nonexistant_path: Path
 ):
@@ -354,4 +292,4 @@ def test_get_scratch_info_fails_on_invalid_root(
 
     response = get_scratch_info(config)
 
-    assert response.packages == []
+    assert response.installed_packages == []

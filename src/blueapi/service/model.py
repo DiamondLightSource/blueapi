@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Iterable
+from enum import Enum
 from typing import Any, get_args
 
 from bluesky.protocols import HasName
@@ -174,10 +175,19 @@ class EnvironmentResponse(BlueapiBaseModel):
     )
 
 
-class RepositoryStatus(BlueapiBaseModel):
-    remote_url: str = Field(description="URL of a repository on a remote server")
-    ref: str = Field(description="Branch or tag of the repository")
-    is_dirty: bool = Field(description="Does the repository have uncommitted changes")
+class SourceInfo(str, Enum):
+    pypi = "pypi"
+    scratch = "scratch"
+
+
+class PackageInfo(BlueapiBaseModel):
+    name: str = Field(description="Name of the package")
+    version: str = Field(description="Version of the package")
+    location: str = Field(description="Location of the package")
+    is_dirty: bool = Field(description="Does the package have uncommitted changes")
+    source: SourceInfo = Field(
+        description="Source of the package", default=SourceInfo.pypi
+    )
 
 
 class ScratchResponse(BlueapiBaseModel):
@@ -185,10 +195,7 @@ class ScratchResponse(BlueapiBaseModel):
     State of the scratch area.
     """
 
-    packages: list[RepositoryStatus] = Field(
-        description="Package information", default_factory=list
-    )
-    installed_packages: list[str] = Field(
+    installed_packages: list[PackageInfo] = Field(
         description="List of installed packages", default_factory=list
     )
     enabled: bool = Field(description="Scratch area state", default=False)

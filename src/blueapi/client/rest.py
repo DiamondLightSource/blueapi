@@ -19,6 +19,7 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
     ScratchResponse,
+    SourceInfo,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -136,8 +137,12 @@ class BlueapiRestClient:
     def get_oidc_config(self) -> OIDCConfig:
         return self._request_and_deserialize("/config/oidc", OIDCConfig)
 
-    def get_scratch(self) -> ScratchResponse:
-        return self._request_and_deserialize("/scratch", ScratchResponse)
+    def get_scratch(
+        self, name: str | None = None, source: SourceInfo | None = None
+    ) -> ScratchResponse:
+        return self._request_and_deserialize(
+            "/scratch", ScratchResponse, params={"name": name, "source": source}
+        )
 
     @start_as_current_span(TRACER, "method", "data", "suffix")
     def _request_and_deserialize(
@@ -147,16 +152,24 @@ class BlueapiRestClient:
         data: Mapping[str, Any] | None = None,
         method="GET",
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
+        params: Mapping[str, Any] | None = None,
     ) -> T:
         url = self._url(suffix)
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
-
         if data:
             response = requests.request(
                 method,
                 url,
                 json=data,
+                headers=carr,
+                auth=JWTAuth(self._session_manager),
+            )
+        elif params:
+            response = requests.request(
+                method,
+                url,
+                params=params,
                 headers=carr,
                 auth=JWTAuth(self._session_manager),
             )

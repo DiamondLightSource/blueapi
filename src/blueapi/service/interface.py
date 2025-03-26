@@ -10,7 +10,13 @@ from blueapi.cli.scratch import get_scratch_info
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
-from blueapi.service.model import DeviceModel, PlanModel, ScratchResponse, WorkerTask
+from blueapi.service.model import (
+    DeviceModel,
+    PlanModel,
+    ScratchResponse,
+    SourceInfo,
+    WorkerTask,
+)
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -199,10 +205,12 @@ def get_oidc_config() -> OIDCConfig | None:
     return config().oidc
 
 
-def get_scratch() -> ScratchResponse:
+def get_scratch(
+    name: str | None = None, source: SourceInfo | None = None
+) -> ScratchResponse:
     """Retrieve information about the scratch area."""
     scratch = config().scratch
     if scratch is None:
         return ScratchResponse()
     else:
-        return get_scratch_info(config=scratch)
+        return get_scratch_info(config=scratch, name=name, source=source)

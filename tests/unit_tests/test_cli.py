@@ -32,8 +32,6 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
-    RepositoryStatus,
-    ScratchResponse,
 )
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
@@ -817,20 +815,23 @@ def test_wrapper_permission_error(
 @responses.activate
 def test_get_scratch(runner: CliRunner):
     scratch_config = {
-        "packages": [
+        "installed_packages": [
             {
-                "remote_url": "https://github.com/example/foo.git",
-                "ref": "18ec206e",
-                "is_dirty": "true",
+                "name": "bar",
+                "version": "0.0.1",
+                "location": "/tmp/bar",
+                "is_dirty": "false",
+                "source": "pypi",
             },
             {
-                "remote_url": "https://github.com/example/bar.git",
-                "ref": "main",
-                "is_dirty": "false",
+                "name": "foo",
+                "version": "https://github.com/example/foo.git @18ec206e",
+                "location": "/tmp/foo",
+                "is_dirty": "true",
+                "source": "scratch",
             },
         ],
-        "installed_packages": ["pydantic (2.10.6) => /venv/site-packages/pydantic"],
-        "enabled": True,
+        "enabled": "true",
     }
     response = responses.add(
         responses.GET,
@@ -845,91 +846,14 @@ def test_get_scratch(runner: CliRunner):
 
     assert result.output == dedent("""\
         Scratch Status: enabled
-        - https://github.com/example/foo.git @ 18ec206e (Dirty)
-        - https://github.com/example/bar.git @ main
-        installed packages:
-        pydantic (2.10.6) => /venv/site-packages/pydantic
+        - bar @ (0.0.1)
+        - foo @ (https://github.com/example/foo.git @18ec206e) (Dirty) (Scratch)
         """)
-
-
-def test_get_scratch_formatting():
-    scratch_config = ScratchResponse(
-        packages=[
-            RepositoryStatus(
-                remote_url="https://github.com/example/foo.git",
-                ref="18ec206e",
-                is_dirty=True,
-            ),
-            RepositoryStatus(
-                remote_url="https://github.com/example/bar.git",
-                ref="main",
-                is_dirty=False,
-            ),
-        ],
-        installed_packages=["pydantic (2.10.6) => /venv/site-packages/pydantic"],
-        enabled=True,
-    )
-
-    compact = dedent("""\
-        Scratch Status: enabled
-        - https://github.com/example/foo.git @ 18ec206e (Dirty)
-        - https://github.com/example/bar.git @ main
-        installed packages:
-        pydantic (2.10.6) => /venv/site-packages/pydantic
-        """)
-    _assert_matching_formatting(OutputFormat.COMPACT, scratch_config, compact)
-
-    full = dedent("""\
-    Scratch Status: enabled
-    - Remote URL: https://github.com/example/foo.git Version: 18ec206e Dirty: True
-    - Remote URL: https://github.com/example/bar.git Version: main Dirty: False
-    installed packages:
-    pydantic (2.10.6) => /venv/site-packages/pydantic
-    """)
-
-    _assert_matching_formatting(OutputFormat.FULL, scratch_config, full)
-
-    scratch_config = ScratchResponse()
-
-    output = "Scratch Status: disabled\nNo scratch packages found\n"
-    _assert_matching_formatting(OutputFormat.FULL, scratch_config, output)
-
-    installed_packages = [
-        f"package{i} (1.0.0) => /venv/site-packages/package{i}" for i in range(7)
-    ]
-    scratch_config = ScratchResponse(
-        packages=[
-            RepositoryStatus(
-                remote_url="https://github.com/example/foo.git",
-                ref="18ec206e",
-                is_dirty=True,
-            ),
-            RepositoryStatus(
-                remote_url="https://github.com/example/bar.git",
-                ref="main",
-                is_dirty=False,
-            ),
-        ],
-        installed_packages=installed_packages,
-        enabled=True,
-    )
-
-    compact = dedent("""\
-        Scratch Status: enabled
-        - https://github.com/example/foo.git @ 18ec206e (Dirty)
-        - https://github.com/example/bar.git @ main
-        installed packages:
-        """)
-    compact += (
-        "\n".join(installed_packages[:3] + 2 * ["..."] + installed_packages[-3:]) + "\n"
-    )
-
-    _assert_matching_formatting(OutputFormat.COMPACT, scratch_config, compact)
 
 
 @responses.activate
 def test_get_scratch_with_empty_response(runner: CliRunner):
-    scratch_config = {"packages": []}
+    scratch_config = {"installed_packages": []}
     response = responses.add(
         responses.GET,
         "http://localhost:8000/scratch",

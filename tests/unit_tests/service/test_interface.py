@@ -14,10 +14,11 @@ from blueapi.service import interface
 from blueapi.service.interface import get_scratch, set_config
 from blueapi.service.model import (
     DeviceModel,
+    PackageInfo,
     PlanModel,
     ProtocolInfo,
-    RepositoryStatus,
     ScratchResponse,
+    SourceInfo,
     WorkerTask,
 )
 from blueapi.worker.event import TaskStatusEnum, WorkerState
@@ -308,7 +309,7 @@ def test_stomp_config(mock_stomp_client: StompClient):
 
 def test_get_scratch_no_config():
     set_config(ApplicationConfig(scratch=None))
-    assert get_scratch() == ScratchResponse()
+    assert get_scratch(name=None, source=None) == ScratchResponse()
 
 
 @patch("blueapi.service.interface.get_scratch_info")
@@ -316,9 +317,20 @@ def test_get_scratch_with_config(mock_get_scratch_info: MagicMock):
     scratch_config = ScratchConfig()
     set_config(ApplicationConfig(scratch=scratch_config))
     mock_response = ScratchResponse(
-        packages=[RepositoryStatus(remote_url="foo", ref="main", is_dirty=False)]
+        installed_packages=[
+            PackageInfo(
+                name="foo",
+                version="http://example.com/foo.git@adsad23123",
+                source=SourceInfo.scratch,
+                location="/tmp/foo",
+                is_dirty=False,
+            )
+        ],
+        enabled=True,
     )
     mock_get_scratch_info.return_value = mock_response
 
     assert get_scratch() == mock_response
-    mock_get_scratch_info.assert_called_once_with(config=scratch_config)
+    mock_get_scratch_info.assert_called_once_with(
+        config=scratch_config, name=None, source=None
+    )

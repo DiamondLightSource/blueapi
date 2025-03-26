@@ -25,9 +25,10 @@ from blueapi.service.interface import (
 from blueapi.service.model import (
     DeviceModel,
     EnvironmentResponse,
+    PackageInfo,
     PlanModel,
-    RepositoryStatus,
     ScratchResponse,
+    SourceInfo,
     StateChangeRequest,
     WorkerTask,
 )
@@ -603,7 +604,15 @@ def test_get_oidc_config(
 
 def test_get_scratch_packages(mock_runner: Mock, client: TestClient) -> None:
     packages = ScratchResponse(
-        packages=[RepositoryStatus(remote_url="foo", ref="1.0.0", is_dirty=False)]
+        installed_packages=[
+            PackageInfo(
+                name="pydantic",
+                version="2.10.6",
+                source=SourceInfo.pypi,
+                is_dirty=False,
+                location="/venv/site-packages/pydantic",
+            )
+        ]
     )
     mock_runner.run.return_value = packages
     response = client.get("/scratch")

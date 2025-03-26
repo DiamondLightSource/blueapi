@@ -390,3 +390,23 @@ def test_setup(mock_stomp: MagicMock):
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 
     interface.teardown()
+
+
+@patch("blueapi.client.numtracker.NumtrackerClient.create_scan")
+def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_scan):
+    conf = ApplicationConfig(
+        numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+    )
+    interface.set_config(conf)
+    ctx = interface.context()
+
+    headers = {"a": "b"}
+    interface._try_configure_numtracker(headers)
+    interface._update_scan_num(ctx.run_engine.md)
+
+    mock_create_scan.assert_called_once_with("ab123", "p46")
+
+    interface.teardown()

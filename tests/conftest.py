@@ -4,6 +4,7 @@ import os
 import time
 from collections.abc import Iterable
 from pathlib import Path
+from textwrap import dedent
 from typing import Any, cast
 from unittest.mock import Mock, patch
 
@@ -19,6 +20,7 @@ from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
+from responses.matchers import json_params_matcher
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service.model import Cache
@@ -341,11 +343,82 @@ if os.getenv("PYTEST_RAISE", "0") == "1":
         raise excinfo.value
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
-    requests_mock = responses.RequestsMock()
+    query_working = {
+        "query": dedent("""
+            mutation{
+                scan(
+                    instrument: "p46",
+                    instrumentSession: "ab123"
+                    ) {
+                    directory{
+                        instrumentSession
+                        instrument
+                        path
+                    }
+                    scanFile
+                    scanNumber
+                }
+            }
+            """)
+    }
+    query_400 = {
+        "query": dedent("""
+            mutation{
+                scan(
+                    instrument: "p47",
+                    instrumentSession: "ab123"
+                    ) {
+                    directory{
+                        instrumentSession
+                        instrument
+                        path
+                    }
+                    scanFile
+                    scanNumber
+                }
+            }
+            """)
+    }
+    query_500 = {
+        "query": dedent("""
+            mutation{
+                scan(
+                    instrument: "p48",
+                    instrumentSession: "ab123"
+                    ) {
+                    directory{
+                        instrumentSession
+                        instrument
+                        path
+                    }
+                    scanFile
+                    scanNumber
+                }
+            }
+            """)
+    }
+    query_key_error = {
+        "query": dedent("""
+            mutation{
+                scan(
+                    instrument: "p49",
+                    instrumentSession: "ab123"
+                    ) {
+                    directory{
+                        instrumentSession
+                        instrument
+                        path
+                    }
+                    scanFile
+                    scanNumber
+                }
+            }
+            """)
+    }
 
-    response = {
+    working_response = {
         "data": {
             "scan": {
                 "scanFile": "p46-11",
@@ -358,11 +431,35 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             }
         }
     }
+    empty_response = {}
 
-    requests_mock.post(
-        "https://numtracker-example.com/graphql",
-        json=response,
-    )
-
-    with requests_mock:
+    with responses.RequestsMock() as requests_mock:
+        requests_mock.add(
+            responses.POST,
+            url="https://numtracker-example.com/graphql",
+            match=[json_params_matcher(query_working)],
+            status=200,
+            json=working_response,
+        )
+        requests_mock.add(
+            responses.POST,
+            url="https://numtracker-example.com/graphql",
+            match=[json_params_matcher(query_400)],
+            status=400,
+            json=empty_response,
+        )
+        requests_mock.add(
+            responses.POST,
+            url="https://numtracker-example.com/graphql",
+            match=[json_params_matcher(query_500)],
+            status=500,
+            json=empty_response,
+        )
+        requests_mock.add(
+            responses.POST,
+            url="https://numtracker-example.com/graphql",
+            match=[json_params_matcher(query_key_error)],
+            status=200,
+            json=empty_response,
+        )
         yield requests_mock

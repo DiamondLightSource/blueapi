@@ -66,7 +66,7 @@ def qualified_name(target: type) -> str:
     return f"{module_name}{name}"
 
 
-def is_bluesky_type(typ: type):
+def is_bluesky_type(typ: type) -> bool:
     return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
 
 
@@ -322,13 +322,12 @@ class BlueskyContext:
         Returns:
             A Type that can be deserialised by Pydantic
         """
-        origin = get_origin(typ)
-        if is_bluesky_type(typ) or (origin is not None and is_bluesky_type(origin)):
+        root = get_origin(typ)
+        if is_bluesky_type(typ) or (root is not None and is_bluesky_type(root)):
             return self._reference(typ)
         args = get_args(typ)
         if args:
             new_types = tuple(self._convert_type(i) for i in args)
-            root = get_origin(typ)
             if root == UnionType:
                 root = Union
             return root[new_types] if root else typ  # type: ignore

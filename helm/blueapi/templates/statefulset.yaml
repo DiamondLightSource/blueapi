@@ -12,6 +12,9 @@ spec:
   template:
     metadata:
       annotations:
+      {{- if ((.Values.worker).logging).graylog_enabled }}
+      fluentd-ignore: "true"
+      {{- end }}
       {{- if .Values.restartOnConfigChange }}
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       {{- end }}

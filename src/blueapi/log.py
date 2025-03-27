@@ -52,7 +52,7 @@ def set_up_logging(logging_config: LoggingConfig) -> None:
     stream_handler = set_up_stream_handler(logger, logging_config)
     handlers.append(stream_handler)
 
-    if logging_config.graylog_export_enabled:
+    if logging_config.graylog_enabled:
         graylog_handler = set_up_graylog_handler(logger, logging_config)
         handlers.append(graylog_handler)
 

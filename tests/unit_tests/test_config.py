@@ -221,7 +221,7 @@ def temp_yaml_config_file(
                 "events": {"broadcast_status_events": True},
             },
             "logging": {
-                "graylog_export_enabled": True,
+                "graylog_enabled": False,
                 "graylog_host": "graylog-log-target.diamond.ac.uk",
                 "graylog_port": 12232,
                 "level": "INFO",
@@ -274,7 +274,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "protocol": "http",
             },
             "logging": {
-                "graylog_export_enabled": True,
+                "graylog_enabled": False,
                 "graylog_host": "graylog-log-target.diamond.ac.uk",
                 "graylog_port": 12232,
                 "level": "INFO",
@@ -311,7 +311,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "events": {"broadcast_status_events": True},
             },
             "logging": {
-                "graylog_export_enabled": True,
+                "graylog_enabled": False,
                 "graylog_host": "graylog-log-target.diamond.ac.uk",
                 "graylog_port": 12232,
                 "level": "INFO",

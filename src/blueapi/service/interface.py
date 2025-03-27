@@ -124,8 +124,7 @@ def setup(config: ApplicationConfig) -> None:
     _hook_run_engine_and_path_provider()
 
 
-# TODO: Make the path provider ourselves and inject it into dodal,tox -e pre
-#         leaving BL modules to define their own offline default
+# TODO: https://github.com/DiamondLightSource/blueapi/issues/875
 def _hook_run_engine_and_path_provider() -> None:
     path_provider = get_path_provider()
     run_engine = context().run_engine

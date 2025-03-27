@@ -319,9 +319,9 @@ def set_active_task(
         interface.begin_task,
         task=task,
         pass_through_headers={
-            key: request.headers[key]
-            for key in {"Authorization"}
-            if key in request.headers
+            key: value
+            for key, value in request.headers.items()
+            if key in {"Authorization"}
         },
     )
     return task

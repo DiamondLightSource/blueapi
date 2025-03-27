@@ -461,11 +461,7 @@ async def log_request_details(
 ) -> Response:
     response = await call_next(request)
     LOGGER.info(
-        '%s:%s - "%s %s"',
-        request.client.host,
-        request.client.port,
-        request.method,
-        request.url.path,
+        "http request: %s call_next: %s response: %s", request, call_next, response
     )
     return response
 

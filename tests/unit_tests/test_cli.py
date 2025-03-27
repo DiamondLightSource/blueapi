@@ -914,3 +914,12 @@ def test_scratch_output_formatting():
         """)
 
     _assert_matching_formatting(OutputFormat.FULL, scratch, full)
+
+    empty_scratch = ScratchResponse(installed_packages=[], enabled=False)
+
+    full = dedent("""\
+        Scratch Status: disabled
+        No scratch packages found
+        """)
+
+    _assert_matching_formatting(OutputFormat.FULL, empty_scratch, full)

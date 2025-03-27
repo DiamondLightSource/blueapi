@@ -26,7 +26,7 @@ LOGGER_NAMES = ["", "blueapi", "blueapi.test"]
 @pytest.fixture(params=LOGGER_NAMES)
 def logger_with_graylog(request):
     logger = logging.getLogger(request.param)
-    set_up_logging(LoggingConfig(graylog_export_enabled=True))
+    set_up_logging(LoggingConfig(graylog_enabled=True))
     yield logger
     clear_all_loggers_and_handlers(logger)
 
@@ -34,7 +34,7 @@ def logger_with_graylog(request):
 @pytest.fixture(params=LOGGER_NAMES)
 def logger_without_graylog(request):
     logger = logging.getLogger(request.param)
-    set_up_logging(LoggingConfig(graylog_export_enabled=False))
+    set_up_logging(LoggingConfig(graylog_enabled=False))
     yield logger
     clear_all_loggers_and_handlers(logger)
 
@@ -71,7 +71,7 @@ def mock_handler_emit(request):
 
 @pytest.fixture
 def mock_logger_config() -> LoggingConfig:
-    return LoggingConfig(graylog_export_enabled=False)
+    return LoggingConfig(graylog_enabled=False)
 
 
 def test_loggers_emits_to_all_handlers(logger, mock_handler_emit):

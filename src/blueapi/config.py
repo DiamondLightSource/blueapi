@@ -153,6 +153,13 @@ class OIDCConfig(BlueapiBaseModel):
         )
 
 
+class CORSConfig(BlueapiBaseModel):
+    origins: list[str]
+    allow_credentials: bool = False
+    allow_methods: list[str] = ["*"]
+    allow_headers: list[str] = ["*"]
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -166,6 +173,7 @@ class ApplicationConfig(BlueapiBaseModel):
     scratch: ScratchConfig | None = None
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
+    cors: CORSConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

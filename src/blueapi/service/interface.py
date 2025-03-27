@@ -85,7 +85,7 @@ def numtracker_client() -> NumtrackerClient | None:
     conf = config()
     if conf.numtracker is not None:
         if conf.env.metadata is not None:
-            client = NumtrackerClient(url=conf.numtracker.url, headers={})
+            client = NumtrackerClient(url=conf.numtracker.url)
             return client
         else:
             raise InvalidConfigError(

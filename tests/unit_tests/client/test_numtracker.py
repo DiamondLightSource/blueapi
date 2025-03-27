@@ -14,7 +14,7 @@ from blueapi.client.numtracker import (
 
 @pytest.fixture
 def numtracker() -> NumtrackerClient:
-    return NumtrackerClient("https://numtracker-example.com/graphql", {})
+    return NumtrackerClient("https://numtracker-example.com/graphql")
 
 
 def test_create_scan(

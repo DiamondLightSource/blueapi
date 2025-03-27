@@ -46,10 +46,9 @@ class NumtrackerClient:
     def __init__(
         self,
         url: str,
-        headers: Mapping[str, str],
     ) -> None:
         self._url = url
-        self._headers = headers
+        self._headers: Mapping[str, str] = {}
 
     def set_headers(self, headers: Mapping[str, str]) -> None:
         """

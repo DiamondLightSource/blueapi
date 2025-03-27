@@ -6,6 +6,7 @@ from inspect import Parameter, signature
 from types import ModuleType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
+from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
@@ -25,7 +26,6 @@ from blueapi.utils import (
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     Device,
-    HasName,
     Plan,
     PlanGenerator,
     is_bluesky_compatible_device,

@@ -10,7 +10,7 @@ from git import Repo
 from tomlkit import parse
 
 from blueapi.config import ScratchConfig
-from blueapi.service.model import PackageInfo, ScratchResponse, SourceInfo
+from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, SourceInfo
 from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
@@ -155,63 +155,71 @@ def _fetch_installed_packages_details() -> list[PackageInfo]:
     ]
 
 
-def get_scratch_info(
-    config: ScratchConfig, name: str | None = None, source: SourceInfo | None = None
-) -> ScratchResponse:
+def get_python_environment(
+    config: ScratchConfig | None,
+    name: str | None = None,
+    source: SourceInfo | None = None,
+) -> PythonEnvironmentResponse:
     """
-    Get information about the scratch area. This includes the installed packages
-    and the status of each repository.
+    Get the Python environment. This includes all installed packages and
+    the scratch packages.
     """
-    scratch_responses = ScratchResponse(enabled=True)
-    try:
-        _validate_directory(config.root)
-    except Exception as e:
-        logging.error(f"Failed to get scratch info: {e}")
-        return scratch_responses
+    scratch_packages = {}
     packages = []
-    for repo in config.repositories:
-        local_directory = config.root / repo.name
-        repo = Repo(local_directory)
+
+    if config is None:
+        python_env_response = PythonEnvironmentResponse(scratch_enabled=False)
+    else:
+        python_env_response = PythonEnvironmentResponse(scratch_enabled=True)
         try:
-            branch = repo.active_branch.name
-        except TypeError:
-            branch = repo.head.commit.hexsha
+            _validate_directory(config.root)
+        except Exception as e:
+            logging.error(f"Failed to get scratch info: {e}")
+            return python_env_response
+        for repo in config.repositories:
+            local_directory = config.root / repo.name
+            repo = Repo(local_directory)
+            try:
+                branch = repo.active_branch.name
+            except TypeError:
+                branch = repo.head.commit.hexsha
 
-        is_dirty = repo.is_dirty()
+            is_dirty = repo.is_dirty()
 
-        version = (
-            f"{repo.remotes[0].url} @{branch}"
-            if repo.remotes
-            else f"UNKNOWN REMOTE @{branch}"
-        )
-        package_name = _get_project_name_from_pyproject(local_directory)
-        package_location = ""
-
-        packages.append(
-            PackageInfo(
-                name=package_name,
-                version=version,
-                location=package_location,
-                source=SourceInfo.scratch,
-                is_dirty=is_dirty,
+            version = (
+                f"{repo.remotes[0].url} @{branch}"
+                if repo.remotes
+                else f"UNKNOWN REMOTE @{branch}"
             )
-        )
-    scratch_packages = {p.name: p for p in packages}
+            package_name = _get_project_name_from_pyproject(local_directory)
+            package_location = ""
+
+            packages.append(
+                PackageInfo(
+                    name=package_name,
+                    version=version,
+                    location=package_location,
+                    source=SourceInfo.SCRATCH,
+                    is_dirty=is_dirty,
+                )
+            )
+        scratch_packages = {p.name: p for p in packages}
+
     for pkg in _fetch_installed_packages_details():
         if pkg.name not in scratch_packages:
             packages.append(pkg)
         else:
             scratch_packages[pkg.name].location += f"{pkg.location} &&"
 
-    scratch_responses.installed_packages = sorted(
+    python_env_response.installed_packages = sorted(
         packages, key=lambda pkg: pkg.name.lower()
     )
     if name:
-        scratch_responses.installed_packages = [
-            p for p in scratch_responses.installed_packages if p.name == name
+        python_env_response.installed_packages = [
+            p for p in python_env_response.installed_packages if p.name == name
         ]
     if source:
-        scratch_responses.installed_packages = [
-            p for p in scratch_responses.installed_packages if p.source == source
+        python_env_response.installed_packages = [
+            p for p in python_env_response.installed_packages if p.source == source
         ]
-    return scratch_responses
+    return python_env_response

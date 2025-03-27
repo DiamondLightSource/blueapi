@@ -32,7 +32,7 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
-    ScratchResponse,
+    PythonEnvironmentResponse,
 )
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
@@ -809,7 +809,7 @@ def test_wrapper_permission_error(
 
 
 @responses.activate
-def test_get_scratch(runner: CliRunner):
+def test_get_python_environment(runner: CliRunner):
     scratch_config = {
         "installed_packages": [
             {
@@ -827,16 +827,16 @@ def test_get_scratch(runner: CliRunner):
                 "source": "scratch",
             },
         ],
-        "enabled": "true",
+        "scratch_enabled": "true",
     }
     response = responses.add(
         responses.GET,
-        "http://localhost:8000/scratch",
+        "http://localhost:8000/python_environment",
         json=scratch_config,
         status=200,
     )
 
-    result = runner.invoke(main, ["controller", "get-scratch"])
+    result = runner.invoke(main, ["controller", "get-python-env"])
     assert response.call_count == 1
     assert result.exit_code == 0
 
@@ -848,16 +848,18 @@ def test_get_scratch(runner: CliRunner):
 
 
 @responses.activate
-def test_get_scratch_with_empty_response(runner: CliRunner):
-    scratch_config = {"installed_packages": []}
+def test_get_python_env_with_empty_response(runner: CliRunner):
+    scratch_config = {
+        "installed_packages": [],
+    }
     response = responses.add(
         responses.GET,
-        "http://localhost:8000/scratch",
+        "http://localhost:8000/python_environment",
         json=scratch_config,
         status=200,
     )
 
-    result = runner.invoke(main, ["controller", "get-scratch"])
+    result = runner.invoke(main, ["controller", "get-python-env"])
     assert response.call_count == 1
     assert result.exit_code == 0
     assert result.output == dedent("""\
@@ -866,10 +868,10 @@ def test_get_scratch_with_empty_response(runner: CliRunner):
     """)
 
 
-def test_scratch_output_formatting():
-    """Test for alternative scratch output formats"""
+def test_python_env_output_formatting():
+    """Test for alternative python env output formats"""
 
-    scratch_response = {
+    python_env_response = {
         "installed_packages": [
             {
                 "name": "bar",
@@ -886,9 +888,9 @@ def test_scratch_output_formatting():
                 "source": "scratch",
             },
         ],
-        "enabled": "true",
+        "scratch_enabled": "true",
     }
-    scratch = ScratchResponse(**scratch_response)
+    python_env_response = PythonEnvironmentResponse(**python_env_response)
 
     compact = dedent("""\
         Scratch Status: enabled
@@ -896,7 +898,7 @@ def test_scratch_output_formatting():
         - foo @ (https://github.com/example/foo.git @18ec206e) (Dirty) (Scratch)
         """)
 
-    _assert_matching_formatting(OutputFormat.COMPACT, scratch, compact)
+    _assert_matching_formatting(OutputFormat.COMPACT, python_env_response, compact)
 
     full = dedent("""\
         Scratch Status: enabled
@@ -913,13 +915,15 @@ def test_scratch_output_formatting():
         Dirty: True
         """)
 
-    _assert_matching_formatting(OutputFormat.FULL, scratch, full)
+    _assert_matching_formatting(OutputFormat.FULL, python_env_response, full)
 
-    empty_scratch = ScratchResponse(installed_packages=[], enabled=False)
+    empty_python_env = PythonEnvironmentResponse(
+        installed_packages=[], scratch_enabled=False
+    )
 
     full = dedent("""\
         Scratch Status: disabled
         No scratch packages found
         """)
 
-    _assert_matching_formatting(OutputFormat.FULL, empty_scratch, full)
+    _assert_matching_formatting(OutputFormat.FULL, empty_python_env, full)

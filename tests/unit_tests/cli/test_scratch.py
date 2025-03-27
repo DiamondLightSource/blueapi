@@ -12,7 +12,7 @@ from blueapi.cli.scratch import (
     _fetch_installed_packages_details,
     _get_project_name_from_pyproject,
     ensure_repo,
-    get_scratch_info,
+    get_python_environment,
     scratch_install,
     setup_scratch,
 )
@@ -280,9 +280,7 @@ def test_setup_scratch_continues_after_failure(
 
 
 @patch("blueapi.cli.scratch.Repo")
-def test_get_scratch_info_fails_on_invalid_root(
-    mock_repo: Mock, nonexistant_path: Path
-):
+def test_python_env_info_with_nonexistent_path(mock_repo: Mock, nonexistant_path: Path):
     config = ScratchConfig(
         root=nonexistant_path,
         repositories=[
@@ -293,7 +291,7 @@ def test_get_scratch_info_fails_on_invalid_root(
         ],
     )
 
-    response = get_scratch_info(config)
+    response = get_python_environment(config)
 
     assert response.installed_packages == []
 
@@ -318,7 +316,7 @@ def config(directory_path_with_sgid: Path) -> ScratchConfig:
 @patch("blueapi.cli.scratch.Repo")
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
 @patch("blueapi.cli.scratch._get_project_name_from_pyproject")
-def test_get_scratch_info_returns_correct_packages(
+def test_get_python_env_returns_correct_packages(
     mock_get_project_name: Mock,
     mock_fetch_installed_packages: Mock,
     mock_repo: Mock,
@@ -352,7 +350,7 @@ def test_get_scratch_info_returns_correct_packages(
         )
     ]
 
-    response = get_scratch_info(config)
+    response = get_python_environment(config)
 
     assert response.installed_packages == [
         PackageInfo(
@@ -360,21 +358,21 @@ def test_get_scratch_info_returns_correct_packages(
             version="http://example.com/bar.git @adsad23123",
             location="",
             is_dirty=True,
-            source=SourceInfo.scratch,
+            source=SourceInfo.SCRATCH,
         ),
         PackageInfo(
             name="foo-package",
             version="http://example.com/foo.git @main",
             location="",
             is_dirty=False,
-            source=SourceInfo.scratch,
+            source=SourceInfo.SCRATCH,
         ),
         PackageInfo(
             name="package-01",
             version="1.0.1",
             location="/some/location",
             is_dirty=False,
-            source=SourceInfo.pypi,
+            source=SourceInfo.PYPI,
         ),
     ]
 
@@ -382,7 +380,7 @@ def test_get_scratch_info_returns_correct_packages(
 @patch("blueapi.cli.scratch.Repo")
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
 @patch("blueapi.cli.scratch._get_project_name_from_pyproject")
-def test_fetch_scratch_info_with_identical_packages(
+def test_fetch_python_env_with_identical_packages(
     mock_get_project_name: Mock,
     mock_fetch_installed_packages: Mock,
     mock_repo: Mock,
@@ -404,7 +402,7 @@ def test_fetch_scratch_info_with_identical_packages(
             version="http://example.com/foo.git @main",
             location="/some/location",
             is_dirty=False,
-            source=SourceInfo.scratch,
+            source=SourceInfo.SCRATCH,
         )
     ]
     config = ScratchConfig(
@@ -416,7 +414,7 @@ def test_fetch_scratch_info_with_identical_packages(
             ),
         ],
     )
-    response = get_scratch_info(config)
+    response = get_python_environment(config)
 
     assert response.installed_packages == [
         PackageInfo(
@@ -424,7 +422,7 @@ def test_fetch_scratch_info_with_identical_packages(
             version="http://example.com/foo.git @main",
             location="/some/location &&",
             is_dirty=False,
-            source=SourceInfo.scratch,
+            source=SourceInfo.SCRATCH,
         ),
     ]
 
@@ -453,7 +451,7 @@ def test_fetch_installed_packages_details_returns_correct_packages(mock_distribu
 @patch("blueapi.cli.scratch.Repo")
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
 @patch("blueapi.cli.scratch._get_project_name_from_pyproject")
-def test_get_scratch_info_filters_by_name_and_source(
+def test_get_python_env_filters_by_name_and_source(
     mock_get_project_name: Mock,
     mock_fetch_installed_packages: Mock,
     mock_repo: Mock,
@@ -475,7 +473,7 @@ def test_get_scratch_info_filters_by_name_and_source(
             version="1.0.0",
             location="/some/location",
             is_dirty=False,
-            source=SourceInfo.pypi,
+            source=SourceInfo.PYPI,
         )
     ]
     config = ScratchConfig(
@@ -488,26 +486,26 @@ def test_get_scratch_info_filters_by_name_and_source(
         ],
     )
     # Test filtering by name
-    response_by_name = get_scratch_info(config, name="foo-package")
+    response_by_name = get_python_environment(config, name="foo-package")
     assert response_by_name.installed_packages == [
         PackageInfo(
             name="foo-package",
             version="http://example.com/foo.git @main",
             location="",
             is_dirty=False,
-            source=SourceInfo.scratch,
+            source=SourceInfo.SCRATCH,
         )
     ]
 
     # Test filtering by source
-    response_by_source = get_scratch_info(config, source=SourceInfo.scratch)
+    response_by_source = get_python_environment(config, source=SourceInfo.SCRATCH)
     assert response_by_source.installed_packages == [
         PackageInfo(
             name="foo-package",
             version="http://example.com/foo.git @main",
             location="",
             is_dirty=False,
-            source=SourceInfo.scratch,
+            source=SourceInfo.SCRATCH,
         )
     ]
 

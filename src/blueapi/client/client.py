@@ -18,7 +18,7 @@ from blueapi.service.model import (
     OIDCConfig,
     PlanModel,
     PlanResponse,
-    ScratchResponse,
+    PythonEnvironmentResponse,
     SourceInfo,
     TaskResponse,
     TasksListResponse,
@@ -441,14 +441,15 @@ class BlueapiClient:
         return self._rest.get_oidc_config()
 
     @start_as_current_span(TRACER)
-    def get_scratch(
+    def get_python_env(
         self, name: str | None = None, source: SourceInfo | None = None
-    ) -> ScratchResponse:
+    ) -> PythonEnvironmentResponse:
         """
-        Get scratch packages from the server
+        Get the Python environment. This includes all installed packages and
+        the scratch packages.
 
         Returns:
-            ScratchResponse: Details of the scratch packages
+            PythonEnvironmentResponse: Details of the python environment
         """
 
-        return self._rest.get_scratch(name=name, source=source)
+        return self._rest.get_python_environment(name=name, source=source)

@@ -28,7 +28,7 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PackageInfo,
     PlanModel,
-    ScratchResponse,
+    PythonEnvironmentResponse,
     SourceInfo,
     StateChangeRequest,
     WorkerTask,
@@ -603,19 +603,19 @@ def test_get_oidc_config(
     assert response.json() == oidc_config.model_dump()
 
 
-def test_get_scratch_packages(mock_runner: Mock, client: TestClient) -> None:
-    packages = ScratchResponse(
+def test_get_python_environment(mock_runner: Mock, client: TestClient) -> None:
+    packages = PythonEnvironmentResponse(
         installed_packages=[
             PackageInfo(
                 name="pydantic",
                 version="2.10.6",
-                source=SourceInfo.pypi,
+                source=SourceInfo.PYPI,
                 is_dirty=False,
                 location="/venv/site-packages/pydantic",
             )
         ]
     )
     mock_runner.run.return_value = packages
-    response = client.get("/scratch")
+    response = client.get("/python_environment")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == packages.model_dump()

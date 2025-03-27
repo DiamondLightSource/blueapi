@@ -14,7 +14,7 @@ from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
-    ScratchResponse,
+    PythonEnvironmentResponse,
     SourceInfo,
 )
 from blueapi.worker.event import ProgressEvent, WorkerEvent
@@ -73,7 +73,9 @@ def display_full(obj: Any, stream: Stream):
             )
         case ProgressEvent():
             print(f"Progress:{fmt_dict(obj.model_dump())}")
-        case ScratchResponse(installed_packages=installed_packages, enabled=enabled):
+        case PythonEnvironmentResponse(
+            installed_packages=installed_packages, scratch_enabled=enabled
+        ):
             print(f"Scratch Status: {'enabled' if enabled else 'disabled'}")
             if not installed_packages:
                 print("No scratch packages found")
@@ -143,7 +145,9 @@ def display_compact(obj: Any, stream: Stream):
                 else "???"
             )
             print(f"Progress: {prog}%")
-        case ScratchResponse(installed_packages=installed_packages, enabled=enabled):
+        case PythonEnvironmentResponse(
+            installed_packages=installed_packages, scratch_enabled=enabled
+        ):
             print(f"Scratch Status: {'enabled' if enabled else 'disabled'}")
             if not installed_packages:
                 print("No scratch packages found")
@@ -152,7 +156,7 @@ def display_compact(obj: Any, stream: Stream):
                     extra = ""
                     if package.is_dirty:
                         extra += " (Dirty)"
-                    if package.source == SourceInfo.scratch:
+                    if package.source == SourceInfo.SCRATCH:
                         extra += " (Scratch)"
                     print(f"- {package.name} @ ({package.version}){extra}")
 

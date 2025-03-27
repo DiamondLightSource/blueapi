@@ -38,7 +38,7 @@ from .model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
-    ScratchResponse,
+    PythonEnvironmentResponse,
     SourceInfo,
     StateChangeRequest,
     TaskResponse,
@@ -422,37 +422,29 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
-@router.get("/scratch", response_model=ScratchResponse)
+@router.get("/python_environment", response_model=PythonEnvironmentResponse)
 @start_as_current_span(TRACER)
-def get_scratch_packages(
+def get_python_environment(
     runner: WorkerDispatcher = Depends(_runner),
     name: str | None = None,
     source: SourceInfo | None = None,
-) -> ScratchResponse:
+) -> PythonEnvironmentResponse:
     """
-    Retrieve details about the scratch area.
+    Retrieve the Python environment details.
 
-    - **Behavior**:
-        - If the scratch configuration is not defined (`None`),
-          an empty `ScratchResponse` object is returned.
-        - If the scratch configuration exists but encounters issues,
-          an exception is logged on the server side,
-          and an empty `ScratchResponse` object is returned.
-        - If the scratch configuration is valid,
-          detailed scratch information is fetched.
+    This endpoint fetches information about the Python environment,
+    such as the installed packages and scratch packages.
 
-    - **Returns**:
-        - A `ScratchResponse` object containing the scratch area details.
-        - An empty `ScratchResponse` object
-          if no valid scratch configuration is available.
+    Args:
+        name: An optional name to filter or identify the environment.
+        source: An optional source filter to find packages present of a specific source.
+        (e.g. "scratch"or "pypi")
 
-    - **Exceptions**:
-        - `RuntimeError`: Raised if an error occurs while retrieving
-          scratch information.
-          These exceptions are logged and handled on the server side.
+    Returns:
+        PythonEnvironmentResponse: A response model containing details about
+        the Python environment.
     """
-
-    return runner.run(interface.get_scratch, name, source)
+    return runner.run(interface.get_python_env, name, source)
 
 
 @start_as_current_span(TRACER, "config")

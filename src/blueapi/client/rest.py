@@ -18,7 +18,7 @@ from blueapi.service.model import (
     OIDCConfig,
     PlanModel,
     PlanResponse,
-    ScratchResponse,
+    PythonEnvironmentResponse,
     SourceInfo,
     TaskResponse,
     TasksListResponse,
@@ -137,11 +137,13 @@ class BlueapiRestClient:
     def get_oidc_config(self) -> OIDCConfig:
         return self._request_and_deserialize("/config/oidc", OIDCConfig)
 
-    def get_scratch(
+    def get_python_environment(
         self, name: str | None = None, source: SourceInfo | None = None
-    ) -> ScratchResponse:
+    ) -> PythonEnvironmentResponse:
         return self._request_and_deserialize(
-            "/scratch", ScratchResponse, params={"name": name, "source": source}
+            "/python_environment",
+            PythonEnvironmentResponse,
+            params={"name": name, "source": source},
         )
 
     @start_as_current_span(TRACER, "method", "data", "suffix")

@@ -360,17 +360,17 @@ def scratch(obj: dict) -> None:
         raise KeyError("No scratch config supplied")
 
 
-@controller.command(name="get-scratch")
+@controller.command(name="get-python-env")
 @click.option("--name", type=str, help="Filter by the name of the installed package")
 @click.option("--source", type=SourceInfo, help="Filter by the source type")
 @check_connection
 @click.pass_obj
-def get_scratch(obj: dict, name: str, source: SourceInfo) -> None:
+def get_python_env(obj: dict, name: str, source: SourceInfo) -> None:
     """
-    Retrieve the scratch status from the server
+    Retrieve the installed packages and their sources in the current environment.
     """
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display(client.get_scratch(name=name, source=source))
+    obj["fmt"].display(client.get_python_env(name=name, source=source))
 
 
 @main.command(name="login")

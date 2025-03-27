@@ -171,8 +171,8 @@ class EnvironmentResponse(BlueapiBaseModel):
 
 
 class SourceInfo(str, Enum):
-    pypi = "pypi"
-    scratch = "scratch"
+    PYPI = "pypi"
+    SCRATCH = "scratch"
 
     def __str__(self):
         return self.value
@@ -186,19 +186,19 @@ class PackageInfo(BlueapiBaseModel):
         description="Does the package have uncommitted changes", default_factory=bool
     )
     source: SourceInfo = Field(
-        description="Source of the package", default=SourceInfo.pypi
+        description="Source of the package", default=SourceInfo.PYPI
     )
 
 
-class ScratchResponse(BlueapiBaseModel):
+class PythonEnvironmentResponse(BlueapiBaseModel):
     """
-    State of the scratch area.
+    State of the Python environment.
     """
 
     installed_packages: list[PackageInfo] = Field(
         description="List of installed packages", default_factory=list
     )
-    enabled: bool = Field(description="Scratch area state", default=False)
+    scratch_enabled: bool = Field(description="Scratch status", default=False)
 
 
 class Cache(BlueapiBaseModel):

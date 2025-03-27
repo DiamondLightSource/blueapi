@@ -28,6 +28,9 @@ jobs:
           # Need this to get version number from last tag
           fetch-depth: 0
 
+      - name: "fetch-main-branch"
+        run: "git branch --track main origin/main"
+
       - if: inputs.python-version == 'dev'
         name: Install dev versions of python packages
         uses: ./.github/actions/install_requirements

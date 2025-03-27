@@ -15,7 +15,7 @@ class BeamlineTagFilter(logging.Filter):
 
     beamline: str | None = os.environ.get("BEAMLINE")
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         record.beamline = self.beamline if self.beamline else "dev"
         return True
 
@@ -28,7 +28,7 @@ class InstrumentTagFilter(logging.Filter):
 
     instrument: str | None = os.environ.get("BEAMLINE")
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         record.instrument = self.instrument if self.instrument else "dev"
         return True
 

@@ -103,7 +103,7 @@ def _update_scan_num(md: dict[str, Any]) -> int:
         md["instrument_session_directory"] = str(scan.scan.directory.path)
         return scan.scan.scan_number
     else:
-        raise OSError(
+        raise InvalidConfigError(
             "Blueapi was configured to talk to numtracker but numtracker is not"
             "configured, this should not happen, please contact the DAQ team"
         )

@@ -14,3 +14,5 @@ API
     :recursive:
 
     blueapi
+
+.. autodata:: blueapi.service.main.REST_API_VERSION

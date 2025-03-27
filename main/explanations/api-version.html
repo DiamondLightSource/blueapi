@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Architecture &#8212; blueapi 0.8.1.dev3+g06500d66 documentation</title>
+    <title>API Version &#8212; blueapi 0.8.1.dev3+g06500d66 documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/architecture';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/api-version';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
@@ -58,8 +58,8 @@
     <link rel="icon" href="../_static/blueapi-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Architectural Decision Records" href="decisions.html" />
-    <link rel="prev" title="API Version" href="api-version.html" />
+    <link rel="next" title="Architecture" href="architecture.html" />
+    <link rel="prev" title="Explanations" href="../explanations.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -397,8 +397,8 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="api-version.html">API Version</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Architecture</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">API Version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="decisions/0002-switched-to-python-copier-template.html">2. Adopt python-copier-template for project structure</a></li>
@@ -455,7 +455,7 @@
     
     <li class="breadcrumb-item"><a href="../explanations.html" class="nav-link">Explanations</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Architecture</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">API Version</span></li>
   </ul>
 </nav>
 </div>
@@ -472,17 +472,10 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="architecture">
-<h1>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">#</a></h1>
-<p>Blueapi performs a number of tasks:</p>
-<ul class="simple">
-<li><p>Managing the Bluesky <a class="reference external" href="https://nsls-ii.github.io/bluesky/run_engine_api.html">RunEngine</a>, giving it instructions and handling its errors. Traditionally this job has been done by a human with an <a class="reference external" href="https://ipython.org/">IPython</a> terminal, so it requires automating.</p></li>
-<li><p>Maintaining a registry of plans and devices. In the aforementioned IPython_ case, these would have just been global variables.</p></li>
-<li><p>Communicating with the outside world, accepting instructions to run plans, providing updates on plan progress etc.</p></li>
-</ul>
-<p>These responsibilities are kept separate in the codebase to ensure a clean, maintainable architecture.</p>
-<p><img alt="blueapi main components" src="../_images/blueapi.png" /></p>
-<p>Above are the main components of blueapi. The main process houses the REST API and manages the subprocess, which wraps the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>, devices and external connections.</p>
+  <section id="api-version">
+<h1>API Version<a class="headerlink" href="#api-version" title="Link to this heading">#</a></h1>
+<p>Blueapi has <a class="reference external" href="https://github.com/DiamondLightSource/blueapi/releases">released versions</a> that are complaint with <a class="reference external" href="https://semver.org/">semantic versioning</a> to make updating/rolling back as easy as possible. Blueapi’s <a class="reference internal" href="../reference/rest-spec.html"><span class="std std-doc">REST API</span></a> is versioned separately to the main application, since not all changes will affect it. The idea is that a change in the REST API version is a signal to client developers that they may need to do some work to update.</p>
+<p>If you are a developer contributing a PR, there is a unit test that will fail if the REST API has changed in your PR but the version defined in the code, <a class="reference internal" href="../_api.html#blueapi.service.main.REST_API_VERSION" title="blueapi.service.main.REST_API_VERSION"><code class="xref myst py py-data docutils literal notranslate"><span class="pre">REST_API_VERSION</span></code></a>, has not been updated. You should update the version for <em>any</em> change to the API at all, whether it’s a major, minor or patch update is to be determined by the developer(s) and the reviewer(s) involved. <em>Do not</em> update <a class="reference download internal" download="" href="../_downloads/feddf4863798c05cc977abbc19543fe0/openapi.yaml"><span class="xref download myst"><code class="docutils literal notranslate"><span class="pre">docs/reference/openapi.yaml</span></code></span></a>, it is checked against <code class="docutils literal notranslate"><span class="pre">main</span></code> in CI.</p>
 </section>
 
 
@@ -496,20 +489,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="api-version.html"
+       href="../explanations.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">API Version</p>
+        <p class="prev-next-title">Explanations</p>
       </div>
     </a>
     <a class="right-next"
-       href="decisions.html"
+       href="architecture.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Architectural Decision Records</p>
+        <p class="prev-next-title">Architecture</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -528,7 +521,7 @@
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/explanations/architecture.md">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/explanations/api-version.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -544,7 +537,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/explanations/architecture.md.txt"
+      <li><a href="../_sources/explanations/api-version.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

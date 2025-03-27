@@ -174,6 +174,9 @@ class SourceInfo(str, Enum):
     pypi = "pypi"
     scratch = "scratch"
 
+    def __str__(self):
+        return self.value
+
 
 class PackageInfo(BlueapiBaseModel):
     name: str = Field(description="Name of the package", default_factory=str)

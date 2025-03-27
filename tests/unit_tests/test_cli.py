@@ -904,12 +904,12 @@ def test_scratch_output_formatting():
         - bar
         Version: 0.0.1
         Location: /tmp/bar
-        Source: SourceInfo.pypi
+        Source: pypi
         Dirty: False
         - foo
         Version: https://github.com/example/foo.git @18ec206e
         Location: /tmp/foo
-        Source: SourceInfo.scratch
+        Source: scratch
         Dirty: True
         """)
 

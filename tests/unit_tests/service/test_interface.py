@@ -9,13 +9,16 @@ from bluesky_stomp.messaging import StompClient
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, ScratchConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import (
     DeviceModel,
+    PackageInfo,
     PlanModel,
     ProtocolInfo,
+    PythonEnvironmentResponse,
+    SourceInfo,
     WorkerTask,
 )
 from blueapi.worker.event import TaskStatusEnum, WorkerState
@@ -302,3 +305,32 @@ def test_stomp_config(mock_stomp_client: StompClient):
     ):
         interface.set_config(ApplicationConfig(stomp=StompConfig()))
         assert interface.stomp_client() is not None
+
+
+@patch("blueapi.cli.scratch._fetch_installed_packages_details")
+def test_get_scratch_no_config(mock_fetch_installed_packages: Mock):
+    interface.set_config(ApplicationConfig(scratch=None))
+    mock_fetch_installed_packages.return_value = []
+    assert interface.get_python_env() == PythonEnvironmentResponse()
+
+
+@patch("blueapi.service.interface.get_python_environment")
+def test_get_scratch_with_config(mock_get_env: MagicMock):
+    scratch_config = ScratchConfig()
+    interface.set_config(ApplicationConfig(scratch=scratch_config))
+    mock_response = PythonEnvironmentResponse(
+        installed_packages=[
+            PackageInfo(
+                name="foo",
+                version="http://example.com/foo.git@adsad23123",
+                source=SourceInfo.SCRATCH,
+                location="/tmp/foo",
+                is_dirty=False,
+            )
+        ],
+        scratch_enabled=True,
+    )
+    mock_get_env.return_value = mock_response
+
+    assert interface.get_python_env() == mock_response
+    mock_get_env.assert_called_once_with(config=scratch_config, name=None, source=None)

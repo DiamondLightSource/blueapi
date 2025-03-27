@@ -36,6 +36,18 @@ from blueapi.service.model import (
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
 
+@pytest.fixture(autouse=True)
+def mock_setup_tracing():
+    """Mock the setup_tracing function to avoid setting up tracing in tests.
+
+    OpenTelemetry only allows one global TracerProvider, however most cli entry-points
+    overwrite this to set up tracing. As OpenTelemetry does not have any functions to
+    aid testing, the tracing set up has to be mocked to avoid errors.
+    """
+    with patch("blueapi.cli.cli.setup_tracing"):
+        yield
+
+
 @pytest.fixture
 def mock_connection() -> Mock:
     return Mock(spec=Connection)

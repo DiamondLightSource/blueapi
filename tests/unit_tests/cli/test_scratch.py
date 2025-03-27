@@ -298,6 +298,19 @@ def test_get_scratch_info_fails_on_invalid_root(
     assert response.installed_packages == []
 
 
+@pytest.fixture
+def config(directory_path_with_sgid: Path) -> ScratchConfig:
+    return ScratchConfig(
+        root=directory_path_with_sgid,
+        repositories=[
+            ScratchRepository(
+                name="foo",
+                remote_url="http://example.com/foo.git",
+            ),
+        ],
+    )
+
+
 @patch("blueapi.cli.scratch.Repo")
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
 @patch("blueapi.cli.scratch._get_project_name_from_pyproject")
@@ -306,6 +319,7 @@ def test_get_scratch_info_returns_correct_packages(
     mock_fetch_installed_packages: Mock,
     mock_repo: Mock,
     directory_path_with_sgid: Path,
+    config: ScratchConfig,
 ):
     repo_path = directory_path_with_sgid / "foo"
     repo_path.mkdir()
@@ -324,16 +338,6 @@ def test_get_scratch_info_returns_correct_packages(
             is_dirty=False,
         )
     ]
-
-    config = ScratchConfig(
-        root=directory_path_with_sgid,
-        repositories=[
-            ScratchRepository(
-                name="foo",
-                remote_url="http://example.com/foo.git",
-            ),
-        ],
-    )
 
     response = get_scratch_info(config)
 
@@ -361,6 +365,7 @@ def test_get_scratch_info_filters_by_name(
     mock_get_project_name: Mock,
     mock_repo: Mock,
     directory_path_with_sgid: Path,
+    config: ScratchConfig,
 ):
     repo_path = directory_path_with_sgid / "foo"
     repo_path.mkdir()
@@ -372,17 +377,49 @@ def test_get_scratch_info_filters_by_name(
 
     mock_get_project_name.return_value = "foo-package"
 
-    config = ScratchConfig(
-        root=directory_path_with_sgid,
-        repositories=[
-            ScratchRepository(
-                name="foo",
-                remote_url="http://example.com/foo.git",
-            ),
-        ],
-    )
-
     response = get_scratch_info(config, name="foo-package")
+
+    assert response.installed_packages == [
+        PackageInfo(
+            name="foo-package",
+            version="http://example.com/foo.git @main",
+            location="",
+            is_dirty=False,
+            source=SourceInfo.scratch,
+        )
+    ]
+
+
+@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.cli.scratch._fetch_installed_packages_details")
+@patch("blueapi.cli.scratch._get_project_name_from_pyproject")
+def test_get_scratch_info_filters_by_source(
+    mock_get_project_name: Mock,
+    mock_fetch_installed_packages: Mock,
+    mock_repo: Mock,
+    directory_path_with_sgid: Path,
+    config: ScratchConfig,
+):
+    repo_path = directory_path_with_sgid / "foo"
+    repo_path.mkdir()
+    mock_repo_instance = Mock()
+    mock_repo_instance.active_branch.name = "main"
+    mock_repo_instance.is_dirty.return_value = False
+    mock_repo_instance.remotes = [Mock(url="http://example.com/foo.git")]
+    mock_repo.return_value = mock_repo_instance
+
+    mock_get_project_name.return_value = "foo-package"
+    mock_fetch_installed_packages.return_value = [
+        PackageInfo(
+            name="bar-package",
+            version="1.0.0",
+            location="/some/location",
+            is_dirty=False,
+            source=SourceInfo.pypi,
+        )
+    ]
+
+    response = get_scratch_info(config, source=SourceInfo.scratch)
 
     assert response.installed_packages == [
         PackageInfo(
@@ -403,6 +440,7 @@ def test_get_scratch_info_handles_dirty_repos(
     mock_get_project_name: Mock,
     mock_repo: Mock,
     directory_path_with_sgid: Path,
+    config: ScratchConfig,
 ):
     repo_path = directory_path_with_sgid / "foo"
     repo_path.mkdir()
@@ -414,15 +452,6 @@ def test_get_scratch_info_handles_dirty_repos(
 
     mock_get_project_name.return_value = "foo-package"
     mock_fetch_installed_packages.return_value = []
-    config = ScratchConfig(
-        root=directory_path_with_sgid,
-        repositories=[
-            ScratchRepository(
-                name="foo",
-                remote_url="http://example.com/foo.git",
-            ),
-        ],
-    )
 
     response = get_scratch_info(config)
 
@@ -497,3 +526,18 @@ def test_fetch_installed_packages_details_returns_correct_packages(mock_distribu
             is_dirty=False,
         )
     ]
+
+
+@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.cli.scratch._fetch_installed_packages_details")
+@patch("blueapi.cli.scratch._get_project_name_from_pyproject")
+def test_get_scratch_info_handles_empty_repositories(
+    mock_get_project_name: Mock,
+    mock_fetch_installed_packages: Mock,
+    mock_repo: Mock,
+    directory_path_with_sgid: Path,
+):
+    config = ScratchConfig(root=directory_path_with_sgid, repositories=[])
+    response = get_scratch_info(config)
+
+    assert response.installed_packages == []

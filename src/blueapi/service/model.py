@@ -181,10 +181,12 @@ class SourceInfo(str, Enum):
 
 
 class PackageInfo(BlueapiBaseModel):
-    name: str = Field(description="Name of the package")
-    version: str = Field(description="Version of the package")
-    location: str = Field(description="Location of the package")
-    is_dirty: bool = Field(description="Does the package have uncommitted changes")
+    name: str = Field(description="Name of the package", default_factory=str)
+    version: str = Field(description="Version of the package", default_factory=str)
+    location: str = Field(description="Location of the package", default_factory=str)
+    is_dirty: bool = Field(
+        description="Does the package have uncommitted changes", default_factory=bool
+    )
     source: SourceInfo = Field(
         description="Source of the package", default=SourceInfo.pypi
     )

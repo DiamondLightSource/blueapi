@@ -32,6 +32,7 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+    ScratchResponse,
 )
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
@@ -868,3 +869,53 @@ def test_get_scratch_with_empty_response(runner: CliRunner):
     Scratch Status: disabled
     No scratch packages found
     """)
+
+
+def test_scratch_output_formatting():
+    """Test for alternative scratch output formats"""
+
+    scratch_response = {
+        "installed_packages": [
+            {
+                "name": "bar",
+                "version": "0.0.1",
+                "location": "/tmp/bar",
+                "is_dirty": "false",
+                "source": "pypi",
+            },
+            {
+                "name": "foo",
+                "version": "https://github.com/example/foo.git @18ec206e",
+                "location": "/tmp/foo",
+                "is_dirty": "true",
+                "source": "scratch",
+            },
+        ],
+        "enabled": "true",
+    }
+    scratch = ScratchResponse(**scratch_response)
+
+    compact = dedent("""\
+        Scratch Status: enabled
+        - bar @ (0.0.1)
+        - foo @ (https://github.com/example/foo.git @18ec206e) (Dirty) (Scratch)
+        """)
+
+    _assert_matching_formatting(OutputFormat.COMPACT, scratch, compact)
+
+    full = dedent("""\
+        Scratch Status: enabled
+        Installed Packages:
+        - bar
+        Version: 0.0.1
+        Location: /tmp/bar
+        Source: SourceInfo.pypi
+        Dirty: False
+        - foo
+        Version: https://github.com/example/foo.git @18ec206e
+        Location: /tmp/foo
+        Source: SourceInfo.scratch
+        Dirty: True
+        """)
+
+    _assert_matching_formatting(OutputFormat.FULL, scratch, full)

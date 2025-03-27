@@ -78,13 +78,14 @@ def display_full(obj: Any, stream: Stream):
             if not installed_packages:
                 print("No scratch packages found")
             else:
+                print("Installed Packages:")
                 for package in installed_packages:
                     print(
-                        f"- Remote URL: {package.name} "
-                        + f"Version: {package.version} "
+                        f"- {package.name}\n"
+                        + f"Version: {package.version}\n"
+                        + f"Location: {package.location}\n"
+                        + f"Source: {package.source}\n"
                         + f"Dirty: {package.is_dirty}"
-                        + f"Location: {package.location}"
-                        + f"Source: {package.source}"
                     )
         case BaseModel():
             print(obj.__class__.__name__, end="")

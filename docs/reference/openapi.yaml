@@ -91,11 +91,6 @@ components:
           description: Version of the package
           title: Version
           type: string
-      required:
-      - name
-      - version
-      - location
-      - is_dirty
       title: PackageInfo
       type: object
     PlanModel:

@@ -85,8 +85,7 @@ def numtracker_client() -> NumtrackerClient | None:
     conf = config()
     if conf.numtracker is not None:
         if conf.env.metadata is not None:
-            client = NumtrackerClient(url=conf.numtracker.url)
-            return client
+            return NumtrackerClient(url=conf.numtracker.url)
         else:
             raise InvalidConfigError(
                 "Numtracker url has been configured, but there is no instrument or"

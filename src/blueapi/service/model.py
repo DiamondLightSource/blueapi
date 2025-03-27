@@ -1,8 +1,7 @@
 import uuid
 from collections.abc import Iterable
 from enum import Enum
-from typing import Any, get_args
-
+from typing import Any
 
 from bluesky.protocols import HasName
 from pydantic import Field

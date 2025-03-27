@@ -1,3 +1,4 @@
+import importlib
 import json
 import uuid
 from collections.abc import Mapping
@@ -14,6 +15,7 @@ import yaml
 from bluesky.protocols import Movable
 from bluesky_stomp.messaging import StompClient
 from click.testing import CliRunner
+from opentelemetry import trace
 from ophyd_async.core import AsyncStatus
 from pydantic import BaseModel, ValidationError
 from requests.exceptions import ConnectionError
@@ -37,15 +39,15 @@ from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerS
 
 
 @pytest.fixture(autouse=True)
-def mock_setup_tracing():
-    """Mock the setup_tracing function to avoid setting up tracing in tests.
+def reload_opentelemetry_trace_after_tests():
+    """Reload opentelemetry.trace after running each test.
 
     OpenTelemetry only allows one global TracerProvider, however most cli entry-points
     overwrite this to set up tracing. As OpenTelemetry does not have any functions to
-    aid testing, the tracing set up has to be mocked to avoid errors.
+    aid testing, the library init has to be reloaded after each test to avoid errors.
     """
-    with patch("blueapi.cli.cli.setup_tracing"):
-        yield
+    yield
+    importlib.reload(trace)
 
 
 @pytest.fixture

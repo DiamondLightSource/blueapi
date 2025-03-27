@@ -1,4 +1,11 @@
 from .authentication import SessionManager
-from .model import DeviceModel, PlanModel
+from .model import DeviceModel, PackageInfo, PlanModel, ScratchResponse, SourceInfo
 
-__all__ = ["PlanModel", "DeviceModel", "SessionManager"]
+__all__ = [
+    "PlanModel",
+    "DeviceModel",
+    "SessionManager",
+    "ScratchResponse",
+    "SourceInfo",
+    "PackageInfo",
+]

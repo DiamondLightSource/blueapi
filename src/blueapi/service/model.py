@@ -3,11 +3,13 @@ from collections.abc import Iterable
 from enum import Enum
 from typing import Any, get_args
 
+
 from bluesky.protocols import HasName
 from pydantic import Field
 
 from blueapi.config import OIDCConfig
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
+from blueapi.core.context import generic_bounds
 from blueapi.utils import BlueapiBaseModel
 from blueapi.worker import WorkerState
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -36,21 +38,15 @@ class DeviceModel(BlueapiBaseModel):
     @classmethod
     def from_device(cls, device: Device) -> "DeviceModel":
         name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
-        return cls(name=name, protocols=list(_protocol_names(device)))
+        return cls(name=name, protocols=list(_protocol_info(device)))
 
 
-def generic_bounds(device, protocol) -> list[str]:
-    for base in getattr(device, "__orig_bases__", ()):
-        if getattr(base, "__name__", None) == protocol.__name__:
-            return [arg.__name__ for arg in get_args(base)]
-    return []
-
-
-def _protocol_names(device: Device) -> Iterable[ProtocolInfo]:
+def _protocol_info(device: Device) -> Iterable[ProtocolInfo]:
     for protocol in BLUESKY_PROTOCOLS:
         if isinstance(device, protocol):
             yield ProtocolInfo(
-                name=protocol.__name__, types=generic_bounds(device, protocol)
+                name=protocol.__name__,
+                types=[arg.__name__ for arg in generic_bounds(device, protocol)],
             )
 
 

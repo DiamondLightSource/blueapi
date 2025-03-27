@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import jwt
 import pytest
+from bluesky.protocols import Stoppable
 from fastapi import status
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
@@ -67,6 +68,14 @@ def client_with_auth(
         main.teardown_runner()
 
 
+@dataclass
+class MinimalDevice(Stoppable):
+    name: str
+
+    def stop(self, success: bool = True):
+        pass
+
+
 def test_get_plans(mock_runner: Mock, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
@@ -125,11 +134,7 @@ def test_get_non_existent_plan_by_name(mock_runner: Mock, client: TestClient) ->
 
 
 def test_get_devices(mock_runner: Mock, client: TestClient) -> None:
-    @dataclass
-    class MyDevice:
-        name: str
-
-    device = MyDevice("my-device")
+    device = MinimalDevice("my-device")
     mock_runner.run.return_value = [DeviceModel.from_device(device)]
 
     response = client.get("/devices")
@@ -139,18 +144,14 @@ def test_get_devices(mock_runner: Mock, client: TestClient) -> None:
         "devices": [
             {
                 "name": "my-device",
-                "protocols": [{"name": "HasName", "types": []}],
+                "protocols": [{"name": "Stoppable", "types": []}],
             }
         ]
     }
 
 
 def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
-    @dataclass
-    class MyDevice:
-        name: str
-
-    device = MyDevice("my-device")
+    device = MinimalDevice("my-device")
 
     mock_runner.run.return_value = DeviceModel.from_device(device)
     response = client.get("/devices/my-device")
@@ -159,7 +160,7 @@ def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "name": "my-device",
-        "protocols": [{"name": "HasName", "types": []}],
+        "protocols": [{"name": "Stoppable", "types": []}],
     }
 
 

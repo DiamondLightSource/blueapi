@@ -254,6 +254,7 @@ tiled==0.1.0b12
 toolz==1.0.0
 tox==3.28.0
 tox-direct==0.4
+tomlkit==0.13.2
 tqdm==4.67.1
 traitlets==5.14.3
 typer==0.15.2

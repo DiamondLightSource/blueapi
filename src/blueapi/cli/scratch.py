@@ -6,8 +6,8 @@ import textwrap
 from pathlib import Path
 from subprocess import Popen
 
-import tomllib
 from git import Repo
+from tomlkit import parse
 
 from blueapi.config import ScratchConfig
 from blueapi.service.model import PackageInfo, ScratchResponse, SourceInfo
@@ -134,11 +134,11 @@ def _validate_directory(path: Path) -> None:
 
 
 def _get_project_name_from_pyproject(path: Path) -> str:
-    pyproject_path = Path(path / "pyproject.toml")
+    pyproject_path = path / "pyproject.toml"
     if pyproject_path.exists():
-        with pyproject_path.open("rb") as f:
-            data = tomllib.load(f)
-        return data.get("project", {}).get("name")
+        with pyproject_path.open("r", encoding="utf-8") as file:
+            toml_data = parse(file.read())
+        return toml_data.get("project", {}).get("name", "")
     return ""
 
 

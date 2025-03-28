@@ -110,13 +110,13 @@ def get_app(config: ApplicationConfig):
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
-    if config.cors:
+    if config.api.cors:
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=config.cors.origins,
-            allow_credentials=config.cors.allow_credentials,
-            allow_methods=config.cors.allow_methods,
-            allow_headers=config.cors.allow_headers,
+            allow_origins=config.api.cors.origins,
+            allow_credentials=config.api.cors.allow_credentials,
+            allow_methods=config.api.cors.allow_methods,
+            allow_headers=config.api.cors.allow_headers,
         )
     return app
 

@@ -253,7 +253,6 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "auth": {"username": "guest", "password": "guest"},
             },
             "auth_token_path": None,
-            "cors": None,
             "env": {
                 "events": {
                     "broadcast_status_events": True,
@@ -268,6 +267,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "host": "0.0.0.0",
                 "port": 8000,
                 "protocol": "http",
+                "cors": None,
             },
             "logging": {"level": "INFO"},
             "oidc": {
@@ -293,7 +293,6 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "auth": {"username": "guest", "password": "guest"},
             },
             "auth_token_path": None,
-            "cors": None,
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
@@ -303,7 +302,12 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "events": {"broadcast_status_events": True},
             },
             "logging": {"level": "INFO"},
-            "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
+            "api": {
+                "host": "0.0.0.0",
+                "port": 8001,
+                "protocol": "http",
+                "cors": None,
+            },
             "oidc": {
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",

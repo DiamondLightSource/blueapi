@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Iterable
+from enum import Enum
 from typing import Any
 
 from bluesky.protocols import HasName
@@ -167,6 +168,37 @@ class EnvironmentResponse(BlueapiBaseModel):
         description="If present - error loading context",
         min_length=1,
     )
+
+
+class SourceInfo(str, Enum):
+    PYPI = "pypi"
+    SCRATCH = "scratch"
+
+    def __str__(self):
+        return self.value
+
+
+class PackageInfo(BlueapiBaseModel):
+    name: str = Field(description="Name of the package", default_factory=str)
+    version: str = Field(description="Version of the package", default_factory=str)
+    location: str = Field(description="Location of the package", default_factory=str)
+    is_dirty: bool = Field(
+        description="Does the package have uncommitted changes", default_factory=bool
+    )
+    source: SourceInfo = Field(
+        description="Source of the package", default=SourceInfo.PYPI
+    )
+
+
+class PythonEnvironmentResponse(BlueapiBaseModel):
+    """
+    State of the Python environment.
+    """
+
+    installed_packages: list[PackageInfo] = Field(
+        description="List of installed packages", default_factory=list
+    )
+    scratch_enabled: bool = Field(description="Scratch status", default=False)
 
 
 class Cache(BlueapiBaseModel):

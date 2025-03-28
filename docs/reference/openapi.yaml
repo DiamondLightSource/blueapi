@@ -68,6 +68,31 @@ components:
           type: array
       title: HTTPValidationError
       type: object
+    PackageInfo:
+      additionalProperties: false
+      properties:
+        is_dirty:
+          description: Does the package have uncommitted changes
+          title: Is Dirty
+          type: boolean
+        location:
+          description: Location of the package
+          title: Location
+          type: string
+        name:
+          description: Name of the package
+          title: Name
+          type: string
+        source:
+          $ref: '#/components/schemas/SourceInfo'
+          default: pypi
+          description: Source of the package
+        version:
+          description: Version of the package
+          title: Version
+          type: string
+      title: PackageInfo
+      type: object
     PlanModel:
       additionalProperties: false
       description: Representation of a plan
@@ -122,6 +147,29 @@ components:
       - name
       title: ProtocolInfo
       type: object
+    PythonEnvironmentResponse:
+      additionalProperties: false
+      description: State of the Python environment.
+      properties:
+        installed_packages:
+          description: List of installed packages
+          items:
+            $ref: '#/components/schemas/PackageInfo'
+          title: Installed Packages
+          type: array
+        scratch_enabled:
+          default: false
+          description: Scratch status
+          title: Scratch Enabled
+          type: boolean
+      title: PythonEnvironmentResponse
+      type: object
+    SourceInfo:
+      enum:
+      - pypi
+      - scratch
+      title: SourceInfo
+      type: string
     StateChangeRequest:
       additionalProperties: false
       description: Request to change the state of the worker.
@@ -269,7 +317,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.6
+  version: 0.0.7
 openapi: 3.1.0
 paths:
   /devices:
@@ -370,6 +418,45 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Plan By Name
+  /python_environment:
+    get:
+      description: 'Retrieve the Python environment details.
+
+        This endpoint fetches information about the Python environment,
+
+        such as the installed packages and scratch packages.'
+      operationId: get_python_environment_python_environment_get
+      parameters:
+      - in: query
+        name: name
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+      - in: query
+        name: source
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/SourceInfo'
+          - type: 'null'
+          title: Source
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PythonEnvironmentResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Python Environment
   /tasks:
     get:
       description: 'Retrieve tasks based on their status.

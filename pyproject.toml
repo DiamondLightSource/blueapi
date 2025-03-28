@@ -26,7 +26,7 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal>=1.36.2",
+    "dls-dodal>=1.43.0",
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "bluesky-stomp>=0.1.4",
@@ -35,6 +35,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
     "pyjwt[crypto]",
+    "tomlkit"
 ]
 dynamic = ["version"]
 license.file = "LICENSE"

@@ -306,6 +306,7 @@ def get_tasks(
 )
 @start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
+    request: Request,
     task: WorkerTask,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerTask:
@@ -316,7 +317,15 @@ def set_active_task(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    runner.run(interface.begin_task, task)
+    runner.run(
+        interface.begin_task,
+        task=task,
+        pass_through_headers={
+            key: value
+            for key, value in request.headers.items()
+            if key in {"Authorization"}
+        },
+    )
     return task
 
 

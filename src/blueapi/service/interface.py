@@ -5,6 +5,9 @@ from typing import Any
 
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from dodal.common.beamlines.beamline_utils import get_path_provider
+from dodal.common.visit import StartDocumentPathProvider
+
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
@@ -17,6 +20,14 @@ from blueapi.service.model import (
     SourceInfo,
     WorkerTask,
 )
+
+from blueapi.client.numtracker import NumtrackerClient
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
+from blueapi.core.context import BlueskyContext
+from blueapi.core.event import EventStream
+from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
+from blueapi.utils.invalid_config_error import InvalidConfigError
+
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -83,6 +94,34 @@ def stomp_client() -> StompClient | None:
         return None
 
 
+@cache
+def numtracker_client() -> NumtrackerClient | None:
+    conf = config()
+    if conf.numtracker is not None:
+        if conf.env.metadata is not None:
+            return NumtrackerClient(url=conf.numtracker.url)
+        else:
+            raise InvalidConfigError(
+                "Numtracker url has been configured, but there is no instrument or"
+                " instrument_session in the environment metadata"
+            )
+    else:
+        return None
+
+
+def _update_scan_num(md: dict[str, Any]) -> int:
+    numtracker = numtracker_client()
+    if numtracker is not None:
+        scan = numtracker.create_scan(md["instrument_session"], md["instrument"])
+        md["instrument_session_directory"] = str(scan.scan.directory.path)
+        return scan.scan.scan_number
+    else:
+        raise InvalidConfigError(
+            "Blueapi was configured to talk to numtracker but numtracker is not"
+            "configured, this should not happen, please contact the DAQ team"
+        )
+
+
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
 
@@ -93,6 +132,18 @@ def setup(config: ApplicationConfig) -> None:
     logging.basicConfig(format="%(asctime)s - %(message)s", level=config.logging.level)
     worker()
     stomp_client()
+    if numtracker_client() is not None:
+        context().run_engine.scan_id_source = _update_scan_num
+    _hook_run_engine_and_path_provider()
+
+
+# TODO: https://github.com/DiamondLightSource/blueapi/issues/875
+def _hook_run_engine_and_path_provider() -> None:
+    path_provider = get_path_provider()
+    run_engine = context().run_engine
+
+    if isinstance(path_provider, StartDocumentPathProvider):
+        run_engine.subscribe(path_provider.update_run, "start")
 
 
 def teardown() -> None:
@@ -102,6 +153,7 @@ def teardown() -> None:
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
+    numtracker_client.cache_clear()
 
 
 def _publish_event_streams(
@@ -151,11 +203,22 @@ def clear_task(task_id: str) -> str:
     return worker().clear_task(task_id)
 
 
-def begin_task(task: WorkerTask) -> WorkerTask:
+def begin_task(
+    task: WorkerTask, pass_through_headers: Mapping[str, str] | None = None
+) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
+    if pass_through_headers:
+        _try_configure_numtracker(pass_through_headers)
+
     if task.task_id is not None:
         worker().begin_task(task.task_id)
     return task
+
+
+def _try_configure_numtracker(pass_through_headers: Mapping[str, str]) -> None:
+    numtracker = numtracker_client()
+    if numtracker is not None:
+        numtracker.set_headers(pass_through_headers)
 
 
 def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:

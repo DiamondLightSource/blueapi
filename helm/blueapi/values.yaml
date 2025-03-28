@@ -7,9 +7,9 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: nginx
+  repository: ghcr.io/diamondlightsource/blueapi
   # This sets the pull policy for images.
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
@@ -22,7 +22,7 @@ fullnameOverride: ""
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
   # Specifies whether a service account should be created
-  create: true
+  create: false
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
@@ -52,6 +52,7 @@ securityContext:
   # runAsUser: 1000
 
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+# Recommended for production to change service.type to ClusterIP and set up an Ingress
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
@@ -61,20 +62,19 @@ service:
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: false
-  className: ""
+  className: "nginx"
   annotations:
     {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: chart-example.local
+    - host: foo.diamond.ac.uk
       paths:
         - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+          pathType: Prefix
+  tls:
+    - hosts:
+        - foo.diamond.ac.uk
 
 resources:
   {}
@@ -125,3 +125,56 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+hostNetwork: false # May be needed for talking to arcane protocols such as EPICS
+
+restartOnConfigChange: true
+
+# Additional envVars to mount to the pod as a String
+extraEnvVars: []
+# - name: RABBITMQ_PASSWORD
+#   valueFrom:
+#     secretKeyRef:
+#       name: rabbitmq-password
+#       key: rabbitmq-password
+
+tracing:
+  otlp:
+    enabled: false
+    protocol: http/protobuf
+    server:
+      host: https://daq-services-jaeger # replace with central instance
+      port: 4318
+
+# Config for the worker goes here, will be mounted into a config file
+worker:
+  api:
+    host: 0.0.0.0 # Allow non-loopback traffic
+    port: 8000
+  env:
+    sources:
+      - kind: deviceFunctions
+        module: blueapi.startup.example_devices
+      - kind: planFunctions
+        module: blueapi.startup.example_plans
+      - kind: planFunctions
+        module: dodal.plans
+      - kind: planFunctions
+        module: dodal.plan_stubs.wrapped
+  stomp:
+    auth:
+      username: guest
+      password: guest
+    host: rabbitmq
+    port: 61613
+
+initContainer:
+  scratch:
+    root: /blueapi-plugins/scratch
+    repositories: []
+    # - name: "dodal"
+    #   remote_url: https://github.com/DiamondLightSource/dodal.git
+
+# Mount path for scratch area from host machine, setting
+# this effectively enables scratch area management
+scratchHostPath: "" # example: /usr/local/blueapi-software-scratch

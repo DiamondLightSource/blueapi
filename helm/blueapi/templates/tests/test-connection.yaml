@@ -6,10 +6,26 @@ metadata:
     {{- include "blueapi.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
+  volumes:
+  - name: worker-config
+    projected:
+      sources:
+        - configMap:
+            name: {{ include "blueapi.fullname" . }}-config
   containers:
-    - name: wget
-      image: busybox
-      command: ['wget']
-      args: ['{{ include "blueapi.fullname" . }}:{{ .Values.service.port }}']
+    - name: ping
+      volumeMounts:
+      - name: worker-config
+        mountPath: "/config"
+        readOnly: true
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      command: ["blueapi"]
+      args:
+        - "-c"
+        - "/config/config.yaml"
+        - "controller"
+        - "plans"
   restartPolicy: Never

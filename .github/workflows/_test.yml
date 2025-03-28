@@ -29,7 +29,8 @@ jobs:
           fetch-depth: 0
 
       - name: "fetch-main-branch"
-        run: "git checkout --track -B main origin/main"
+        if: github.ref != 'refs/heads/main'
+        run: git branch --track main origin/main
 
       - if: inputs.python-version == 'dev'
         name: Install dev versions of python packages

@@ -8,8 +8,8 @@ from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from dodal.common.beamlines.beamline_utils import get_path_provider
 from dodal.common.visit import StartDocumentPathProvider
 
-
 from blueapi.cli.scratch import get_python_environment
+from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
@@ -20,14 +20,7 @@ from blueapi.service.model import (
     SourceInfo,
     WorkerTask,
 )
-
-from blueapi.client.numtracker import NumtrackerClient
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
-from blueapi.core.context import BlueskyContext
-from blueapi.core.event import EventStream
-from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.utils.invalid_config_error import InvalidConfigError
-
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask

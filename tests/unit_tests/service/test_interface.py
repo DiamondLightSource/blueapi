@@ -11,8 +11,16 @@ from dodal.common.visit import StartDocumentPathProvider
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
-
-from blueapi.config import ApplicationConfig, OIDCConfig, ScratchConfig, StompConfig
+from blueapi.client.numtracker import NumtrackerClient
+from blueapi.config import (
+    ApplicationConfig,
+    EnvironmentConfig,
+    MetadataConfig,
+    NumtrackerConfig,
+    OIDCConfig,
+    ScratchConfig,
+    StompConfig,
+)
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
 from blueapi.service.model import (
@@ -24,21 +32,7 @@ from blueapi.service.model import (
     SourceInfo,
     WorkerTask,
 )
-
-from blueapi.client.numtracker import NumtrackerClient
-from blueapi.config import (
-    ApplicationConfig,
-    EnvironmentConfig,
-    MetadataConfig,
-    NumtrackerConfig,
-    OIDCConfig,
-    StompConfig,
-)
-from blueapi.core.context import BlueskyContext
-from blueapi.service import interface
-from blueapi.service.model import DeviceModel, PlanModel, ProtocolInfo, WorkerTask
 from blueapi.utils.invalid_config_error import InvalidConfigError
-
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
@@ -341,7 +335,6 @@ def test_stomp_config(mock_stomp_client: StompClient):
         assert interface.stomp_client() is not None
 
 
-
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
 def test_get_scratch_no_config(mock_fetch_installed_packages: Mock):
     interface.set_config(ApplicationConfig(scratch=None))
@@ -369,6 +362,7 @@ def test_get_scratch_with_config(mock_get_env: MagicMock):
 
     assert interface.get_python_env() == mock_response
     mock_get_env.assert_called_once_with(config=scratch_config, name=None, source=None)
+
 
 def test_configure_numtracker():
     conf = ApplicationConfig(
@@ -454,4 +448,3 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
     mock_create_scan.assert_called_once_with("ab123", "p46")
 
     interface.teardown()
-

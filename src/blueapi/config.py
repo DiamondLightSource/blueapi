@@ -49,6 +49,11 @@ class WorkerEventConfig(BlueapiBaseModel):
     broadcast_status_events: bool = True
 
 
+class MetadataConfig(BlueapiBaseModel):
+    instrument_session: str
+    instrument: str
+
+
 class EnvironmentConfig(BlueapiBaseModel):
     """
     Config for the RunEngine environment
@@ -63,6 +68,7 @@ class EnvironmentConfig(BlueapiBaseModel):
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
     ]
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
+    metadata: MetadataConfig | None = Field(default=None)
 
 
 class LoggingConfig(BlueapiBaseModel):
@@ -161,6 +167,10 @@ class OIDCConfig(BlueapiBaseModel):
         )
 
 
+class NumtrackerConfig(BlueapiBaseModel):
+    url: str = "http://localhost:8002/graphql"
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -174,6 +184,7 @@ class ApplicationConfig(BlueapiBaseModel):
     scratch: ScratchConfig | None = None
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
+    numtracker: NumtrackerConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

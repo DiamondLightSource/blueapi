@@ -61,8 +61,10 @@ def test_generate_schema(mock_get_app: Mock) -> None:
     reason="If the schema file does not exist, the test is being run"
     " with a non-editable install",
 )
-def test_schema_updated(reference_schema: Mapping[str, Any]) -> None:
-    assert reference_schema == generate_schema()
+def test_schema_updated() -> None:
+    with DOCS_SCHEMA_LOCATION.open("r") as stream:
+        docs_schema = yaml.safe_load(stream)
+    assert docs_schema == generate_schema()
 
 
 @pytest.mark.skipif(

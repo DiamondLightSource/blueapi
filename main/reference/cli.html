@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Command-Line Interface &#8212; blueapi 0.8.1.dev6+gac90780c documentation</title>
+    <title>Command-Line Interface &#8212; blueapi 0.8.1.dev7+g3303d91e documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=ee1b07c7"></script>
+    <script src="../_static/documentation_options.js?v=d4b778e7"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -543,6 +543,26 @@ with optional reason</p>
 </dd></dl>
 
 </section>
+<section id="blueapi-controller-get-python-env">
+<h4>get-python-env<a class="headerlink" href="#blueapi-controller-get-python-env" title="Link to this heading">#</a></h4>
+<p>Retrieve the installed packages and their sources in the current environment.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>controller<span class="w"> </span>get-python-env<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-get-python-env-name">
+<span class="sig-name descname"><span class="pre">--name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-controller-get-python-env-name" title="Link to this definition">#</a></dt>
+<dd><p>Filter by the name of the installed package</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-get-python-env-source">
+<span class="sig-name descname"><span class="pre">--source</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;source&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-controller-get-python-env-source" title="Link to this definition">#</a></dt>
+<dd><p>Filter by the source type</p>
+</dd></dl>
+
+</section>
 <section id="blueapi-controller-listen">
 <h4>listen<a class="headerlink" href="#blueapi-controller-listen" title="Link to this heading">#</a></h4>
 <p>Listen to events output by blueapi</p>
@@ -723,6 +743,7 @@ the schema, not the controller as a new FastAPI app will be started each time.</
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-abort">abort</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-devices">devices</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-env">env</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-get-python-env">get-python-env</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-listen">listen</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-pause">pause</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-plans">plans</a></li>

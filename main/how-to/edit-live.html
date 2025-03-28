@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Edit Plans and Device Live &#8212; blueapi 0.8.1.dev6+gac90780c documentation</title>
+    <title>Edit Plans and Device Live &#8212; blueapi 0.8.1.dev7+g3303d91e documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=ee1b07c7"></script>
+    <script src="../_static/documentation_options.js?v=d4b778e7"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -515,12 +515,12 @@ to a particular owner.</p>
 <h2>Kubernetes<a class="headerlink" href="#kubernetes" title="Link to this heading">#</a></h2>
 <p>The helm chart can be configured to mount a scratch area from the
 host machine, include the following in your <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="nt">scratchHostPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/scratch/area</span><span class="w">  </span><span class="c1"># e.g. /dls_sw/&lt;my_beamline&gt;/software/blueapi/scratch</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="nt">initContainer</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">scratch</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/scratch/area</span><span class="w">  </span><span class="c1"># e.g. /dls_sw/&lt;my_beamline&gt;/software/blueapi/scratch</span>
+<span class="w">      </span><span class="nt">repositories</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you do this then the value of <code class="docutils literal notranslate"><span class="pre">scratch.root</span></code> in your blueapi configuration is no longer particularly important, it only specifies where to mount the scratch area <em>inside</em> the container.</p>
 </div>
 <p>The scratch folder that you’re pointing to must exist, not already have a copy of the repositories that will be cloned into it and have correct permissions e.g.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">dls_sw</span><span class="o">/&lt;</span><span class="n">my_beamline</span><span class="o">&gt;/</span><span class="n">software</span><span class="o">/</span><span class="n">blueapi</span><span class="o">/</span>

@@ -616,6 +616,6 @@ def test_get_python_environment(mock_runner: Mock, client: TestClient):
         ]
     )
     mock_runner.run.return_value = packages
-    response = client.get("/python_environment", params={"source": SourceInfo.PYPI})
+    response = client.get("/python_environment")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == packages.model_dump()

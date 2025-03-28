@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "blueapi.fullname" . }}-test-ping"
+  name: "{{ include "blueapi.fullname" . }}-test-connection"
   labels:
     {{- include "blueapi.labels" . | nindent 4 }}
   annotations:
@@ -14,10 +14,6 @@ spec:
       sources:
         - configMap:
             name: {{ include "blueapi.fullname" . }}-config
-        {{- with .Values.existingSecret }}
-        - secret:
-            name: {{ . }}
-        {{- end }}
   containers:
     - name: ping
       volumeMounts:
@@ -30,10 +26,6 @@ spec:
       args:
         - "-c"
         - "/config/config.yaml"
-        {{- with .Values.existingSecret }}
-        - "-c"
-        - "/config/secret.yaml"
-        {{- end }}
         - "controller"
         - "plans"
   restartPolicy: Never

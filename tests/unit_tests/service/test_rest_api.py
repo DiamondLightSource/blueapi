@@ -603,7 +603,7 @@ def test_get_oidc_config(
     assert response.json() == oidc_config.model_dump()
 
 
-def test_get_python_environment(mock_runner: Mock, client: TestClient) -> None:
+def test_get_python_environment(mock_runner: Mock, client: TestClient):
     packages = PythonEnvironmentResponse(
         installed_packages=[
             PackageInfo(
@@ -612,17 +612,10 @@ def test_get_python_environment(mock_runner: Mock, client: TestClient) -> None:
                 source=SourceInfo.PYPI,
                 is_dirty=False,
                 location="/venv/site-packages/pydantic",
-            ),
-            PackageInfo(
-                name="test",
-                version="1.2.3",
-                source=SourceInfo.SCRATCH,
-                is_dirty=True,
-                location="/venv/site-packages/test",
-            ),
+            )
         ]
     )
     mock_runner.run.return_value = packages
-    response = client.get("/python_environment")
+    response = client.get("/python_environment", params={"source": SourceInfo.PYPI})
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == packages.model_dump()

@@ -19,7 +19,7 @@ from ophyd.sim import SynAxis, SynGauss
 from pydantic import TypeAdapter, ValidationError
 from pytest import LogCaptureFixture
 
-from blueapi.config import EnvironmentConfig, Source, SourceKind
+from blueapi.config import EnvironmentConfig, MetadataConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 
@@ -344,6 +344,20 @@ def test_add_devices_and_plans_from_modules_with_config(
         "ophyd_async_device",
     } == empty_context.devices.keys()
     assert EXPECTED_PLANS == empty_context.plans.keys()
+
+
+def test_add_metadata_with_config(
+    empty_context: BlueskyContext,
+) -> None:
+    empty_context.with_config(
+        EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        )
+    )
+    metadata = [("instrument", "p46"), ("instrument_session", "ab123")]
+
+    for md in metadata:
+        assert md in empty_context.run_engine.md.items()
 
 
 def test_function_spec(empty_context: BlueskyContext) -> None:

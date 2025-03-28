@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Mapping
 from functools import cache
 from typing import Any
@@ -83,7 +82,6 @@ def setup(config: ApplicationConfig) -> None:
 
     # Eagerly initialize worker and messaging connection
 
-    logging.basicConfig(format="%(asctime)s - %(message)s", level=config.logging.level)
     worker()
     stomp_client()
 

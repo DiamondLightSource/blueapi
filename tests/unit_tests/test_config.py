@@ -220,7 +220,12 @@ def temp_yaml_config_file(
                 ],
                 "events": {"broadcast_status_events": True},
             },
-            "logging": {"level": "INFO"},
+            "logging": {
+                "graylog_enabled": False,
+                "graylog_host": "graylog-log-target.diamond.ac.uk",
+                "graylog_port": 12232,
+                "level": "INFO",
+            },
             "api": {"host": "0.0.0.0", "port": 8000, "protocol": "http"},
             "scratch": None,
         },
@@ -268,7 +273,12 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "port": 8000,
                 "protocol": "http",
             },
-            "logging": {"level": "INFO"},
+            "logging": {
+                "graylog_enabled": False,
+                "graylog_host": "graylog-log-target.diamond.ac.uk",
+                "graylog_port": 12232,
+                "level": "INFO",
+            },
             "oidc": {
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",
@@ -300,7 +310,12 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 ],
                 "events": {"broadcast_status_events": True},
             },
-            "logging": {"level": "INFO"},
+            "logging": {
+                "graylog_enabled": False,
+                "graylog_host": "graylog-log-target.diamond.ac.uk",
+                "graylog_port": 12232,
+                "level": "INFO",
+            },
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
             "oidc": {
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",

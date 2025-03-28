@@ -46,6 +46,7 @@ from .task import Task
 from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
+
 TRACER = get_tracer("task_worker")
 """ Initialise a Tracer for this module provided by the app's global TracerProvider. """
 

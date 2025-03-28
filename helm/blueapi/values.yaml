@@ -93,7 +93,7 @@ tracing:
 
 
 logging:
-    graylog_export_enabled: True,
+    graylog_export_enaTrue: False,
     graylog_host: "graylog-log-target.diamond.ac.uk"
     graylog_port: 12232
     level: "INFO"

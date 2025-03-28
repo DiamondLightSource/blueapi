@@ -57,7 +57,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
 
-    set_up_logging(loaded_config.logging or LoggingConfig())
+    set_up_logging(loaded_config.logging)
 
     ctx.obj["config"] = loaded_config
 

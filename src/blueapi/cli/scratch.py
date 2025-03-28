@@ -171,11 +171,7 @@ def get_python_environment(
         python_env_response = PythonEnvironmentResponse(scratch_enabled=False)
     else:
         python_env_response = PythonEnvironmentResponse(scratch_enabled=True)
-        try:
-            _validate_directory(config.root)
-        except Exception as e:
-            logging.error(f"Failed to get scratch info: {e}")
-            return python_env_response
+        _validate_directory(config.root)
         for repo in config.repositories:
             local_directory = config.root / repo.name
             repo = Repo(local_directory)

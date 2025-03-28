@@ -1,8 +1,9 @@
 import subprocess
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any
+from textwrap import dedent
+from typing import Any, Literal
 
 import pytest
 import yaml
@@ -19,6 +20,15 @@ from blueapi.config import (
 
 BLUEAPI_HELM_CHART = Path(__file__).parent.parent.parent / "helm" / "blueapi"
 Values = Mapping[str, Any]
+ManifestKind = Literal[
+    "ConfigMap",
+    "Ingress",
+    "Service",
+    "StatefulSet",
+    "Deployment",
+    "ServiceAccount",
+]
+GroupedManifests = Mapping[ManifestKind, Mapping[str, Mapping[str, Any]]]
 
 HIGH_RESOURCES = {
     "requests": {
@@ -79,7 +89,9 @@ LOW_RESOURCES = {
 def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
     manifests = render_chart(values={"worker": worker_config.model_dump()})
     rendered_config = ApplicationConfig(
-        **yaml.safe_load(manifests["blueapi-config"]["data"]["config.yaml"])
+        **yaml.safe_load(
+            manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
+        )
     )
     assert rendered_config == worker_config
 
@@ -118,7 +130,7 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
 def test_helm_chart_creates_init_config_map(values: Values):
     manifests = render_chart(values=values)
     rendered_config = yaml.safe_load(
-        manifests["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
     )
     assert rendered_config == values["initContainer"]
 
@@ -128,7 +140,9 @@ def test_helm_chart_does_not_render_arbitrary_rabbitmq_password():
         values={"worker": {"stomp": {"auth": {"password": "foobar"}}}}
     )
     rendered_config = ApplicationConfig(
-        **yaml.safe_load(manifests["blueapi-config"]["data"]["config.yaml"])
+        **yaml.safe_load(
+            manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
+        )
     )
     assert rendered_config.stomp is not None
     assert rendered_config.stomp.auth is not None
@@ -138,7 +152,9 @@ def test_helm_chart_does_not_render_arbitrary_rabbitmq_password():
 def test_container_gets_container_resources():
     manifests = render_chart(values={"resources": HIGH_RESOURCES})
     assert (
-        manifests["blueapi"]["spec"]["template"]["spec"]["containers"][0]["resources"]
+        manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]["containers"][
+            0
+        ]["resources"]
         == HIGH_RESOURCES
     )
 
@@ -156,9 +172,9 @@ def test_init_container_gets_container_resources_by_default():
         }
     )
     assert (
-        manifests["blueapi"]["spec"]["template"]["spec"]["initContainers"][0][
-            "resources"
-        ]
+        manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "initContainers"
+        ][0]["resources"]
         == HIGH_RESOURCES
     )
 
@@ -176,9 +192,9 @@ def test_init_container_resources_overridable():
         }
     )
     assert (
-        manifests["blueapi"]["spec"]["template"]["spec"]["initContainers"][0][
-            "resources"
-        ]
+        manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "initContainers"
+        ][0]["resources"]
         == LOW_RESOURCES
     )
 
@@ -200,7 +216,7 @@ def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,
     values: Values | None = None,
-) -> Mapping[str, Values]:
+) -> GroupedManifests:
     content = TypeAdapter(Any).dump_json(values or {})
     with NamedTemporaryFile() as tmp_file:
         tmp_file.write(content)
@@ -218,11 +234,23 @@ def render_chart(
         )
     if result.returncode == 0:
         manifests = yaml.safe_load_all(result.stdout)
-        manifests = {
-            k8s_object["metadata"]["name"]: k8s_object
-            for k8s_object in manifests
-            if k8s_object
-        }
-        return manifests
+        return group_manifests(manifests)
     else:
         raise RuntimeError(f"Unable to render helm chart: {result.stderr}")
+
+
+def group_manifests(ungrouped: Iterable[Mapping[str, Any]]) -> GroupedManifests:
+    groups = {}
+    for manifest in ungrouped:
+        name = manifest["metadata"]["name"]
+        kind = manifest["kind"]
+        group = groups.setdefault(kind, {})
+        if name in group:
+            raise KeyError(
+                dedent(f"""
+                Cannot have 2 manifests of the same type with the same name.
+                The chart currently renders at least 2 {kind}s named {name}.
+                """)
+            )
+        group[name] = manifest
+    return groups

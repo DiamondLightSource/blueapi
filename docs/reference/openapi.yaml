@@ -420,13 +420,11 @@ paths:
       summary: Get Plan By Name
   /python_environment:
     get:
-      description: "Retrieve the Python environment details.\n\nThis endpoint fetches\
-        \ information about the Python environment,\nsuch as the installed packages\
-        \ and scratch packages.\n\nArgs:\n    name: An optional name to filter or\
-        \ identify the environment.\n    source: An optional source filter to find\
-        \ packages present of a specific source.\n    (e.g. \"scratch\"or \"pypi\"\
-        )\n\nReturns:\n    PythonEnvironmentResponse: A response model containing\
-        \ details about\n    the Python environment."
+      description: 'Retrieve the Python environment details.
+
+        This endpoint fetches information about the Python environment,
+
+        such as the installed packages and scratch packages.'
       operationId: get_python_environment_python_environment_get
       parameters:
       - in: query

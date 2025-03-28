@@ -432,18 +432,8 @@ def get_python_environment(
 ) -> PythonEnvironmentResponse:
     """
     Retrieve the Python environment details.
-
     This endpoint fetches information about the Python environment,
     such as the installed packages and scratch packages.
-
-    Args:
-        name: An optional name to filter or identify the environment.
-        source: An optional source filter to find packages present of a specific source.
-        (e.g. "scratch"or "pypi")
-
-    Returns:
-        PythonEnvironmentResponse: A response model containing details about
-        the Python environment.
     """
     return runner.run(interface.get_python_env, name, source)
 

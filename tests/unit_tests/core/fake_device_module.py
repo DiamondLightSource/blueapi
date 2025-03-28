@@ -72,6 +72,12 @@ def _mock_with_name(name: str) -> MagicMock:
     # mock.name must return str, cannot MagicMock(name=name)
     mock = MagicMock()
     mock.name = name
+
+    def stop(self, success: bool = True) -> None:
+        pass
+
+    mock.stop = stop
+
     return mock
 
 

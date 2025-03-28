@@ -4,10 +4,6 @@
             "name": "data_class_motor",
             "protocols": [
                 {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
                     "name": "Movable",
                     "types": [
                         "DataClassType"
@@ -19,10 +15,6 @@
             "name": "dynamic_motor",
             "protocols": [
                 {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
                     "name": "Movable",
                     "types": [
                         "MotorPositions"
@@ -33,10 +25,6 @@
         {
             "name": "movable_motor",
             "protocols": [
-                {
-                    "name": "HasName",
-                    "types": []
-                },
                 {
                     "name": "Movable",
                     "types": [
@@ -50,18 +38,6 @@
             "protocols": [
                 {
                     "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "HasHints",
-                    "types": []
-                },
-                {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
-                    "name": "HasParent",
                     "types": []
                 },
                 {
@@ -106,18 +82,6 @@
                     "types": []
                 },
                 {
-                    "name": "HasHints",
-                    "types": []
-                },
-                {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
-                    "name": "HasParent",
-                    "types": []
-                },
-                {
                     "name": "Movable",
                     "types": []
                 },
@@ -156,18 +120,6 @@
             "protocols": [
                 {
                     "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "HasHints",
-                    "types": []
-                },
-                {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
-                    "name": "HasParent",
                     "types": []
                 },
                 {
@@ -212,18 +164,6 @@
                     "types": []
                 },
                 {
-                    "name": "HasHints",
-                    "types": []
-                },
-                {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
-                    "name": "HasParent",
-                    "types": []
-                },
-                {
                     "name": "Movable",
                     "types": []
                 },
@@ -262,18 +202,6 @@
             "protocols": [
                 {
                     "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "HasHints",
-                    "types": []
-                },
-                {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
-                    "name": "HasParent",
                     "types": []
                 },
                 {
@@ -318,18 +246,6 @@
                     "types": []
                 },
                 {
-                    "name": "HasHints",
-                    "types": []
-                },
-                {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
-                    "name": "HasParent",
-                    "types": []
-                },
-                {
                     "name": "Movable",
                     "types": []
                 },
@@ -371,18 +287,6 @@
                     "types": []
                 },
                 {
-                    "name": "HasHints",
-                    "types": []
-                },
-                {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
-                    "name": "HasParent",
-                    "types": []
-                },
-                {
                     "name": "Pausable",
                     "types": []
                 },
@@ -420,18 +324,6 @@
                     "types": []
                 },
                 {
-                    "name": "HasHints",
-                    "types": []
-                },
-                {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
-                    "name": "HasParent",
-                    "types": []
-                },
-                {
                     "name": "Pausable",
                     "types": []
                 },
@@ -466,18 +358,6 @@
             "protocols": [
                 {
                     "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "HasHints",
-                    "types": []
-                },
-                {
-                    "name": "HasName",
-                    "types": []
-                },
-                {
-                    "name": "HasParent",
                     "types": []
                 },
                 {

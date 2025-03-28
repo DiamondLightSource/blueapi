@@ -13,9 +13,6 @@ from bluesky.protocols import (
     Checkable,
     Configurable,
     Flyable,
-    HasHints,
-    HasName,
-    HasParent,
     Movable,
     Pausable,
     Readable,
@@ -40,9 +37,6 @@ PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
 Device = (
     Checkable
     | Flyable
-    | HasHints
-    | HasName
-    | HasParent
     | Movable
     | Pausable
     | Readable

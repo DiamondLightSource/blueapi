@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
+from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
 from ophyd.sim import SynAxis
@@ -104,8 +105,11 @@ def test_get_plan(context_mock: MagicMock):
 
 
 @dataclass
-class MyDevice:
+class MyDevice(Stoppable):
     name: str
+
+    def stop(self, success: bool = True) -> None:
+        pass
 
 
 @patch("blueapi.service.interface.context")
@@ -116,14 +120,11 @@ def test_get_devices(context_mock: MagicMock):
     context_mock.return_value = context
 
     assert interface.get_devices() == [
-        DeviceModel(name="my_device", protocols=[ProtocolInfo(name="HasName")]),
+        DeviceModel(name="my_device", protocols=[ProtocolInfo(name="Stoppable")]),
         DeviceModel(
             name="my_axis",
             protocols=[
                 ProtocolInfo(name="Checkable"),
-                ProtocolInfo(name="HasHints"),
-                ProtocolInfo(name="HasName"),
-                ProtocolInfo(name="HasParent"),
                 ProtocolInfo(name="Movable"),
                 ProtocolInfo(name="Pausable"),
                 ProtocolInfo(name="Readable"),
@@ -144,7 +145,7 @@ def test_get_device(context_mock: MagicMock):
     context_mock.return_value = context
 
     assert interface.get_device("my_device") == DeviceModel(
-        name="my_device", protocols=[ProtocolInfo(name="HasName")]
+        name="my_device", protocols=[ProtocolInfo(name="Stoppable")]
     )
 
     with pytest.raises(KeyError):

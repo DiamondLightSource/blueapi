@@ -612,7 +612,14 @@ def test_get_python_environment(mock_runner: Mock, client: TestClient) -> None:
                 source=SourceInfo.PYPI,
                 is_dirty=False,
                 location="/venv/site-packages/pydantic",
-            )
+            ),
+            PackageInfo(
+                name="test",
+                version="1.2.3",
+                source=SourceInfo.SCRATCH,
+                is_dirty=True,
+                location="/venv/site-packages/test",
+            ),
         ]
     )
     mock_runner.run.return_value = packages

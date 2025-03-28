@@ -8,11 +8,18 @@ from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from dodal.common.beamlines.beamline_utils import get_path_provider
 from dodal.common.visit import StartDocumentPathProvider
 
+from blueapi.cli.scratch import get_python_environment
 from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
-from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
+from blueapi.service.model import (
+    DeviceModel,
+    PlanModel,
+    PythonEnvironmentResponse,
+    SourceInfo,
+    WorkerTask,
+)
 from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
@@ -252,3 +259,11 @@ def get_task_by_id(task_id: str) -> TrackableTask | None:
 
 def get_oidc_config() -> OIDCConfig | None:
     return config().oidc
+
+
+def get_python_env(
+    name: str | None = None, source: SourceInfo | None = None
+) -> PythonEnvironmentResponse:
+    """Retrieve information about the Python environment"""
+    scratch = config().scratch
+    return get_python_environment(config=scratch, name=name, source=source)

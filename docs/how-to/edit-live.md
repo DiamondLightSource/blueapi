@@ -53,13 +53,14 @@ blueapi controller env -r
 The helm chart can be configured to mount a scratch area from the
 host machine, include the following in your `values.yaml`:
 
-```yaml 
-  scratchHostPath: path/to/scratch/area  # e.g. /dls_sw/<my_beamline>/software/blueapi/scratch
+```yaml
+  initContainer:
+    enabled: true
+    scratch:
+      root: path/to/scratch/area  # e.g. /dls_sw/<my_beamline>/software/blueapi/scratch
+      repositories: []
 ```
 
-:::{note}
-If you do this then the value of `scratch.root` in your blueapi configuration is no longer particularly important, it only specifies where to mount the scratch area _inside_ the container.
-:::
 
 The scratch folder that you're pointing to must exist, not already have a copy of the repositories that will be cloned into it and have correct permissions e.g.
 

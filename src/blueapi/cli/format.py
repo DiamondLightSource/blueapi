@@ -11,7 +11,12 @@ from typing import Any, TextIO
 from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.model import DeviceResponse, PlanResponse
+from blueapi.service.model import (
+    DeviceResponse,
+    PlanResponse,
+    PythonEnvironmentResponse,
+    SourceInfo,
+)
 from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 FALLBACK = pprint
@@ -68,6 +73,22 @@ def display_full(obj: Any, stream: Stream):
             )
         case ProgressEvent():
             print(f"Progress:{fmt_dict(obj.model_dump())}")
+        case PythonEnvironmentResponse(
+            installed_packages=installed_packages, scratch_enabled=enabled
+        ):
+            print(f"Scratch Status: {'enabled' if enabled else 'disabled'}")
+            if not installed_packages:
+                print("No scratch packages found")
+            else:
+                print("Installed Packages:")
+                for package in installed_packages:
+                    print(
+                        f"- {package.name}\n"
+                        + f"Version: {package.version}\n"
+                        + f"Location: {package.location}\n"
+                        + f"Source: {package.source}\n"
+                        + f"Dirty: {package.is_dirty}"
+                    )
         case BaseModel():
             print(obj.__class__.__name__, end="")
             print(fmt_dict(obj.model_dump()))
@@ -124,6 +145,21 @@ def display_compact(obj: Any, stream: Stream):
                 else "???"
             )
             print(f"Progress: {prog}%")
+        case PythonEnvironmentResponse(
+            installed_packages=installed_packages, scratch_enabled=enabled
+        ):
+            print(f"Scratch Status: {'enabled' if enabled else 'disabled'}")
+            if not installed_packages:
+                print("No scratch packages found")
+            else:
+                for package in installed_packages:
+                    extra = ""
+                    if package.is_dirty:
+                        extra += " (Dirty)"
+                    if package.source == SourceInfo.SCRATCH:
+                        extra += " (Scratch)"
+                    print(f"- {package.name} @ ({package.version}){extra}")
+
         case other:
             FALLBACK(other, stream=stream)
 

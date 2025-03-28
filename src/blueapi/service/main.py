@@ -38,6 +38,8 @@ from .model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+    PythonEnvironmentResponse,
+    SourceInfo,
     StateChangeRequest,
     TaskResponse,
     TasksListResponse,
@@ -46,7 +48,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "0.0.6"
+REST_API_VERSION = "0.0.7"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -428,6 +430,21 @@ def set_state(
         response.status_code = status.HTTP_400_BAD_REQUEST
 
     return runner.run(interface.get_worker_state)
+
+
+@router.get("/python_environment", response_model=PythonEnvironmentResponse)
+@start_as_current_span(TRACER)
+def get_python_environment(
+    runner: WorkerDispatcher = Depends(_runner),
+    name: str | None = None,
+    source: SourceInfo | None = None,
+) -> PythonEnvironmentResponse:
+    """
+    Retrieve the Python environment details.
+    This endpoint fetches information about the Python environment,
+    such as the installed packages and scratch packages.
+    """
+    return runner.run(interface.get_python_env, name, source)
 
 
 @start_as_current_span(TRACER, "config")

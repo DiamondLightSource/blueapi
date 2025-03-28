@@ -40,17 +40,17 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
-      {{- if .Values.scratchHostPath }}
+      {{- if .Values.initContainer.enabled | default false}}
       - name: scratch-host
         hostPath:
-          path: {{ .Values.scratchHostPath }}
+          path: {{ .Values.initContainer.scratch.root }}
           type: Directory
       - name: venv
         emptyDir:
           sizeLimit: 5Gi
       {{- end }}
       initContainers:
-      {{- if .Values.scratchHostPath }}
+      {{- if .Values.initContainer.enabled | default false}}
       - name: setup-scratch
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -69,7 +69,7 @@ spec:
             mountPath: "/config"
             readOnly: true
           - name: scratch-host
-            mountPath: {{ .Values.worker.scratch.root }}
+            mountPath: {{ .Values.initContainer.scratch.root }}
             mountPropagation: HostToContainer
           - name: venv
             mountPath: /artefacts
@@ -86,9 +86,9 @@ spec:
             - name: worker-config
               mountPath: "/config"
               readOnly: true
-            {{- if .Values.scratchHostPath }}
+            {{- if .Values.initContainer.enabled | default false }}
             - name: scratch-host
-              mountPath: {{ .Values.worker.scratch.root }}
+              mountPath: {{ .Values.initContainer.scratch.root }}
               mountPropagation: HostToContainer
             - name: venv
               mountPath: /venv

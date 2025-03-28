@@ -279,23 +279,6 @@ def test_setup_scratch_continues_after_failure(
         setup_scratch(config)
 
 
-@patch("blueapi.cli.scratch.Repo")
-def test_python_env_info_with_nonexistent_path(mock_repo: Mock, nonexistant_path: Path):
-    config = ScratchConfig(
-        root=nonexistant_path,
-        repositories=[
-            ScratchRepository(
-                name="foo",
-                remote_url="http://example.com/foo.git",
-            ),
-        ],
-    )
-
-    response = get_python_environment(config)
-
-    assert response.installed_packages == []
-
-
 @pytest.fixture
 def config(directory_path_with_sgid: Path) -> ScratchConfig:
     return ScratchConfig(

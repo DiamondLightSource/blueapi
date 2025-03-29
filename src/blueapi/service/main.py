@@ -1,5 +1,6 @@
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 import jwt
 from fastapi import (
@@ -9,6 +10,7 @@ from fastapi import (
     Depends,
     FastAPI,
     HTTPException,
+    Query,
     Request,
     Response,
     status,
@@ -202,9 +204,17 @@ def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
 
 @router.get("/devices", response_model=DeviceResponse)
 @start_as_current_span(TRACER)
-def get_devices(runner: WorkerDispatcher = Depends(_runner)):
+def get_devices(
+    runner: WorkerDispatcher = Depends(_runner),
+    expected_type: Annotated[str | None, Query(alias="type")] = Query(
+        None, description="Filter devices by protocol name"
+    ),
+):
     """Retrieve information about all available devices."""
-    devices = runner.run(interface.get_devices)
+    if expected_type:
+        devices = runner.run(lambda: interface.get_devices(expected_type))
+    else:
+        devices = runner.run(interface.get_devices)
     return DeviceResponse(devices=devices)
 
 

@@ -13,7 +13,7 @@ class InstrumentTagFilter(logging.Filter):
     through. Value is taken from `BEAMLINE` env var, defaulting to `dev`.
     """
 
-    instrument: str | None = os.environ.get("BEAMLINE", "dev")
+    instrument: str = os.environ.get("BEAMLINE", os.environ.get("INSTRUMENT", "dev"))
 
     def filter(self, record: logging.LogRecord) -> bool:
         record.instrument = self.instrument

@@ -91,14 +91,6 @@ tracing:
       host: https://daq-services-jaeger # replace with central instance
       port: 4318
 
-
-logging:
-    graylog_export_enaTrue: False,
-    graylog_host: "graylog-log-target.diamond.ac.uk"
-    graylog_port: 12232
-    level: "INFO"
-
-
 # Config for the worker goes here, will be mounted into a config file
 worker:
   api:
@@ -120,6 +112,11 @@ worker:
       password: guest
     host: rabbitmq
     port: 61613
+  logging:
+      graylog_export_enaTrue: False,
+      graylog_host: "graylog-log-target.diamond.ac.uk"
+      graylog_port: 12232
+      level: "INFO"
 
 initContainer:
   scratch:

@@ -487,7 +487,7 @@ async def log_request_details(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     LOGGER.info(
-        "method: %s url: %s body: %s", request.method, request.url, request.body
+        f"method: {request.method} url: {request.url} body: {await request.body()}",
     )
     response = await call_next(request)
     return response

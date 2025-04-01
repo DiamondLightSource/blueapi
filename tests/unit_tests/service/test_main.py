@@ -2,7 +2,6 @@ from unittest import mock
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from starlette.datastructures import URL
 
 from blueapi.service.main import log_request_details
 
@@ -21,5 +20,5 @@ async def test_log_request_details():
 
         assert response.status_code == 200
         logger.info.assert_called_once_with(
-            "body: %s method: %s url: %s", mock.ANY, "GET", URL("http://testserver/")
+            "method: GET url: http://testserver/ body: b''"
         )

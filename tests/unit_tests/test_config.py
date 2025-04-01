@@ -325,7 +325,6 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "level": "INFO",
             },
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
-            "numtracker": None,
             "oidc": {
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",

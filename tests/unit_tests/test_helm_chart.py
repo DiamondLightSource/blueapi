@@ -25,7 +25,7 @@ ManifestKind = Literal[
     "Ingress",
     "Service",
     "StatefulSet",
-    "Deployment",
+    "Pod",
     "ServiceAccount",
 ]
 GroupedManifests = Mapping[ManifestKind, Mapping[str, Mapping[str, Any]]]

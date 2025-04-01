@@ -113,7 +113,7 @@ worker:
     host: rabbitmq
     port: 61613
   logging:
-      graylog_export_enaTrue: False,
+      graylog_enabled: False,
       graylog_host: "graylog-log-target.diamond.ac.uk"
       graylog_port: 12232
       level: "INFO"

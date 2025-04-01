@@ -242,12 +242,25 @@ def test_init_container_resources_overridable():
     strict=True,
 )
 def test_do_not_have_to_provide_scratch_host_path_twice():
-    render_chart(
+    manifests = render_chart(
         values={
-            "initContainer": {"scratch": {"root": "/foo"}},
-            "scratchHostPath": "/foo",
+            "initContainer": {
+                "enabled": True,
+                "scratch": {
+                    "root": "/foo",
+                },
+            },
         }
     )
+
+    config = yaml.safe_load(
+        manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
+    )
+    init_config = yaml.safe_load(
+        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+    )
+    assert config["scratch"]["root"] == "/foo"
+    assert init_config["scratch"]["root"] == "/foo"
 
 
 def render_chart(

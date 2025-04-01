@@ -21,7 +21,6 @@ from opentelemetry.trace import SpanKind
 from pydantic import Field
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import LoggingConfig
 from blueapi.core import (
     OTLP_EXPORT_ENABLED,
     BlueskyContext,
@@ -31,7 +30,6 @@ from blueapi.core import (
     WatchableStatus,
 )
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
-from blueapi.log import set_up_logging
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
 
@@ -141,7 +139,6 @@ class TaskWorker:
         self._broadcast_statuses = broadcast_statuses
         self._current_task_otel_context = None
         setup_tracing("BlueAPIWorker", OTLP_EXPORT_ENABLED)
-        set_up_logging(LoggingConfig())
 
     @start_as_current_span(TRACER, "task_id")
     def clear_task(self, task_id: str) -> str:

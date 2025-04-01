@@ -8,6 +8,7 @@ from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
+from blueapi.log import set_up_logging
 from blueapi.service.model import DeviceModel, PlanModel, WorkerTask
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
@@ -79,6 +80,8 @@ def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
 
     set_config(config)
+
+    set_up_logging(config.logging)
 
     # Eagerly initialize worker and messaging connection
 

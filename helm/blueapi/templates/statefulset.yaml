@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "blueapi.fullname" . }}
+  labels:
+    {{- include "blueapi.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+replicas: {{ .Values.replicaCount }}
+{{- end }}
+selector:
+  matchLabels:
+    {{- include "blueapi.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+      {{- if .Values.restartOnConfigChange }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- end }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "blueapi.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      hostNetwork: {{ .Values.hostNetwork }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "blueapi.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+      {{- if (.Values.initContainer).enabled }}
+      - name: setup-scratch
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        resources:
+          {{- .Values.initResources | default .Values.resources | toYaml | nindent 12 }}
+        command: [/bin/sh, -c]
+        args:
+          - |
+            echo "Setting up scratch area"
+            blueapi -c /config/init-config.yaml setup-scratch
+            if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
+            echo "Exporting venv as artefact"
+            cp -r /venv/* /artefacts
+        volumeMounts:
+          - name: init-config
+            mountPath: "/config"
+            readOnly: true
+          - name: scratch-host
+            mountPath: {{ .Values.initContainer.config.scratch.root | required "initContainer enabled but config does not contain scratch.root" }}
+            mountPropagation: HostToContainer
+          - name: venv
+            mountPath: /artefacts
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ ((.Values.worker).api).port | default 8000 }}
+              protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: worker-config
+              mountPath: "/config"
+              readOnly: true
+            {{- if (.Values.initContainer).enabled }}
+            - name: scratch-host
+              mountPath: {{ .Values.initContainer.config.scratch.root }}
+              mountPropagation: HostToContainer
+            - name: venv
+              mountPath: /venv
+            {{- end }}
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          args:
+            - "-c"
+            - "/config/config.yaml"
+            - "serve"
+          envFrom:
+            - configMapRef:
+                name: {{ include "blueapi.fullname" . }}-otel-config
+          env:
+            {{- with .Values.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: worker-config
+          projected:
+            sources:
+            - configMap:
+                name: {{ include "blueapi.fullname" . }}-config
+        - name: init-config
+          projected:
+            sources:
+            - configMap:
+                name: {{ include "blueapi.fullname" . }}-init-config
+        {{- if (.Values.initContainer).enabled }}
+        - name: scratch-host
+          hostPath:
+            path: {{ .Values.initContainer.config.scratch.root }}
+            type: Directory
+        - name: venv
+          emptyDir:
+            sizeLimit: 5Gi
+        {{- end }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blueapi.fullname" . }}-config
+data:
+  config.yaml: |-
+    {{- toYaml .Values.worker | nindent 4 }}
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blueapi.fullname" . }}-otel-config
+data:
+{{- if ((.Values.tracing).otlp).enabled }}
+  OTLP_EXPORT_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: {{ .Values.tracing.otlp.protocol | default "http/protobuf" }}
+  {{- with .Values.tracing.otlp.server | required "OTLP export enabled but no server information given" }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .host | required "OTLP export enabled but server address not set" }}:{{ .port | default 4318 }}
+  {{- end }}
+{{ end }}
+
+---
+
+{{- if (.Values.initContainer).enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blueapi.fullname" . }}-init-config
+data:
+  init-config.yaml: |-
+    {{- toYaml .Values.initContainer.config | nindent 4 }}
+{{- end }}
+
+---

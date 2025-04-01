@@ -486,10 +486,10 @@ async def add_api_version_header(
 async def log_request_details(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    response = await call_next(request)
     LOGGER.info(
-        "body: %s method: %s url: %s", request.body, request.method, request.url
+        "method: %s url: %s body: %s", request.method, request.url, request.body
     )
+    response = await call_next(request)
     return response
 
 

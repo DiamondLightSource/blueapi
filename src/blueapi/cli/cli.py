@@ -22,7 +22,6 @@ from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
-    LoggingConfig,
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging

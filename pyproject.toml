@@ -28,15 +28,16 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal>=1.36.2",
-    "super-state-machine",  # https://github.com/DiamondLightSource/blueapi/issues/553
+    "dls-dodal>=1.43.0",
+    "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "bluesky-stomp>=0.1.4",
-    "event-model==1.22.1",    # https://github.com/DiamondLightSource/blueapi/issues/684
+    "event-model==1.22.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
     "pyjwt[crypto]",
+    "tomlkit"
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -56,6 +57,7 @@ dev = [
     "pytest-asyncio",
     "responses",
     "ruff",
+    "semver",
     "sphinx-autobuild>=2024.4.16",
     "sphinx-copybutton",
     "sphinx-click",

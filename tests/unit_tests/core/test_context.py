@@ -5,14 +5,21 @@ from typing import Generic, TypeVar, Union
 from unittest.mock import patch
 
 import pytest
-from bluesky.protocols import Descriptor, Movable, Readable, Reading, SyncOrAsync
+from bluesky.protocols import (
+    Descriptor,
+    Movable,
+    Readable,
+    Reading,
+    Stoppable,
+    SyncOrAsync,
+)
 from bluesky.utils import MsgGenerator
 from dodal.common import PlanGenerator, inject
 from ophyd.sim import SynAxis, SynGauss
 from pydantic import TypeAdapter, ValidationError
 from pytest import LogCaptureFixture
 
-from blueapi.config import EnvironmentConfig, Source, SourceKind
+from blueapi.config import EnvironmentConfig, MetadataConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 
@@ -339,6 +346,20 @@ def test_add_devices_and_plans_from_modules_with_config(
     assert EXPECTED_PLANS == empty_context.plans.keys()
 
 
+def test_add_metadata_with_config(
+    empty_context: BlueskyContext,
+) -> None:
+    empty_context.with_config(
+        EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        )
+    )
+    metadata = [("instrument", "p46"), ("instrument_session", "ab123")]
+
+    for md in metadata:
+        assert md in empty_context.run_engine.md.items()
+
+
 def test_function_spec(empty_context: BlueskyContext) -> None:
     spec = empty_context._type_spec_for_function(has_some_params)
     assert spec["foo"][0] is int
@@ -421,26 +442,29 @@ def test_generic_default_device_reference(empty_context: BlueskyContext) -> None
     assert spec["mov"][1].default_factory == DefaultFactory("demo")
 
 
-class Named:
-    """Concrete implementation of a Bluesky protocol (HasName)"""
+class ConcreteStoppable(Stoppable):
+    """Concrete implementation of a Bluesky protocol"""
 
     @property
     def name(self) -> str:
         return "Concrete"
 
+    def stop(self, success: bool = True) -> None:
+        pass
+
 
 def test_concrete_type_conversion(empty_context: BlueskyContext) -> None:
-    hasname_ref = empty_context._reference(Named)
-    assert empty_context._convert_type(Named) == hasname_ref
+    stoppable_ref = empty_context._reference(ConcreteStoppable)
+    assert empty_context._convert_type(ConcreteStoppable) == stoppable_ref
 
 
 def test_concrete_method_annotation(empty_context: BlueskyContext) -> None:
-    hasname_ref = empty_context._reference(Named)
+    stoppable_ref = empty_context._reference(ConcreteStoppable)
 
-    def demo(named: Named) -> None: ...
+    def demo(named: ConcreteStoppable) -> None: ...
 
     spec = empty_context._type_spec_for_function(demo)
-    assert spec["named"][0] is hasname_ref
+    assert spec["named"][0] is stoppable_ref
     assert spec["named"][1].default_factory is None
 
 

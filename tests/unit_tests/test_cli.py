@@ -34,6 +34,7 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+    PythonEnvironmentResponse,
 )
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
@@ -172,7 +173,7 @@ def test_get_devices(runner: CliRunner):
 
     plans = runner.invoke(main, ["controller", "devices"])
     assert response.call_count == 1
-    assert plans.output == "my-device\n    HasName, Movable['ComplexType']\n"
+    assert plans.output == "my-device\n    Movable['ComplexType']\n"
 
 
 def test_invalid_config_path_handling(runner: CliRunner):
@@ -427,7 +428,7 @@ def test_device_output_formatting():
 
     compact = dedent("""\
                 my-device
-                    HasName, Movable['ComplexType']
+                    Movable['ComplexType']
                 """)
 
     _assert_matching_formatting(OutputFormat.COMPACT, devices, compact)
@@ -437,10 +438,6 @@ def test_device_output_formatting():
                   {
                     "name": "my-device",
                     "protocols": [
-                      {
-                        "name": "HasName",
-                        "types": []
-                      },
                       {
                         "name": "Movable",
                         "types": [
@@ -456,7 +453,6 @@ def test_device_output_formatting():
 
     full = dedent("""\
             my-device
-                HasName
                 Movable['ComplexType']
             """)
     _assert_matching_formatting(OutputFormat.FULL, devices, full)
@@ -824,3 +820,124 @@ def test_wrapper_permission_error(
     with patch.object(Path, "write_text", side_effect=PermissionError):
         result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
     assert f"Permission denied: Cannot write to {token_file}\n" == result.stdout
+
+
+@responses.activate
+def test_get_python_environment(runner: CliRunner):
+    scratch_config = {
+        "installed_packages": [
+            {
+                "name": "bar",
+                "version": "0.0.1",
+                "location": "/tmp/bar",
+                "is_dirty": "false",
+                "source": "pypi",
+            },
+            {
+                "name": "foo",
+                "version": "https://github.com/example/foo.git @18ec206e",
+                "location": "/tmp/foo",
+                "is_dirty": "true",
+                "source": "scratch",
+            },
+        ],
+        "scratch_enabled": "true",
+    }
+    response = responses.add(
+        responses.GET,
+        "http://localhost:8000/python_environment",
+        json=scratch_config,
+        status=200,
+    )
+
+    result = runner.invoke(main, ["controller", "get-python-env"])
+    assert response.call_count == 1
+    assert result.exit_code == 0
+
+    assert result.output == dedent("""\
+        Scratch Status: enabled
+        - bar @ (0.0.1)
+        - foo @ (https://github.com/example/foo.git @18ec206e) (Dirty) (Scratch)
+        """)
+
+
+@responses.activate
+def test_get_python_env_with_empty_response(runner: CliRunner):
+    scratch_config = {
+        "installed_packages": [],
+    }
+    response = responses.add(
+        responses.GET,
+        "http://localhost:8000/python_environment",
+        json=scratch_config,
+        status=200,
+    )
+
+    result = runner.invoke(main, ["controller", "get-python-env"])
+    assert response.call_count == 1
+    assert result.exit_code == 0
+    assert result.output == dedent("""\
+    Scratch Status: disabled
+    No scratch packages found
+    """)
+
+
+def test_python_env_output_formatting():
+    """Test for alternative python env output formats"""
+
+    python_env_response = {
+        "installed_packages": [
+            {
+                "name": "bar",
+                "version": "0.0.1",
+                "location": "/tmp/bar",
+                "is_dirty": "false",
+                "source": "pypi",
+            },
+            {
+                "name": "foo",
+                "version": "https://github.com/example/foo.git @18ec206e",
+                "location": "/tmp/foo",
+                "is_dirty": "true",
+                "source": "scratch",
+            },
+        ],
+        "scratch_enabled": "true",
+    }
+    python_env_response = PythonEnvironmentResponse(**python_env_response)
+
+    compact = dedent("""\
+        Scratch Status: enabled
+        - bar @ (0.0.1)
+        - foo @ (https://github.com/example/foo.git @18ec206e) (Dirty) (Scratch)
+        """)
+
+    _assert_matching_formatting(OutputFormat.COMPACT, python_env_response, compact)
+
+    full = dedent("""\
+        Scratch Status: enabled
+        Installed Packages:
+        - bar
+        Version: 0.0.1
+        Location: /tmp/bar
+        Source: pypi
+        Dirty: False
+        - foo
+        Version: https://github.com/example/foo.git @18ec206e
+        Location: /tmp/foo
+        Source: scratch
+        Dirty: True
+        """)
+
+    _assert_matching_formatting(OutputFormat.FULL, python_env_response, full)
+
+    empty_python_env = PythonEnvironmentResponse(
+        installed_packages=[], scratch_enabled=False
+    )
+
+    full = dedent("""\
+        Scratch Status: disabled
+        No scratch packages found
+        """)
+
+    _assert_matching_formatting(OutputFormat.FULL, empty_python_env, full)

@@ -8,11 +8,13 @@ from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
+from bluesky.protocols import Movable, Status
 from dodal.common.types import UpdatingPathProvider
 from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
 )
+from ophyd_async.core import AsyncStatus
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream, MsgGenerator
@@ -39,7 +41,7 @@ _INDEFINITE_TASK = Task(
 _FAILING_TASK = Task(name="failing_plan", params={})
 
 
-class FakeDevice:
+class FakeDevice(Movable[float]):
     event: threading.Event
 
     @property
@@ -49,9 +51,18 @@ class FakeDevice:
     def __init__(self) -> None:
         self.event = threading.Event()
 
-    def set(self, pos: float) -> None:
-        self.event.wait()
-        self.event.clear()
+    def set(self, value: float) -> Status:
+        def when_done(_: Status):
+            self.event.clear()
+
+        async def wait_for_event():
+            self.event.wait()
+
+        stat = AsyncStatus(wait_for_event())
+
+        stat.add_callback(when_done)
+
+        return stat
 
 
 def failing_plan() -> MsgGenerator:

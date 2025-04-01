@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import jwt
 import pytest
+from bluesky.protocols import Stoppable
 from fastapi import status
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
@@ -25,7 +26,10 @@ from blueapi.service.interface import (
 from blueapi.service.model import (
     DeviceModel,
     EnvironmentResponse,
+    PackageInfo,
     PlanModel,
+    PythonEnvironmentResponse,
+    SourceInfo,
     StateChangeRequest,
     WorkerTask,
 )
@@ -62,6 +66,14 @@ def client_with_auth(
         main.setup_runner(runner=mock_runner)
         yield TestClient(main.get_app(ApplicationConfig(oidc=oidc_config)))
         main.teardown_runner()
+
+
+@dataclass
+class MinimalDevice(Stoppable):
+    name: str
+
+    def stop(self, success: bool = True):
+        pass
 
 
 def test_get_plans(mock_runner: Mock, client: TestClient) -> None:
@@ -122,11 +134,7 @@ def test_get_non_existent_plan_by_name(mock_runner: Mock, client: TestClient) ->
 
 
 def test_get_devices(mock_runner: Mock, client: TestClient) -> None:
-    @dataclass
-    class MyDevice:
-        name: str
-
-    device = MyDevice("my-device")
+    device = MinimalDevice("my-device")
     mock_runner.run.return_value = [DeviceModel.from_device(device)]
 
     response = client.get("/devices")
@@ -136,18 +144,14 @@ def test_get_devices(mock_runner: Mock, client: TestClient) -> None:
         "devices": [
             {
                 "name": "my-device",
-                "protocols": [{"name": "HasName", "types": []}],
+                "protocols": [{"name": "Stoppable", "types": []}],
             }
         ]
     }
 
 
 def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
-    @dataclass
-    class MyDevice:
-        name: str
-
-    device = MyDevice("my-device")
+    device = MinimalDevice("my-device")
 
     mock_runner.run.return_value = DeviceModel.from_device(device)
     response = client.get("/devices/my-device")
@@ -156,7 +160,7 @@ def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "name": "my-device",
-        "protocols": [{"name": "HasName", "types": []}],
+        "protocols": [{"name": "Stoppable", "types": []}],
     }
 
 
@@ -597,3 +601,21 @@ def test_get_oidc_config(
     response = client_with_auth.get("/config/oidc")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == oidc_config.model_dump()
+
+
+def test_get_python_environment(mock_runner: Mock, client: TestClient):
+    packages = PythonEnvironmentResponse(
+        installed_packages=[
+            PackageInfo(
+                name="pydantic",
+                version="2.10.6",
+                source=SourceInfo.PYPI,
+                is_dirty=False,
+                location="/venv/site-packages/pydantic",
+            )
+        ]
+    )
+    mock_runner.run.return_value = packages
+    response = client.get("/python_environment")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == packages.model_dump()

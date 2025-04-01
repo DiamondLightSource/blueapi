@@ -39,6 +39,8 @@ from .model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+    PythonEnvironmentResponse,
+    SourceInfo,
     StateChangeRequest,
     TaskResponse,
     TasksListResponse,
@@ -46,7 +48,8 @@ from .model import (
 )
 from .runner import WorkerDispatcher
 
-REST_API_VERSION = "0.0.5"
+#: API version to publish in OpenAPI schema
+REST_API_VERSION = "0.0.7"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -306,6 +309,7 @@ def get_tasks(
 )
 @start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
+    request: Request,
     task: WorkerTask,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> WorkerTask:
@@ -316,7 +320,15 @@ def set_active_task(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    runner.run(interface.begin_task, task)
+    runner.run(
+        interface.begin_task,
+        task=task,
+        pass_through_headers={
+            key: value
+            for key, value in request.headers.items()
+            if key in {"Authorization"}
+        },
+    )
     return task
 
 
@@ -421,6 +433,21 @@ def set_state(
         response.status_code = status.HTTP_400_BAD_REQUEST
 
     return runner.run(interface.get_worker_state)
+
+
+@router.get("/python_environment", response_model=PythonEnvironmentResponse)
+@start_as_current_span(TRACER)
+def get_python_environment(
+    runner: WorkerDispatcher = Depends(_runner),
+    name: str | None = None,
+    source: SourceInfo | None = None,
+) -> PythonEnvironmentResponse:
+    """
+    Retrieve the Python environment details.
+    This endpoint fetches information about the Python environment,
+    such as the installed packages and scratch packages.
+    """
+    return runner.run(interface.get_python_env, name, source)
 
 
 @start_as_current_span(TRACER, "config")

@@ -27,6 +27,7 @@ from blueapi.config import (
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
+from blueapi.service.model import SourceInfo
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
@@ -357,6 +358,19 @@ def scratch(obj: dict) -> None:
         setup_scratch(config.scratch)
     else:
         raise KeyError("No scratch config supplied")
+
+
+@controller.command(name="get-python-env")
+@click.option("--name", type=str, help="Filter by the name of the installed package")
+@click.option("--source", type=SourceInfo, help="Filter by the source type")
+@check_connection
+@click.pass_obj
+def get_python_env(obj: dict, name: str, source: SourceInfo) -> None:
+    """
+    Retrieve the installed packages and their sources in the current environment.
+    """
+    client: BlueapiClient = obj["client"]
+    obj["fmt"].display(client.get_python_env(name=name, source=source))
 
 
 @main.command(name="login")

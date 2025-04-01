@@ -1,12 +1,14 @@
 import uuid
 from collections.abc import Iterable
-from typing import Any, get_args
+from enum import Enum
+from typing import Any
 
 from bluesky.protocols import HasName
 from pydantic import Field
 
 from blueapi.config import OIDCConfig
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
+from blueapi.core.context import generic_bounds
 from blueapi.utils import BlueapiBaseModel
 from blueapi.worker import WorkerState
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -35,21 +37,15 @@ class DeviceModel(BlueapiBaseModel):
     @classmethod
     def from_device(cls, device: Device) -> "DeviceModel":
         name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
-        return cls(name=name, protocols=list(_protocol_names(device)))
+        return cls(name=name, protocols=list(_protocol_info(device)))
 
 
-def generic_bounds(device, protocol) -> list[str]:
-    for base in getattr(device, "__orig_bases__", ()):
-        if getattr(base, "__name__", None) == protocol.__name__:
-            return [arg.__name__ for arg in get_args(base)]
-    return []
-
-
-def _protocol_names(device: Device) -> Iterable[ProtocolInfo]:
+def _protocol_info(device: Device) -> Iterable[ProtocolInfo]:
     for protocol in BLUESKY_PROTOCOLS:
         if isinstance(device, protocol):
             yield ProtocolInfo(
-                name=protocol.__name__, types=generic_bounds(device, protocol)
+                name=protocol.__name__,
+                types=[arg.__name__ for arg in generic_bounds(device, protocol)],
             )
 
 
@@ -172,6 +168,37 @@ class EnvironmentResponse(BlueapiBaseModel):
         description="If present - error loading context",
         min_length=1,
     )
+
+
+class SourceInfo(str, Enum):
+    PYPI = "pypi"
+    SCRATCH = "scratch"
+
+    def __str__(self):
+        return self.value
+
+
+class PackageInfo(BlueapiBaseModel):
+    name: str = Field(description="Name of the package", default_factory=str)
+    version: str = Field(description="Version of the package", default_factory=str)
+    location: str = Field(description="Location of the package", default_factory=str)
+    is_dirty: bool = Field(
+        description="Does the package have uncommitted changes", default_factory=bool
+    )
+    source: SourceInfo = Field(
+        description="Source of the package", default=SourceInfo.PYPI
+    )
+
+
+class PythonEnvironmentResponse(BlueapiBaseModel):
+    """
+    State of the Python environment.
+    """
+
+    installed_packages: list[PackageInfo] = Field(
+        description="List of installed packages", default_factory=list
+    )
+    scratch_enabled: bool = Field(description="Scratch status", default=False)
 
 
 class Cache(BlueapiBaseModel):

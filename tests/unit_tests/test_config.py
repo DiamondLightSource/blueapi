@@ -262,6 +262,10 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "events": {
                     "broadcast_status_events": True,
                 },
+                "metadata": {
+                    "instrument_session": "aa123456",
+                    "instrument": "p01",
+                },
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
@@ -309,6 +313,10 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
                 "events": {"broadcast_status_events": True},
+                "metadata": {
+                    "instrument_session": "aa123456",
+                    "instrument": "p01",
+                },
             },
             "logging": {
                 "graylog_enabled": False,
@@ -317,6 +325,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "level": "INFO",
             },
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
+            "numtracker": None,
             "oidc": {
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",

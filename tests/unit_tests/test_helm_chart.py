@@ -102,39 +102,43 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
         {
             "initContainer": {
                 "enabled": True,
-                "scratch": {
-                    "repositories": [],
-                    "root": "/blueapi-plugins/scratch",
+                "config": {
+                    "scratch": {
+                        "repositories": [],
+                        "root": "/blueapi-plugins/scratch",
+                    },
                 },
-            }
+            },
         },
         {
             "initContainer": {
                 "enabled": True,
-                "scratch": {
-                    "root": "/dls_sw/i22/scratch",
-                    "required_gid": 12345,
-                    "repositories": [
-                        {
-                            "name": "foo",
-                            "remote_url": "https://example.git",
-                        },
-                        {
-                            "name": "bar",
-                            "remote_url": "https://example.git",
-                        },
-                    ],
+                "config": {
+                    "scratch": {
+                        "root": "/dls_sw/i22/scratch",
+                        "required_gid": 12345,
+                        "repositories": [
+                            {
+                                "name": "foo",
+                                "remote_url": "https://example.git",
+                            },
+                            {
+                                "name": "bar",
+                                "remote_url": "https://example.git",
+                            },
+                        ],
+                    },
                 },
-            }
+            },
         },
     ],
 )
 def test_helm_chart_creates_init_config_map(values: Values):
     manifests = render_chart(values=values)
     rendered_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        manifests["ConfigMap"]["blueapi-init-config"]["data"]["init-config.yaml"]
     )
-    assert rendered_config == values["initContainer"]
+    assert rendered_config == values["initContainer"]["config"]
 
 
 def test_init_container_spec_generated():
@@ -257,7 +261,7 @@ def test_do_not_have_to_provide_scratch_host_path_twice():
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
     init_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        manifests["ConfigMap"]["blueapi-init-config"]["data"]["init-config.yaml"]
     )
     assert config["scratch"]["root"] == "/foo"
     assert init_config["scratch"]["root"] == "/foo"
@@ -293,15 +297,16 @@ def render_chart(
 def group_manifests(ungrouped: Iterable[Mapping[str, Any]]) -> GroupedManifests:
     groups = {}
     for manifest in ungrouped:
-        name = manifest["metadata"]["name"]
-        kind = manifest["kind"]
-        group = groups.setdefault(kind, {})
-        if name in group:
-            raise KeyError(
-                dedent(f"""
-                Cannot have 2 manifests of the same type with the same name.
-                The chart currently renders at least 2 {kind}s named {name}.
-                """)
-            )
-        group[name] = manifest
+        if manifest is not None:
+            name = manifest["metadata"]["name"]
+            kind = manifest["kind"]
+            group = groups.setdefault(kind, {})
+            if name in group:
+                raise KeyError(
+                    dedent(f"""
+                    Cannot have 2 manifests of the same type with the same name.
+                    The chart currently renders at least 2 {kind}s named {name}.
+                    """)
+                )
+            group[name] = manifest
     return groups

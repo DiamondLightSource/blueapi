@@ -101,14 +101,16 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
     [
         {
             "initContainer": {
+                "enabled": True,
                 "scratch": {
                     "repositories": [],
                     "root": "/blueapi-plugins/scratch",
-                }
+                },
             }
         },
         {
             "initContainer": {
+                "enabled": True,
                 "scratch": {
                     "root": "/dls_sw/i22/scratch",
                     "required_gid": 12345,
@@ -122,7 +124,7 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
                             "remote_url": "https://example.git",
                         },
                     ],
-                }
+                },
             }
         },
     ],
@@ -133,6 +135,42 @@ def test_helm_chart_creates_init_config_map(values: Values):
         manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
     )
     assert rendered_config == values["initContainer"]
+
+
+def test_init_container_spec_generated():
+    manifests = render_chart(
+        values={
+            "initContainer": {
+                "enabled": True,
+                "scratch": {
+                    "repositories": [],
+                    "root": "/blueapi-plugins/scratch",
+                },
+            }
+        }
+    )
+    init_containers = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ]
+    assert len(init_containers) == 1
+
+
+def test_init_container_spec_disablable():
+    manifests = render_chart(
+        values={
+            "initContainer": {
+                "enabled": False,
+                "scratch": {
+                    "repositories": [],
+                    "root": "/blueapi-plugins/scratch",
+                },
+            }
+        }
+    )
+    init_containers = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ]
+    assert init_containers is None
 
 
 def test_helm_chart_does_not_render_arbitrary_rabbitmq_password():

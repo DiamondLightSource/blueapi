@@ -1,0 +1,45 @@
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Assign environment variables
+        # This is required because oci requires the repository is lowercase
+        run: |
+          echo "CHART_REPO=ghcr.io/${OWNER@L}" >>${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get appVersion to insert into chart
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v4
+        id: install
+
+      - name: Lint Helm chart
+        run: helm lint helm/blueapi
+
+      - name: Log in to GitHub Container Registry
+        if: github.ref_type == 'tag'
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ${{ env.CHART_REPO }} --username ${{ github.repository_owner }} --password-stdin
+
+      - name: Publish Helm chart to container registry
+        if: github.ref_type == 'tag'
+        run: |
+          helm dependencies update helm/blueapi
+          helm package helm/blueapi --app-version ${{ steps.meta.outputs.version }} -d /tmp/
+          helm push /tmp/helm/blueapi-${{ steps.meta.outputs.version }}.tgz oci://${{ env.CHART_REPO }}/charts

@@ -2,6 +2,64 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# May be required for communication with EPICS on the host node
+hostNetwork: false
+
+# Whether to restart the pod automatically on a change to any configMap
+# includes most changes to `tracing`, `worker` or `initContainer` below
+# Kubernetes does not treat a change to config only as need to restart a pod,
+# but we pick up configuration only on startup.
+restartOnConfigChange: true
+
+# Additional envVars to mount to the pod
+extraEnvVars: []
+# - name: RABBITMQ_PASSWORD
+#   valueFrom:
+#     secretKeyRef:
+#       name: rabbitmq-password  # this secret is defined in the RabbitMQ deployment
+#       key: rabbitmq-password
+
+# Configure tracing support
+tracing:
+  # Configure use of the Open Telemetry Protocol
+  otlp:
+    enabled: false
+    protocol: http/protobuf
+    server:
+      host: https://daq-services-jaeger # replace with central instance
+      port: 4318
+
+# Config for the worker goes here, will be mounted into a config file
+worker:
+  api:
+    host: 0.0.0.0 # Allow non-loopback traffic
+    port: 8000
+  env:
+    sources:
+      - kind: deviceFunctions
+        module: blueapi.startup.example_devices
+      - kind: planFunctions
+        module: blueapi.startup.example_plans
+      - kind: planFunctions
+        module: dodal.plans
+      - kind: planFunctions
+        module: dodal.plan_stubs.wrapped
+  stomp:
+    auth:
+      username: guest
+      password: guest
+    host: rabbitmq
+    port: 61613
+
+initContainer:
+  enabled: false
+  config:
+    scratch:
+      root: /blueapi-plugins/scratch
+      repositories: []
+      # - name: "dodal"
+      #   remote_url: https://github.com/DiamondLightSource/dodal.git
+
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 
@@ -38,10 +96,12 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
+podSecurityContext:
+  {}
   # fsGroup: 2000
 
-securityContext: {}
+securityContext:
+  {}
   # capabilities:
   #   drop:
   #   - ALL
@@ -61,7 +121,8 @@ service:
 ingress:
   enabled: false
   className: "nginx"
-  annotations: {}
+  annotations:
+    {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
@@ -73,7 +134,8 @@ ingress:
     - hosts:
         - foo.diamond.ac.uk
 
-resources: {}
+resources:
+  {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
@@ -86,7 +148,8 @@ resources: {}
   #   memory: 128Mi
 
 # Can optionally specify separate resource constraints for the scratch setup container.
-initResources: {}
+initResources:
+  {}
   # Defaults to any resources defined above.
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
@@ -125,54 +188,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-hostNetwork: false # May be needed for talking to arcane protocols such as EPICS
-
-restartOnConfigChange: true
-
-# Additional envVars to mount to the pod
-extraEnvVars: []
-# - name: RABBITMQ_PASSWORD
-#   valueFrom:
-#     secretKeyRef:
-#       name: rabbitmq-password
-#       key: rabbitmq-password
-
-tracing:
-  otlp:
-    enabled: false
-    protocol: http/protobuf
-    server:
-      host: https://daq-services-jaeger # replace with central instance
-      port: 4318
-
-# Config for the worker goes here, will be mounted into a config file
-worker:
-  api:
-    host: 0.0.0.0 # Allow non-loopback traffic
-    port: 8000
-  env:
-    sources:
-      - kind: deviceFunctions
-        module: blueapi.startup.example_devices
-      - kind: planFunctions
-        module: blueapi.startup.example_plans
-      - kind: planFunctions
-        module: dodal.plans
-      - kind: planFunctions
-        module: dodal.plan_stubs.wrapped
-  stomp:
-    auth:
-      username: guest
-      password: guest
-    host: rabbitmq
-    port: 61613
-
-initContainer:
-  enabled: false
-  config:
-    scratch:
-      root: /blueapi-plugins/scratch
-      repositories: []
-      # - name: "dodal"
-      #   remote_url: https://github.com/DiamondLightSource/dodal.git

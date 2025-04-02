@@ -197,16 +197,11 @@ def test_container_gets_container_resources():
     )
 
 
-@pytest.mark.xfail(
-    reason="https://github.com/DiamondLightSource/blueapi/issues/646",
-    strict=True,
-)
 def test_init_container_gets_container_resources_by_default():
     manifests = render_chart(
         values={
             "resources": HIGH_RESOURCES,
-            "scratchHostPath": "/foo",
-            "initContainer": {"scratch": {"root": "/foo"}},
+            "initContainer": {"enabled": True, "scratch": {"root": "/foo"}},
         }
     )
     assert (
@@ -217,18 +212,15 @@ def test_init_container_gets_container_resources_by_default():
     )
 
 
-@pytest.mark.xfail(
-    reason="https://github.com/DiamondLightSource/blueapi/issues/646",
-    strict=True,
-)
 def test_init_container_resources_overridable():
     manifests = render_chart(
         values={
             "resources": HIGH_RESOURCES,
             "initResources": LOW_RESOURCES,
-            "scratchHostPath": "/foo",
+            "initContainer": {"enabled": True},
         }
     )
+
     assert (
         manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
             "initContainers"
@@ -237,10 +229,6 @@ def test_init_container_resources_overridable():
     )
 
 
-@pytest.mark.xfail(
-    reason="https://github.com/DiamondLightSource/blueapi/issues/646",
-    strict=True,
-)
 def test_do_not_have_to_provide_scratch_host_path_twice():
     manifests = render_chart(
         values={

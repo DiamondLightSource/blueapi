@@ -5,8 +5,14 @@ metadata:
 data:
   config.yaml: |-
     {{- toYaml .Values.worker | nindent 4 }}
-
+    {{- if .Values.initContainer.enabled }}
+    scratch:
+      root: {{ .Values.initContainer.scratch.root }}
+      repositories: {{ .Values.initContainer.scratch.repositories }}
+    {{- end }}
 ---
+
+
 
 apiVersion: v1
 kind: ConfigMap

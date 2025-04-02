@@ -390,7 +390,7 @@ def login(obj: dict) -> None:
         client = BlueapiClient.from_config(config)
         oidc_config = client.get_oidc_config()
         if oidc_config is None:
-            print("Server is not configured to use auth")
+            print("Server is not configured to use authentication!")
             return
         auth = SessionManager(
             oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)

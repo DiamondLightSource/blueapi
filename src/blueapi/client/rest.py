@@ -1,8 +1,8 @@
 from collections.abc import Callable, Mapping
+from json import JSONDecodeError
 from typing import Any, Literal, TypeVar
 
 import requests
-from fastapi.exceptions import ResponseValidationError
 from observability_utils.tracing import (
     get_context_propagator,
     get_tracer,
@@ -138,7 +138,9 @@ class BlueapiRestClient:
     def get_oidc_config(self) -> OIDCConfig | None:
         try:
             return self._request_and_deserialize("/config/oidc", OIDCConfig)
-        except ResponseValidationError:
+        except JSONDecodeError:
+            # Server returned no body and status code <400
+            # Must be status code 204 (No Content): server is not using authentication
             return None
 
     def get_python_environment(

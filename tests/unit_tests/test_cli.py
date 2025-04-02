@@ -746,6 +746,16 @@ def test_login_when_cached_token_decode_fails(
         assert result.exit_code == 0
 
 
+def test_login_with_unauthenticated_server(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_unauthenticated_server: responses.RequestsMock,
+):
+    result = runner.invoke(main, ["-c", config_with_auth, "login"])
+    assert "Server is not configured to use authentication!" == result.output
+    assert result.exit_code == 0
+
+
 def test_logout_success(
     runner: CliRunner,
     config_with_auth: str,

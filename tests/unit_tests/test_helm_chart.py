@@ -337,3 +337,27 @@ def test_init_container_config_not_available_when_disabled():
     )
 
     assert config.get("scratch", None) is None
+
+
+def test_init_container_config_copied_to_worker_when_enabled():
+    manifests = render_chart(
+        values={
+            "initContainer": {
+                "enabled": True,
+                "scratch": {
+                    "repositories": ["foo", "bar"],
+                    "required_gid": 12345,
+                    "root": "/blueapi-plugins/scratch",
+                },
+            }
+        }
+    )
+
+    config = yaml.safe_load(
+        manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
+    )
+    init_config = yaml.safe_load(
+        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+    )
+
+    assert config["scratch"] == init_config["scratch"]

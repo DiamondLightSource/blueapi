@@ -2,88 +2,26 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
+# May be required for communication with EPICS on the host node
+hostNetwork: false
 
-image:
-  repository: ghcr.io/diamondlightsource/blueapi
-  pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
-
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
-
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: false
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-podAnnotations: {}
-
-podSecurityContext: {}
-# fsGroup: 2000
-
-securityContext: {}
-# capabilities:
-#   drop:
-#   - ALL
-# readOnlyRootFilesystem: true
-# runAsNonRoot: true
-# runAsUser: 1000
-
-# Recommended for production to change service.type to ClusterIP and set up an Ingress
-service:
-  type: ClusterIP
-  port: 80
-
-ingress:
-  create: false
-#  host: foo.diamond.ac.uk  (assumes port = service.port)
-
-resources: {}
-# We usually recommend not to specify default resources and to leave this as a conscious
-# choice for the user. This also increases chances charts run on environments with little
-# resources, such as Minikube. If you do want to specify resources, uncomment the following
-# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-# limits:
-#   cpu: 100m
-#   memory: 128Mi
-# requests:
-#   cpu: 100m
-#   memory: 128Mi
-
-initResources: {}
-# Can optionally specify separate resource constraints for the scratch setup container.
-# If left empty this defaults to the same as resources above.
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
-
-hostNetwork: false # May be needed for talking to arcane protocols such as EPICS
-
+# Whether to restart the pod automatically on a change to any configMap
+# includes most changes to `tracing`, `worker` or `initContainer` below
+# Kubernetes does not treat a change to config only as need to restart a pod,
+# but we pick up configuration only on startup.
 restartOnConfigChange: true
 
-listener:
-  enabled: true
-  resources: {}
-
-# Additional envVars to mount to the pod as a String
+# Additional envVars to mount to the pod
 extraEnvVars: []
 # - name: RABBITMQ_PASSWORD
 #   valueFrom:
 #     secretKeyRef:
-#       name: rabbitmq-password
+#       name: rabbitmq-password  # this secret is defined in the RabbitMQ deployment
 #       key: rabbitmq-password
 
+# Configure tracing support
 tracing:
+  # Configure use of the Open Telemetry Protocol
   otlp:
     enabled: false
     protocol: http/protobuf
@@ -98,14 +36,14 @@ worker:
     port: 8000
   env:
     sources:
-    - kind: deviceFunctions
-      module: blueapi.startup.example_devices
-    - kind: planFunctions
-      module: blueapi.startup.example_plans
-    - kind: planFunctions
-      module: dodal.plans
-    - kind: planFunctions
-      module: dodal.plan_stubs.wrapped
+      - kind: deviceFunctions
+        module: blueapi.startup.example_devices
+      - kind: planFunctions
+        module: blueapi.startup.example_plans
+      - kind: planFunctions
+        module: dodal.plans
+      - kind: planFunctions
+        module: dodal.plan_stubs.wrapped
   stomp:
     auth:
       username: guest
@@ -115,8 +53,139 @@ worker:
 
 initContainer:
   enabled: false
-  scratch:
-    root: /blueapi-plugins/scratch
-    repositories: []
-    # - name: "dodal"
-    #   remote_url: https://github.com/DiamondLightSource/dodal.git
+  config:
+    scratch:
+      root: /blueapi-plugins/scratch
+      repositories: []
+      # - name: "dodal"
+      #   remote_url: https://github.com/DiamondLightSource/dodal.git
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: ghcr.io/diamondlightsource/blueapi
+  # This sets the pull policy for images.
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+# Recommended for production to change service.type to ClusterIP and set up an Ingress
+service:
+  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  type: ClusterIP
+  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+  port: 80
+
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: foo.diamond.ac.uk
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+  {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# Can optionally specify separate resource constraints for the scratch setup container.
+initResources:
+  {}
+  # Defaults to any resources defined above.
+
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -119,7 +119,7 @@ service:
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
-  enabled: false
+  enabled: true
   className: "nginx"
   annotations:
     {}
@@ -130,9 +130,10 @@ ingress:
       paths:
         - path: /
           pathType: Prefix
-  tls:
-    - hosts:
-        - foo.diamond.ac.uk
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
 
 resources:
   {}

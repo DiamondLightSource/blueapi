@@ -293,3 +293,29 @@ def group_manifests(ungrouped: Iterable[Mapping[str, Any]]) -> GroupedManifests:
             )
         group[name] = manifest
     return groups
+
+
+def test_init_container_config_not_available_when_disabled():
+    manifests = render_chart(
+        values={
+            "resources": HIGH_RESOURCES,
+            "initResources": LOW_RESOURCES,
+            "initContainer": {"enabled": False},
+        }
+    )
+
+    assert (manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "initContainers"]) is None
+
+    manifests = render_chart(
+        values={
+            "resources": HIGH_RESOURCES,
+            "initContainer": {"enabled": False},
+        }
+    )
+    assert (
+        manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "initContainers"
+        ]
+        is None
+    )

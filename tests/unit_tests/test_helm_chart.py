@@ -104,10 +104,10 @@ def test_init_container_spec_disablable():
             }
         }
     )
-    init_containers = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+    assert (
         "initContainers"
-    ]
-    assert init_containers is None
+        not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]
+    )
 
 
 def test_helm_chart_does_not_render_arbitrary_rabbitmq_password():
@@ -200,51 +200,6 @@ def test_init_container_resources_overridable():
     )
 
 
-def test_worker_scratch_config_used_when_init_container_enabled():
-    manifests = render_chart(
-        values={
-            "worker": {
-                "scratch": {
-                    "root": "/foo",
-                    "required_gid": 12345,
-                    "repositories": [
-                        {
-                            "name": "foo",
-                            "remote_url": "https://example.git",
-                        },
-                        {
-                            "name": "bar",
-                            "remote_url": "https://example.git",
-                        },
-                    ],
-                },
-            },
-            "initContainer": {
-                "enabled": True,
-                "scratch": {
-                    "root": "NOT_USED",
-                    "required_gid": 54321,
-                    "repositories": [
-                        {
-                            "name": "NOT_USED",
-                            "remote_url": "https://example.git",
-                        },
-                    ],
-                },
-            },
-        }
-    )
-
-    config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
-    )
-    init_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
-    )
-    assert config["scratch"]["root"] == "/foo"
-    assert init_config["scratch"]["root"] == "/foo"
-
-
 def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,
@@ -293,12 +248,11 @@ def group_manifests(ungrouped: Iterable[Mapping[str, Any]]) -> GroupedManifests:
     "config",
     [
         {
-            "resources": HIGH_RESOURCES,
             "initResources": LOW_RESOURCES,
             "initContainer": {"enabled": False},
         },
         {
-            "resources": HIGH_RESOURCES,
+            "initResources": HIGH_RESOURCES,
             "initContainer": {"enabled": False},
         },
     ],
@@ -307,22 +261,12 @@ def test_init_container_config_not_available_when_disabled(config):
     manifests = render_chart(values=config)
 
     assert (
-        (
-            manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
-                "initContainers"
-            ]
-        )
-        is None
+        "initContainers"
+        not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]
     )
 
-    config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
-    )
 
-    assert "scratch" not in config
-
-
-def test_init_container_config_copied_to_worker_when_enabled():
+def test_init_container_config_copied_from_worker_when_enabled():
     manifests = render_chart(
         values={
             "worker": {
@@ -350,11 +294,8 @@ def test_init_container_config_copied_to_worker_when_enabled():
     config = yaml.safe_load(
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
-    init_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
-    )
+    init_config = manifests["ConfigMap"]["blueapi-initconfig"]["data"][
+        "initconfig.yaml"
+    ]
 
-    assert (
-        config["scratch"]
-        == init_config["scratch"]
-    )
+    assert config["scratch"] == init_config["scratch"]

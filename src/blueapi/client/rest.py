@@ -2,6 +2,7 @@ from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
 import requests
+from fastapi.exceptions import ResponseValidationError
 from observability_utils.tracing import (
     get_context_propagator,
     get_tracer,
@@ -134,8 +135,11 @@ class BlueapiRestClient:
             "/environment", EnvironmentResponse, method="DELETE"
         )
 
-    def get_oidc_config(self) -> OIDCConfig:
-        return self._request_and_deserialize("/config/oidc", OIDCConfig)
+    def get_oidc_config(self) -> OIDCConfig | None:
+        try:
+            return self._request_and_deserialize("/config/oidc", OIDCConfig)
+        except ResponseValidationError:
+            return None
 
     def get_python_environment(
         self, name: str | None = None, source: SourceInfo | None = None
@@ -159,26 +163,14 @@ class BlueapiRestClient:
         url = self._url(suffix)
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
-        if data:
-            response = requests.request(
-                method,
-                url,
-                json=data,
-                headers=carr,
-                auth=JWTAuth(self._session_manager),
-            )
-        elif params:
-            response = requests.request(
-                method,
-                url,
-                params=params,
-                headers=carr,
-                auth=JWTAuth(self._session_manager),
-            )
-        else:
-            response = requests.request(
-                method, url, headers=carr, auth=JWTAuth(self._session_manager)
-            )
+        response = requests.request(
+            method,
+            url,
+            json=data,
+            params=params,
+            headers=carr,
+            auth=JWTAuth(self._session_manager),
+        )
         exception = get_exception(response)
         if exception is not None:
             raise exception

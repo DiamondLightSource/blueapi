@@ -301,7 +301,7 @@ def test_init_container_config_not_available_when_disabled():
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
 
-    assert config.get("scratch", None) is None
+    assert "scratch" not in config
 
     manifests = render_chart(
         values={
@@ -320,7 +320,7 @@ def test_init_container_config_not_available_when_disabled():
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
 
-    assert config.get("scratch", None) is None
+    assert "scratch" not in config
 
 
 def test_init_container_config_copied_to_worker_when_enabled():

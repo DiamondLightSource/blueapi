@@ -4,7 +4,8 @@ kind: ConfigMap
 metadata:
   name: {{ include "blueapi.fullname" . }}-initconfig
 data:
-  initconfig.yaml: |-
+  initconfig.yaml: 
+    scratch: |-
       {{- toYaml .Values.worker.scratch | nindent 4 }}
 ---
 {{- end }}

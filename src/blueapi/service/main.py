@@ -48,7 +48,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "0.0.7"
+REST_API_VERSION = "0.0.8"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -91,8 +91,8 @@ def lifespan(config: ApplicationConfig):
     return inner
 
 
-router = APIRouter()
-auth_router = APIRouter()
+secure_router = APIRouter()
+open_router = APIRouter()
 
 
 def get_app(config: ApplicationConfig):
@@ -104,9 +104,9 @@ def get_app(config: ApplicationConfig):
     )
     dependencies = []
     if config.oidc:
-        dependencies = [Depends(verify_access_token(config.oidc))]
-        app.include_router(auth_router)
-    app.include_router(router, dependencies=dependencies)
+        dependencies.append(Depends(verify_access_token(config.oidc)))
+    app.include_router(open_router)
+    app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_api_version_header)
@@ -154,7 +154,7 @@ async def on_token_error_401(_: Request, __: Exception):
     )
 
 
-@router.get("/environment", response_model=EnvironmentResponse)
+@secure_router.get("/environment", response_model=EnvironmentResponse)
 @start_as_current_span(TRACER, "runner")
 def get_environment(
     runner: WorkerDispatcher = Depends(_runner),
@@ -163,7 +163,7 @@ def get_environment(
     return runner.state
 
 
-@router.delete("/environment", response_model=EnvironmentResponse)
+@secure_router.delete("/environment", response_model=EnvironmentResponse)
 async def delete_environment(
     background_tasks: BackgroundTasks,
     runner: WorkerDispatcher = Depends(_runner),
@@ -175,14 +175,23 @@ async def delete_environment(
     return EnvironmentResponse(environment_id=environment_id, initialized=False)
 
 
-@auth_router.get("/config/oidc", tags=["auth"], response_model=OIDCConfig)
+@open_router.get(
+    "/config/oidc",
+    response_model=OIDCConfig,
+    responses={
+        status.HTTP_204_NO_CONTENT: {"description": "No Authentication configured"}
+    },
+)
 @start_as_current_span(TRACER)
-def get_oidc_config(runner: WorkerDispatcher = Depends(_runner)) -> OIDCConfig | None:
+def get_oidc_config(runner: WorkerDispatcher = Depends(_runner)) -> OIDCConfig:
     """Retrieve the OpenID Connect (OIDC) configuration for the server."""
-    return runner.run(interface.get_oidc_config)
+    config = runner.run(interface.get_oidc_config)
+    if config is None:
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+    return config
 
 
-@router.get("/plans", response_model=PlanResponse)
+@secure_router.get("/plans", response_model=PlanResponse)
 @start_as_current_span(TRACER)
 def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available plans."""
@@ -190,7 +199,7 @@ def get_plans(runner: WorkerDispatcher = Depends(_runner)):
     return PlanResponse(plans=plans)
 
 
-@router.get(
+@secure_router.get(
     "/plans/{name}",
     response_model=PlanModel,
 )
@@ -200,7 +209,7 @@ def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
     return runner.run(interface.get_plan, name)
 
 
-@router.get("/devices", response_model=DeviceResponse)
+@secure_router.get("/devices", response_model=DeviceResponse)
 @start_as_current_span(TRACER)
 def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     """Retrieve information about all available devices."""
@@ -208,7 +217,7 @@ def get_devices(runner: WorkerDispatcher = Depends(_runner)):
     return DeviceResponse(devices=devices)
 
 
-@router.get(
+@secure_router.get(
     "/devices/{name}",
     response_model=DeviceModel,
 )
@@ -221,7 +230,7 @@ def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
 example_task = Task(name="count", params={"detectors": ["x"]})
 
 
-@router.post(
+@secure_router.post(
     "/tasks",
     response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
@@ -255,7 +264,7 @@ def submit_task(
         ) from e
 
 
-@router.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+@secure_router.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 @start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
@@ -272,7 +281,9 @@ def validate_task_status(v: str) -> TaskStatusEnum:
     return TaskStatusEnum(v_upper)
 
 
-@router.get("/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK)
+@secure_router.get(
+    "/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK
+)
 @start_as_current_span(TRACER)
 def get_tasks(
     task_status: str | None = None,
@@ -299,7 +310,7 @@ def get_tasks(
     return TasksListResponse(tasks=tasks)
 
 
-@router.put(
+@secure_router.put(
     "/worker/task",
     response_model=WorkerTask,
     responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
@@ -329,7 +340,7 @@ def set_active_task(
     return task
 
 
-@router.get(
+@secure_router.get(
     "/tasks/{task_id}",
     response_model=TrackableTask,
 )
@@ -345,7 +356,7 @@ def get_task(
     return task
 
 
-@router.get("/worker/task")
+@secure_router.get("/worker/task")
 @start_as_current_span(TRACER)
 def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
     active = runner.run(interface.get_active_task)
@@ -353,7 +364,7 @@ def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
     return WorkerTask(task_id=task_id)
 
 
-@router.get("/worker/state")
+@secure_router.get("/worker/state")
 @start_as_current_span(TRACER)
 def get_state(runner: WorkerDispatcher = Depends(_runner)) -> WorkerState:
     """Get the State of the Worker"""
@@ -375,7 +386,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 }
 
 
-@router.put(
+@secure_router.put(
     "/worker/state",
     status_code=status.HTTP_202_ACCEPTED,
     responses={
@@ -432,7 +443,7 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
-@router.get("/python_environment", response_model=PythonEnvironmentResponse)
+@secure_router.get("/python_environment", response_model=PythonEnvironmentResponse)
 @start_as_current_span(TRACER)
 def get_python_environment(
     runner: WorkerDispatcher = Depends(_runner),

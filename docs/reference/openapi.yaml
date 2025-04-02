@@ -355,9 +355,6 @@ paths:
         '204':
           description: No Authentication configured
       summary: Get Oidc Config
-      tags:
-      - auth
-      - meta
   /devices:
     get:
       description: Retrieve information about all available devices.
@@ -495,8 +492,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Python Environment
-      tags:
-      - meta
   /tasks:
     get:
       description: 'Retrieve tasks based on their status.

@@ -177,7 +177,6 @@ async def delete_environment(
 
 @open_router.get(
     "/config/oidc",
-    tags=["auth", "meta"],
     response_model=OIDCConfig,
     responses={
         status.HTTP_204_NO_CONTENT: {"description": "No Authentication configured"}
@@ -444,9 +443,7 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
-@secure_router.get(
-    "/python_environment", tags=["meta"], response_model=PythonEnvironmentResponse
-)
+@secure_router.get("/python_environment", response_model=PythonEnvironmentResponse)
 @start_as_current_span(TRACER)
 def get_python_environment(
     runner: WorkerDispatcher = Depends(_runner),

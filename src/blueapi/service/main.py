@@ -36,6 +36,8 @@ from .model import (
     DeviceModel,
     DeviceResponse,
     EnvironmentResponse,
+    Health,
+    HealthProbeResponse,
     PlanModel,
     PlanResponse,
     PythonEnvironmentResponse,
@@ -48,7 +50,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "0.0.8"
+REST_API_VERSION = "0.0.9"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -456,6 +458,16 @@ def get_python_environment(
     such as the installed packages and scratch packages.
     """
     return runner.run(interface.get_python_env, name, source)
+
+
+@open_router.get(
+    "/healthz",
+    status_code=status.HTTP_200_OK,
+    response_model=HealthProbeResponse,
+)
+def health_probe() -> HealthProbeResponse:
+    """If able to serve this, server is live and ready for requests."""
+    return HealthProbeResponse(status=Health.OK)
 
 
 @start_as_current_span(TRACER, "config")

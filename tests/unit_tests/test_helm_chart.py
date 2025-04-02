@@ -382,11 +382,11 @@ def test_init_container_config_copied_from_worker_when_enabled():
         }
     )
 
-    config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
+    config = ApplicationConfig.model_validate(
+        yaml.safe_load(manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"])
     )
-    init_config = manifests["ConfigMap"]["blueapi-initconfig"]["data"][
-        "initconfig.yaml"
-    ]
+    init_config = ApplicationConfig.model_validate(
+        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+    )
 
-    assert config["scratch"] == init_config["scratch"]
+    assert config.scratch == init_config.scratch

@@ -304,8 +304,20 @@ def test_init_container_config_not_available_when_disabled():
         }
     )
 
-    assert (manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
-            "initContainers"]) is None
+    assert (
+        (
+            manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "initContainers"
+            ]
+        )
+        is None
+    )
+
+    config = yaml.safe_load(
+        manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
+    )
+
+    assert config.get("scratch", None) is None
 
     manifests = render_chart(
         values={
@@ -319,3 +331,9 @@ def test_init_container_config_not_available_when_disabled():
         ]
         is None
     )
+
+    config = yaml.safe_load(
+        manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
+    )
+
+    assert config.get("scratch", None) is None

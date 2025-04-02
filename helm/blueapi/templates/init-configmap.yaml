@@ -5,7 +5,7 @@ metadata:
   name: {{ include "blueapi.fullname" . }}-initconfig
 data:
   initconfig.yaml: 
-    scratch: |-
+    scratch:
       {{- toYaml .Values.worker.scratch | nindent 6 }}
 ---
 {{- end }}

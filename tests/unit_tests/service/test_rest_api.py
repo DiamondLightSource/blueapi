@@ -26,7 +26,10 @@ from blueapi.service.interface import (
 from blueapi.service.model import (
     DeviceModel,
     EnvironmentResponse,
+    PackageInfo,
     PlanModel,
+    PythonEnvironmentResponse,
+    SourceInfo,
     StateChangeRequest,
     WorkerTask,
 )
@@ -598,3 +601,21 @@ def test_get_oidc_config(
     response = client_with_auth.get("/config/oidc")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == oidc_config.model_dump()
+
+
+def test_get_python_environment(mock_runner: Mock, client: TestClient):
+    packages = PythonEnvironmentResponse(
+        installed_packages=[
+            PackageInfo(
+                name="pydantic",
+                version="2.10.6",
+                source=SourceInfo.PYPI,
+                is_dirty=False,
+                location="/venv/site-packages/pydantic",
+            )
+        ]
+    )
+    mock_runner.run.return_value = packages
+    response = client.get("/python_environment")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == packages.model_dump()

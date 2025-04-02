@@ -18,6 +18,8 @@ from blueapi.service.model import (
     OIDCConfig,
     PlanModel,
     PlanResponse,
+    PythonEnvironmentResponse,
+    SourceInfo,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -437,3 +439,17 @@ class BlueapiClient:
         """
 
         return self._rest.get_oidc_config()
+
+    @start_as_current_span(TRACER)
+    def get_python_env(
+        self, name: str | None = None, source: SourceInfo | None = None
+    ) -> PythonEnvironmentResponse:
+        """
+        Get the Python environment. This includes all installed packages and
+        the scratch packages.
+
+        Returns:
+            PythonEnvironmentResponse: Details of the python environment
+        """
+
+        return self._rest.get_python_environment(name=name, source=source)

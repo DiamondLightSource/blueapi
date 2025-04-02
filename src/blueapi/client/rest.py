@@ -1,8 +1,8 @@
 from collections.abc import Callable, Mapping
-from json import JSONDecodeError
 from typing import Any, Literal, TypeVar
 
 import requests
+from fastapi import status
 from observability_utils.tracing import (
     get_context_propagator,
     get_tracer,
@@ -35,6 +35,13 @@ TRACER = get_tracer("rest")
 class BlueskyRemoteControlError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class NoContent(Exception):
+    """Request returned 204 (No Content): handle if None is allowed"""
+
+    def __init__(self, target_type: type) -> None:
+        super().__init__(target_type)
 
 
 def _exception(response: requests.Response) -> Exception | None:
@@ -138,9 +145,8 @@ class BlueapiRestClient:
     def get_oidc_config(self) -> OIDCConfig | None:
         try:
             return self._request_and_deserialize("/config/oidc", OIDCConfig)
-        except JSONDecodeError:
-            # Server returned no body and status code <400
-            # Must be status code 204 (No Content): server is not using authentication
+        except NoContent:
+            # Server is not using authentication
             return None
 
     def get_python_environment(
@@ -176,6 +182,8 @@ class BlueapiRestClient:
         exception = get_exception(response)
         if exception is not None:
             raise exception
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            raise NoContent(target_type)
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized
 

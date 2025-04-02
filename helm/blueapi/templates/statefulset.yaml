@@ -43,7 +43,7 @@ spec:
       {{- if .Values.initContainer.enabled | default false}}
       - name: scratch-host
         hostPath:
-          path: {{ .Values.initContainer.scratch.root }}
+          path: {{ .Values.worker.scratch.root }}
           type: Directory
       - name: venv
         emptyDir:
@@ -60,7 +60,7 @@ spec:
         args:
           - |
             echo "Setting up scratch area"
-            blueapi -c /config/initconfig.yaml setup-scratch
+            blueapi -c /config/config.yaml setup-scratch
             if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
             echo "Exporting venv as artefact"
             cp -r /venv/* /artefacts
@@ -69,7 +69,7 @@ spec:
             mountPath: "/config"
             readOnly: true
           - name: scratch-host
-            mountPath: {{ .Values.initContainer.scratch.root }}
+            mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
           - name: venv
             mountPath: /artefacts
@@ -88,7 +88,7 @@ spec:
               readOnly: true
             {{- if .Values.initContainer.enabled | default false }}
             - name: scratch-host
-              mountPath: {{ .Values.initContainer.scratch.root }}
+              mountPath: {{ .Values.worker.scratch.root }}
               mountPropagation: HostToContainer
             - name: venv
               mountPath: /venv

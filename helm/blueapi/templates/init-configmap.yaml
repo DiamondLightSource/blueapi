@@ -4,8 +4,4 @@ metadata:
   name: {{ include "blueapi.fullname" . }}-initconfig
 data:
   initconfig.yaml: |-
-    {{- if .Values.initContainer.enabled }}
-    scratch:
-      {{- toYaml .Values.initContainer.scratch | nindent 4 }}
-    {{- end }}
----
+    {{- toYaml .Values.initContainer | nindent 4 }}

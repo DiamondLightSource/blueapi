@@ -200,6 +200,50 @@ def test_init_container_resources_overridable():
     )
 
 
+def test_worker_scratch_config_used_when_init_container_enabled():
+    manifests = render_chart(
+        values={
+            "worker": {
+                "scratch": {
+                    "root": "/foo",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
+            "initContainer": {
+                "enabled": True,
+                "scratch": {
+                    "root": "NOT_USED",
+                    "required_gid": 54321,
+                    "repositories": [
+                        {
+                            "name": "NOT_USED",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
+        }
+    )
+
+    config = yaml.safe_load(
+        manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
+    )
+    init_config = manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+
+    assert config["scratch"]["root"] == "/foo"
+    assert init_config["scratch"]["root"] == "/foo"
+    assert config["scratch"] == init_config["scratch"]
+    
 def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,

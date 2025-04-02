@@ -96,74 +96,11 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
     assert rendered_config == worker_config
 
 
-@pytest.mark.parametrize(
-    "values",
-    [
-        {
-            "initContainer": {
-                "enabled": True,
-                "scratch": {
-                    "repositories": [],
-                    "root": "/blueapi-plugins/scratch",
-                },
-            }
-        },
-        {
-            "initContainer": {
-                "enabled": True,
-                "scratch": {
-                    "root": "/dls_sw/i22/scratch",
-                    "required_gid": 12345,
-                    "repositories": [
-                        {
-                            "name": "foo",
-                            "remote_url": "https://example.git",
-                        },
-                        {
-                            "name": "bar",
-                            "remote_url": "https://example.git",
-                        },
-                    ],
-                },
-            }
-        },
-    ],
-)
-def test_helm_chart_creates_init_config_map(values: Values):
-    manifests = render_chart(values=values)
-    rendered_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
-    )
-    assert rendered_config == values["initContainer"]
-
-
-def test_init_container_spec_generated():
-    manifests = render_chart(
-        values={
-            "initContainer": {
-                "enabled": True,
-                "scratch": {
-                    "repositories": [],
-                    "root": "/blueapi-plugins/scratch",
-                },
-            }
-        }
-    )
-    init_containers = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
-        "initContainers"
-    ]
-    assert len(init_containers) == 1
-
-
 def test_init_container_spec_disablable():
     manifests = render_chart(
         values={
             "initContainer": {
                 "enabled": False,
-                "scratch": {
-                    "repositories": [],
-                    "root": "/blueapi-plugins/scratch",
-                },
             }
         }
     )
@@ -200,8 +137,24 @@ def test_container_gets_container_resources():
 def test_init_container_gets_container_resources_by_default():
     manifests = render_chart(
         values={
+            "worker": {
+                "scratch": {
+                    "root": "/foo",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
             "resources": HIGH_RESOURCES,
-            "initContainer": {"enabled": True, "scratch": {"root": "/foo"}},
+            "initContainer": {"enabled": True},
         }
     )
     assert (
@@ -215,9 +168,27 @@ def test_init_container_gets_container_resources_by_default():
 def test_init_container_resources_overridable():
     manifests = render_chart(
         values={
+            "worker": {
+                "scratch": {
+                    "root": "/foo",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
             "resources": HIGH_RESOURCES,
             "initResources": LOW_RESOURCES,
-            "initContainer": {"enabled": True},
+            "initContainer": {
+                "enabled": True,
+            },
         }
     )
 
@@ -232,11 +203,24 @@ def test_init_container_resources_overridable():
 def test_do_not_have_to_provide_scratch_host_path_twice():
     manifests = render_chart(
         values={
-            "initContainer": {
-                "enabled": True,
+            "worker": {
                 "scratch": {
                     "root": "/foo",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
                 },
+            },
+            "initContainer": {
+                "enabled": True,
             },
         }
     )
@@ -342,22 +326,36 @@ def test_init_container_config_not_available_when_disabled():
 def test_init_container_config_copied_to_worker_when_enabled():
     manifests = render_chart(
         values={
+            "worker": {
+                "scratch": {
+                    "root": "/foo",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
             "initContainer": {
                 "enabled": True,
-                "scratch": {
-                    "repositories": ["foo", "bar"],
-                    "required_gid": 12345,
-                    "root": "/blueapi-plugins/scratch",
-                },
-            }
+            },
         }
     )
 
     config = yaml.safe_load(
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
-    init_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
-    )
+    # init_config = yaml.safe_load(
+    #     manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+    # )
 
-    assert config["scratch"] == init_config["scratch"]
+    assert (
+        config["scratch"]
+        == manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+    )

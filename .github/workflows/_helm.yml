@@ -37,9 +37,24 @@ jobs:
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ${{ env.CHART_REPO }} --username ${{ github.repository_owner }} --password-stdin
 
+      - name: Bump patch version if necessary
+        if: github.ref_type == 'tag'
+        run: |
+          # Gets the latest published Helm chart version
+          LATEST=`helm show chart oci://${{ env.CHART_REPO }}/charts/blueapi | yq '.version' | cut -d "\"" -f 2`
+          # Gets the current Helm chart version
+          NEXT=`helm show chart helm/blueapi | yq '.version' | cut -d "\"" -f 2`
+          if dpkg --compare-versions $NEXT le $LATEST
+          then
+            NEXT=`echo $LATEST | awk -F. -v OFS=. '{$NF += 1 ; print}'`
+          fi
+          echo "CHART_VERSION=$NEXT" >>${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+
       - name: Publish Helm chart to container registry
         if: github.ref_type == 'tag'
         run: |
           helm dependencies update helm/blueapi
-          helm package helm/blueapi --app-version ${{ steps.meta.outputs.version }} -d /tmp/
-          helm push /tmp/helm/blueapi-${{ steps.meta.outputs.version }}.tgz oci://${{ env.CHART_REPO }}/charts
+          helm package helm/blueapi --app-version ${{ steps.meta.outputs.version }} --version ${{ env.CHART_VERSION }} -d /tmp/
+          helm push /tmp/helm/blueapi-${{ env.CHART_VERSION }}.tgz oci://${{ env.CHART_REPO }}/charts

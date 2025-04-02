@@ -5,6 +5,7 @@ metadata:
 data:
   config.yaml: |-
     {{- toYaml .Values.worker | nindent 4 }}
+
 ---
 
 apiVersion: v1

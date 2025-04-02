@@ -96,6 +96,72 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
     assert rendered_config == worker_config
 
 
+@pytest.mark.parametrize(
+    "values",
+    [
+        {
+            "initContainer": {
+                "enabled": True,
+            },
+            "worker": {
+                "scratch": {
+                    "repositories": [],
+                    "root": "/blueapi-plugins/scratch",
+                }
+            },
+        },
+        {
+            "initContainer": {
+                "enabled": True,
+            },
+            "worker": {
+                "scratch": {
+                    "root": "/dls_sw/i22/scratch",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
+        },
+    ],
+)
+def test_helm_chart_creates_init_config_map(values: Values):
+    manifests = render_chart(values=values)
+    rendered_config = ApplicationConfig.model_validate(
+        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+    )
+    values_config = ApplicationConfig.model_validate(values["worker"])
+    assert rendered_config == values_config
+
+
+def test_init_container_spec_generated():
+    manifests = render_chart(
+        values={
+            "worker": {
+                "scratch": {
+                    "repositories": [],
+                    "root": "/blueapi-plugins/scratch",
+                },
+            },
+            "initContainer": {
+                "enabled": True,
+            },
+        },
+    )
+    init_containers = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ]
+    assert len(init_containers) == 1
+
+
 def test_init_container_spec_disablable():
     manifests = render_chart(
         values={
@@ -289,28 +355,6 @@ def group_manifests(ungrouped: Iterable[Mapping[str, Any]]) -> GroupedManifests:
             )
         group[name] = manifest
     return groups
-
-
-@pytest.mark.parametrize(
-    "config",
-    [
-        {
-            "initResources": LOW_RESOURCES,
-            "initContainer": {"enabled": False},
-        },
-        {
-            "initResources": HIGH_RESOURCES,
-            "initContainer": {"enabled": False},
-        },
-    ],
-)
-def test_init_container_config_not_available_when_disabled(config):
-    manifests = render_chart(values=config)
-
-    assert (
-        "initContainers"
-        not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]
-    )
 
 
 def test_init_container_config_copied_from_worker_when_enabled():

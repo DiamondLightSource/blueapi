@@ -200,7 +200,7 @@ def test_init_container_resources_overridable():
     )
 
 
-def test_do_not_have_to_provide_scratch_host_path_twice():
+def test_worker_scratch_config_used_when_init_container_enabled():
     manifests = render_chart(
         values={
             "worker": {
@@ -221,6 +221,16 @@ def test_do_not_have_to_provide_scratch_host_path_twice():
             },
             "initContainer": {
                 "enabled": True,
+                "scratch": {
+                    "root": "NOT_USED",
+                    "required_gid": 54321,
+                    "repositories": [
+                        {
+                            "name": "NOT_USED",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
             },
         }
     )
@@ -279,14 +289,22 @@ def group_manifests(ungrouped: Iterable[Mapping[str, Any]]) -> GroupedManifests:
     return groups
 
 
-def test_init_container_config_not_available_when_disabled():
-    manifests = render_chart(
-        values={
+@pytest.mark.parametrize(
+    "config",
+    [
+        {
             "resources": HIGH_RESOURCES,
             "initResources": LOW_RESOURCES,
             "initContainer": {"enabled": False},
-        }
-    )
+        },
+        {
+            "resources": HIGH_RESOURCES,
+            "initContainer": {"enabled": False},
+        },
+    ],
+)
+def test_init_container_config_not_available_when_disabled(config):
+    manifests = render_chart(values=config)
 
     assert (
         (
@@ -294,25 +312,6 @@ def test_init_container_config_not_available_when_disabled():
                 "initContainers"
             ]
         )
-        is None
-    )
-
-    config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
-    )
-
-    assert "scratch" not in config
-
-    manifests = render_chart(
-        values={
-            "resources": HIGH_RESOURCES,
-            "initContainer": {"enabled": False},
-        }
-    )
-    assert (
-        manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
-            "initContainers"
-        ]
         is None
     )
 
@@ -351,11 +350,11 @@ def test_init_container_config_copied_to_worker_when_enabled():
     config = yaml.safe_load(
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
-    # init_config = yaml.safe_load(
-    #     manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
-    # )
+    init_config = yaml.safe_load(
+        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+    )
 
     assert (
         config["scratch"]
-        == manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        == init_config["scratch"]
     )

@@ -56,11 +56,8 @@ host machine, include the following in your `values.yaml`:
 ```yaml
   initContainer:
     enabled: true
-    scratch:
-      root: path/to/scratch/area  # e.g. /dls_sw/<my_beamline>/software/blueapi/scratch
-      repositories: []
 ```
-
+When initContainer is enabled worker must have scratch config.
 
 The scratch folder that you're pointing to must exist, not already have a copy of the repositories that will be cloned into it and have correct permissions e.g.
 

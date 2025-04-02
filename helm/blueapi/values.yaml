@@ -112,11 +112,11 @@ worker:
       password: guest
     host: rabbitmq
     port: 61613
-
-initContainer:
-  enabled: false
   scratch:
     root: /blueapi-plugins/scratch
     repositories: []
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
+
+initContainer:
+  enabled: false

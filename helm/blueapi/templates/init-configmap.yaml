@@ -6,6 +6,6 @@ metadata:
 data:
   initconfig.yaml: 
     scratch: |-
-      {{- toYaml .Values.worker.scratch | nindent 4 }}
+      {{- toYaml .Values.worker.scratch | nindent 6 }}
 ---
 {{- end }}

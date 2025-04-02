@@ -238,12 +238,15 @@ def test_worker_scratch_config_used_when_init_container_enabled():
     config = yaml.safe_load(
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
-    init_config = manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+    init_config = manifests["ConfigMap"]["blueapi-initconfig"]["data"][
+        "initconfig.yaml"
+    ]
 
     assert config["scratch"]["root"] == "/foo"
     assert init_config["scratch"]["root"] == "/foo"
     assert config["scratch"] == init_config["scratch"]
-    
+
+
 def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,

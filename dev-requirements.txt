@@ -160,7 +160,6 @@ ruamel.yaml.clib==0.2.12
 ruff==0.11.3
 scanspec==0.7.8
 semver==3.0.4
-setuptools==78.1.0
 setuptools_dso==2.12.2
 shellingham==1.5.4
 six==1.17.0

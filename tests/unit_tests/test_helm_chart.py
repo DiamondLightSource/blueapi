@@ -263,6 +263,35 @@ def test_do_not_have_to_provide_scratch_host_path_twice():
     assert init_config["scratch"]["root"] == "/foo"
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+def test_fluentd_ignore_true_when_graylog_enabled(enabled):
+    manifests = render_chart(
+        values={
+            "worker": {
+                "logging": {
+                    "graylog_enabled": enabled,
+                },
+            },
+        }
+    )
+
+    if enabled:
+        assert (
+            manifests["StatefulSet"]["blueapi"]["spec"]["template"]["metadata"][
+                "annotations"
+            ]["fluentd-ignore"]
+            == "true"
+        )
+
+    else:
+        assert (
+            "fluentd-ignore"
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["metadata"][
+                "annotations"
+            ]
+        )
+
+
 def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,

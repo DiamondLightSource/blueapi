@@ -212,3 +212,11 @@ class Cache(BlueapiBaseModel):
     access_token: str
     refresh_token: str
     id_token: str
+
+
+class Health(str, Enum):
+    OK = "ok"
+
+
+class HealthProbeResponse(BlueapiBaseModel):
+    status: Health

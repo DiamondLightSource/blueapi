@@ -66,6 +66,41 @@ components:
           type: array
       title: HTTPValidationError
       type: object
+    Health:
+      enum:
+      - ok
+      title: Health
+      type: string
+    HealthProbeResponse:
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/Health'
+      required:
+      - status
+      title: HealthProbeResponse
+      type: object
+    OIDCConfig:
+      additionalProperties: false
+      properties:
+        client_audience:
+          default: blueapi
+          description: Client Audience(s)
+          title: Client Audience
+          type: string
+        client_id:
+          description: Client ID
+          title: Client Id
+          type: string
+        well_known_url:
+          description: URL to fetch OIDC config from the provider
+          title: Well Known Url
+          type: string
+      required:
+      - well_known_url
+      - client_id
+      title: OIDCConfig
+      type: object
     PackageInfo:
       additionalProperties: false
       properties:
@@ -305,9 +340,23 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.7
+  version: 0.0.9
 openapi: 3.1.0
 paths:
+  /config/oidc:
+    get:
+      description: Retrieve the OpenID Connect (OIDC) configuration for the server.
+      operationId: get_oidc_config_config_oidc_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OIDCConfig'
+          description: Successful Response
+        '204':
+          description: No Authentication configured
+      summary: Get Oidc Config
   /devices:
     get:
       description: Retrieve information about all available devices.
@@ -369,6 +418,18 @@ paths:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
       summary: Get Environment
+  /healthz:
+    get:
+      description: If able to serve this, server is live and ready for requests.
+      operationId: health_probe_healthz_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthProbeResponse'
+          description: Successful Response
+      summary: Health Probe
   /plans:
     get:
       description: Retrieve information about all available plans.

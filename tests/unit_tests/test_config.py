@@ -413,7 +413,7 @@ def test_raises_validation_error(temp_yaml_config_file: dict):
     loader.use_values_from_yaml(temp_yaml_file_path)
     with pytest.raises(InvalidConfigError) as excinfo:
         _loaded_config = loader.load()
-        assert excinfo.value.errors() == [ # type: ignore
+        assert excinfo.value.errors() == [  # type: ignore
             {
                 "loc": ("scratch",),
                 "msg": "The scratch area cannot be used to clone the blueapi repository. That is to prevent namespace clashing with the blueapi application.",  # noqa: E501

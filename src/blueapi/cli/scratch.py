@@ -15,6 +15,7 @@ from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
+
 def setup_scratch(
     config: ScratchConfig, install_timeout: float = _DEFAULT_INSTALL_TIMEOUT
 ) -> None:

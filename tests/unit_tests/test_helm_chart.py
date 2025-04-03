@@ -135,11 +135,10 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
 )
 def test_helm_chart_creates_init_config_map(values: Values):
     manifests = render_chart(values=values)
-    rendered_config = ApplicationConfig.model_validate(
+    rendered_config = yaml.safe_load(
         manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
     )
-    values_config = ApplicationConfig.model_validate(values["worker"])
-    assert rendered_config == values_config
+    assert rendered_config["scratch"] == values["worker"]["scratch"]
 
 
 def test_init_container_spec_generated():
@@ -304,13 +303,19 @@ def test_worker_scratch_config_used_when_init_container_enabled():
     config = yaml.safe_load(
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
-    init_config = manifests["ConfigMap"]["blueapi-initconfig"]["data"][
-        "initconfig.yaml"
-    ]
+    init_config = yaml.safe_load(
+        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+    )
+    type_adapter = TypeAdapter(ApplicationConfig)
 
     assert config["scratch"]["root"] == "/foo"
     assert init_config["scratch"]["root"] == "/foo"
     assert config["scratch"] == init_config["scratch"]
+
+    init_config = type_adapter.validate_python(init_config)
+    config = type_adapter.validate_python(config)
+
+    assert config.scratch == init_config.scratch
 
 
 def render_chart(
@@ -386,7 +391,9 @@ def test_init_container_config_copied_from_worker_when_enabled():
         yaml.safe_load(manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"])
     )
     init_config = ApplicationConfig.model_validate(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        yaml.safe_load(
+            manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        )
     )
 
     assert config.scratch == init_config.scratch

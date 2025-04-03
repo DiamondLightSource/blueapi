@@ -13,7 +13,7 @@ import jwt
 import pytest
 import responses
 import yaml
-from bluesky._vendor.super_state_machine.errors import TransitionError
+from bluesky._vendor.super_state_machine.errors import TransitionError  # type: ignore
 from bluesky.run_engine import RunEngine
 from fastapi import status
 from jwcrypto.jwk import JWK

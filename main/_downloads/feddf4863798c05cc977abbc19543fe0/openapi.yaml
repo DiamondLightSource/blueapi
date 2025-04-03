@@ -68,6 +68,20 @@ components:
           type: array
       title: HTTPValidationError
       type: object
+    Health:
+      enum:
+      - ok
+      title: Health
+      type: string
+    HealthProbeResponse:
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/Health'
+      required:
+      - status
+      title: HealthProbeResponse
+      type: object
     OIDCConfig:
       additionalProperties: false
       properties:
@@ -338,7 +352,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.8
+  version: 0.0.9
 openapi: 3.1.0
 paths:
   /config/oidc:
@@ -416,6 +430,18 @@ paths:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
       summary: Get Environment
+  /healthz:
+    get:
+      description: If able to serve this, server is live and ready for requests.
+      operationId: health_probe_healthz_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthProbeResponse'
+          description: Successful Response
+      summary: Health Probe
   /plans:
     get:
       description: Retrieve information about all available plans.

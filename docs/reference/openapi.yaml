@@ -44,12 +44,10 @@ components:
           title: Environment Id
           type: string
         error_message:
-          anyOf:
-          - minLength: 1
-            type: string
-          - type: 'null'
           description: If present - error loading context
+          minLength: 1
           title: Error Message
+          type: string
         initialized:
           description: blueapi context initialized
           title: Initialized
@@ -133,21 +131,17 @@ components:
       description: Representation of a plan
       properties:
         description:
-          anyOf:
-          - type: string
-          - type: 'null'
           description: Docstring of the plan
           title: Description
+          type: string
         name:
           description: Name of the plan
           title: Name
           type: string
         schema:
-          anyOf:
-          - type: object
-          - type: 'null'
           description: Schema of the plan's parameters
           title: Schema
+          type: object
       required:
       - name
       title: PlanModel
@@ -217,11 +211,9 @@ components:
         new_state:
           $ref: '#/components/schemas/WorkerState'
         reason:
-          anyOf:
-          - type: string
-          - type: 'null'
           description: The reason for the current run to be aborted
           title: Reason
+          type: string
       required:
       - new_state
       title: StateChangeRequest
@@ -286,10 +278,8 @@ components:
           title: Is Pending
           type: boolean
         request_id:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Request Id
+          type: string
         task:
           title: Task
         task_id:
@@ -341,18 +331,16 @@ components:
       description: Worker's active task ID, can be None
       properties:
         task_id:
-          anyOf:
-          - type: string
-          - type: 'null'
           description: The ID of the current task, None if the worker is idle
           title: Task Id
+          type: string
       required:
       - task_id
       title: WorkerTask
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.9
+  version: 0.0.10
 openapi: 3.1.0
 paths:
   /config/oidc:
@@ -529,10 +517,8 @@ paths:
         name: task_status
         required: false
         schema:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Task Status
+          type: string
       responses:
         '200':
           content:
@@ -664,10 +650,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/WorkerState'
           description: Successful Response
-          detail: Transition requested
         '400':
           description: Bad Request
-          detail: Transition not allowed
         '422':
           content:
             application/json:
@@ -707,7 +691,6 @@ paths:
           description: Successful Response
         '409':
           description: Conflict
-          worker: already active
         '422':
           content:
             application/json:

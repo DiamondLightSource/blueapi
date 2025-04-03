@@ -24,6 +24,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.propagate import get_global_textmap
 from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
+from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
@@ -50,7 +51,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "0.0.9"
+REST_API_VERSION = "0.0.10"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -288,7 +289,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 )
 @start_as_current_span(TRACER)
 def get_tasks(
-    task_status: str | None = None,
+    task_status: str | SkipJsonSchema[None] = None,
     runner: WorkerDispatcher = Depends(_runner),
 ) -> TasksListResponse:
     """
@@ -315,7 +316,7 @@ def get_tasks(
 @secure_router.put(
     "/worker/task",
     response_model=WorkerTask,
-    responses={status.HTTP_409_CONFLICT: {"worker": "already active"}},
+    responses={status.HTTP_409_CONFLICT: {}},
 )
 @start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
@@ -392,8 +393,8 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
     "/worker/state",
     status_code=status.HTTP_202_ACCEPTED,
     responses={
-        status.HTTP_400_BAD_REQUEST: {"detail": "Transition not allowed"},
-        status.HTTP_202_ACCEPTED: {"detail": "Transition requested"},
+        status.HTTP_400_BAD_REQUEST: {},
+        status.HTTP_202_ACCEPTED: {},
     },
 )
 @start_as_current_span(TRACER, "state_change_request.new_state")

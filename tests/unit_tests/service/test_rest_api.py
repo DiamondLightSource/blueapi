@@ -622,3 +622,10 @@ def test_get_python_environment(mock_runner: Mock, client: TestClient):
     response = client.get("/python_environment")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == packages.model_dump()
+
+
+def test_health_probe(client: TestClient):
+    response = client.get("/healthz")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"status": "ok"}

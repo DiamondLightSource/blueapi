@@ -9,12 +9,11 @@ from subprocess import Popen
 from git import Repo
 from tomlkit import parse
 
-from blueapi.config import ScratchConfig
+from blueapi.config import FORBIDDEN_OWN_REMOTE_URL, ScratchConfig
 from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, SourceInfo
 from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
-
 
 def setup_scratch(
     config: ScratchConfig, install_timeout: float = _DEFAULT_INSTALL_TIMEOUT
@@ -33,6 +32,14 @@ def setup_scratch(
     logging.info(f"Setting up scratch area: {config.root}")
 
     for repo in config.repositories:
+        if repo.remote_url == FORBIDDEN_OWN_REMOTE_URL:
+            raise PermissionError(
+                textwrap.dedent("""
+        The scratch area cannot be used to clone the blueapi repository.
+        That is to prevent namespace clashing with the blueapi application.
+        """)
+            )
+
         local_directory = config.root / repo.name
         ensure_repo(repo.remote_url, local_directory)
         scratch_install(local_directory, timeout=install_timeout)

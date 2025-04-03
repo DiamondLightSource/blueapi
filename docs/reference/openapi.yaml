@@ -340,7 +340,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.9
+  version: 0.0.10
 openapi: 3.1.0
 paths:
   /config/oidc:

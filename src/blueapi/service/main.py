@@ -13,7 +13,7 @@ from fastapi import (
     Response,
     status,
 )
-from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.security import HTTPBearer, OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -108,6 +108,8 @@ def get_app(config: ApplicationConfig):
     dependencies = []
     if config.oidc:
         dependencies.append(Depends(verify_access_token(config.oidc)))
+    else:
+        dependencies.append(Depends(HTTPBearer(auto_error=False)))
     app.include_router(open_router)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)

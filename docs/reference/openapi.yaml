@@ -339,8 +339,13 @@ components:
       title: WorkerTask
       type: object
   securitySchemes:
-    OAuth2:
-      flows: {}
+    OAuth2AuthorizationCodeBearer:
+      flows:
+        authorizationCode:
+          authorizationUrl: https://authn.diamond.ac.uk/realms/master/protocol/openid-connect/auth
+          refreshUrl: https://authn.diamond.ac.uk/realms/master/protocol/openid-connect/token
+          scopes: {}
+          tokenUrl: https://authn.diamond.ac.uk/realms/master/protocol/openid-connect/token
       type: oauth2
 info:
   title: BlueAPI Control
@@ -373,7 +378,7 @@ paths:
                 $ref: '#/components/schemas/DeviceResponse'
           description: Successful Response
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Devices
   /devices/{name}:
     get:
@@ -400,7 +405,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Device By Name
   /environment:
     delete:
@@ -415,7 +420,7 @@ paths:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Delete Environment
     get:
       description: Get the current state of the environment, i.e. initialization state.
@@ -428,7 +433,7 @@ paths:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Environment
   /healthz:
     get:
@@ -454,7 +459,7 @@ paths:
                 $ref: '#/components/schemas/PlanResponse'
           description: Successful Response
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Plans
   /plans/{name}:
     get:
@@ -481,7 +486,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Plan By Name
   /python_environment:
     get:
@@ -522,7 +527,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Python Environment
   /tasks:
     get:
@@ -551,7 +556,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Tasks
     post:
       description: Submit a task to the worker.
@@ -581,7 +586,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Submit Task
   /tasks/{task_id}:
     delete:
@@ -607,7 +612,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Delete Submitted Task
     get:
       description: Retrieve a task
@@ -633,7 +638,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Task
   /worker/state:
     get:
@@ -647,7 +652,7 @@ paths:
                 $ref: '#/components/schemas/WorkerState'
           description: Successful Response
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get State
     put:
       description: "Request that the worker is put into a particular state.\nReturns\
@@ -687,7 +692,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Set State
   /worker/task:
     get:
@@ -700,7 +705,7 @@ paths:
                 $ref: '#/components/schemas/WorkerTask'
           description: Successful Response
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Get Active Task
     put:
       description: 'Set a task to active status, the worker should begin it as soon
@@ -730,5 +735,5 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security:
-      - OAuth2: []
+      - OAuth2AuthorizationCodeBearer: []
       summary: Set Active Task

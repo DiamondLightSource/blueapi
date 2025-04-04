@@ -338,6 +338,10 @@ components:
       - task_id
       title: WorkerTask
       type: object
+  securitySchemes:
+    OAuth2:
+      flows: {}
+      type: oauth2
 info:
   title: BlueAPI Control
   version: 0.0.10
@@ -368,6 +372,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeviceResponse'
           description: Successful Response
+      security:
+      - OAuth2: []
       summary: Get Devices
   /devices/{name}:
     get:
@@ -393,6 +399,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2: []
       summary: Get Device By Name
   /environment:
     delete:
@@ -406,6 +414,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
+      security:
+      - OAuth2: []
       summary: Delete Environment
     get:
       description: Get the current state of the environment, i.e. initialization state.
@@ -417,6 +427,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
+      security:
+      - OAuth2: []
       summary: Get Environment
   /healthz:
     get:
@@ -441,6 +453,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlanResponse'
           description: Successful Response
+      security:
+      - OAuth2: []
       summary: Get Plans
   /plans/{name}:
     get:
@@ -466,6 +480,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2: []
       summary: Get Plan By Name
   /python_environment:
     get:
@@ -505,6 +521,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2: []
       summary: Get Python Environment
   /tasks:
     get:
@@ -532,6 +550,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2: []
       summary: Get Tasks
     post:
       description: Submit a task to the worker.
@@ -560,6 +580,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2: []
       summary: Submit Task
   /tasks/{task_id}:
     delete:
@@ -584,6 +606,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2: []
       summary: Delete Submitted Task
     get:
       description: Retrieve a task
@@ -608,6 +632,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2: []
       summary: Get Task
   /worker/state:
     get:
@@ -620,6 +646,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/WorkerState'
           description: Successful Response
+      security:
+      - OAuth2: []
       summary: Get State
     put:
       description: "Request that the worker is put into a particular state.\nReturns\
@@ -658,6 +686,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2: []
       summary: Set State
   /worker/task:
     get:
@@ -669,6 +699,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/WorkerTask'
           description: Successful Response
+      security:
+      - OAuth2: []
       summary: Get Active Task
     put:
       description: 'Set a task to active status, the worker should begin it as soon
@@ -697,4 +729,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+      security:
+      - OAuth2: []
       summary: Set Active Task

@@ -15,6 +15,7 @@ import responses
 import yaml
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.run_engine import RunEngine
+from fastapi import status
 from jwcrypto.jwk import JWK
 from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
@@ -316,6 +317,16 @@ def mock_authn_server(
     requests_mock.get(oidc_well_known["end_session_endpoint"], json="")
 
     with mock_jwks_fetch, requests_mock:
+        yield requests_mock
+
+
+@pytest.fixture
+def mock_unauthenticated_server():
+    requests_mock = responses.RequestsMock(assert_all_requests_are_fired=False)
+    requests_mock.get(
+        "http://localhost:8000/config/oidc", status=status.HTTP_204_NO_CONTENT
+    )
+    with requests_mock:
         yield requests_mock
 
 

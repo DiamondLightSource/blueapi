@@ -1,10 +1,11 @@
 import uuid
 from collections.abc import Iterable
 from enum import Enum
-from typing import Any
+from typing import Annotated, Any
 
 from bluesky.protocols import HasName
 from pydantic import Field
+from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.config import OIDCConfig
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
@@ -79,8 +80,10 @@ class PlanModel(BlueapiBaseModel):
     """
 
     name: str = Field(description="Name of the plan")
-    description: str | None = Field(description="Docstring of the plan", default=None)
-    parameter_schema: dict[str, Any] | None = Field(
+    description: str | SkipJsonSchema[None] = Field(
+        description="Docstring of the plan", default=None
+    )
+    parameter_schema: dict[str, Any] | SkipJsonSchema[None] = Field(
         description="Schema of the plan's parameters",
         alias="schema",
         default_factory=dict,
@@ -124,7 +127,7 @@ class WorkerTask(BlueapiBaseModel):
     Worker's active task ID, can be None
     """
 
-    task_id: str | None = Field(
+    task_id: str | SkipJsonSchema[None] = Field(
         description="The ID of the current task, None if the worker is idle"
     )
 
@@ -147,7 +150,7 @@ class StateChangeRequest(BlueapiBaseModel):
         description="Should worker defer Pausing until the next checkpoint",
         default=False,
     )
-    reason: str | None = Field(
+    reason: str | SkipJsonSchema[None] = Field(
         description="The reason for the current run to be aborted",
         default=None,
     )
@@ -163,10 +166,9 @@ class EnvironmentResponse(BlueapiBaseModel):
         "differentiate between a new environment and old that has been torn down"
     )
     initialized: bool = Field(description="blueapi context initialized")
-    error_message: str | None = Field(
+    error_message: Annotated[str, Field(min_length=1)] | SkipJsonSchema[None] = Field(
         default=None,
         description="If present - error loading context",
-        min_length=1,
     )
 
 
@@ -210,3 +212,11 @@ class Cache(BlueapiBaseModel):
     access_token: str
     refresh_token: str
     id_token: str
+
+
+class Health(str, Enum):
+    OK = "ok"
+
+
+class HealthProbeResponse(BlueapiBaseModel):
+    status: Health

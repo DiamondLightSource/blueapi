@@ -112,6 +112,11 @@ worker:
       password: guest
     host: rabbitmq
     port: 61613
+  scratch:
+    root: /blueapi-plugins/scratch
+    repositories: []
+    # - name: "dodal"
+    #   remote_url: https://github.com/DiamondLightSource/dodal.git
   logging:
       graylog_enabled: False
       graylog_host: "graylog-log-target.diamond.ac.uk"
@@ -120,8 +125,3 @@ worker:
 
 initContainer:
   enabled: false
-  scratch:
-    root: /blueapi-plugins/scratch
-    repositories: []
-    # - name: "dodal"
-    #   remote_url: https://github.com/DiamondLightSource/dodal.git

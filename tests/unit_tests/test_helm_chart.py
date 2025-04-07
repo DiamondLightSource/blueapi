@@ -102,15 +102,19 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
         {
             "initContainer": {
                 "enabled": True,
+            },
+            "worker": {
                 "scratch": {
                     "repositories": [],
                     "root": "/blueapi-plugins/scratch",
-                },
-            }
+                }
+            },
         },
         {
             "initContainer": {
                 "enabled": True,
+            },
+            "worker": {
                 "scratch": {
                     "root": "/dls_sw/i22/scratch",
                     "required_gid": 12345,
@@ -125,7 +129,7 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
                         },
                     ],
                 },
-            }
+            },
         },
     ],
 )
@@ -134,20 +138,22 @@ def test_helm_chart_creates_init_config_map(values: Values):
     rendered_config = yaml.safe_load(
         manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
     )
-    assert rendered_config == values["initContainer"]
+    assert rendered_config["scratch"] == values["worker"]["scratch"]
 
 
 def test_init_container_spec_generated():
     manifests = render_chart(
         values={
-            "initContainer": {
-                "enabled": True,
+            "worker": {
                 "scratch": {
                     "repositories": [],
                     "root": "/blueapi-plugins/scratch",
                 },
-            }
-        }
+            },
+            "initContainer": {
+                "enabled": True,
+            },
+        },
     )
     init_containers = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
         "initContainers"
@@ -160,17 +166,13 @@ def test_init_container_spec_disablable():
         values={
             "initContainer": {
                 "enabled": False,
-                "scratch": {
-                    "repositories": [],
-                    "root": "/blueapi-plugins/scratch",
-                },
             }
         }
     )
-    init_containers = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+    assert (
         "initContainers"
-    ]
-    assert init_containers is None
+        not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]
+    )
 
 
 def test_helm_chart_does_not_render_arbitrary_rabbitmq_password():
@@ -197,16 +199,27 @@ def test_container_gets_container_resources():
     )
 
 
-@pytest.mark.xfail(
-    reason="https://github.com/DiamondLightSource/blueapi/issues/646",
-    strict=True,
-)
 def test_init_container_gets_container_resources_by_default():
     manifests = render_chart(
         values={
+            "worker": {
+                "scratch": {
+                    "root": "/foo",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
             "resources": HIGH_RESOURCES,
-            "scratchHostPath": "/foo",
-            "initContainer": {"scratch": {"root": "/foo"}},
+            "initContainer": {"enabled": True},
         }
     )
     assert (
@@ -217,18 +230,33 @@ def test_init_container_gets_container_resources_by_default():
     )
 
 
-@pytest.mark.xfail(
-    reason="https://github.com/DiamondLightSource/blueapi/issues/646",
-    strict=True,
-)
 def test_init_container_resources_overridable():
     manifests = render_chart(
         values={
+            "worker": {
+                "scratch": {
+                    "root": "/foo",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
             "resources": HIGH_RESOURCES,
             "initResources": LOW_RESOURCES,
-            "scratchHostPath": "/foo",
+            "initContainer": {
+                "enabled": True,
+            },
         }
     )
+
     assert (
         manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
             "initContainers"
@@ -237,17 +265,36 @@ def test_init_container_resources_overridable():
     )
 
 
-@pytest.mark.xfail(
-    reason="https://github.com/DiamondLightSource/blueapi/issues/646",
-    strict=True,
-)
-def test_do_not_have_to_provide_scratch_host_path_twice():
+def test_worker_scratch_config_used_when_init_container_enabled():
     manifests = render_chart(
         values={
+            "worker": {
+                "scratch": {
+                    "root": "/foo",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
             "initContainer": {
                 "enabled": True,
                 "scratch": {
-                    "root": "/foo",
+                    "root": "NOT_USED",
+                    "required_gid": 54321,
+                    "repositories": [
+                        {
+                            "name": "NOT_USED",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
                 },
             },
         }
@@ -259,8 +306,16 @@ def test_do_not_have_to_provide_scratch_host_path_twice():
     init_config = yaml.safe_load(
         manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
     )
+    type_adapter = TypeAdapter(ApplicationConfig)
+
     assert config["scratch"]["root"] == "/foo"
     assert init_config["scratch"]["root"] == "/foo"
+    assert config["scratch"] == init_config["scratch"]
+
+    init_config = type_adapter.validate_python(init_config)
+    config = type_adapter.validate_python(config)
+
+    assert config.scratch == init_config.scratch
 
 
 @pytest.mark.parametrize("enabled", [True, False])
@@ -334,3 +389,40 @@ def group_manifests(ungrouped: Iterable[Mapping[str, Any]]) -> GroupedManifests:
             )
         group[name] = manifest
     return groups
+
+
+def test_init_container_config_copied_from_worker_when_enabled():
+    manifests = render_chart(
+        values={
+            "worker": {
+                "scratch": {
+                    "root": "/foo",
+                    "required_gid": 12345,
+                    "repositories": [
+                        {
+                            "name": "foo",
+                            "remote_url": "https://example.git",
+                        },
+                        {
+                            "name": "bar",
+                            "remote_url": "https://example.git",
+                        },
+                    ],
+                },
+            },
+            "initContainer": {
+                "enabled": True,
+            },
+        }
+    )
+
+    config = ApplicationConfig.model_validate(
+        yaml.safe_load(manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"])
+    )
+    init_config = ApplicationConfig.model_validate(
+        yaml.safe_load(
+            manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        )
+    )
+
+    assert config.scratch == init_config.scratch

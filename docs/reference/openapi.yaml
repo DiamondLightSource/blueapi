@@ -44,12 +44,10 @@ components:
           title: Environment Id
           type: string
         error_message:
-          anyOf:
-          - minLength: 1
-            type: string
-          - type: 'null'
           description: If present - error loading context
+          minLength: 1
           title: Error Message
+          type: string
         initialized:
           description: blueapi context initialized
           title: Initialized
@@ -67,6 +65,41 @@ components:
           title: Detail
           type: array
       title: HTTPValidationError
+      type: object
+    Health:
+      enum:
+      - ok
+      title: Health
+      type: string
+    HealthProbeResponse:
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/Health'
+      required:
+      - status
+      title: HealthProbeResponse
+      type: object
+    OIDCConfig:
+      additionalProperties: false
+      properties:
+        client_audience:
+          default: blueapi
+          description: Client Audience(s)
+          title: Client Audience
+          type: string
+        client_id:
+          description: Client ID
+          title: Client Id
+          type: string
+        well_known_url:
+          description: URL to fetch OIDC config from the provider
+          title: Well Known Url
+          type: string
+      required:
+      - well_known_url
+      - client_id
+      title: OIDCConfig
       type: object
     PackageInfo:
       additionalProperties: false
@@ -98,21 +131,17 @@ components:
       description: Representation of a plan
       properties:
         description:
-          anyOf:
-          - type: string
-          - type: 'null'
           description: Docstring of the plan
           title: Description
+          type: string
         name:
           description: Name of the plan
           title: Name
           type: string
         schema:
-          anyOf:
-          - type: object
-          - type: 'null'
           description: Schema of the plan's parameters
           title: Schema
+          type: object
       required:
       - name
       title: PlanModel
@@ -182,11 +211,9 @@ components:
         new_state:
           $ref: '#/components/schemas/WorkerState'
         reason:
-          anyOf:
-          - type: string
-          - type: 'null'
           description: The reason for the current run to be aborted
           title: Reason
+          type: string
       required:
       - new_state
       title: StateChangeRequest
@@ -251,10 +278,8 @@ components:
           title: Is Pending
           type: boolean
         request_id:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Request Id
+          type: string
         task:
           title: Task
         task_id:
@@ -306,20 +331,32 @@ components:
       description: Worker's active task ID, can be None
       properties:
         task_id:
-          anyOf:
-          - type: string
-          - type: 'null'
           description: The ID of the current task, None if the worker is idle
           title: Task Id
+          type: string
       required:
       - task_id
       title: WorkerTask
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.7
+  version: 0.0.10
 openapi: 3.1.0
 paths:
+  /config/oidc:
+    get:
+      description: Retrieve the OpenID Connect (OIDC) configuration for the server.
+      operationId: get_oidc_config_config_oidc_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OIDCConfig'
+          description: Successful Response
+        '204':
+          description: No Authentication configured
+      summary: Get Oidc Config
   /devices:
     get:
       description: Retrieve information about all available devices.
@@ -381,6 +418,18 @@ paths:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
       summary: Get Environment
+  /healthz:
+    get:
+      description: If able to serve this, server is live and ready for requests.
+      operationId: health_probe_healthz_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthProbeResponse'
+          description: Successful Response
+      summary: Health Probe
   /plans:
     get:
       description: Retrieve information about all available plans.
@@ -468,10 +517,8 @@ paths:
         name: task_status
         required: false
         schema:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Task Status
+          type: string
       responses:
         '200':
           content:
@@ -603,10 +650,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/WorkerState'
           description: Successful Response
-          detail: Transition requested
         '400':
           description: Bad Request
-          detail: Transition not allowed
         '422':
           content:
             application/json:
@@ -646,7 +691,6 @@ paths:
           description: Successful Response
         '409':
           description: Conflict
-          worker: already active
         '422':
           content:
             application/json:

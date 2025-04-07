@@ -40,6 +40,8 @@ jobs:
       - name: Bump patch version if necessary
         if: github.ref_type == 'tag'
         run: |
+          apt update && apt install wget
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
           # Gets the latest published Helm chart version
           LATEST=`helm show chart oci://${{ env.CHART_REPO }}/charts/blueapi | yq '.version' | cut -d "\"" -f 2`
           # Gets the current Helm chart version

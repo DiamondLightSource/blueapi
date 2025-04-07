@@ -23,14 +23,15 @@ data:
 
 ---
 
-{{- if (.Values.initContainer).enabled }}
+{{- if .Values.initContainer.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "blueapi.fullname" . }}-init-config
 data:
   init-config.yaml: |-
-    {{- toYaml .Values.initContainer.config | nindent 4 }}
+    scratch:
+      {{- toYaml .Values.worker.scratch | nindent 6 }}
 {{- end }}
 
 ---

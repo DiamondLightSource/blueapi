@@ -585,10 +585,13 @@ def test_get_without_authentication(mock_runner: Mock, client: TestClient) -> No
     assert response.json() == {"detail": "Not authenticated"}
 
 
-def test_oidc_config_not_found_when_auth_is_disabled(client: TestClient):
+def test_oidc_config_not_found_when_auth_is_disabled(
+    mock_runner: Mock, client: TestClient
+):
+    mock_runner.run.return_value = None
     response = client.get("/config/oidc")
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": "Not Found"}
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.text == ""
 
 
 def test_get_oidc_config(
@@ -619,3 +622,10 @@ def test_get_python_environment(mock_runner: Mock, client: TestClient):
     response = client.get("/python_environment")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == packages.model_dump()
+
+
+def test_health_probe(client: TestClient):
+    response = client.get("/healthz")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"status": "ok"}

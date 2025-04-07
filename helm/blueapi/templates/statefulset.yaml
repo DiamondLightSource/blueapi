@@ -36,8 +36,28 @@ selector:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+      - name: worker-config
+        projected:
+          sources:
+          - configMap:
+              name: {{ include "blueapi.fullname" . }}-config
+      {{- if .Values.initContainer.enabled }}
+      - name: init-config
+        projected:
+          sources:
+          - configMap:
+              name: {{ include "blueapi.fullname" . }}-init-config
+      - name: scratch-host
+        hostPath:
+          path: {{ required "initContainer enabled but no worker.scratch.root!" (.Values.worker.scratch).root }}
+          type: Directory
+      - name: venv
+        emptyDir:
+          sizeLimit: 5Gi
+      {{- end }}
+      {{- if .Values.initContainer.enabled }}
       initContainers:
-      {{- if (.Values.initContainer).enabled }}
       - name: setup-scratch
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -56,7 +76,7 @@ selector:
             mountPath: "/config"
             readOnly: true
           - name: scratch-host
-            mountPath: {{ .Values.initContainer.config.scratch.root | required "initContainer enabled but config does not contain scratch.root" }}
+            mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
           - name: venv
             mountPath: /artefacts
@@ -89,9 +109,9 @@ selector:
             - name: worker-config
               mountPath: "/config"
               readOnly: true
-            {{- if (.Values.initContainer).enabled }}
+            {{- if .Values.initContainer.enabled }}
             - name: scratch-host
-              mountPath: {{ .Values.initContainer.config.scratch.root }}
+              mountPath: {{ .Values.worker.scratch.root }}
               mountPropagation: HostToContainer
             - name: venv
               mountPath: /venv

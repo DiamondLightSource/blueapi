@@ -2,6 +2,7 @@ from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
 import requests
+from fastapi import status
 from observability_utils.tracing import (
     get_context_propagator,
     get_tracer,
@@ -34,6 +35,13 @@ TRACER = get_tracer("rest")
 class BlueskyRemoteControlError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class NoContent(Exception):
+    """Request returned 204 (No Content): handle if None is allowed"""
+
+    def __init__(self, target_type: type) -> None:
+        super().__init__(target_type)
 
 
 def _exception(response: requests.Response) -> Exception | None:
@@ -134,8 +142,12 @@ class BlueapiRestClient:
             "/environment", EnvironmentResponse, method="DELETE"
         )
 
-    def get_oidc_config(self) -> OIDCConfig:
-        return self._request_and_deserialize("/config/oidc", OIDCConfig)
+    def get_oidc_config(self) -> OIDCConfig | None:
+        try:
+            return self._request_and_deserialize("/config/oidc", OIDCConfig)
+        except NoContent:
+            # Server is not using authentication
+            return None
 
     def get_python_environment(
         self, name: str | None = None, source: SourceInfo | None = None
@@ -159,29 +171,19 @@ class BlueapiRestClient:
         url = self._url(suffix)
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
-        if data:
-            response = requests.request(
-                method,
-                url,
-                json=data,
-                headers=carr,
-                auth=JWTAuth(self._session_manager),
-            )
-        elif params:
-            response = requests.request(
-                method,
-                url,
-                params=params,
-                headers=carr,
-                auth=JWTAuth(self._session_manager),
-            )
-        else:
-            response = requests.request(
-                method, url, headers=carr, auth=JWTAuth(self._session_manager)
-            )
+        response = requests.request(
+            method,
+            url,
+            json=data,
+            params=params,
+            headers=carr,
+            auth=JWTAuth(self._session_manager),
+        )
         exception = get_exception(response)
         if exception is not None:
             raise exception
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            raise NoContent(target_type)
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized
 

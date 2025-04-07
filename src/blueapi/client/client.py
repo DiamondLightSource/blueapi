@@ -430,7 +430,7 @@ class BlueapiClient:
         )
 
     @start_as_current_span(TRACER)
-    def get_oidc_config(self) -> OIDCConfig:
+    def get_oidc_config(self) -> OIDCConfig | None:
         """
         Get oidc config from the server
 

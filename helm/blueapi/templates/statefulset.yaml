@@ -5,12 +5,12 @@ metadata:
   labels:
     {{- include "blueapi.labels" . | nindent 4 }}
 spec:
-{{- if not .Values.autoscaling.enabled }}
-replicas: {{ .Values.replicaCount }}
-{{- end }}
-selector:
-  matchLabels:
-    {{- include "blueapi.selectorLabels" . | nindent 6 }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "blueapi.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:

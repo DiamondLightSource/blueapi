@@ -5,12 +5,12 @@ metadata:
   labels:
     {{- include "blueapi.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
-  selector:
-    matchLabels:
-      {{- include "blueapi.selectorLabels" . | nindent 6 }}
+{{- if not .Values.autoscaling.enabled }}
+replicas: {{ .Values.replicaCount }}
+{{- end }}
+selector:
+  matchLabels:
+    {{- include "blueapi.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -106,10 +106,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "blueapi.fullname" . }}-otel-config
-          {{- with .Values.extraEnvVars }}
           env:
-          {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- with .Values.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       volumes:
         - name: worker-config
           projected:

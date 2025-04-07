@@ -36,26 +36,6 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      volumes:
-      - name: worker-config
-        projected:
-          sources:
-          - configMap:
-              name: {{ include "blueapi.fullname" . }}-config
-      {{- if .Values.initContainer.enabled }}
-      - name: init-config
-        projected:
-          sources:
-          - configMap:
-              name: {{ include "blueapi.fullname" . }}-init-config
-      - name: scratch-host
-        hostPath:
-          path: {{ required "initContainer enabled but no worker.scratch.root!" (.Values.worker.scratch).root }}
-          type: Directory
-      - name: venv
-        emptyDir:
-          sizeLimit: 5Gi
-      {{- end }}
       {{- if .Values.initContainer.enabled }}
       initContainers:
       - name: setup-scratch
@@ -123,25 +103,27 @@ spec:
             - "-c"
             - "/config/config.yaml"
             - "serve"
+          {{- if (.Values.tracing.otlp).enabled }}
           envFrom:
             - configMapRef:
                 name: {{ include "blueapi.fullname" . }}-otel-config
+          {{- end }}
+          {{- with .Values.extraEnvVars }}
           env:
-            {{- with .Values.extraEnvVars }}
-            {{- toYaml . | nindent 12 }}
-            {{- end }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
       volumes:
         - name: worker-config
           projected:
             sources:
             - configMap:
                 name: {{ include "blueapi.fullname" . }}-config
+        {{- if .Values.initContainer.enabled }}
         - name: init-config
           projected:
             sources:
             - configMap:
                 name: {{ include "blueapi.fullname" . }}-init-config
-        {{- if .Values.initContainer.enabled }}
         - name: scratch-host
           hostPath:
             path: {{ required "initContainer enabled but no worker.scratch.root!" (.Values.worker.scratch).root }}

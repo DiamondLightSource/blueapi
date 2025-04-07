@@ -39,15 +39,15 @@ podAnnotations: {}
 podLabels: {}
 
 podSecurityContext: {}
-  # fsGroup: 2000
+# fsGroup: 2000
 
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+# capabilities:
+#   drop:
+#   - ALL
+# readOnlyRootFilesystem: true
+# runAsNonRoot: true
+# runAsUser: 1000
 
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 # Recommended for production to change service.type to ClusterIP and set up an Ingress
@@ -75,20 +75,20 @@ ingress:
   #      - chart-example.local
 
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+# We usually recommend not to specify default resources and to leave this as a conscious
+# choice for the user. This also increases chances charts run on environments with little
+# resources, such as Minikube. If you do want to specify resources, uncomment the following
+# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+# limits:
+#   cpu: 100m
+#   memory: 128Mi
+# requests:
+#   cpu: 100m
+#   memory: 128Mi
 
-# Can optionally specify separate resource constraints for the scratch setup container.
+# Can optionally specify separate resource constraints for the scratch setup container,
+# else defaults to resources defined above.
 initResources: {}
-  # Defaults to any resources defined above.
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
@@ -108,14 +108,14 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-# Additional volumes on the output Deployment definition.
+# Additional volumes on the output StatefulSet definition.
 volumes: []
 # - name: foo
 #   secret:
 #     secretName: mysecret
 #     optional: false
 
-# Additional volumeMounts on the output Deployment definition.
+# Additional volumeMounts on the output StatefulSet definition.
 volumeMounts: []
 # - name: foo
 #   mountPath: "/etc/foo"
@@ -154,14 +154,14 @@ worker:
     port: 8000
   env:
     sources:
-      - kind: deviceFunctions
-        module: blueapi.startup.example_devices
-      - kind: planFunctions
-        module: blueapi.startup.example_plans
-      - kind: planFunctions
-        module: dodal.plans
-      - kind: planFunctions
-        module: dodal.plan_stubs.wrapped
+    - kind: deviceFunctions
+      module: blueapi.startup.example_devices
+    - kind: planFunctions
+      module: blueapi.startup.example_plans
+    - kind: planFunctions
+      module: dodal.plans
+    - kind: planFunctions
+      module: dodal.plan_stubs.wrapped
   stomp:
     auth:
       username: guest
@@ -174,5 +174,10 @@ worker:
   #     - name: "dodal"
   #       remote_url: https://github.com/DiamondLightSource/dodal.git
 
+# Configuration for the initContainer.
+# If enabled, the scratch section of the above configuration is mounted and
+# each repository is installed into a virtualEnv that the  main container uses.
+# These installations are editable, so code changes will be reflected when the
+# service performs an environment reload.
 initContainer:
   enabled: false

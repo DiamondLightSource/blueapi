@@ -8,12 +8,12 @@ data:
 
 ---
 
+{{- if (.Values.tracing.otlp).enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "blueapi.fullname" . }}-otel-config
 data:
-{{- if (.Values.tracing.otlp).enabled }}
   OTLP_EXPORT_ENABLED: "true"
   OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: {{ .Values.tracing.otlp.protocol | default "http/protobuf" }}
   {{- with .Values.tracing.otlp.server | required "OTLP export enabled but no server information given" }}

@@ -39,6 +39,13 @@ DEVICES = DeviceResponse(
         DeviceModel(name="bar", protocols=[]),
     ]
 )
+CHILD_DEVICES = DeviceResponse(
+    devices=[
+        DeviceModel(name="foo", protocols=[]),
+        DeviceModel(name="foo-bar", protocols=[]),
+        DeviceModel(name="bar", protocols=[]),
+    ]
+)
 DEVICE = DeviceModel(name="foo", protocols=[])
 TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
 TASKS = TasksListResponse(tasks=[TASK])
@@ -69,9 +76,16 @@ FAILED_EVENT = WorkerEvent(
 def mock_rest() -> BlueapiRestClient:
     mock = Mock(spec=BlueapiRestClient)
 
+    def get_devices_with_children(depth: int) -> DeviceResponse:
+        if depth == 0:
+            return DEVICES
+        if depth == 1:
+            return CHILD_DEVICES
+        return DEVICES if depth == 0 else CHILD_DEVICES
+
     mock.get_plans.return_value = PLANS
     mock.get_plan.return_value = PLAN
-    mock.get_devices.return_value = DEVICES
+    mock.get_devices.side_effect = get_devices_with_children
     mock.get_device.return_value = DEVICE
     mock.get_state.return_value = WorkerState.IDLE
     mock.get_task.return_value = TASK
@@ -121,7 +135,7 @@ def test_get_nonexistant_plan(
 
 
 def test_get_devices(client: BlueapiClient):
-    assert client.get_devices() == DEVICES
+    assert client.get_devices(depth=0) == DEVICES
 
 
 def test_get_device(client: BlueapiClient):
@@ -511,7 +525,7 @@ def test_get_plan_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClien
 
 def test_get_devices_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
     with asserting_span_exporter(exporter, "get_devices"):
-        client.get_devices()
+        client.get_devices(depth=0)
 
 
 def test_get_device_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):

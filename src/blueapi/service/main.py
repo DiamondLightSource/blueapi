@@ -1,5 +1,6 @@
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 import jwt
 from fastapi import (
@@ -9,6 +10,7 @@ from fastapi import (
     Depends,
     FastAPI,
     HTTPException,
+    Query,
     Request,
     Response,
     status,
@@ -51,7 +53,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "0.0.10"
+REST_API_VERSION = "0.0.11"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -214,9 +216,21 @@ def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
 
 @secure_router.get("/devices", response_model=DeviceResponse)
 @start_as_current_span(TRACER)
-def get_devices(runner: WorkerDispatcher = Depends(_runner)):
+def get_devices(
+    depth: Annotated[
+        int,
+        Query(
+            description="Maximum depth of children to return: "
+            "-1 for all, 0 for just root",
+            ge=-1,
+            # https://github.com/fastapi/fastapi/discussions/13473
+            json_schema_extra={"description": None},
+        ),
+    ] = 0,
+    runner: WorkerDispatcher = Depends(_runner),
+):
     """Retrieve information about all available devices."""
-    devices = runner.run(interface.get_devices)
+    devices = runner.run(interface.get_devices, depth)
     return DeviceResponse(devices=devices)
 
 

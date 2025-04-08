@@ -4,6 +4,8 @@ from enum import Enum
 from typing import Annotated, Any
 
 from bluesky.protocols import HasName
+from ophyd.device import Device as SyncDevice
+from ophyd_async.core import Device as AsyncDevice
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
@@ -40,10 +42,35 @@ class DeviceModel(BlueapiBaseModel):
         name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
         return cls(name=name, protocols=list(_protocol_info(device)))
 
+    @classmethod
+    def from_device_tree(cls, root: Device, max_depth: int) -> list["DeviceModel"]:
+        if max_depth == 0:
+            return [cls.from_device(root)]
+        if isinstance(root, AsyncDevice):
+            # Breadth-first iteration through child devices, stopping at max_depth
+            async_devices: list[AsyncDevice] = [root]
+            branches: list[AsyncDevice] = [child[1] for child in root.children()]
+            depth = 0
+            while (max_depth == -1 or depth < max_depth) and branches:
+                async_devices += branches
+                branches = [
+                    child[1] for branch in branches for child in branch.children()
+                ]
+                depth += 1
+            return [cls.from_device(device) for device in async_devices]
+        elif isinstance(root, SyncDevice):
+            sync_devices: list[SyncDevice] = [root]
+            # Depth-first iteration through components, keeping any below max_depth
+            for component in root.walk_components():
+                if max_depth == -1 or len(component.ancestors) <= max_depth:
+                    sync_devices.append(component.item)
+            return [cls.from_device(device) for device in sync_devices]
+        return [cls.from_device(root)]
+
 
 def _protocol_info(device: Device) -> Iterable[ProtocolInfo]:
     for protocol in BLUESKY_PROTOCOLS:
-        if isinstance(device, protocol):
+        if isinstance(device, protocol) and protocol is not AsyncDevice:
             yield ProtocolInfo(
                 name=protocol.__name__,
                 types=[arg.__name__ for arg in generic_bounds(device, protocol)],

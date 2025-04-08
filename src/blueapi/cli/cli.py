@@ -164,12 +164,19 @@ def get_plans(obj: dict) -> None:
 
 
 @controller.command(name="devices")
+@click.option(
+    "-d",
+    "--depth",
+    type=click.IntRange(min=-1),
+    required=False,
+    help="Maximum depth of children to return: -1 for all, 0 for just root",
+)
 @check_connection
 @click.pass_obj
-def get_devices(obj: dict) -> None:
+def get_devices(obj: dict, depth: int = 0) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display(client.get_devices())
+    obj["fmt"].display(client.get_devices(depth))
 
 
 @controller.command(name="listen")

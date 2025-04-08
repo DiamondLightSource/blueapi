@@ -33,7 +33,10 @@ def setup_scratch(
     logging.info(f"Setting up scratch area: {config.root}")
 
     for repo in config.repositories:
-        if repo.remote_url.lower() == FORBIDDEN_OWN_REMOTE_URL.lower() or repo.name == "blueapi":
+        if (
+            repo.remote_url.lower() == FORBIDDEN_OWN_REMOTE_URL.lower()
+            or repo.name == "blueapi"
+        ):
             raise PermissionError(
                 textwrap.dedent("""
         The scratch area cannot be used to clone the blueapi repository.

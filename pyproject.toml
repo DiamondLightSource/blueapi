@@ -13,10 +13,8 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky>=1.13.1",
+    "bluesky[plotting]>=1.13.1",
     "ophyd",
-    "nslsii",
-    "pyepics",
     "aioca",
     "pydantic>=2.0",
     "scanspec>=0.7.8",

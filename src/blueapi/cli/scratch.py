@@ -31,7 +31,8 @@ def setup_scratch(
     _validate_root_directory(config.root, config.required_gid)
 
     logging.info(f"Setting up scratch area: {config.root}")
-
+    
+    """ fail early """
     for repo in config.repositories:
         if (
             repo.remote_url.lower() == FORBIDDEN_OWN_REMOTE_URL.lower()
@@ -43,7 +44,7 @@ def setup_scratch(
         That is to prevent namespace clashing with the blueapi application.
         """)
             )
-
+    for repo in config.repositories:
         local_directory = config.root / repo.name
         ensure_repo(repo.remote_url, local_directory)
         scratch_install(local_directory, timeout=install_timeout)

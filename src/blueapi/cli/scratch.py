@@ -31,7 +31,7 @@ def setup_scratch(
     _validate_root_directory(config.root, config.required_gid)
 
     logging.info(f"Setting up scratch area: {config.root}")
-    
+
     """ fail early """
     for repo in config.repositories:
         if (

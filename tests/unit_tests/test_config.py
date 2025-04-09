@@ -363,6 +363,71 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     )
 
 
+@pytest.mark.parametrize(
+    "temp_yaml_config_file",
+    [
+        {
+            "stomp": {
+                "host": "https://rabbitmq.diamond.ac.uk",
+                "port": 61613,
+                "auth": {"username": "guest", "password": "guest"},
+            },
+            "auth_token_path": None,
+            "env": {
+                "sources": [
+                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "planFunctions", "module": "dodal.plans"},
+                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
+                ],
+                "events": {"broadcast_status_events": True},
+                "metadata": {
+                    "instrument_session": "aa123456",
+                    "instrument": "p01",
+                },
+            },
+            "logging": {"level": "INFO"},
+            "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
+            "numtracker": None,
+            "oidc": {
+                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "client_id": "blueapi-client",
+                "client_audience": "aud",
+            },
+            "scratch": {
+                "root": "/tmp/scratch/blueapi",
+                "required_gid": None,
+                "repositories": [
+                    {
+                        "name": "dodal",
+                        "remote_url": "https://github.com/DiamondLightSource/dodal.git",
+                    },
+                    {
+                        "name": "blueapi",
+                        "remote_url": "https://github.com/DiamondLightSource/blueapi.git",
+                    },
+                ],
+            },
+        },
+    ],
+    indirect=True,
+)
+def test_raises_validation_error(temp_yaml_config_file: dict):
+    temp_yaml_file_path, config_data = temp_yaml_config_file
+
+    # Initialize loader and load config from the YAML file
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(temp_yaml_file_path)
+    with pytest.raises(InvalidConfigError) as excinfo:
+        _loaded_config = loader.load()
+        assert excinfo.value.errors() == [  # type: ignore
+            {
+                "loc": ("scratch",),
+                "msg": "The scratch area cannot be used to clone the blueapi repository. That is to prevent namespace clashing with the blueapi application.",  # noqa: E501
+                "type": "value_error",
+            }
+        ]
+
+
 def test_oauth_config_model_post_init(
     oidc_well_known: dict[str, Any],
     oidc_config: OIDCConfig,

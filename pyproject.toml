@@ -147,6 +147,7 @@ lint.select = [
     "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "SLF", # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+    "FAST", # fastapi - https://docs.astral.sh/ruff/rules/#fastapi-fast
 ]
 
 [tool.ruff.lint.flake8-bugbear]

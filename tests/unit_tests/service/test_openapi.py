@@ -8,6 +8,7 @@ from unittest.mock import Mock, PropertyMock
 import git
 import pytest
 import yaml
+from deepdiff import DeepDiff
 from semver import Version
 
 from blueapi.config import ApplicationConfig
@@ -64,7 +65,7 @@ def test_generate_schema(mock_get_app: Mock) -> None:
 def test_schema_updated() -> None:
     with DOCS_SCHEMA_LOCATION.open("r") as stream:
         docs_schema = yaml.safe_load(stream)
-    assert docs_schema == generate_schema()
+    assert DeepDiff(docs_schema, generate_schema()) == {}
 
 
 @pytest.mark.skipif(

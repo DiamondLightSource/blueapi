@@ -7,7 +7,6 @@ from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
 from dodal.common.beamlines.beamline_utils import set_path_provider
-from dodal.common.visit import StartDocumentPathProvider
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
@@ -22,6 +21,7 @@ from blueapi.config import (
     StompConfig,
 )
 from blueapi.core.context import BlueskyContext
+from blueapi.path_provider import StartDocumentPathProvider
 from blueapi.service import interface
 from blueapi.service.model import (
     DeviceModel,

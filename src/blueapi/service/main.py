@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -56,6 +57,7 @@ REST_API_VERSION = "0.0.10"
 
 RUNNER: WorkerDispatcher | None = None
 
+LOGGER = logging.getLogger(__name__)
 CONTEXT_HEADER = "traceparent"
 
 
@@ -115,6 +117,7 @@ def get_app(config: ApplicationConfig):
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
+    app.middleware("http")(log_request_details)
     return app
 
 
@@ -503,6 +506,16 @@ async def add_api_version_header(
 ):
     response = await call_next(request)
     response.headers["X-API-Version"] = REST_API_VERSION
+    return response
+
+
+async def log_request_details(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    LOGGER.info(
+        f"method: {request.method} url: {request.url} body: {await request.body()}",
+    )
+    response = await call_next(request)
     return response
 
 

@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import stat
 import sys
@@ -25,6 +24,7 @@ from blueapi.config import (
     ConfigLoader,
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
+from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import SourceInfo
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
@@ -57,10 +57,9 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
 
+    set_up_logging(loaded_config.logging)
+
     ctx.obj["config"] = loaded_config
-    logging.basicConfig(
-        format="%(asctime)s - %(message)s", level=loaded_config.logging.level
-    )
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")

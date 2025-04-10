@@ -318,6 +318,35 @@ def test_worker_scratch_config_used_when_init_container_enabled():
     assert config.scratch == init_config.scratch
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+def test_fluentd_ignore_true_when_graylog_enabled(enabled):
+    manifests = render_chart(
+        values={
+            "worker": {
+                "logging": {
+                    "graylog_enabled": enabled,
+                },
+            },
+        }
+    )
+
+    if enabled:
+        assert (
+            manifests["StatefulSet"]["blueapi"]["spec"]["template"]["metadata"][
+                "annotations"
+            ]["fluentd-ignore"]
+            == "true"
+        )
+
+    else:
+        assert (
+            "fluentd-ignore"
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["metadata"][
+                "annotations"
+            ]
+        )
+
+
 def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,

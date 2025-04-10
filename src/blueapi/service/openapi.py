@@ -7,14 +7,21 @@ import yaml
 from fastapi.openapi.utils import get_openapi
 from pyparsing import Any
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service.main import get_app
 
 DOCS_SCHEMA_LOCATION = Path(__file__).parents[3] / "docs" / "reference" / "openapi.yaml"
 
 
 def generate_schema() -> Mapping[str, Any]:
-    app = get_app(ApplicationConfig())
+    app = get_app(
+        ApplicationConfig(
+            oidc=OIDCConfig(
+                well_known_url="https://authn.diamond.ac.uk/realms/master/.well-known/openid-configuration",
+                client_id="blueapi-cli",
+            )
+        )
+    )
     return get_openapi(
         title=app.title,
         version=app.version,

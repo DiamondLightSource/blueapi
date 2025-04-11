@@ -14,6 +14,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
@@ -115,6 +116,14 @@ def get_app(config: ApplicationConfig):
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
+    if config.api.cors:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=config.api.cors.origins,
+            allow_credentials=config.api.cors.allow_credentials,
+            allow_methods=config.api.cors.allow_methods,
+            allow_headers=config.api.cors.allow_headers,
+        )
     return app
 
 

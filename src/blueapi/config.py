@@ -78,10 +78,18 @@ class LoggingConfig(BlueapiBaseModel):
     level: LogLevel = "INFO"
 
 
+class CORSConfig(BlueapiBaseModel):
+    origins: list[str]
+    allow_credentials: bool = False
+    allow_methods: list[str] = ["*"]
+    allow_headers: list[str] = ["*"]
+
+
 class RestConfig(BlueapiBaseModel):
     host: str = "localhost"
     port: int = 8000
     protocol: str = "http"
+    cors: CORSConfig | None = None
 
 
 class ScratchRepository(BlueapiBaseModel):

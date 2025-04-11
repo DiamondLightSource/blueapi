@@ -1,6 +1,6 @@
 apiVersion: v2
 name: blueapi
-description: A helm chart deploying a worker pod that runs Bluesky plans
+description: A Helm chart deploying a worker pod that runs Bluesky plans
 
 # A chart can be either an 'application' or a 'library' chart.
 #
@@ -15,5 +15,12 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-# This is updated automatically by CI, the appVersion is automatically inserted by CI
-version: 0.1.0
+# The patch version is automatically set to the next version on release.
+version: 0.9.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+# This version is automatically inserted during the release process.
+appVersion: "latest"

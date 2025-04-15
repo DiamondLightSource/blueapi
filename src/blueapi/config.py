@@ -74,8 +74,15 @@ class EnvironmentConfig(BlueapiBaseModel):
     metadata: MetadataConfig | None = Field(default=None)
 
 
+class GraylogConfig(BlueapiBaseModel):
+    enabled: bool = False
+    host: str = "localhost"
+    port: int = 5555
+
+
 class LoggingConfig(BlueapiBaseModel):
     level: LogLevel = "INFO"
+    graylog: GraylogConfig = GraylogConfig()
 
 
 class CORSConfig(BlueapiBaseModel):

@@ -4,7 +4,10 @@ from typing import Any
 
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
-from dodal.common.beamlines.beamline_utils import get_path_provider
+from dodal.common.beamlines.beamline_utils import (
+    set_path_provider,
+    try_get_path_provider,
+)
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.client.numtracker import NumtrackerClient
@@ -132,12 +135,13 @@ def setup(config: ApplicationConfig) -> None:
 
 
 def _hook_run_engine_and_path_provider() -> None:
-    path_provider = get_path_provider()
+    path_provider = try_get_path_provider()
     run_engine = context().run_engine
 
     if path_provider is None:
         if numtracker_client() is not None:
             path_provider = StartDocumentPathProvider()
+            set_path_provider(path_provider)
             run_engine.subscribe(path_provider.update_run, "start")
         else:
             raise InvalidConfigError(

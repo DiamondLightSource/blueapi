@@ -71,11 +71,6 @@ def mock_handler_emit(request):
         yield mock_emit
 
 
-@pytest.fixture
-def mock_logger_config() -> LoggingConfig:
-    return LoggingConfig(graylog_enabled=False)
-
-
 def test_loggers_emits_to_all_handlers(logger, mock_handler_emit):
     mock_handler_emit.assert_not_called()
     logger.info("FOO")

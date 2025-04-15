@@ -12,7 +12,7 @@ spec:
   template:
     metadata:
       annotations:
-      {{- if (.Values.worker.logging).graylog).enabled }}
+      {{- if ((.Values.worker.logging).graylog).enabled }}
         fluentd-ignore: "true"
       {{- end }}
       {{- if .Values.restartOnConfigChange }}

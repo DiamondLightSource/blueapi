@@ -6,7 +6,7 @@ from bluesky.log import logger as bluesky_logger
 from dodal.log import LOGGER as dodal_logger
 from ophyd.log import logger as ophyd_logger
 
-from blueapi.config import LoggingConfig
+from blueapi.config import GraylogConfig, LoggingConfig
 from blueapi.log import set_up_logging
 
 
@@ -26,7 +26,8 @@ LOGGER_NAMES = ["", "blueapi", "blueapi.test"]
 @pytest.fixture(params=LOGGER_NAMES)
 def logger_with_graylog(request):
     logger = logging.getLogger(request.param)
-    set_up_logging(LoggingConfig(graylog_enabled=True))
+    graylog_config = GraylogConfig(enabled=True)
+    set_up_logging(LoggingConfig(graylog=graylog_config))
     yield logger
     clear_all_loggers_and_handlers(logger)
 
@@ -34,7 +35,8 @@ def logger_with_graylog(request):
 @pytest.fixture(params=LOGGER_NAMES)
 def logger_without_graylog(request):
     logger = logging.getLogger(request.param)
-    set_up_logging(LoggingConfig(graylog_enabled=False))
+    graylog_config = GraylogConfig(enabled=False)
+    set_up_logging(LoggingConfig(graylog=graylog_config))
     yield logger
     clear_all_loggers_and_handlers(logger)
 

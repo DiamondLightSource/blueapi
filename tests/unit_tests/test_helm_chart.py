@@ -324,7 +324,9 @@ def test_fluentd_ignore_true_when_graylog_enabled(enabled):
         values={
             "worker": {
                 "logging": {
-                    "graylog_enabled": enabled,
+                    "graylog": {
+                        "enabled": enabled,
+                    }
                 },
             },
         }

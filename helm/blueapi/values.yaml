@@ -118,10 +118,10 @@ worker:
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
   logging:
-      graylog_enabled: False
-      graylog_host: "graylog-log-target.diamond.ac.uk"
-      graylog_port: 12232
       level: "INFO"
-
+      graylog:
+        enabled: False
+        host: "graylog-log-target.diamond.ac.uk"
+        port: 12232
 initContainer:
   enabled: false

@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 import jwt
 from fastapi import (
@@ -14,6 +15,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
@@ -117,6 +119,14 @@ def get_app(config: ApplicationConfig):
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
     app.middleware("http")(log_request_details)
+    if config.api.cors:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=config.api.cors.origins,
+            allow_credentials=config.api.cors.allow_credentials,
+            allow_methods=config.api.cors.allow_methods,
+            allow_headers=config.api.cors.allow_headers,
+        )
     return app
 
 
@@ -160,19 +170,19 @@ async def on_token_error_401(_: Request, __: Exception):
     )
 
 
-@secure_router.get("/environment", response_model=EnvironmentResponse)
+@secure_router.get("/environment")
 @start_as_current_span(TRACER, "runner")
 def get_environment(
-    runner: WorkerDispatcher = Depends(_runner),
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> EnvironmentResponse:
     """Get the current state of the environment, i.e. initialization state."""
     return runner.state
 
 
-@secure_router.delete("/environment", response_model=EnvironmentResponse)
+@secure_router.delete("/environment")
 async def delete_environment(
     background_tasks: BackgroundTasks,
-    runner: WorkerDispatcher = Depends(_runner),
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> EnvironmentResponse:
     """Delete the current environment, causing internal components to be reloaded."""
     environment_id = runner.state.environment_id
@@ -183,13 +193,14 @@ async def delete_environment(
 
 @open_router.get(
     "/config/oidc",
-    response_model=OIDCConfig,
     responses={
         status.HTTP_204_NO_CONTENT: {"description": "No Authentication configured"}
     },
 )
 @start_as_current_span(TRACER)
-def get_oidc_config(runner: WorkerDispatcher = Depends(_runner)) -> OIDCConfig:
+def get_oidc_config(
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> OIDCConfig:
     """Retrieve the OpenID Connect (OIDC) configuration for the server."""
     config = runner.run(interface.get_oidc_config)
     if config is None:
@@ -197,9 +208,9 @@ def get_oidc_config(runner: WorkerDispatcher = Depends(_runner)) -> OIDCConfig:
     return config
 
 
-@secure_router.get("/plans", response_model=PlanResponse)
+@secure_router.get("/plans")
 @start_as_current_span(TRACER)
-def get_plans(runner: WorkerDispatcher = Depends(_runner)):
+def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResponse:
     """Retrieve information about all available plans."""
     plans = runner.run(interface.get_plans)
     return PlanResponse(plans=plans)
@@ -207,17 +218,20 @@ def get_plans(runner: WorkerDispatcher = Depends(_runner)):
 
 @secure_router.get(
     "/plans/{name}",
-    response_model=PlanModel,
 )
 @start_as_current_span(TRACER, "name")
-def get_plan_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
+def get_plan_by_name(
+    name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
+) -> PlanModel:
     """Retrieve information about a plan by its (unique) name."""
     return runner.run(interface.get_plan, name)
 
 
-@secure_router.get("/devices", response_model=DeviceResponse)
+@secure_router.get("/devices")
 @start_as_current_span(TRACER)
-def get_devices(runner: WorkerDispatcher = Depends(_runner)):
+def get_devices(
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> DeviceResponse:
     """Retrieve information about all available devices."""
     devices = runner.run(interface.get_devices)
     return DeviceResponse(devices=devices)
@@ -225,10 +239,11 @@ def get_devices(runner: WorkerDispatcher = Depends(_runner)):
 
 @secure_router.get(
     "/devices/{name}",
-    response_model=DeviceModel,
 )
 @start_as_current_span(TRACER, "name")
-def get_device_by_name(name: str, runner: WorkerDispatcher = Depends(_runner)):
+def get_device_by_name(
+    name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
+) -> DeviceModel:
     """Retrieve information about a devices by its (unique) name."""
     return runner.run(interface.get_device, name)
 
@@ -238,16 +253,15 @@ example_task = Task(name="count", params={"detectors": ["x"]})
 
 @secure_router.post(
     "/tasks",
-    response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
 )
 @start_as_current_span(TRACER, "request", "task.name", "task.params")
 def submit_task(
     request: Request,
     response: Response,
-    task: Task = Body(..., example=example_task),
-    runner: WorkerDispatcher = Depends(_runner),
-):
+    task: Annotated[Task, Body(..., example=example_task)],
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> TaskResponse:
     """Submit a task to the worker."""
     plan_model = runner.run(interface.get_plan, task.name)
     try:
@@ -274,7 +288,7 @@ def submit_task(
 @start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
-    runner: WorkerDispatcher = Depends(_runner),
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
@@ -287,13 +301,11 @@ def validate_task_status(v: str) -> TaskStatusEnum:
     return TaskStatusEnum(v_upper)
 
 
-@secure_router.get(
-    "/tasks", response_model=TasksListResponse, status_code=status.HTTP_200_OK
-)
+@secure_router.get("/tasks", status_code=status.HTTP_200_OK)
 @start_as_current_span(TRACER)
 def get_tasks(
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
     task_status: str | SkipJsonSchema[None] = None,
-    runner: WorkerDispatcher = Depends(_runner),
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
@@ -318,14 +330,13 @@ def get_tasks(
 
 @secure_router.put(
     "/worker/task",
-    response_model=WorkerTask,
     responses={status.HTTP_409_CONFLICT: {}},
 )
 @start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
     request: Request,
     task: WorkerTask,
-    runner: WorkerDispatcher = Depends(_runner),
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
     This will return an error response if the worker is not idle."""
@@ -348,12 +359,11 @@ def set_active_task(
 
 @secure_router.get(
     "/tasks/{task_id}",
-    response_model=TrackableTask,
 )
 @start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
-    runner: WorkerDispatcher = Depends(_runner),
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TrackableTask:
     """Retrieve a task"""
     task = runner.run(interface.get_task_by_id, task_id)
@@ -364,7 +374,9 @@ def get_task(
 
 @secure_router.get("/worker/task")
 @start_as_current_span(TRACER)
-def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
+def get_active_task(
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> WorkerTask:
     active = runner.run(interface.get_active_task)
     task_id = active.task_id if active is not None else None
     return WorkerTask(task_id=task_id)
@@ -372,7 +384,7 @@ def get_active_task(runner: WorkerDispatcher = Depends(_runner)) -> WorkerTask:
 
 @secure_router.get("/worker/state")
 @start_as_current_span(TRACER)
-def get_state(runner: WorkerDispatcher = Depends(_runner)) -> WorkerState:
+def get_state(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> WorkerState:
     """Get the State of the Worker"""
     return runner.run(interface.get_worker_state)
 
@@ -404,7 +416,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    runner: WorkerDispatcher = Depends(_runner),
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:
     """
     Request that the worker is put into a particular state.
@@ -449,10 +461,10 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
-@secure_router.get("/python_environment", response_model=PythonEnvironmentResponse)
+@secure_router.get("/python_environment")
 @start_as_current_span(TRACER)
 def get_python_environment(
-    runner: WorkerDispatcher = Depends(_runner),
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
     name: str | None = None,
     source: SourceInfo | None = None,
 ) -> PythonEnvironmentResponse:
@@ -467,7 +479,6 @@ def get_python_environment(
 @open_router.get(
     "/healthz",
     status_code=status.HTTP_200_OK,
-    response_model=HealthProbeResponse,
 )
 def health_probe() -> HealthProbeResponse:
     """If able to serve this, server is live and ready for requests."""

@@ -13,6 +13,8 @@ updates:
       actions:
         patterns:
           - "*"
+    commit-message:
+      prefix: "chore"
 
   - package-ecosystem: "pip"
     directory: "/"
@@ -25,3 +27,5 @@ updates:
     ignore:
       - dependency-name: "pydantic"
         versions: [">=2.0"]
+    commit-message:
+      prefix: "chore"

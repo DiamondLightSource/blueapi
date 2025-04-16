@@ -71,8 +71,10 @@ class BlueapiRestClient:
     def get_plan(self, name: str) -> PlanModel:
         return self._request_and_deserialize(f"/plans/{name}", PlanModel)
 
-    def get_devices(self) -> DeviceResponse:
-        return self._request_and_deserialize("/devices", DeviceResponse)
+    def get_devices(self, max_depth: int) -> DeviceResponse:
+        return self._request_and_deserialize(
+            "/devices", DeviceResponse, params={"max_depth": max_depth}
+        )
 
     def get_device(self, name: str) -> DeviceModel:
         return self._request_and_deserialize(f"/devices/{name}", DeviceModel)

@@ -1,5 +1,7 @@
 from typing import Any
 
+from ophyd_async.core import DeviceVector
+
 from .bluesky_types import Device, is_bluesky_compatible_device
 
 
@@ -28,6 +30,8 @@ def find_component(obj: Any, addr: list[str]) -> Device | None:
     # Otherwise, we error.
     if isinstance(obj, dict):
         component = obj.get(head)
+    elif isinstance(obj, DeviceVector):
+        component = obj.get(int(head))
     elif is_bluesky_compatible_device(obj):
         component = getattr(obj, head, None)
     else:

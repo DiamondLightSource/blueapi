@@ -1,5 +1,4 @@
 import uuid
-from dataclasses import dataclass
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
@@ -9,6 +8,7 @@ from bluesky_stomp.messaging import StompClient
 from dodal.common.beamlines.beamline_utils import set_path_provider
 from dodal.common.visit import StartDocumentPathProvider
 from ophyd.sim import SynAxis
+from ophyd_async.core import DeviceVector
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi.client.numtracker import NumtrackerClient
@@ -124,23 +124,28 @@ def test_get_plan(context_mock: MagicMock):
         interface.get_plan("non_existing_plan")
 
 
-@dataclass
-class MyDevice(Stoppable):
-    name: str
-
+class MyDevice(DeviceVector["MyDevice"], Stoppable):
     def stop(self, success: bool = True) -> None:
         pass
 
 
+@pytest.fixture
+def family_device() -> MyDevice:
+    child = MyDevice({1: MyDevice({})})
+    return MyDevice({1: child, 2: MyDevice({})}, "root")
+
+
 @patch("blueapi.service.interface.context")
-def test_get_devices(context_mock: MagicMock):
+def test_get_devices(context_mock: MagicMock, family_device: MyDevice):
     context = BlueskyContext()
-    context.register_device(MyDevice(name="my_device"))
+    context.register_device(family_device)
     context.register_device(SynAxis(name="my_axis"))
     context_mock.return_value = context
 
-    assert interface.get_devices() == [
-        DeviceModel(name="my_device", protocols=[ProtocolInfo(name="Stoppable")]),
+    assert interface.get_devices(max_depth=0) == [
+        DeviceModel(
+            name="root", protocols=[ProtocolInfo(name="Stoppable")], address="root"
+        ),
         DeviceModel(
             name="my_axis",
             protocols=[
@@ -154,22 +159,62 @@ def test_get_devices(context_mock: MagicMock):
                 ProtocolInfo(name="Configurable"),
                 ProtocolInfo(name="Triggerable"),
             ],
+            address="my_axis",
         ),
     ]
 
 
 @patch("blueapi.service.interface.context")
-def test_get_device(context_mock: MagicMock):
+def test_get_device(context_mock: MagicMock, family_device: MyDevice):
     context = BlueskyContext()
-    context.register_device(MyDevice(name="my_device"))
+    context.register_device(family_device)
     context_mock.return_value = context
 
-    assert interface.get_device("my_device") == DeviceModel(
-        name="my_device", protocols=[ProtocolInfo(name="Stoppable")]
+    assert interface.get_device("root") == DeviceModel(
+        name="root", protocols=[ProtocolInfo(name="Stoppable")], address="root"
     )
 
     with pytest.raises(KeyError):
         assert interface.get_device("non_existing_device")
+
+
+@patch("blueapi.service.interface.context")
+def test_get_devices_depth(context_mock: MagicMock, family_device: MyDevice):
+    context = BlueskyContext()
+    context.register_device(family_device)
+    context_mock.return_value = context
+
+    root_device = [
+        DeviceModel(
+            name="root", protocols=[ProtocolInfo(name="Stoppable")], address="root"
+        )
+    ]
+
+    root_and_branches = root_device + [
+        DeviceModel(
+            name="root-1", protocols=[ProtocolInfo(name="Stoppable")], address="root.1"
+        ),
+        DeviceModel(
+            name="root-2", protocols=[ProtocolInfo(name="Stoppable")], address="root.2"
+        ),
+    ]
+
+    all_devices = root_and_branches + [
+        DeviceModel(
+            name="root-1-1",
+            protocols=[ProtocolInfo(name="Stoppable")],
+            address="root.1.1",
+        )
+    ]
+
+    assert interface.get_devices(max_depth=0) == root_device
+    assert interface.get_devices(max_depth=-2) == root_device
+
+    assert interface.get_devices(max_depth=1) == root_and_branches
+
+    assert interface.get_devices(max_depth=2) == all_devices
+    assert interface.get_devices(max_depth=3) == all_devices
+    assert interface.get_devices(max_depth=-1) == all_devices
 
 
 @patch("blueapi.service.interface.context")

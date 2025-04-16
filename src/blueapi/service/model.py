@@ -4,6 +4,8 @@ from enum import Enum
 from typing import Annotated, Any
 
 from bluesky.protocols import HasName
+from ophyd import Device as SyncDevice
+from ophyd_async.core import Device as AsyncDevice
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
@@ -34,16 +36,69 @@ class DeviceModel(BlueapiBaseModel):
     protocols: list[ProtocolInfo] = Field(
         description="Protocols that a device conforms to, indicating its capabilities"
     )
+    address: str
 
     @classmethod
     def from_device(cls, device: Device) -> "DeviceModel":
         name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
-        return cls(name=name, protocols=list(_protocol_info(device)))
+        return cls(name=name, protocols=list(_protocol_info(device)), address=name)
+
+    @classmethod
+    def from_device_tree(cls, root: Device, max_depth: int) -> list["DeviceModel"]:
+        if isinstance(root, AsyncDevice):
+            return [
+                DeviceModel(
+                    name=device.name,
+                    protocols=list(_protocol_info(device)),
+                    address=address,
+                )
+                for address, device in _from_async_device(
+                    root, max_depth=max_depth
+                ).items()
+            ]
+        if isinstance(root, SyncDevice):
+            return [
+                DeviceModel(
+                    name=device.name,
+                    protocols=list(_protocol_info(device)),
+                    address=address,
+                )
+                for address, device in _from_sync_device(
+                    root, max_depth=max_depth
+                ).items()
+            ]
+        return [DeviceModel.from_device(root)]
+
+
+def _from_async_device(root: AsyncDevice, max_depth: int) -> dict[str, AsyncDevice]:
+    depth = 0
+    devices: dict[str, AsyncDevice] = {root.name: root}
+    branches: dict[str, AsyncDevice] = {root.name: root}
+    while branches and (max_depth == -1 or depth < max_depth):
+        leaves: dict[str, AsyncDevice] = {}
+        for addr, parent in branches.items():
+            for suffix, child in parent.children():
+                leaves[f"{addr}.{suffix}"] = child
+        devices.update(leaves)
+        branches = leaves
+        depth += 1
+    return devices
+
+
+def _from_sync_device(root: SyncDevice, max_depth: int) -> dict[str, SyncDevice]:
+    return {
+        root.name: root,
+        **{
+            k.dotted_name: k.item
+            for k in root.walk_signals()
+            if max_depth == -1 or len(k.ancestors) <= max_depth
+        },
+    }
 
 
 def _protocol_info(device: Device) -> Iterable[ProtocolInfo]:
     for protocol in BLUESKY_PROTOCOLS:
-        if isinstance(device, protocol):
+        if isinstance(device, protocol) and protocol is not AsyncDevice:
             yield ProtocolInfo(
                 name=protocol.__name__,
                 types=[arg.__name__ for arg in generic_bounds(device, protocol)],

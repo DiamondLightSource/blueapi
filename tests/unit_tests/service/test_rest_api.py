@@ -114,13 +114,9 @@ def test_rest_config_with_cors(
     client_with_cors: TestClient,
     mock_runner: Mock,
 ):
-    class MyModel(BaseModel):
-        id: str
-
-    plan = Plan(name="my-plan", model=MyModel)
     task = Task(name="my-plan", params={"id": "x"})
     task_id = "f8424be3-203c-494e-b22f-219933b4fa67"
-    mock_runner.run.side_effect = [plan, task_id]
+    mock_runner.run.side_effect = [task_id]
     HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
 
     # Allowed method
@@ -233,7 +229,7 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
     task = Task(name="count", params={"detectors": ["x"]})
     task_id = str(uuid.uuid4())
 
-    mock_runner.run.side_effect = [COUNT, task_id]
+    mock_runner.run.side_effect = [task_id]
 
     response = client.post("/tasks", json=task.model_dump())
 
@@ -242,13 +238,7 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
 
 
 def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> None:
-    class MyModel(BaseModel):
-        id: str
-
-    plan = Plan(name="my-plan", model=MyModel)
-
     mock_runner.run.side_effect = [
-        PlanModel.from_plan(plan),
         ValidationError.from_exception_data(
             title="ValueError",
             line_errors=[
@@ -262,13 +252,15 @@ def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> 
     response = client.post("/tasks", json={"name": "my-plan"})
     assert response.status_code == 422
     assert response.json() == {
-        "detail": (
-            "\n        Input validation failed: id: Field required,\n"
-            "        supplied params {},\n"
-            "        do not match the expected params: {'properties': {'id': "
-            "{'title': 'Id', 'type': 'string'}}, 'required': ['id'], 'title': "
-            "'MyModel', 'type': 'object'}\n        "
-        )
+        "detail": [
+            {
+                "input": None,
+                "loc": ["body", "params", "id"],
+                "msg": "Field required",
+                "type": "missing",
+                "url": "https://errors.pydantic.dev/2.10/v/missing",
+            }
+        ]
     }
 
 

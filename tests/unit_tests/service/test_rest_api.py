@@ -258,7 +258,6 @@ def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> 
                 "loc": ["body", "params", "id"],
                 "msg": "Field required",
                 "type": "missing",
-                "url": "https://errors.pydantic.dev/2.10/v/missing",
             }
         ]
     }

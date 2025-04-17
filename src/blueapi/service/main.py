@@ -272,10 +272,11 @@ def submit_task(
         # fields defined in the generated schema are present
         errors = [
             {
-                **err,
                 "loc": ["body", "params", *err.get("loc", [])],
                 "msg": err.get("msg", None),
                 "type": err.get("type", None),
+                # Input is not listed as required but is useful to have if available
+                "input": err.get("input", None),
             }
             for err in e.errors()
         ]

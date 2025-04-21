@@ -26,7 +26,7 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal==1.44.0",                             # https://github.com/DiamondLightSource/blueapi/issues/921
+    "dls-dodal==1.45.0",                             # https://github.com/DiamondLightSource/blueapi/issues/921
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "bluesky-stomp>=0.1.4",

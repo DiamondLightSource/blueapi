@@ -10,16 +10,14 @@ When Graylog is enabled BlueAPI will continue to log to stdout.
 # Cofiguration
 
 An example logging config is shown below:
-```...
+```
 worker:
-  ...
     logging:
       level: "INFO"
       graylog:
         enabled: True
         host: "graylog-log-target.diamond.ac.uk"
         port: 12232
-...
 ```
 
 Here, BlueAPI will accept all messages are [INFO level and above](https://docs.python.org/3/library/logging.html#logging-levels) and will forward these to both the referenced Graylog address, and to stdout.

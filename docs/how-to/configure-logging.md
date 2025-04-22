@@ -3,15 +3,19 @@
 
 By default BlueAPI will log to stdout at the [INFO level](https://docs.python.org/3/library/logging.html#logging-levels), but can be reconfigured to log at any level, and to output to Graylog.
 
-As the BlueAPI handlers are set at root level, they will recieve messages from all loggers in the same process that [allow propagation](https://docs.python.org/3/library/logging.html#logging.Logger.propagate).
+As the BlueAPI log handlers are set at root level they will recieve messages from all loggers in the same process that [allow propagation](https://docs.python.org/3/library/logging.html#logging.Logger.propagate).
 
-To add logging to a custom module in BlueAPI, simply instantiate a logger from the [standard library logging package, then use any of its log methods](https://docs.python.org/3/library/logging.html#logger-objects). Propagation is enabled by default.
+To add logging to a custom module in BlueAPI, instantiate a logger from the [standard library logging package, then use any of its log methods](https://docs.python.org/3/library/logging.html#logger-objects). Propagation is enabled by default.
 
 When Graylog is enabled, BlueAPI will continue to log to stdout.
 
-Services hosted on the cluster automatically have their stdout forwarded to Graylog via a service called fluentd. In BlueAPI, if your config's `worker.logging.graylog.enabled` is `True`, then the `fluentd-ignore` pod annotation is automatically set to `True`. This disables stdout forwarding.
+Services hosted on the cluster automatically have their stdout forwarded to Graylog via a service called fluentd. In BlueAPI, if your config's `worker.logging.graylog.enabled` is `True` (if Graylog is enabed), then the `fluentd-ignore` pod annotation is automatically set to `True`. This disables stdout forwarding to avoid log duplication.
 
 # Cofiguration
+
+:::{seealso}
+[Configure the Application](./configure-app.md)
+:::
 
 An example logging config is shown below:
 ```

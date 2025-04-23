@@ -55,17 +55,18 @@ class BlueapiClient:
         except Exception:
             ...  # Swallow exceptions
         rest = BlueapiRestClient(config.api, session_manager=session_manager)
-        if config.stomp is None:
-            return cls(rest)
-        client = StompClient.for_broker(
-            broker=Broker(
-                host=config.stomp.host,
-                port=config.stomp.port,
-                auth=config.stomp.auth,
+        if config.stomp.enabled:
+            client = StompClient.for_broker(
+                broker=Broker(
+                    host=config.stomp.host,
+                    port=config.stomp.port,
+                    auth=config.stomp.auth,
+                )
             )
-        )
-        events = EventBusClient(client)
-        return cls(rest, events)
+            events = EventBusClient(client)
+            return cls(rest, events)
+        else:
+            return cls(rest)
 
     @start_as_current_span(TRACER)
     def get_plans(self) -> PlanResponse:

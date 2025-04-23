@@ -1,3 +1,4 @@
 stomp:
+  enabled: true
   host: localhost
   port: 61613

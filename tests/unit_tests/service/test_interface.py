@@ -331,8 +331,17 @@ def test_stomp_config(mock_stomp_client: StompClient):
         "blueapi.service.interface.StompClient.for_broker",
         return_value=mock_stomp_client,
     ):
-        interface.set_config(ApplicationConfig(stomp=StompConfig()))
+        interface.set_config(ApplicationConfig(stomp=StompConfig(enabled=True)))
         assert interface.stomp_client() is not None
+
+
+def test_stomp_config_makes_no_client_when_disabled(mock_stomp_client: StompClient):
+    with patch(
+        "blueapi.service.interface.StompClient.for_broker",
+        return_value=mock_stomp_client,
+    ):
+        interface.set_config(ApplicationConfig(stomp=StompConfig(enabled=False)))
+        assert interface.stomp_client() is None
 
 
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")

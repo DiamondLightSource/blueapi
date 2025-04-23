@@ -39,6 +39,11 @@ class StompConfig(BlueapiBaseModel):
     Config for connecting to stomp broker
     """
 
+    enabled: bool = Field(
+        description="True if blueapi should connect to stomp for asynchronous "
+        "event publishing",
+        default=False,
+    )
     host: str = "localhost"
     port: int = 61613
     auth: BasicAuthentication | None = None
@@ -194,7 +199,7 @@ class ApplicationConfig(BlueapiBaseModel):
     config tree.
     """
 
-    stomp: StompConfig | None = None
+    stomp: StompConfig = Field(default_factory=StompConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)

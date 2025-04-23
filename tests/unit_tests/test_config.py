@@ -211,7 +211,7 @@ def temp_yaml_config_file(
             "api": {"host": "0.0.0.0", "port": 8000},
         },
         {
-            "stomp": None,
+            "stomp": {"enabled": True},
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
@@ -255,6 +255,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
         # Different configuration examples passed to the fixture
         {
             "stomp": {
+                "enabled": True,
                 "host": "localhost",
                 "port": 61613,
                 "auth": {"username": "guest", "password": "guest"},
@@ -307,6 +308,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
         },
         {
             "stomp": {
+                "enabled": True,
                 "host": "https://rabbitmq.diamond.ac.uk",
                 "port": 61613,
                 "auth": {"username": "guest", "password": "guest"},
@@ -369,7 +371,6 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     # Parse the loaded config JSON into a dictionary
     target_dict_json = json.loads(loaded_config.model_dump_json())
 
-    assert loaded_config.stomp is not None
     assert loaded_config.stomp.auth is not None
     assert (
         loaded_config.stomp.auth.password.get_secret_value()

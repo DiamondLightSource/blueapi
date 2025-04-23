@@ -184,7 +184,6 @@ def test_helm_chart_does_not_render_arbitrary_rabbitmq_password():
             manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
         )
     )
-    assert rendered_config.stomp is not None
     assert rendered_config.stomp.auth is not None
     assert isinstance(rendered_config.stomp.auth.password, Secret)
 

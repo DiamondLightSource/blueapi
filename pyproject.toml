@@ -13,12 +13,10 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky>=1.13.1",
+    "bluesky[plotting]>=1.13.1",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd",
-    "nslsii",
-    "pyepics",
     "aioca",
-    "pydantic>=2.0",
+    "pydantic(>=2.0,<=2.10.6)",                      # https://github.com/DiamondLightSource/blueapi/issues/908
     "scanspec>=0.7.8",
     "pydantic-settings",
     "stomp-py",
@@ -28,16 +26,16 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal>=1.43.0",
+    "dls-dodal==1.44.0",                             # https://github.com/DiamondLightSource/blueapi/issues/921
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "bluesky-stomp>=0.1.4",
-    "event-model==1.22.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
+    "event-model==1.22.3",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
     "pyjwt[crypto]",
-    "tomlkit"
+    "tomlkit",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -70,6 +68,7 @@ dev = [
     "types-urllib3",
     "mock",
     "jwcrypto",
+    "deepdiff",
 ]
 
 [project.scripts]
@@ -139,14 +138,15 @@ commands =
 src = ["src", "tests"]
 line-length = 88
 lint.select = [
-    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
-    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
-    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
-    "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
-    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
-    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
-    "SLF", # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+    "B",    # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",   # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",    # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",    # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",    # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",    # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",   # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "SLF",  # self - https://docs.astral.sh/ruff/settings/#lintflake8-self
+    "FAST", # fastapi - https://docs.astral.sh/ruff/rules/#fastapi-fast
 ]
 
 [tool.ruff.lint.flake8-bugbear]

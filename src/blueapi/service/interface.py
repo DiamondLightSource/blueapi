@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Mapping
 from functools import cache
 from typing import Any
@@ -13,6 +12,7 @@ from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
+from blueapi.log import set_up_logging
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,
@@ -120,9 +120,10 @@ def setup(config: ApplicationConfig) -> None:
 
     set_config(config)
 
+    set_up_logging(config.logging)
+
     # Eagerly initialize worker and messaging connection
 
-    logging.basicConfig(format="%(asctime)s - %(message)s", level=config.logging.level)
     worker()
     stomp_client()
     if numtracker_client() is not None:

@@ -168,11 +168,18 @@ worker:
       password: guest
     host: rabbitmq
     port: 61613
+  logging:
+      level: "INFO"
+      graylog:
+        enabled: False
+        host: "graylog-log-target.diamond.ac.uk"
+        port: 12232
 #  scratch:
 #    root: /blueapi-plugins/scratch
 #    repositories:
 #    - name: "dodal"
 #      remote_url: https://github.com/DiamondLightSource/dodal.git
+
 
 # Configuration for the initContainer.
 # If enabled, the scratch section of the above configuration is mounted and

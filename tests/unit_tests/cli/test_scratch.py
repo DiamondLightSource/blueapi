@@ -188,6 +188,23 @@ def test_setup_scratch_fails_on_wrong_gid(
         setup_scratch(config)
 
 
+def test_setup_scratch_fails_on_blueapi_included(
+    directory_path_with_sgid: Path,
+):
+    b = ScratchRepository.model_construct(
+        name="blueapi",
+        remote_url="https://github.com/DiamondLightSource/blueapi.git",
+    )
+    config = ScratchConfig.model_construct(
+        root=directory_path_with_sgid,
+        required_gid=12345,
+        repositories=[b],
+    )
+    assert get_owner_gid(directory_path_with_sgid) != 12345
+    with pytest.raises(PermissionError):
+        setup_scratch(config)
+
+
 @pytest.mark.skip(
     reason="""
 We can't chown a tempfile in all environments, in particular it

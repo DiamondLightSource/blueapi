@@ -13,11 +13,14 @@ from pydantic import (
     Field,
     TypeAdapter,
     ValidationError,
+    field_validator,
 )
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+FORBIDDEN_OWN_REMOTE_URL = "https://github.com/DiamondLightSource/blueapi.git"
 
 
 class SourceKind(str, Enum):
@@ -71,14 +74,29 @@ class EnvironmentConfig(BlueapiBaseModel):
     metadata: MetadataConfig | None = Field(default=None)
 
 
+class GraylogConfig(BlueapiBaseModel):
+    enabled: bool = False
+    host: str = "localhost"
+    port: int = 5555
+
+
 class LoggingConfig(BlueapiBaseModel):
     level: LogLevel = "INFO"
+    graylog: GraylogConfig = GraylogConfig()
+
+
+class CORSConfig(BlueapiBaseModel):
+    origins: list[str]
+    allow_credentials: bool = False
+    allow_methods: list[str] = ["*"]
+    allow_headers: list[str] = ["*"]
 
 
 class RestConfig(BlueapiBaseModel):
     host: str = "localhost"
     port: int = 8000
     protocol: str = "http"
+    cors: CORSConfig | None = None
 
 
 class ScratchRepository(BlueapiBaseModel):
@@ -90,6 +108,13 @@ class ScratchRepository(BlueapiBaseModel):
         description="URL to clone from",
         default="https://github.com/example/example.git",
     )
+
+    @field_validator("remote_url")
+    @classmethod
+    def check_remote_url(cls, value: str) -> str:
+        if value == FORBIDDEN_OWN_REMOTE_URL:
+            raise ValueError(f"remote_url '{value}' is not allowed.")
+        return value
 
 
 class ScratchConfig(BlueapiBaseModel):

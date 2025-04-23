@@ -12,7 +12,7 @@ from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, OIDCConfig
+from blueapi.config import ApplicationConfig, CORSConfig, OIDCConfig, RestConfig
 from blueapi.core.bluesky_types import Plan
 from blueapi.service import main
 from blueapi.service.interface import (
@@ -68,12 +68,69 @@ def client_with_auth(
         main.teardown_runner()
 
 
+@pytest.fixture
+def rest_config_with_cors() -> RestConfig:
+    cors_config = CORSConfig(
+        origins=["http://testhost:8080"],
+        allow_credentials=True,
+        allow_methods=["*"],
+    )
+    return RestConfig(cors=cors_config)
+
+
+@pytest.fixture
+def client_with_cors(
+    mock_runner: Mock, rest_config_with_cors: RestConfig
+) -> Iterator[TestClient]:
+    with patch("blueapi.service.interface.worker"):
+        main.setup_runner(runner=mock_runner)
+        yield TestClient(main.get_app(ApplicationConfig(api=rest_config_with_cors)))
+        main.teardown_runner()
+
+
 @dataclass
 class MinimalDevice(Stoppable):
     name: str
 
     def stop(self, success: bool = True):
         pass
+
+
+def test_rest_config_with_cors_gets_plan(
+    client_with_cors: TestClient,
+    mock_runner: Mock,
+):
+    class MyModel(BaseModel):
+        id: str
+
+    plan = Plan(name="my-plan", model=MyModel)
+    mock_runner.run.return_value = [PlanModel.from_plan(plan)]
+
+    response_get = client_with_cors.get("/plans")
+    assert response_get.status_code == status.HTTP_200_OK
+
+
+def test_rest_config_with_cors(
+    client_with_cors: TestClient,
+    mock_runner: Mock,
+):
+    class MyModel(BaseModel):
+        id: str
+
+    plan = Plan(name="my-plan", model=MyModel)
+    task = Task(name="my-plan", params={"id": "x"})
+    task_id = "f8424be3-203c-494e-b22f-219933b4fa67"
+    mock_runner.run.side_effect = [plan, task_id]
+    HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
+
+    # Allowed method
+    response_post = client_with_cors.post(
+        "/tasks",
+        json=task.model_dump(),
+        headers=HEADERS,
+    )
+    assert response_post.status_code == status.HTTP_201_CREATED
+    assert response_post.headers["content-type"] == "application/json"
 
 
 def test_get_plans(mock_runner: Mock, client: TestClient) -> None:

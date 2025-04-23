@@ -191,12 +191,25 @@ def test_submit_plan(runner: CliRunner):
         match=[matchers.json_params_matcher(body_data)],
     )
 
-    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    config_path = "tests/unit_tests/example_yaml/rest_and_stomp_config.yaml"
     runner.invoke(
         main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
     )
 
     assert response.call_count == 1
+
+
+@responses.activate
+def test_submit_plan_without_stomp(runner: CliRunner):
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    result = runner.invoke(
+        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+    )
+
+    assert (
+        str(result.exception)
+        == "Cannot run plans without Stomp configuration to track progress"
+    )
 
 
 def test_invalid_stomp_config_for_listener(runner: CliRunner):

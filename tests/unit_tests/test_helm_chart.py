@@ -58,8 +58,10 @@ LOW_RESOURCES = {
     [
         ApplicationConfig(),
         ApplicationConfig(stomp=StompConfig()),
+        ApplicationConfig(stomp=StompConfig(enabled=True)),
         ApplicationConfig(
             stomp=StompConfig(
+                enabled=True,
                 host="example.com",
                 port=515,
             ),

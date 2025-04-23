@@ -107,6 +107,7 @@ worker:
     - kind: planFunctions
       module: dodal.plan_stubs.wrapped
   stomp:
+    enabled: false
     auth:
       username: guest
       password: guest

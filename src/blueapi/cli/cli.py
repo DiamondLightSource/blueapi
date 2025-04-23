@@ -177,7 +177,8 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    assert config.stomp.enabled, "Message bus needs to be configured"
+    if not config.stomp.enabled:
+        raise BlueskyStreamingError("Message bus needs to be configured")
     event_bus_client = EventBusClient(
         StompClient.for_broker(
             broker=Broker(

@@ -61,8 +61,8 @@ def worker() -> TaskWorker:
 
 @cache
 def stomp_client() -> StompClient | None:
-    stomp_config: StompConfig | None = config().stomp
-    if stomp_config is not None:
+    stomp_config: StompConfig = config().stomp
+    if stomp_config.enabled:
         client = StompClient.for_broker(
             broker=Broker(
                 host=stomp_config.host,

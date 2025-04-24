@@ -25,6 +25,7 @@ from stomp.connect import StompConnection11 as Connection
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.cli.format import OutputFormat, fmt_dict
+from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.client.rest import BlueskyRemoteControlError
 from blueapi.config import ApplicationConfig, ScratchConfig, ScratchRepository
 from blueapi.core.bluesky_types import DataEvent, Plan
@@ -191,7 +192,7 @@ def test_submit_plan(runner: CliRunner):
         match=[matchers.json_params_matcher(body_data)],
     )
 
-    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    config_path = "tests/unit_tests/example_yaml/rest_and_stomp_config.yaml"
     runner.invoke(
         main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
     )
@@ -199,9 +200,22 @@ def test_submit_plan(runner: CliRunner):
     assert response.call_count == 1
 
 
+@responses.activate
+def test_submit_plan_without_stomp(runner: CliRunner):
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    result = runner.invoke(
+        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+    )
+
+    assert (
+        str(result.exception)
+        == "Cannot run plans without Stomp configuration to track progress"
+    )
+
+
 def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
-    assert isinstance(result.exception, AssertionError)
+    assert isinstance(result.exception, BlueskyStreamingError)
     assert str(result.exception) == "Message bus needs to be configured"
 
 

@@ -60,7 +60,8 @@ def client_with_stomp() -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
             stomp=StompConfig(
-                auth=BasicAuthentication(username="guest", password="guest")  # type: ignore
+                enabled=True,
+                auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
             )
         )
     )

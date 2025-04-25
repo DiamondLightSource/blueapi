@@ -4,7 +4,7 @@ import pytest
 from event_model.documents import RunStart
 from ophyd_async.core import PathInfo
 
-from blueapi.path_provider import StartDocumentPathProvider
+from blueapi.utils.path_provider import StartDocumentPathProvider
 
 
 @pytest.fixture

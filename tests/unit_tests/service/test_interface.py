@@ -25,7 +25,6 @@ from blueapi.config import (
     StompConfig,
 )
 from blueapi.core.context import BlueskyContext
-from blueapi.path_provider import StartDocumentPathProvider
 from blueapi.service import interface
 from blueapi.service.model import (
     DeviceModel,
@@ -37,6 +36,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
+from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask

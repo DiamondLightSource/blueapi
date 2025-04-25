@@ -440,7 +440,9 @@ def test_setup(mock_stomp: MagicMock):
 
 
 @patch("blueapi.service.interface.StompClient")
-def test_setup_without_path_provider_with_numtracker(mock_stomp: MagicMock):
+def test_setup_without_path_provider_with_numtracker_makes_start_document_provider(
+    mock_stomp: MagicMock,
+):
     interface.teardown()
 
     conf = ApplicationConfig(

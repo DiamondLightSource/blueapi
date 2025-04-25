@@ -6,7 +6,7 @@ import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
-from dodal.common.beamlines.beamline_utils import set_path_provider
+from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
@@ -433,6 +433,28 @@ def test_setup(mock_stomp: MagicMock):
     interface.set_config(conf)
     interface.setup(conf)
 
+    assert interface.worker()._ctx is not None
+    assert interface.context().run_engine.scan_id_source == interface._update_scan_num
+
+    interface.teardown()
+
+
+@patch("blueapi.service.interface.StompClient")
+def test_setup_without_path_provider_with_numtracker(mock_stomp: MagicMock):
+    interface.teardown()
+
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+        numtracker=NumtrackerConfig(),
+    )
+    interface.set_config(conf)
+    interface.setup(conf)
+
+    path_provider = get_path_provider()
+
+    assert isinstance(path_provider, StartDocumentPathProvider)
     assert interface.worker()._ctx is not None
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 

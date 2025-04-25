@@ -425,8 +425,7 @@ def test_configure_numtracker_with_no_metadata_fails():
     interface.teardown()
 
 
-@patch("blueapi.service.interface.StompClient")
-def test_setup(mock_stomp: MagicMock):
+def test_setup():
     conf = ApplicationConfig(
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
@@ -444,10 +443,7 @@ def test_setup(mock_stomp: MagicMock):
     interface.teardown()
 
 
-@patch("blueapi.service.interface.StompClient")
-def test_setup_without_path_provider_with_numtracker_makes_start_document_provider(
-    mock_stomp: MagicMock,
-):
+def test_setup_without_path_provider_with_numtracker_makes_start_document_provider():
     interface.teardown()
 
     conf = ApplicationConfig(

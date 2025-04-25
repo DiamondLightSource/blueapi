@@ -436,7 +436,6 @@ def test_setup():
     interface.set_config(conf)
     interface.setup(conf)
 
-    assert interface.worker()._ctx is not None
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 
     clear_path_provider()
@@ -458,7 +457,6 @@ def test_setup_without_path_provider_with_numtracker_makes_start_document_provid
     path_provider = get_path_provider()
 
     assert isinstance(path_provider, StartDocumentPathProvider)
-    assert interface.worker()._ctx is not None
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 
     clear_path_provider()

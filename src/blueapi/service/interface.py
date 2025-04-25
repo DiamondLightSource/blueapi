@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Mapping
 from functools import cache
 from typing import Any
@@ -128,7 +129,7 @@ def setup(config: ApplicationConfig) -> None:
     stomp_client()
     if numtracker_client() is not None:
         context().run_engine.scan_id_source = _update_scan_num
-    _hook_run_engine_and_path_provider()
+        _hook_run_engine_and_path_provider()
 
 
 def _hook_run_engine_and_path_provider() -> None:
@@ -139,10 +140,15 @@ def _hook_run_engine_and_path_provider() -> None:
 
     run_engine = context().run_engine
 
-    if path_provider is None and numtracker_client() is not None:
+    if path_provider is None:
         path_provider = StartDocumentPathProvider()
         set_path_provider(path_provider)
         run_engine.subscribe(path_provider.update_run, "start")
+    else:
+        logging.debug(
+            "A StartDocumentPathProvider has not been configured for numtracker"
+            f"because a different path provider was already set: {path_provider}"
+        )
 
 
 def teardown() -> None:

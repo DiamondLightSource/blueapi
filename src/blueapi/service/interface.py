@@ -120,13 +120,10 @@ def _update_scan_num(md: dict[str, Any]) -> int:
 
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
-
     set_config(config)
-
     set_up_logging(config.logging)
 
     # Eagerly initialize worker and messaging connection
-
     worker()
     stomp_client()
     if numtracker_client() is not None:
@@ -142,16 +139,10 @@ def _hook_run_engine_and_path_provider() -> None:
 
     run_engine = context().run_engine
 
-    if path_provider is None:
-        if numtracker_client() is not None:
-            path_provider = StartDocumentPathProvider()
-            set_path_provider(path_provider)
-            run_engine.subscribe(path_provider.update_run, "start")
-        else:
-            raise InvalidConfigError(
-                "A path provider was not supplied and numtracker is not configured."
-                "Either define a path provider or configure numtracker."
-            )
+    if path_provider is None and numtracker_client() is not None:
+        path_provider = StartDocumentPathProvider()
+        set_path_provider(path_provider)
+        run_engine.subscribe(path_provider.update_run, "start")
 
 
 def teardown() -> None:

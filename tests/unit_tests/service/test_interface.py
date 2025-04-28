@@ -9,6 +9,7 @@ from bluesky_stomp.messaging import StompClient
 from dodal.common.beamlines.beamline_utils import (
     clear_path_provider,
     get_path_provider,
+    set_path_provider,
 )
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
@@ -440,7 +441,7 @@ def test_setup():
     interface.teardown()
 
 
-def test_setup_without_path_provider_with_numtracker_makes_start_document_provider():
+def test_setup_with_numtracker_makes_start_document_provider():
     interface.teardown()
 
     conf = ApplicationConfig(
@@ -456,6 +457,30 @@ def test_setup_without_path_provider_with_numtracker_makes_start_document_provid
 
     assert isinstance(path_provider, StartDocumentPathProvider)
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
+
+    clear_path_provider()
+    interface.teardown()
+
+
+def test_setup_with_numtracker_with_exisiting_provider_raises():
+    interface.teardown()
+
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+        numtracker=NumtrackerConfig(),
+    )
+    interface.set_config(conf)
+    set_path_provider(Mock())
+    path_provider = get_path_provider()
+
+    with pytest.raises(
+        InvalidConfigError,
+        match="A StartDocumentPathProvider has not been configured for numtracker"
+        f"because a different path provider was already set: {path_provider}",
+    ):
+        interface.setup(conf)
 
     clear_path_provider()
     interface.teardown()

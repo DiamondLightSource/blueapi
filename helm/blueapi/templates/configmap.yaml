@@ -8,13 +8,30 @@ data:
 
 ---
 
+{{- if (.Values.tracing.otlp).enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "blueapi.fullname" . }}-otel-config
 data:
-{{- if .Values.tracing.otlp.enabled | default false }}
   OTLP_EXPORT_ENABLED: "true"
   OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: {{ .Values.tracing.otlp.protocol | default "http/protobuf" }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ required "OTLP export enabled but server address not set" .Values.tracing.otlp.server.host }}:{{ .Values.tracing.otlp.server.port | default 4318 }}
+  {{- with .Values.tracing.otlp.server | required "OTLP export enabled but no server information given" }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .host | required "OTLP export enabled but server address not set" }}:{{ .port | default 4318 }}
+  {{- end }}
 {{ end }}
+
+---
+
+{{- if .Values.initContainer.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blueapi.fullname" . }}-init-config
+data:
+  init-config.yaml: |-
+    scratch:
+      {{- toYaml .Values.worker.scratch | nindent 6 }}
+{{- end }}
+
+---

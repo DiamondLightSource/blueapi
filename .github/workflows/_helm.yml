@@ -1,0 +1,62 @@
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Assign environment variables
+        # This is required because oci requires the repository is lowercase
+        run: |
+          echo "CHART_REPO=ghcr.io/${OWNER@L}" >>${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get appVersion to insert into chart
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v4
+        id: install
+
+      - name: Lint Helm chart
+        run: helm lint helm/blueapi
+
+      - name: Log in to GitHub Container Registry
+        if: github.ref_type == 'tag'
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ${{ env.CHART_REPO }} --username ${{ github.repository_owner }} --password-stdin
+
+      - name: Bump patch version if necessary
+        if: github.ref_type == 'tag'
+        run: |
+          apt update && apt install wget
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
+          # Gets the latest published Helm chart version
+          LATEST=`helm show chart oci://${{ env.CHART_REPO }}/charts/blueapi | yq '.version' | cut -d "\"" -f 2`
+          # Gets the current Helm chart version
+          NEXT=`helm show chart helm/blueapi | yq '.version' | cut -d "\"" -f 2`
+          if dpkg --compare-versions $NEXT le $LATEST
+          then
+            NEXT=`echo $LATEST | awk -F. -v OFS=. '{$NF += 1 ; print}'`
+          fi
+          echo "CHART_VERSION=$NEXT" >>${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+
+      - name: Publish Helm chart to container registry
+        if: github.ref_type == 'tag'
+        run: |
+          helm dependencies update helm/blueapi
+          helm package helm/blueapi --app-version ${{ steps.meta.outputs.version }} --version ${{ env.CHART_VERSION }} -d /tmp/
+          helm push /tmp/helm/blueapi-${{ env.CHART_VERSION }}.tgz oci://${{ env.CHART_REPO }}/charts

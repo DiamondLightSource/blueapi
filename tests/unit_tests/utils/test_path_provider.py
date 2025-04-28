@@ -58,7 +58,7 @@ def start_doc_custom_template() -> dict:
         "instrument": "p01",
         "data_session_directory": "/p01/ab123",
         "scan_id": 22,
-        "template": "{device_name}-{instrument}-{scan_id}-custom",
+        "data_file_path_template": "{device_name}-{instrument}-{scan_id}-custom",
         "plan_type": "generator",
         "plan_name": "count",
         "detectors": ["det"],

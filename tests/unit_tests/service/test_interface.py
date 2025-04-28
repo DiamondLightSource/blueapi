@@ -6,8 +6,11 @@ import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
-from dodal.common.beamlines.beamline_utils import set_path_provider
-from dodal.common.visit import StartDocumentPathProvider
+from dodal.common.beamlines.beamline_utils import (
+    clear_path_provider,
+    get_path_provider,
+    set_path_provider,
+)
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
@@ -33,6 +36,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
+from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
@@ -421,21 +425,72 @@ def test_configure_numtracker_with_no_metadata_fails():
     interface.teardown()
 
 
-@patch("blueapi.service.interface.StompClient")
-def test_setup(mock_stomp: MagicMock):
+def test_setup_without_numtracker_with_exisiting_provider():
+    conf = ApplicationConfig()
+    interface.set_config(conf)
+    set_path_provider(Mock())
+
+    interface.setup(conf)
+
+    assert interface.config() is not None
+    assert interface.worker() is not None
+
+    clear_path_provider()
+    interface.teardown()
+
+
+def test_setup_without_numtracker_without_exisiting_provider_does_not_make_one():
+    conf = ApplicationConfig()
+    interface.set_config(conf)
+    interface.setup(conf)
+
+    assert interface.config() is not None
+    assert interface.worker() is not None
+
+    with pytest.raises(NameError):
+        get_path_provider()
+
+    interface.teardown()
+
+
+def test_setup_with_numtracker_makes_start_document_provider():
     conf = ApplicationConfig(
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
         ),
         numtracker=NumtrackerConfig(),
     )
-    set_path_provider(StartDocumentPathProvider())
     interface.set_config(conf)
     interface.setup(conf)
 
-    assert interface.worker()._ctx is not None
+    path_provider = get_path_provider()
+
+    assert isinstance(path_provider, StartDocumentPathProvider)
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 
+    clear_path_provider()
+    interface.teardown()
+
+
+def test_setup_with_numtracker_with_exisiting_provider_raises():
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+        numtracker=NumtrackerConfig(),
+    )
+    interface.set_config(conf)
+    set_path_provider(Mock())
+    path_provider = get_path_provider()
+
+    with pytest.raises(
+        InvalidConfigError,
+        match="A StartDocumentPathProvider has not been configured for numtracker"
+        f"because a different path provider was already set: {path_provider}",
+    ):
+        interface.setup(conf)
+
+    clear_path_provider()
     interface.teardown()
 
 

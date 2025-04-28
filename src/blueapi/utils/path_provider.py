@@ -36,7 +36,7 @@ class StartDocumentPathProvider(PathProvider):
 
         If you do not provide a data_session_directory it will default to "/tmp".
         """
-        template = self._doc.get("template", DEFAULT_TEMPLATE)
+        template = self._doc.get("data_file_path_template", DEFAULT_TEMPLATE)
         sub_path = template.format_map(self._doc | {"device_name": device_name})
         data_session_directory = Path(self._doc.get("data_session_directory", "/tmp"))
         return PathInfo(directory_path=data_session_directory, filename=sub_path)

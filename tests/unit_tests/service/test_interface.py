@@ -425,25 +425,35 @@ def test_configure_numtracker_with_no_metadata_fails():
     interface.teardown()
 
 
-def test_setup():
-    conf = ApplicationConfig(
-        env=EnvironmentConfig(
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
-        ),
-        numtracker=NumtrackerConfig(),
-    )
+def test_setup_without_numtracker_with_exisiting_provider():
+    conf = ApplicationConfig()
     interface.set_config(conf)
+    set_path_provider(Mock())
+
     interface.setup(conf)
 
-    assert interface.context().run_engine.scan_id_source == interface._update_scan_num
+    assert interface.config() is not None
+    assert interface.worker() is not None
 
     clear_path_provider()
     interface.teardown()
 
 
-def test_setup_with_numtracker_makes_start_document_provider():
+def test_setup_without_numtracker_without_exisiting_provider_does_not_make_one():
+    conf = ApplicationConfig()
+    interface.set_config(conf)
+    interface.setup(conf)
+
+    assert interface.config() is not None
+    assert interface.worker() is not None
+
+    with pytest.raises(NameError):
+        get_path_provider()
+
     interface.teardown()
 
+
+def test_setup_with_numtracker_makes_start_document_provider():
     conf = ApplicationConfig(
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
@@ -463,8 +473,6 @@ def test_setup_with_numtracker_makes_start_document_provider():
 
 
 def test_setup_with_numtracker_with_exisiting_provider_raises():
-    interface.teardown()
-
     conf = ApplicationConfig(
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")

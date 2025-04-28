@@ -9,7 +9,6 @@ from bluesky_stomp.messaging import StompClient
 from dodal.common.beamlines.beamline_utils import (
     clear_path_provider,
     get_path_provider,
-    set_path_provider,
 )
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
@@ -432,7 +431,6 @@ def test_setup():
         ),
         numtracker=NumtrackerConfig(),
     )
-    set_path_provider(StartDocumentPathProvider())
     interface.set_config(conf)
     interface.setup(conf)
 

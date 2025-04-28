@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Mapping
 from functools import cache
 from typing import Any
@@ -145,7 +144,7 @@ def _hook_run_engine_and_path_provider() -> None:
         set_path_provider(path_provider)
         run_engine.subscribe(path_provider.update_run, "start")
     else:
-        logging.debug(
+        raise InvalidConfigError(
             "A StartDocumentPathProvider has not been configured for numtracker"
             f"because a different path provider was already set: {path_provider}"
         )

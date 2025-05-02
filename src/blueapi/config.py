@@ -291,3 +291,7 @@ class ConfigLoader(Generic[C]):
             raise InvalidConfigError(
                 f"Something is wrong with the configuration file: \n {error_details}"
             ) from exc
+
+
+class MissingStompConfiguration(Exception):
+    pass

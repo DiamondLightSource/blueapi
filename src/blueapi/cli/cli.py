@@ -10,15 +10,20 @@ import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from click.exceptions import ClickException
 from observability_utils.tracing import setup_tracing
-from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
-from blueapi import __version__
+from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
-from blueapi.client.rest import BlueskyRemoteControlError
+from blueapi.client.rest import (
+    BlueskyRemoteControlError,
+    InvalidParameters,
+    UnauthorisedAccess,
+    UnknownPlan,
+)
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -226,7 +231,6 @@ def run_plan(
     client: BlueapiClient = obj["client"]
 
     parameters = parameters or "{}"
-    task_id = ""
     parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
 
     progress_bar = CliEventRenderer()
@@ -241,9 +245,17 @@ def run_plan(
     try:
         task = Task(name=name, params=parsed_params)
         resp = client.run_task(task, on_event=on_event)
-    except ValidationError as e:
-        pprint(f"failed to validate the task parameters, {task_id}, error: {e}")
-        return
+    except config.MissingStompConfiguration as mse:
+        raise ClickException(*mse.args) from mse
+    except UnknownPlan as up:
+        raise click.ClickException(f"Plan '{name}' was not recognised") from up
+    except UnauthorisedAccess as ua:
+        raise click.ClickException("Unauthorised request") from ua
+    except InvalidParameters as ip:
+        msg = "Incorrect parameters supplied"
+        if ip.errors:
+            msg += "\n    " + "\n    ".join(str(e) for e in ip.errors)
+        raise ClickException(msg) from ip
     except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
         pprint(f"server error with this message: {e}")
         return

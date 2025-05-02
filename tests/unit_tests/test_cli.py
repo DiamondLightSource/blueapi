@@ -27,7 +27,11 @@ from blueapi.cli.cli import main
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ApplicationConfig, ScratchConfig, ScratchRepository
+from blueapi.config import (
+    ApplicationConfig,
+    ScratchConfig,
+    ScratchRepository,
+)
 from blueapi.core.bluesky_types import DataEvent, Plan
 from blueapi.service.model import (
     DeviceModel,
@@ -208,8 +212,8 @@ def test_submit_plan_without_stomp(runner: CliRunner):
     )
 
     assert (
-        str(result.exception)
-        == "Cannot run plans without Stomp configuration to track progress"
+        result.stdout
+        == "Error: Stomp configuration required to run plans is missing or disabled\n"
     )
 
 
@@ -222,10 +226,9 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert result.exit_code == 1
-    assert isinstance(result.exception, RuntimeError)
     assert (
-        str(result.exception)
-        == "Cannot run plans without Stomp configuration to track progress"
+        result.stdout
+        == "Error: Stomp configuration required to run plans is missing or disabled\n"
     )
 
 

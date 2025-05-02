@@ -8,7 +8,7 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from pydantic import TypeAdapter
+from pydantic import BaseModel, TypeAdapter
 
 from blueapi.config import RestConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
@@ -32,9 +32,17 @@ T = TypeVar("T")
 TRACER = get_tracer("rest")
 
 
+class UnauthorisedAccess(Exception):
+    pass
+
+
 class BlueskyRemoteControlError(Exception):
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
+    pass
+
+
+class BlueskyRequestError(Exception):
+    def __init__(self, code: int, message: str) -> None:
+        super().__init__(message, code)
 
 
 class NoContent(Exception):
@@ -44,6 +52,36 @@ class NoContent(Exception):
         super().__init__(target_type)
 
 
+class ParameterError(BaseModel):
+    loc: list[str | int]
+    msg: str
+    type: str
+    input: Any
+
+    def field(self):
+        return ".".join(str(p) for p in self.loc[2:])
+
+    def __str__(self) -> str:
+        match self.type:
+            case "missing":
+                return f"Missing value for {self.field()}"
+            case "extra_forbidden":
+                return f"Unexpected field {self.field()}"
+            case _:
+                return (
+                    f"Invalid value {self.input!r} for field {self.field()}: {self.msg}"
+                )
+
+
+class InvalidParameters(Exception):
+    def __init__(self, errors: list[ParameterError]):
+        self.errors = errors
+
+
+class UnknownPlan(Exception):
+    pass
+
+
 def _exception(response: requests.Response) -> Exception | None:
     code = response.status_code
     if code < 400:
@@ -51,7 +89,31 @@ def _exception(response: requests.Response) -> Exception | None:
     elif code == 404:
         return KeyError(str(response.json()))
     else:
-        return BlueskyRemoteControlError(str(response))
+        return BlueskyRemoteControlError(code, str(response))
+
+
+def _create_task_exceptions(response: requests.Response) -> Exception | None:
+    code = response.status_code
+    if code < 400:
+        return None
+    elif code == 401 or code == 403:
+        return UnauthorisedAccess()
+    elif code == 404:
+        return UnknownPlan()
+    elif code == 422:
+        try:
+            content = response.json()
+            return InvalidParameters(
+                TypeAdapter(list[ParameterError]).validate_python(
+                    content.get("detail", [])
+                )
+            )
+        except Exception:
+            # If the error can't be parsed into something sensible, return the
+            # raw text in a generic exception so at least it gets reported
+            return BlueskyRequestError(code, response.text)
+    else:
+        return BlueskyRequestError(code, response.text)
 
 
 class BlueapiRestClient:
@@ -106,6 +168,7 @@ class BlueapiRestClient:
             "/tasks",
             TaskResponse,
             method="POST",
+            get_exception=_create_task_exceptions,
             data=task.model_dump(),
         )
 

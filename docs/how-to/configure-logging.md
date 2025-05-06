@@ -29,6 +29,12 @@ To instrument to a custom module in BlueAPI, instantiate a logger from the [stan
 
 BlueAPI is written to intercept logs from any python code it executes.
 
+```
+import logging
+logger = logging.getLogger(__name__)
+logger.info("FOO")
+```
+
 # Running BlueAPI on the Cluster
 
 Services hosted on the cluster automatically have their stdout forwarded to Graylog via a service called fluentd. Due to this, BlueAPI services hosted on the cluster will always log to Graylog.

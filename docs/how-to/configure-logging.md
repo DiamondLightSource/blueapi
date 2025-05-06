@@ -48,3 +48,7 @@ By default logs can be found wherever your stdout is.
 If Graylog is enabled, logs will be forwarded to whichever Graylog instance the configuration addresses. By default this is the main Diamond instance, which can be accessed via [graylog.diamond.ac.uk](https://graylog.diamond.ac.uk/)
 
 If your BlueAPI server is running on the cluster, stdout is likely being forwarded to the above Graylog instance.
+
+# Log Message Structure
+
+When structured logging via Graylog is enabled, BlueAPI will bundle the log message and instrument name (e.g. i22) into a JSON blob. Also included is other standard logging data, such as a timestamp.

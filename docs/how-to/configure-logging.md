@@ -5,10 +5,6 @@ By default BlueAPI will log to stdout at the [INFO level](https://docs.python.or
 
 When Graylog is enabled, BlueAPI will continue to log to stdout.
 
-Services hosted on the cluster automatically have their stdout forwarded to Graylog via a service called fluentd. Due to this, 
-In BlueAPI, if your config's `worker.logging.graylog.enabled` is `True` (if Graylog is enabed), then the `fluentd-ignore` pod annotation is automatically set to `True`. This disables stdout forwarding to avoid log duplication.
-
-
 # BlueAPI Cofiguration
 
 :::{seealso}
@@ -32,3 +28,9 @@ Here, BlueAPI will accept all messages are INFO level and above and will forward
 To instrument to a custom module in BlueAPI, instantiate a logger from the [standard library logging package, then use any of its log methods](https://docs.python.org/3/library/logging.html#logger-objects).
 
 BlueAPI is written to intercept logs from any python code it executes.
+
+# Running BlueAPI on the Cluster
+
+Services hosted on the cluster automatically have their stdout forwarded to Graylog via a service called fluentd. Due to this, BlueAPI services hosted on the cluster will always log to Graylog.
+
+In this instance, the difference between enabling and disabling graylog in BlueAPI's configuration, is that fluentd only fowards plaintext logs, while BlueAPI's native graylog produces structured data with rich metadata included.

@@ -8,7 +8,7 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from blueapi.config import RestConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
@@ -59,14 +59,14 @@ class ParameterError(BaseModel):
     input: Any
 
     def field(self):
-        return ".".join(str(p) for p in self.loc[2:])
+        return ".".join(str(p) for p in self.loc[2:] or self.loc)
 
     def __str__(self) -> str:
         match self.type:
             case "missing":
-                return f"Missing value for {self.field()}"
+                return f"Missing value for {self.field()!r}"
             case "extra_forbidden":
-                return f"Unexpected field {self.field()}"
+                return f"Unexpected field {self.field()!r}"
             case _:
                 return (
                     f"Invalid value {self.input!r} for field {self.field()}: {self.msg}"
@@ -76,6 +76,23 @@ class ParameterError(BaseModel):
 class InvalidParameters(Exception):
     def __init__(self, errors: list[ParameterError]):
         self.errors = errors
+
+    def message(self):
+        msg = "Incorrect parameters supplied"
+        if self.errors:
+            msg += "\n    " + "\n    ".join(str(e) for e in self.errors)
+        return msg
+
+    @staticmethod
+    def from_validation_error(ve: ValidationError):
+        return InvalidParameters(
+            [
+                ParameterError(
+                    loc=e["loc"], msg=e["msg"], type=e["type"], input=e["input"]
+                )
+                for e in ve.errors()
+            ]
+        )
 
 
 class UnknownPlan(Exception):

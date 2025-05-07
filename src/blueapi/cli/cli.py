@@ -12,6 +12,7 @@ from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 from click.exceptions import ClickException
 from observability_utils.tracing import setup_tracing
+from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__, config
@@ -231,7 +232,10 @@ def run_plan(
     client: BlueapiClient = obj["client"]
 
     parameters = parameters or "{}"
-    parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
+    try:
+        parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
+    except json.JSONDecodeError:
+        raise ClickException("Write better JSON")
 
     progress_bar = CliEventRenderer()
     callback = BestEffortCallback()
@@ -244,6 +248,11 @@ def run_plan(
 
     try:
         task = Task(name=name, params=parsed_params)
+    except ValidationError as ve:
+        ip = InvalidParameters.from_validation_error(ve)
+        raise ClickException(ip.message()) from ip
+
+    try:
         resp = client.run_task(task, on_event=on_event)
     except config.MissingStompConfiguration as mse:
         raise ClickException(*mse.args) from mse
@@ -252,16 +261,19 @@ def run_plan(
     except UnauthorisedAccess as ua:
         raise ClickException("Unauthorised request") from ua
     except InvalidParameters as ip:
+        raise ClickException(ip.message()) from ip
+    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
+        raise ClickException(f"server error with this message: {e}") from e
+    except ValidationError as ve:
+        ip = InvalidParameters.from_validation_error(ve)
         msg = "Incorrect parameters supplied"
         if ip.errors:
             msg += "\n    " + "\n    ".join(str(e) for e in ip.errors)
         raise ClickException(msg) from ip
-    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
-        raise ClickException(f"server error with this message: {e}") from e
-    except ValueError as ve:
-        raise ClickException("task could not run") from ve
 
-    pprint(resp.model_dump())
+    except ValueError as ve:
+        raise ClickException(f"task could not run: {ve}") from ve
+
     if resp.task_status is not None and not resp.task_status.task_failed:
         print("Plan Succeeded")
 

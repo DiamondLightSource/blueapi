@@ -248,20 +248,18 @@ def run_plan(
     except config.MissingStompConfiguration as mse:
         raise ClickException(*mse.args) from mse
     except UnknownPlan as up:
-        raise click.ClickException(f"Plan '{name}' was not recognised") from up
+        raise ClickException(f"Plan '{name}' was not recognised") from up
     except UnauthorisedAccess as ua:
-        raise click.ClickException("Unauthorised request") from ua
+        raise ClickException("Unauthorised request") from ua
     except InvalidParameters as ip:
         msg = "Incorrect parameters supplied"
         if ip.errors:
             msg += "\n    " + "\n    ".join(str(e) for e in ip.errors)
         raise ClickException(msg) from ip
     except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
-        pprint(f"server error with this message: {e}")
-        return
-    except ValueError:
-        pprint("task could not run")
-        return
+        raise ClickException(f"server error with this message: {e}") from e
+    except ValueError as ve:
+        raise ClickException("task could not run") from ve
 
     pprint(resp.model_dump())
     if resp.task_status is not None and not resp.task_status.task_failed:

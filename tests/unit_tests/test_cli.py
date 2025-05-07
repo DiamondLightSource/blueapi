@@ -17,7 +17,7 @@ from bluesky_stomp.messaging import StompClient
 from click.testing import CliRunner
 from opentelemetry import trace
 from ophyd_async.core import AsyncStatus
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from requests.exceptions import ConnectionError
 from responses import matchers
 from stomp.connect import StompConnection11 as Connection
@@ -26,7 +26,13 @@ from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.event_bus import BlueskyStreamingError
-from blueapi.client.rest import BlueskyRemoteControlError
+from blueapi.client.rest import (
+    BlueskyRemoteControlError,
+    InvalidParameters,
+    ParameterError,
+    UnauthorisedAccess,
+    UnknownPlan,
+)
 from blueapi.config import (
     ApplicationConfig,
     ScratchConfig,
@@ -411,18 +417,34 @@ def test_env_reload_server_side_error(runner: CliRunner):
 @pytest.mark.parametrize(
     "exception, error_message",
     [
+        (UnknownPlan(), "Error: Plan 'sleep' was not recognised\n"),
+        (UnauthorisedAccess(), "Error: Unauthorised request\n"),
         (
-            ValidationError.from_exception_data(title="Base model", line_errors=[]),
-            "('failed to validate the task parameters, ,"
-            + " error: 0 validation errors for '\n 'Base model\\n')\n",
+            InvalidParameters(
+                errors=[
+                    ParameterError(
+                        loc=["body", "params", "foo"],
+                        type="missing",
+                        msg="Foo is missing",
+                        input=None,
+                    )
+                ]
+            ),
+            "Error: Incorrect parameters supplied\n    Missing value for foo\n",
         ),
         (
             BlueskyRemoteControlError("Server error"),
-            "'server error with this message: Server error'\n",
+            "Error: server error with this message: Server error\n",
         ),
-        (ValueError("Error parsing parameters"), "'task could not run'\n"),
+        (ValueError("Error parsing parameters"), "Error: task could not run\n"),
     ],
-    ids=["validation_error", "remote_control", "value_error"],
+    ids=[
+        "unknown_plan",
+        "unauthorised_access",
+        "invalid_parameters",
+        "remote_control",
+        "value_error",
+    ],
 )
 def test_error_handling(exception, error_message, runner: CliRunner):
     # Patching the create_task method to raise different exceptions
@@ -440,8 +462,9 @@ def test_error_handling(exception, error_message, runner: CliRunner):
                 '{"time": 5}',
             ],
         )
-        # error message is printed to stderr but test runner combines output
-        assert result.stdout == error_message
+    # error message is printed to stderr but test runner combines output
+    assert result.stdout == error_message
+    assert result.exit_code == 1
 
 
 def test_device_output_formatting():

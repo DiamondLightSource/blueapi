@@ -175,7 +175,7 @@ def test_parameter_error_missing_string():
         type="missing",
         input=None,
     )
-    assert str(p1) == "Missing value for field_one.0"
+    assert str(p1) == "Missing value for 'field_one.0'"
 
 
 def test_parameter_error_extra_string():
@@ -185,7 +185,7 @@ def test_parameter_error_extra_string():
         type="extra_forbidden",
         input={"foo": "bar"},
     )
-    assert str(p1) == "Unexpected field foo"
+    assert str(p1) == "Unexpected field 'foo'"
 
 
 def test_parameter_error_other_string():

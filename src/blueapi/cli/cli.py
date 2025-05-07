@@ -234,8 +234,8 @@ def run_plan(
     parameters = parameters or "{}"
     try:
         parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
-    except json.JSONDecodeError:
-        raise ClickException("Write better JSON")
+    except json.JSONDecodeError as jde:
+        raise ClickException("Write better JSON") from jde
 
     progress_bar = CliEventRenderer()
     callback = BestEffortCallback()

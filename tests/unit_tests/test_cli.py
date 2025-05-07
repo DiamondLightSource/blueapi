@@ -430,13 +430,16 @@ def test_env_reload_server_side_error(runner: CliRunner):
                     )
                 ]
             ),
-            "Error: Incorrect parameters supplied\n    Missing value for foo\n",
+            "Error: Incorrect parameters supplied\n    Missing value for 'foo'\n",
         ),
         (
             BlueskyRemoteControlError("Server error"),
             "Error: server error with this message: Server error\n",
         ),
-        (ValueError("Error parsing parameters"), "Error: task could not run\n"),
+        (
+            ValueError("Error parsing parameters"),
+            "Error: task could not run: Error parsing parameters\n",
+        ),
     ],
     ids=[
         "unknown_plan",

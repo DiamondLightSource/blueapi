@@ -88,7 +88,7 @@ class InvalidParameters(Exception):
         return InvalidParameters(
             [
                 ParameterError(
-                    loc=e["loc"], msg=e["msg"], type=e["type"], input=e["input"]
+                    loc=list(e["loc"]), msg=e["msg"], type=e["type"], input=e["input"]
                 )
                 for e in ve.errors()
             ]

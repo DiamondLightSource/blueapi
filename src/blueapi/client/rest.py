@@ -1,5 +1,5 @@
 from collections.abc import Callable, Mapping
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal, Self, TypeVar
 
 import requests
 from fastapi import status
@@ -83,9 +83,9 @@ class InvalidParameters(Exception):
             msg += "\n    " + "\n    ".join(str(e) for e in self.errors)
         return msg
 
-    @staticmethod
-    def from_validation_error(ve: ValidationError):
-        return InvalidParameters(
+    @classmethod
+    def from_validation_error(cls, ve: ValidationError) -> Self:
+        return cls(
             [
                 ParameterError(
                     loc=list(e["loc"]), msg=e["msg"], type=e["type"], input=e["input"]

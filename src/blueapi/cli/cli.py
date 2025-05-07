@@ -264,13 +264,6 @@ def run_plan(
         raise ClickException(ip.message()) from ip
     except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
         raise ClickException(f"server error with this message: {e}") from e
-    except ValidationError as ve:
-        ip = InvalidParameters.from_validation_error(ve)
-        msg = "Incorrect parameters supplied"
-        if ip.errors:
-            msg += "\n    " + "\n    ".join(str(e) for e in ip.errors)
-        raise ClickException(msg) from ip
-
     except ValueError as ve:
         raise ClickException(f"task could not run: {ve}") from ve
 

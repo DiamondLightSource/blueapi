@@ -470,6 +470,30 @@ def test_error_handling(exception, error_message, runner: CliRunner):
     assert result.exit_code == 1
 
 
+@pytest.mark.parametrize(
+    "params, error",
+    [
+        ("{", "Parameters are not valid JSON"),
+        ("[]", ""),
+    ],
+)
+def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
+    result = runner.invoke(
+        main,
+        [
+            "-c",
+            "tests/unit_tests/example_yaml/valid_stomp_config.yaml",
+            "controller",
+            "run",
+            "sleep",
+            params,
+        ],
+    )
+    # error message is printed to stderr but test runner combines output
+    assert result.stdout.startswith("Error: " + error)
+    assert result.exit_code == 1
+
+
 def test_device_output_formatting():
     """Test for alternative device output formats"""
 

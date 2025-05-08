@@ -406,14 +406,22 @@ def test_env_reload_server_side_error(runner: CliRunner):
 
 
 @pytest.mark.parametrize(
-    "exception, expected_exit_code",
+    "exception, error_message",
     [
-        (ValidationError.from_exception_data(title="Base model", line_errors=[]), 1),
-        (BlueskyRemoteControlError("Server error"), 1),
-        (ValueError("Error parsing parameters"), 1),
+        (
+            ValidationError.from_exception_data(title="Base model", line_errors=[]),
+            "('failed to validate the task parameters, ,"
+            + " error: 0 validation errors for '\n 'Base model\\n')\n",
+        ),
+        (
+            BlueskyRemoteControlError("Server error"),
+            "'server error with this message: Server error'\n",
+        ),
+        (ValueError("Error parsing parameters"), "'task could not run'\n"),
     ],
+    ids=["validation_error", "remote_control", "value_error"],
 )
-def test_error_handling(exception, expected_exit_code, runner: CliRunner):
+def test_error_handling(exception, error_message, runner: CliRunner):
     # Patching the create_task method to raise different exceptions
     with patch(
         "blueapi.client.rest.BlueapiRestClient.create_task", side_effect=exception
@@ -422,15 +430,15 @@ def test_error_handling(exception, expected_exit_code, runner: CliRunner):
             main,
             [
                 "-c",
-                "tests/example_yaml/valid_stomp_config.yaml",
+                "tests/unit_tests/example_yaml/valid_stomp_config.yaml",
                 "controller",
                 "run",
                 "sleep",
-                "'{\"time\": 5}'",
+                '{"time": 5}',
             ],
-            input="\n",
         )
-        assert result.exit_code == expected_exit_code
+        # error message is printed to stderr but test runner combines output
+        assert result.stdout == error_message
 
 
 def test_device_output_formatting():

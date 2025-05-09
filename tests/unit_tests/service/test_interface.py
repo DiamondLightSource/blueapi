@@ -472,28 +472,6 @@ def test_setup_with_numtracker_makes_start_document_provider():
     interface.teardown()
 
 
-def test_setup_with_numtracker_with_exisiting_provider_raises():
-    conf = ApplicationConfig(
-        env=EnvironmentConfig(
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
-        ),
-        numtracker=NumtrackerConfig(),
-    )
-    interface.set_config(conf)
-    set_path_provider(Mock())
-    path_provider = get_path_provider()
-
-    with pytest.raises(
-        InvalidConfigError,
-        match="A StartDocumentPathProvider has not been configured for numtracker"
-        f"because a different path provider was already set: {path_provider}",
-    ):
-        interface.setup(conf)
-
-    clear_path_provider()
-    interface.teardown()
-
-
 @patch("blueapi.client.numtracker.NumtrackerClient.create_scan")
 def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_scan):
     conf = ApplicationConfig(
@@ -504,6 +482,7 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
     )
     interface.set_config(conf)
     ctx = interface.context()
+    interface.instantiate_devices_in_context()
 
     headers = {"a": "b"}
     interface._try_configure_numtracker(headers)

@@ -4,6 +4,9 @@ components:
       additionalProperties: false
       description: Representation of a device
       properties:
+        address:
+          title: Address
+          type: string
         name:
           description: Name of the device
           title: Name
@@ -17,6 +20,7 @@ components:
       required:
       - name
       - protocols
+      - address
       title: DeviceModel
       type: object
     DeviceResponse:
@@ -340,7 +344,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.10
+  version: 0.0.11
 openapi: 3.1.0
 paths:
   /config/oidc:
@@ -361,6 +365,16 @@ paths:
     get:
       description: Retrieve information about all available devices.
       operationId: get_devices_devices_get
+      parameters:
+      - description: Maximum depth of children to return, -1 for all
+        in: query
+        name: max_depth
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          title: Max Depth
+          type: integer
       responses:
         '200':
           content:
@@ -368,6 +382,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeviceResponse'
           description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
       summary: Get Devices
   /devices/{name}:
     get:

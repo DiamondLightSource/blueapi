@@ -86,7 +86,7 @@ name = "Callum Forrester"
 version_file = "src/blueapi/_version.py"
 
 [tool.pyright]
-typeCheckingMode = "strict"
+typeCheckingMode = "standard"
 reportMissingImports = false # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]

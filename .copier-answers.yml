@@ -16,5 +16,5 @@ github_org: DiamondLightSource
 package_name: blueapi
 pypi: true
 repo_name: blueapi
-strict_typing: true
+strict_typing: false  # https://github.com/DiamondLightSource/blueapi/issues/945
 type_checker: pyright

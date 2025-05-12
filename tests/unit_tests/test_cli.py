@@ -218,7 +218,7 @@ def test_submit_plan_without_stomp(runner: CliRunner):
     )
 
     assert (
-        result.stdout
+        result.stderr
         == "Error: Stomp configuration required to run plans is missing or disabled\n"
     )
 
@@ -233,7 +233,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert result.exit_code == 1
     assert (
-        result.stdout
+        result.stderr
         == "Error: Stomp configuration required to run plans is missing or disabled\n"
     )
 
@@ -466,7 +466,7 @@ def test_error_handling(exception, error_message, runner: CliRunner):
             ],
         )
     # error message is printed to stderr but test runner combines output
-    assert result.stdout == error_message
+    assert result.stderr == error_message
     assert result.exit_code == 1
 
 
@@ -490,7 +490,7 @@ def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
         ],
     )
     # error message is printed to stderr but test runner combines output
-    assert result.stdout.startswith("Error: " + error)
+    assert result.stderr.startswith("Error: " + error)
     assert result.exit_code == 1
 
 

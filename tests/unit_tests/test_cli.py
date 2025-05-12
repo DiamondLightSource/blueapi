@@ -465,7 +465,6 @@ def test_error_handling(exception, error_message, runner: CliRunner):
                 '{"time": 5}',
             ],
         )
-    # error message is printed to stderr but test runner combines output
     assert result.stderr == error_message
     assert result.exit_code == 1
 
@@ -489,7 +488,6 @@ def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
             params,
         ],
     )
-    # error message is printed to stderr but test runner combines output
     assert result.stderr.startswith("Error: " + error)
     assert result.exit_code == 1
 

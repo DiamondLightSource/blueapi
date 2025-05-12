@@ -22,7 +22,7 @@ dependencies = [
     "stomp-py",
     "aiohttp",
     "PyYAML>=6.0.2",
-    "click",
+    "click>=8.2.0",
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",

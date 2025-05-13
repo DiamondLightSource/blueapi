@@ -19,12 +19,25 @@ For example:
 import my_plan_library.tomography.plans
 ```
 
-You would add the following into your configuration file:
+To add plans, you would add the following into your configuration file:
 ```yaml
 env:
   sources:
     - kind: planFunctions
       module: my_plan_library.tomography.plans
+```
+
+Devices are added in the same way, just using different values of `kind` depending on their source. [Dodal](https://github.com/DiamondLightSource/dodal) devices use `dodal`, while devices from elsewhere use `deviceFunctions`, like so: 
+
+```yaml
+env:
+  sources:
+    - kind: planFunctions
+      module: my_plan_library.tomography.plans
+    - kind: deviceFunctions
+      module: my_device_library.lab_devices
+    - kind: dodal
+      module: dodal.beamlines.i04
 ```
 
 You can have as many sources for plans and devices as are needed.

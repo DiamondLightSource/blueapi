@@ -10,15 +10,21 @@ import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from click.exceptions import ClickException
 from observability_utils.tracing import setup_tracing
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
-from blueapi import __version__
+from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
-from blueapi.client.rest import BlueskyRemoteControlError
+from blueapi.client.rest import (
+    BlueskyRemoteControlError,
+    InvalidParameters,
+    UnauthorisedAccess,
+    UnknownPlan,
+)
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -226,8 +232,10 @@ def run_plan(
     client: BlueapiClient = obj["client"]
 
     parameters = parameters or "{}"
-    task_id = ""
-    parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
+    try:
+        parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
+    except json.JSONDecodeError as jde:
+        raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
 
     progress_bar = CliEventRenderer()
     callback = BestEffortCallback()
@@ -240,18 +248,25 @@ def run_plan(
 
     try:
         task = Task(name=name, params=parsed_params)
-        resp = client.run_task(task, on_event=on_event)
-    except ValidationError as e:
-        pprint(f"failed to validate the task parameters, {task_id}, error: {e}")
-        return
-    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
-        pprint(f"server error with this message: {e}")
-        return
-    except ValueError:
-        pprint("task could not run")
-        return
+    except ValidationError as ve:
+        ip = InvalidParameters.from_validation_error(ve)
+        raise ClickException(ip.message()) from ip
 
-    pprint(resp.model_dump())
+    try:
+        resp = client.run_task(task, on_event=on_event)
+    except config.MissingStompConfiguration as mse:
+        raise ClickException(*mse.args) from mse
+    except UnknownPlan as up:
+        raise ClickException(f"Plan '{name}' was not recognised") from up
+    except UnauthorisedAccess as ua:
+        raise ClickException("Unauthorised request") from ua
+    except InvalidParameters as ip:
+        raise ClickException(ip.message()) from ip
+    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
+        raise ClickException(f"server error with this message: {e}") from e
+    except ValueError as ve:
+        raise ClickException(f"task could not run: {ve}") from ve
+
     if resp.task_status is not None and not resp.task_status.task_failed:
         print("Plan Succeeded")
 

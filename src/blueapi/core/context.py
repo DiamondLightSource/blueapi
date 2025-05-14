@@ -66,6 +66,14 @@ def qualified_name(target: type) -> str:
     return f"{module_name}{name}"
 
 
+def qualified_generic_name(target: type) -> str:
+    args = get_args(target)
+    subscript = (
+        "[" + ", ".join(qualified_name(arg) for arg in args) + "]" if args else ""
+    )
+    return f"{qualified_name(target)}{subscript}"
+
+
 def is_bluesky_type(typ: type) -> bool:
     return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
 
@@ -251,7 +259,10 @@ class BlueskyContext:
                         if not val or not is_compatible(
                             val, cls.origin or target, cls.args
                         ):
-                            raise ValueError(f"Device {value} is not of type {target}")
+                            required = qualified_generic_name(target)
+                            raise ValueError(
+                                f"Device {value} is not of type {required}"
+                            )
                         return val
 
                     return core_schema.no_info_after_validator_function(

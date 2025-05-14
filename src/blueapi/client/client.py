@@ -8,7 +8,7 @@ from observability_utils.tracing import (
     start_as_current_span,
 )
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, MissingStompConfiguration
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
@@ -214,8 +214,8 @@ class BlueapiClient:
         """
 
         if self._events is None:
-            raise RuntimeError(
-                "Cannot run plans without Stomp configuration to track progress"
+            raise MissingStompConfiguration(
+                "Stomp configuration required to run plans is missing or disabled"
             )
 
         task_response = self.create_task(task)

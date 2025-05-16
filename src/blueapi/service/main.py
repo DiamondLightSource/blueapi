@@ -31,7 +31,7 @@ from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, OIDCConfig
+from blueapi.config import ApplicationConfig, ClientType, OIDCConfig
 from blueapi.service import interface
 from blueapi.worker import Task, TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
@@ -112,6 +112,29 @@ def get_app(config: ApplicationConfig):
     dependencies = []
     if config.oidc:
         dependencies.append(Depends(verify_access_token(config.oidc)))
+        if config.swagger_auth:
+            client_id = ""
+            for client in config.oidc.clients:
+                if client.type == ClientType.SWAGGER:
+                    client_id = client.id
+                    break
+            app.swagger_ui_init_oauth = {
+                "clientId": client_id,
+                "clientSecret": config.swagger_auth.client_secret,
+                "scopeSeparator": " ",
+                "usePkceWithAuthorizationCodeGrant": True,
+                "scopes": "openid profile offline_access",
+            }
+    #                 # app.swagger_ui_oauth2_redirect_url= "https://authn.diamond.ac.uk/realms/master"
+
+    #                 break
+    # app.swagger_ui_init_oauth = {
+    #                 "clientId": "blueapi",
+    #                 "clientSecret": "",
+    #                 "scopeSeparator": " ",
+    #                 "usePkceWithAuthorizationCodeGrant": True,
+    #                 "scopes": "openid profile offline_access",
+    #                 }
     app.include_router(open_router)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
@@ -140,14 +163,25 @@ def verify_access_token(config: OIDCConfig):
 
     def inner(access_token: str = Depends(oauth_scheme)):
         signing_key = jwkclient.get_signing_key_from_jwt(access_token)
-        jwt.decode(
-            access_token,
-            signing_key.key,
-            algorithms=config.id_token_signing_alg_values_supported,
-            verify=True,
-            audience=config.client_audience,
-            issuer=config.issuer,
-        )
+        last_exception = None
+        for client in config.clients:
+            try:
+                jwt.decode(
+                    access_token,
+                    signing_key.key,
+                    algorithms=config.id_token_signing_alg_values_supported,
+                    verify=True,
+                    audience=client.audience,
+                    issuer=config.issuer,
+                )
+                # If decode succeeds for any audience, return (success)
+                return
+            except Exception as e:
+                last_exception = e
+                continue
+        # If all audiences fail, raise the last exception
+        if last_exception:
+            raise last_exception
 
     return inner
 
@@ -168,6 +202,13 @@ async def on_token_error_401(_: Request, __: Exception):
         content={"detail": "Not authenticated"},
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+# from fastapi.openapi.docs import get_swagger_ui_oauth2_redirect_html
+
+# @secure_router.get("/docs/oauth2-redirect", include_in_schema=False)
+# async def swagger_ui_redirect():
+#     return get_swagger_ui_oauth2_redirect_html()
 
 
 @secure_router.get("/environment")

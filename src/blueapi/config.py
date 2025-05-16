@@ -20,6 +20,7 @@ from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
+
 FORBIDDEN_OWN_REMOTE_URL = "https://github.com/DiamondLightSource/blueapi.git"
 
 
@@ -145,12 +146,37 @@ class ScratchConfig(BlueapiBaseModel):
     )
 
 
+class ClientType(str, Enum):
+    SWAGGER = "swagger"
+    CLI = "cli"
+
+
+class ClientInfo(BlueapiBaseModel):
+    id: str = Field(
+        description="Client ID required for authentication",
+    )
+    audience: str = Field(
+        description="Client Audience(s) required for authentication",
+    )
+    type: ClientType = Field(
+        description="Client type required for authentication",
+    )
+
+
+class SwaggerConfig(BlueapiBaseModel):
+    client_secret: str = Field(
+        description="Client Secret required for Swagger UI authentication"
+    )
+
+
 class OIDCConfig(BlueapiBaseModel):
     well_known_url: str = Field(
         description="URL to fetch OIDC config from the provider"
     )
-    client_id: str = Field(description="Client ID")
-    client_audience: str = Field(description="Client Audience(s)", default="blueapi")
+    clients: list[ClientInfo] = Field(
+        description="List of clients for authentication",
+        default_factory=list,
+    )
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
@@ -210,6 +236,7 @@ class ApplicationConfig(BlueapiBaseModel):
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
     numtracker: NumtrackerConfig | None = None
+    swagger_auth: SwaggerConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):

@@ -8,7 +8,7 @@ image:
   repository: ghcr.io/diamondlightsource/blueapi
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: "0.13.0"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -42,8 +42,8 @@ service:
   port: 80
 
 ingress:
-  create: false
-#  host: foo.diamond.ac.uk  (assumes port = service.port)
+  create: true
+  host: ckk43848.diamond.ac.uk
 
 resources: {}
 # We usually recommend not to specify default resources and to leave this as a conscious
@@ -137,3 +137,4 @@ oauth2-proxy:
     email_domains = [ "*" ]
     upstreams = [ "{{ include "blueapi.fullname" . }}" ]
     skip_auth_routes = ["GET=^/config/oidc"]
+    provider = keycloak-oidc

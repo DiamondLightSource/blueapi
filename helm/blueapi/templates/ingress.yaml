@@ -16,7 +16,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: blueapi-oauth2-proxy
+            name: {{ include "blueapi.fullname" . }}
             port:
               number: {{ .Values.service.port }}
 {{- end }}

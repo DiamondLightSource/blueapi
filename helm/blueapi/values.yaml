@@ -42,8 +42,8 @@ service:
   port: 80
 
 ingress:
-  create: true
-  host: ckk43848.diamond.ac.uk
+  create: false
+  # host: ckk43848.diamond.ac.uk
 
 resources: {}
 # We usually recommend not to specify default resources and to leave this as a conscious
@@ -131,17 +131,20 @@ initContainer:
   enabled: false
 
 oauth2-proxy:
-  config:
-    existingSecret: "oauth2-proxy-secret"
-  configFile: |
-    email_domains = [ "*" ]
-    upstreams = [ "{{ include "blueapi.fullname" . }}" ]
-    skip_auth_routes = ["GET=^/config/oidc"]
-    skip_provider_button = true
-    oidc_issuer_url = https://authn.diamond.ac.uk/realms/master
   ingress:
     enabled: true
     hosts:
-      - ckk43848.diamond.ac.uk
+      - p46-blueapi.diamond.ac.uk
     path: /
     pathType: Prefix
+  config:
+    clientID: blueapi
+    cookieSecret: zcYIH1xIRiJuqU5d9x4t3VHWvxRVyxjxlC86orJLwqk=
+    configFile: |-
+        provider = "keycloak-oidc"
+        email_domains = ["*"]
+        oidc_issuer_url = "https://authn.diamond.ac.uk/realms/master"
+        code_challenge_method = "S256"
+        insecure_oidc_allow_unverified_email="true"
+        redirect_url="https://p46-blueapi.diamond.ac.uk/docs/oauth2-redirect"
+        upstreams="https://p46-blueapi.diamond.ac.uk"

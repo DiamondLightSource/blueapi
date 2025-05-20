@@ -8,7 +8,7 @@ image:
   repository: ghcr.io/diamondlightsource/blueapi
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -124,5 +124,16 @@ worker:
       enabled: False
       host: "graylog-log-target.diamond.ac.uk"
       port: 12232
+  oidc:
+    well_known_url: https://authn.diamond.ac.uk/realms/master/.well-known/openid-configuration
+    client_id: blueapi
 initContainer:
   enabled: false
+
+oauth2-proxy:
+  config:
+    existingSecret: "oauth2-proxy-secret"
+  configFile: |
+    email_domains = [ "*" ]
+    upstreams = [ "{{ include "blueapi.fullname" . }}" ]
+    skip_auth_routes = ["GET=^/config/oidc"]

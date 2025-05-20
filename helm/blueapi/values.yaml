@@ -137,4 +137,11 @@ oauth2-proxy:
     email_domains = [ "*" ]
     upstreams = [ "{{ include "blueapi.fullname" . }}" ]
     skip_auth_routes = ["GET=^/config/oidc"]
-    provider = keycloak-oidc
+    skip_provider_button = true
+    oidc_issuer_url = https://authn.diamond.ac.uk/realms/master
+  ingress:
+    enabled: true
+    hosts:
+      - ckk43848.diamond.ac.uk
+    path: /
+    pathType: Prefix

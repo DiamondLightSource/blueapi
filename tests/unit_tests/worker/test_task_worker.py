@@ -514,7 +514,7 @@ def take_events_from_streams(
     ],
 )
 def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
-    worker._tasks = {
+    worker._pending_tasks = {
         "task1": TrackableTask(
             task_id="task1",
             task=Task(
@@ -531,6 +531,8 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
             is_complete=False,
             is_pending=True,
         ),
+    }
+    worker._completed_tasks = {
         "task3": TrackableTask(
             task_id="task3",
             task=Task(
@@ -542,7 +544,7 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
     }
 
     result = worker.get_tasks_by_status(status)
-    result_ids = [task_id for task_id, task in worker._tasks.items() if task in result]
+    result_ids = [task.task_id for task in result]
 
     assert result_ids == expected_task_ids
 

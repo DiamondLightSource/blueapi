@@ -28,7 +28,7 @@ RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c de
 FROM build AS debug
 
 # Set origin to use ssh
-RUN git remote set-url origin git@github.com:{{github_org}}/DiamondLightSource/blueapi.git
+RUN git remote set-url origin git@github.com:diamondlightsource/DiamondLightSource/blueapi.git
 
 # For this pod to understand finding user information from LDAP
 RUN apt update

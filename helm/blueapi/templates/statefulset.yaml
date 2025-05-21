@@ -58,7 +58,7 @@ spec:
           path: {{ .Values.debug.home }}
       - name: nslcd  # Shared volume between main and sidecar container
         emptyDir:
-          sizeLimit: 500Mi
+          sizeLimit: 5Mi
       {{- end }}      
       {{- if .Values.initContainer.enabled }}
       initContainers:
@@ -89,7 +89,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary \"-debug" "" .Values.debug.enabled }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

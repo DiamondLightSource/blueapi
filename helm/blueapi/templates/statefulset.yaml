@@ -119,6 +119,14 @@ spec:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
+        {{- if .Values.debug.enabled }}
+        - name: debug-account-sync
+          image: ghcr.io/diamondlightsource/account-sync-sidecar:2.6.0-alpha
+          volumeMounts:
+          # This allows the nslcd socket to be shared between the main container and the sidecar
+          - mountPath: /var/run/nslcd
+            name: nslcd
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

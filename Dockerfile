@@ -21,8 +21,8 @@ ENV PATH=/venv/bin:$PATH
 
 # The build stage installs the context into the venv
 FROM developer AS build
-COPY . /context
-WORKDIR /context
+COPY --chmod=o+wrX . /workspaces/blueapi
+WORKDIR /workspaces/blueapi
 RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
 
 FROM build AS debug

@@ -54,8 +54,8 @@ spec:
       {{- end }}
       {{- if .Values.debug.enabled }}
       - name: home  # Required for vscode to install plugins
-        hostPath:
-          path: {{ .Values.debug.home }}
+        emptyDir:
+          sizeLimit: 500Mi
       - name: nslcd  # Shared volume between main and sidecar container
         emptyDir:
           sizeLimit: 5Mi
@@ -105,15 +105,17 @@ spec:
               mountPath: /venv
             {{- end }}
             {{- if .Values.debug.enabled }}
-            - mountPath: {{ .Values.debug.home }}
+            - mountPath: /home
               name: home
             - mountPath: /var/run/nslcd
               name: nslcd
             {{- end }}
+          {{- if not .Values.debug.enabled }}
           args:
             - "-c"
             - "/config/config.yaml"
             - "serve"
+          {{ end }}
           envFrom:
             - configMapRef:
                 name: {{ include "blueapi.fullname" . }}-otel-config

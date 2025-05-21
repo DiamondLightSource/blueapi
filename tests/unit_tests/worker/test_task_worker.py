@@ -253,6 +253,19 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     assert active_task.errors == ["'I failed'"]
 
 
+def test_task_not_run_twice(worker: TaskWorker) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    events_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda event: event.task_status is not None and event.task_status.task_complete,
+    )
+    worker.begin_task(task_id)
+    events_future.result(timeout=5.0)
+
+    with pytest.raises(KeyError):
+        worker.begin_task(task_id)
+
+
 @pytest.mark.parametrize("num_runs", [0, 1, 2])
 def test_produces_worker_events(worker: TaskWorker, num_runs: int) -> None:
     task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]

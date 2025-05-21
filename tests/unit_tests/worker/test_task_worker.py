@@ -562,6 +562,15 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
     assert result_ids == expected_task_ids
 
 
+def test_submitting_completed_task_fails(worker: TaskWorker):
+    with pytest.raises(ValueError):
+        worker._submit_trackable_task(
+            TrackableTask(
+                task_id="task1", task=_SIMPLE_TASK, is_complete=True, is_pending=False
+            )
+        )
+
+
 def test_start_span_ok(
     exporter: JsonObjectSpanExporter, inert_worker: TaskWorker
 ) -> None:

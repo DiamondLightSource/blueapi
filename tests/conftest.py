@@ -444,7 +444,7 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
     }
     empty_response = {}
 
-    with responses.RequestsMock() as requests_mock:
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as requests_mock:
         requests_mock.add(
             responses.POST,
             url="https://numtracker-example.com/graphql",

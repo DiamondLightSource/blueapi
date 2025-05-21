@@ -52,6 +52,14 @@ spec:
         emptyDir:
           sizeLimit: 5Gi
       {{- end }}
+      {{- if .Values.debug.enabled }}
+      - name: home  # Required for vscode to install plugins
+        hostPath:
+          path: {{ .Values.debug.home }}
+      - name: nslcd  # Shared volume between main and sidecar container
+        emptyDir:
+          sizeLimit: 500Mi
+      {{- end }}      
       {{- if .Values.initContainer.enabled }}
       initContainers:
       - name: setup-scratch
@@ -95,6 +103,12 @@ spec:
               mountPropagation: HostToContainer
             - name: venv
               mountPath: /venv
+            {{- end }}
+            {{- if .Values.debug.enabled }}
+            - mountPath: {{ .Values.debug.home }}
+              name: home
+            - mountPath: /var/run/nslcd
+              name: nslcd
             {{- end }}
           args:
             - "-c"

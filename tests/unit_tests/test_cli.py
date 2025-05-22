@@ -1,7 +1,7 @@
 import importlib
 import json
 import uuid
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
@@ -14,6 +14,7 @@ import responses
 import yaml
 from bluesky.protocols import Movable
 from bluesky_stomp.messaging import StompClient
+from bluesky_stomp.models import MessageTopic
 from click.testing import CliRunner
 from opentelemetry import trace
 from ophyd_async.core import AsyncStatus
@@ -221,6 +222,70 @@ def test_submit_plan_without_stomp(runner: CliRunner):
         result.stderr
         == "Error: Stomp configuration required to run plans is missing or disabled\n"
     )
+
+
+@patch("blueapi.client.client.StompClient")
+@responses.activate
+def test_run_plan(stomp_client: StompClient, runner: CliRunner):
+    task_id = "abcd-1234"
+    submit_response = responses.post(
+        url="http://a.fake.host:12345/tasks",
+        match=[matchers.json_params_matcher({"name": "sleep", "params": {"time": 3}})],
+        json={"task_id": task_id},
+        status=201,
+    )
+    run_response = responses.put(
+        url="http://a.fake.host:12345/worker/task",
+        match=[matchers.json_params_matcher({"task_id": task_id})],
+        json={"task_id": task_id},
+    )
+
+    def mock_events(topic: MessageTopic, callback: Callable[[Any, Any], Any]):
+        if topic.name != "public.worker.event":
+            return
+        ctx = Mock()
+        ctx.correlation_id = task_id
+        callback(
+            WorkerEvent(
+                state=WorkerState.RUNNING,
+                task_status=TaskStatus(
+                    task_id=task_id, task_complete=False, task_failed=False
+                ),
+            ),
+            ctx,
+        )
+        callback(ProgressEvent(task_id=task_id), ctx)
+        callback(DataEvent(name="event", doc={}), ctx)
+        callback(
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id=task_id, task_complete=False, task_failed=False
+                ),
+            ),
+            ctx,
+        )
+        callback(
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id=task_id, task_complete=True, task_failed=False
+                ),
+            ),
+            ctx,
+        )
+
+    stomp = stomp_client.for_broker(...)  # type: ignore
+    stomp.subscribe.side_effect = mock_events  # type: ignore
+
+    config_path = "tests/unit_tests/example_yaml/rest_and_stomp_config.yaml"
+    result = runner.invoke(
+        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 3}']
+    )
+
+    assert result.exit_code == 0
+    assert submit_response.call_count == 1
+    assert run_response.call_count == 1
 
 
 def test_invalid_stomp_config_for_listener(runner: CliRunner):

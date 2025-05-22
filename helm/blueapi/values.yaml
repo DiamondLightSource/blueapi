@@ -128,5 +128,4 @@ initContainer:
   enabled: false
 
 debug:
-  enabled: true
-  home: /home/foo
+  enabled: false

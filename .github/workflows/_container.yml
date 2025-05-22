@@ -2,10 +2,6 @@ name: Build and publish container
 on:
   workflow_call:
 
-env:
-  GCR_IMAGE: ghcr.io/diamondlightsource/blueapi
-  HELM_VERSION: 3.10.3
-
 jobs:
   build_container:
     runs-on: ubuntu-latest
@@ -95,7 +91,7 @@ jobs:
 
       - name: login to gcr using helm
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ${{ env.GCR_IMAGE }} --username ${{ github.repository_owner }} --password-stdin
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io --username ${{ github.repository_owner }} --password-stdin
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea

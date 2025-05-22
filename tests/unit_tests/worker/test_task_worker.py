@@ -253,6 +253,19 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     assert active_task.errors == ["'I failed'"]
 
 
+def test_task_not_run_twice(worker: TaskWorker) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    events_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda event: event.task_status is not None and event.task_status.task_complete,
+    )
+    worker.begin_task(task_id)
+    events_future.result(timeout=5.0)
+
+    with pytest.raises(KeyError):
+        worker.begin_task(task_id)
+
+
 @pytest.mark.parametrize("num_runs", [0, 1, 2])
 def test_produces_worker_events(worker: TaskWorker, num_runs: int) -> None:
     task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
@@ -514,7 +527,7 @@ def take_events_from_streams(
     ],
 )
 def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
-    worker._tasks = {
+    worker._pending_tasks = {
         "task1": TrackableTask(
             task_id="task1",
             task=Task(
@@ -531,6 +544,8 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
             is_complete=False,
             is_pending=True,
         ),
+    }
+    worker._completed_tasks = {
         "task3": TrackableTask(
             task_id="task3",
             task=Task(
@@ -542,9 +557,18 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
     }
 
     result = worker.get_tasks_by_status(status)
-    result_ids = [task_id for task_id, task in worker._tasks.items() if task in result]
+    result_ids = [task.task_id for task in result]
 
     assert result_ids == expected_task_ids
+
+
+def test_submitting_completed_task_fails(worker: TaskWorker):
+    with pytest.raises(ValueError):
+        worker._submit_trackable_task(
+            TrackableTask(
+                task_id="task1", task=_SIMPLE_TASK, is_complete=True, is_pending=False
+            )
+        )
 
 
 def test_start_span_ok(

@@ -130,21 +130,160 @@ worker:
 initContainer:
   enabled: false
 
-oauth2-proxy:
+# oauth2-proxy:
+#   ingress:
+#     enabled: true
+#     hosts:
+#       - p46-blueapi.diamond.ac.uk
+#     path: /
+#     pathType: Prefix
+#   config:
+#     cookieSecret: zcYIH1xIRiJuqU5d9x4t3VHWvxRVyxjxlC86orJLwqk=
+#     configFile: |-
+#         email_domains = ["*"]
+        
+#   alphaConfig:
+#     enabled: true
+#     configData:
+#       upstreamConfig:
+#         proxyRawPath: true
+#         upstreams:
+#           - id: blueapi
+#             path: /
+#             uri: http://blueapi:8000
+#       providers:
+#         - id: authn.diamond.ac.uk
+#           clientID: blueapi
+#           code_challenge_method: S256
+#           clientSecret: "wdasdjsakdhsakjhdskjahdkjsh"
+#           provider: oidc
+#           # scope: "blueapi"
+#           oidcConfig:
+#             insecureAllowUnverifiedEmail: true
+#             audienceClaims: ["aud"]
+#             # emailClaim: email
+#             # userIDClaim: fedid
+#             issuerURL: https://authn.diamond.ac.uk/realms/master
+#       injectRequestHeaders:  # Forward headers into pod
+#         - name: Authorization
+#           values:
+#             - claim: access_token
+#               prefix: "Bearer "
+#         - name: x-forwarded-user
+#           values:
+#             - claim: user
+#         - name: x-auth-request-user
+#           values:
+#             - claim: user
+#       injectResponseHeaders:
+#         - name: Identity
+#           values:
+#             - claim: id_token
+# oauth2-proxy:
+#   ingress:
+#     enabled: true
+#     hosts:
+#       - p46-blueapi.diamond.ac.uk
+#     path: /
+#     pathType: Prefix
+#   config:
+#     clientID: blueapi
+#     cookieSecret: zcYIH1xIRiJuqU5d9x4t3VHWvxRVyxjxlC86orJLwqk=
+#     configFile: |-
+#         email_domains = ["*"]
+#         silence_ping_logging=true
+#   alphaConfig:
+#     enabled: true
+#     configData:
+#       upstreamConfig:
+#         proxyRawPath: true
+#         upstreams:
+#           - id: blueapi
+#             path: /
+#             uri: http://blueapi.p46-beamline:80
+#       providers:
+#         - id: authn.diamond.ac.uk
+#           clientID: blueapi
+#           code_challenge_method: S256
+#           clientSecret: "wdasdjsakdhsakjhdskjahdkjsh"
+#           provider: oidc
+#           # scope: "blueapi"
+#           oidcConfig:
+#             insecureAllowUnverifiedEmail: true
+#             audienceClaims: ["aud"]
+#             emailClaim: email
+#             # userIDClaim: fedid
+#             issuerURL: https://authn.diamond.ac.uk/realms/master
+#       injectRequestHeaders:  # Forward headers into pod
+#         - name: Authorization
+#           values:
+#             - claim: access_token
+#               prefix: "Bearer "
+#         - name: x-forwarded-user
+#           values:
+#             - claim: user
+#         - name: x-auth-request-user
+#           values:
+#             - claim: user
+#       injectResponseHeaders:
+#         - name: Identity
+#           values:
+#             - claim: id_token
+
+# 3rd attempt at oauth2-proxy
+oauth2:
+  # extraEnv:
+  #   - name: OIDC_CLIENT_SECRET
+  #     valueFrom:
+  #       secretKeyRef:
+  #         name: tiled-secrets
+  #         key: OIDC_CLIENT_SECRET
+
   ingress:
     enabled: true
     hosts:
       - p46-blueapi.diamond.ac.uk
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
     path: /
     pathType: Prefix
   config:
-    clientID: blueapi
-    cookieSecret: zcYIH1xIRiJuqU5d9x4t3VHWvxRVyxjxlC86orJLwqk=
     configFile: |-
-        provider = "keycloak-oidc"
-        email_domains = ["*"]
-        oidc_issuer_url = "https://authn.diamond.ac.uk/realms/master"
-        code_challenge_method = "S256"
-        insecure_oidc_allow_unverified_email="true"
-        redirect_url="https://p46-blueapi.diamond.ac.uk/docs/oauth2-redirect"
-        upstreams="https://p46-blueapi.diamond.ac.uk"
+      email_domains = [ "*" ]
+      skip_provider_button = true
+  alphaConfig:
+    enabled: true
+    configData:
+      upstreamConfig:
+        proxyRawPath: true
+        upstreams:
+          - id: blueapi
+            path: /
+            uri: http://blueapi.p46-beamline:80
+      providers:
+        - id: authn.diamond.ac.uk
+          clientID: blueapi
+          clientSecret: "wdasdjsakdhsakjhdskjahdkjsh"
+          provider: oidc
+          scope: "openid profile email fedid read:metadata read:data"
+          oidcConfig:
+            insecureAllowUnverifiedEmail: true
+            audienceClaims: ["aud"]
+            emailClaim: email
+            userIDClaim: fedid
+            issuerURL: https://authn.diamond.ac.uk/realms/master
+      injectRequestHeaders:  # Forward headers into pod
+        - name: Authorization
+          values:
+            - claim: access_token
+              prefix: "Bearer "
+        - name: x-forwarded-user
+          values:
+            - claim: user
+        - name: x-auth-request-user
+          values:
+            - claim: user
+      injectResponseHeaders:
+        - name: Identity
+          values:
+            - claim: id_token

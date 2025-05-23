@@ -5,7 +5,6 @@ from typing import Any
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from dodal.common.beamlines.beamline_utils import (
-    get_path_provider,
     set_path_provider,
 )
 
@@ -48,8 +47,11 @@ def set_config(new_config: ApplicationConfig):
 @cache
 def context() -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx.with_config(config().env)
     return ctx
+
+
+def instantiate_devices_in_context() -> None:
+    context().with_config(config().env)
 
 
 @cache
@@ -125,29 +127,21 @@ def setup(config: ApplicationConfig) -> None:
 
     # Eagerly initialize worker and messaging connection
     worker()
-    stomp_client()
+
+    # if numtracker is configured, use a StartDocumentPathProvider
     if numtracker_client() is not None:
         context().run_engine.scan_id_source = _update_scan_num
         _hook_run_engine_and_path_provider()
 
+    instantiate_devices_in_context()
+    stomp_client()
+
 
 def _hook_run_engine_and_path_provider() -> None:
-    try:
-        path_provider = get_path_provider()
-    except NameError:
-        path_provider = None
-
+    path_provider = StartDocumentPathProvider()
+    set_path_provider(path_provider)
     run_engine = context().run_engine
-
-    if path_provider is None:
-        path_provider = StartDocumentPathProvider()
-        set_path_provider(path_provider)
-        run_engine.subscribe(path_provider.update_run, "start")
-    else:
-        raise InvalidConfigError(
-            "A StartDocumentPathProvider has not been configured for numtracker"
-            f"because a different path provider was already set: {path_provider}"
-        )
+    run_engine.subscribe(path_provider.update_run, "start")
 
 
 def teardown() -> None:

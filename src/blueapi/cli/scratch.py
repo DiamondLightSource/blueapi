@@ -11,7 +11,7 @@ from tomlkit import parse
 
 from blueapi.config import FORBIDDEN_OWN_REMOTE_URL, ScratchConfig
 from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, SourceInfo
-from blueapi.utils import get_owner_gid, is_sgid_set
+from blueapi.utils import get_owner_gid
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
@@ -110,19 +110,19 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:
     _validate_directory(root_path)
 
-    if not is_sgid_set(root_path):
-        raise PermissionError(
-            textwrap.dedent(f"""
-        The scratch area root directory ({root_path}) needs to have the
-        SGID permission bit set. This allows blueapi to clone
-        repositories into it while retaining the ability for
-        other users in an approved group to edit/delete them.
+    # if not is_sgid_set(root_path):
+    #     raise PermissionError(
+    #         textwrap.dedent(f"""
+    #     The scratch area root directory ({root_path}) needs to have the
+    #     SGID permission bit set. This allows blueapi to clone
+    #     repositories into it while retaining the ability for
+    #     other users in an approved group to edit/delete them.
 
-        See https://www.redhat.com/en/blog/suid-sgid-sticky-bit for how to
-        set the SGID bit.
-        """)
-        )
-    elif required_gid is not None and get_owner_gid(root_path) != required_gid:
+    #     See https://www.redhat.com/en/blog/suid-sgid-sticky-bit for how to
+    #     set the SGID bit.
+    #     """)
+    #     )
+    if required_gid is not None and get_owner_gid(root_path) != required_gid:
         raise PermissionError(
             textwrap.dedent(f"""
         The configuration requires that {root_path} be owned by the group with

@@ -465,7 +465,10 @@ class TaskWorker:
 
                     correlation_id = self._current.request_id
                     self._data_events.publish(
-                        DataEvent(name=name, doc=document), correlation_id
+                        DataEvent(
+                            name=name, task_id=self._current.task_id, doc=document
+                        ),
+                        correlation_id,
                     )
             else:
                 raise ValueError(

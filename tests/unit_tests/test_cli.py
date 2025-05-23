@@ -657,7 +657,9 @@ def test_plan_output_formatting():
 
 def test_event_formatting():
     data = DataEvent(
-        name="start", doc={"foo": "bar", "fizz": {"buzz": (1, 2, 3), "hello": "world"}}
+        name="start",
+        doc={"foo": "bar", "fizz": {"buzz": (1, 2, 3), "hello": "world"}},
+        task_id="0000-1111",
     )
     worker = WorkerEvent(
         state=WorkerState.RUNNING,
@@ -672,7 +674,8 @@ def test_event_formatting():
         data,
         (
             """{"name": "start", "doc": """
-            """{"foo": "bar", "fizz": {"buzz": [1, 2, 3], "hello": "world"}}}\n"""
+            """{"foo": "bar", "fizz": {"buzz": [1, 2, 3], "hello": "world"}}, """
+            """"task_id": "0000-1111"}\n"""
         ),
     )
     _assert_matching_formatting(OutputFormat.COMPACT, data, "Data Event: start\n")

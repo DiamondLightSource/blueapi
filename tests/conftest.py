@@ -354,6 +354,9 @@ if os.getenv("PYTEST_RAISE", "0") == "1":
         raise excinfo.value
 
 
+NOT_CONFIGURED_INSTRUMENT = "p100"
+
+
 @pytest.fixture(scope="module")
 def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
     query_working = {
@@ -428,6 +431,38 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             }
             """)
     }
+    query_200_with_errors = {
+        "query": dedent(f"""
+            mutation{{
+                scan(
+                    instrument: "{NOT_CONFIGURED_INSTRUMENT}",
+                    instrumentSession: "ab123"
+                    ) {{
+                    directory{{
+                        instrumentSession
+                        instrument
+                        path
+                    }}
+                    scanFile
+                    scanNumber
+                }}
+            }}
+            """)
+    }
+
+    response_with_errors = {
+        "data": None,
+        "errors": [
+            {
+                "message": (
+                    "No configuration available for instrument "
+                    f'"{NOT_CONFIGURED_INSTRUMENT}"'
+                ),
+                "locations": [{"line": 3, "column": 5}],
+                "path": ["scan"],
+            }
+        ],
+    }
 
     working_response = {
         "data": {
@@ -472,5 +507,12 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             match=[json_params_matcher(query_key_error)],
             status=200,
             json=empty_response,
+        )
+        requests_mock.add(
+            responses.POST,
+            "https://numtracker-example.com/graphql",
+            match=[json_params_matcher(query_200_with_errors)],
+            status=200,
+            json=response_with_errors,
         )
         yield requests_mock

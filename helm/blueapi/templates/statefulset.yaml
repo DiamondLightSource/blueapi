@@ -45,9 +45,8 @@ spec:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
       - name: scratch-host
-        hostPath:
-          path: {{ required "initContainer enabled but no worker.scratch.root!" (.Values.worker.scratch).root }}
-          type: Directory
+        emptyDir:
+          sizeLimit: 1Gi
       - name: venv
         emptyDir:
           sizeLimit: 5Gi

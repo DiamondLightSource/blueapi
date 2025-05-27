@@ -2,5 +2,27 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "groupName": "opentelemetry production",
+      "matchDepNames": [
+        "opentelemetry-*"
+      ],
+      "matchCurrentValue": "!/^0/",
+      "description": [
+        "Update opentelemetry versions together"
+      ]
+    },
+    {
+      "groupName": "opentelemetry beta",
+      "matchDepNames": [
+        "opentelemetry-*"
+      ],
+      "matchCurrentValue": "/^0/",
+      "description": [
+        "Update opentelemetry versions together"
+      ]
+    }
   ]
 }

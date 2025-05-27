@@ -1,4 +1,4 @@
-{{ if .Values.initContainer.persistentVolume }}
+{{- if .Values.initContainer.persistentVolume }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,4 +9,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
-{{- end -}}
+{{- end }}

@@ -44,7 +44,7 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
-      {{ if .Values.initContainer.persistentVolume }}
+      {{- if .Values.initContainer.persistentVolume }}
       - name: scratch
         persistentVolumeClaim:
           claimName: scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
@@ -54,12 +54,12 @@ spec:
       - name: nslcd  # Shared volume between main and sidecar container
         emptyDir:
           sizeLimit: 5Mi
-      {{ else }}
+      {{- else }}
       - name: scratch-host
         hostPath:
           path: {{ required "initContainer enabled but no worker.scratch.root!" (.Values.worker.scratch).root }}
           type: Directory
-      {{- end -}}
+      {{- end }}
       - name: venv
         emptyDir:
           sizeLimit: 5Gi
@@ -83,19 +83,18 @@ spec:
           - name: init-config
             mountPath: "/config"
             readOnly: true
-          {{ if .Values.initContainer.persistentVolume }}
+          {{- if .Values.initContainer.persistentVolume }}
           - name: scratch
             mountPath: {{ .Values.worker.scratch.root }}
           - name: home
             mountPath: /home
           - name: nslcd
             mountPath: /var/run/nslcd
-            {{- end }}
-          {{ else }}
+          {{- else }}
           - name: scratch-host
             mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
-          {{- end -}}
+          {{- end }}
           - name: venv
             mountPath: /artefacts
       {{- end }}

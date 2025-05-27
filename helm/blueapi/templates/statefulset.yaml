@@ -48,6 +48,12 @@ spec:
       - name: scratch
         persistentVolumeClaim:
           claimName: scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+      - name: home  # Required for vscode to install plugins
+        emptyDir:
+          sizeLimit: 500Mi
+      - name: nslcd  # Shared volume between main and sidecar container
+        emptyDir:
+          sizeLimit: 5Mi
       {{ else }}
       - name: scratch-host
         hostPath:
@@ -80,6 +86,11 @@ spec:
           {{ if .Values.initContainer.persistentVolume }}
           - name: scratch
             mountPath: {{ .Values.worker.scratch.root }}
+          - name: home
+            mountPath: /home
+          - name: nslcd
+            mountPath: /var/run/nslcd
+            {{- end }}
           {{ else }}
           - name: scratch-host
             mountPath: {{ .Values.worker.scratch.root }}
@@ -116,6 +127,14 @@ spec:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
+        {{- if .Values.initContainer.persistentVolume }}
+        - name: debug-account-sync
+          image: ghcr.io/diamondlightsource/account-sync-sidecar:3.0.0
+          volumeMounts:
+          # This allows the nslcd socket to be shared between the main container and the sidecar
+          - mountPath: /var/run/nslcd
+            name: nslcd
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

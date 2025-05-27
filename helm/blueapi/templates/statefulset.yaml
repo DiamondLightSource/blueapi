@@ -44,10 +44,16 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
+      {{ if .Values.initContainer.persistentVolume }}
+      - name: scratch
+        persistentVolumeClaim:
+          claimName: scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+      {{ else }}
       - name: scratch-host
         hostPath:
           path: {{ required "initContainer enabled but no worker.scratch.root!" (.Values.worker.scratch).root }}
           type: Directory
+      {{- end -}}
       - name: venv
         emptyDir:
           sizeLimit: 5Gi
@@ -71,9 +77,14 @@ spec:
           - name: init-config
             mountPath: "/config"
             readOnly: true
+          {{ if .Values.initContainer.persistentVolume }}
+          - name: scratch
+            mountPath: {{ .Values.worker.scratch.root }}
+          {{ else }}
           - name: scratch-host
             mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
+          {{- end -}}
           - name: venv
             mountPath: /artefacts
       {{- end }}

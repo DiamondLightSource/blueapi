@@ -1,0 +1,12 @@
+{{ if .Values.initContainer.persistentVolume }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+{{- end -}}

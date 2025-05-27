@@ -20,6 +20,7 @@
         "pypa/gh-action-pypi-publish",
         "softprops/action-gh-release"
       ],
+      "enabled": false,
       "description": [
         "Group and update GitHub actions through the copier template to prevent merge conflicts"
       ]

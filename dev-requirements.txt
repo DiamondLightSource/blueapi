@@ -17,7 +17,7 @@ bluesky-stomp==0.1.4
 certifi==2025.1.31
 cffi==1.17.1
 cfgv==3.4.0
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
 click==8.2.0
 colorama==0.4.6
 colorlog==6.9.0

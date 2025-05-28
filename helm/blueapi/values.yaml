@@ -8,7 +8,7 @@ image:
   repository: ghcr.io/diamondlightsource/blueapi
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.13.0"
+  tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -43,7 +43,7 @@ service:
 
 ingress:
   create: false
-  # host: ckk43848.diamond.ac.uk
+# host: foo.diamond.ac.uk (assumes port = service.port)
 
 resources: {}
 # We usually recommend not to specify default resources and to leave this as a conscious
@@ -140,8 +140,8 @@ oauth2-proxy:
     path: /
     pathType: Prefix
   config:
-    clientID: blueapi 
-    clientSecret: 
+    clientID: blueapi
+    clientSecret:
     configFile: |-
       email_domains = [ "*" ]
       skip_provider_button = true
@@ -161,7 +161,7 @@ oauth2-proxy:
         - provider: oidc
           id: authn.diamond.ac.uk
           clientID: blueapi
-          clientSecret: 
+          clientSecret:
           oidcConfig:
             insecureSkipNonce: true
             insecureAllowUnverifiedEmail: true

@@ -2,6 +2,7 @@ import json
 import os
 import stat
 import sys
+import logging
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
@@ -425,3 +426,8 @@ def logout(obj: dict) -> None:
         auth.logout()
     except FileNotFoundError:
         print("Logged out")
+    except ValueError as e:
+        logging.debug("Invalid login token: %s", e)
+        raise ClickException(f"Login token is not valid - remove before trying again") from e
+    except Exception as e:
+        raise ClickException(f'Error logging out: {e}') from e

@@ -6,6 +6,7 @@
   ],
   "packageRules": [
     {
+      "groupName": "Indirect python dependencies",
       "matchUpdateTypes": [
         "patch",
         "minor"
@@ -13,18 +14,20 @@
       "matchManagers": [
         "pip_requirements"
       ],
-      "description": "Group non-major indirect python versions together"
+      "description": "Group non-major indirect (dev-requirements.txt only) python updates"
     },
     {
+      "groupName": "Direct python dependencies",
       "matchUpdateTypes": [
         "patch"
       ],
       "matchManagers": [
         "pep621"
       ],
-      "description": "Group patch direct python versions together"
+      "description": "Group patch direct (pyproject.toml) python updates"
     },
     {
+      "groupName": "GitHub Actions",
       "matchUpdateTypes": [
         "patch",
         "minor"
@@ -32,7 +35,7 @@
       "matchManagers": [
         "github-actions"
       ],
-      "description": "Group non-major github action versions together"
+      "description": "Group non-major github action updates"
     }
   ]
 }

@@ -12,6 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: check catalog-info.yaml file
-        uses: RoadieHQ/backstage-entity-validator@v0.3.11
+        uses: RoadieHQ/backstage-entity-validator@d39db2335a810aed3175c5ba9b86b89b7c7286c1 # v0.5.0
         with:
           path: "./catalog-info.yaml"

@@ -129,7 +129,7 @@ pvxslibs==1.3.3
 py==1.11.0
 pycparser==2.22
 pydantic==2.10.6
-pydantic-extra-types==2.10.3
+pydantic-extra-types==2.10.4
 pydantic-settings==2.9.1
 pydantic_core==2.27.2
 pydantic_numpy==8.0.1

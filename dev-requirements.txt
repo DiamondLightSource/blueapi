@@ -155,7 +155,7 @@ rich==14.0.0
 rich-toolkit==0.14.3
 roman-numerals-py==3.1.0
 rpds-py==0.24.0
-ruamel.yaml==0.18.10
+ruamel.yaml==0.18.11
 ruamel.yaml.clib==0.2.12
 ruff==0.11.7
 scanspec==0.7.8

@@ -855,6 +855,27 @@ def test_logout_success(
     assert not cached_valid_refresh.exists()
 
 
+def test_logout_invalid_token(runner: CliRunner):
+    with patch("blueapi.cli.cli.SessionManager") as sm:
+        sm.from_cache.side_effect = ValueError("Invalid token")
+        result = runner.invoke(main, ["logout"])
+
+    assert result.exit_code == 1
+    assert (
+        result.output
+        == "Error: Login token is not valid - remove before trying again\n"
+    )
+
+
+def test_logout_unknown_error(runner: CliRunner):
+    with patch("blueapi.cli.cli.SessionManager") as sm:
+        sm.from_cache.side_effect = Exception("Invalid token")
+        result = runner.invoke(main, ["logout"])
+
+    assert result.exit_code == 1
+    assert result.output == "Error: Error logging out: Invalid token\n"
+
+
 def test_logout_when_no_cache(
     runner: CliRunner,
     config_with_auth: str,

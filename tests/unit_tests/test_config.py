@@ -53,6 +53,11 @@ def nested_config_yaml(package_root: Path) -> Path:
 
 
 @pytest.fixture
+def env_var_config_yaml(package_root: Path) -> Path:
+    return package_root / "env_var_config.yaml"
+
+
+@pytest.fixture
 def override_config_yaml(package_root: Path) -> Path:
     return package_root / "override_config.yaml"
 
@@ -124,6 +129,18 @@ def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) ->
     loader.use_values_from_yaml(nested_config_yaml)
     with pytest.raises(InvalidConfigError):
         loader.load()
+
+
+@mock.patch.dict(
+    os.environ, {"ENV_NUM": "12345", "BAR": "bar", "ENABLE_BAZ": "False"}, clear=True
+)
+def test_expand_env_vars(env_var_config_yaml: Path):
+    loader = ConfigLoader(NestedConfig)
+    loader.use_values_from_yaml(env_var_config_yaml)
+    conf = loader.load()
+    assert conf.nested.foo == 12345
+    assert conf.nested.bar == "interpolated_bar_value"
+    assert not conf.baz
 
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)

@@ -43,7 +43,7 @@ service:
 
 ingress:
   create: false
-# host: foo.diamond.ac.uk (assumes port = service.port)
+#  host: foo.diamond.ac.uk  (assumes port = service.port)
 
 resources: {}
 # We usually recommend not to specify default resources and to leave this as a conscious
@@ -124,52 +124,42 @@ worker:
       enabled: False
       host: "graylog-log-target.diamond.ac.uk"
       port: 12232
-  oidc:
-    well_known_url: https://authn.diamond.ac.uk/realms/master/.well-known/openid-configuration
-    client_id: blueapi
 initContainer:
   enabled: false
 
-oauth2-proxy:
-  ingress:
-    enabled: true
-    hosts:
-      - p46-blueapi.diamond.ac.uk
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
-    path: /
-    pathType: Prefix
-  config:
-    clientID: blueapi
-    clientSecret:
-    configFile: |-
-      email_domains = [ "*" ]
-      skip_provider_button = true
-      silence_ping_logging=true
-      cookie_refresh="1m"
-      cookie_expire="30m"
-  alphaConfig:
-    enabled: true
-    configData:
-      upstreamConfig:
-        proxyRawPath: true
-        upstreams:
-          - id: blueapi
-            path: /
-            uri: http://blueapi.p46-beamline:80
-      providers:
-        - provider: oidc
-          id: authn.diamond.ac.uk
-          clientID: blueapi
-          clientSecret:
-          oidcConfig:
-            insecureSkipNonce: true
-            insecureAllowUnverifiedEmail: true
-            emailClaim: sub
-            audienceClaims: ["aud"]
-            issuerURL: https://authn.diamond.ac.uk/realms/master
-      injectRequestHeaders:
-        - name: Authorization
-          values:
-            - claim: access_token
-              prefix: "Bearer "
+# oauth2:
+# ingress:
+#   enabled: true
+#   hosts:
+#     - p46-blueapi.diamond.ac.uk
+#   annotations:
+#     nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
+#   path: /
+#   pathType: Prefix
+# config:
+#   clientID: blueapi
+#   clientSecret:
+#   configFile: |-
+#     email_domains = [ "*" ]
+#     skip_provider_button = true
+#     cookie_refresh="1m"
+#     cookie_expire="30m"
+#     upstreams: ["{{ include "blueapi.fullname" . }}:{{ .Values.service.port }}"]
+# alphaConfig:
+#   enabled: true
+#   configData:
+#     providers:
+#       - provider: oidc
+#         id: authn.diamond.ac.uk
+#         clientID: blueapi
+#         clientSecret:
+#         oidcConfig:
+#           insecureAllowUnverifiedEmail: true
+#           emailClaim: sub
+#           audienceClaims: ["aud"]
+#           issuerURL: https://authn.diamond.ac.uk/realms/master
+#     injectRequestHeaders:
+#       - name: Authorization
+#         values:
+#           - claim: access_token
+#             prefix: "Bearer "

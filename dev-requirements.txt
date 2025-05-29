@@ -106,7 +106,7 @@ opentelemetry-semantic-conventions==0.53b1
 opentelemetry-util-http==0.53b1
 ophyd==1.10.5
 ophyd-async==0.10.0a3
-orderly-set==5.4.0
+orderly-set==5.4.1
 orjson==3.10.16
 p4p==4.2.0
 packaging==25.0

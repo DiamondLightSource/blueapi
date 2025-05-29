@@ -6,11 +6,33 @@
   ],
   "packageRules": [
     {
-      "matchUpdateTypes": "patch",
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
       "matchManagers": [
         "pip_requirements"
       ],
-      "description": "Group indirect python patch versions together"
+      "description": "Group non-major indirect python versions together"
+    },
+    {
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "matchManagers": [
+        "pep621"
+      ],
+      "description": "Group patch direct python versions together"
+    },
+    {
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "description": "Group non-major github action versions together"
     }
   ]
 }

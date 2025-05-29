@@ -34,7 +34,7 @@ class UnconnectableOphydDevice(OphydV1Device):
     def wait_for_connection(
         self,
         all_signals: bool = False,
-        timeout: float = 2.0,
+        timeout: object = 2.0,
     ) -> None:
         raise RuntimeError(f"{self.name}: fake connection error for tests")
 

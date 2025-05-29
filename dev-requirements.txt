@@ -192,7 +192,7 @@ tqdm==4.67.1
 typer==0.15.2
 types-mock==5.2.0.20250306
 types-PyYAML==6.0.12.20250402
-types-requests==2.32.0.20250328
+types-requests==2.32.0.20250515
 types-urllib3==1.26.25.14
 typing-inspect==0.9.0
 typing-inspection==0.4.0

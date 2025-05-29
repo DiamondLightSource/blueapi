@@ -190,7 +190,7 @@ tox==3.28.0
 tox-direct==0.4
 tqdm==4.67.1
 typer==0.15.2
-types-mock==5.2.0.20250306
+types-mock==5.2.0.20250516
 types-PyYAML==6.0.12.20250402
 types-requests==2.32.0.20250328
 types-urllib3==1.26.25.14

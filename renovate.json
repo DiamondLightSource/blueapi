@@ -3,5 +3,14 @@
   "extends": [
     "config:best-practices",
     ":automergeStableNonMajor"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": "patch",
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "description": "Group indirect python patch versions together"
+    }
   ]
 }

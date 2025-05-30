@@ -41,7 +41,7 @@ Services hosted on the cluster automatically have their stdout forwarded to Gray
 
 In this instance, the difference between enabling and disabling graylog in BlueAPI's configuration, is that fluentd only fowards plaintext logs, while BlueAPI's native graylog produces structured data with rich metadata included.
 
-# Were to Find Logs
+# Where to Find Logs
 
 By default logs can be found wherever your stdout is. 
 

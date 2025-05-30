@@ -3,7 +3,7 @@
 
 By default BlueAPI will log to stdout at the [INFO level](https://docs.python.org/3/library/logging.html#logging-levels), but can be reconfigured to log at any level, and to output to Graylog.
 
-When Graylog is enabled, BlueAPI will continue to log to stdout.
+When logging to [Graylog](https://graylog.org) is enabled, BlueAPI will also continue to log to stdout.
 
 # BlueAPI Cofiguration
 

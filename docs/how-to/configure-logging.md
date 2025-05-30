@@ -37,7 +37,7 @@ logger.info("FOO")
 
 # Running BlueAPI on the Cluster
 
-Services hosted on the cluster automatically have their stdout forwarded to Graylog via a service called fluentd. Due to this, BlueAPI services hosted on the cluster will always log to Graylog.
+Services hosted on the DLS clusters automatically have their stdout forwarded to Graylog via a service called fluentd. Due to this, BlueAPI services hosted on the cluster will always log to Graylog.
 
 In this instance, the difference between enabling and disabling graylog in BlueAPI's configuration, is that fluentd only fowards plaintext logs, while BlueAPI's native graylog produces structured data with rich metadata included.
 

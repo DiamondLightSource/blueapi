@@ -1,0 +1,7 @@
+{{- if .Values.initContainer.volumeName }} 
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.initContainer.volumeName }}
+reclaimPolicy: Retain
+{{- end }}

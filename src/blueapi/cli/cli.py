@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import stat
 import sys
@@ -425,3 +426,10 @@ def logout(obj: dict) -> None:
         auth.logout()
     except FileNotFoundError:
         print("Logged out")
+    except ValueError as e:
+        logging.debug("Invalid login token: %s", e)
+        raise ClickException(
+            "Login token is not valid - remove before trying again"
+        ) from e
+    except Exception as e:
+        raise ClickException(f"Error logging out: {e}") from e

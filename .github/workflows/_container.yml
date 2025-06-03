@@ -81,10 +81,10 @@ jobs:
     needs: build_container
     steps:
       - name: checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: install helm
-        uses: Azure/setup-helm@v3
+        uses: Azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
         id: install
@@ -94,7 +94,7 @@ jobs:
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io --username ${{ github.repository_owner }} --password-stdin
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea
+        uses: docker/metadata-action@418e4b98bf2841bd337d0b24fe63cb36dc8afa55
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |

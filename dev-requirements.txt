@@ -13,7 +13,7 @@ babel==2.17.0
 beautifulsoup4==4.13.4
 bidict==0.23.1
 bluesky==1.13.1
-bluesky-stomp==0.1.4
+bluesky-stomp==0.1.6
 certifi==2025.1.31
 cffi==1.17.1
 cfgv==3.4.0

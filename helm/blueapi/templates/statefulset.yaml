@@ -111,9 +111,11 @@ spec:
               mountPath: "/config"
               readOnly: true
             {{- if .Values.initContainer.enabled }}
+            {{- if not .Values.initContainer.persistentVolume }}
             - name: scratch-host
               mountPath: {{ .Values.worker.scratch.root }}
               mountPropagation: HostToContainer
+            {{- end }}
             - name: venv
               mountPath: /venv
             {{- end }}

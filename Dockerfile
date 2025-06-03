@@ -26,7 +26,7 @@ WORKDIR /context
 RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
 
 # The runtime stage copies the built venv into a slim runtime container
-FROM python:${PYTHON_VERSION}-slim AS runtime
+FROM python:${PYTHON_VERSION%@*}-slim AS runtime
 # Add apt-get system dependecies for runtime here if needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime

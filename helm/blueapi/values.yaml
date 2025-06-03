@@ -127,4 +127,3 @@ worker:
 initContainer:
   enabled: false
   persistentVolume: false
-  retainPVC: false

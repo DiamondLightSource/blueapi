@@ -3,10 +3,8 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
-  {{- if .Values.initContainer.reclaimPVC}}
   annotations:
     helm.sh/resource-policy: keep
-  {{- end }}
 spec:
   accessModes:
     - ReadWriteMany

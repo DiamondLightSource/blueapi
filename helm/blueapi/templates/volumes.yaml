@@ -9,8 +9,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  {{- if .Values.initContainer.volumeName }}
-  volumeName: {{ .Values.initContainer.volumeName }}
-  storageClassName: {{ .Values.initContainer.volumeName }}
-  {{- end }}
 {{- end }}

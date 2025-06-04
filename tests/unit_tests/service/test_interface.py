@@ -22,6 +22,8 @@ from blueapi.config import (
     NumtrackerConfig,
     OIDCConfig,
     ScratchConfig,
+    Source,
+    SourceKind,
     StompConfig,
 )
 from blueapi.core.context import BlueskyContext
@@ -461,6 +463,31 @@ def test_setup_with_numtracker_makes_start_document_provider():
 
     assert isinstance(path_provider, StartDocumentPathProvider)
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
+
+    clear_path_provider()
+    interface.teardown()
+
+
+def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            sources=[
+                Source(
+                    kind=SourceKind.DEVICE_FUNCTIONS,
+                    module="tests.unit_tests.service.example_beamline",
+                ),
+            ],
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123"),
+        ),
+        numtracker=NumtrackerConfig(),
+    )
+
+    with pytest.raises(
+        InvalidConfigError,
+        match="Numtracker has been configured but a path provider was imported"
+        "with the devices. Remove this path provider to use numtracker.",
+    ):
+        interface.setup(conf)
 
     clear_path_provider()
     interface.teardown()

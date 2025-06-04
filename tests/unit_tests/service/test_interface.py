@@ -503,7 +503,7 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
     )
     interface.set_config(conf)
     ctx = interface.context()
-    interface.instantiate_devices_in_context()
+    interface.configure_context()
 
     headers = {"a": "b"}
     interface._try_configure_numtracker(headers)

@@ -51,7 +51,7 @@ def context() -> BlueskyContext:
     return ctx
 
 
-def instantiate_devices_in_context() -> None:
+def configure_context() -> None:
     context().with_config(config().env)
 
 
@@ -134,7 +134,7 @@ def setup(config: ApplicationConfig) -> None:
         context().run_engine.scan_id_source = _update_scan_num
         _hook_run_engine_and_path_provider()
 
-    instantiate_devices_in_context()
+    configure_context()
 
     if numtracker_client() is not None and not isinstance(
         get_path_provider(), StartDocumentPathProvider

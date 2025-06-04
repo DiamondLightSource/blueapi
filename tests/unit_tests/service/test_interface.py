@@ -425,14 +425,14 @@ def test_configure_numtracker_with_no_metadata_fails():
     interface.teardown()
 
 
-def test_setup_without_numtracker_with_exisiting_provider():
+def test_setup_without_numtracker_with_exisiting_provider_does_not_overwrite_provider():
     conf = ApplicationConfig()
-    set_path_provider(Mock())
+    mock_provider = Mock()
+    set_path_provider(mock_provider)
 
+    assert get_path_provider() == mock_provider
     interface.setup(conf)
-
-    assert interface.config() is not None
-    assert interface.worker() is not None
+    assert get_path_provider() == mock_provider
 
     clear_path_provider()
     interface.teardown()

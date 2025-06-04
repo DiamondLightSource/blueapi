@@ -220,7 +220,7 @@ def listen_to_events(obj: dict) -> None:
 @click.argument("name", type=str)
 @click.argument("parameters", type=str, required=False)
 @click.option(
-    "--blocking/--non-blocking", "--fg/--bg", type=bool, is_flag=True, default=True
+    "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
 )
 @click.option(
     "-t",
@@ -232,7 +232,7 @@ def listen_to_events(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: str | None, timeout: float | None, blocking: bool
+    obj: dict, name: str, parameters: str | None, timeout: float | None, foreground: bool
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
@@ -250,7 +250,7 @@ def run_plan(
         raise ClickException(ip.message()) from ip
 
     try:
-        if blocking:
+        if foreground:
             progress_bar = CliEventRenderer()
             callback = BestEffortCallback()
 

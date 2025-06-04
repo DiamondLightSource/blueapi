@@ -310,7 +310,7 @@ def test_run_plan_background_without_stomp(runner: CliRunner):
             config_path,
             "controller",
             "run",
-            "--non-blocking",
+            "--background",
             "sleep",
             '{"time": 3}',
         ],

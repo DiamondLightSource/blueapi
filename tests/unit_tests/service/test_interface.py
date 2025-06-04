@@ -22,6 +22,8 @@ from blueapi.config import (
     NumtrackerConfig,
     OIDCConfig,
     ScratchConfig,
+    Source,
+    SourceKind,
     StompConfig,
 )
 from blueapi.core.context import BlueskyContext
@@ -425,27 +427,22 @@ def test_configure_numtracker_with_no_metadata_fails():
     interface.teardown()
 
 
-def test_setup_without_numtracker_with_exisiting_provider():
+def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
     conf = ApplicationConfig()
-    interface.set_config(conf)
-    set_path_provider(Mock())
+    mock_provider = Mock()
+    set_path_provider(mock_provider)
 
+    assert get_path_provider() == mock_provider
     interface.setup(conf)
-
-    assert interface.config() is not None
-    assert interface.worker() is not None
+    assert get_path_provider() == mock_provider
 
     clear_path_provider()
     interface.teardown()
 
 
-def test_setup_without_numtracker_without_exisiting_provider_does_not_make_one():
+def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
     conf = ApplicationConfig()
-    interface.set_config(conf)
     interface.setup(conf)
-
-    assert interface.config() is not None
-    assert interface.worker() is not None
 
     with pytest.raises(NameError):
         get_path_provider()
@@ -460,7 +457,6 @@ def test_setup_with_numtracker_makes_start_document_provider():
         ),
         numtracker=NumtrackerConfig(),
     )
-    interface.set_config(conf)
     interface.setup(conf)
 
     path_provider = get_path_provider()
@@ -472,21 +468,24 @@ def test_setup_with_numtracker_makes_start_document_provider():
     interface.teardown()
 
 
-def test_setup_with_numtracker_with_exisiting_provider_raises():
+def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
     conf = ApplicationConfig(
         env=EnvironmentConfig(
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+            sources=[
+                Source(
+                    kind=SourceKind.DEVICE_FUNCTIONS,
+                    module="tests.unit_tests.service.example_beamline_with_path_provider",
+                ),
+            ],
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123"),
         ),
         numtracker=NumtrackerConfig(),
     )
-    interface.set_config(conf)
-    set_path_provider(Mock())
-    path_provider = get_path_provider()
 
     with pytest.raises(
         InvalidConfigError,
-        match="A StartDocumentPathProvider has not been configured for numtracker"
-        f"because a different path provider was already set: {path_provider}",
+        match="Numtracker has been configured but a path provider was imported"
+        "with the devices. Remove this path provider to use numtracker.",
     ):
         interface.setup(conf)
 
@@ -504,6 +503,7 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
     )
     interface.set_config(conf)
     ctx = interface.context()
+    interface.configure_context()
 
     headers = {"a": "b"}
     interface._try_configure_numtracker(headers)
@@ -531,3 +531,5 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     assert (
         ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"
     )
+
+    interface.teardown()

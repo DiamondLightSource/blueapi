@@ -507,3 +507,5 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     assert (
         ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"
     )
+
+    interface.teardown()

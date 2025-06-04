@@ -265,8 +265,7 @@ def run_plan(
             if resp.task_status is not None and not resp.task_status.task_failed:
                 print("Plan Succeeded")
         else:
-            server_task = client.create_task(task)
-            client.start_task(WorkerTask(task_id=server_task.task_id))
+            server_task = client.create_and_start_task(task)
             click.echo(server_task.task_id)
     except config.MissingStompConfiguration as mse:
         raise ClickException(*mse.args) from mse

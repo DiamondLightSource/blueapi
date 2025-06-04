@@ -389,10 +389,10 @@ def test_worker_and_data_events_produce_in_order(
                 errors=[],
                 warnings=[],
             ),
-            DataEvent(name="start", doc={}),
-            DataEvent(name="descriptor", doc={}),
-            DataEvent(name="event", doc={}),
-            DataEvent(name="stop", doc={}),
+            DataEvent(name="start", doc={}, task_id="0000-1111"),
+            DataEvent(name="descriptor", doc={}, task_id="0000-1111"),
+            DataEvent(name="event", doc={}, task_id="0000-1111"),
+            DataEvent(name="stop", doc={}, task_id="0000-1111"),
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(

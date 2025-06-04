@@ -103,6 +103,7 @@ class DataEvent(BlueapiBaseModel):
 
     name: str
     doc: Mapping[str, Any]
+    task_id: str
 
 
 @runtime_checkable

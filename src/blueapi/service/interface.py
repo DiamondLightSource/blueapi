@@ -136,12 +136,13 @@ def setup(config: ApplicationConfig) -> None:
 
     instantiate_devices_in_context()
 
-    if numtracker_client() is not None:
-        if not isinstance(get_path_provider(), StartDocumentPathProvider):
-            raise InvalidConfigError(
-                "Numtracker has been configured but a path provider was imported"
-                "with the devices. Remove this path provider to use numtracker."
-            )
+    if numtracker_client() is not None and not isinstance(
+        get_path_provider(), StartDocumentPathProvider
+    ):
+        raise InvalidConfigError(
+            "Numtracker has been configured but a path provider was imported"
+            "with the devices. Remove this path provider to use numtracker."
+        )
 
     stomp_client()
 

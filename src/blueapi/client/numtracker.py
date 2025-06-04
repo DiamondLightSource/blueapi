@@ -101,6 +101,9 @@ class NumtrackerClient:
         response.raise_for_status()
         json = response.json()
 
+        if json.get("errors") is not None:
+            raise RuntimeError(f"Numtracker error: {json['errors']}")
+
         new_collection = NumtrackerScanMutationResponse.model_validate(json["data"])
         logging.debug("New NumtrackerNewScan: %s", new_collection)
         return new_collection

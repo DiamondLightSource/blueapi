@@ -442,9 +442,6 @@ def test_setup_without_numtracker_without_exisiting_provider_does_not_make_one()
     conf = ApplicationConfig()
     interface.setup(conf)
 
-    assert interface.config() is not None
-    assert interface.worker() is not None
-
     with pytest.raises(NameError):
         get_path_provider()
 

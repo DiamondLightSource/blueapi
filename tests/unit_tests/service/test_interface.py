@@ -427,7 +427,7 @@ def test_configure_numtracker_with_no_metadata_fails():
     interface.teardown()
 
 
-def test_setup_without_numtracker_with_exisiting_provider_does_not_overwrite_provider():
+def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
     conf = ApplicationConfig()
     mock_provider = Mock()
     set_path_provider(mock_provider)
@@ -440,7 +440,7 @@ def test_setup_without_numtracker_with_exisiting_provider_does_not_overwrite_pro
     interface.teardown()
 
 
-def test_setup_without_numtracker_without_exisiting_provider_does_not_make_one():
+def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
     conf = ApplicationConfig()
     interface.setup(conf)
 

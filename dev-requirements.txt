@@ -140,7 +140,7 @@ PyJWT==2.10.1
 pyparsing==3.2.3
 pyright==1.1.401
 pytest==8.3.5
-pytest-asyncio==0.26.0
+pytest-asyncio==1.0.0
 pytest-cov==6.1.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0

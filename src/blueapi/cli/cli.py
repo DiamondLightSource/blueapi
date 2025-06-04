@@ -33,7 +33,7 @@ from blueapi.config import (
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
-from blueapi.service.model import SourceInfo, WorkerTask
+from blueapi.service.model import SourceInfo
 from blueapi.worker import ProgressEvent, Task, WorkerEvent
 
 from .scratch import setup_scratch
@@ -232,7 +232,11 @@ def listen_to_events(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: str | None, timeout: float | None, foreground: bool
+    obj: dict,
+    name: str,
+    parameters: str | None,
+    timeout: float | None,
+    foreground: bool,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]

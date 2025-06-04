@@ -8,7 +8,7 @@ image:
   repository: ghcr.io/diamondlightsource/blueapi
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "@sha256:a2dfbb6d7b08df4adcb35e835c2b57756b741e393abcae7e5c941c39fcf5fcd0"
+  tag: "@sha256:2c01159e73c991b4753c3b446b60fdac47d66c985c26636cfb4b0d7649b2b733"
 
 imagePullSecrets: []
 nameOverride: ""

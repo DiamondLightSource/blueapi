@@ -427,7 +427,6 @@ def test_configure_numtracker_with_no_metadata_fails():
 
 def test_setup_without_numtracker_with_exisiting_provider():
     conf = ApplicationConfig()
-    interface.set_config(conf)
     set_path_provider(Mock())
 
     interface.setup(conf)
@@ -441,7 +440,6 @@ def test_setup_without_numtracker_with_exisiting_provider():
 
 def test_setup_without_numtracker_without_exisiting_provider_does_not_make_one():
     conf = ApplicationConfig()
-    interface.set_config(conf)
     interface.setup(conf)
 
     assert interface.config() is not None
@@ -460,7 +458,6 @@ def test_setup_with_numtracker_makes_start_document_provider():
         ),
         numtracker=NumtrackerConfig(),
     )
-    interface.set_config(conf)
     interface.setup(conf)
 
     path_provider = get_path_provider()

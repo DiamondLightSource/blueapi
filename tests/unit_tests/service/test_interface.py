@@ -474,7 +474,7 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
             sources=[
                 Source(
                     kind=SourceKind.DEVICE_FUNCTIONS,
-                    module="tests.unit_tests.service.example_beamline",
+                    module="tests.unit_tests.service.example_beamline_with_path_provider",
                 ),
             ],
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123"),

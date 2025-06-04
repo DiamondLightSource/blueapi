@@ -5,6 +5,7 @@ from typing import Any
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from dodal.common.beamlines.beamline_utils import (
+    get_path_provider,
     set_path_provider,
 )
 
@@ -134,6 +135,14 @@ def setup(config: ApplicationConfig) -> None:
         _hook_run_engine_and_path_provider()
 
     instantiate_devices_in_context()
+
+    if numtracker_client() is not None:
+        if not isinstance(get_path_provider(), StartDocumentPathProvider):
+            raise InvalidConfigError(
+                "Numtracker has been configured but a path provider was imported"
+                "with the devices. Remove this path provider to use numtracker."
+            )
+
     stomp_client()
 
 

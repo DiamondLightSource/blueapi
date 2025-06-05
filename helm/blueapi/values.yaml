@@ -125,5 +125,7 @@ worker:
       host: "graylog-log-target.diamond.ac.uk"
       port: 12232
 initContainer:
-  enabled: false
-  persistentVolume: false
+  enabled: true
+persistentVolume:
+  enabled: true
+  #existingClaimName: foo

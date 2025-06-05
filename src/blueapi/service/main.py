@@ -112,6 +112,9 @@ def get_app(config: ApplicationConfig):
     dependencies = []
     if config.oidc:
         dependencies.append(Depends(verify_access_token(config.oidc)))
+        app.swagger_ui_init_oauth = {
+            "clientId": "NOT_SUPPORTED",
+        }
     app.include_router(open_router)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)

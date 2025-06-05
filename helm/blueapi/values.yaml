@@ -126,3 +126,40 @@ worker:
       port: 12232
 initContainer:
   enabled: false
+
+# oauth2:
+# ingress:
+#   enabled: true
+#   hosts:
+#     - p46-blueapi.diamond.ac.uk
+#   annotations:
+#     nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
+#   path: /
+#   pathType: Prefix
+# config:
+#   clientID: blueapi
+#   clientSecret:
+#   configFile: |-
+#     email_domains = [ "*" ]
+#     skip_provider_button = true
+#     cookie_refresh="1m"
+#     cookie_expire="30m"
+#     upstreams: ["{{ include "blueapi.fullname" . }}:{{ .Values.service.port }}"]
+# alphaConfig:
+#   enabled: true
+#   configData:
+#     providers:
+#       - provider: oidc
+#         id: authn.diamond.ac.uk
+#         clientID: blueapi
+#         clientSecret:
+#         oidcConfig:
+#           insecureAllowUnverifiedEmail: true
+#           emailClaim: sub
+#           audienceClaims: ["aud"]
+#           issuerURL: https://authn.diamond.ac.uk/realms/master
+#     injectRequestHeaders:
+#       - name: Authorization
+#         values:
+#           - claim: access_token
+#             prefix: "Bearer "

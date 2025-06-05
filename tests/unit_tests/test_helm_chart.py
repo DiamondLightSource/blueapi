@@ -370,6 +370,18 @@ def render_chart(
     with NamedTemporaryFile() as tmp_file:
         tmp_file.write(content)
         tmp_file.flush()
+        subprocess.run(
+            [
+                "helm",
+                "repo",
+                "add",
+                "oauth2-proxy",
+                "https://oauth2-proxy.github.io/manifests/",
+            ],
+        )
+        subprocess.run(
+            ["helm", "dependency", "build", path],
+        )
         result = subprocess.run(
             [
                 "helm",

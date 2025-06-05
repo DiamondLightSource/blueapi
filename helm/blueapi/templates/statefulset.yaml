@@ -44,10 +44,10 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
-      {{- if .Values.initContainer.persistentVolume }}
+      {{- if .Values.persistentVolume.enabled }}
       - name: scratch
         persistentVolumeClaim:
-          claimName: scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+          claimName: {{ .Values.persistentVolume.existingClaimName | default (tpl "scratch-{{ .Values.image.tag | default .Chart.AppVersion }}" .) }}
       - name: home  # Required for vscode to install plugins
         emptyDir:
           sizeLimit: 500Mi
@@ -63,8 +63,6 @@ spec:
       - name: venv
         emptyDir:
           sizeLimit: 5Gi
-      {{- end }}
-      {{- if .Values.initContainer.enabled }}
       initContainers:
       - name: setup-scratch
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -83,7 +81,7 @@ spec:
           - name: init-config
             mountPath: "/config"
             readOnly: true
-          {{- if .Values.initContainer.persistentVolume }}
+          {{- if .Values.persistentVolume.enabled }}
           - name: scratch
             mountPath: {{ .Values.worker.scratch.root }}
           - name: home
@@ -111,7 +109,10 @@ spec:
               mountPath: "/config"
               readOnly: true
             {{- if .Values.initContainer.enabled }}
-            {{- if not .Values.initContainer.persistentVolume }}
+            {{- if .Values.persistentVolume.enabled }}
+            - name: scratch
+              mountPath: {{ .Values.worker.scratch.root }}
+            {{- else }}
             - name: scratch-host
               mountPath: {{ .Values.worker.scratch.root }}
               mountPropagation: HostToContainer
@@ -128,7 +129,7 @@ spec:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
-        {{- if .Values.initContainer.persistentVolume }}
+        {{- if .Values.initContainer.persistentVolume.enabled }}
         - name: debug-account-sync
           image: ghcr.io/diamondlightsource/account-sync-sidecar:3.0.0
           volumeMounts:

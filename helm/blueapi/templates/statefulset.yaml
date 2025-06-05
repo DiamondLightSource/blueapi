@@ -44,10 +44,10 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
-      {{- if .Values.persistentVolume.enabled }}
+      {{- if .Values.initContainer.persistentVolume.enabled }}
       - name: scratch
         persistentVolumeClaim:
-          claimName: {{ .Values.persistentVolume.existingClaimName | default (tpl "scratch-{{ .Values.image.tag | default .Chart.AppVersion }}" .) }}
+          claimName: {{ .Values.initContainer.persistentVolume.existingClaimName | default (tpl "scratch-{{ .Values.image.tag | default .Chart.AppVersion }}" .) }}
       - name: home  # Required for vscode to install plugins
         emptyDir:
           sizeLimit: 500Mi
@@ -81,7 +81,7 @@ spec:
           - name: init-config
             mountPath: "/config"
             readOnly: true
-          {{- if .Values.persistentVolume.enabled }}
+          {{- if .Values.initContainer.persistentVolume.enabled }}
           - name: scratch
             mountPath: {{ .Values.worker.scratch.root }}
           - name: home
@@ -109,7 +109,7 @@ spec:
               mountPath: "/config"
               readOnly: true
             {{- if .Values.initContainer.enabled }}
-            {{- if .Values.persistentVolume.enabled }}
+            {{- if .Values.initContainer.persistentVolume.enabled }}
             - name: scratch
               mountPath: {{ .Values.worker.scratch.root }}
             {{- else }}
@@ -129,7 +129,7 @@ spec:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
-        {{- if .Values.persistentVolume.enabled }}
+        {{- if .Values.initContainer.persistentVolume.enabled }}
         - name: debug-account-sync
           image: ghcr.io/diamondlightsource/account-sync-sidecar:3.0.0
           volumeMounts:

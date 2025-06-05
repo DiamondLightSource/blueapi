@@ -126,6 +126,6 @@ worker:
       port: 12232
 initContainer:
   enabled: true
-persistentVolume:
-  enabled: true
-  #existingClaimName: foo
+  persistentVolume:
+    enabled: true
+    # existingClaimName: foo

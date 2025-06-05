@@ -1,4 +1,4 @@
-{{- if and .Values.persistentVolume (not .Values.persistentVolume.existingClaimName) }}
+{{- if and .Values.initContainer.persistentVolume.enabled (not .Values.initContainer.persistentVolume.existingClaimName) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

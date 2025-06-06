@@ -44,15 +44,21 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
+      {{- if .Values.initContainer.persistentVolume }}
+      - name: scratch
+        persistentVolumeClaim:
+          claimName: scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+      {{- else }}
       - name: scratch-host
         hostPath:
           path: {{ required "initContainer enabled but no worker.scratch.root!" (.Values.worker.scratch).root }}
           type: Directory
+      {{- end }}
       - name: venv
         emptyDir:
           sizeLimit: 5Gi
       {{- end }}
-      {{- if .Values.debug.enabled }}
+      {{- if or .Values.debug.enabled .Values.initContainer.persistentVolume.enabled}}
       - name: home  # Required for vscode to install plugins
         emptyDir:
           sizeLimit: 500Mi
@@ -79,9 +85,18 @@ spec:
           - name: init-config
             mountPath: "/config"
             readOnly: true
+          {{- if .Values.initContainer.persistentVolume }}
+          - name: scratch
+            mountPath: {{ .Values.worker.scratch.root }}
+          - name: home
+            mountPath: /home
+          - name: nslcd
+            mountPath: /var/run/nslcd
+          {{- else }}
           - name: scratch-host
             mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
+          {{- end }}
           - name: venv
             mountPath: /artefacts
       {{- end }}
@@ -89,7 +104,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary "-debug" "" .Values.debug.enabled }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -98,30 +113,37 @@ spec:
               mountPath: "/config"
               readOnly: true
             {{- if .Values.initContainer.enabled }}
+            {{- if .Values.initContainer.persistentVolume }}
+            - name: scratch
+              mountPath: {{ .Values.worker.scratch.root }}
+            {{- else }}
             - name: scratch-host
               mountPath: {{ .Values.worker.scratch.root }}
               mountPropagation: HostToContainer
+            {{- end }}
             - name: venv
               mountPath: /venv
             {{- end }}
-            {{- if .Values.debug.enabled }}
+            {{- if or .Values.debug.enabled .Values.initContainer.persistentVolume.enabled }}
             - mountPath: /home
               name: home
             - mountPath: /var/run/nslcd
               name: nslcd
             {{- end }}
           {{- if not .Values.debug.enabled }}
+          command:
+            - "blueapi"
           args:
             - "-c"
             - "/config/config.yaml"
             - "serve"
-          {{ end }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
-        {{- if .Values.debug.enabled }}
+        {{- if or .Values.debug.enabled .Values.initContainer.persistentVolume }}
         - name: debug-account-sync
           image: ghcr.io/diamondlightsource/account-sync-sidecar:3.0.0
           volumeMounts:

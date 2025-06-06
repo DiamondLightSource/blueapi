@@ -52,6 +52,14 @@ spec:
         emptyDir:
           sizeLimit: 5Gi
       {{- end }}
+      {{- if .Values.debug.enabled }}
+      - name: home  # Required for vscode to install plugins
+        emptyDir:
+          sizeLimit: 500Mi
+      - name: nslcd  # Shared volume between main and sidecar container
+        emptyDir:
+          sizeLimit: 5Mi
+      {{- end }}      
       {{- if .Values.initContainer.enabled }}
       initContainers:
       - name: setup-scratch
@@ -81,7 +89,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary "-debug" "" .Values.debug.enabled }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -96,15 +104,31 @@ spec:
             - name: venv
               mountPath: /venv
             {{- end }}
+            {{- if .Values.debug.enabled }}
+            - mountPath: /home
+              name: home
+            - mountPath: /var/run/nslcd
+              name: nslcd
+            {{- end }}
+          {{- if not .Values.debug.enabled }}
           args:
             - "-c"
             - "/config/config.yaml"
             - "serve"
+          {{ end }}
           envFrom:
             - configMapRef:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
+        {{- if .Values.debug.enabled }}
+        - name: debug-account-sync
+          image: ghcr.io/diamondlightsource/account-sync-sidecar:3.0.0
+          volumeMounts:
+          # This allows the nslcd socket to be shared between the main container and the sidecar
+          - mountPath: /var/run/nslcd
+            name: nslcd
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

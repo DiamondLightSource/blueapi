@@ -11,7 +11,7 @@ jobs:
         run: sleep 60
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # Need this to get version number from last tag
           fetch-depth: 0
@@ -29,7 +29,7 @@ jobs:
         run: rm build/html/.doctrees/environment.pickle
 
       - name: Upload built docs artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: docs
           path: build

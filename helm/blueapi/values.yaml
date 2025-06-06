@@ -8,7 +8,7 @@ image:
   repository: ghcr.io/diamondlightsource/blueapi
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "@sha256:2c01159e73c991b4753c3b446b60fdac47d66c985c26636cfb4b0d7649b2b733"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -125,7 +125,10 @@ worker:
       host: "graylog-log-target.diamond.ac.uk"
       port: 12232
 initContainer:
-  enabled: true
+  enabled: false
   persistentVolume:
     enabled: true
     # existingClaimName: foo
+
+debug:
+  enabled: false

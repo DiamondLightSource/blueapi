@@ -1,6 +1,6 @@
 # The devcontainer should use the developer target and run as root with podman
 # or docker with user namespaces.
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.11@sha256:4e0b4f7d6124f7ff41cdc1b82bedaa07722c55fbb78038c7587b5f7c0b892c1a
 FROM python:${PYTHON_VERSION} AS developer
 
 # Add any system dependencies for the developer/build environment here
@@ -21,18 +21,38 @@ ENV PATH=/venv/bin:$PATH
 
 # The build stage installs the context into the venv
 FROM developer AS build
-COPY . /context
-WORKDIR /context
+RUN mkdir -p /.cache/pip; chmod o+wrX /.cache/pip
+COPY --chmod=o+wrX . /workspaces/blueapi
+WORKDIR /workspaces/blueapi
 RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
 
+FROM build AS debug
+
+# Set origin to use ssh
+RUN git remote set-url origin git@github.com:diamondlightsource/DiamondLightSource/blueapi.git
+
+# For this pod to understand finding user information from LDAP
+RUN apt update
+RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
+RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
+
+# Make editable and debuggable
+RUN pip install debugpy
+RUN pip install -e .
+
+# Alternate entrypoint to allow devcontainer to attach
+ENTRYPOINT [ "/bin/bash", "-c", "--" ]
+CMD [ "while true; do sleep 30; done;" ]
+
 # The runtime stage copies the built venv into a slim runtime container
-FROM python:${PYTHON_VERSION}-slim AS runtime
+FROM python:${PYTHON_VERSION%@*}-slim AS runtime
 # Add apt-get system dependecies for runtime here if needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime
     git \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=build /venv/ /venv/
+COPY --from=build --chmod=o+wrX /venv/ /venv/
+COPY --from=build --chmod=o+wrX /.cache/pip /.cache/pip
 ENV PATH=/venv/bin:$PATH
 ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
 
@@ -42,8 +62,6 @@ ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
 # https://matplotlib.org/stable/install/environment_variables_faq.html#envvar-MPLCONFIGDIR
 
 ENV MPLCONFIGDIR=/tmp/matplotlib
-
-RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip
 
 ENTRYPOINT ["blueapi"]
 CMD ["serve"]

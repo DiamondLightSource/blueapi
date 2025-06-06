@@ -59,7 +59,7 @@ def _establish_device_connections(
 def connect_devices(
     run_engine: RunEngine, module: ModuleType, devices: dict[str, AnyDevice], **kwargs
 ):
-    factories = collect_factories(module, include_skipped=False)
+    factories = collect_factories(module, include_skipped=kwargs.get("include_skipped", False))
 
     def is_simulated_device(name, factory, **kwargs):
         device = devices.get(name, None)

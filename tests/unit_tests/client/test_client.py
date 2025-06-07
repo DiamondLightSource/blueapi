@@ -36,11 +36,26 @@ PLANS = PlanResponse(
 PLAN = PlanModel(name="foo")
 DEVICES = DeviceResponse(
     devices=[
-        DeviceModel(name="foo", protocols=[]),
-        DeviceModel(name="bar", protocols=[]),
+        DeviceModel(name="foo", protocols=[], address="foo"),
+        DeviceModel(name="bar", protocols=[], address="bar"),
     ]
 )
-DEVICE = DeviceModel(name="foo", protocols=[])
+DEVICES_AND_CHILDREN = DeviceResponse(
+    devices=[
+        DeviceModel(name="foo", protocols=[], address="foo"),
+        DeviceModel(name="bar", protocols=[], address="bar"),
+        DeviceModel(name="foo-bar", protocols=[], address="foo.bar"),
+    ]
+)
+DEVICES_AND_ALL_DESCENDENTS = DeviceResponse(
+    devices=[
+        DeviceModel(name="foo", protocols=[], address="foo"),
+        DeviceModel(name="bar", protocols=[], address="bar"),
+        DeviceModel(name="foo-bar", protocols=[], address="foo.bar"),
+        DeviceModel(name="foo-bar-baz", protocols=[], address="foo.bar.baz"),
+    ]
+)
+DEVICE = DeviceModel(name="foo", protocols=[], address="foo")
 TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
 TASKS = TasksListResponse(tasks=[TASK])
 ACTIVE_TASK = WorkerTask(task_id="bar")
@@ -68,11 +83,18 @@ FAILED_EVENT = WorkerEvent(
 
 @pytest.fixture
 def mock_rest() -> BlueapiRestClient:
+    def get_devices(max_depth: int) -> DeviceResponse:
+        if max_depth == -1 or max_depth > 1:
+            return DEVICES_AND_ALL_DESCENDENTS
+        if max_depth == 1:
+            return DEVICES_AND_CHILDREN
+        return DEVICES
+
     mock = Mock(spec=BlueapiRestClient)
 
     mock.get_plans.return_value = PLANS
     mock.get_plan.return_value = PLAN
-    mock.get_devices.return_value = DEVICES
+    mock.get_devices.side_effect = get_devices
     mock.get_device.return_value = DEVICE
     mock.get_state.return_value = WorkerState.IDLE
     mock.get_task.return_value = TASK
@@ -122,7 +144,7 @@ def test_get_nonexistant_plan(
 
 
 def test_get_devices(client: BlueapiClient):
-    assert client.get_devices() == DEVICES
+    assert client.get_devices(max_depth=0) == DEVICES
 
 
 def test_get_device(client: BlueapiClient):
@@ -512,7 +534,7 @@ def test_get_plan_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClien
 
 def test_get_devices_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
     with asserting_span_exporter(exporter, "get_devices"):
-        client.get_devices()
+        client.get_devices(max_depth=0)
 
 
 def test_get_device_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):

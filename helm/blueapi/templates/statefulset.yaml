@@ -88,10 +88,6 @@ spec:
           {{- if .Values.initContainer.persistentVolume }}
           - name: scratch
             mountPath: {{ .Values.worker.scratch.root }}
-          - name: home
-            mountPath: /home
-          - name: nslcd
-            mountPath: /var/run/nslcd
           {{- else }}
           - name: scratch-host
             mountPath: {{ .Values.worker.scratch.root }}

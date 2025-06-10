@@ -10,6 +10,8 @@
 
 Lightweight bluesky-as-a-service wrapper application. Also usable as a library.
 
+Please note it is stylised as blueapi, as opposed to BlueAPI etc.
+
 Source          | <https://github.com/DiamondLightSource/blueapi>
 :---:           | :---:
 PyPI            | `pip install blueapi`

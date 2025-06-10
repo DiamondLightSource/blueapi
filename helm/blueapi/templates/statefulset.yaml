@@ -131,8 +131,6 @@ spec:
               name: nslcd
             {{- end }}
           {{- if not .Values.debug.enabled }}
-          command:
-            - "blueapi"
           args:
             - "-c"
             - "/config/config.yaml"

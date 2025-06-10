@@ -176,9 +176,9 @@ def test_setup_scratch_fails_on_non_sgid_root(
 
 
 def test_setup_scratch_passes_without_required_gid(
-    directory_path: Path,
+    directory_path_with_sgid: Path,
 ):
-    config = ScratchConfig(root=directory_path, repositories=[])
+    config = ScratchConfig(root=directory_path_with_sgid, repositories=[])
     setup_scratch(config)
 
     assert True

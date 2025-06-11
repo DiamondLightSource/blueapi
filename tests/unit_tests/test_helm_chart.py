@@ -412,8 +412,20 @@ def scratch_host_volume_mount():
 
 
 @pytest.fixture
+def init_config_volume_mount():
+    return {
+        "name": "init-config",
+        "mountPath": "/config",
+        "readOnly": True,
+    }
+
+
+@pytest.fixture
 def init_container_venv_volume_mount():
-    return {"name": "venv", "mountPath": "/artefacts"}
+    return {
+        "name": "venv",
+        "mountPath": "/artefacts",
+    }
 
 
 @pytest.mark.parametrize("init_container_enabled", [True, False])
@@ -464,6 +476,29 @@ def test_init_container_scratch_mount(
 @pytest.mark.parametrize("persistentVolume_enabled", [True, False])
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
+def test_init_container_init_config_mount(
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    init_config_volume_mount,
+):
+    manifests = render_persistent_volume_chart(
+        True,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ][0]["volumeMounts"]
+
+    assert init_config_volume_mount in volume_mounts
+
+
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
 def test_init_container_venv_mount(
     persistentVolume_enabled,
     existingClaimName,
@@ -482,6 +517,7 @@ def test_init_container_venv_mount(
     ][0]["volumeMounts"]
 
     assert init_container_venv_volume_mount in volume_mounts
+
 
 
 def render_chart(

@@ -368,7 +368,10 @@ def test_init_container_exists_conditions(init_container_enabled):
     )
 
     if init_container_enabled:
-        assert "initContainers" in manifests["StatefulSet"]["blueapi"]["spec"]
+        assert (
+            "initContainers"
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]
+        )
 
     else:
         assert "initContainers" not in manifests["StatefulSet"]["blueapi"]["spec"]

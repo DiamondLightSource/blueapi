@@ -25,6 +25,7 @@ ManifestKind = Literal[
     "Ingress",
     "Service",
     "StatefulSet",
+    "PersistentVolumeClaim",
     "Pod",
     "ServiceAccount",
 ]
@@ -518,6 +519,43 @@ def test_init_container_venv_mount(
 
     assert init_container_venv_volume_mount in volume_mounts
 
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_persistent_volume_claim_exists(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    persistent_volume_claim = {
+        "scratch-": {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "name": "scratch-",
+                "annotations": {"helm.sh/resource-policy": "keep"},
+            },
+            "spec": {
+                "accessModes": ["ReadWriteMany"],
+                "resources": {"requests": {"storage": "1Gi"}},
+            },
+        }
+    }
+
+    if persistentVolume_enabled and not existingClaimName:
+        assert persistent_volume_claim == manifests["PersistentVolumeClaim"]
+    else:
+        assert "PersistentVolumeClaim" not in manifests
 
 
 def render_chart(

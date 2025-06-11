@@ -411,6 +411,11 @@ def scratch_host_volume_mount():
     }
 
 
+@pytest.fixture
+def init_container_venv_volume_mount():
+    return {"name": "venv", "mountPath": "/artefacts"}
+
+
 @pytest.mark.parametrize("init_container_enabled", [True, False])
 def test_init_container_exists_conditions(init_container_enabled):
     manifests = render_chart(
@@ -454,6 +459,29 @@ def test_init_container_scratch_mount(
     else:
         assert scratch_host_volume_mount in volume_mounts
         assert not any(mount["name"] == "scratch" for mount in volume_mounts)
+
+
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_init_container_venv_mount(
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    init_container_venv_volume_mount,
+):
+    manifests = render_persistent_volume_chart(
+        True,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ][0]["volumeMounts"]
+
+    assert init_container_venv_volume_mount in volume_mounts
 
 
 def render_chart(

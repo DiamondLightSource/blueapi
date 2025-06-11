@@ -361,6 +361,19 @@ def test_fluentd_ignore_false_when_graylog_disabled():
     )
 
 
+@pytest.mark.parametrize("init_container_enabled", [True, False])
+def test_init_container_exists_conditions(init_container_enabled):
+    manifests = render_chart(
+        values={"initContainer": {"enabled": init_container_enabled}}
+    )
+
+    if init_container_enabled:
+        assert "initContainers" in manifests["StatefulSet"]["blueapi"]["spec"]
+
+    else:
+        assert "initContainers" not in manifests["StatefulSet"]["blueapi"]["spec"]
+
+
 def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,

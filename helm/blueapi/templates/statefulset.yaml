@@ -85,7 +85,7 @@ spec:
           - name: init-config
             mountPath: "/config"
             readOnly: true
-          {{- if .Values.initContainer.persistentVolume }}
+          {{- if .Values.initContainer.persistentVolume.enabled }}
           - name: scratch
             mountPath: {{ .Values.worker.scratch.root }}
           {{- else }}

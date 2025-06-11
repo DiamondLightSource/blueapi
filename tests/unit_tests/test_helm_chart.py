@@ -361,6 +361,39 @@ def test_fluentd_ignore_false_when_graylog_disabled():
     )
 
 
+def render_persistent_volume_chart(
+    init_container_enabled, persistentVolume_enabled, existingClaimName, debug_enabled
+):
+    """Generated chart for this section of Values:
+    ```
+    initContainer:
+        enabled: false
+        persistentVolume:
+            enabled: true
+            # existingClaimName: foo
+
+    debug:
+        enabled: false
+    ```
+    """
+    return render_chart(
+        values={
+            "initContainer": {
+                "enabled": init_container_enabled,
+                "persistentVolume": {
+                    "enabled": persistentVolume_enabled,
+                }
+                | (
+                    {"existingClaimName": existingClaimName}
+                    if existingClaimName
+                    else {}
+                ),
+            },
+            "debug": {"enabled": debug_enabled},
+        }
+    )
+
+
 @pytest.mark.parametrize("init_container_enabled", [True, False])
 def test_init_container_exists_conditions(init_container_enabled):
     manifests = render_chart(
@@ -375,6 +408,36 @@ def test_init_container_exists_conditions(init_container_enabled):
 
     else:
         assert "initContainers" not in manifests["StatefulSet"]["blueapi"]["spec"]
+
+
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_init_container_scratch_mount(
+    persistentVolume_enabled, existingClaimName, debug_enabled
+):
+    manifests = render_persistent_volume_chart(
+        True,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ][0]["volumeMounts"]
+    if persistentVolume_enabled:
+        assert {
+            "name": "scratch",
+            "mountPath": "/blueapi-plugins/scratch",
+        } in volume_mounts
+        assert not any(mount["name"] == "scratch-host" for mount in volume_mounts)
+    else:
+        assert {
+            "name": "scratch-host",
+            "mountPath": "/blueapi-plugins/scratch",
+            "mountPropagation": "HostToContainer",
+        } in volume_mounts
+        assert not any(mount["name"] == "scratch" for mount in volume_mounts)
 
 
 def render_chart(

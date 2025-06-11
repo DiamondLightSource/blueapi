@@ -394,6 +394,23 @@ def render_persistent_volume_chart(
     )
 
 
+@pytest.fixture
+def scratch_volume_mount():
+    return {
+        "name": "scratch",
+        "mountPath": "/blueapi-plugins/scratch",
+    }
+
+
+@pytest.fixture
+def scratch_host_volume_mount():
+    return {
+        "name": "scratch-host",
+        "mountPath": "/blueapi-plugins/scratch",
+        "mountPropagation": "HostToContainer",
+    }
+
+
 @pytest.mark.parametrize("init_container_enabled", [True, False])
 def test_init_container_exists_conditions(init_container_enabled):
     manifests = render_chart(
@@ -414,7 +431,11 @@ def test_init_container_exists_conditions(init_container_enabled):
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
 def test_init_container_scratch_mount(
-    persistentVolume_enabled, existingClaimName, debug_enabled
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    scratch_volume_mount,
+    scratch_host_volume_mount,
 ):
     manifests = render_persistent_volume_chart(
         True,
@@ -422,21 +443,16 @@ def test_init_container_scratch_mount(
         existingClaimName,
         debug_enabled,
     )
+
     volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
         "initContainers"
     ][0]["volumeMounts"]
+
     if persistentVolume_enabled:
-        assert {
-            "name": "scratch",
-            "mountPath": "/blueapi-plugins/scratch",
-        } in volume_mounts
+        assert scratch_volume_mount in volume_mounts
         assert not any(mount["name"] == "scratch-host" for mount in volume_mounts)
     else:
-        assert {
-            "name": "scratch-host",
-            "mountPath": "/blueapi-plugins/scratch",
-            "mountPropagation": "HostToContainer",
-        } in volume_mounts
+        assert scratch_host_volume_mount in volume_mounts
         assert not any(mount["name"] == "scratch" for mount in volume_mounts)
 
 

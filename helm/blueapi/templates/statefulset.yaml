@@ -85,6 +85,8 @@ spec:
           - name: init-config
             mountPath: "/config"
             readOnly: true
+          - name: venv
+            mountPath: /artefacts
           {{- if .Values.initContainer.persistentVolume.enabled }}
           - name: scratch
             mountPath: {{ .Values.worker.scratch.root }}
@@ -93,8 +95,7 @@ spec:
             mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
           {{- end }}
-          - name: venv
-            mountPath: /artefacts
+
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}

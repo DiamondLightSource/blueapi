@@ -186,11 +186,14 @@ def listen_to_events(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     if not config.stomp.enabled:
         raise BlueskyStreamingError("Message bus needs to be configured")
+    assert config.stomp.url.host and config.stomp.url.port, (
+        "stomp url missing host or port in the configuration."
+    )
     event_bus_client = EventBusClient(
         StompClient.for_broker(
             broker=Broker(
-                host=config.stomp.host,
-                port=config.stomp.port,
+                host=config.stomp.url.host,
+                port=config.stomp.url.port,
                 auth=config.stomp.auth,
             )
         )
@@ -205,7 +208,7 @@ def listen_to_events(obj: dict) -> None:
 
     print(
         "Subscribing to all bluesky events from "
-        f"{config.stomp.host}:{config.stomp.port}",
+        f"{config.stomp.url.host}:{config.stomp.url.port}",
         file=sys.stderr,
     )
     with event_bus_client:

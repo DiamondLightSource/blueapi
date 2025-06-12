@@ -74,7 +74,8 @@ def set_up_graylog_handler(
         logging_config: LoggingConfig
     """
     graylog_handler = GELFTCPHandler(
-        logging_config.graylog.host, logging_config.graylog.port
+        logging_config.graylog.url.host,
+        logging_config.graylog.url.port,  # type: ignore
     )
     graylog_handler.setLevel(logging_config.level)
 

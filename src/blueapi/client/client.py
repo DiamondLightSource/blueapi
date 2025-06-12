@@ -56,10 +56,13 @@ class BlueapiClient:
             ...  # Swallow exceptions
         rest = BlueapiRestClient(config.api, session_manager=session_manager)
         if config.stomp.enabled:
+            assert config.stomp.url.host and config.stomp.url.port, (
+                "stomp url missing host or port in the configuration."
+            )
             client = StompClient.for_broker(
                 broker=Broker(
-                    host=config.stomp.host,
-                    port=config.stomp.port,
+                    host=config.stomp.url.host,
+                    port=config.stomp.url.port,
                     auth=config.stomp.auth,
                 )
             )

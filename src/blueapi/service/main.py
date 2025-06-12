@@ -509,8 +509,10 @@ def start(config: ApplicationConfig):
         http_capture_headers_server_response=[",*"],
     )
     app.state.config = config
-
-    uvicorn.run(app, host=config.api.host, port=config.api.port)
+    assert config.api.url.host and config.api.url.port, (
+        "api url is missing host or port"
+    )
+    uvicorn.run(app, host=config.api.url.host, port=config.api.url.port)
 
 
 async def add_api_version_header(

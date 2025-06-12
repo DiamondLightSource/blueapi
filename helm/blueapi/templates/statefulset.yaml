@@ -58,7 +58,7 @@ spec:
           type: Directory
       {{- end }}
       {{- end }}
-      {{- if or .Values.debug.enabled .Values.initContainer.persistentVolume.enabled}}
+      {{- if or .Values.debug.enabled (and .Values.initContainer.enabled .Values.initContainer.persistentVolume.enabled)}}
       - name: home  # Required for vscode to install plugins
         emptyDir:
           sizeLimit: 500Mi
@@ -121,7 +121,7 @@ spec:
             - name: venv
               mountPath: /venv
             {{- end }}
-            {{- if or .Values.debug.enabled .Values.initContainer.persistentVolume.enabled }}
+            {{- if or .Values.debug.enabled (and .Values.initContainer.enabled .Values.initContainer.persistentVolume.enabled) }}
             - mountPath: /home
               name: home
             - mountPath: /var/run/nslcd

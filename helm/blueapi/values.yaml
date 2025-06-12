@@ -124,6 +124,9 @@ worker:
       url: http://graylog-log-target.diamond.ac.uk:12232/
 initContainer:
   enabled: false
+  persistentVolume:
+    enabled: false
+    # existingClaimName: foo
 
 debug:
   enabled: false

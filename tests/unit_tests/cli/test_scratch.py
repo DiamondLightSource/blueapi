@@ -170,9 +170,18 @@ def test_setup_scratch_fails_on_non_directory_root(
 def test_setup_scratch_fails_on_non_sgid_root(
     directory_path: Path,
 ):
-    config = ScratchConfig(root=directory_path, repositories=[])
+    config = ScratchConfig(root=directory_path, repositories=[], required_gid=1000)
     with pytest.raises(PermissionError):
         setup_scratch(config)
+
+
+def test_setup_scratch_passes_without_required_gid(
+    directory_path_with_sgid: Path,
+):
+    config = ScratchConfig(root=directory_path_with_sgid, repositories=[])
+    setup_scratch(config)
+
+    assert True
 
 
 def test_setup_scratch_fails_on_wrong_gid(

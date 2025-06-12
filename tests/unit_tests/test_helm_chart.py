@@ -4,6 +4,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 from typing import Any, Literal
+from unittest.mock import ANY
 
 import pytest
 import yaml
@@ -25,6 +26,7 @@ ManifestKind = Literal[
     "Ingress",
     "Service",
     "StatefulSet",
+    "PersistentVolumeClaim",
     "Pod",
     "ServiceAccount",
 ]
@@ -358,6 +360,679 @@ def test_fluentd_ignore_false_when_graylog_disabled():
             "annotations"
         ]
     )
+
+
+def render_persistent_volume_chart(
+    init_container_enabled, persistentVolume_enabled, existingClaimName, debug_enabled
+):
+    """Generated chart for this section of Values:
+    ```
+    initContainer:
+        enabled: false
+        persistentVolume:
+            enabled: true
+            # existingClaimName: foo
+
+    debug:
+        enabled: false
+    ```
+    """
+    return render_chart(
+        values={
+            "initContainer": {
+                "enabled": init_container_enabled,
+                "persistentVolume": {
+                    "enabled": persistentVolume_enabled,
+                }
+                | (
+                    {"existingClaimName": existingClaimName}
+                    if existingClaimName
+                    else {}
+                ),
+            },
+            "debug": {"enabled": debug_enabled},
+        }
+    )
+
+
+@pytest.fixture
+def scratch_volume_mount():
+    return {
+        "name": "scratch",
+        "mountPath": "/blueapi-plugins/scratch",
+    }
+
+
+@pytest.fixture
+def scratch_host_volume_mount():
+    return {
+        "name": "scratch-host",
+        "mountPath": "/blueapi-plugins/scratch",
+        "mountPropagation": "HostToContainer",
+    }
+
+
+@pytest.fixture
+def init_config_volume_mount():
+    return {
+        "name": "init-config",
+        "mountPath": "/config",
+        "readOnly": True,
+    }
+
+
+@pytest.fixture
+def init_container_venv_volume_mount():
+    return {
+        "name": "venv",
+        "mountPath": "/artefacts",
+    }
+
+
+@pytest.fixture
+def venv_volume_mount():
+    return {
+        "name": "venv",
+        "mountPath": "/venv",
+    }
+
+
+@pytest.fixture
+def home_volume_mount():
+    return {
+        "name": "home",
+        "mountPath": "/home",
+    }
+
+
+@pytest.fixture
+def nslcd_volume_mount():
+    return {
+        "name": "nslcd",
+        "mountPath": "/var/run/nslcd",
+    }
+
+
+@pytest.mark.parametrize("init_container_enabled", [True, False])
+def test_init_container_exists_conditions(init_container_enabled):
+    manifests = render_chart(
+        values={"initContainer": {"enabled": init_container_enabled}}
+    )
+
+    if init_container_enabled:
+        assert (
+            "initContainers"
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]
+        )
+
+    else:
+        assert "initContainers" not in manifests["StatefulSet"]["blueapi"]["spec"]
+
+
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_init_container_scratch_mount(
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    scratch_volume_mount,
+    scratch_host_volume_mount,
+):
+    manifests = render_persistent_volume_chart(
+        True,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ][0]["volumeMounts"]
+
+    if persistentVolume_enabled:
+        assert scratch_volume_mount in volume_mounts
+        assert not any(mount["name"] == "scratch-host" for mount in volume_mounts)
+    else:
+        assert scratch_host_volume_mount in volume_mounts
+        assert not any(mount["name"] == "scratch" for mount in volume_mounts)
+
+
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_init_container_init_config_mount(
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    init_config_volume_mount,
+):
+    manifests = render_persistent_volume_chart(
+        True,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ][0]["volumeMounts"]
+
+    assert init_config_volume_mount in volume_mounts
+
+
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_init_container_venv_volume_mount(
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    init_container_venv_volume_mount,
+):
+    manifests = render_persistent_volume_chart(
+        True,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ][0]["volumeMounts"]
+
+    assert init_container_venv_volume_mount in volume_mounts
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_persistent_volume_claim_exists(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    persistent_volume_claim = {
+        "scratch-": {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "name": "scratch-",
+                "annotations": {"helm.sh/resource-policy": "keep"},
+            },
+            "spec": {
+                "accessModes": ["ReadWriteMany"],
+                "resources": {"requests": {"storage": "1Gi"}},
+            },
+        }
+    }
+
+    if persistentVolume_enabled and not existingClaimName:
+        assert persistent_volume_claim == manifests["PersistentVolumeClaim"]
+    else:
+        assert "PersistentVolumeClaim" not in manifests
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_debug_account_sync_exists(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if debug_enabled or (initContainer_enabled and persistentVolume_enabled):
+        assert {
+            "name": "debug-account-sync",
+            "image": ANY,
+            "volumeMounts": [{"mountPath": "/var/run/nslcd", "name": "nslcd"}],
+        } == manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "containers"
+        ][1]
+
+    else:
+        assert (
+            len(
+                manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                    "containers"
+                ]
+            )
+            == 1
+        )
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_container_image_has_debug_suffix(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if debug_enabled:
+        assert (
+            manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "containers"
+            ][0]["image"][-6:]
+            == "-debug"
+        )
+
+    else:
+        assert not (
+            manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "containers"
+            ][0]["image"][-6:]
+            == "-debug"
+        )
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_main_container_scratch_mount(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    scratch_volume_mount,
+    scratch_host_volume_mount,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "containers"
+    ][0]["volumeMounts"]
+
+    if initContainer_enabled and persistentVolume_enabled:
+        assert scratch_volume_mount in volume_mounts
+        assert not any(mount["name"] == "scratch-host" for mount in volume_mounts)
+    elif initContainer_enabled:
+        assert scratch_host_volume_mount in volume_mounts
+        assert not any(mount["name"] == "scratch" for mount in volume_mounts)
+    else:
+        assert not any(mount["name"] == "scratch-host" for mount in volume_mounts)
+        assert not any(mount["name"] == "scratch" for mount in volume_mounts)
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_main_container_venv_volume_mount(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    venv_volume_mount,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "containers"
+    ][0]["volumeMounts"]
+
+    if initContainer_enabled:
+        assert venv_volume_mount in volume_mounts
+    else:
+        assert venv_volume_mount not in volume_mounts
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_main_container_home_and_nslcd_volume_mounts(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    home_volume_mount,
+    nslcd_volume_mount,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "containers"
+    ][0]["volumeMounts"]
+
+    if debug_enabled or (initContainer_enabled and persistentVolume_enabled):
+        assert home_volume_mount in volume_mounts
+        assert nslcd_volume_mount in volume_mounts
+    else:
+        assert home_volume_mount not in volume_mounts
+        assert nslcd_volume_mount not in volume_mounts
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_main_container_args(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    home_volume_mount,
+    nslcd_volume_mount,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if not debug_enabled:
+        assert manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "containers"
+        ][0]["args"] == [
+            "-c",
+            "/config/config.yaml",
+            "serve",
+        ]
+    else:
+        assert (
+            "args"
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "containers"
+            ][0]
+        )
+
+
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_scratch_volume_uses_correct_claimName(
+    existingClaimName,
+    debug_enabled,
+):
+    manifests = render_persistent_volume_chart(
+        True,
+        True,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    claim_name = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "volumes"
+    ][3]["persistentVolumeClaim"]["claimName"]
+
+    if existingClaimName:
+        assert claim_name == existingClaimName
+        assert "PersistentVolumeClaim" not in manifests
+    else:
+        assert claim_name == "scratch-"
+        assert claim_name in manifests["PersistentVolumeClaim"]
+
+
+@pytest.fixture
+def worker_config_volume():
+    return {
+        "name": "worker-config",
+        "projected": {"sources": [{"configMap": {"name": "blueapi-config"}}]},
+    }
+
+
+@pytest.fixture
+def init_config_volume():
+    return {
+        "name": "init-config",
+        "projected": {"sources": [{"configMap": {"name": "blueapi-initconfig"}}]},
+    }
+
+
+@pytest.fixture
+def scratch_volume():
+    return {"name": "scratch", "persistentVolumeClaim": {"claimName": ANY}}
+
+
+@pytest.fixture
+def scratch_host_volume():
+    return {"name": "scratch-host", "hostPath": {"path": ANY, "type": "Directory"}}
+
+
+@pytest.fixture
+def venv_volume():
+    return {"name": "venv", "emptyDir": {"sizeLimit": "5Gi"}}
+
+
+@pytest.fixture
+def home_volume():
+    return {"name": "home", "emptyDir": {"sizeLimit": "500Mi"}}
+
+
+@pytest.fixture
+def nslcd_volume():
+    return {"name": "nslcd", "emptyDir": {"sizeLimit": "5Mi"}}
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_worker_config_volume_declared(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    worker_config_volume,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    assert (
+        worker_config_volume
+        in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]["volumes"]
+    )
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_init_config_and_venv_volumes_declared(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    init_config_volume,
+    venv_volume,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if initContainer_enabled:
+        assert (
+            init_config_volume
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+        assert (
+            venv_volume
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+    else:
+        assert (
+            init_config_volume
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+
+        assert (
+            venv_volume
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_scratch_volume_declared(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    scratch_volume,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if initContainer_enabled and persistentVolume_enabled:
+        assert (
+            scratch_volume
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+    else:
+        assert (
+            scratch_volume
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_scratch_host_volume_declared(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    scratch_host_volume,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if initContainer_enabled and not persistentVolume_enabled:
+        assert (
+            scratch_host_volume
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+    else:
+        assert (
+            scratch_host_volume
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_home_and_nslcd_volumes_declared(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    home_volume,
+    nslcd_volume,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if debug_enabled or (initContainer_enabled and persistentVolume_enabled):
+        assert (
+            home_volume
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+        assert (
+            nslcd_volume
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+    else:
+        assert (
+            home_volume
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+        assert (
+            nslcd_volume
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
 
 
 def render_chart(

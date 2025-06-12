@@ -130,9 +130,9 @@ class ScratchConfig(BlueapiBaseModel):
     )
     required_gid: int | None = Field(
         description=textwrap.dedent("""
-    Required owner GID for the scratch directory. If supplied the setup-scratch
+    Required owner GID for the scratch directory. If supplied, the setup-scratch
     command will check the scratch area ownership and raise an error if it is
-    not owned by <GID>.
+    not owned by <GID>, or if it does not have SGID permission bit set.
     """),
         default=None,
     )

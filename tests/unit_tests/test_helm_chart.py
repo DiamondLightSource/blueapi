@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 import pytest
 import yaml
-from pydantic import Secret, TypeAdapter
+from pydantic import HttpUrl, Secret, TypeAdapter
 
 from blueapi.config import (
     ApplicationConfig,
@@ -62,8 +62,7 @@ LOW_RESOURCES = {
         ApplicationConfig(
             stomp=StompConfig(
                 enabled=True,
-                host="example.com",
-                port=515,
+                url=HttpUrl("http://example.com:515/"),
             ),
             logging=LoggingConfig(level="CRITICAL"),
             oidc=OIDCConfig(

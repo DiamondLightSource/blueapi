@@ -1,4 +1,3 @@
 stomp:
   enabled: true
-  host: localhost
-  port: 61613
+  url: http://localhost:61613

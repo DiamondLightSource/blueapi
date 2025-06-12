@@ -44,7 +44,7 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
-      {{- if .Values.initContainer.persistentVolume }}
+      {{- if .Values.initContainer.persistentVolume.enabled }}
       - name: scratch
         persistentVolumeClaim:
           claimName: {{default "scratch-{{ .Values.image.tag | default .Chart.AppVersion }}" .Values.initContainer.persistentVolume.existingClaimName }}

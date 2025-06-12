@@ -748,6 +748,42 @@ def test_main_container_home_and_nslcd_mounts(
         assert nslcd_mount not in volume_mounts
 
 
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_main_container_args(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    home_mount,
+    nslcd_mount,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if not debug_enabled:
+        assert manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "containers"
+        ][0]["args"] == [
+            "-c",
+            "/config/config.yaml",
+            "serve",
+        ]
+    else:
+        assert (
+            "args"
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "containers"
+            ][0]
+        )
+
+
 def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,

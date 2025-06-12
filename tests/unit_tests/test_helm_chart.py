@@ -8,6 +8,7 @@ from unittest.mock import ANY
 
 import pytest
 import yaml
+from colorama import init
 from pydantic import Secret, TypeAdapter
 
 from blueapi.config import (
@@ -430,6 +431,14 @@ def init_container_venv_volume_mount():
     }
 
 
+@pytest.fixture
+def venv_mount():
+    return {
+        "name": "venv",
+        "mountPath": "/venv",
+    }
+
+
 @pytest.mark.parametrize("init_container_enabled", [True, False])
 def test_init_container_exists_conditions(init_container_enabled):
     manifests = render_chart(
@@ -662,6 +671,34 @@ def test_main_container_scratch_mount(
     else:
         assert not any(mount["name"] == "scratch-host" for mount in volume_mounts)
         assert not any(mount["name"] == "scratch" for mount in volume_mounts)
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_main_container_venv_mount(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    venv_mount,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "containers"
+    ][0]["volumeMounts"]
+
+    if initContainer_enabled:
+        assert venv_mount in volume_mounts
+    else:
+        assert venv_mount not in volume_mounts
 
 
 def render_chart(

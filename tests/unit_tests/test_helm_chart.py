@@ -937,6 +937,13 @@ def test_scratch_volume_declared(
                 "volumes"
             ]
         )
+    else:
+        assert (
+            scratch_volume
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
 
 
 def render_chart(

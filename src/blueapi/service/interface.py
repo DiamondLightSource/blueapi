@@ -69,9 +69,8 @@ def worker() -> TaskWorker:
 def stomp_client() -> StompClient | None:
     stomp_config: StompConfig = config().stomp
     if stomp_config.enabled:
-        assert stomp_config.url.host and stomp_config.url.port, (
-            "stomp url missing host or port in the configuration."
-        )
+        assert stomp_config.url.host is not None, "Stomp URL missing host"
+        assert stomp_config.url.port is not None, "Stomp URL missing port"
         client = StompClient.for_broker(
             broker=Broker(
                 host=stomp_config.url.host,

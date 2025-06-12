@@ -509,9 +509,8 @@ def start(config: ApplicationConfig):
         http_capture_headers_server_response=[",*"],
     )
     app.state.config = config
-    assert config.api.url.host and config.api.url.port, (
-        "api url is missing host or port"
-    )
+    assert config.api.url.host is not None, "API URL missing host"
+    assert config.api.url.port is not None, "API URL missing port"
     uvicorn.run(app, host=config.api.url.host, port=config.api.url.port)
 
 

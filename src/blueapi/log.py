@@ -73,9 +73,11 @@ def set_up_graylog_handler(
         logger: Logger to attach handler to
         logging_config: LoggingConfig
     """
+    assert logging_config.graylog.url.host is not None, "Graylog URL missing host"
+    assert logging_config.graylog.url.port is not None, "Graylog URL missing port"
     graylog_handler = GELFTCPHandler(
         logging_config.graylog.url.host,
-        logging_config.graylog.url.port,  # type: ignore
+        logging_config.graylog.url.port,
     )
     graylog_handler.setLevel(logging_config.level)
 

@@ -149,7 +149,7 @@ PyYAML==6.0.2
 questionary==2.1.0
 redis==6.2.0
 referencing==0.36.2
-requests==2.32.3
+requests==2.32.4
 responses==0.25.7
 rich==14.0.0
 rich-toolkit==0.14.3

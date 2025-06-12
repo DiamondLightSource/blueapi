@@ -208,7 +208,7 @@ def temp_yaml_config_file(
                     {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
             },
-            "api": {"host": "0.0.0.0", "port": 8000},
+            "api": {"url": "http://0.0.0.0:8000/"},
         },
         {
             "stomp": {"enabled": True},
@@ -224,11 +224,12 @@ def temp_yaml_config_file(
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "host": "graylog-log-target.diamond.ac.uk",
-                    "port": 12232,
+                    "url": "http://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
-            "api": {"host": "0.0.0.0", "port": 8000, "protocol": "http"},
+            "api": {
+                "url": "http://0.0.0.0:8000/",
+            },
             "scratch": None,
         },
     ],
@@ -256,8 +257,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
         {
             "stomp": {
                 "enabled": True,
-                "host": "localhost",
-                "port": 61613,
+                "url": "http://localhost:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
             "auth_token_path": None,
@@ -276,17 +276,14 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 ],
             },
             "api": {
-                "host": "0.0.0.0",
-                "port": 8000,
-                "protocol": "http",
+                "url": "http://0.0.0.0:8000/",
                 "cors": None,
             },
             "logging": {
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "host": "graylog-log-target.diamond.ac.uk",
-                    "port": 12232,
+                    "url": "http://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
             "numtracker": None,
@@ -309,8 +306,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
         {
             "stomp": {
                 "enabled": True,
-                "host": "https://rabbitmq.diamond.ac.uk",
-                "port": 61613,
+                "url": "https://rabbitmq.diamond.ac.uk:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
             "auth_token_path": None,
@@ -330,14 +326,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "host": "graylog-log-target.diamond.ac.uk",
-                    "port": 12232,
+                    "url": "http://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
             "api": {
-                "host": "0.0.0.0",
-                "port": 8001,
-                "protocol": "http",
+                "url": "http://0.0.0.0:8001/",
                 "cors": None,
             },
             "numtracker": None,

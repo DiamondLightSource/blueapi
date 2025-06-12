@@ -11,6 +11,7 @@ from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
     BaseModel,
     Field,
+    HttpUrl,
     TypeAdapter,
     ValidationError,
     field_validator,
@@ -44,8 +45,7 @@ class StompConfig(BlueapiBaseModel):
         "event publishing",
         default=False,
     )
-    host: str = Field(description="STOMP broker host", default="localhost")
-    port: int = Field(description="STOMP broker port", default=61613)
+    url: HttpUrl = HttpUrl("http://localhost:61613")
     auth: BasicAuthentication | None = Field(
         description="Auth information for communicating with STOMP broker, if required",
         default=None,
@@ -84,8 +84,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
 class GraylogConfig(BlueapiBaseModel):
     enabled: bool = False
-    host: str = "localhost"
-    port: int = 5555
+    url: HttpUrl = HttpUrl("http://localhost:5555")
 
 
 class LoggingConfig(BlueapiBaseModel):
@@ -101,9 +100,7 @@ class CORSConfig(BlueapiBaseModel):
 
 
 class RestConfig(BlueapiBaseModel):
-    host: str = "localhost"
-    port: int = 8000
-    protocol: str = "http"
+    url: HttpUrl = HttpUrl("http://localhost:8000")
     cors: CORSConfig | None = None
 
 

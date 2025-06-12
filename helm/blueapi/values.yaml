@@ -95,8 +95,7 @@ tracing:
 # Config for the worker goes here, will be mounted into a config file
 worker:
   api:
-    host: 0.0.0.0 # Allow non-loopback traffic
-    port: 8000
+    url: http://0.0.0.0:8000/ # Allow non-loopback traffic
   env:
     sources:
       - kind: deviceFunctions
@@ -112,8 +111,7 @@ worker:
     auth:
       username: guest
       password: guest
-    host: rabbitmq
-    port: 61613
+    url: http://rabbitmq:61613/
   scratch:
     root: /blueapi-plugins/scratch
     repositories: []
@@ -123,8 +121,7 @@ worker:
     level: "INFO"
     graylog:
       enabled: False
-      host: "graylog-log-target.diamond.ac.uk"
-      port: 12232
+      url: http://graylog-log-target.diamond.ac.uk:12232/
 initContainer:
   enabled: false
   persistentVolume:

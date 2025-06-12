@@ -138,7 +138,7 @@ spec:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
-        {{- if or .Values.debug.enabled (and .Values.initContainer.persistentVolume .Values.initContainer.enabled )}}
+        {{- if or .Values.debug.enabled (and .Values.initContainer.persistentVolume.enabled .Values.initContainer.enabled )}}
         - name: debug-account-sync
           image: ghcr.io/diamondlightsource/account-sync-sidecar:3.0.0
           volumeMounts:

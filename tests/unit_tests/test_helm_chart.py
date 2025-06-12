@@ -4,6 +4,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 from typing import Any, Literal
+from unittest.mock import ANY
 
 import pytest
 import yaml
@@ -556,6 +557,43 @@ def test_persistent_volume_claim_exists(
         assert persistent_volume_claim == manifests["PersistentVolumeClaim"]
     else:
         assert "PersistentVolumeClaim" not in manifests
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_debug_account_sync_exists(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if debug_enabled or (initContainer_enabled and persistentVolume_enabled):
+        assert {
+            "name": "debug-account-sync",
+            "image": ANY,
+            "volumeMounts": [{"mountPath": "/var/run/nslcd", "name": "nslcd"}],
+        } == manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "containers"
+        ][1]
+
+    else:
+        assert (
+            len(
+                manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                    "containers"
+                ]
+            )
+            == 1
+        )
 
 
 def render_chart(

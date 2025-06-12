@@ -784,6 +784,37 @@ def test_main_container_args(
         )
 
 
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_scratch_volume_uses_correct_claimName(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if initContainer_enabled and persistentVolume_enabled:
+        claim_name = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "volumes"
+        ][2]["persistentVolumeClaim"]["claimName"]
+
+        if existingClaimName:
+            assert claim_name == existingClaimName
+        else:
+            assert (
+                claim_name
+                == "scratch-{{ .Values.image.tag | default .Chart.AppVersion }}"
+            )
+
+
 def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,

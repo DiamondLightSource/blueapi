@@ -8,7 +8,6 @@ from unittest.mock import ANY
 
 import pytest
 import yaml
-from colorama import init
 from pydantic import Secret, TypeAdapter
 
 from blueapi.config import (
@@ -872,6 +871,7 @@ def test_worker_config_volume_declared(
         worker_config_volume
         in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]["volumes"]
     )
+
 
 @pytest.mark.parametrize("initContainer_enabled", [True, False])
 @pytest.mark.parametrize("persistentVolume_enabled", [True, False])

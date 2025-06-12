@@ -596,6 +596,40 @@ def test_debug_account_sync_exists(
         )
 
 
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_container_image_has_debug_suffix(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if debug_enabled:
+        assert (
+            manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "containers"
+            ][0]["image"][-6:]
+            == "-debug"
+        )
+
+    else:
+        assert not (
+            manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "containers"
+            ][0]["image"][-6:]
+            == "-debug"
+        )
+
+
 def render_chart(
     path: Path = BLUEAPI_HELM_CHART,
     name: str | None = None,

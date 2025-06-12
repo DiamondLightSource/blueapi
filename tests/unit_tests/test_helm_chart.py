@@ -883,12 +883,13 @@ def test_worker_config_volume_declared(
 @pytest.mark.parametrize("persistentVolume_enabled", [True, False])
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
-def test_init_config_volume_declared(
+def test_init_config_and_venv_volumes_declared(
     initContainer_enabled,
     persistentVolume_enabled,
     existingClaimName,
     debug_enabled,
     init_config_volume,
+    venv_volume,
 ):
     manifests = render_persistent_volume_chart(
         initContainer_enabled,
@@ -904,6 +905,12 @@ def test_init_config_volume_declared(
                 "volumes"
             ]
         )
+        assert (
+            venv_volume
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
     else:
         assert (
             init_config_volume
@@ -911,6 +918,14 @@ def test_init_config_volume_declared(
                 "volumes"
             ]
         )
+
+        assert (
+            venv_volume
+            not in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
+
 
 @pytest.mark.parametrize("initContainer_enabled", [True, False])
 @pytest.mark.parametrize("persistentVolume_enabled", [True, False])

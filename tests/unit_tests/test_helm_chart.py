@@ -802,8 +802,10 @@ def test_scratch_volume_uses_correct_claimName(
 
     if existingClaimName:
         assert claim_name == existingClaimName
+        assert "PersistentVolumeClaim" not in manifests
     else:
         assert claim_name == "scratch-"
+        assert claim_name in manifests["PersistentVolumeClaim"]
 
 
 @pytest.fixture

@@ -432,7 +432,7 @@ def init_container_venv_volume_mount():
 
 
 @pytest.fixture
-def venv_mount():
+def venv_volume_mount():
     return {
         "name": "venv",
         "mountPath": "/venv",
@@ -440,7 +440,7 @@ def venv_mount():
 
 
 @pytest.fixture
-def home_mount():
+def home_volume_mount():
     return {
         "name": "home",
         "mountPath": "/home",
@@ -448,7 +448,7 @@ def home_mount():
 
 
 @pytest.fixture
-def nslcd_mount():
+def nslcd_volume_mount():
     return {
         "name": "nslcd",
         "mountPath": "/var/run/nslcd",
@@ -526,7 +526,7 @@ def test_init_container_init_config_mount(
 @pytest.mark.parametrize("persistentVolume_enabled", [True, False])
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
-def test_init_container_venv_mount(
+def test_init_container_venv_volume_mount(
     persistentVolume_enabled,
     existingClaimName,
     debug_enabled,
@@ -693,12 +693,12 @@ def test_main_container_scratch_mount(
 @pytest.mark.parametrize("persistentVolume_enabled", [True, False])
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
-def test_main_container_venv_mount(
+def test_main_container_venv_volume_mount(
     initContainer_enabled,
     persistentVolume_enabled,
     existingClaimName,
     debug_enabled,
-    venv_mount,
+    venv_volume_mount,
 ):
     manifests = render_persistent_volume_chart(
         initContainer_enabled,
@@ -712,22 +712,22 @@ def test_main_container_venv_mount(
     ][0]["volumeMounts"]
 
     if initContainer_enabled:
-        assert venv_mount in volume_mounts
+        assert venv_volume_mount in volume_mounts
     else:
-        assert venv_mount not in volume_mounts
+        assert venv_volume_mount not in volume_mounts
 
 
 @pytest.mark.parametrize("initContainer_enabled", [True, False])
 @pytest.mark.parametrize("persistentVolume_enabled", [True, False])
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
-def test_main_container_home_and_nslcd_mounts(
+def test_main_container_home_and_nslcd_volume_mounts(
     initContainer_enabled,
     persistentVolume_enabled,
     existingClaimName,
     debug_enabled,
-    home_mount,
-    nslcd_mount,
+    home_volume_mount,
+    nslcd_volume_mount,
 ):
     manifests = render_persistent_volume_chart(
         initContainer_enabled,
@@ -741,11 +741,11 @@ def test_main_container_home_and_nslcd_mounts(
     ][0]["volumeMounts"]
 
     if debug_enabled or (initContainer_enabled and persistentVolume_enabled):
-        assert home_mount in volume_mounts
-        assert nslcd_mount in volume_mounts
+        assert home_volume_mount in volume_mounts
+        assert nslcd_volume_mount in volume_mounts
     else:
-        assert home_mount not in volume_mounts
-        assert nslcd_mount not in volume_mounts
+        assert home_volume_mount not in volume_mounts
+        assert nslcd_volume_mount not in volume_mounts
 
 
 @pytest.mark.parametrize("initContainer_enabled", [True, False])
@@ -757,8 +757,8 @@ def test_main_container_args(
     persistentVolume_enabled,
     existingClaimName,
     debug_enabled,
-    home_mount,
-    nslcd_mount,
+    home_volume_mount,
+    nslcd_volume_mount,
 ):
     manifests = render_persistent_volume_chart(
         initContainer_enabled,
@@ -813,6 +813,74 @@ def test_scratch_volume_uses_correct_claimName(
                 claim_name
                 == "scratch-{{ .Values.image.tag | default .Chart.AppVersion }}"
             )
+
+
+@pytest.fixture
+def worker_config_volume():
+    return {
+        "name": "worker-config",
+        "projected": {"sources": [{"configMap": {"name": "blueapi-config"}}]},
+    }
+
+
+@pytest.fixture
+def init_config_volume():
+    return {
+        "name": "init-config",
+        "projected": {"sources": [{"configMap": {"name": "blueapi-initconfig"}}]},
+    }
+
+
+@pytest.fixture
+def scratch_volume():
+    return {"name": "scratch", "persistentVolumeClaim": {"claimName": ANY}}
+
+
+@pytest.fixture
+def scratch_host_volume():
+    return {"name": "scratch-host", "hostPath": {"path": ANY, "type": "Directory"}}
+
+
+@pytest.fixture
+def venv_volume():
+    return {"name": "venv", "emptyDir": {"sizeLimit": "5Gi"}}
+
+
+@pytest.fixture
+def home_volume():
+    return {"name": "home", "emptyDir": {"sizeLimit": "500Mi"}}
+
+
+@pytest.fixture
+def nslcd_volume():
+    return {"name": "nslcd", "emptyDir": {"sizeLimit": "5Mi"}}
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_scratch_volume_declared(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    scratch_volume,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    if initContainer_enabled and persistentVolume_enabled:
+        assert (
+            scratch_volume
+            in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+                "volumes"
+            ]
+        )
 
 
 def render_chart(

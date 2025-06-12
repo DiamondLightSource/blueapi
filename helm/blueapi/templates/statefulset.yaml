@@ -44,6 +44,9 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-initconfig
+      - name: venv
+        emptyDir:
+          sizeLimit: 5Gi
       {{- if .Values.initContainer.persistentVolume.enabled }}
       - name: scratch
         persistentVolumeClaim:
@@ -54,9 +57,6 @@ spec:
           path: {{ required "initContainer enabled but no worker.scratch.root!" (.Values.worker.scratch).root }}
           type: Directory
       {{- end }}
-      - name: venv
-        emptyDir:
-          sizeLimit: 5Gi
       {{- end }}
       {{- if or .Values.debug.enabled .Values.initContainer.persistentVolume.enabled}}
       - name: home  # Required for vscode to install plugins

@@ -248,7 +248,7 @@ class BlueapiRestClient:
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
         params: Mapping[str, Any] | None = None,
     ) -> T:
-        url = self._config.url.unicode_string() + suffix.removeprefix("/")
+        url = self._config.url.unicode_string().removesuffix("/") + suffix
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
         response = requests.request(

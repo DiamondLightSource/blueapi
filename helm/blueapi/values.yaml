@@ -128,7 +128,7 @@ worker:
 initContainer:
   enabled: false
   persistentVolume:
-    enabled: true
+    enabled: false
     # existingClaimName: foo
 
 debug:

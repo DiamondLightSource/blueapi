@@ -56,6 +56,11 @@ COPY --from=build --chmod=o+wrX /.cache/pip /.cache/pip
 ENV PATH=/venv/bin:$PATH
 ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
 
+# For this pod to understand finding user information from LDAP
+RUN apt update
+RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
+RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
+
 # Set the MPLCONFIGDIR environment variable to a temporary directory to avoid
 # writing to the home directory. This is necessary because the home directory
 # is read-only in the runtime container.

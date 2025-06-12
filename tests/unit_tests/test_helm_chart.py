@@ -201,6 +201,22 @@ def test_container_gets_container_resources():
     )
 
 
+@pytest.mark.parametrize("api_port", [8001, None, 8000, 9000])
+def test_container_port_set(api_port: int | None):
+    port = f":{api_port}" if api_port else ""
+    values = {
+        "worker": {"api": {"url": f"0.0.0.0{port}"}},
+    }
+    manifests = render_chart(values=values)
+    port = str(api_port) if api_port else "8000"
+    assert (
+        manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]["containers"][
+            0
+        ]["ports"][0]["containerPort"]
+        == port
+    )
+
+
 def test_init_container_gets_container_resources_by_default():
     manifests = render_chart(
         values={

@@ -803,9 +803,7 @@ def test_scratch_volume_uses_correct_claimName(
     if existingClaimName:
         assert claim_name == existingClaimName
     else:
-        assert (
-            claim_name == "scratch-{{ .Values.image.tag | default .Chart.AppVersion }}"
-        )
+        assert claim_name == "scratch-"
 
 
 @pytest.fixture

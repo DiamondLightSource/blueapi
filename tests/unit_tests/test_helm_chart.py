@@ -439,6 +439,22 @@ def venv_mount():
     }
 
 
+@pytest.fixture
+def home_mount():
+    return {
+        "name": "home",
+        "mountPath": "/home",
+    }
+
+
+@pytest.fixture
+def nslcd_mount():
+    return {
+        "name": "nslcd",
+        "mountPath": "/var/run/nslcd",
+    }
+
+
 @pytest.mark.parametrize("init_container_enabled", [True, False])
 def test_init_container_exists_conditions(init_container_enabled):
     manifests = render_chart(
@@ -699,6 +715,37 @@ def test_main_container_venv_mount(
         assert venv_mount in volume_mounts
     else:
         assert venv_mount not in volume_mounts
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_main_container_home_and_nslcd_mounts(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    home_mount,
+    nslcd_mount,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    volume_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "containers"
+    ][0]["volumeMounts"]
+
+    if debug_enabled or (initContainer_enabled and persistentVolume_enabled):
+        assert home_mount in volume_mounts
+        assert nslcd_mount in volume_mounts
+    else:
+        assert home_mount not in volume_mounts
+        assert nslcd_mount not in volume_mounts
 
 
 def render_chart(

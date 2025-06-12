@@ -860,6 +860,30 @@ def nslcd_volume():
 @pytest.mark.parametrize("persistentVolume_enabled", [True, False])
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
+def test_worker_config_volume_declared(
+    initContainer_enabled,
+    persistentVolume_enabled,
+    existingClaimName,
+    debug_enabled,
+    worker_config_volume,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    assert (
+        worker_config_volume
+        in manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]["volumes"]
+    )
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
 def test_scratch_volume_declared(
     initContainer_enabled,
     persistentVolume_enabled,

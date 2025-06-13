@@ -201,6 +201,33 @@ def test_container_gets_container_resources():
     )
 
 
+@pytest.mark.parametrize(
+    "url,expected_port",
+    [
+        ("http://0.0.0.0", "80"),
+        ("http://0.0.0.0:8001", "8001"),
+        ("https://0.0.0.0", "443"),
+        ("https://0.0.0.0:9090/path", "9090"),
+        ("https://0.0.0.0:9000", "9000"),
+        (None, "8000"),
+    ],
+)
+def test_container_port_set(url: str | None, expected_port: str):
+    if url is None:
+        values = {"worker": {"api": {}}}
+    else:
+        values = {
+            "worker": {"api": {"url": url}},
+        }
+    manifests = render_chart(values=values)
+    assert (
+        manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]["containers"][
+            0
+        ]["ports"][0]["containerPort"]
+        == expected_port
+    )
+
+
 def test_init_container_gets_container_resources_by_default():
     manifests = render_chart(
         values={

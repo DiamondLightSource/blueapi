@@ -204,15 +204,15 @@ def test_container_gets_container_resources():
 @pytest.mark.parametrize(
     "url,expected_port",
     [
-        ("http://0.0.0.0", "80"),
-        ("http://0.0.0.0:8001", "8001"),
-        ("https://0.0.0.0", "443"),
-        ("https://0.0.0.0:9090/path", "9090"),
-        ("https://0.0.0.0:9000", "9000"),
-        (None, "8000"),
+        ("http://0.0.0.0", 80),
+        ("http://0.0.0.0:8001", 8001),
+        ("https://0.0.0.0", 443),
+        ("https://0.0.0.0:9090/path", 9090),
+        ("https://0.0.0.0:9000", 9000),
+        (None, 8000),
     ],
 )
-def test_container_port_set(url: str | None, expected_port: str):
+def test_container_port_set(url: str | None, expected_port: int):
     if url is None:
         values = {"worker": {"api": {}}}
     else:

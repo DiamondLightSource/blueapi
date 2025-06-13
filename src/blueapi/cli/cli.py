@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import stat
 import sys
@@ -185,11 +186,13 @@ def listen_to_events(obj: dict) -> None:
     config: ApplicationConfig = obj["config"]
     if not config.stomp.enabled:
         raise BlueskyStreamingError("Message bus needs to be configured")
+    assert config.stomp.url.host is not None, "Stomp URL missing host"
+    assert config.stomp.url.port is not None, "Stomp URL missing port"
     event_bus_client = EventBusClient(
         StompClient.for_broker(
             broker=Broker(
-                host=config.stomp.host,
-                port=config.stomp.port,
+                host=config.stomp.url.host,
+                port=config.stomp.url.port,
                 auth=config.stomp.auth,
             )
         )
@@ -204,7 +207,7 @@ def listen_to_events(obj: dict) -> None:
 
     print(
         "Subscribing to all bluesky events from "
-        f"{config.stomp.host}:{config.stomp.port}",
+        f"{config.stomp.url.host}:{config.stomp.url.port}",
         file=sys.stderr,
     )
     with event_bus_client:
@@ -425,3 +428,10 @@ def logout(obj: dict) -> None:
         auth.logout()
     except FileNotFoundError:
         print("Logged out")
+    except ValueError as e:
+        logging.debug("Invalid login token: %s", e)
+        raise ClickException(
+            "Login token is not valid - remove before trying again"
+        ) from e
+    except Exception as e:
+        raise ClickException(f"Error logging out: {e}") from e

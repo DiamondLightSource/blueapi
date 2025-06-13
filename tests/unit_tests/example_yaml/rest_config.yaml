@@ -1,3 +1,2 @@
 api:
-  host: a.fake.host
-  port: 12345
+  url: http://a.fake.host:12345

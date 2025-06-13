@@ -657,7 +657,9 @@ def test_plan_output_formatting():
 
 def test_event_formatting():
     data = DataEvent(
-        name="start", doc={"foo": "bar", "fizz": {"buzz": (1, 2, 3), "hello": "world"}}
+        name="start",
+        doc={"foo": "bar", "fizz": {"buzz": (1, 2, 3), "hello": "world"}},
+        task_id="0000-1111",
     )
     worker = WorkerEvent(
         state=WorkerState.RUNNING,
@@ -672,7 +674,8 @@ def test_event_formatting():
         data,
         (
             """{"name": "start", "doc": """
-            """{"foo": "bar", "fizz": {"buzz": [1, 2, 3], "hello": "world"}}}\n"""
+            """{"foo": "bar", "fizz": {"buzz": [1, 2, 3], "hello": "world"}}, """
+            """"task_id": "0000-1111"}\n"""
         ),
     )
     _assert_matching_formatting(OutputFormat.COMPACT, data, "Data Event: start\n")
@@ -853,6 +856,27 @@ def test_logout_success(
     result = runner.invoke(main, ["-c", config_with_auth, "logout"])
     assert "Logged out" in result.output
     assert not cached_valid_refresh.exists()
+
+
+def test_logout_invalid_token(runner: CliRunner):
+    with patch("blueapi.cli.cli.SessionManager") as sm:
+        sm.from_cache.side_effect = ValueError("Invalid token")
+        result = runner.invoke(main, ["logout"])
+
+    assert result.exit_code == 1
+    assert (
+        result.output
+        == "Error: Login token is not valid - remove before trying again\n"
+    )
+
+
+def test_logout_unknown_error(runner: CliRunner):
+    with patch("blueapi.cli.cli.SessionManager") as sm:
+        sm.from_cache.side_effect = Exception("Invalid token")
+        result = runner.invoke(main, ["logout"])
+
+    assert result.exit_code == 1
+    assert result.output == "Error: Error logging out: Invalid token\n"
 
 
 def test_logout_when_no_cache(

@@ -48,8 +48,11 @@ def set_config(new_config: ApplicationConfig):
 @cache
 def context() -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx.with_config(config().env)
     return ctx
+
+
+def configure_context() -> None:
+    context().with_config(config().env)
 
 
 @cache
@@ -66,11 +69,13 @@ def worker() -> TaskWorker:
 def stomp_client() -> StompClient | None:
     stomp_config: StompConfig = config().stomp
     if stomp_config.enabled:
+        assert stomp_config.url.host is not None, "Stomp URL missing host"
+        assert stomp_config.url.port is not None, "Stomp URL missing port"
         client = StompClient.for_broker(
             broker=Broker(
-                host=stomp_config.host,
-                port=stomp_config.port,
-                auth=stomp_config.auth,  # type: ignore
+                host=stomp_config.url.host,
+                port=stomp_config.url.port,
+                auth=stomp_config.auth,
             )
         )
 
@@ -109,7 +114,7 @@ def _update_scan_num(md: dict[str, Any]) -> int:
     numtracker = numtracker_client()
     if numtracker is not None:
         scan = numtracker.create_scan(md["instrument_session"], md["instrument"])
-        md["instrument_session_directory"] = str(scan.scan.directory.path)
+        md["data_session_directory"] = str(scan.scan.directory.path)
         return scan.scan.scan_number
     else:
         raise InvalidConfigError(
@@ -125,29 +130,30 @@ def setup(config: ApplicationConfig) -> None:
 
     # Eagerly initialize worker and messaging connection
     worker()
-    stomp_client()
+
+    # if numtracker is configured, use a StartDocumentPathProvider
     if numtracker_client() is not None:
         context().run_engine.scan_id_source = _update_scan_num
         _hook_run_engine_and_path_provider()
 
+    configure_context()
+
+    if numtracker_client() is not None and not isinstance(
+        get_path_provider(), StartDocumentPathProvider
+    ):
+        raise InvalidConfigError(
+            "Numtracker has been configured but a path provider was imported"
+            "with the devices. Remove this path provider to use numtracker."
+        )
+
+    stomp_client()
+
 
 def _hook_run_engine_and_path_provider() -> None:
-    try:
-        path_provider = get_path_provider()
-    except NameError:
-        path_provider = None
-
+    path_provider = StartDocumentPathProvider()
+    set_path_provider(path_provider)
     run_engine = context().run_engine
-
-    if path_provider is None:
-        path_provider = StartDocumentPathProvider()
-        set_path_provider(path_provider)
-        run_engine.subscribe(path_provider.update_run, "start")
-    else:
-        raise InvalidConfigError(
-            "A StartDocumentPathProvider has not been configured for numtracker"
-            f"because a different path provider was already set: {path_provider}"
-        )
+    run_engine.subscribe(path_provider.update_run, "start")
 
 
 def teardown() -> None:

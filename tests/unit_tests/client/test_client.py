@@ -434,7 +434,7 @@ def test_run_task_fails_on_failing_event(
             ),
         ),
         ProgressEvent(task_id="foo"),
-        DataEvent(name="start", doc={}),
+        DataEvent(name="start", doc={}, task_id="0000-1111"),
     ],
 )
 def test_run_task_calls_event_callback(

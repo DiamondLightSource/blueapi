@@ -213,7 +213,11 @@ def test_invalid_config_via_env(runner: CliRunner):
 
 @responses.activate
 def test_submit_plan(runner: CliRunner):
-    body_data = {"name": "sleep", "params": {"time": 5}}
+    body_data = {
+        "name": "sleep",
+        "params": {"time": 5},
+        "instrument_session": "cm12345-1",
+    }
 
     response = responses.post(
         url="http://a.fake.host:12345/tasks",
@@ -221,11 +225,11 @@ def test_submit_plan(runner: CliRunner):
     )
 
     config_path = "tests/unit_tests/example_yaml/rest_and_stomp_config.yaml"
-    runner.invoke(
+    output = runner.invoke(
         main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
     )
 
-    assert response.call_count == 1
+    assert response.call_count == 1, output.output
 
 
 @responses.activate

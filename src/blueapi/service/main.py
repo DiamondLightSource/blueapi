@@ -33,7 +33,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service import interface
-from blueapi.worker import Task, TrackableTask, WorkerState
+from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
 from .model import (
@@ -47,6 +47,7 @@ from .model import (
     PythonEnvironmentResponse,
     SourceInfo,
     StateChangeRequest,
+    TaskRequest,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -54,7 +55,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "0.0.10"
+REST_API_VERSION = "0.1.0"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -254,23 +255,33 @@ def get_device_by_name(
     return runner.run(interface.get_device, name)
 
 
-example_task = Task(name="count", params={"detectors": ["x"]})
+example_task_request = TaskRequest(
+    name="count",
+    params={"detectors": ["x"]},
+    instrument_session="cm12345-1",
+)
 
 
 @secure_router.post(
     "/tasks",
     status_code=status.HTTP_201_CREATED,
 )
-@start_as_current_span(TRACER, "request", "task.name", "task.params")
+@start_as_current_span(
+    TRACER,
+    "request",
+    "task_request.name",
+    "task_request.params",
+    "task_request.instrument_session",
+)
 def submit_task(
     request: Request,
     response: Response,
-    task: Annotated[Task, Body(..., example=example_task)],
+    task_request: Annotated[TaskRequest, Body(..., example=example_task_request)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        task_id: str = runner.run(interface.submit_task, task)
+        task_id: str = runner.run(interface.submit_task, task_request)
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:

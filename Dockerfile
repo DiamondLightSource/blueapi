@@ -1,6 +1,7 @@
 # The devcontainer should use the developer target and run as root with podman
 # or docker with user namespaces.
-ARG PYTHON_VERSION=3.11@sha256:4e0b4f7d6124f7ff41cdc1b82bedaa07722c55fbb78038c7587b5f7c0b892c1a
+# Version SHA has been removed, see: https://github.com/DiamondLightSource/blueapi/issues/1053
+ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION} AS developer
 
 # Add any system dependencies for the developer/build environment here
@@ -45,7 +46,7 @@ ENTRYPOINT [ "/bin/bash", "-c", "--" ]
 CMD [ "while true; do sleep 30; done;" ]
 
 # The runtime stage copies the built venv into a slim runtime container
-FROM python:${PYTHON_VERSION%@*}-slim AS runtime
+FROM python:${PYTHON_VERSION}-slim AS runtime
 # Add apt-get system dependecies for runtime here if needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime

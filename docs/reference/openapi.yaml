@@ -218,10 +218,14 @@ components:
       - new_state
       title: StateChangeRequest
       type: object
-    Task:
+    TaskRequest:
       additionalProperties: false
-      description: Task that will run a plan
+      description: Request to run a task with related info
       properties:
+        instrument_session:
+          description: Instrument session associated with this task
+          title: Instrument Session
+          type: string
         name:
           description: Name of plan to run
           title: Name
@@ -232,7 +236,8 @@ components:
           type: object
       required:
       - name
-      title: Task
+      - instrument_session
+      title: TaskRequest
       type: object
     TaskResponse:
       additionalProperties: false
@@ -340,7 +345,7 @@ components:
       type: object
 info:
   title: BlueAPI Control
-  version: 0.0.10
+  version: 0.1.0
 openapi: 3.1.0
 paths:
   /config/oidc:
@@ -540,12 +545,13 @@ paths:
         content:
           application/json:
             example:
+              instrument_session: cm12345-1
               name: count
               params:
                 detectors:
                 - x
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: '#/components/schemas/TaskRequest'
         required: true
       responses:
         '201':

@@ -18,3 +18,5 @@ pypi: true
 repo_name: blueapi
 strict_typing: false
 type_checker: pyright
+
+#copier updated

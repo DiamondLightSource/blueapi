@@ -23,8 +23,7 @@ Create a YAML file for configuring blueapi:
 # or if its STOMP plugin is running on a different port
 stomp:
     enabled: true  # All other stomp settings will be ignored if this is false
-    host: localhost
-    port: 61613
+    url: http://localhost:61613
     auth:
         username: guest
         password: guest  # This is for local development only, production systems should use good passwords

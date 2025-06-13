@@ -9,7 +9,7 @@ image:
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   # Do not set this to a package hash: https://github.com/DiamondLightSource/blueapi/issues/1046
-  tag: ""
+  tag: "@sha256:ca66977f06848b893fd054ccfea8f848ca02746a2ef1c233ee6ba4b4c308e45a"
 
 imagePullSecrets: []
 nameOverride: ""

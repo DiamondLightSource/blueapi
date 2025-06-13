@@ -13,6 +13,7 @@ from dodal.common.beamlines.beamline_utils import (
 )
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
+from tests.unit_tests.service.test_rest_api import FAKE_INSTRUMENT_SESSION
 
 from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import (

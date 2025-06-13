@@ -21,6 +21,7 @@ from blueapi.service.model import (
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskRequest,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -180,7 +181,7 @@ class BlueapiRestClient:
     def get_active_task(self) -> WorkerTask:
         return self._request_and_deserialize("/worker/task", WorkerTask)
 
-    def create_task(self, task: Task) -> TaskResponse:
+    def create_task(self, task: TaskRequest) -> TaskResponse:
         return self._request_and_deserialize(
             "/tasks",
             TaskResponse,

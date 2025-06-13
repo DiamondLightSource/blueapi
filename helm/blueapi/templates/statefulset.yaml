@@ -107,13 +107,13 @@ spec:
             - name: http
               {{- $parsed := urlParse .Values.worker.api.url }}
               {{- if regexMatch "\\:[0-9]+" .Values.worker.api.url }}
-              containerPort: {{ trimPrefix ":" (regexFind "\\:[0-9]+" .Values.worker.api.url) |  quote }}
+              containerPort: {{ trimPrefix ":" (regexFind "\\:[0-9]+" .Values.worker.api.url) }}
               {{- else if eq $parsed.scheme  "http"}}
-              containerPort: "80"
+              containerPort: 80
               {{- else if eq $parsed.scheme "https" }}
-              containerPort: "443"
+              containerPort: 443
               {{- else }}
-              containerPort: "8000"
+              containerPort: 8000
               {{- end }}
               protocol: TCP
           resources:

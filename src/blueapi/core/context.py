@@ -232,6 +232,10 @@ class BlueskyContext:
 
         self.devices[name] = device
 
+    def unregister_all_devices(self):
+        """Unregister all devices from the context."""
+        self.devices.clear()
+
     def _reference(self, target: type) -> type:
         """
         Create an intermediate reference type for the required ``target`` type that

@@ -7,7 +7,7 @@ spec:
   - name: http
     port: {{ .Values.service.port }}
     protocol: TCP
-    targetPort: {{ .Values.worker.api.port }}
+    targetPort: http
   selector:
     {{- include "blueapi.selectorLabels" . | nindent 4 }}
   type: {{ .Values.service.type }}

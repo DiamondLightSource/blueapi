@@ -248,7 +248,7 @@ class BlueapiRestClient:
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
         params: Mapping[str, Any] | None = None,
     ) -> T:
-        url = self._url(suffix)
+        url = self._config.url.unicode_string().removesuffix("/") + suffix
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
         response = requests.request(
@@ -266,7 +266,3 @@ class BlueapiRestClient:
             raise NoContent(target_type)
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized
-
-    def _url(self, suffix: str) -> str:
-        base_url = f"{self._config.protocol}://{self._config.host}:{self._config.port}"
-        return f"{base_url}{suffix}"

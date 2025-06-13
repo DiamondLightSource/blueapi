@@ -1,0 +1,14 @@
+{{- if and .Values.initContainer.persistentVolume.enabled (not .Values.initContainer.persistentVolume.existingClaimName) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+{{- end }}

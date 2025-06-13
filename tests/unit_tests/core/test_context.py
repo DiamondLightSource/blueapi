@@ -385,6 +385,13 @@ def test_device_reference_cache_with_generics(empty_context: BlueskyContext) -> 
     assert empty_context._reference(motor) is not empty_context._reference(Movable)
 
 
+def test_unregister_all_devices(devicey_context: BlueskyContext) -> None:
+    assert len(devicey_context.devices) > 0
+    devicey_context.unregister_all_devices()
+
+    assert len(devicey_context.devices) == 0
+
+
 def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
     movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref

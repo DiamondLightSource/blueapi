@@ -107,7 +107,7 @@ spec:
             - name: http
               {{- $parsed := urlParse .Values.worker.api.url }}
               {{- if regexMatch "\\:[0-9]+" .Values.worker.api.url }}
-              containerPort: {{ last (regexSplit ":" .Values.worker.api.url -1) |  quote }}
+              containerPort: {{ trimPrefix ":" (regexFind "\\:[0-9]+" .Values.worker.api.url) |  quote }}
               {{- else if eq $parsed.scheme  "http"}}
               containerPort: "80"
               {{- else if eq $parsed.scheme "https" }}

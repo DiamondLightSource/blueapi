@@ -207,6 +207,7 @@ def test_container_gets_container_resources():
         ("http://0.0.0.0", "80"),
         ("http://0.0.0.0:8001", "8001"),
         ("https://0.0.0.0", "443"),
+        ("https://0.0.0.0:9090/path", "9090"),
         ("https://0.0.0.0:9000", "9000"),
         (None, "8000"),
     ],

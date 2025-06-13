@@ -13,13 +13,12 @@ When logging to [Graylog](https://graylog.org) is enabled, BlueAPI will also con
 
 An example logging config is shown below:
 ```
-worker:
-    logging:
-      level: "INFO"
-      graylog:
-        enabled: True
-        host: "graylog-log-target.diamond.ac.uk"
-        port: 12232
+  logging:
+    level: "INFO"
+    graylog:
+      enabled: True
+      host: "graylog-log-target.diamond.ac.uk"
+      port: 12232
 ```
 
 Here, BlueAPI will accept all messages are INFO level and above and will forward these to both the referenced Graylog address, and to stdout.
@@ -35,7 +34,7 @@ logger = logging.getLogger(__name__)
 logger.info("FOO")
 ```
 
-# Running BlueAPI on the Cluster
+# Kubernetes
 
 Services hosted on the DLS clusters automatically have their stdout forwarded to Graylog via a service called fluentd. Due to this, BlueAPI services hosted on the cluster will always log to Graylog.
 

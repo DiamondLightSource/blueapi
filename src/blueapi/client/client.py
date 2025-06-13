@@ -20,6 +20,7 @@ from blueapi.service.model import (
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskRequest,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -197,7 +198,7 @@ class BlueapiClient:
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,
-        task: Task,
+        task: TaskRequest,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> WorkerEvent:
@@ -258,7 +259,7 @@ class BlueapiClient:
             return complete.result(timeout=timeout)
 
     @start_as_current_span(TRACER, "task")
-    def create_and_start_task(self, task: Task) -> TaskResponse:
+    def create_and_start_task(self, task: TaskRequest) -> TaskResponse:
         """
         Create a new task and instruct the worker to start it
         immediately.
@@ -281,7 +282,7 @@ class BlueapiClient:
             )
 
     @start_as_current_span(TRACER, "task")
-    def create_task(self, task: Task) -> TaskResponse:
+    def create_task(self, task: TaskRequest) -> TaskResponse:
         """
         Create a new task, does not start execution
 

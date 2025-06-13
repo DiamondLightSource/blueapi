@@ -31,6 +31,7 @@ from blueapi.service.model import (
     PythonEnvironmentResponse,
     SourceInfo,
     StateChangeRequest,
+    TaskRequest,
     WorkerTask,
 )
 from blueapi.service.runner import WorkerDispatcher
@@ -43,6 +44,7 @@ class MockCountModel(BaseModel): ...
 
 
 COUNT = Plan(name="count", model=MockCountModel)
+FAKE_INSTRUMENT_SESSION = "cm12345-1"
 
 
 @pytest.fixture
@@ -114,7 +116,11 @@ def test_rest_config_with_cors(
     client_with_cors: TestClient,
     mock_runner: Mock,
 ):
-    task = Task(name="my-plan", params={"id": "x"})
+    task = TaskRequest(
+        name="my-plan",
+        params={"id": "x"},
+        instrument_session=FAKE_INSTRUMENT_SESSION,
+    )
     task_id = "f8424be3-203c-494e-b22f-219933b4fa67"
     mock_runner.run.side_effect = [task_id]
     HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
@@ -226,7 +232,11 @@ def test_get_non_existent_device_by_name(mock_runner: Mock, client: TestClient) 
 
 
 def test_create_task(mock_runner: Mock, client: TestClient) -> None:
-    task = Task(name="count", params={"detectors": ["x"]})
+    task = TaskRequest(
+        name="count",
+        params={"detectors": ["x"]},
+        instrument_session=FAKE_INSTRUMENT_SESSION,
+    )
     task_id = str(uuid.uuid4())
 
     mock_runner.run.side_effect = [task_id]
@@ -249,7 +259,13 @@ def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> 
         ),
     ]
 
-    response = client.post("/tasks", json={"name": "my-plan"})
+    response = client.post(
+        "/tasks",
+        json={
+            "name": "my-plan",
+            "instrument_session": FAKE_INSTRUMENT_SESSION,
+        },
+    )
     assert response.status_code == 422
     assert response.json() == {
         "detail": [
@@ -310,7 +326,11 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "is_complete": False,
                 "is_pending": True,
                 "request_id": None,
-                "task": {"name": "sleep", "params": {"time": 0.0}},
+                "task": {
+                    "name": "sleep",
+                    "params": {"time": 0.0},
+                    "metadata": {},
+                },
                 "task_id": "0",
             },
             {
@@ -318,7 +338,11 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "is_complete": False,
                 "is_pending": True,
                 "request_id": None,
-                "task": {"name": "first_task", "params": {}},
+                "task": {
+                    "name": "first_task",
+                    "params": {},
+                    "metadata": {},
+                },
                 "task_id": "1",
             },
         ]
@@ -345,7 +369,11 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
                 "is_complete": True,
                 "is_pending": False,
                 "request_id": None,
-                "task": {"name": "third_task", "params": {}},
+                "task": {
+                    "name": "third_task",
+                    "params": {},
+                    "metadata": {},
+                },
                 "task_id": "3",
             }
         ]
@@ -427,7 +455,11 @@ def test_get_task(mock_runner: Mock, client: TestClient):
         "is_complete": False,
         "is_pending": True,
         "request_id": None,
-        "task": {"name": "third_task", "params": {}},
+        "task": {
+            "name": "third_task",
+            "params": {},
+            "metadata": {},
+        },
         "task_id": f"{task_id}",
     }
 
@@ -448,7 +480,11 @@ def test_get_all_tasks(mock_runner: Mock, client: TestClient):
         "tasks": [
             {
                 "task_id": task_id,
-                "task": {"name": "third_task", "params": {}},
+                "task": {
+                    "name": "third_task",
+                    "params": {},
+                    "metadata": {},
+                },
                 "is_complete": False,
                 "is_pending": True,
                 "request_id": None,

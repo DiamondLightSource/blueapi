@@ -105,16 +105,13 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              # containerPort: {{ default 8000 (index (mustRegexSplit ":" .Values.worker.api.url 2) 1) | quote }}
-              # containerPort: {{ default 8000 (last (mustRegexSplit ":" .Values.worker.api.url -1) )| quote }}
-              # {{- $parts := regexSplit ":" .Values.worker.api.url 2 }}
-              # {{- $port := (quote "8000") }}
-              # {{- if gt (len $parts) 1 }}
-              #   {{- $port = quote (index $parts 1) }}
-              # {{- end }}
-              # containerPort: {{ $port }}
-              {{- if eq (regexMatch "\\:[0-9]+" .Values.worker.api.url) true }}
+              {{- $parsed := urlParse .Values.worker.api.url }}
+              {{- if regexMatch "\\:[0-9]+" .Values.worker.api.url }}
               containerPort: {{ last (regexSplit ":" .Values.worker.api.url -1) |  quote }}
+              {{- else if eq $parsed.scheme  "http"}}
+              containerPort: "80"
+              {{- else if eq $parsed.scheme "https" }}
+              containerPort: "443"
               {{- else }}
               containerPort: "8000"
               {{- end }}

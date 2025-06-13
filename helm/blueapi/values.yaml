@@ -95,7 +95,7 @@ tracing:
 # Config for the worker goes here, will be mounted into a config file
 worker:
   api:
-    url: http://0.0.0.0:8000/ # Allow non-loopback traffic
+    url: http://0.0.0.0:8000 # Allow non-loopback traffic
   env:
     sources:
       - kind: deviceFunctions

@@ -220,6 +220,9 @@ def listen_to_events(obj: dict) -> None:
 @click.argument("name", type=str)
 @click.argument("parameters", type=str, required=False)
 @click.option(
+    "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
+)
+@click.option(
     "-t",
     "--timeout",
     type=float,
@@ -229,7 +232,11 @@ def listen_to_events(obj: dict) -> None:
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: str | None, timeout: float | None
+    obj: dict,
+    name: str,
+    parameters: str | None,
+    timeout: float | None,
+    foreground: bool,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
@@ -240,15 +247,6 @@ def run_plan(
     except json.JSONDecodeError as jde:
         raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
 
-    progress_bar = CliEventRenderer()
-    callback = BestEffortCallback()
-
-    def on_event(event: AnyEvent) -> None:
-        if isinstance(event, ProgressEvent):
-            progress_bar.on_progress_event(event)
-        elif isinstance(event, DataEvent):
-            callback(event.name, event.doc)
-
     try:
         task = Task(name=name, params=parsed_params)
     except ValidationError as ve:
@@ -256,7 +254,23 @@ def run_plan(
         raise ClickException(ip.message()) from ip
 
     try:
-        resp = client.run_task(task, on_event=on_event)
+        if foreground:
+            progress_bar = CliEventRenderer()
+            callback = BestEffortCallback()
+
+            def on_event(event: AnyEvent) -> None:
+                if isinstance(event, ProgressEvent):
+                    progress_bar.on_progress_event(event)
+                elif isinstance(event, DataEvent):
+                    callback(event.name, event.doc)
+
+            resp = client.run_task(task, on_event=on_event)
+
+            if resp.task_status is not None and not resp.task_status.task_failed:
+                print("Plan Succeeded")
+        else:
+            server_task = client.create_and_start_task(task)
+            click.echo(server_task.task_id)
     except config.MissingStompConfiguration as mse:
         raise ClickException(*mse.args) from mse
     except UnknownPlan as up:
@@ -269,9 +283,6 @@ def run_plan(
         raise ClickException(f"server error with this message: {e}") from e
     except ValueError as ve:
         raise ClickException(f"task could not run: {ve}") from ve
-
-    if resp.task_status is not None and not resp.task_status.task_failed:
-        print("Plan Succeeded")
 
 
 @controller.command(name="state")

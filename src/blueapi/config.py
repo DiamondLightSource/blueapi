@@ -1,8 +1,11 @@
+import os
+import re
 import textwrap
 from collections.abc import Mapping
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
+from string import Template
 from typing import Any, Generic, Literal, TypeVar, cast
 
 import requests
@@ -22,6 +25,16 @@ from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 FORBIDDEN_OWN_REMOTE_URL = "https://github.com/DiamondLightSource/blueapi.git"
+
+
+def _expand_env(loader: yaml.Loader, node: yaml.ScalarNode) -> str:
+    value = loader.construct_scalar(node)
+    return Template(value).safe_substitute(os.environ)
+
+
+# Configure yaml parser to expand environment variables
+yaml.Loader.add_implicit_resolver("!expand", re.compile(r".*\$.*"), None)
+yaml.Loader.add_constructor("!expand", _expand_env)
 
 
 class SourceKind(str, Enum):

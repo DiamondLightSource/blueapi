@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 import responses
+import responses.matchers
 import yaml
 from bluesky.protocols import Movable
 from bluesky_stomp.messaging import StompClient
@@ -175,8 +176,7 @@ def test_get_plans(runner: CliRunner):
 def test_get_devices(runner: CliRunner):
     device = MyDevice(name="my-device")
 
-    response = responses.add(
-        responses.GET,
+    response = responses.get(
         "http://localhost:8000/devices",
         json=DeviceResponse(devices=[DeviceModel.from_device(device)]).model_dump(),
         status=200,
@@ -517,7 +517,8 @@ def test_device_output_formatting():
                           "ComplexType"
                         ]
                       }
-                    ]
+                    ],
+                    "address": "my-device"
                   }
                 ]
                 """)

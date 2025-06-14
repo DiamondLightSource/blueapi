@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
+    DeviceModel,
     DeviceResponse,
     PlanResponse,
     PythonEnvironmentResponse,
@@ -62,7 +63,7 @@ def display_full(obj: Any, stream: Stream):
                     print(indent(json.dumps(schema, indent=2), "        "))
         case DeviceResponse(devices=devices):
             for dev in devices:
-                print(dev.name)
+                print(_format_name(dev))
                 for proto in dev.protocols:
                     print(f"    {proto}")
         case DataEvent(name=name, doc=doc):
@@ -124,7 +125,7 @@ def display_compact(obj: Any, stream: Stream):
                         print(f"      {arg}={_describe_type(spec, req)}")
         case DeviceResponse(devices=devices):
             for dev in devices:
-                print(dev.name)
+                print(_format_name(dev))
                 print(
                     indent(
                         textwrap.fill(
@@ -162,6 +163,12 @@ def display_compact(obj: Any, stream: Stream):
 
         case other:
             FALLBACK(other, stream=stream)
+
+
+def _format_name(device: DeviceModel) -> str:
+    if not device.address or device.address == device.name:
+        return device.name
+    return f"{device.name} @ {device.address}"
 
 
 def _describe_type(spec: dict[Any, Any], required: bool = False):

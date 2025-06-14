@@ -15,7 +15,7 @@ dependencies = [
     "bluesky[plotting]>=1.13.1",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd",
     "aioca",
-    "pydantic(>=2.0,<=2.10.6)",                      # https://github.com/DiamondLightSource/blueapi/issues/908
+    "pydantic(>=2.11,<=2.11.7)",                      # https://github.com/DiamondLightSource/blueapi/issues/908
     "scanspec>=0.7.8",
     "pydantic-settings",
     "stomp-py",

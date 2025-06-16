@@ -8,7 +8,7 @@ from observability_utils.tracing import (
     start_as_current_span,
 )
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, MissingStompConfiguration
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
@@ -55,17 +55,20 @@ class BlueapiClient:
         except Exception:
             ...  # Swallow exceptions
         rest = BlueapiRestClient(config.api, session_manager=session_manager)
-        if config.stomp is None:
-            return cls(rest)
-        client = StompClient.for_broker(
-            broker=Broker(
-                host=config.stomp.host,
-                port=config.stomp.port,
-                auth=config.stomp.auth,
+        if config.stomp.enabled:
+            assert config.stomp.url.host is not None, "Stomp URL missing host"
+            assert config.stomp.url.port is not None, "Stomp URL missing port"
+            client = StompClient.for_broker(
+                broker=Broker(
+                    host=config.stomp.url.host,
+                    port=config.stomp.url.port,
+                    auth=config.stomp.auth,
+                )
             )
-        )
-        events = EventBusClient(client)
-        return cls(rest, events)
+            events = EventBusClient(client)
+            return cls(rest, events)
+        else:
+            return cls(rest)
 
     @start_as_current_span(TRACER)
     def get_plans(self) -> PlanResponse:
@@ -213,8 +216,8 @@ class BlueapiClient:
         """
 
         if self._events is None:
-            raise RuntimeError(
-                "Cannot run plans without Stomp configuration to track progress"
+            raise MissingStompConfiguration(
+                "Stomp configuration required to run plans is missing or disabled"
             )
 
         task_response = self.create_task(task)

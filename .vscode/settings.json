@@ -9,4 +9,10 @@
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff",
     },
+    "[yaml]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml",
+    },
+    "[toml]": {
+        "editor.defaultFormatter": "tamasfe.even-better-toml",
+    }
 }

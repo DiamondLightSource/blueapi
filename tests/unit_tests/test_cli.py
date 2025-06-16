@@ -17,7 +17,7 @@ from bluesky_stomp.messaging import StompClient
 from click.testing import CliRunner
 from opentelemetry import trace
 from ophyd_async.core import AsyncStatus
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from requests.exceptions import ConnectionError
 from responses import matchers
 from stomp.connect import StompConnection11 as Connection
@@ -25,8 +25,19 @@ from stomp.connect import StompConnection11 as Connection
 from blueapi import __version__
 from blueapi.cli.cli import main
 from blueapi.cli.format import OutputFormat, fmt_dict
-from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import ApplicationConfig, ScratchConfig, ScratchRepository
+from blueapi.client.event_bus import BlueskyStreamingError
+from blueapi.client.rest import (
+    BlueskyRemoteControlError,
+    InvalidParameters,
+    ParameterError,
+    UnauthorisedAccess,
+    UnknownPlan,
+)
+from blueapi.config import (
+    ApplicationConfig,
+    ScratchConfig,
+    ScratchRepository,
+)
 from blueapi.core.bluesky_types import DataEvent, Plan
 from blueapi.service.model import (
     DeviceModel,
@@ -191,7 +202,7 @@ def test_submit_plan(runner: CliRunner):
         match=[matchers.json_params_matcher(body_data)],
     )
 
-    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    config_path = "tests/unit_tests/example_yaml/rest_and_stomp_config.yaml"
     runner.invoke(
         main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
     )
@@ -199,19 +210,31 @@ def test_submit_plan(runner: CliRunner):
     assert response.call_count == 1
 
 
+@responses.activate
+def test_submit_plan_without_stomp(runner: CliRunner):
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    result = runner.invoke(
+        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+    )
+
+    assert (
+        result.stderr
+        == "Error: Stomp configuration required to run plans is missing or disabled\n"
+    )
+
+
 def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
-    assert isinstance(result.exception, AssertionError)
+    assert isinstance(result.exception, BlueskyStreamingError)
     assert str(result.exception) == "Message bus needs to be configured"
 
 
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
     result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
     assert result.exit_code == 1
-    assert isinstance(result.exception, RuntimeError)
     assert (
-        str(result.exception)
-        == "Cannot run plans without Stomp configuration to track progress"
+        result.stderr
+        == "Error: Stomp configuration required to run plans is missing or disabled\n"
     )
 
 
@@ -392,14 +415,41 @@ def test_env_reload_server_side_error(runner: CliRunner):
 
 
 @pytest.mark.parametrize(
-    "exception, expected_exit_code",
+    "exception, error_message",
     [
-        (ValidationError.from_exception_data(title="Base model", line_errors=[]), 1),
-        (BlueskyRemoteControlError("Server error"), 1),
-        (ValueError("Error parsing parameters"), 1),
+        (UnknownPlan(), "Error: Plan 'sleep' was not recognised\n"),
+        (UnauthorisedAccess(), "Error: Unauthorised request\n"),
+        (
+            InvalidParameters(
+                errors=[
+                    ParameterError(
+                        loc=["body", "params", "foo"],
+                        type="missing",
+                        msg="Foo is missing",
+                        input=None,
+                    )
+                ]
+            ),
+            "Error: Incorrect parameters supplied\n    Missing value for 'foo'\n",
+        ),
+        (
+            BlueskyRemoteControlError("Server error"),
+            "Error: server error with this message: Server error\n",
+        ),
+        (
+            ValueError("Error parsing parameters"),
+            "Error: task could not run: Error parsing parameters\n",
+        ),
+    ],
+    ids=[
+        "unknown_plan",
+        "unauthorised_access",
+        "invalid_parameters",
+        "remote_control",
+        "value_error",
     ],
 )
-def test_error_handling(exception, expected_exit_code, runner: CliRunner):
+def test_error_handling(exception, error_message, runner: CliRunner):
     # Patching the create_task method to raise different exceptions
     with patch(
         "blueapi.client.rest.BlueapiRestClient.create_task", side_effect=exception
@@ -408,15 +458,38 @@ def test_error_handling(exception, expected_exit_code, runner: CliRunner):
             main,
             [
                 "-c",
-                "tests/example_yaml/valid_stomp_config.yaml",
+                "tests/unit_tests/example_yaml/valid_stomp_config.yaml",
                 "controller",
                 "run",
                 "sleep",
-                "'{\"time\": 5}'",
+                '{"time": 5}',
             ],
-            input="\n",
         )
-        assert result.exit_code == expected_exit_code
+    assert result.stderr == error_message
+    assert result.exit_code == 1
+
+
+@pytest.mark.parametrize(
+    "params, error",
+    [
+        ("{", "Parameters are not valid JSON"),
+        ("[]", ""),
+    ],
+)
+def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
+    result = runner.invoke(
+        main,
+        [
+            "-c",
+            "tests/unit_tests/example_yaml/valid_stomp_config.yaml",
+            "controller",
+            "run",
+            "sleep",
+            params,
+        ],
+    )
+    assert result.stderr.startswith("Error: " + error)
+    assert result.exit_code == 1
 
 
 def test_device_output_formatting():
@@ -584,7 +657,9 @@ def test_plan_output_formatting():
 
 def test_event_formatting():
     data = DataEvent(
-        name="start", doc={"foo": "bar", "fizz": {"buzz": (1, 2, 3), "hello": "world"}}
+        name="start",
+        doc={"foo": "bar", "fizz": {"buzz": (1, 2, 3), "hello": "world"}},
+        task_id="0000-1111",
     )
     worker = WorkerEvent(
         state=WorkerState.RUNNING,
@@ -599,7 +674,8 @@ def test_event_formatting():
         data,
         (
             """{"name": "start", "doc": """
-            """{"foo": "bar", "fizz": {"buzz": [1, 2, 3], "hello": "world"}}}\n"""
+            """{"foo": "bar", "fizz": {"buzz": [1, 2, 3], "hello": "world"}}, """
+            """"task_id": "0000-1111"}\n"""
         ),
     )
     _assert_matching_formatting(OutputFormat.COMPACT, data, "Data Event: start\n")
@@ -780,6 +856,27 @@ def test_logout_success(
     result = runner.invoke(main, ["-c", config_with_auth, "logout"])
     assert "Logged out" in result.output
     assert not cached_valid_refresh.exists()
+
+
+def test_logout_invalid_token(runner: CliRunner):
+    with patch("blueapi.cli.cli.SessionManager") as sm:
+        sm.from_cache.side_effect = ValueError("Invalid token")
+        result = runner.invoke(main, ["logout"])
+
+    assert result.exit_code == 1
+    assert (
+        result.output
+        == "Error: Login token is not valid - remove before trying again\n"
+    )
+
+
+def test_logout_unknown_error(runner: CliRunner):
+    with patch("blueapi.cli.cli.SessionManager") as sm:
+        sm.from_cache.side_effect = Exception("Invalid token")
+        result = runner.invoke(main, ["logout"])
+
+    assert result.exit_code == 1
+    assert result.output == "Error: Error logging out: Invalid token\n"
 
 
 def test_logout_when_no_cache(

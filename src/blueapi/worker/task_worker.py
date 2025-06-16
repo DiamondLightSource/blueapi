@@ -83,7 +83,8 @@ class TaskWorker:
     _ctx: BlueskyContext
     _start_stop_timeout: float
 
-    _tasks: dict[str, TrackableTask]
+    _pending_tasks: dict[str, TrackableTask]
+    _completed_tasks: dict[str, TrackableTask]
 
     _state: WorkerState
     _errors: list[str]
@@ -118,7 +119,8 @@ class TaskWorker:
         self._ctx = ctx
         self._start_stop_timeout = start_stop_timeout
 
-        self._tasks = {}
+        self._pending_tasks = {}
+        self._completed_tasks = {}
 
         assert ctx.run_engine.state is not None, "RunEngine state is not set"
         state: RawRunEngineState = str(ctx.run_engine.state)
@@ -143,7 +145,8 @@ class TaskWorker:
 
     @start_as_current_span(TRACER, "task_id")
     def clear_task(self, task_id: str) -> str:
-        task = self._tasks.pop(task_id)
+        pending = self._pending_tasks.pop(task_id, None)
+        task = pending or self._completed_tasks.pop(task_id)
         return task.task_id
 
     @start_as_current_span(TRACER)
@@ -168,24 +171,24 @@ class TaskWorker:
 
     @start_as_current_span(TRACER)
     def get_tasks(self) -> list[TrackableTask]:
-        return list(self._tasks.values())
+        return list(self._pending_tasks.values()) + list(self._completed_tasks.values())
 
     @start_as_current_span(TRACER, "task_id")
     def get_task_by_id(self, task_id: str) -> TrackableTask | None:
-        return self._tasks.get(task_id)
+        return self._pending_tasks.get(task_id, None) or self._completed_tasks[task_id]
 
     @start_as_current_span(TRACER, "status")
     def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
         if status == TaskStatusEnum.RUNNING:
             return [
                 task
-                for task in self._tasks.values()
+                for task in self._pending_tasks.values()
                 if not task.is_pending and not task.is_complete
             ]
         elif status == TaskStatusEnum.PENDING:
-            return [task for task in self._tasks.values() if task.is_pending]
+            return [task for task in self._pending_tasks.values() if task.is_pending]
         elif status == TaskStatusEnum.COMPLETE:
-            return [task for task in self._tasks.values() if task.is_complete]
+            return list(self._completed_tasks.values())
         return []
 
     @start_as_current_span(TRACER)
@@ -197,11 +200,11 @@ class TaskWorker:
 
     @start_as_current_span(TRACER, "task_id")
     def begin_task(self, task_id: str) -> None:
-        task = self._tasks.get(task_id)
-        if task is not None:
-            self._submit_trackable_task(task)
-        else:
+        task = self._pending_tasks.get(task_id)
+        if task is None:
             raise KeyError(f"No pending task with ID {task_id}")
+        else:
+            self._submit_trackable_task(task)
 
     @start_as_current_span(TRACER, "task.name", "task.params")
     def submit_task(self, task: Task) -> str:
@@ -218,7 +221,7 @@ class TaskWorker:
             request_id=request_id,
             task=task,
         )
-        self._tasks[task_id] = trackable_task
+        self._pending_tasks[task_id] = trackable_task
         return task_id
 
     @start_as_current_span(
@@ -230,6 +233,9 @@ class TaskWorker:
     def _submit_trackable_task(self, trackable_task: TrackableTask) -> None:
         if self.state is not WorkerState.IDLE:
             raise WorkerBusyError(f"Worker is in state {self.state}")
+
+        if trackable_task.is_complete:
+            raise ValueError("Task has already been run")
 
         task_started = Event()
 
@@ -363,6 +369,8 @@ class TaskWorker:
 
         if self._current is not None:
             self._current.is_complete = True
+            self._pending_tasks.pop(self._current.task_id)
+            self._completed_tasks[self._current.task_id] = self._current
         self._report_status()
         self._errors.clear()
         self._warnings.clear()
@@ -457,7 +465,10 @@ class TaskWorker:
 
                     correlation_id = self._current.request_id
                     self._data_events.publish(
-                        DataEvent(name=name, doc=document), correlation_id
+                        DataEvent(
+                            name=name, task_id=self._current.task_id, doc=document
+                        ),
+                        correlation_id,
                     )
             else:
                 raise ValueError(

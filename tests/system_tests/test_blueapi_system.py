@@ -13,6 +13,7 @@ from blueapi.client.client import (
     BlueskyRemoteControlError,
 )
 from blueapi.client.event_bus import AnyEvent
+from blueapi.client.rest import UnknownPlan
 from blueapi.config import (
     ApplicationConfig,
     OIDCConfig,
@@ -60,7 +61,8 @@ def client_with_stomp() -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
             stomp=StompConfig(
-                auth=BasicAuthentication(username="guest", password="guest")  # type: ignore
+                enabled=True,
+                auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
             )
         )
     )
@@ -185,7 +187,7 @@ def test_create_task_and_delete_task_by_id(client: BlueapiClient):
 
 
 def test_create_task_validation_error(client: BlueapiClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+    with pytest.raises(UnknownPlan):
         client.create_task(Task(name="Not-exists", params={"Not-exists": 0.0}))
 
 

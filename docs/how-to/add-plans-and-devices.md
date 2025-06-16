@@ -19,12 +19,22 @@ For example:
 import my_plan_library.tomography.plans
 ```
 
-You would add the following into your configuration file:
+To add plans, you would add the following into your configuration file:
 ```yaml
 env:
   sources:
     - kind: planFunctions
       module: my_plan_library.tomography.plans
+```
+
+Devices are added similarly, using `dodal` as the `kind`, like so: 
+```yaml
+env:
+  sources:
+    - kind: planFunctions
+      module: my_plan_library.tomography.plans
+    - kind: dodal
+      module: dodal.beamlines.i04
 ```
 
 You can have as many sources for plans and devices as are needed.

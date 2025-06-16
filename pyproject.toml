@@ -7,7 +7,6 @@ name = "blueapi"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
@@ -22,15 +21,15 @@ dependencies = [
     "stomp-py",
     "aiohttp",
     "PyYAML>=6.0.2",
-    "click",
+    "click>=8.2.0",
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal==1.44.0",                             # https://github.com/DiamondLightSource/blueapi/issues/921
+    "dls-dodal>=1.46.0",
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
-    "bluesky-stomp>=0.1.4",
     "event-model==1.23",                           # https://github.com/DiamondLightSource/blueapi/issues/684
+    "bluesky-stomp>=0.1.6",
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
@@ -40,7 +39,7 @@ dependencies = [
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 [project.optional-dependencies]
 dev = [

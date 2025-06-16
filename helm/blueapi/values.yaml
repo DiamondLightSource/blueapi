@@ -8,6 +8,7 @@ image:
   repository: ghcr.io/diamondlightsource/blueapi
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
+  # Do not set this to a package hash: https://github.com/DiamondLightSource/blueapi/issues/1046
   tag: ""
 
 imagePullSecrets: []
@@ -94,34 +95,38 @@ tracing:
 # Config for the worker goes here, will be mounted into a config file
 worker:
   api:
-    host: 0.0.0.0 # Allow non-loopback traffic
-    port: 8000
+    url: http://0.0.0.0:8000/ # Allow non-loopback traffic
   env:
     sources:
-    - kind: deviceFunctions
-      module: blueapi.startup.example_devices
-    - kind: planFunctions
-      module: blueapi.startup.example_plans
-    - kind: planFunctions
-      module: dodal.plans
-    - kind: planFunctions
-      module: dodal.plan_stubs.wrapped
+      - kind: deviceFunctions
+        module: blueapi.startup.example_devices
+      - kind: planFunctions
+        module: blueapi.startup.example_plans
+      - kind: planFunctions
+        module: dodal.plans
+      - kind: planFunctions
+        module: dodal.plan_stubs.wrapped
   stomp:
+    enabled: false
     auth:
       username: guest
       password: guest
-    host: rabbitmq
-    port: 61613
+    url: http://rabbitmq:61613/
   scratch:
     root: /blueapi-plugins/scratch
     repositories: []
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
   logging:
-      level: "INFO"
-      graylog:
-        enabled: False
-        host: "graylog-log-target.diamond.ac.uk"
-        port: 12232
+    level: "INFO"
+    graylog:
+      enabled: False
+      url: http://graylog-log-target.diamond.ac.uk:12232/
 initContainer:
+  enabled: false
+  persistentVolume:
+    enabled: false
+    # existingClaimName: foo
+
+debug:
   enabled: false

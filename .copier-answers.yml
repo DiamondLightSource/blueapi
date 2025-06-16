@@ -1,6 +1,6 @@
 # Changes here will be overwritten by Copier
-_commit: 2.5.0
-_src_path: gh:DiamondLightSource/python-copier-template
+_commit: 3.0.0
+_src_path: https://github.com/DiamondLightSource/python-copier-template
 author_email: callum.forrester@diamond.ac.uk
 author_name: Callum Forrester
 component_lifecycle: production
@@ -16,4 +16,5 @@ github_org: DiamondLightSource
 package_name: blueapi
 pypi: true
 repo_name: blueapi
+strict_typing: false
 type_checker: pyright

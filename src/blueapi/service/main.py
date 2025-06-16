@@ -263,24 +263,27 @@ def submit_task(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     """Submit a task to the worker."""
-    plan_model = runner.run(interface.get_plan, task.name)
     try:
         task_id: str = runner.run(interface.submit_task, task)
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
-        errors = e.errors()
-        formatted_errors = "; ".join(
-            [f"{err['loc'][0]}: {err['msg']}" for err in errors]
-        )
-        error_detail_response = f"""
-        Input validation failed: {formatted_errors},
-        supplied params {task.params},
-        do not match the expected params: {plan_model.parameter_schema}
-        """
+        # Add body/params context to location and ensure that all required
+        # fields defined in the generated schema are present
+        errors = [
+            {
+                "loc": ["body", "params", *err.get("loc", [])],
+                "msg": err.get("msg", None),
+                "type": err.get("type", None),
+                # Input is not listed as required but is useful to have if available
+                "input": err.get("input", None),
+            }
+            for err in e.errors()
+        ]
+
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=error_detail_response,
+            detail=errors,
         ) from e
 
 
@@ -506,8 +509,9 @@ def start(config: ApplicationConfig):
         http_capture_headers_server_response=[",*"],
     )
     app.state.config = config
-
-    uvicorn.run(app, host=config.api.host, port=config.api.port)
+    assert config.api.url.host is not None, "API URL missing host"
+    assert config.api.url.port is not None, "API URL missing port"
+    uvicorn.run(app, host=config.api.url.host, port=config.api.url.port)
 
 
 async def add_api_version_header(

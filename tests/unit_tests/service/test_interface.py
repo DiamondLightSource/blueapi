@@ -6,8 +6,11 @@ import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
-from dodal.common.beamlines.beamline_utils import set_path_provider
-from dodal.common.visit import StartDocumentPathProvider
+from dodal.common.beamlines.beamline_utils import (
+    clear_path_provider,
+    get_path_provider,
+    set_path_provider,
+)
 from ophyd.sim import SynAxis
 from stomp.connect import StompConnection11 as Connection
 
@@ -19,6 +22,8 @@ from blueapi.config import (
     NumtrackerConfig,
     OIDCConfig,
     ScratchConfig,
+    Source,
+    SourceKind,
     StompConfig,
 )
 from blueapi.core.context import BlueskyContext
@@ -33,6 +38,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
+from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
@@ -331,8 +337,17 @@ def test_stomp_config(mock_stomp_client: StompClient):
         "blueapi.service.interface.StompClient.for_broker",
         return_value=mock_stomp_client,
     ):
-        interface.set_config(ApplicationConfig(stomp=StompConfig()))
+        interface.set_config(ApplicationConfig(stomp=StompConfig(enabled=True)))
         assert interface.stomp_client() is not None
+
+
+def test_stomp_config_makes_no_client_when_disabled(mock_stomp_client: StompClient):
+    with patch(
+        "blueapi.service.interface.StompClient.for_broker",
+        return_value=mock_stomp_client,
+    ):
+        interface.set_config(ApplicationConfig(stomp=StompConfig(enabled=False)))
+        assert interface.stomp_client() is None
 
 
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
@@ -412,21 +427,69 @@ def test_configure_numtracker_with_no_metadata_fails():
     interface.teardown()
 
 
-@patch("blueapi.service.interface.StompClient")
-def test_setup(mock_stomp: MagicMock):
+def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
+    conf = ApplicationConfig()
+    mock_provider = Mock()
+    set_path_provider(mock_provider)
+
+    assert get_path_provider() == mock_provider
+    interface.setup(conf)
+    assert get_path_provider() == mock_provider
+
+    clear_path_provider()
+    interface.teardown()
+
+
+def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
+    conf = ApplicationConfig()
+    interface.setup(conf)
+
+    with pytest.raises(NameError):
+        get_path_provider()
+
+    interface.teardown()
+
+
+def test_setup_with_numtracker_makes_start_document_provider():
     conf = ApplicationConfig(
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
         ),
         numtracker=NumtrackerConfig(),
     )
-    set_path_provider(StartDocumentPathProvider())
-    interface.set_config(conf)
     interface.setup(conf)
 
-    assert interface.worker()._ctx is not None
+    path_provider = get_path_provider()
+
+    assert isinstance(path_provider, StartDocumentPathProvider)
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 
+    clear_path_provider()
+    interface.teardown()
+
+
+def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            sources=[
+                Source(
+                    kind=SourceKind.DEVICE_FUNCTIONS,
+                    module="tests.unit_tests.service.example_beamline_with_path_provider",
+                ),
+            ],
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123"),
+        ),
+        numtracker=NumtrackerConfig(),
+    )
+
+    with pytest.raises(
+        InvalidConfigError,
+        match="Numtracker has been configured but a path provider was imported"
+        "with the devices. Remove this path provider to use numtracker.",
+    ):
+        interface.setup(conf)
+
+    clear_path_provider()
     interface.teardown()
 
 
@@ -440,11 +503,33 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
     )
     interface.set_config(conf)
     ctx = interface.context()
+    interface.configure_context()
 
     headers = {"a": "b"}
     interface._try_configure_numtracker(headers)
     interface._update_scan_num(ctx.run_engine.md)
 
     mock_create_scan.assert_called_once_with("ab123", "p46")
+
+    interface.teardown()
+
+
+def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
+    mock_numtracker_server,
+):
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+        numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
+    )
+    interface.setup(conf)
+    ctx = interface.context()
+
+    interface._update_scan_num(ctx.run_engine.md)
+
+    assert (
+        ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"
+    )
 
     interface.teardown()

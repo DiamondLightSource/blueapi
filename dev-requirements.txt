@@ -39,7 +39,7 @@ docutils==0.21.2
 dunamai==1.23.1
 email_validator==2.2.0
 epicscorelibs==7.0.7.99.1.2a1
-event-model==1.22.3
+event-model==1.23
 fastapi==0.115.12
 fastapi-cli==0.0.7
 filelock==3.18.0

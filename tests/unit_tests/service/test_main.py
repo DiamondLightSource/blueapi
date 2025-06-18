@@ -41,4 +41,5 @@ def test_get_passthrough_headers(
     headers: dict[str, str], expected_headers: dict[str, str]
 ):
     request = Mock(spec=Request)
+    request.headers = headers
     assert get_passthrough_headers(request) == expected_headers

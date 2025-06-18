@@ -60,6 +60,9 @@ RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
 CONTEXT_HEADER = "traceparent"
+VENDOR_CONTEXT_HEADER = "tracestate"
+AUTHORIZAITON_HEADER = "authorization"
+PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
 
 
 def _runner() -> WorkerDispatcher:
@@ -351,13 +354,17 @@ def set_active_task(
     runner.run(
         interface.begin_task,
         task=task,
-        pass_through_headers={
-            key: value
-            for key, value in request.headers.items()
-            if key.casefold() in {"authorization"}
-        },
+        pass_through_headers=get_passthrough_headers(request),
     )
     return task
+
+
+def get_passthrough_headers(request: Request) -> dict[str, str]:
+    return {
+        key: value
+        for key, value in request.headers.items()
+        if key.casefold() in PROPAGATED_HEADERS
+    }
 
 
 @secure_router.get(
@@ -538,10 +545,13 @@ async def inject_propagated_observability_context(
     """Middleware to extract any propagated observability context from the
     HTTP headers and attach it to the local one.
     """
-    if CONTEXT_HEADER in request.headers:
-        ctx = get_global_textmap().extract(
-            {CONTEXT_HEADER: request.headers[CONTEXT_HEADER]}
-        )
+    headers = request.headers
+    if CONTEXT_HEADER in headers:
+        carrier = {CONTEXT_HEADER: headers[CONTEXT_HEADER]}
+        if VENDOR_CONTEXT_HEADER in headers:
+            carrier[VENDOR_CONTEXT_HEADER] = headers[VENDOR_CONTEXT_HEADER]
+        ctx = get_global_textmap().extract(carrier)
+
         attach(ctx)
     response = await call_next(request)
     return response

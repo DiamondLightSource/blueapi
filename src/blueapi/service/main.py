@@ -354,7 +354,7 @@ def set_active_task(
         pass_through_headers={
             key: value
             for key, value in request.headers.items()
-            if key in {"Authorization"}
+            if key.casefold() in {"authorization"}
         },
     )
     return task

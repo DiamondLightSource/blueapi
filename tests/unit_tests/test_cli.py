@@ -288,6 +288,40 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
     assert run_response.call_count == 1
 
 
+@responses.activate
+def test_run_plan_background_without_stomp(runner: CliRunner):
+    submit_response = responses.post(
+        url="http://a.fake.host:12345/tasks",
+        match=[matchers.json_params_matcher({"name": "sleep", "params": {"time": 3}})],
+        json={"task_id": "abcd-1234"},
+        status=201,
+    )
+    run_response = responses.put(
+        url="http://a.fake.host:12345/worker/task",
+        match=[matchers.json_params_matcher({"task_id": "abcd-1234"})],
+        json={"task_id": "abcd-1234"},
+    )
+
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    result = runner.invoke(
+        main,
+        [
+            "-c",
+            config_path,
+            "controller",
+            "run",
+            "--background",
+            "sleep",
+            '{"time": 3}',
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.output == "abcd-1234\n"
+    assert submit_response.call_count == 1
+    assert run_response.call_count == 1
+
+
 def test_invalid_stomp_config_for_listener(runner: CliRunner):
     result = runner.invoke(main, ["controller", "listen"])
     assert isinstance(result.exception, BlueskyStreamingError)

@@ -255,7 +255,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             ctx,
         )
         callback(ProgressEvent(task_id=task_id), ctx)
-        callback(DataEvent(name="event", doc={}), ctx)
+        callback(DataEvent(name="event", doc={}, task_id=task_id), ctx)
         callback(
             WorkerEvent(
                 state=WorkerState.IDLE,

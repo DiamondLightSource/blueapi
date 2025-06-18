@@ -69,7 +69,7 @@ spec:
       {{- if .Values.initContainer.enabled }}
       initContainers:
       - name: setup-scratch
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary "-debug" "" .Values.debug.enabled }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources:
           {{- .Values.initResources | default .Values.resources | toYaml | nindent 12 }}

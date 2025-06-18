@@ -4,6 +4,8 @@
     "config:best-practices",
     ":automergeStableNonMajor"
   ],
+  "allowScripts": true,
+  "ignoreScripts": false,
   "packageRules": [
     {
       "groupName": "Templated CI",

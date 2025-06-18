@@ -19,7 +19,6 @@ dependencies = [
     "scanspec>=0.7.8",
     "pydantic-settings",
     "stomp-py",
-    "aiohttp",
     "PyYAML>=6.0.2",
     "click>=8.2.0",
     "fastapi>=0.112.0",

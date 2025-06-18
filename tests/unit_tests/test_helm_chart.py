@@ -668,22 +668,18 @@ def test_container_image_has_debug_suffix(
             "containers"
         ][0]["image"]
         assert str(image).endswith("-debug")
-        if initContainer_enabled:
-            init_image = manifests["StatefulSet"]["blueapi"]["spec"]["template"][
-                "spec"
-            ]["initContainers"][0]["image"]
-            assert init_image == image
 
     else:
         image = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
             "containers"
         ][0]["image"]
         assert not str(image).endswith("-debug")
-        if initContainer_enabled:
-            init_image = manifests["StatefulSet"]["blueapi"]["spec"]["template"][
-                "spec"
-            ]["initContainers"][0]["image"]
-            assert init_image == image
+
+    if initContainer_enabled:
+        init_image = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+            "initContainers"
+        ][0]["image"]
+        assert init_image == image
 
 
 @pytest.mark.parametrize("initContainer_enabled", [True, False])

@@ -2,7 +2,6 @@ import asyncio
 import base64
 import os
 import time
-from collections.abc import Iterable
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, cast
@@ -21,7 +20,6 @@ from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
-from responses.matchers import json_params_matcher
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service.model import Cache
@@ -336,30 +334,9 @@ def mock_jwks_fetch(json_web_keyset: JWK):
     return patch("jwt.PyJWKClient.fetch_data", mock)
 
 
-# Prevent pytest from catching exceptions when debugging in vscode so that break on
-# exception works correctly (see: https://github.com/pytest-dev/pytest/issues/7409)
-if os.getenv("PYTEST_RAISE", "0") == "1":
-
-    @pytest.hookimpl(tryfirst=True)
-    def pytest_exception_interact(call: pytest.CallInfo[Any]):
-        if call.excinfo is not None:
-            raise call.excinfo.value
-        else:
-            raise RuntimeError(
-                f"{call} has no exception data, an unknown error has occurred"
-            )
-
-    @pytest.hookimpl(tryfirst=True)
-    def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
-        raise excinfo.value
-
-
-NOT_CONFIGURED_INSTRUMENT = "p100"
-
-
-@pytest.fixture(scope="module")
-def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
-    query_working = {
+@pytest.fixture
+def nt_query() -> dict[str, str]:
+    return {
         "query": dedent("""
             mutation{
                 scan(
@@ -377,94 +354,11 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             }
             """)
     }
-    query_400 = {
-        "query": dedent("""
-            mutation{
-                scan(
-                    instrument: "p47",
-                    instrumentSession: "ab123"
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """)
-    }
-    query_500 = {
-        "query": dedent("""
-            mutation{
-                scan(
-                    instrument: "p48",
-                    instrumentSession: "ab123"
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """)
-    }
-    query_key_error = {
-        "query": dedent("""
-            mutation{
-                scan(
-                    instrument: "p49",
-                    instrumentSession: "ab123"
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """)
-    }
-    query_200_with_errors = {
-        "query": dedent(f"""
-            mutation{{
-                scan(
-                    instrument: "{NOT_CONFIGURED_INSTRUMENT}",
-                    instrumentSession: "ab123"
-                    ) {{
-                    directory{{
-                        instrumentSession
-                        instrument
-                        path
-                    }}
-                    scanFile
-                    scanNumber
-                }}
-            }}
-            """)
-    }
 
-    response_with_errors = {
-        "data": None,
-        "errors": [
-            {
-                "message": (
-                    "No configuration available for instrument "
-                    f'"{NOT_CONFIGURED_INSTRUMENT}"'
-                ),
-                "locations": [{"line": 3, "column": 5}],
-                "path": ["scan"],
-            }
-        ],
-    }
 
-    working_response = {
+@pytest.fixture
+def nt_response() -> dict[str, Any]:
+    return {
         "data": {
             "scan": {
                 "scanFile": "p46-11",
@@ -477,42 +371,21 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             }
         }
     }
-    empty_response = {}
 
-    with responses.RequestsMock(assert_all_requests_are_fired=False) as requests_mock:
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_working)],
-            status=200,
-            json=working_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_400)],
-            status=400,
-            json=empty_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_500)],
-            status=500,
-            json=empty_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_key_error)],
-            status=200,
-            json=empty_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            "https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_200_with_errors)],
-            status=200,
-            json=response_with_errors,
-        )
-        yield requests_mock
+
+# Prevent pytest from catching exceptions when debugging in vscode so that break on
+# exception works correctly (see: https://github.com/pytest-dev/pytest/issues/7409)
+if os.getenv("PYTEST_RAISE", "0") == "1":
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_exception_interact(call: pytest.CallInfo[Any]):
+        if call.excinfo is not None:
+            raise call.excinfo.value
+        else:
+            raise RuntimeError(
+                f"{call} has no exception data, an unknown error has occurred"
+            )
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
+        raise excinfo.value

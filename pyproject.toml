@@ -36,6 +36,7 @@ dependencies = [
     "pyjwt[crypto]",
     "tomlkit",
     "graypy>=2.1.0",
+    "httpx>=0.28.1",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -52,6 +53,7 @@ dev = [
     "pyright!=1.1.407",             # https://github.com/bluesky/scanspec/issues/190
     "pytest-cov",
     "pytest-asyncio",
+    "pytest-httpx>=0.35.0",
     "responses",
     "ruff",
     "semver",

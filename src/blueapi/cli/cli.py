@@ -7,6 +7,7 @@ import textwrap
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
+from typing import Any
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -35,6 +36,7 @@ from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import SourceInfo, TaskRequest
+from blueapi.utils.caching import DiskCache
 from blueapi.worker import ProgressEvent, WorkerEvent
 
 from .scratch import setup_scratch
@@ -219,6 +221,14 @@ def listen_to_events(obj: dict) -> None:
         input()
 
 
+@controller.command(name="set-instrument-session")
+@click.argument("instrument_session", type=str)
+@click.pass_obj
+def set_instrument_session(obj: dict[str, Any], instrument_session: str) -> None:
+    cache = DiskCache()
+    cache.set("instrument_session", instrument_session)
+
+
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.argument("parameters", type=str, required=False)
@@ -236,14 +246,12 @@ def listen_to_events(obj: dict) -> None:
     "-i",
     "--instrument-session",
     type=str,
-    help=textwrap.dedent("""
-        Instrument session associated with running the plan,
-        used to tell blueapi where to store any data and as a security check:
-        the session must be valid and active and you must be a member of it.
-        If you have saved your current session with
-        blueapi controller set-instrument-session,
-        passing this will supersede that."""),
-    required=True,
+    help=textwrap.dedent("""Instrument session associated with running the plan,
+    used to tell blueapi where to store any data and as a secuirty check:
+    the session must be valid and active and you must be a member of it.
+    If you have saved your current session with
+    blueapi controller set-instrument-session, passing this will superseed that."""),
+    default=None,
 )
 @check_connection
 @click.pass_obj
@@ -253,7 +261,7 @@ def run_plan(
     parameters: str | None,
     timeout: float | None,
     foreground: bool,
-    instrument_session: str,
+    instrument_session: str | None,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
@@ -263,6 +271,12 @@ def run_plan(
         parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
     except json.JSONDecodeError as jde:
         raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
+
+    if instrument_session is None:
+        cache = DiskCache()
+        instrument_session = cache.get("instrument_session")
+        if instrument_session is None:
+            raise BlueskyRemoteControlError("No session set")
 
     try:
         task = TaskRequest(

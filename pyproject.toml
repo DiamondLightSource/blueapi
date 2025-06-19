@@ -34,6 +34,7 @@ dependencies = [
     "observability-utils>=0.1.4",
     "pyjwt[crypto]",
     "tomlkit",
+    "httpx>=0.28.1",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -51,6 +52,7 @@ dev = [
     "pyright",
     "pytest-cov",
     "pytest-asyncio",
+    "pytest-httpx>=0.35.0",
     "responses",
     "ruff",
     "semver",

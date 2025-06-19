@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import os
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -334,6 +333,7 @@ def mock_unauthenticated_server():
 def mock_jwks_fetch(json_web_keyset: JWK):
     mock = Mock(return_value={"keys": [json_web_keyset.export_public(as_dict=True)]})
     return patch("jwt.PyJWKClient.fetch_data", mock)
+
 
 NOT_CONFIGURED_INSTRUMENT = "p100"
 

@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from textwrap import dedent
 
-import requests
+import httpx
 from pydantic import Field, HttpUrl
 
 from blueapi.utils import BlueapiBaseModel
@@ -60,7 +60,7 @@ class NumtrackerClient:
 
         self._headers = headers
 
-    def create_scan(
+    async def create_scan(
         self, instrument_session: str, instrument: str
     ) -> NumtrackerScanMutationResponse:
         """
@@ -92,11 +92,12 @@ class NumtrackerClient:
             """)
         }
 
-        response = requests.post(
-            self._url.unicode_string(),
-            headers=self._headers,
-            json=query,
-        )
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self._url.unicode_string(),
+                headers=self._headers,
+                json=query,
+            )
 
         response.raise_for_status()
         json = response.json()

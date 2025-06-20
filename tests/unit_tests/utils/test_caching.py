@@ -87,7 +87,7 @@ def test_defaults_to_default(cache: DiskCache, default: Any):
     assert cache.get("foo", default=default) == default
 
 
-@patch("pathlib.io.open")
+@patch("blueapi.utils.caching.Path")
 @patch("blueapi.utils.caching.os.makedirs")
 def test_makes_directory_on_set(mock_makedirs: Mock, _: Mock):
     cache = DiskCache(Path("/cacheroot"))

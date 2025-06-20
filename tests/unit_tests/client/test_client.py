@@ -224,7 +224,9 @@ def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
     client.create_and_start_task(
         TaskRequest(name="baz", instrument_session="cm12345-1")
     )
-    mock_rest.create_task.assert_called_once_with(Task(name="baz"))
+    mock_rest.create_task.assert_called_once_with(
+        TaskRequest(name="baz", instrument_session="cm12345-1")
+    )
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="baz"))
 
 
@@ -410,7 +412,9 @@ def test_run_task_sets_up_control(
     mock_events.subscribe_to_all_events = lambda on_event: on_event(COMPLETE_EVENT, ctx)
 
     client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
-    mock_rest.create_task.assert_called_once_with(Task(name="foo"))
+    mock_rest.create_task.assert_called_once_with(
+        TaskRequest(name="foo", instrument_session="cm12345-1")
+    )
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="foo"))
 
 

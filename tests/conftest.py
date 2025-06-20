@@ -503,7 +503,7 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
 
 @pytest.fixture
 def temp_dir() -> Generator[Path]:
-    temporary_directory = TemporaryDirectory(dir="")
+    temporary_directory = TemporaryDirectory()
     path = Path(temporary_directory.name)
     os.chmod(path, 0o600)
     yield path

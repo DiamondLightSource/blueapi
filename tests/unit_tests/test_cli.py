@@ -226,6 +226,49 @@ def test_submit_plan(runner: CliRunner):
 
 
 @responses.activate
+def test_submit_plan_with_cached_instrument_session(runner: CliRunner):
+    body_data = {
+        "name": "sleep",
+        "params": {"time": 5},
+        "instrument_session": "cm12345-1",
+    }
+
+    response = responses.post(
+        url="http://a.fake.host:12345/tasks",
+        match=[matchers.json_params_matcher(body_data)],
+    )
+
+    runner.invoke(
+        main,
+        ["controller", "set-instrument-session", "cm12345-1"],
+    )
+    config_path = "tests/unit_tests/example_yaml/rest_and_stomp_config.yaml"
+
+    output = runner.invoke(
+        main,
+        [
+            "-c",
+            config_path,
+            "controller",
+            "run",
+            "sleep",
+            '{"time": 5}',
+        ],
+    )
+
+    assert response.call_count == 1, output.output
+
+
+def test_caches_instrument_session(runner: CliRunner):
+    output = runner.invoke(
+        main,
+        ["controller", "set-instrument-session", "cm12345-1"],
+    )
+
+    assert output.stdout == "Default instrument session set to cm12345-1\n"
+
+
+@responses.activate
 def test_submit_plan_without_stomp(runner: CliRunner):
     config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
     result = runner.invoke(

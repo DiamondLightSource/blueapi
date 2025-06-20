@@ -1,8 +1,9 @@
 import asyncio
 import base64
 import time
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from textwrap import dedent
 from typing import Any, cast
 from unittest.mock import Mock, patch
@@ -497,3 +498,11 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             json=response_with_errors,
         )
         yield requests_mock
+
+
+@pytest.fixture
+def temp_dir() -> Generator[Path]:
+    temporary_directory = TemporaryDirectory()
+    path = Path(temporary_directory.name)
+    yield path
+    temporary_directory.cleanup()

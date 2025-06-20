@@ -26,7 +26,7 @@ class DiskCache:
         with path.open("xb") as writer:
             as_json = TypeAdapter(T).dump_json(value)
             writer.write(base64.b64encode(as_json))
-        os.chmod(self._path, 0o600)
+        os.chmod(path, 0o600)
 
     def get(
         self,

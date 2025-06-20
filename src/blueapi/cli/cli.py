@@ -227,6 +227,7 @@ def listen_to_events(obj: dict) -> None:
 def set_instrument_session(obj: dict[str, Any], instrument_session: str) -> None:
     cache = DiskCache()
     cache.set("instrument_session", instrument_session)
+    print(f"Default instrument session set to {instrument_session}")
 
 
 @controller.command(name="run")
@@ -276,7 +277,19 @@ def run_plan(
         cache = DiskCache()
         instrument_session = cache.get("instrument_session")
         if instrument_session is None:
-            raise BlueskyRemoteControlError("No session set")
+            raise BlueskyRemoteControlError(
+                textwrap.dedent("""
+
+            No instrument session specified!
+
+            You need to run plans as part of an instrument session (a.k.a. visit)
+            on which you are authorized to work. Please do so via:
+            blueapi controller run -i <session name> <args>
+
+            Alternatively please set a default instrument session with:
+            blueapi controller set-instrument-session <session name>
+            """)
+            )
 
     try:
         task = TaskRequest(

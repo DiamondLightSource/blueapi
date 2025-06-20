@@ -1,7 +1,6 @@
 import os
 from collections.abc import Generator
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any
 from unittest.mock import Mock, patch
 
@@ -12,15 +11,8 @@ from blueapi.utils.caching import DiskCache
 
 
 @pytest.fixture
-def root() -> Generator[Path]:
-    temporary_directory = TemporaryDirectory()
-    yield Path(temporary_directory.name)
-    temporary_directory.cleanup()
-
-
-@pytest.fixture
-def some_file(root: Path) -> Generator[Path]:
-    file_path = root / "temp"
+def some_file(temp_dir: Path) -> Generator[Path]:
+    file_path = temp_dir / "temp"
     with file_path.open("w") as stream:
         stream.write("foo")
     yield file_path
@@ -28,19 +20,19 @@ def some_file(root: Path) -> Generator[Path]:
 
 
 @pytest.fixture
-def cache(root: Path) -> DiskCache:
-    return DiskCache(root)
+def cache(temp_dir: Path) -> DiskCache:
+    return DiskCache(temp_dir)
 
 
-def test_caches_to_correct_file_path(cache: DiskCache, root: Path):
-    assert not (root / "foo").exists()
+def test_caches_to_correct_file_path(cache: DiskCache, temp_dir: Path):
+    assert not (temp_dir / "foo").exists()
     cache.set("foo", "bar")
-    assert (root / "foo").exists()
+    assert (temp_dir / "foo").exists()
 
 
-def test_writes_b64_encoded_string(cache: DiskCache, root: Path):
+def test_writes_b64_encoded_string(cache: DiskCache, temp_dir: Path):
     cache.set("foo", "bar")
-    with (root / "foo").open("rb") as reader:
+    with (temp_dir / "foo").open("rb") as reader:
         assert reader.read() == b"ImJhciI="
 
 
@@ -88,8 +80,9 @@ def test_defaults_to_default(cache: DiskCache, default: Any):
 
 
 @patch("pathlib.io.open")
+@patch("blueapi.utils.caching.os.chmod")
 @patch("blueapi.utils.caching.os.makedirs")
-def test_makes_directory_on_set(mock_makedirs: Mock, _: Mock):
+def test_makes_directory_on_set(mock_makedirs: Mock, _: Mock, __: Mock):
     cache = DiskCache(Path("/cacheroot"))
     cache.set("foo", "bar")
     mock_makedirs.assert_called_once_with(Path("/cacheroot"), exist_ok=True)

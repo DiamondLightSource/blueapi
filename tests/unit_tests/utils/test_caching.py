@@ -111,3 +111,7 @@ def test_can_make_file_in_dir():
 def test_can_stat_file():
     os.stat("temp2")
     os.stat("temp1/foo")
+
+
+def test_can_check_if_a_file_exists():
+    Path("temp1/foo").exists()

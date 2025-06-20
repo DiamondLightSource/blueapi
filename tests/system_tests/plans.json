@@ -8,7 +8,18 @@
                 "properties": {
                     "detectors": {
                         "items": {
-                            "type": "bluesky.protocols.Readable"
+                            "type": "bluesky.protocols.Readable",
+                            "enum": [
+                                "sample_pressure",
+                                "x_err",
+                                "theta",
+                                "z",
+                                "y",
+                                "x",
+                                "current_det",
+                                "image_det",
+                                "sample_temperature"
+                            ]
                         },
                         "title": "Detectors",
                         "type": "array"
@@ -16,6 +27,18 @@
                     "temperature": {
                         "title": "Temperature",
                         "type": "bluesky.protocols.Movable",
+                        "enum": [
+                            "data_class_motor",
+                            "dynamic_motor",
+                            "movable_motor",
+                            "sample_pressure",
+                            "x_err",
+                            "theta",
+                            "z",
+                            "y",
+                            "x",
+                            "sample_temperature"
+                        ],
                         "types": [
                             "float"
                         ]
@@ -23,6 +46,18 @@
                     "pressure": {
                         "title": "Pressure",
                         "type": "bluesky.protocols.Movable",
+                        "enum": [
+                            "data_class_motor",
+                            "dynamic_motor",
+                            "movable_motor",
+                            "sample_pressure",
+                            "x_err",
+                            "theta",
+                            "z",
+                            "y",
+                            "x",
+                            "sample_temperature"
+                        ],
                         "types": [
                             "float"
                         ]
@@ -44,6 +79,18 @@
                     "motor": {
                         "title": "Motor",
                         "type": "bluesky.protocols.Movable",
+                        "enum": [
+                            "data_class_motor",
+                            "dynamic_motor",
+                            "movable_motor",
+                            "sample_pressure",
+                            "x_err",
+                            "theta",
+                            "z",
+                            "y",
+                            "x",
+                            "sample_temperature"
+                        ],
                         "types": [
                             "str"
                         ]
@@ -65,6 +112,18 @@
                     "motor": {
                         "title": "Motor",
                         "type": "bluesky.protocols.Movable",
+                        "enum": [
+                            "data_class_motor",
+                            "dynamic_motor",
+                            "movable_motor",
+                            "sample_pressure",
+                            "x_err",
+                            "theta",
+                            "z",
+                            "y",
+                            "x",
+                            "sample_temperature"
+                        ],
                         "types": [
                             "blueapi.startup.example_devices.DataClassType"
                         ]
@@ -85,6 +144,17 @@
                 "properties": {
                     "detectors": {
                         "items": {
+                            "enum": [
+                                "sample_pressure",
+                                "x_err",
+                                "theta",
+                                "z",
+                                "y",
+                                "x",
+                                "current_det",
+                                "image_det",
+                                "sample_temperature"
+                            ],
                             "type": "bluesky.protocols.Readable"
                         },
                         "title": "Detectors",
@@ -140,11 +210,35 @@
                             "x_axis": {
                                 "description": "The name matching the x axis of the spec",
                                 "title": "X Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "The name matching the y axis of the spec",
                                 "title": "Y Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "x_middle": {
@@ -277,11 +371,35 @@
                             "x_axis": {
                                 "description": "The name matching the x axis of the spec",
                                 "title": "X Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "The name matching the y axis of the spec",
                                 "title": "Y Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "x_middle": {
@@ -363,6 +481,18 @@
                             "axis": {
                                 "description": "An identifier for what to move",
                                 "title": "Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "start": {
@@ -436,11 +566,35 @@
                             "x_axis": {
                                 "description": "The name matching the x axis of the spec",
                                 "title": "X Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "The name matching the y axis of the spec",
                                 "title": "Y Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "x_verts": {
@@ -510,6 +664,18 @@
                             "axis": {
                                 "description": "The name matching the axis to mask in spec",
                                 "title": "Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "min": {
@@ -544,11 +710,35 @@
                             "x_axis": {
                                 "description": "The name matching the x axis of the spec",
                                 "title": "X Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "The name matching the y axis of the spec",
                                 "title": "Y Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "x_min": {
@@ -750,11 +940,35 @@
                             "x_axis": {
                                 "description": "An identifier for what to move for x",
                                 "title": "X Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "An identifier for what to move for y",
                                 "title": "Y Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "x_start": {
@@ -842,6 +1056,18 @@
                             "axis": {
                                 "description": "An identifier for what to move",
                                 "title": "Axis",
+                                "enum": [
+                                    "data_class_motor",
+                                    "dynamic_motor",
+                                    "movable_motor",
+                                    "sample_pressure",
+                                    "x_err",
+                                    "theta",
+                                    "z",
+                                    "y",
+                                    "x",
+                                    "sample_temperature"
+                                ],
                                 "type": "bluesky.protocols.Movable"
                             },
                             "value": {
@@ -953,6 +1179,17 @@
                 "properties": {
                     "detectors": {
                         "items": {
+                            "enum": [
+                                "sample_pressure",
+                                "x_err",
+                                "theta",
+                                "z",
+                                "y",
+                                "x",
+                                "current_det",
+                                "image_det",
+                                "sample_temperature"
+                            ],
                             "type": "bluesky.protocols.Readable"
                         },
                         "title": "Detectors",
@@ -991,6 +1228,18 @@
                     "movable": {
                         "title": "Movable",
                         "type": "bluesky.protocols.Movable",
+                        "enum": [
+                            "data_class_motor",
+                            "dynamic_motor",
+                            "movable_motor",
+                            "sample_pressure",
+                            "x_err",
+                            "theta",
+                            "z",
+                            "y",
+                            "x",
+                            "sample_temperature"
+                        ],
                         "types": [
                             "Any"
                         ]
@@ -1031,6 +1280,18 @@
                     "movable": {
                         "title": "Movable",
                         "type": "bluesky.protocols.Movable",
+                        "enum": [
+                            "data_class_motor",
+                            "dynamic_motor",
+                            "movable_motor",
+                            "sample_pressure",
+                            "x_err",
+                            "theta",
+                            "z",
+                            "y",
+                            "x",
+                            "sample_temperature"
+                        ],
                         "types": [
                             "Any"
                         ]

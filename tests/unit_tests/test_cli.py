@@ -569,13 +569,13 @@ def test_error_handling(exception, error_message, runner: CliRunner):
 
 
 @pytest.mark.parametrize(
-    "params, error",
+    "params, error, code",
     [
-        ("{", "Parameters are not valid JSON"),
-        ("[]", ""),
+        ("{", "Invalid value for '[PARAMETERS]'", 2),
+        ("[]", "Incorrect parameters supplied", 1),
     ],
 )
-def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
+def test_run_task_parsing_errors(params: str, error: str, code: int, runner: CliRunner):
     result = runner.invoke(
         main,
         [
@@ -587,8 +587,8 @@ def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
             params,
         ],
     )
-    assert result.stderr.startswith("Error: " + error)
-    assert result.exit_code == 1
+    assert ("Error: " + error) in result.stderr
+    assert result.exit_code == code
 
 
 def test_device_output_formatting():

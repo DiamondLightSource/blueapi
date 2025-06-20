@@ -36,7 +36,7 @@ from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import SourceInfo, TaskRequest
-from blueapi.utils.caching import DiskCacheManager
+from blueapi.utils.caching import DiskCache
 from blueapi.worker import ProgressEvent, WorkerEvent
 
 from .scratch import setup_scratch
@@ -223,10 +223,8 @@ def listen_to_events(obj: dict) -> None:
 @click.argument("instrument_session", type=str)
 @click.pass_obj
 def set_instrument_session(obj: dict[str, Any], instrument_session: str) -> None:
-    cache = DiskCacheManager[str](
-        Path("~/.cache/blueapi_instrument_session").expanduser()
-    )
-    cache.save_cache(instrument_session)
+    cache = DiskCache()
+    cache.set("instrument_session", instrument_session)
 
 
 @controller.command(name="run")
@@ -273,13 +271,10 @@ def run_plan(
         raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
 
     if instrument_session is None:
-        cache = DiskCacheManager[str](
-            Path("~/.cache/blueapi_instrument_session").expanduser()
-        )
-        try:
-            instrument_session = cache.load_cache()
-        except FileNotFoundError as ex:
-            raise BlueskyRemoteControlError("No cache found") from ex
+        cache = DiskCache()
+        instrument_session = cache.get("instrument_session")
+        if instrument_session is None:
+            raise BlueskyRemoteControlError("No session set")
 
     try:
         task = TaskRequest(

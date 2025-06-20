@@ -229,7 +229,17 @@ def test_submit_plan(runner: CliRunner):
 def test_submit_plan_without_stomp(runner: CliRunner):
     config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
     result = runner.invoke(
-        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+        main,
+        [
+            "-c",
+            config_path,
+            "controller",
+            "run",
+            "-i",
+            "cm12345-1",
+            "sleep",
+            '{"time": 5}',
+        ],
     )
 
     assert (
@@ -343,7 +353,17 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
 
 
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
-    result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    result = runner.invoke(
+        main,
+        [
+            "controller",
+            "run",
+            "sleep",
+            "-i",
+            "cm12345-1",
+            '{"time": 5}',
+        ],
+    )
     assert result.exit_code == 1
     assert (
         result.stderr
@@ -574,6 +594,8 @@ def test_error_handling(exception, error_message, runner: CliRunner):
                 "tests/unit_tests/example_yaml/valid_stomp_config.yaml",
                 "controller",
                 "run",
+                "-i",
+                "cm12345-1",
                 "sleep",
                 '{"time": 5}',
             ],
@@ -597,6 +619,8 @@ def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
             "tests/unit_tests/example_yaml/valid_stomp_config.yaml",
             "controller",
             "run",
+            "-i",
+            "cm12345-1",
             "sleep",
             params,
         ],

@@ -14,9 +14,7 @@ from blueapi.utils.caching import DiskCache
 @pytest.fixture
 def root() -> Generator[Path]:
     temporary_directory = TemporaryDirectory()
-    root_path = Path(temporary_directory.name) / "root"
-    os.makedirs(root_path)
-    yield root_path
+    yield Path(temporary_directory.name)
     temporary_directory.cleanup()
 
 

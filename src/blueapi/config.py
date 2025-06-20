@@ -12,6 +12,7 @@ import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
+    AnyUrl,
     BaseModel,
     Field,
     HttpUrl,
@@ -97,7 +98,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
 class GraylogConfig(BlueapiBaseModel):
     enabled: bool = False
-    url: HttpUrl = HttpUrl("http://localhost:5555")
+    url: AnyUrl = AnyUrl("tcp://localhost:5555")
 
 
 class LoggingConfig(BlueapiBaseModel):

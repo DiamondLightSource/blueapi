@@ -120,8 +120,8 @@ worker:
   logging:
     level: "INFO"
     graylog:
-      enabled: False
-      url: http://graylog-log-target.diamond.ac.uk:12232/
+      enabled: True
+      url: tcp://graylog-log-target.diamond.ac.uk:12232/
 initContainer:
   enabled: false
   persistentVolume:

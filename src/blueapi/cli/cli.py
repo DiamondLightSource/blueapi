@@ -6,19 +6,21 @@ import sys
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
+from typing import Any
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from click.core import Context, Parameter
 from click.exceptions import ClickException
+from click.types import ParamType
 from observability_utils.tracing import setup_tracing
-from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
-from blueapi.client.client import BlueapiClient
+from blueapi.client.client import BlueapiClient, TaskParameters
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
@@ -34,10 +36,25 @@ from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import SourceInfo
-from blueapi.worker import ProgressEvent, Task, WorkerEvent
+from blueapi.worker import ProgressEvent, WorkerEvent
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
+
+
+class ParametersType(ParamType):
+    name = "TaskParameters"
+
+    def convert(
+        self, value: Any, param: Parameter | None, ctx: Context | None
+    ) -> TaskParameters:
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError as jde:
+                self.fail(f"Parameters are not valid JSON: {jde}")
+        else:
+            return super().convert(value, param, ctx)
 
 
 @click.group(
@@ -220,7 +237,7 @@ def listen_to_events(obj: dict) -> None:
 
 @controller.command(name="run")
 @click.argument("name", type=str)
-@click.argument("parameters", type=str, required=False)
+@click.argument("parameters", type=ParametersType(), default={}, required=False)
 @click.option(
     "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
 )
@@ -236,24 +253,12 @@ def listen_to_events(obj: dict) -> None:
 def run_plan(
     obj: dict,
     name: str,
-    parameters: str | None,
     timeout: float | None,
     foreground: bool,
+    parameters: TaskParameters,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
-
-    parameters = parameters or "{}"
-    try:
-        parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
-    except json.JSONDecodeError as jde:
-        raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
-
-    try:
-        task = Task(name=name, params=parsed_params)
-    except ValidationError as ve:
-        ip = InvalidParameters.from_validation_error(ve)
-        raise ClickException(ip.message()) from ip
 
     try:
         if foreground:
@@ -266,12 +271,12 @@ def run_plan(
                 elif isinstance(event, DataEvent):
                     callback(event.name, event.doc)
 
-            resp = client.run_task(task, on_event=on_event)
+            resp = client.run_task(name, parameters, on_event=on_event)
 
             if resp.task_status is not None and not resp.task_status.task_failed:
                 print("Plan Succeeded")
         else:
-            server_task = client.create_and_start_task(task)
+            server_task = client.create_and_start_task(name, parameters)
             click.echo(server_task.task_id)
     except config.MissingStompConfiguration as mse:
         raise ClickException(*mse.args) from mse

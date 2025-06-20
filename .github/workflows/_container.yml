@@ -1,6 +1,10 @@
 name: Build and publish container
 on:
   workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        description: If true, pushes image to container registry
 
 jobs:
   build_container:
@@ -69,8 +73,8 @@ jobs:
             type=ref,event=tag,suffix=-debug
             type=raw,value=latest-debug
       
-      - name: Build and publish debug image to container registry
-        if: github.ref_type == 'tag'
+      - name: Push cached image to container registry
+        if: inputs.publish && github.ref_type == 'tag'
         uses: docker/build-push-action@v6
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false

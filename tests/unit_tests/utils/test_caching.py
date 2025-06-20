@@ -92,3 +92,22 @@ def test_fails_if_directory_is_a_file(some_file: Path):
     cache = DiskCache(some_file)
     with pytest.raises(FileExistsError):
         cache.set("foo", "bar")
+
+
+def test_can_make_dir():
+    os.makedirs("temp1")
+
+
+def test_can_make_file():
+    with open("temp2", "w") as writer:
+        writer.write("foo")
+
+
+def test_can_make_file_in_dir():
+    with open("temp1/foo", "w") as writer:
+        writer.write("bar")
+
+
+def test_can_stat_file():
+    os.stat("temp2")
+    os.stat("temp1/foo")

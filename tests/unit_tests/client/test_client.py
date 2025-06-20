@@ -20,6 +20,7 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+    TaskRequest,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -171,15 +172,17 @@ def test_create_task(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
-    client.create_task(task=Task(name="foo"))
-    mock_rest.create_task.assert_called_once_with(Task(name="foo"))
+    client.create_task(task=TaskRequest(name="foo", instrument_session="cm12345-1"))
+    mock_rest.create_task.assert_called_once_with(
+        TaskRequest(name="foo", instrument_session="cm12345-1")
+    )
 
 
 def test_create_task_does_not_start_task(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
-    client.create_task(task=Task(name="foo"))
+    client.create_task(task=TaskRequest(name="foo", instrument_session="cm12345-1"))
     mock_rest.update_worker_task.assert_not_called()
 
 
@@ -218,8 +221,12 @@ def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="baz")
-    client.create_and_start_task(Task(name="baz"))
-    mock_rest.create_task.assert_called_once_with(Task(name="baz"))
+    client.create_and_start_task(
+        TaskRequest(name="baz", instrument_session="cm12345-1")
+    )
+    mock_rest.create_task.assert_called_once_with(
+        TaskRequest(name="baz", instrument_session="cm12345-1")
+    )
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="baz"))
 
 
@@ -229,7 +236,9 @@ def test_create_and_start_task_fails_if_task_creation_fails(
 ):
     mock_rest.create_task.side_effect = BlueskyRemoteControlError("No can do")
     with pytest.raises(BlueskyRemoteControlError):
-        client.create_and_start_task(Task(name="baz"))
+        client.create_and_start_task(
+            TaskRequest(name="baz", instrument_session="cm12345-1")
+        )
 
 
 def test_create_and_start_task_fails_if_task_id_is_wrong(
@@ -239,7 +248,9 @@ def test_create_and_start_task_fails_if_task_id_is_wrong(
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="bar")
     with pytest.raises(BlueskyRemoteControlError):
-        client.create_and_start_task(Task(name="baz"))
+        client.create_and_start_task(
+            TaskRequest(name="baz", instrument_session="cm12345-1")
+        )
 
 
 def test_create_and_start_task_fails_if_task_start_fails(
@@ -249,7 +260,9 @@ def test_create_and_start_task_fails_if_task_start_fails(
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.side_effect = BlueskyRemoteControlError("No can do")
     with pytest.raises(BlueskyRemoteControlError):
-        client.create_and_start_task(Task(name="baz"))
+        client.create_and_start_task(
+            TaskRequest(name="baz", instrument_session="cm12345-1")
+        )
 
 
 def test_get_environment(client: BlueapiClient):
@@ -384,7 +397,7 @@ def test_cannot_run_task_without_message_bus(client: BlueapiClient):
         MissingStompConfiguration,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
-        client.run_task(Task(name="foo"))
+        client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
 
 
 def test_run_task_sets_up_control(
@@ -398,8 +411,10 @@ def test_run_task_sets_up_control(
     ctx.correlation_id = "foo"
     mock_events.subscribe_to_all_events = lambda on_event: on_event(COMPLETE_EVENT, ctx)
 
-    client_with_events.run_task(Task(name="foo"))
-    mock_rest.create_task.assert_called_once_with(Task(name="foo"))
+    client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    mock_rest.create_task.assert_called_once_with(
+        TaskRequest(name="foo", instrument_session="cm12345-1")
+    )
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="foo"))
 
 
@@ -417,7 +432,9 @@ def test_run_task_fails_on_failing_event(
 
     on_event = Mock()
     with pytest.raises(BlueskyStreamingError):
-        client_with_events.run_task(Task(name="foo"), on_event=on_event)
+        client_with_events.run_task(
+            TaskRequest(name="foo", instrument_session="cm12345-1"), on_event=on_event
+        )
 
     on_event.assert_called_with(FAILED_EVENT)
 
@@ -456,7 +473,9 @@ def test_run_task_calls_event_callback(
     mock_events.subscribe_to_all_events = callback  # type: ignore
 
     mock_on_event = Mock()
-    client_with_events.run_task(Task(name="foo"), on_event=mock_on_event)
+    client_with_events.run_task(
+        TaskRequest(name="foo", instrument_session="cm12345-1"), on_event=mock_on_event
+    )
 
     assert mock_on_event.mock_calls == [call(test_event), call(COMPLETE_EVENT)]
 
@@ -495,7 +514,9 @@ def test_run_task_ignores_non_matching_events(
     mock_events.subscribe_to_all_events = callback
 
     mock_on_event = Mock()
-    client_with_events.run_task(Task(name="foo"), on_event=mock_on_event)
+    client_with_events.run_task(
+        TaskRequest(name="foo", instrument_session="cm12345-1"), on_event=mock_on_event
+    )
 
     mock_on_event.assert_called_once_with(COMPLETE_EVENT)
 
@@ -544,7 +565,7 @@ def test_create_task_span_ok(
     mock_rest: Mock,
 ):
     with asserting_span_exporter(exporter, "create_task", "task"):
-        client.create_task(task=Task(name="foo"))
+        client.create_task(task=TaskRequest(name="foo", instrument_session="cm12345-1"))
 
 
 def test_clear_task_span_ok(
@@ -580,7 +601,9 @@ def test_create_and_start_task_span_ok(
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="baz")
     with asserting_span_exporter(exporter, "create_and_start_task", "task"):
-        client.create_and_start_task(Task(name="baz"))
+        client.create_and_start_task(
+            TaskRequest(name="baz", instrument_session="cm12345-1")
+        )
 
 
 def test_get_environment_span_ok(
@@ -644,4 +667,4 @@ def test_cannot_run_task_span_ok(
         match="Stomp configuration required to run plans is missing or disabled",
     ):
         with asserting_span_exporter(exporter, "grun_task"):
-            client.run_task(Task(name="foo"))
+            client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))

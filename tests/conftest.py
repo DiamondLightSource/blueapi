@@ -1,8 +1,10 @@
 import asyncio
 import base64
+import os
 import time
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from textwrap import dedent
 from typing import Any, cast
 from unittest.mock import Mock, patch
@@ -497,3 +499,17 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             json=response_with_errors,
         )
         yield requests_mock
+
+
+@pytest.fixture
+def temp_dir() -> Generator[Path]:
+    github_workspace = os.environ.get("GITHUB_WORKSPACE")
+    if github_workspace is not None:
+        temporary_directory = TemporaryDirectory(dir=github_workspace)
+    else:
+        temporary_directory = TemporaryDirectory()
+
+    path = Path(temporary_directory.name)
+    os.chmod(path, 0o600)
+    yield path
+    temporary_directory.cleanup()

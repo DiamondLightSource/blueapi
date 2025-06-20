@@ -25,7 +25,7 @@ from responses import matchers
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
-from blueapi.cli.cli import main
+from blueapi.cli.cli import ParametersType, main
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.client.rest import (
@@ -714,7 +714,7 @@ def test_error_handling(exception, error_message, runner: CliRunner):
     "params, error",
     [
         ("{", "Parameters are not valid JSON"),
-        ("[]", ""),
+        ("[]", "Parameters must be a JSON object with string keys"),
     ],
 )
 def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
@@ -731,8 +731,8 @@ def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
             params,
         ],
     )
-    assert result.stderr.startswith("Error: " + error)
-    assert result.exit_code == 1
+    assert error in result.stderr
+    assert result.exit_code == 2
 
 
 def test_device_output_formatting():
@@ -1329,3 +1329,9 @@ def test_config_schema(
             stream.write.assert_called()
     else:
         assert json.loads(result.output) == expected
+
+
+@pytest.mark.parametrize("value,result", [({}, {}), ("{}", {}), (None, None)])
+def test_task_parameter_type(value, result):
+    t = ParametersType()
+    assert t.convert(value, None, None) == result

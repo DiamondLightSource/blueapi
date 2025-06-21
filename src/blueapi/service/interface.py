@@ -193,9 +193,14 @@ def get_plan(name: str) -> PlanModel:
     return PlanModel.from_plan(context().plans[name])
 
 
-def get_devices() -> list[DeviceModel]:
+def get_devices(max_depth: int) -> list[DeviceModel]:
     """Get all available devices in the BlueskyContext"""
-    return [DeviceModel.from_device(device) for device in context().devices.values()]
+    return [
+        model
+        for device in context().devices.values()
+        for model in DeviceModel.from_device_tree(device, max_depth)
+        if model.protocols
+    ]
 
 
 def get_device(name: str) -> DeviceModel:

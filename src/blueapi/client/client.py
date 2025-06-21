@@ -93,8 +93,8 @@ class BlueapiClient:
         """
         return self._rest.get_plan(name)
 
-    @start_as_current_span(TRACER)
-    def get_devices(self) -> DeviceResponse:
+    @start_as_current_span(TRACER, "max_depth")
+    def get_devices(self, max_depth: int) -> DeviceResponse:
         """
         List devices available
 
@@ -102,7 +102,7 @@ class BlueapiClient:
             DeviceResponse: Devices that can be used in plans
         """
 
-        return self._rest.get_devices()
+        return self._rest.get_devices(max_depth)
 
     @start_as_current_span(TRACER, "name")
     def get_device(self, name: str) -> DeviceModel:

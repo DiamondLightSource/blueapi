@@ -586,13 +586,13 @@ def test_error_handling(exception, error_message, runner: CliRunner):
 
 
 @pytest.mark.parametrize(
-    "params, error, code",
+    "params",
     [
-        ("{", "Invalid value for '[PARAMETERS]'", 2),
-        ("[]", "Incorrect parameters supplied", 1),
+        "{",
+        "[]",
     ],
 )
-def test_run_task_parsing_errors(params: str, error: str, code: int, runner: CliRunner):
+def test_run_task_parsing_errors(params: str, runner: CliRunner):
     result = runner.invoke(
         main,
         [
@@ -604,8 +604,8 @@ def test_run_task_parsing_errors(params: str, error: str, code: int, runner: Cli
             params,
         ],
     )
-    assert ("Error: " + error) in result.stderr
-    assert result.exit_code == code
+    assert "Error: Invalid value for '[PARAMETERS]'" in result.stderr
+    assert result.exit_code == 2
 
 
 def test_device_output_formatting():

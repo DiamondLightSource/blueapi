@@ -289,7 +289,9 @@ class BlueapiClient:
             )
 
     @start_as_current_span(TRACER, "name", "parameters")
-    def create_task(self, name: str, parameters: TaskParameters) -> TaskResponse:
+    def create_task(
+        self, name: str, parameters: TaskParameters | None = None
+    ) -> TaskResponse:
         """
         Create a new task, does not start execution
 
@@ -301,7 +303,7 @@ class BlueapiClient:
         """
 
         try:
-            task = Task(name=name, params=parameters)
+            task = Task(name=name, params=parameters or {})
         except ValidationError as ve:
             raise InvalidParameters.from_validation_error(ve) from ve
         return self._rest.create_task(task)

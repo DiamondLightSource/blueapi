@@ -206,7 +206,7 @@ class BlueapiClient:
         Synchronously run a task, requires a message bus connection
 
         Args:
-            task: Task to run
+            task: Request for task to run
             on_event: Callback for each event. Defaults to None.
             timeout: Time to wait until the task is finished.
             Defaults to None, so waits forever.
@@ -265,7 +265,7 @@ class BlueapiClient:
         immediately.
 
         Args:
-            task: The task to create on the worker
+            task: Request object for task to create on the worker
 
         Returns:
             TaskResponse: Acknowledgement of request
@@ -287,7 +287,7 @@ class BlueapiClient:
         Create a new task, does not start execution
 
         Args:
-            task: The task to create on the worker
+            task: Request object for task to create on the worker
 
         Returns:
             TaskResponse: Acknowledgement of request

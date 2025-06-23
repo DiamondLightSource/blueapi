@@ -273,23 +273,26 @@ def run_plan(
     except json.JSONDecodeError as jde:
         raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
 
+    # If no session is passed, see if one is cached
     if instrument_session is None:
         cache = DiskCache()
         instrument_session = cache.get("instrument_session")
-        if instrument_session is None:
-            raise BlueskyRemoteControlError(
-                textwrap.dedent("""
 
-            No instrument session specified!
+    # If no session is passed or cached, error
+    if instrument_session is None:
+        raise ClickException(
+            textwrap.dedent("""
 
-            You need to run plans as part of an instrument session (a.k.a. visit)
-            on which you are authorized to work. Please do so via:
-            blueapi controller run -i <session name> <args>
+        No instrument session specified!
 
-            Alternatively please set a default instrument session with:
-            blueapi controller set-instrument-session <session name>
-            """)
-            )
+        You need to run plans as part of an instrument session (a.k.a. visit)
+        on which you are authorized to work. Please do so via:
+        blueapi controller run -i <session name> <args>
+
+        Alternatively please set a default instrument session with:
+        blueapi controller set-instrument-session <session name>
+        """)
+        )
 
     try:
         task = TaskRequest(

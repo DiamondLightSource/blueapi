@@ -476,8 +476,8 @@ def test_cannot_start_a_plan_without_an_instrument_session(runner: CliRunner):
             '{"time": 5}',
         ],
     )
-    assert result.exit_code == 2
-    assert "Error: Missing option '-i' / '--instrument-session'.\n" in result.stderr
+    assert result.exit_code == 1
+    assert "No instrument session specified!" in result.stderr
 
 
 @patch("blueapi.cli.cli.StompClient")

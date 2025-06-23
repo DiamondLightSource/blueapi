@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import pytest
 from pydantic import ValidationError
 
-from blueapi.utils.caching import DiskCache
+from blueapi.utils.caching import DiskCache, default_cache_dir
 
 
 @pytest.fixture
@@ -92,3 +92,16 @@ def test_fails_if_directory_is_a_file(some_file: Path):
     cache = DiskCache(some_file)
     with pytest.raises(FileExistsError):
         cache.set("foo", "bar")
+
+
+def test_default_cache_is_in_home_cache():
+    expected_cache = Path("~/.cache").expanduser() / "blueapi_cache.d"
+    assert default_cache_dir() == expected_cache
+
+
+@patch.dict(os.environ, clear=True)
+def test_default_cache_is_overridable_with_environment():
+    os.environ["XDG_CACHE_HOME"] = "/foo"
+
+    expected_cache = Path("/foo/blueapi_cache.d")
+    assert default_cache_dir() == expected_cache

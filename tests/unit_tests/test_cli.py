@@ -24,7 +24,7 @@ from responses import matchers
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
-from blueapi.cli.cli import main
+from blueapi.cli.cli import ParametersType, main
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.client.rest import (
@@ -1164,3 +1164,9 @@ def test_python_env_output_formatting():
         """)
 
     _assert_matching_formatting(OutputFormat.FULL, empty_python_env, full)
+
+
+@pytest.mark.parametrize("value,result", [({}, {}), ("{}", {}), (None, None)])
+def test_task_parameter_type(value, result):
+    t = ParametersType()
+    assert t.convert(value, None, None) == result

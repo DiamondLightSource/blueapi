@@ -8,7 +8,6 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from pydantic import ValidationError
 
 from blueapi.config import ApplicationConfig, MissingStompConfiguration
 from blueapi.core.bluesky_types import DataEvent
@@ -30,7 +29,7 @@ from blueapi.worker import Task, TrackableTask, WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 
 from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError, InvalidParameters
+from .rest import BlueapiRestClient, BlueskyRemoteControlError
 
 TRACER = get_tracer("client")
 
@@ -302,10 +301,7 @@ class BlueapiClient:
             TaskResponse: Acknowledgement of request
         """
 
-        try:
-            task = Task(name=name, params=parameters or {})
-        except ValidationError as ve:
-            raise InvalidParameters.from_validation_error(ve) from ve
+        task = Task(name=name, params=parameters or {})
         return self._rest.create_task(task)
 
     @start_as_current_span(TRACER)

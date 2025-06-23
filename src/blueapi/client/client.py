@@ -202,7 +202,7 @@ class BlueapiClient:
     def run_task(
         self,
         name: str,
-        parameters: TaskParameters = {},
+        parameters: TaskParameters | None = None,
         *,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
@@ -226,7 +226,7 @@ class BlueapiClient:
                 "Stomp configuration required to run plans is missing or disabled"
             )
 
-        task_response = self.create_task(name, parameters)
+        task_response = self.create_task(name, parameters or {})
         task_id = task_response.task_id
 
         complete: Future[WorkerEvent] = Future()
@@ -265,7 +265,7 @@ class BlueapiClient:
 
     @start_as_current_span(TRACER, "name", "parameters")
     def create_and_start_task(
-        self, name: str, parameters: TaskParameters = {}
+        self, name: str, parameters: TaskParameters | None = None
     ) -> TaskResponse:
         """
         Create a new task and instruct the worker to start it
@@ -278,7 +278,7 @@ class BlueapiClient:
             TaskResponse: Acknowledgement of request
         """
 
-        response = self.create_task(name, parameters)
+        response = self.create_task(name, parameters or {})
         worker_response = self.start_task(WorkerTask(task_id=response.task_id))
         if worker_response.task_id == response.task_id:
             return response
@@ -289,7 +289,7 @@ class BlueapiClient:
             )
 
     @start_as_current_span(TRACER, "name", "parameters")
-    def create_task(self, name: str, parameters: TaskParameters = {}) -> TaskResponse:
+    def create_task(self, name: str, parameters: TaskParameters) -> TaskResponse:
         """
         Create a new task, does not start execution
 
@@ -303,7 +303,7 @@ class BlueapiClient:
         try:
             task = Task(name=name, params=parameters)
         except ValidationError as ve:
-            raise InvalidParameters.from_validation_error(ve)
+            raise InvalidParameters.from_validation_error(ve) from ve
         return self._rest.create_task(task)
 
     @start_as_current_span(TRACER)

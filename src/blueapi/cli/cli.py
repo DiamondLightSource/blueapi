@@ -6,7 +6,7 @@ import sys
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Any
+from typing import Any, cast
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -43,6 +43,8 @@ from .updates import CliEventRenderer
 
 
 class ParametersType(ParamType):
+    """CLI input parameter to accept a JSON object as an argument"""
+
     name = "TaskParameters"
 
     def convert(
@@ -50,11 +52,16 @@ class ParametersType(ParamType):
     ) -> TaskParameters:
         if isinstance(value, str):
             try:
-                return json.loads(value)
+                params = json.loads(value)
+                if not isinstance(params, dict) or any(
+                    not isinstance(k, str) for k in params
+                ):
+                    self.fail("Parameters must be a JSON object")
+                return cast(TaskParameters, params)
             except json.JSONDecodeError as jde:
                 self.fail(f"Parameters are not valid JSON: {jde}")
         else:
-            return super().convert(value, param, ctx)
+            return cast(TaskParameters, super().convert(value, param, ctx))
 
 
 @click.group(

@@ -6,7 +6,7 @@ import sys
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Any, cast
+from typing import Any, TypeGuard
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -48,20 +48,25 @@ class ParametersType(ParamType):
     name = "TaskParameters"
 
     def convert(
-        self, value: Any, param: Parameter | None, ctx: Context | None
+        self,
+        value: str | dict[str, Any] | None,
+        param: Parameter | None,
+        ctx: Context | None,
     ) -> TaskParameters:
         if isinstance(value, str):
             try:
                 params = json.loads(value)
-                if not isinstance(params, dict) or any(
-                    not isinstance(k, str) for k in params
-                ):
-                    self.fail("Parameters must be a JSON object")
-                return cast(TaskParameters, params)
+                if is_str_dict(params):
+                    return params
+                self.fail("Parameters must be a JSON object with string keys")
             except json.JSONDecodeError as jde:
                 self.fail(f"Parameters are not valid JSON: {jde}")
         else:
-            return cast(TaskParameters, super().convert(value, param, ctx))
+            return super().convert(value, param, ctx)
+
+
+def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
+    return isinstance(val, dict) and all(isinstance(k, str) for k in val)
 
 
 @click.group(

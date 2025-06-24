@@ -1,5 +1,6 @@
 apiVersion: v2
 name: blueapi
+home: https://github.com/DiamondLightSource/blueapi
 description: A helm chart deploying a worker pod that runs Bluesky plans
 
 # A chart can be either an 'application' or a 'library' chart.

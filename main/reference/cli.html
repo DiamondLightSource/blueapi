@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Command-Line Interface &#8212; blueapi 0.17.1.dev3+gea48e282 documentation</title>
+    <title>Command-Line Interface &#8212; blueapi 0.17.1.dev4+g1ca02abd documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=95f6f465"></script>
+    <script src="../_static/documentation_options.js?v=80be4911"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -466,6 +466,12 @@
   <section id="command-line-interface">
 <h1>Command-Line Interface<a class="headerlink" href="#command-line-interface" title="Link to this heading">#</a></h1>
 <p>Full reference for the CLI:</p>
+<p>Options for each command can also be set via environment variables to avoid them
+having to be set for every call. The variable to set should be <code class="docutils literal notranslate"><span class="pre">BLUEAPI</span></code>
+followed by the name of each subcommand, and then the name of the option all
+made upper-case and joined with underscores. For example, to set the <code class="docutils literal notranslate"><span class="pre">--output</span></code>
+option to the <code class="docutils literal notranslate"><span class="pre">controller</span></code> subcommand to ‘full’, you would need to set the
+environment variable <code class="docutils literal notranslate"><span class="pre">BLUEAPI_CONTROLLER_OUTPUT=full</span></code>.</p>
 <section id="blueapi">
 <h2>blueapi<a class="headerlink" href="#blueapi" title="Link to this heading">#</a></h2>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...

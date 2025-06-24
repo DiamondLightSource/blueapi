@@ -40,7 +40,9 @@ from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 
-@click.group(invoke_without_command=True, context_settings={"auto_envvar_prefix":"BLUEAPI"})
+@click.group(
+    invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
+)
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True

@@ -3,6 +3,7 @@ import logging
 import os
 import stat
 import sys
+import textwrap
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
@@ -231,6 +232,19 @@ def listen_to_events(obj: dict) -> None:
     help="Timeout for the plan in seconds. None hangs forever",
     default=None,
 )
+@click.option(
+    "-i",
+    "--instrument-session",
+    type=str,
+    help=textwrap.dedent("""
+        Instrument session associated with running the plan,
+        used to tell blueapi where to store any data and as a security check:
+        the session must be valid and active and you must be a member of it.
+        If you have saved your current session with
+        blueapi controller set-instrument-session,
+        passing this will supersede that."""),
+    required=True,
+)
 @check_connection
 @click.pass_obj
 def run_plan(
@@ -239,6 +253,7 @@ def run_plan(
     parameters: str | None,
     timeout: float | None,
     foreground: bool,
+    instrument_session: str,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
@@ -253,7 +268,7 @@ def run_plan(
         task = TaskRequest(
             name=name,
             params=parsed_params,
-            instrument_session="cm12345-1",
+            instrument_session=instrument_session,
         )
     except ValidationError as ve:
         ip = InvalidParameters.from_validation_error(ve)

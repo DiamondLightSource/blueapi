@@ -218,7 +218,7 @@ class ApplicationConfig(BlueapiBaseModel):
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
     oidc: OIDCConfig | None = None
-    auth_token_path: Path | None = None
+    cache_path: Path | None = None
     numtracker: NumtrackerConfig | None = None
 
     def __eq__(self, other: object) -> bool:

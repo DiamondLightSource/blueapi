@@ -7,6 +7,7 @@ import textwrap
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
+from typing import Any
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -33,8 +34,9 @@ from blueapi.config import (
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
-from blueapi.service.authentication import SessionCacheManager, SessionManager
+from blueapi.service.authentication import SessionManager
 from blueapi.service.model import SourceInfo, TaskRequest
+from blueapi.utils.caching import DiskCache
 from blueapi.worker import ProgressEvent, WorkerEvent
 
 from .scratch import setup_scratch
@@ -70,6 +72,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     set_up_logging(loaded_config.logging)
 
     ctx.obj["config"] = loaded_config
+    ctx.obj["cache"] = DiskCache(loaded_config.cache_path)
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
@@ -219,6 +222,15 @@ def listen_to_events(obj: dict) -> None:
         input()
 
 
+@controller.command(name="set-instrument-session")
+@click.argument("instrument_session", type=str)
+@click.pass_obj
+def set_instrument_session(obj: dict[str, Any], instrument_session: str) -> None:
+    cache: DiskCache = obj["cache"]
+    cache.set("instrument_session", instrument_session)
+    print(f"Default instrument session set to {instrument_session}")
+
+
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.argument("parameters", type=str, required=False)
@@ -236,14 +248,12 @@ def listen_to_events(obj: dict) -> None:
     "-i",
     "--instrument-session",
     type=str,
-    help=textwrap.dedent("""
-        Instrument session associated with running the plan,
-        used to tell blueapi where to store any data and as a security check:
-        the session must be valid and active and you must be a member of it.
-        If you have saved your current session with
-        blueapi controller set-instrument-session,
-        passing this will supersede that."""),
-    required=True,
+    help=textwrap.dedent("""Instrument session associated with running the plan,
+    used to tell blueapi where to store any data and as a secuirty check:
+    the session must be valid and active and you must be a member of it.
+    If you have saved your current session with
+    blueapi controller set-instrument-session, passing this will superseed that."""),
+    default=None,
 )
 @check_connection
 @click.pass_obj
@@ -253,7 +263,7 @@ def run_plan(
     parameters: str | None,
     timeout: float | None,
     foreground: bool,
-    instrument_session: str,
+    instrument_session: str | None,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
@@ -263,6 +273,27 @@ def run_plan(
         parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
     except json.JSONDecodeError as jde:
         raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
+
+    # If no session is passed, see if one is cached
+    if instrument_session is None:
+        cache: DiskCache = obj["cache"]
+        instrument_session = cache.get("instrument_session")
+
+    # If no session is passed or cached, error
+    if instrument_session is None:
+        raise ClickException(
+            textwrap.dedent("""
+
+        No instrument session specified!
+
+        You need to run plans as part of an instrument session (a.k.a. visit)
+        on which you are authorized to work. Please do so via:
+        blueapi controller run -i <session name> <args>
+
+        Alternatively please set a default instrument session with:
+        blueapi controller set-instrument-session <session name>
+        """)
+        )
 
     try:
         task = TaskRequest(
@@ -431,8 +462,9 @@ def login(obj: dict) -> None:
     Authenticate with the blueapi using the OIDC (OpenID Connect) flow.
     """
     config: ApplicationConfig = obj["config"]
+    cache: DiskCache = obj["cache"]
     try:
-        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
+        auth: SessionManager = SessionManager.from_cache(config.cache_path)
         access_token = auth.get_valid_access_token()
         assert access_token
         print("Logged in")
@@ -442,10 +474,11 @@ def login(obj: dict) -> None:
         if oidc_config is None:
             print("Server is not configured to use authentication!")
             return
-        auth = SessionManager(
-            oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
-        )
-        auth.start_device_flow()
+        auth = SessionManager(oidc_config, cache_manager=cache)
+        try:
+            auth.start_device_flow()
+        except Exception as ex:
+            raise ClickException(f"Error logging in: {ex}") from ex
 
 
 @main.command(name="logout")
@@ -456,9 +489,9 @@ def logout(obj: dict) -> None:
     """
     config: ApplicationConfig = obj["config"]
     try:
-        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
+        auth: SessionManager = SessionManager.from_cache(config.cache_path)
         auth.logout()
-    except FileNotFoundError:
+    except KeyError:
         print("Logged out")
     except ValueError as e:
         logging.debug("Invalid login token: %s", e)

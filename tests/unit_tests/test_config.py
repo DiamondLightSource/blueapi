@@ -277,7 +277,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "url": "http://localhost:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
-            "auth_token_path": None,
+            "cache_path": None,
             "env": {
                 "events": {
                     "broadcast_status_events": True,
@@ -326,7 +326,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "url": "https://rabbitmq.diamond.ac.uk:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
-            "auth_token_path": None,
+            "cache_path": None,
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
@@ -404,7 +404,7 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
                 "port": 61613,
                 "auth": {"username": "guest", "password": "guest"},
             },
-            "auth_token_path": None,
+            "cache_path": None,
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},

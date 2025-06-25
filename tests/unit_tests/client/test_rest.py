@@ -1,5 +1,4 @@
 import uuid
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
@@ -17,8 +16,9 @@ from blueapi.client.rest import (
     _create_task_exceptions,
 )
 from blueapi.config import OIDCConfig
-from blueapi.service.authentication import SessionCacheManager, SessionManager
-from blueapi.service.model import EnvironmentResponse
+from blueapi.service.authentication import SessionManager
+from blueapi.service.model import Cache, EnvironmentResponse
+from blueapi.utils.caching import DiskCache
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def rest_with_auth(oidc_config: OIDCConfig, tmp_path) -> BlueapiRestClient:
     return BlueapiRestClient(
         session_manager=SessionManager(
             server_config=oidc_config,
-            cache_manager=SessionCacheManager(tmp_path / "blueapi_cache"),
+            cache_manager=DiskCache(tmp_path),
         )
     )
 
@@ -109,7 +109,7 @@ def test_create_task_exceptions(
 def test_auth_request_functionality(
     rest_with_auth: BlueapiRestClient,
     mock_authn_server: responses.RequestsMock,
-    cached_valid_token: Path,
+    cached_valid_token: DiskCache,
 ):
     environment_id = uuid.uuid4()
     mock_authn_server.stop()  # Cannot use multiple RequestsMock context manager
@@ -128,15 +128,15 @@ def test_auth_request_functionality(
     )
     calls = mock_get_env.calls
     assert len(calls) == 1
-    cache_manager = SessionCacheManager(cached_valid_token)
-    cache = cache_manager.load_cache()
+    cache = cached_valid_token.get("auth_token", deserialize_type=Cache)
+    assert cache is not None
     assert calls[0].request.headers["Authorization"] == f"Bearer {cache.access_token}"
 
 
 def test_refresh_if_signature_expired(
     rest_with_auth: BlueapiRestClient,
     mock_authn_server: responses.RequestsMock,
-    cached_valid_refresh: Path,
+    cached_valid_refresh: DiskCache,
 ):
     environment_id = uuid.uuid4()
     mock_authn_server.stop()  # Cannot use multiple RequestsMock context manager

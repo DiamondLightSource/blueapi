@@ -52,7 +52,7 @@ class BlueapiClient:
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         session_manager: SessionManager | None = None
         try:
-            session_manager = SessionManager.from_cache(config.auth_token_path)
+            session_manager = SessionManager.from_cache(config.cache_path)
         except Exception:
             ...  # Swallow exceptions
         rest = BlueapiRestClient(config.api, session_manager=session_manager)

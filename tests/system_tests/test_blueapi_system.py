@@ -61,7 +61,7 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 
 @pytest.fixture
 def client_without_auth(tmp_path: Path) -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig(auth_token_path=tmp_path))
+    return BlueapiClient.from_config(config=ApplicationConfig(cache_path=tmp_path))
 
 
 @pytest.fixture

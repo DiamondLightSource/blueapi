@@ -21,8 +21,8 @@ class DiskCache:
 
     def set(self, key: str, value: Any) -> None:
         self._ensure_root()
+        self.clear(key)
         path = self._path_to_value(key)
-        path.unlink(missing_ok=True)
         with path.open("xb") as writer:
             as_json = TypeAdapter(T).dump_json(value)
             writer.write(base64.b64encode(as_json))
@@ -43,7 +43,20 @@ class DiskCache:
         else:
             return default
 
+    def clear(self, key: str) -> None:
+        self._path_to_value(key).unlink(missing_ok=True)
+
+    def contains(self, key: str) -> bool:
+        return self._path_to_value(key).exists()
+
+    __contains__ = contains
+
     def _ensure_root(self) -> None:
+        if self._path.is_file():
+            raise NotADirectoryError(
+                "Invalid path: a file path was provided instead of a "
+                f"directory path: {self._path}"
+            )
         os.makedirs(self._path, exist_ok=True)
 
     def _path_to_value(self, key: str) -> Path:

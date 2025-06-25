@@ -34,7 +34,7 @@ from blueapi.config import (
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
-from blueapi.service.authentication import SessionCacheManager, SessionManager
+from blueapi.service.authentication import SessionManager
 from blueapi.service.model import SourceInfo, TaskRequest
 from blueapi.utils.caching import DiskCache
 from blueapi.worker import ProgressEvent, WorkerEvent
@@ -72,6 +72,7 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     set_up_logging(loaded_config.logging)
 
     ctx.obj["config"] = loaded_config
+    ctx.obj["cache"] = DiskCache(loaded_config.cache_path)
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
@@ -225,7 +226,7 @@ def listen_to_events(obj: dict) -> None:
 @click.argument("instrument_session", type=str)
 @click.pass_obj
 def set_instrument_session(obj: dict[str, Any], instrument_session: str) -> None:
-    cache = DiskCache()
+    cache: DiskCache = obj["cache"]
     cache.set("instrument_session", instrument_session)
     print(f"Default instrument session set to {instrument_session}")
 
@@ -275,7 +276,7 @@ def run_plan(
 
     # If no session is passed, see if one is cached
     if instrument_session is None:
-        cache = DiskCache()
+        cache: DiskCache = obj["cache"]
         instrument_session = cache.get("instrument_session")
 
     # If no session is passed or cached, error
@@ -461,8 +462,9 @@ def login(obj: dict) -> None:
     Authenticate with the blueapi using the OIDC (OpenID Connect) flow.
     """
     config: ApplicationConfig = obj["config"]
+    cache: DiskCache = obj["cache"]
     try:
-        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
+        auth: SessionManager = SessionManager.from_cache(config.cache_path)
         access_token = auth.get_valid_access_token()
         assert access_token
         print("Logged in")
@@ -472,10 +474,11 @@ def login(obj: dict) -> None:
         if oidc_config is None:
             print("Server is not configured to use authentication!")
             return
-        auth = SessionManager(
-            oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
-        )
-        auth.start_device_flow()
+        auth = SessionManager(oidc_config, cache_manager=cache)
+        try:
+            auth.start_device_flow()
+        except Exception as ex:
+            raise ClickException(f"Error logging in: {ex}") from ex
 
 
 @main.command(name="logout")
@@ -486,9 +489,9 @@ def logout(obj: dict) -> None:
     """
     config: ApplicationConfig = obj["config"]
     try:
-        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
+        auth: SessionManager = SessionManager.from_cache(config.cache_path)
         auth.logout()
-    except FileNotFoundError:
+    except KeyError:
         print("Logged out")
     except ValueError as e:
         logging.debug("Invalid login token: %s", e)

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -10,40 +9,42 @@ from starlette.status import HTTP_403_FORBIDDEN
 
 from blueapi.config import OIDCConfig
 from blueapi.service import main
-from blueapi.service.authentication import SessionCacheManager, SessionManager
+from blueapi.service.authentication import SessionManager
+from blueapi.utils.caching import DiskCache
 
 
 @pytest.fixture
-def auth_token_path(tmp_path) -> Path:
-    return tmp_path / "blueapi_cache"
+def auth_token_path(tmp_path: Path) -> Path:
+    return tmp_path / "blueapi_cache.d" / "auth_token"
 
 
 @pytest.fixture
 def session_manager(
     oidc_config: OIDCConfig,
-    auth_token_path,
+    tmp_path: Path,
     mock_authn_server: responses.RequestsMock,
 ) -> SessionManager:
     return SessionManager(
-        server_config=oidc_config, cache_manager=SessionCacheManager(auth_token_path)
+        server_config=oidc_config,
+        cache_manager=DiskCache(tmp_path),
     )
 
 
 def test_logout(
     session_manager: SessionManager,
     oidc_config: OIDCConfig,
-    cached_valid_token: Path,
+    cached_valid_token: DiskCache,
     auth_token_path: Path,
 ):
-    assert os.path.exists(auth_token_path)
+    assert "auth_token" in cached_valid_token
     session_manager.logout()
-    assert not os.path.exists(auth_token_path)
+    assert "auth_token" not in cached_valid_token
 
 
 def test_refresh_auth_token(
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
-    cached_valid_refresh: Path,
+    cached_valid_refresh: DiskCache,
 ):
     token = session_manager.get_valid_access_token()
     assert token == "new_token"
@@ -57,18 +58,18 @@ def test_get_empty_token_if_no_cache(session_manager: SessionManager):
 def test_get_empty_token_if_refresh_fails(
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
-    cached_expired_refresh: Path,
+    cached_expired_refresh: DiskCache,
 ):
-    assert cached_expired_refresh.exists()
+    assert "auth_token" in cached_expired_refresh
     token = session_manager.get_valid_access_token()
     assert token == ""
-    assert not cached_expired_refresh.exists()
+    assert "auth_token" not in cached_expired_refresh
 
 
 def test_get_empty_token_if_invalid_cache(
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
-    cache_with_invalid_audience: Path,
+    cache_with_invalid_audience: DiskCache,
 ):
     token = session_manager.get_valid_access_token()
     assert token == ""
@@ -77,12 +78,12 @@ def test_get_empty_token_if_invalid_cache(
 def test_get_empty_token_if_exception_in_decode(
     mock_authn_server: responses.RequestsMock,
     session_manager: SessionManager,
-    cached_expired_refresh: Path,
+    cached_expired_refresh: DiskCache,
 ):
-    assert cached_expired_refresh.exists()
+    assert "auth_token" in cached_expired_refresh
     token = session_manager.get_valid_access_token()
     assert token == ""
-    assert not cached_expired_refresh.exists()
+    assert "auth_token" not in cached_expired_refresh
 
 
 def test_poll_for_token(
@@ -129,11 +130,3 @@ def test_processes_valid_token(
 ):
     inner = main.verify_access_token(oidc_config)
     inner(access_token=valid_token_with_jwt["access_token"])
-
-
-def test_session_cache_manager_returns_writable_file_path(tmp_path: Path):
-    with patch.dict(os.environ, {"XDG_CACHE_HOME": str(tmp_path)}, clear=True):
-        cache = SessionCacheManager(token_path=None)
-        Path(cache._file_path).touch()
-        assert os.path.isfile(cache._file_path)
-        assert cache._file_path == f"{tmp_path}/blueapi_cache"

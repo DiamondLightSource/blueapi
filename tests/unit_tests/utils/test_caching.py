@@ -90,7 +90,7 @@ def test_makes_directory_on_set(mock_makedirs: Mock, _: Mock, __: Mock):
 
 def test_fails_if_directory_is_a_file(some_file: Path):
     cache = DiskCache(some_file)
-    with pytest.raises(FileExistsError):
+    with pytest.raises(NotADirectoryError):
         cache.set("foo", "bar")
 
 

@@ -48,6 +48,7 @@ from blueapi.service.model import (
     PlanResponse,
     PythonEnvironmentResponse,
 )
+from blueapi.utils.caching import DiskCache
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
 
@@ -1047,7 +1048,7 @@ def test_token_login_with_valid_token(
     runner: CliRunner,
     config_with_auth: str,
     mock_authn_server: responses.RequestsMock,
-    cached_valid_token: Path,
+    cached_valid_token: DiskCache,
 ):
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
     assert "Logged in\n" == result.output
@@ -1058,7 +1059,7 @@ def test_login_with_refresh_token(
     runner: CliRunner,
     config_with_auth: str,
     mock_authn_server: responses.RequestsMock,
-    cached_valid_refresh: Path,
+    cached_valid_refresh: DiskCache,
 ):
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
 
@@ -1070,7 +1071,7 @@ def test_login_when_cached_token_decode_fails(
     runner: CliRunner,
     config_with_auth: str,
     mock_authn_server: responses.RequestsMock,
-    cached_expired_refresh: Path,
+    cached_expired_refresh: DiskCache,
 ):
     with patch("webbrowser.open_new_tab", return_value=False):
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
@@ -1095,13 +1096,13 @@ def test_login_with_unauthenticated_server(
 def test_logout_success(
     runner: CliRunner,
     config_with_auth: str,
-    cached_valid_refresh: Path,
+    cached_valid_refresh: DiskCache,
     mock_authn_server: responses.RequestsMock,
 ):
-    assert cached_valid_refresh.exists()
+    assert "auth_token" in cached_valid_refresh
     result = runner.invoke(main, ["-c", config_with_auth, "logout"])
     assert "Logged out" in result.output
-    assert not cached_valid_refresh.exists()
+    assert "auth_token" not in cached_valid_refresh
 
 
 def test_logout_invalid_token(runner: CliRunner):
@@ -1136,43 +1137,58 @@ def test_logout_when_no_cache(
 def test_local_cache_cleared_on_logout_when_oidc_unavailable(
     runner: CliRunner,
     config_with_auth: str,
-    cached_valid_refresh: Path,
+    cached_valid_refresh: DiskCache,
 ):
-    assert cached_valid_refresh.exists()
+    assert "auth_token" in cached_valid_refresh
     result = runner.invoke(main, ["-c", config_with_auth, "logout"])
     assert (
         "An unexpected error occurred while attempting to log out from the server."
         in result.output
     )
-    assert not cached_valid_refresh.exists()
+    assert "auth_token" not in cached_valid_refresh
 
 
-def test_wrapper_is_a_directory_error(
-    runner: CliRunner, mock_authn_server: responses.RequestsMock, tmp_path
+def test_wrapper_is_a_file_error(
+    runner: CliRunner,
+    mock_authn_server: responses.RequestsMock,
+    tmp_path: Path,
 ):
-    config: ApplicationConfig = ApplicationConfig(auth_token_path=tmp_path)
+    config: ApplicationConfig = ApplicationConfig(cache_path=tmp_path / "foo")
     config_path = tmp_path / "config.yaml"
-    with open(config_path, mode="w") as valid_auth_config_file:
+    with config_path.open(mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
+    with (tmp_path / "foo").open(mode="w") as cache_root:
+        cache_root.write("foo")
     result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
     assert (
-        "Invalid path: a directory path was provided instead of a file path\n"
-        == result.stdout
+        "Error: Error logging in: Invalid path: a file path was provided "
+        "instead of a directory path:" in result.stderr
     )
 
 
 def test_wrapper_permission_error(
-    runner: CliRunner, mock_authn_server: responses.RequestsMock, tmp_path
+    runner: CliRunner,
+    mock_authn_server: responses.RequestsMock,
+    tmp_path: Path,
 ):
     token_file: Path = tmp_path / "dir/token"
 
-    config: ApplicationConfig = ApplicationConfig(auth_token_path=token_file)
+    config: ApplicationConfig = ApplicationConfig(cache_path=token_file)
     config_path = tmp_path / "config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
-    with patch.object(Path, "write_text", side_effect=PermissionError):
+    with patch.object(
+        DiskCache,
+        "set",
+        side_effect=PermissionError(
+            f"Permission denied: Cannot write to {token_file}\n"
+        ),
+    ):
         result = runner.invoke(main, ["-c", config_path.as_posix(), "login"])
-    assert f"Permission denied: Cannot write to {token_file}\n" == result.stdout
+    assert (
+        f"Error: Error logging in: Permission denied: Cannot write to {token_file}\n\n"
+        == result.stderr
+    )
 
 
 @responses.activate

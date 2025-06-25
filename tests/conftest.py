@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import time
 from collections.abc import Generator, Iterable
 from pathlib import Path
@@ -25,6 +24,7 @@ from responses.matchers import json_params_matcher
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service.model import Cache
+from blueapi.utils.caching import DiskCache
 
 
 @pytest.fixture(scope="function")
@@ -71,12 +71,12 @@ def oidc_config(oidc_url: str) -> OIDCConfig:
     )
 
 
-CACHE_FILE = "blueapi_cache"
+CACHE_FILE = "auth_token"
 
 
 @pytest.fixture
 def config_with_auth(tmp_path: Path) -> str:
-    config = ApplicationConfig(auth_token_path=tmp_path / CACHE_FILE)
+    config = ApplicationConfig(cache_path=tmp_path)
     config_path = tmp_path / "auth_config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
@@ -143,46 +143,30 @@ def _make_token(
 @pytest.fixture
 def cached_valid_refresh(
     tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
-) -> Path:
-    cache = Cache(
-        oidc_config=oidc_config,
-        access_token=expired_token["access_token"],
-        refresh_token=expired_token["refresh_token"],
-        id_token=expired_token["id_token"],
-    )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
-        cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+) -> DiskCache:
+    return _cached_token(tmp_path, expired_token, oidc_config)
 
 
 @pytest.fixture
 def cached_expired_refresh(
     tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
-) -> Path:
-    cache = Cache(
+) -> DiskCache:
+    data = Cache(
         oidc_config=oidc_config,
         access_token=expired_token["access_token"],
         refresh_token="expired_refresh",
         id_token=expired_token["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
-        cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    cache = DiskCache(tmp_path)
+    cache.set("auth_token", data)
+    return cache
 
 
 @pytest.fixture
 def cached_valid_token(
     tmp_path: Path, valid_token_with_jwt: dict[str, Any], oidc_config: OIDCConfig
-) -> Path:
-    cache = Cache(
-        oidc_config=oidc_config,
-        access_token=valid_token_with_jwt["access_token"],
-        refresh_token=valid_token_with_jwt["refresh_token"],
-        id_token=valid_token_with_jwt["id_token"],
-    )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
-        cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+) -> DiskCache:
+    return _cached_token(tmp_path, valid_token_with_jwt, oidc_config)
 
 
 @pytest.fixture
@@ -190,16 +174,22 @@ def cache_with_invalid_audience(
     tmp_path: Path,
     oidc_config: OIDCConfig,
     valid_token_with_jwt_invalid_audience: dict[str, Any],
-) -> Path:
-    cache = Cache(
+) -> DiskCache:
+    return _cached_token(tmp_path, valid_token_with_jwt_invalid_audience, oidc_config)
+
+
+def _cached_token(
+    tmp_path: Path, token: dict[str, Any], oidc_config: OIDCConfig
+) -> DiskCache:
+    data = Cache(
         oidc_config=oidc_config,
-        access_token=valid_token_with_jwt_invalid_audience["access_token"],
-        refresh_token=valid_token_with_jwt_invalid_audience["refresh_token"],
-        id_token=valid_token_with_jwt_invalid_audience["id_token"],
+        access_token=token["access_token"],
+        refresh_token=token["refresh_token"],
+        id_token=token["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
-        cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    cache = DiskCache(tmp_path)
+    cache.set("auth_token", data)
+    return cache
 
 
 @pytest.fixture

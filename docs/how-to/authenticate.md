@@ -15,10 +15,10 @@ Here is an example configuration for authenticating to p46-blueapi:
 api:
   url: "https://p46-blueapi.diamond.ac.uk"
 
-auth_token_path: "~/.cache/blueapi_cache"  # Optional: Custom path to store the token
+cache_path: "~/.cache/blueapi_cache.d"  # Optional: Custom path to store the token
 ```
 
-- **auth_token_path**: (Optional) Specify where to save the token. If omitted, the default is `~/.cache/blueapi_cache` or `$XDG_CACHE_HOME/blueapi_cache` if `XDG_CACHE_HOME` is set.
+- **cache_path**: (Optional) Specify where to save the token. If omitted, the default is `~/.cache/blueapi_cache.d` or `$XDG_CACHE_HOME/blueapi_cache.d` if `XDG_CACHE_HOME` is set.
 
 ---
 

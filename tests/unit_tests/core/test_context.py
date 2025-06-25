@@ -150,16 +150,16 @@ def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
 
 
 def test_generated_schema(
-    empty_context: BlueskyContext,
+    devicey_context: BlueskyContext,
 ):
     def demo_plan(foo: int, mov: Movable) -> MsgGenerator:  # type: ignore
         ...
 
-    empty_context.register_plan(demo_plan)
-    schema = empty_context.plans["demo_plan"].model.model_json_schema()
+    devicey_context.register_plan(demo_plan)
+    schema = devicey_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
-        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable"},
+        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable", "enum": ["sim"]},
     }
 
 
@@ -177,6 +177,7 @@ def test_generated_schema_with_generic_bounds(
             "title": "Mov",
             "type": "bluesky.protocols.Movable",
             "types": ["int"],
+            "enum": [],
         },
     }
 

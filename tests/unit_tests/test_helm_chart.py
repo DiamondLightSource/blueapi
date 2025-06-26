@@ -1143,3 +1143,106 @@ def test_init_container_config_copied_from_worker_when_enabled():
     )
 
     assert config.scratch == init_config.scratch
+
+
+@pytest.mark.parametrize("service_port", [80, 800])
+@pytest.mark.parametrize("service_type", ["LoadBalancer", "ClusterIP"])
+def test_service_created(service_type: str, service_port: int):
+    manifests = render_chart(
+        values={
+            "service": {"type": service_type, "port": service_port},
+        }
+    )
+    spec = manifests["Service"]["blueapi"]["spec"]
+    assert spec["type"] == service_type
+    assert spec["ports"][0] == {
+        "name": "http",
+        "port": service_port,
+        "protocol": "TCP",
+        "targetPort": "http",
+    }
+
+
+@pytest.mark.parametrize("ingress_host", ["blueapi.diamond.ac.uk", "ixx.diamond.ac.uk"])
+@pytest.mark.parametrize("service_type", ["LoadBalancer", "ClusterIP"])
+@pytest.mark.parametrize("service_port", [80, 800])
+def test_ingress_created(service_type: str, service_port: int, ingress_host: str):
+    manifests = render_chart(
+        values={
+            "service": {"type": service_type, "port": service_port},
+            "ingress": {"create": True, "host": ingress_host},
+        }
+    )
+    spec = manifests["Ingress"]["blueapi"]["spec"]
+    assert spec["ingressClassName"] == "nginx"
+    assert spec["rules"][0] == {
+        "host": ingress_host,
+        "http": {
+            "paths": [
+                {
+                    "path": "/",
+                    "pathType": "Prefix",
+                    "backend": {
+                        "service": {
+                            "name": "blueapi",
+                            "port": {"number": service_port},
+                        }
+                    },
+                }
+            ]
+        },
+    }
+
+
+def test_ingress_not_created():
+    manifests = render_chart(
+        values={
+            "ingress": {"create": False},
+        }
+    )
+    assert "Ingress" not in manifests
+
+
+@pytest.mark.parametrize("service_port", [80, 800])
+@pytest.mark.parametrize(
+    "worker_api_url",
+    [
+        "https://0.0.0.0",
+        "http://0.0.0.0",
+        "http://0.0.0.0:800",
+        "https://0.0.0.0:800",
+        None,
+    ],
+)
+def test_service_linked_to_api(worker_api_url: str | None, service_port: int):
+    manifests = render_chart(
+        values={
+            "service": {"port": service_port},
+            "worker": {"api": {"url": worker_api_url}} if worker_api_url else {},
+        }
+    )
+    service_spec = manifests["Service"]["blueapi"]["spec"]
+    assert service_spec["ports"][0] == {
+        "name": "http",
+        "port": service_port,
+        "protocol": "TCP",
+        "targetPort": "http",
+    }
+
+    expected_container_port = {
+        "https://0.0.0.0": 443,
+        "http://0.0.0.0": 80,
+        "http://0.0.0.0:800": 800,
+        "https://0.0.0.0:800": 800,
+        None: 8000,
+    }
+
+    container_ports = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "containers"
+    ][0]["ports"]
+    assert len(container_ports) == 1
+    assert container_ports[0] == {
+        "name": "http",
+        "containerPort": expected_container_port[worker_api_url],
+        "protocol": "TCP",
+    }

@@ -55,7 +55,7 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 #   src/script/start_rabbitmq.sh
 #
 # Step 2: Start the BlueAPI server with valid configuration:
-#   blueapi -c tests/unit_tests/example_yaml/valid_stomp_config.yaml serve
+#   blueapi -c tests/system_tests/config.yaml serve
 #
 # Step 3: Run the system tests using tox:
 #   tox -e system-test

@@ -42,9 +42,22 @@ service:
   type: ClusterIP
   port: 80
 
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
-  create: false
-#  host: foo.diamond.ac.uk  (assumes port = service.port)
+  enabled: false
+  className: "nginx"
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: example.diamond.ac.uk
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
 
 resources: {}
 # We usually recommend not to specify default resources and to leave this as a conscious

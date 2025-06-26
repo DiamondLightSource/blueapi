@@ -7,7 +7,7 @@ You will need [a running server connected to a message bus](./run-bus.md) to com
 With a [running worker](./quickstart.md), you can then run a plan. In a new terminal:
 
 ```
-blueapi controller run sleep '{"time": 5}'
+blueapi controller run -i cm12345-1 sleep '{"time": 5}'
 ```
 
 ## Example Plans

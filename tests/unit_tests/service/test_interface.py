@@ -505,7 +505,7 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
     with pytest.raises(
         InvalidConfigError,
         match="Numtracker has been configured but a path provider was imported"
-        "with the devices. Remove this path provider to use numtracker.",
+        " with the devices. Remove this path provider to use numtracker.",
     ):
         interface.setup(conf)
 

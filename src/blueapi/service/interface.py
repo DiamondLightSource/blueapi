@@ -144,7 +144,7 @@ def setup(config: ApplicationConfig) -> None:
     ):
         raise InvalidConfigError(
             "Numtracker has been configured but a path provider was imported"
-            "with the devices. Remove this path provider to use numtracker."
+            " with the devices. Remove this path provider to use numtracker."
         )
 
     stomp_client()

@@ -239,10 +239,7 @@ def listen_to_events(obj: dict) -> None:
     help=textwrap.dedent("""
         Instrument session associated with running the plan,
         used to tell blueapi where to store any data and as a security check:
-        the session must be valid and active and you must be a member of it.
-        If you have saved your current session with
-        blueapi controller set-instrument-session,
-        passing this will supersede that."""),
+        the session must be valid and active and you must be a member of it."""),
     required=True,
 )
 @check_connection

@@ -9,6 +9,7 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from bluesky.protocols import Movable, Status
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.common.types import UpdatingPathProvider
 from observability_utils.tracing import (
@@ -18,7 +19,7 @@ from observability_utils.tracing import (
 from ophyd_async.core import AsyncStatus
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
-from blueapi.core import BlueskyContext, EventStream, MsgGenerator
+from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.worker import (
     Task,

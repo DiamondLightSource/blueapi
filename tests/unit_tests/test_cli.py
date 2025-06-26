@@ -1,5 +1,6 @@
 import importlib
 import json
+import os
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -47,6 +48,8 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
     PythonEnvironmentResponse,
+    TaskRequest,
+    TaskResponse,
 )
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
@@ -429,6 +432,37 @@ def test_cannot_start_a_plan_without_an_instrument_session(runner: CliRunner):
     )
     assert result.exit_code == 2
     assert "Error: Missing option '-i' / '--instrument-session'.\n" in result.stderr
+
+
+@patch("blueapi.client.rest.BlueapiRestClient.create_task")
+def test_can_pass_an_instrument_session_with_an_environment_variable(
+    mock_create_task: Mock, runner: CliRunner
+):
+    mock_create_task.return_value = TaskResponse(task_id="foo")
+    with patch.dict(
+        os.environ,
+        {"BLUEAPI_CONTROLLER_RUN_INSTRUMENT_SESSION": "cm12345-1"},
+        clear=True,
+    ):
+        # assert visit passed to rest
+        result = runner.invoke(
+            main,
+            [
+                "controller",
+                "run",
+                "--background",
+                "sleep",
+                '{"time": 5.0}',
+            ],
+        )
+    assert result.exit_code == 0
+    mock_create_task.assert_called_once_with(
+        TaskRequest(
+            name="sleep",
+            params={"time": 5.0},
+            instrument_session="cm12345-1",
+        )
+    )
 
 
 @patch("blueapi.cli.cli.StompClient")

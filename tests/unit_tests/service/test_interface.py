@@ -35,6 +35,7 @@ from blueapi.service.model import (
     ProtocolInfo,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskRequest,
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
@@ -42,6 +43,8 @@ from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
+
+FAKE_INSTRUMENT_SESSION = "cm12345-1"
 
 
 @pytest.fixture
@@ -182,7 +185,10 @@ def test_get_device(context_mock: MagicMock):
 def test_submit_task(context_mock: MagicMock):
     context = BlueskyContext()
     context.register_plan(my_plan)
-    task = Task(name="my_plan")
+    task = TaskRequest(
+        name="my_plan",
+        instrument_session=FAKE_INSTRUMENT_SESSION,
+    )
     context_mock.return_value = context
     mock_uuid_value = "8dfbb9c2-7a15-47b6-bea8-b6b77c31d3d9"
     with patch.object(uuid, "uuid4") as uuid_mock:
@@ -195,7 +201,10 @@ def test_submit_task(context_mock: MagicMock):
 def test_clear_task(context_mock: MagicMock):
     context = BlueskyContext()
     context.register_plan(my_plan)
-    task = Task(name="my_plan")
+    task = TaskRequest(
+        name="my_plan",
+        instrument_session=FAKE_INSTRUMENT_SESSION,
+    )
     context_mock.return_value = context
     mock_uuid_value = "3d858a62-b40a-400f-82af-8d2603a4e59a"
     with patch.object(uuid, "uuid4") as uuid_mock:
@@ -313,12 +322,23 @@ def test_get_task_by_id(context_mock: MagicMock):
     context.register_plan(my_plan)
     context_mock.return_value = context
 
-    task_id = interface.submit_task(Task(name="my_plan"))
+    task_id = interface.submit_task(
+        TaskRequest(
+            name="my_plan",
+            instrument_session=FAKE_INSTRUMENT_SESSION,
+        )
+    )
 
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
         request_id=ANY,
-        task=Task(name="my_plan", params={}),
+        task=Task(
+            name="my_plan",
+            params={},
+            metadata={
+                "instrument_session": FAKE_INSTRUMENT_SESSION,
+            },
+        ),
         is_complete=False,
         is_pending=True,
         errors=[],
@@ -485,7 +505,7 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
     with pytest.raises(
         InvalidConfigError,
         match="Numtracker has been configured but a path provider was imported"
-        "with the devices. Remove this path provider to use numtracker.",
+        " with the devices. Remove this path provider to use numtracker.",
     ):
         interface.setup(conf)
 

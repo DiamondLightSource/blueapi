@@ -20,6 +20,7 @@ from blueapi.service.model import (
     PlanModel,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskRequest,
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
@@ -143,7 +144,7 @@ def setup(config: ApplicationConfig) -> None:
     ):
         raise InvalidConfigError(
             "Numtracker has been configured but a path provider was imported"
-            "with the devices. Remove this path provider to use numtracker."
+            " with the devices. Remove this path provider to use numtracker."
         )
 
     stomp_client()
@@ -203,8 +204,13 @@ def get_device(name: str) -> DeviceModel:
     return DeviceModel.from_device(context().devices[name])
 
 
-def submit_task(task: Task) -> str:
+def submit_task(task_request: TaskRequest) -> str:
     """Submit a task to be run on begin_task"""
+    task = Task(
+        name=task_request.name,
+        params=task_request.params,
+        metadata={"instrument_session": task_request.instrument_session},
+    )
     return worker().submit_task(task)
 
 

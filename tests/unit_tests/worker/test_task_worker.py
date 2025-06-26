@@ -39,6 +39,14 @@ _INDEFINITE_TASK = Task(
     params={"movable": "fake_device", "value": 4.0},
 )
 _FAILING_TASK = Task(name="failing_plan", params={})
+_TASK_WITH_METADATA = Task(
+    name="sleep",
+    params={"time": 0.0},
+    metadata={
+        "foo": "bar",
+        "baz": 0,
+    },
+)
 
 
 class FakeDevice(Movable[float]):
@@ -333,6 +341,18 @@ def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: TaskWo
     task = worker.submit_task(_SIMPLE_TASK)
     with pytest.raises(WorkerBusyError):
         worker.begin_task(task)
+
+
+def test_metadata_passed_to_context(context: BlueskyContext):
+    context.run_engine = Mock()
+    _TASK_WITH_METADATA.do_task(context)
+    context.run_engine.assert_called_once_with(
+        ANY,
+        metadata_kw={
+            "foo": "bar",
+            "baz": 0,
+        },
+    )
 
 
 #

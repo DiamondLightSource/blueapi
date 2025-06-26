@@ -20,6 +20,7 @@ from blueapi.service.model import (
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskRequest,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -197,7 +198,7 @@ class BlueapiClient:
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,
-        task: Task,
+        task: TaskRequest,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> WorkerEvent:
@@ -205,7 +206,7 @@ class BlueapiClient:
         Synchronously run a task, requires a message bus connection
 
         Args:
-            task: Task to run
+            task: Request for task to run
             on_event: Callback for each event. Defaults to None.
             timeout: Time to wait until the task is finished.
             Defaults to None, so waits forever.
@@ -258,13 +259,13 @@ class BlueapiClient:
             return complete.result(timeout=timeout)
 
     @start_as_current_span(TRACER, "task")
-    def create_and_start_task(self, task: Task) -> TaskResponse:
+    def create_and_start_task(self, task: TaskRequest) -> TaskResponse:
         """
         Create a new task and instruct the worker to start it
         immediately.
 
         Args:
-            task: The task to create on the worker
+            task: Request object for task to create on the worker
 
         Returns:
             TaskResponse: Acknowledgement of request
@@ -281,12 +282,12 @@ class BlueapiClient:
             )
 
     @start_as_current_span(TRACER, "task")
-    def create_task(self, task: Task) -> TaskResponse:
+    def create_task(self, task: TaskRequest) -> TaskResponse:
         """
         Create a new task, does not start execution
 
         Args:
-            task: The task to create on the worker
+            task: Request object for task to create on the worker
 
         Returns:
             TaskResponse: Acknowledgement of request

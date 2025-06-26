@@ -19,6 +19,10 @@ class Task(BlueapiBaseModel):
     params: Mapping[str, Any] = Field(
         description="Values for parameters to plan, if any", default_factory=dict
     )
+    metadata: Mapping[str, Any] = Field(
+        description="Any metadata to apply to all runs within this task",
+        default_factory=dict,
+    )
 
     def prepare_params(self, ctx: BlueskyContext) -> Mapping[str, Any]:
         model = _lookup_params(ctx, self)
@@ -26,11 +30,14 @@ class Task(BlueapiBaseModel):
         return {field: getattr(model, field) for field in model.__pydantic_fields__}
 
     def do_task(self, ctx: BlueskyContext) -> None:
-        LOGGER.info(f"Asked to run plan {self.name} with {self.params}")
+        LOGGER.info(
+            f"Asked to run plan {self.name} with {self.params} and "
+            f"metadata {self.metadata} for all runs"
+        )
 
         func = ctx.plan_functions[self.name]
         prepared_params = self.prepare_params(ctx)
-        ctx.run_engine(func(**prepared_params))
+        ctx.run_engine(func(**prepared_params), metadata_kw=self.metadata)
 
 
 def _lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:

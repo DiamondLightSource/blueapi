@@ -22,15 +22,25 @@ from blueapi.config import (
 from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
+    TaskRequest,
     TaskResponse,
     WorkerTask,
 )
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
-from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
-_SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
-_LONG_TASK = Task(name="sleep", params={"time": 1.0})
+FAKE_INSTRUMENT_SESSION = "cm12345-1"
+
+_SIMPLE_TASK = TaskRequest(
+    name="sleep",
+    params={"time": 0.0},
+    instrument_session=FAKE_INSTRUMENT_SESSION,
+)
+_LONG_TASK = TaskRequest(
+    name="sleep",
+    params={"time": 1.0},
+    instrument_session=FAKE_INSTRUMENT_SESSION,
+)
 
 _DATA_PATH = Path(__file__).parent
 
@@ -186,9 +196,23 @@ def test_create_task_and_delete_task_by_id(client: BlueapiClient):
     client.clear_task(create_task.task_id)
 
 
+def test_instrument_session_propagated(client: BlueapiClient):
+    response = client.create_task(_SIMPLE_TASK)
+    trackable_task = client.get_task(response.task_id)
+    assert trackable_task.task.metadata == {
+        "instrument_session": FAKE_INSTRUMENT_SESSION
+    }
+
+
 def test_create_task_validation_error(client: BlueapiClient):
     with pytest.raises(UnknownPlan):
-        client.create_task(Task(name="Not-exists", params={"Not-exists": 0.0}))
+        client.create_task(
+            TaskRequest(
+                name="Not-exists",
+                params={"Not-exists": 0.0},
+                instrument_session="Not-exists",
+            )
+        )
 
 
 def test_get_all_tasks(client: BlueapiClient):
@@ -352,7 +376,7 @@ def test_delete_current_environment(client: BlueapiClient):
 @pytest.mark.parametrize(
     "task",
     [
-        Task(
+        TaskRequest(
             name="count",
             params={
                 "detectors": [
@@ -361,8 +385,9 @@ def test_delete_current_environment(client: BlueapiClient):
                 ],
                 "num": 5,
             },
+            instrument_session="cm12345-1",
         ),
-        Task(
+        TaskRequest(
             name="spec_scan",
             params={
                 "detectors": [
@@ -371,35 +396,40 @@ def test_delete_current_environment(client: BlueapiClient):
                 ],
                 "spec": Line("x", 0.0, 10.0, 2) * Line("y", 5.0, 15.0, 3),
             },
+            instrument_session="cm12345-1",
         ),
-        Task(
+        TaskRequest(
             name="set_absolute",
             params={
                 "movable": "dynamic_motor",
                 "value": "bar",
             },
+            instrument_session="cm12345-1",
         ),
-        Task(
+        TaskRequest(
             name="motor_plan",
             params={
                 "motor": "movable_motor",
             },
+            instrument_session="cm12345-1",
         ),
-        Task(
+        TaskRequest(
             name="motor_plan",
             params={
                 "motor": "dynamic_motor",
             },
+            instrument_session="cm12345-1",
         ),
-        Task(
+        TaskRequest(
             name="dataclass_motor_plan",
             params={
                 "motor": "data_class_motor",
             },
+            instrument_session="cm12345-1",
         ),
     ],
 )
-def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):
+def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
     final_event = client_with_stomp.run_task(task)
     assert final_event.is_complete() and not final_event.is_error()
     assert final_event.state is WorkerState.IDLE

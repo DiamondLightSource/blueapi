@@ -1,5 +1,6 @@
 import importlib
 import json
+import os
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -47,6 +48,8 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
     PythonEnvironmentResponse,
+    TaskRequest,
+    TaskResponse,
 )
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
 
@@ -213,7 +216,11 @@ def test_invalid_config_via_env(runner: CliRunner):
 
 @responses.activate
 def test_submit_plan(runner: CliRunner):
-    body_data = {"name": "sleep", "params": {"time": 5}}
+    body_data = {
+        "name": "sleep",
+        "params": {"time": 5},
+        "instrument_session": "cm12345-1",
+    }
 
     response = responses.post(
         url="http://a.fake.host:12345/tasks",
@@ -221,18 +228,38 @@ def test_submit_plan(runner: CliRunner):
     )
 
     config_path = "tests/unit_tests/example_yaml/rest_and_stomp_config.yaml"
-    runner.invoke(
-        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+    output = runner.invoke(
+        main,
+        [
+            "-c",
+            config_path,
+            "controller",
+            "run",
+            "-i",
+            "cm12345-1",
+            "sleep",
+            '{"time": 5}',
+        ],
     )
 
-    assert response.call_count == 1
+    assert response.call_count == 1, output.output
 
 
 @responses.activate
 def test_submit_plan_without_stomp(runner: CliRunner):
     config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
     result = runner.invoke(
-        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 5}']
+        main,
+        [
+            "-c",
+            config_path,
+            "controller",
+            "run",
+            "-i",
+            "cm12345-1",
+            "sleep",
+            '{"time": 5}',
+        ],
     )
 
     assert (
@@ -247,7 +274,15 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
     task_id = "abcd-1234"
     submit_response = responses.post(
         url="http://a.fake.host:12345/tasks",
-        match=[matchers.json_params_matcher({"name": "sleep", "params": {"time": 3}})],
+        match=[
+            matchers.json_params_matcher(
+                {
+                    "name": "sleep",
+                    "params": {"time": 3},
+                    "instrument_session": "cm12345-1",
+                }
+            )
+        ],
         json={"task_id": task_id},
         status=201,
     )
@@ -297,7 +332,17 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
 
     config_path = "tests/unit_tests/example_yaml/rest_and_stomp_config.yaml"
     result = runner.invoke(
-        main, ["-c", config_path, "controller", "run", "sleep", '{"time": 3}']
+        main,
+        [
+            "-c",
+            config_path,
+            "controller",
+            "run",
+            "-i",
+            "cm12345-1",
+            "sleep",
+            '{"time": 3}',
+        ],
     )
 
     assert result.exit_code == 0
@@ -309,7 +354,15 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
 def test_run_plan_background_without_stomp(runner: CliRunner):
     submit_response = responses.post(
         url="http://a.fake.host:12345/tasks",
-        match=[matchers.json_params_matcher({"name": "sleep", "params": {"time": 3}})],
+        match=[
+            matchers.json_params_matcher(
+                {
+                    "name": "sleep",
+                    "params": {"time": 3},
+                    "instrument_session": "cm12345-1",
+                }
+            )
+        ],
         json={"task_id": "abcd-1234"},
         status=201,
     )
@@ -327,6 +380,8 @@ def test_run_plan_background_without_stomp(runner: CliRunner):
             config_path,
             "controller",
             "run",
+            "-i",
+            "cm12345-1",
             "--background",
             "sleep",
             '{"time": 3}',
@@ -346,11 +401,67 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
 
 
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
-    result = runner.invoke(main, ["controller", "run", "sleep", '{"time": 5}'])
+    result = runner.invoke(
+        main,
+        [
+            "controller",
+            "run",
+            "-i",
+            "cm12345-1",
+            "sleep",
+            '{"time": 5}',
+        ],
+    )
     assert result.exit_code == 1
     assert (
         result.stderr
         == "Error: Stomp configuration required to run plans is missing or disabled\n"
+    )
+
+
+def test_cannot_start_a_plan_without_an_instrument_session(runner: CliRunner):
+    result = runner.invoke(
+        main,
+        [
+            "controller",
+            "run",
+            "--background",
+            "sleep",
+            '{"time": 5}',
+        ],
+    )
+    assert result.exit_code == 2
+    assert "Error: Missing option '-i' / '--instrument-session'.\n" in result.stderr
+
+
+@patch("blueapi.client.rest.BlueapiRestClient.create_task")
+def test_can_pass_an_instrument_session_with_an_environment_variable(
+    mock_create_task: Mock, runner: CliRunner
+):
+    mock_create_task.return_value = TaskResponse(task_id="foo")
+    with patch.dict(
+        os.environ,
+        {"BLUEAPI_CONTROLLER_RUN_INSTRUMENT_SESSION": "cm12345-1"},
+        clear=True,
+    ):
+        # assert visit passed to rest
+        result = runner.invoke(
+            main,
+            [
+                "controller",
+                "run",
+                "--background",
+                "sleep",
+                '{"time": 5.0}',
+            ],
+        )
+    assert result.exit_code == 0
+    mock_create_task.assert_called_once_with(
+        TaskRequest(
+            name="sleep",
+            params={"time": 5.0},
+            instrument_session="cm12345-1",
+        )
     )
 
 
@@ -577,6 +688,8 @@ def test_error_handling(exception, error_message, runner: CliRunner):
                 "tests/unit_tests/example_yaml/valid_stomp_config.yaml",
                 "controller",
                 "run",
+                "-i",
+                "cm12345-1",
                 "sleep",
                 '{"time": 5}',
             ],
@@ -600,6 +713,8 @@ def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
             "tests/unit_tests/example_yaml/valid_stomp_config.yaml",
             "controller",
             "run",
+            "-i",
+            "cm12345-1",
             "sleep",
             params,
         ],

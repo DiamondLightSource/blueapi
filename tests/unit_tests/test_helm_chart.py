@@ -139,7 +139,7 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
 def test_helm_chart_creates_init_config_map(values: Values):
     manifests = render_chart(values=values)
     rendered_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        manifests["ConfigMap"]["blueapi-init-config"]["data"]["init_config.yaml"]
     )
     assert rendered_config["scratch"] == values["worker"]["scratch"]
 
@@ -333,7 +333,7 @@ def test_worker_scratch_config_used_when_init_container_enabled():
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
     init_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        manifests["ConfigMap"]["blueapi-init-config"]["data"]["init_config.yaml"]
     )
     type_adapter = TypeAdapter(ApplicationConfig)
 
@@ -848,7 +848,7 @@ def worker_config_volume():
 def init_config_volume():
     return {
         "name": "init-config",
-        "projected": {"sources": [{"configMap": {"name": "blueapi-initconfig"}}]},
+        "projected": {"sources": [{"configMap": {"name": "blueapi-init-config"}}]},
     }
 
 
@@ -1138,7 +1138,7 @@ def test_init_container_config_copied_from_worker_when_enabled():
     )
     init_config = ApplicationConfig.model_validate(
         yaml.safe_load(
-            manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+            manifests["ConfigMap"]["blueapi-init-config"]["data"]["init_config.yaml"]
         )
     )
 

@@ -38,7 +38,7 @@ dependencies = [
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 
 [project.scripts]
 blueapi = "blueapi.cli:main"

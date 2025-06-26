@@ -29,15 +29,17 @@ from blueapi.service.model import (
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task_worker import TrackableTask
 
+FAKE_INSTRUMENT_SESSION = "cm12345-1"
+
 _SIMPLE_TASK = TaskRequest(
     name="sleep",
     params={"time": 0.0},
-    instrument_session="cm12345-1",
+    instrument_session=FAKE_INSTRUMENT_SESSION,
 )
 _LONG_TASK = TaskRequest(
     name="sleep",
     params={"time": 1.0},
-    instrument_session="cm12345-1",
+    instrument_session=FAKE_INSTRUMENT_SESSION,
 )
 
 _DATA_PATH = Path(__file__).parent
@@ -192,6 +194,14 @@ def test_get_non_existent_device(client: BlueapiClient):
 def test_create_task_and_delete_task_by_id(client: BlueapiClient):
     create_task = client.create_task(_SIMPLE_TASK)
     client.clear_task(create_task.task_id)
+
+
+def test_instrument_session_propagated(client: BlueapiClient):
+    response = client.create_task(_SIMPLE_TASK)
+    trackable_task = client.get_task(response.task_id)
+    assert trackable_task.task.metadata == {
+        "instrument_session": FAKE_INSTRUMENT_SESSION
+    }
 
 
 def test_create_task_validation_error(client: BlueapiClient):

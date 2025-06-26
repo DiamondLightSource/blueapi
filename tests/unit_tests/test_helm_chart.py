@@ -589,11 +589,11 @@ def test_persistent_volume_claim_exists(
     )
 
     persistent_volume_claim = {
-        "scratch-": {
+        "scratch-0.1.0": {
             "apiVersion": "v1",
             "kind": "PersistentVolumeClaim",
             "metadata": {
-                "name": "scratch-",
+                "name": "scratch-0.1.0",
                 "annotations": {"helm.sh/resource-policy": "keep"},
             },
             "spec": {
@@ -832,7 +832,7 @@ def test_scratch_volume_uses_correct_claimName(
         assert claim_name == existingClaimName
         assert "PersistentVolumeClaim" not in manifests
     else:
-        assert claim_name == "scratch-"
+        assert claim_name == "scratch-0.1.0"
         assert claim_name in manifests["PersistentVolumeClaim"]
 
 
@@ -1094,6 +1094,8 @@ def render_chart(
 def group_manifests(ungrouped: Iterable[Mapping[str, Any]]) -> GroupedManifests:
     groups = {}
     for manifest in ungrouped:
+        if manifest is None:
+            continue
         name = manifest["metadata"]["name"]
         kind = manifest["kind"]
         group = groups.setdefault(kind, {})

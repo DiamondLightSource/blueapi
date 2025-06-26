@@ -96,12 +96,7 @@ readinessProbe:
     port: http
 
 # Additional volumes on the output Deployment definition.
-volumes:
-- name: worker-config
-  projected:
-    sources:
-    - configMap:
-        name: {{ include "blueapi.fullname" . }}-config
+volumes: []
 
 # Additional volumeMounts on the output Deployment definition.
 volumeMounts:

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Command-Line Interface &#8212; blueapi 0.18.1.dev1+g65ca1664 documentation</title>
+    <title>Command-Line Interface &#8212; blueapi 0.18.1.dev2+g641e0129 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=11c8df9b"></script>
+    <script src="../_static/documentation_options.js?v=ec677a98"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -620,6 +620,14 @@ with optional reason</p>
 <dt class="sig sig-object std" id="cmdoption-blueapi-controller-run-t">
 <span id="cmdoption-blueapi-controller-run-timeout"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--timeout</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;timeout&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-controller-run-t" title="Link to this definition">#</a></dt>
 <dd><p>Timeout for the plan in seconds. None hangs forever</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-controller-run-i">
+<span id="cmdoption-blueapi-controller-run-instrument-session"></span><span class="sig-name descname"><span class="pre">-i</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--instrument-session</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;instrument_session&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-controller-run-i" title="Link to this definition">#</a></dt>
+<dd><p><strong>Required</strong> Instrument session associated with running the plan,
+used to tell blueapi where to store any data and as a security check:
+the session must be valid and active and you must be a member of it.</p>
 </dd></dl>
 
 <p class="rubric">Arguments</p>

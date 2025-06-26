@@ -1,6 +1,7 @@
 import inspect
 import time
 from pathlib import Path
+from typing import Any
 
 import pytest
 from bluesky_stomp.models import BasicAuthentication
@@ -26,11 +27,10 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
-from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
-_SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
-_LONG_TASK = Task(name="sleep", params={"time": 1.0})
+_SIMPLE_TASK = ("sleep", {"time": 0.0})
+_LONG_TASK = ("sleep", {"time": 1.0})
 
 _DATA_PATH = Path(__file__).parent
 
@@ -182,19 +182,19 @@ def test_get_non_existent_device(client: BlueapiClient):
 
 
 def test_create_task_and_delete_task_by_id(client: BlueapiClient):
-    create_task = client.create_task(_SIMPLE_TASK)
+    create_task = client.create_task(*_SIMPLE_TASK)
     client.clear_task(create_task.task_id)
 
 
 def test_create_task_validation_error(client: BlueapiClient):
     with pytest.raises(UnknownPlan):
-        client.create_task(Task(name="Not-exists", params={"Not-exists": 0.0}))
+        client.create_task("Not-exists", {"Not-exists": 0.0})
 
 
 def test_get_all_tasks(client: BlueapiClient):
     created_tasks: list[TaskResponse] = []
     for task in [_SIMPLE_TASK, _LONG_TASK]:
-        created_task = client.create_task(task)
+        created_task = client.create_task(*task)
         created_tasks.append(created_task)
     task_ids = [task.task_id for task in created_tasks]
 
@@ -208,7 +208,7 @@ def test_get_all_tasks(client: BlueapiClient):
 
 
 def test_get_task_by_id(client: BlueapiClient):
-    created_task = client.create_task(_SIMPLE_TASK)
+    created_task = client.create_task(*_SIMPLE_TASK)
 
     get_task = client.get_task(created_task.task_id)
     assert (
@@ -232,7 +232,7 @@ def test_delete_non_existent_task(client: BlueapiClient):
 
 
 def test_put_worker_task(client: BlueapiClient):
-    created_task = client.create_task(_SIMPLE_TASK)
+    created_task = client.create_task(*_SIMPLE_TASK)
     client.start_task(WorkerTask(task_id=created_task.task_id))
     active_task = client.get_active_task()
     assert active_task.task_id == created_task.task_id
@@ -240,8 +240,8 @@ def test_put_worker_task(client: BlueapiClient):
 
 
 def test_put_worker_task_fails_if_not_idle(client: BlueapiClient):
-    small_task = client.create_task(_SIMPLE_TASK)
-    long_task = client.create_task(_LONG_TASK)
+    small_task = client.create_task(*_SIMPLE_TASK)
+    long_task = client.create_task(*_LONG_TASK)
 
     client.start_task(WorkerTask(task_id=long_task.task_id))
     active_task = client.get_active_task()
@@ -269,8 +269,8 @@ def test_set_state_transition_error(client: BlueapiClient):
 
 
 def test_get_task_by_status(client: BlueapiClient):
-    task_1 = client.create_task(_SIMPLE_TASK)
-    task_2 = client.create_task(_SIMPLE_TASK)
+    task_1 = client.create_task(*_SIMPLE_TASK)
+    task_2 = client.create_task(*_SIMPLE_TASK)
     task_by_pending = client.get_all_tasks()
     # https://github.com/DiamondLightSource/blueapi/issues/680
     # task_by_pending = client.get_tasks_by_status(TaskStatusEnum.PENDING)
@@ -305,7 +305,7 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
+    client_with_stomp.run_task(*_SIMPLE_TASK, on_event=on_event)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [
@@ -350,11 +350,11 @@ def test_delete_current_environment(client: BlueapiClient):
 
 
 @pytest.mark.parametrize(
-    "task",
+    "plan,params",
     [
-        Task(
-            name="count",
-            params={
+        (
+            "count",
+            {
                 "detectors": [
                     "image_det",
                     "current_det",
@@ -362,9 +362,9 @@ def test_delete_current_environment(client: BlueapiClient):
                 "num": 5,
             },
         ),
-        Task(
-            name="spec_scan",
-            params={
+        (
+            "spec_scan",
+            {
                 "detectors": [
                     "image_det",
                     "current_det",
@@ -372,34 +372,34 @@ def test_delete_current_environment(client: BlueapiClient):
                 "spec": Line("x", 0.0, 10.0, 2) * Line("y", 5.0, 15.0, 3),
             },
         ),
-        Task(
-            name="set_absolute",
-            params={
+        (
+            "set_absolute",
+            {
                 "movable": "dynamic_motor",
                 "value": "bar",
             },
         ),
-        Task(
-            name="motor_plan",
-            params={
+        (
+            "motor_plan",
+            {
                 "motor": "movable_motor",
             },
         ),
-        Task(
-            name="motor_plan",
-            params={
+        (
+            "motor_plan",
+            {
                 "motor": "dynamic_motor",
             },
         ),
-        Task(
-            name="dataclass_motor_plan",
-            params={
+        (
+            "dataclass_motor_plan",
+            {
                 "motor": "data_class_motor",
             },
         ),
     ],
 )
-def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):
-    final_event = client_with_stomp.run_task(task)
+def test_plan_runs(client_with_stomp: BlueapiClient, plan: str, params: dict[str, Any]):
+    final_event = client_with_stomp.run_task(plan, params)
     assert final_event.is_complete() and not final_event.is_error()
     assert final_event.state is WorkerState.IDLE

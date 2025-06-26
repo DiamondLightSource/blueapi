@@ -1,5 +1,6 @@
 import time
 from concurrent.futures import Future
+from typing import Any
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -31,6 +32,8 @@ from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEve
 from .rest import BlueapiRestClient, BlueskyRemoteControlError
 
 TRACER = get_tracer("client")
+
+TaskParameters = dict[str, Any]
 
 
 class BlueapiClient:
@@ -194,10 +197,12 @@ class BlueapiClient:
 
         return self._rest.get_active_task()
 
-    @start_as_current_span(TRACER, "task", "timeout")
+    @start_as_current_span(TRACER, "name", "parameters", "timeout")
     def run_task(
         self,
-        task: Task,
+        name: str,
+        parameters: TaskParameters | None = None,
+        *,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> WorkerEvent:
@@ -220,7 +225,7 @@ class BlueapiClient:
                 "Stomp configuration required to run plans is missing or disabled"
             )
 
-        task_response = self.create_task(task)
+        task_response = self.create_task(name, parameters or {})
         task_id = task_response.task_id
 
         complete: Future[WorkerEvent] = Future()
@@ -257,8 +262,10 @@ class BlueapiClient:
             self.start_task(WorkerTask(task_id=task_id))
             return complete.result(timeout=timeout)
 
-    @start_as_current_span(TRACER, "task")
-    def create_and_start_task(self, task: Task) -> TaskResponse:
+    @start_as_current_span(TRACER, "name", "parameters")
+    def create_and_start_task(
+        self, name: str, parameters: TaskParameters | None = None
+    ) -> TaskResponse:
         """
         Create a new task and instruct the worker to start it
         immediately.
@@ -270,7 +277,7 @@ class BlueapiClient:
             TaskResponse: Acknowledgement of request
         """
 
-        response = self.create_task(task)
+        response = self.create_task(name, parameters or {})
         worker_response = self.start_task(WorkerTask(task_id=response.task_id))
         if worker_response.task_id == response.task_id:
             return response
@@ -280,8 +287,10 @@ class BlueapiClient:
                 f"but {worker_response.task_id} was started instead"
             )
 
-    @start_as_current_span(TRACER, "task")
-    def create_task(self, task: Task) -> TaskResponse:
+    @start_as_current_span(TRACER, "name", "parameters")
+    def create_task(
+        self, name: str, parameters: TaskParameters | None = None
+    ) -> TaskResponse:
         """
         Create a new task, does not start execution
 
@@ -292,6 +301,7 @@ class BlueapiClient:
             TaskResponse: Acknowledgement of request
         """
 
+        task = Task(name=name, params=parameters or {})
         return self._rest.create_task(task)
 
     @start_as_current_span(TRACER)

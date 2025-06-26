@@ -1172,7 +1172,15 @@ def test_ingress_created(service_type: str, service_port: int, ingress_host: str
     manifests = render_chart(
         values={
             "service": {"type": service_type, "port": service_port},
-            "ingress": {"create": True, "host": ingress_host},
+            "ingress": {
+                "enabled": True,
+                "hosts": [
+                    {
+                        "host": ingress_host,
+                        "paths": [{"path": "/", "pathType": "Prefix"}],
+                    }
+                ],
+            },
         }
     )
     spec = manifests["Ingress"]["blueapi"]["spec"]
@@ -1199,7 +1207,7 @@ def test_ingress_created(service_type: str, service_port: int, ingress_host: str
 def test_ingress_not_created():
     manifests = render_chart(
         values={
-            "ingress": {"create": False},
+            "ingress": {"enabled": False},
         }
     )
     assert "Ingress" not in manifests

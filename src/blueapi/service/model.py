@@ -97,7 +97,7 @@ class PlanModel(BlueapiBaseModel):
     description: str | SkipJsonSchema[None] = Field(
         description="Docstring of the plan", default=None
     )
-    parameter_schema: dict[str, Any] | SkipJsonSchema[None] = Field(
+    parameter_schema: dict[str, Any] = Field(
         description="Schema of the plan's parameters",
         alias="schema",
         default_factory=dict,

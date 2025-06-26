@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Generic, TypeVar, Union
 from unittest.mock import patch
 
@@ -13,9 +14,17 @@ from bluesky.protocols import (
     Stoppable,
     SyncOrAsync,
 )
+from bluesky.run_engine import RunEngine
 from bluesky.utils import MsgGenerator
 from dodal.common import PlanGenerator, inject
-from ophyd.sim import SynAxis, SynGauss
+from ophyd_async.core import (
+    StandardDetector,
+    StaticPathProvider,
+    UUIDFilenameProvider,
+    init_devices,
+)
+from ophyd_async.epics.adaravis import AravisDetector
+from ophyd_async.epics.motor import Motor
 from pydantic import TypeAdapter, ValidationError
 from pytest import LogCaptureFixture
 
@@ -25,7 +34,6 @@ from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 
 SIM_MOTOR_NAME = "sim"
 ALT_MOTOR_NAME = "alt"
-SIM_DET_NAME = "sim_det"
 EXPECTED_PLANS = {
     "plan_a",
     "plan_b",
@@ -49,28 +57,28 @@ EXPECTED_PLANS = {
 #
 
 
-def has_no_params() -> MsgGenerator:  # type: ignore
-    ...
+def has_no_params() -> MsgGenerator:
+    yield from ()
 
 
-def has_one_param(foo: int) -> MsgGenerator:  # type: ignore
-    ...
+def has_one_param(foo: int) -> MsgGenerator:
+    yield from ()
 
 
-def has_some_params(foo: int = 42, bar: str = "bar") -> MsgGenerator:  # type: ignore
-    ...
+def has_some_params(foo: int = 42, bar: str = "bar") -> MsgGenerator:
+    yield from ()
 
 
-def has_typeless_param(foo) -> MsgGenerator:  # type: ignore
-    ...
+def has_typeless_param(foo) -> MsgGenerator:
+    yield from ()
 
 
-def has_typed_and_typeless_params(foo: int, bar) -> MsgGenerator:  # type: ignore
-    ...
+def has_typed_and_typeless_params(foo: int, bar) -> MsgGenerator:
+    yield from ()
 
 
-def has_typeless_params(foo, bar) -> MsgGenerator:  # type: ignore
-    ...
+def has_typeless_params(foo, bar) -> MsgGenerator:
+    yield from ()
 
 
 MOTOR: Movable = inject(SIM_MOTOR_NAME)
@@ -95,25 +103,25 @@ def has_default_nested_reference(
 
 
 @pytest.fixture
-def sim_motor() -> SynAxis:
-    return SynAxis(name=SIM_MOTOR_NAME)
+def sim_motor(RE: RunEngine) -> Motor:
+    with init_devices(mock=True):
+        sim = Motor("FOO:")
+    return sim
 
 
 @pytest.fixture
-def alt_motor() -> SynAxis:
-    return SynAxis(name=ALT_MOTOR_NAME)
+def alt_motor(RE: RunEngine) -> Motor:
+    with init_devices(mock=True):
+        alt = Motor("BAR:")
+    return alt
 
 
 @pytest.fixture
-def sim_detector(sim_motor: SynAxis) -> SynGauss:
-    return SynGauss(
-        name=SIM_DET_NAME,
-        motor=sim_motor,
-        motor_field=SIM_MOTOR_NAME,
-        center=0.0,
-        Imax=1,
-        labels={"detectors"},
-    )
+def sim_detector(tmp_path: Path) -> StandardDetector:
+    path_provider = StaticPathProvider(UUIDFilenameProvider(), tmp_path)
+    with init_devices(mock=True):
+        sim_det = AravisDetector("DET:", path_provider)
+    return sim_det
 
 
 @pytest.fixture
@@ -122,7 +130,7 @@ def empty_context() -> BlueskyContext:
 
 
 @pytest.fixture
-def devicey_context(sim_motor: SynAxis, sim_detector: SynGauss) -> BlueskyContext:
+def devicey_context(sim_motor: Motor, sim_detector: StandardDetector) -> BlueskyContext:
     ctx = BlueskyContext()
     ctx.register_device(sim_motor)
     ctx.register_device(sim_detector)
@@ -130,12 +138,11 @@ def devicey_context(sim_motor: SynAxis, sim_detector: SynGauss) -> BlueskyContex
 
 
 class SomeConfigurable:
-    def read_configuration(self) -> SyncOrAsync[dict[str, Reading]]:  # type: ignore
-        ...
+    def read_configuration(self) -> SyncOrAsync[dict[str, Reading]]:
+        return {}
 
-    def describe_configuration(  # type: ignore
-        self,
-    ) -> SyncOrAsync[dict[str, Descriptor]]: ...
+    def describe_configuration(self) -> SyncOrAsync[dict[str, Descriptor]]:
+        return {}
 
 
 @pytest.fixture
@@ -144,7 +151,7 @@ def some_configurable() -> SomeConfigurable:
 
 
 @pytest.mark.parametrize("plan", [has_no_params, has_one_param, has_some_params])
-def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
+def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator):
     empty_context.register_plan(plan)
     assert plan.__name__ in empty_context.plans
 
@@ -152,8 +159,8 @@ def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
 def test_generated_schema(
     devicey_context: BlueskyContext,
 ):
-    def demo_plan(foo: int, mov: Movable) -> MsgGenerator:  # type: ignore
-        ...
+    def demo_plan(foo: int, mov: Movable) -> MsgGenerator:
+        yield from ()
 
     devicey_context.register_plan(demo_plan)
     schema = devicey_context.plans["demo_plan"].model.model_json_schema()
@@ -166,8 +173,8 @@ def test_generated_schema(
 def test_generated_schema_with_generic_bounds(
     empty_context: BlueskyContext,
 ):
-    def demo_plan(foo: int, mov: Movable[int]) -> MsgGenerator:  # type: ignore
-        ...
+    def demo_plan(foo: int, mov: Movable[int]) -> MsgGenerator:
+        yield from ()
 
     empty_context.register_plan(demo_plan)
     schema = empty_context.plans["demo_plan"].model.model_json_schema()
@@ -185,40 +192,40 @@ def test_generated_schema_with_generic_bounds(
 @pytest.mark.parametrize(
     "plan", [has_typeless_param, has_typed_and_typeless_params, has_typeless_params]
 )
-def test_add_invalid_plan(empty_context: BlueskyContext, plan: PlanGenerator) -> None:
+def test_add_invalid_plan(empty_context: BlueskyContext, plan: PlanGenerator):
     with pytest.raises(ValueError):
         empty_context.register_plan(plan)
 
 
-def test_add_plan_from_module(empty_context: BlueskyContext) -> None:
+def test_add_plan_from_module(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_plan_module as plan_module
 
     empty_context.with_plan_module(plan_module)
     assert EXPECTED_PLANS == empty_context.plans.keys()
 
 
-def test_only_plans_from_source_module_detected(empty_context: BlueskyContext) -> None:
+def test_only_plans_from_source_module_detected(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_plan_module_with_imports as plan_module
 
     empty_context.with_plan_module(plan_module)
     assert {"plan_c", "plan_d"} == empty_context.plans.keys()
 
 
-def test_only_plans_from_all_in_module_detected(empty_context: BlueskyContext) -> None:
+def test_only_plans_from_all_in_module_detected(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_plan_module_with_all as plan_module
 
     empty_context.with_plan_module(plan_module)
     assert {"plan_a", "plan_d"} == empty_context.plans.keys()
 
 
-def test_add_named_device(empty_context: BlueskyContext, sim_motor: SynAxis) -> None:
+def test_add_named_device(empty_context: BlueskyContext, sim_motor: Motor):
     empty_context.register_device(sim_motor)
     assert empty_context.devices[SIM_MOTOR_NAME] is sim_motor
 
 
 def test_add_nameless_device(
     empty_context: BlueskyContext, some_configurable: SomeConfigurable
-) -> None:
+):
     empty_context.register_device(some_configurable, "conf")
     assert empty_context.devices["conf"] is some_configurable
 
@@ -226,19 +233,17 @@ def test_add_nameless_device(
 def test_add_nameless_device_without_override(
     empty_context: BlueskyContext,
     some_configurable: SomeConfigurable,
-) -> None:
+):
     with pytest.raises(KeyError):
         empty_context.register_device(some_configurable)
 
 
-def test_override_device_name(
-    empty_context: BlueskyContext, sim_motor: SynAxis
-) -> None:
+def test_override_device_name(empty_context: BlueskyContext, sim_motor: Motor):
     empty_context.register_device(sim_motor, "foo")
     assert empty_context.devices["foo"] is sim_motor
 
 
-def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
+def test_add_devices_from_module(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_device_module as device_module
 
     empty_context.with_device_module(device_module)
@@ -255,7 +260,7 @@ def test_add_devices_from_module(empty_context: BlueskyContext) -> None:
 
 def test_add_failing_deivces_from_module(
     caplog: LogCaptureFixture, empty_context: BlueskyContext
-) -> None:
+):
     import tests.unit_tests.core.fake_device_module_failing as device_module
 
     caplog.set_level(10)
@@ -268,7 +273,7 @@ def test_add_failing_deivces_from_module(
 
 def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
     empty_context: BlueskyContext,
-) -> None:
+):
     """
     Note that this functionality is currently used by hyperion.
     """
@@ -288,39 +293,39 @@ def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
 
 
 @pytest.mark.parametrize(
-    "addr", ["sim", "sim_det", "sim.setpoint", ["sim"], ["sim", "setpoint"]]
+    "addr", ["sim", "sim_det", "sim.user_setpoint", ["sim"], ["sim", "user_setpoint"]]
 )
-def test_lookup_device(devicey_context: BlueskyContext, addr: str | list[str]) -> None:
+def test_lookup_device(devicey_context: BlueskyContext, addr: str | list[str]):
     device = devicey_context.find_device(addr)
     assert is_bluesky_compatible_device(device)
 
 
-def test_lookup_nonexistent_device(devicey_context: BlueskyContext) -> None:
+def test_lookup_nonexistent_device(devicey_context: BlueskyContext):
     assert devicey_context.find_device("foo") is None
 
 
-def test_lookup_nonexistent_device_child(devicey_context: BlueskyContext) -> None:
+def test_lookup_nonexistent_device_child(devicey_context: BlueskyContext):
     assert devicey_context.find_device("sim.foo") is None
 
 
-def test_lookup_non_device(devicey_context: BlueskyContext) -> None:
+def test_lookup_non_device(devicey_context: BlueskyContext):
     with pytest.raises(ValueError):
-        devicey_context.find_device("sim.SUB_READBACK")
+        devicey_context.find_device("sim._set_success")
 
 
-def test_add_non_plan(empty_context: BlueskyContext) -> None:
+def test_add_non_plan(empty_context: BlueskyContext):
     with pytest.raises(TypeError):
         empty_context.register_plan("not a plan")  # type: ignore
 
 
-def test_add_non_device(empty_context: BlueskyContext) -> None:
+def test_add_non_device(empty_context: BlueskyContext):
     with pytest.raises(TypeError):
         empty_context.register_device("not a device")  # type: ignore
 
 
 def test_add_devices_and_plans_from_modules_with_config(
     empty_context: BlueskyContext,
-) -> None:
+):
     empty_context.with_config(
         EnvironmentConfig(
             sources=[
@@ -349,7 +354,7 @@ def test_add_devices_and_plans_from_modules_with_config(
 
 def test_add_metadata_with_config(
     empty_context: BlueskyContext,
-) -> None:
+):
     empty_context.with_config(
         EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
@@ -361,7 +366,7 @@ def test_add_metadata_with_config(
         assert md in empty_context.run_engine.md.items()
 
 
-def test_function_spec(empty_context: BlueskyContext) -> None:
+def test_function_spec(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(has_some_params)
     assert spec["foo"][0] is int
     assert spec["foo"][1].default_factory == DefaultFactory(42)
@@ -369,50 +374,50 @@ def test_function_spec(empty_context: BlueskyContext) -> None:
     assert spec["bar"][1].default_factory == DefaultFactory("bar")
 
 
-def test_basic_type_conversion(empty_context: BlueskyContext) -> None:
+def test_basic_type_conversion(empty_context: BlueskyContext):
     assert empty_context._convert_type(int) is int
     assert empty_context._convert_type(dict[str, int]) == dict[str, int]
 
 
-def test_device_reference_cache(empty_context: BlueskyContext) -> None:
+def test_device_reference_cache(empty_context: BlueskyContext):
     assert empty_context._reference(Movable) is empty_context._reference(Movable)
     assert empty_context._reference(Movable) is not empty_context._reference(Readable)
 
 
-def test_device_reference_cache_with_generics(empty_context: BlueskyContext) -> None:
+def test_device_reference_cache_with_generics(empty_context: BlueskyContext):
     motor = Movable[float]
     assert empty_context._reference(motor) is empty_context._reference(motor)
     assert empty_context._reference(motor) is not empty_context._reference(Movable[int])
     assert empty_context._reference(motor) is not empty_context._reference(Movable)
 
 
-def test_unregister_all_devices(devicey_context: BlueskyContext) -> None:
+def test_unregister_all_devices(devicey_context: BlueskyContext):
     assert len(devicey_context.devices) > 0
     devicey_context.unregister_all_devices()
 
     assert len(devicey_context.devices) == 0
 
 
-def test_reference_type_conversion(empty_context: BlueskyContext) -> None:
+def test_reference_type_conversion(empty_context: BlueskyContext):
     movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref
     assert (
         empty_context._convert_type(dict[Movable, list[tuple[int, Movable]]])
-        == dict[movable_ref, list[tuple[int, movable_ref]]]  # type: ignore
+        == dict[movable_ref, list[tuple[int, movable_ref]]]
     )
 
 
-def test_generic_reference_type_conversion(empty_context: BlueskyContext) -> None:
+def test_generic_reference_type_conversion(empty_context: BlueskyContext):
     motor = Movable[float]
     motor_ref: type = empty_context._reference(motor)
     assert empty_context._convert_type(motor) == motor_ref
     assert (
         empty_context._convert_type(dict[motor, list[tuple[int, motor]]])
-        == dict[motor_ref, list[tuple[int, motor_ref]]]  # type: ignore
+        == dict[motor_ref, list[tuple[int, motor_ref]]]
     )
 
 
-def test_reference_type_conversion_union(empty_context: BlueskyContext) -> None:
+def test_reference_type_conversion_union(empty_context: BlueskyContext):
     movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref
     assert (
@@ -422,17 +427,15 @@ def test_reference_type_conversion_union(empty_context: BlueskyContext) -> None:
 
 def test_reference_type_conversion_new_style_union(
     empty_context: BlueskyContext,
-) -> None:
+):
     movable_ref: type = empty_context._reference(Movable)
     assert empty_context._convert_type(Movable) == movable_ref
-    assert (
-        empty_context._convert_type(Movable | int) == movable_ref | int  # type: ignore
-    )
+    assert empty_context._convert_type(Movable | int) == movable_ref | int
 
 
-def test_default_device_reference(empty_context: BlueskyContext) -> None:
-    def default_movable(mov: Movable = "demo") -> MsgGenerator:  # type: ignore
-        ...
+def test_default_device_reference(empty_context: BlueskyContext):
+    def default_movable(mov: Movable = inject("demo")) -> MsgGenerator:
+        yield from ()
 
     spec = empty_context._type_spec_for_function(default_movable)
     movable_ref = empty_context._reference(Movable)
@@ -440,9 +443,9 @@ def test_default_device_reference(empty_context: BlueskyContext) -> None:
     assert spec["mov"][1].default_factory == DefaultFactory("demo")
 
 
-def test_generic_default_device_reference(empty_context: BlueskyContext) -> None:
-    def default_movable(mov: Movable[float] = "demo") -> MsgGenerator:  # type: ignore
-        ...
+def test_generic_default_device_reference(empty_context: BlueskyContext):
+    def default_movable(mov: Movable[float] = inject("demo")) -> MsgGenerator:
+        yield from ()
 
     spec = empty_context._type_spec_for_function(default_movable)
     motor_ref = empty_context._reference(Movable[float])
@@ -457,28 +460,26 @@ class ConcreteStoppable(Stoppable):
     def name(self) -> str:
         return "Concrete"
 
-    def stop(self, success: bool = True) -> None:
+    def stop(self, success: bool = True):
         pass
 
 
-def test_concrete_type_conversion(empty_context: BlueskyContext) -> None:
+def test_concrete_type_conversion(empty_context: BlueskyContext):
     stoppable_ref = empty_context._reference(ConcreteStoppable)
     assert empty_context._convert_type(ConcreteStoppable) == stoppable_ref
 
 
-def test_concrete_method_annotation(empty_context: BlueskyContext) -> None:
+def test_concrete_method_annotation(empty_context: BlueskyContext):
     stoppable_ref = empty_context._reference(ConcreteStoppable)
 
-    def demo(named: ConcreteStoppable) -> None: ...
+    def demo(named: ConcreteStoppable): ...
 
     spec = empty_context._type_spec_for_function(demo)
     assert spec["named"][0] is stoppable_ref
     assert spec["named"][1].default_factory is None
 
 
-def test_str_default(
-    empty_context: BlueskyContext, sim_motor: SynAxis, alt_motor: SynAxis
-):
+def test_str_default(empty_context: BlueskyContext, sim_motor: Motor, alt_motor: Motor):
     movable_ref = empty_context._reference(Movable)
     empty_context.register_device(sim_motor)
     empty_context.register_plan(has_default_reference)
@@ -496,14 +497,14 @@ def test_str_default(
 
 
 def test_nested_str_default(
-    empty_context: BlueskyContext, sim_motor: SynAxis, alt_motor: SynAxis
+    empty_context: BlueskyContext, sim_motor: Motor, alt_motor: Motor
 ):
     movable_ref = empty_context._reference(Movable)
     empty_context.register_device(sim_motor)
     empty_context.register_plan(has_default_nested_reference)
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
-    assert spec["m"][0] == list[movable_ref]  # type: ignore
+    assert spec["m"][0] == list[movable_ref]
     assert (df := spec["m"][1].default_factory) and df() == [SIM_MOTOR_NAME]  # type: ignore
 
     assert has_default_nested_reference.__name__ in empty_context.plans
@@ -515,7 +516,7 @@ def test_nested_str_default(
     assert adapter.validate_python({"m": [ALT_MOTOR_NAME]}).m == [alt_motor]  # type: ignore
 
 
-def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:
+def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext):
     def a_plan(foo_bar: int, baz: str) -> MsgGenerator:
         if False:
             yield
@@ -525,7 +526,7 @@ def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext) -> None:
         empty_context.plans[a_plan.__name__].model(fooBar=1, baz="test")
 
 
-def test_generic_bounds_with_generic_base() -> None:
+def test_generic_bounds_with_generic_base():
     T = TypeVar("T")
 
     class Base(Generic[T]):
@@ -535,10 +536,10 @@ def test_generic_bounds_with_generic_base() -> None:
         pass
 
     derived_instance = Derived()
-    assert generic_bounds(derived_instance, Base) == (int,)  # type: ignore
+    assert generic_bounds(derived_instance, Base) == (int,)  #  type: ignore
 
 
-def test_generic_bounds_with_multiple_bases() -> None:
+def test_generic_bounds_with_multiple_bases():
     T = TypeVar("T")
 
     class Base1(Generic[T]):
@@ -551,11 +552,11 @@ def test_generic_bounds_with_multiple_bases() -> None:
         pass
 
     derived_instance = Derived()
-    assert generic_bounds(derived_instance, Base1) == (int,)  # type: ignore
+    assert generic_bounds(derived_instance, Base1) == (int,)  #  type: ignore
     assert generic_bounds(derived_instance, Base2) == ()  #  type: ignore
 
 
-def test_generic_bounds_with_no_bases() -> None:
+def test_generic_bounds_with_no_bases():
     class Base:
         pass
 
@@ -595,5 +596,5 @@ qualified_name_test_data = [
 
 
 @pytest.mark.parametrize("type,expected", qualified_name_test_data)
-def test_qualified_name_with_types(type: type, expected: str) -> None:
+def test_qualified_name_with_types(type: type, expected: str):
     assert qualified_name(type) == expected

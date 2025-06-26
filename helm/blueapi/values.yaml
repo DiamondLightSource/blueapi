@@ -2,44 +2,58 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   repository: ghcr.io/diamondlightsource/blueapi
-  pullPolicy: Always
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  # Do not set this to a package hash: https://github.com/DiamondLightSource/blueapi/issues/1046
   tag: ""
 
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
+# This is to override the chart name.
 nameOverride: ""
 fullnameOverride: ""
 
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
   # Specifies whether a service account should be created
   create: false
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
 
 podSecurityContext: {}
-# fsGroup: 2000
+  # fsGroup: 2000
 
 securityContext: {}
-# capabilities:
-#   drop:
-#   - ALL
-# readOnlyRootFilesystem: true
-# runAsNonRoot: true
-# runAsUser: 1000
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
 
-# Recommended for production to change service.type to ClusterIP and set up an Ingress
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
+  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
+  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 80
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
@@ -60,20 +74,40 @@ ingress:
   #      - chart-example.local
 
 resources: {}
-# We usually recommend not to specify default resources and to leave this as a conscious
-# choice for the user. This also increases chances charts run on environments with little
-# resources, such as Minikube. If you do want to specify resources, uncomment the following
-# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-# limits:
-#   cpu: 100m
-#   memory: 128Mi
-# requests:
-#   cpu: 100m
-#   memory: 128Mi
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
 
-initResources: {}
-# Can optionally specify separate resource constraints for the scratch setup container.
-# If left empty this defaults to the same as resources above.
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+
+# Additional volumes on the output Deployment definition.
+volumes:
+- name: worker-config
+  projected:
+    sources:
+    - configMap:
+        name: {{ include "blueapi.fullname" . }}-config
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts:
+- name: worker-config
+  mountPath: "/config"
+  readOnly: true
 
 nodeSelector: {}
 
@@ -81,13 +115,13 @@ tolerations: []
 
 affinity: {}
 
-hostNetwork: false # May be needed for talking to arcane protocols such as EPICS
+# blueapi specific fields
 
+# May be needed for EPICS
+hostNetwork: false 
+
+# If enabled the blueapi pod will restart on changes to any of its config
 restartOnConfigChange: true
-
-listener:
-  enabled: true
-  resources: {}
 
 # Additional envVars to mount to the pod as a String
 extraEnvVars: []
@@ -97,20 +131,25 @@ extraEnvVars: []
 #       name: rabbitmq-password
 #       key: rabbitmq-password
 
+# Configure tracing
 tracing:
   otlp:
     enabled: false
     protocol: http/protobuf
     server:
-      host: https://daq-services-jaeger # replace with central instance
+      # See note about hostNetwork
+      host: http://opentelemetry-collector.tracing
       port: 4318
 
 # Config for the worker goes here, will be mounted into a config file
 worker:
   api:
-    url: http://0.0.0.0:8000/ # Allow non-loopback traffic
+    # 0.0.0.0 required to allow non-loopback traffic
+    # If using hostNetwork, the port must be free on the host
+    url: http://0.0.0.0:8000/
   env:
     sources:
+      # modules (must be installed in the venv) to fetch devices/plans from
       - kind: deviceFunctions
         module: blueapi.startup.example_devices
       - kind: planFunctions
@@ -119,27 +158,39 @@ worker:
         module: dodal.plans
       - kind: planFunctions
         module: dodal.plan_stubs.wrapped
+  # Message bus configuration for returning status to GDA/forwarding documents downstream
   stomp:
     enabled: false
     auth:
       username: guest
       password: guest
     url: http://rabbitmq:61613/
+  # If initContainer is enabled the default branch of python projects in this section are installed
+  # into the venv *without their dependencies*
   scratch:
     root: /blueapi-plugins/scratch
     repositories: []
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
+  # Configure logging
   logging:
     level: "INFO"
     graylog:
       enabled: False
+      # This is the `dodal` input which will be renamed to blueapi
       url: http://graylog-log-target.diamond.ac.uk:12232/
+
+# Configure the initContainer that checks out the scratch configuration repositories
 initContainer:
   enabled: false
   persistentVolume:
+    # Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem
+    # If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container
     enabled: false
+    # May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release
     # existingClaimName: foo
 
 debug:
+  # If enabled, disables liveness and readiness probes, and does not start the service on startup
+  # This allows connecting to the pod and starting the service manually to allow debugging on the cluster
   enabled: false

@@ -380,8 +380,7 @@ def test_delete_current_environment(client: BlueapiClient):
             name="count",
             params={
                 "detectors": [
-                    "image_det",
-                    "current_det",
+                    "det",
                 ],
                 "num": 5,
             },
@@ -391,39 +390,17 @@ def test_delete_current_environment(client: BlueapiClient):
             name="spec_scan",
             params={
                 "detectors": [
-                    "image_det",
-                    "current_det",
+                    "det",
                 ],
-                "spec": Line("x", 0.0, 10.0, 2) * Line("y", 5.0, 15.0, 3),
+                "spec": Line("sim.x", 0.0, 10.0, 2) * Line("sim.y", 5.0, 15.0, 3),
             },
             instrument_session="cm12345-1",
         ),
         TaskRequest(
             name="set_absolute",
             params={
-                "movable": "dynamic_motor",
-                "value": "bar",
-            },
-            instrument_session="cm12345-1",
-        ),
-        TaskRequest(
-            name="motor_plan",
-            params={
-                "motor": "movable_motor",
-            },
-            instrument_session="cm12345-1",
-        ),
-        TaskRequest(
-            name="motor_plan",
-            params={
-                "motor": "dynamic_motor",
-            },
-            instrument_session="cm12345-1",
-        ),
-        TaskRequest(
-            name="dataclass_motor_plan",
-            params={
-                "motor": "data_class_motor",
+                "movable": "sim.x",
+                "value": "4.0",
             },
             instrument_session="cm12345-1",
         ),

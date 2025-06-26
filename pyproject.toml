@@ -40,7 +40,17 @@ license.file = "LICENSE"
 readme = "README.md"
 requires-python = ">=3.11"
 
-[project.optional-dependencies]
+[project.scripts]
+blueapi = "blueapi.cli:main"
+
+[project.urls]
+GitHub = "https://github.com/DiamondLightSource/blueapi"
+
+[[project.authors]] # Further authors may be added by duplicating this section
+email = "callum.forrester@diamond.ac.uk"
+name = "Callum Forrester"
+
+[dependency-groups]
 dev = [
     "copier",
     "myst-parser>=4.0.0",
@@ -68,16 +78,6 @@ dev = [
     "jwcrypto",
     "deepdiff",
 ]
-
-[project.scripts]
-blueapi = "blueapi.cli:main"
-
-[project.urls]
-GitHub = "https://github.com/DiamondLightSource/blueapi"
-
-[[project.authors]] # Further authors may be added by duplicating this section
-email = "callum.forrester@diamond.ac.uk"
-name = "Callum Forrester"
 
 
 [tool.setuptools_scm]

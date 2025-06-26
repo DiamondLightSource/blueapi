@@ -197,6 +197,7 @@ def test_get_devices(mock_runner: Mock, client: TestClient) -> None:
         "devices": [
             {
                 "name": "my-device",
+                "address": "my-device",
                 "protocols": [{"name": "Stoppable", "types": []}],
             }
         ]
@@ -213,6 +214,7 @@ def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "name": "my-device",
+        "address": "my-device",
         "protocols": [{"name": "Stoppable", "types": []}],
     }
 

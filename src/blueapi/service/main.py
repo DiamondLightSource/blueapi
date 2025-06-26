@@ -11,6 +11,7 @@ from fastapi import (
     Depends,
     FastAPI,
     HTTPException,
+    Query,
     Request,
     Response,
     status,
@@ -54,7 +55,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "0.0.10"
+REST_API_VERSION = "0.0.11"
 
 RUNNER: WorkerDispatcher | None = None
 
@@ -237,9 +238,18 @@ def get_plan_by_name(
 @start_as_current_span(TRACER)
 def get_devices(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    max_depth: Annotated[
+        int,
+        Query(
+            description="Maximum depth of children to return, -1 for all",
+            ge=0,
+            # https://github.com/fastapi/fastapi/discussions/13473
+            json_schema_extra={"description": None},
+        ),
+    ] = 0,
 ) -> DeviceResponse:
     """Retrieve information about all available devices."""
-    devices = runner.run(interface.get_devices)
+    devices = runner.run(interface.get_devices, max_depth)
     return DeviceResponse(devices=devices)
 
 

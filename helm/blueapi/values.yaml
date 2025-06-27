@@ -2,11 +2,9 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
-replicaCount: 1
-
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
+  # -- To use a container image that extends the blueapi one, set it here
   repository: ghcr.io/diamondlightsource/blueapi
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
@@ -52,11 +50,13 @@ securityContext: {}
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  # -- To make blueapi available on an IP outside of the cluster prior to an Ingress being created, change this to LoadBalancer
   type: ClusterIP
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 80
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+# -- Configuring and enabling an ingress allows blueapi to be served at a nicer address, e.g. ixx-blueapi.diamond.ac.uk
 ingress:
   enabled: false
   className: "nginx"
@@ -64,6 +64,8 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
+    # -- Request a host from https://jira.diamond.ac.uk/servicedesk/customer/portal/2/create/91
+    # of the form ixx-blueapi.diamond.ac.uk. Note: pathType: Prefix is required in Diamond's clusters
     - host: example.diamond.ac.uk
       paths:
         - path: /
@@ -73,6 +75,10 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
+# -- Sets the compute resources available to the pod.
+# When using debug mode or an internal PVC we recommend
+# limits.cpu: 2000m, limits.memory: 4000m
+# requests must be >= 0.1*limits
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -86,39 +92,46 @@ resources: {}
   #   memory: 128Mi
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+# -- Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively.
+# This is automatically disabled when in debug mode.
 livenessProbe:
   httpGet:
     path: /healthz
     port: http
+# -- Readiness probe, if configured kubernetes will not route traffic to this pod if failed consecutively.
+# This is automatically disabled when in debug mode.
 readinessProbe:
   httpGet:
     path: /healthz
     port: http
 
-# Additional volumes on the output Deployment definition.
+# -- Additional volumes on the output StatefulSet definition.
+# Define volumes from e.g. Secrets, ConfigMaps or the Filesystem
 volumes: []
 
-# Additional volumeMounts on the output Deployment definition.
+# -- Additional volumeMounts on the output StatefulSet definition.
+# Define how volumes are mounted to the container referenced by using the same name.
 volumeMounts:
 - name: worker-config
   mountPath: "/config"
   readOnly: true
 
+# -- May be required to run on specific nodes (e.g. the control machine)
 nodeSelector: {}
-
+# -- May be required to run on specific nodes (e.g. the control machine)
 tolerations: []
-
+# -- May be required to run on specific nodes (e.g. the control machine)
 affinity: {}
 
 # blueapi specific fields
 
-# May be needed for EPICS
+# -- May be needed for EPICS depending on gateway configuration
 hostNetwork: false 
 
-# If enabled the blueapi pod will restart on changes to any of its config
+# -- If enabled the blueapi pod will restart on changes to `worker`
 restartOnConfigChange: true
 
-# Additional envVars to mount to the pod as a String
+# -- Additional envVars to mount to the pod
 extraEnvVars: []
 # - name: RABBITMQ_PASSWORD
 #   valueFrom:
@@ -126,25 +139,24 @@ extraEnvVars: []
 #       name: rabbitmq-password
 #       key: rabbitmq-password
 
-# Configure tracing
+# -- Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters
 tracing:
   otlp:
     enabled: false
     protocol: http/protobuf
     server:
-      # See note about hostNetwork
       host: http://opentelemetry-collector.tracing
       port: 4318
 
-# Config for the worker goes here, will be mounted into a config file
+# -- Config for the worker goes here, will be mounted into a config file
 worker:
   api:
-    # 0.0.0.0 required to allow non-loopback traffic
+    # -- 0.0.0.0 required to allow non-loopback traffic
     # If using hostNetwork, the port must be free on the host
     url: http://0.0.0.0:8000/
   env:
+    # -- modules (must be installed in the venv) to fetch devices/plans from
     sources:
-      # modules (must be installed in the venv) to fetch devices/plans from
       - kind: deviceFunctions
         module: blueapi.startup.example_devices
       - kind: planFunctions
@@ -153,39 +165,39 @@ worker:
         module: dodal.plans
       - kind: planFunctions
         module: dodal.plan_stubs.wrapped
-  # Message bus configuration for returning status to GDA/forwarding documents downstream
+  # -- Message bus configuration for returning status to GDA/forwarding documents downstream
+  # Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret 
   stomp:
     enabled: false
     auth:
       username: guest
       password: guest
     url: http://rabbitmq:61613/
-  # If initContainer is enabled the default branch of python projects in this section are installed
+  # -- If initContainer is enabled the default branch of python projects in this section are installed
   # into the venv *without their dependencies*
   scratch:
     root: /blueapi-plugins/scratch
     repositories: []
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
-  # Configure logging
+  # -- Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`
   logging:
     level: "INFO"
     graylog:
       enabled: False
-      # This is the `dodal` input which will be renamed to blueapi
       url: http://graylog-log-target.diamond.ac.uk:12232/
 
-# Configure the initContainer that checks out the scratch configuration repositories
+# -- Configure the initContainer that checks out the scratch configuration repositories
 initContainer:
   enabled: false
   persistentVolume:
-    # Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem
+    # -- Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem
     # If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container
     enabled: false
-    # May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release
-    # existingClaimName: foo
+    # -- May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release
+    existingClaimName: ""
 
 debug:
-  # If enabled, disables liveness and readiness probes, and does not start the service on startup
+  # -- If enabled, disables liveness and readiness probes, and does not start the service on startup
   # This allows connecting to the pod and starting the service manually to allow debugging on the cluster
   enabled: false

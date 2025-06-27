@@ -103,7 +103,7 @@ opentelemetry-proto==1.32.1
 opentelemetry-sdk==1.32.1
 opentelemetry-semantic-conventions==0.53b1
 opentelemetry-util-http==0.53b1
-ophyd==1.10.7
+ophyd==1.10.6
 ophyd-async==0.10.0a3
 orderly-set==5.4.1
 orjson==3.10.18

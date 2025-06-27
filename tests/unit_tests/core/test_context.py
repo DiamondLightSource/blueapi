@@ -536,7 +536,7 @@ def test_generic_bounds_with_generic_base():
         pass
 
     derived_instance = Derived()
-    assert generic_bounds(derived_instance, Base) == (int,)  #  type: ignore
+    assert generic_bounds(derived_instance, Base) == (int,)  # type: ignore
 
 
 def test_generic_bounds_with_multiple_bases():
@@ -552,7 +552,7 @@ def test_generic_bounds_with_multiple_bases():
         pass
 
     derived_instance = Derived()
-    assert generic_bounds(derived_instance, Base1) == (int,)  #  type: ignore
+    assert generic_bounds(derived_instance, Base1) == (int,)  # type: ignore
     assert generic_bounds(derived_instance, Base2) == ()  #  type: ignore
 
 

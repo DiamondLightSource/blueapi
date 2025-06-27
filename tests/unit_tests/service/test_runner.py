@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Callable
 from multiprocessing.pool import Pool as PoolClass
 from typing import Any, Generic, TypeVar
 from unittest.mock import MagicMock, Mock, patch
@@ -8,7 +9,6 @@ from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
 )
-from ophyd import Callable
 from pydantic import BaseModel, ValidationError
 
 from blueapi.service import interface

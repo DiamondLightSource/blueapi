@@ -98,10 +98,8 @@ worker:
     url: http://0.0.0.0:8000/ # Allow non-loopback traffic
   env:
     sources:
-      - kind: deviceFunctions
-        module: blueapi.startup.example_devices
-      - kind: planFunctions
-        module: blueapi.startup.example_plans
+      # - kind: dodal
+      #   module: dodal.beamlines.adsim
       - kind: planFunctions
         module: dodal.plans
       - kind: planFunctions

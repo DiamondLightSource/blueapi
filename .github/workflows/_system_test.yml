@@ -19,6 +19,21 @@ jobs:
       - name: Install python packages
         uses: ./.github/actions/install_requirements
 
+      - name: Checkout simulated devices
+        uses: actions/checkout@v4
+        with:
+          repository: epics-containers/example-services
+          path: example-services
+
+      - name: Run docker compose
+        uses: hoverkraft-tech/compose-action@v2.2.0
+        with:
+          compose-file: "./example-services/compose.yaml"
+          services: |
+            bl01t-di-cam-01
+            bl01t-mo-sim-01
+            ca-gateway
+
       - name: Start RabbitMQ
         uses: namoshek/rabbitmq-github-action@d1d4455f4a8f72db66111c24cb0dc5654047a975 # v1
         with:
@@ -26,7 +41,11 @@ jobs:
           plugins: rabbitmq_stomp
 
       - name: Start Blueapi Server
-        run: blueapi -c ${{ github.workspace }}/tests/unit_tests/example_yaml/valid_stomp_config.yaml serve &
+        env:
+          EPICS_CA_NAME_SERVERS: 127.0.0.1:5094
+          EPICS_PVA_NAME_SERVERS: 127.0.0.1:5095
+          EPICS_CA_ADDR_LIST: 127.0.0.1:5094
+        run: blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
 
       - name: Run tests
         run: tox -e system-test

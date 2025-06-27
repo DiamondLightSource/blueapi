@@ -15,25 +15,48 @@ jobs:
     with:
       tox: pre-commit,type-checking
 
-  test:
+  uv_test:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        runs-on: ["ubuntu-latest"] # can add windows-latest, macos-latest
         python-version: ["3.11", "3.12"]
-        include:
-          # Include one that runs in the dev environment
-          - runs-on: "ubuntu-latest"
-            python-version: "dev"
-      fail-fast: false
-    uses: ./.github/workflows/_test.yml
-    with:
-      runs-on: ${{ matrix.runs-on }}
-      python-version: ${{ matrix.python-version }}
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    steps:
+      - name: Setup project
+        uses: ./.github/actions/install_requirements
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Unit tests
+        run: uv run tox -e tests
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5
+        with:
+          name: ${{ matrix.python-version }}/ubuntu-latest
+          files: cov.xml
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   system-test:
-    uses: ./.github/workflows/_system_test.yml
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup project
+        uses: ./.github/actions/install_requirements
+        with:
+          python-version: 3.12
+
+      - name: Start RabbitMQ
+        uses: namoshek/rabbitmq-github-action@d1d4455f4a8f72db66111c24cb0dc5654047a975 # v1
+        with:
+          ports: "61613:61613"
+          plugins: rabbitmq_stomp
+
+      - name: Start Blueapi Server
+        run: uv run blueapi -c ${{ github.workspace }}/tests/unit_tests/example_yaml/valid_stomp_config.yaml serve &
+
+      - name: Run tests
+        run: uv run tox -e system-test
 
   container:
     needs: test

@@ -157,10 +157,8 @@ worker:
   env:
     # -- modules (must be installed in the venv) to fetch devices/plans from
     sources:
-      - kind: deviceFunctions
-        module: blueapi.startup.example_devices
-      - kind: planFunctions
-        module: blueapi.startup.example_plans
+      # - kind: dodal
+      #   module: dodal.beamlines.adsim
       - kind: planFunctions
         module: dodal.plans
       - kind: planFunctions

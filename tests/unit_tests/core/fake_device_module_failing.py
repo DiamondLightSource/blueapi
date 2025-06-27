@@ -1,5 +1,5 @@
-from ophyd import EpicsMotor
+from ophyd_async.epics.motor import Motor
 
 
-def failing_device() -> EpicsMotor:
+def failing_device() -> Motor:
     raise TimeoutError("FooBar")

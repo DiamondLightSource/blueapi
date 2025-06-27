@@ -11,7 +11,7 @@ from dodal.common.beamlines.beamline_utils import (
     get_path_provider,
     set_path_provider,
 )
-from ophyd.sim import SynAxis
+from ophyd_async.epics.motor import Motor
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi.client.numtracker import NumtrackerClient
@@ -145,7 +145,7 @@ class MyDevice(Stoppable):
 def test_get_devices(context_mock: MagicMock):
     context = BlueskyContext()
     context.register_device(MyDevice(name="my_device"))
-    context.register_device(SynAxis(name="my_axis"))
+    context.register_device(Motor("FOO:", name="my_axis"))
     context_mock.return_value = context
 
     assert interface.get_devices() == [
@@ -153,15 +153,14 @@ def test_get_devices(context_mock: MagicMock):
         DeviceModel(
             name="my_axis",
             protocols=[
-                ProtocolInfo(name="Checkable"),
-                ProtocolInfo(name="Movable"),
-                ProtocolInfo(name="Pausable"),
-                ProtocolInfo(name="Readable"),
-                ProtocolInfo(name="Stageable"),
-                ProtocolInfo(name="Stoppable"),
-                ProtocolInfo(name="Subscribable"),
-                ProtocolInfo(name="Configurable"),
-                ProtocolInfo(name="Triggerable"),
+                ProtocolInfo(name="Flyable", types=[]),
+                ProtocolInfo(name="Movable", types=[]),
+                ProtocolInfo(name="Readable", types=[]),
+                ProtocolInfo(name="Stageable", types=[]),
+                ProtocolInfo(name="Stoppable", types=[]),
+                ProtocolInfo(name="Subscribable", types=["float"]),
+                ProtocolInfo(name="Configurable", types=[]),
+                ProtocolInfo(name="Device", types=[]),
             ],
         ),
     ]

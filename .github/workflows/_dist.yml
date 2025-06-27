@@ -15,7 +15,7 @@ jobs:
       - name: Build sdist and wheel
         run: >
           export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) &&
-          pipx run build
+          uv build
 
       - name: Upload sdist and wheel as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -24,11 +24,12 @@ jobs:
           path: dist
 
       - name: Check for packaging errors
-        run: pipx run twine check --strict dist/*
+        run: uvx twine check --strict dist/*
 
       - name: Install produced wheel
         uses: ./.github/actions/install_requirements
         with:
+          # TODO: figure out what's going on
           pip-install: dist/*.whl
 
       - name: Test module --version works using the installed wheel

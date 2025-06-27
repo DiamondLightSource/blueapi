@@ -1,7 +1,7 @@
 apiVersion: v2
 name: blueapi
 home: https://github.com/DiamondLightSource/blueapi
-description: A helm chart deploying a worker pod that runs Bluesky plans
+description: A Helm chart deploying a worker pod that runs Bluesky plans
 
 # A chart can be either an 'application' or a 'library' chart.
 #
@@ -13,8 +13,11 @@ description: A helm chart deploying a worker pod that runs Bluesky plans
 # pipeline. Library charts do not define any templates and therefore cannot be deployed.
 type: application
 
-# This is the chart version. This version number should be incremented each time you make changes
-# to the chart and its templates, including the app version.
+# This is the chart version. This version number is incremented by the release process.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-# This is updated automatically by CI, the appVersion is automatically inserted by CI
 version: 0.1.0
+
+# This is the version number of the application being deployed. This version number is incremented by the release process.
+# Versions are not expected to follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+appVersion: "0.1.0"

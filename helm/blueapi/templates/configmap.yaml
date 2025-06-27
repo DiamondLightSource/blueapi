@@ -18,3 +18,18 @@ data:
   OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: {{ .Values.tracing.otlp.protocol | default "http/protobuf" }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ required "OTLP export enabled but server address not set" .Values.tracing.otlp.server.host }}:{{ .Values.tracing.otlp.server.port | default 4318 }}
 {{ end }}
+
+---
+
+{{- if .Values.initContainer.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blueapi.fullname" . }}-init-config
+data:
+  init_config.yaml: |-
+    scratch:
+      {{- toYaml .Values.worker.scratch | nindent 6 }}
+{{- end }}
+
+---

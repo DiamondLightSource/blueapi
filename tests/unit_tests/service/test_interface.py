@@ -513,7 +513,9 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
 
 
 @patch("blueapi.client.numtracker.NumtrackerClient.create_scan")
-def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_scan):
+async def test_numtracker_create_scan_called_with_arguments_from_metadata(
+    mock_create_scan,
+):
     conf = ApplicationConfig(
         numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
         env=EnvironmentConfig(
@@ -526,16 +528,25 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
 
     headers = {"a": "b"}
     interface._try_configure_numtracker(headers)
-    interface._update_scan_num(ctx.run_engine.md)
+    await interface._update_scan_num(ctx.run_engine.md)
 
     mock_create_scan.assert_called_once_with("ab123", "p46")
 
     interface.teardown()
 
 
-def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
-    mock_numtracker_server,
+async def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
+    httpx_mock,
+    nt_query,
+    nt_response,
 ):
+    httpx_mock.add_response(
+        method="POST",
+        url="https://numtracker-example.com/graphql",
+        match_json=nt_query,
+        status_code=200,
+        json=nt_response,
+    )
     conf = ApplicationConfig(
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
@@ -545,7 +556,7 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     interface.setup(conf)
     ctx = interface.context()
 
-    interface._update_scan_num(ctx.run_engine.md)
+    await interface._update_scan_num(ctx.run_engine.md)
 
     assert (
         ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"

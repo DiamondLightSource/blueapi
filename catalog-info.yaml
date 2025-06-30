@@ -27,7 +27,7 @@ metadata:
 spec:
   type: openapi
   lifecycle: production
-  owner: user:vid18871
+  owner: group:data-acquisition
   definition:
     $text: ./docs/reference/openapi.yaml
 ---
@@ -42,6 +42,6 @@ metadata:
 spec:
   type: asyncapi
   lifecycle: production
-  owner: user:vid18871
+  owner: group:data-acquisition
   definition:
     $text: ./docs/reference/asyncapi.yaml

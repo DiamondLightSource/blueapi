@@ -10,7 +10,7 @@ on:
 name: SonarCloud check
 
 jobs:
-  sonarcloud:
+  sonarqube:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -18,10 +18,9 @@ jobs:
           # Disabling shallow clone is recommended for improving relevancy of reporting
           fetch-depth: 0
 
-      - name: SonarCloud Scan
-        # Skip SonarCloud Scan if the pull request is from a forked repository
+      - name: SonarQube Scan
+        # Skip SonarQube Scan if the pull request is from a forked repository
         if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: sonarsource/sonarcloud-github-action@ffc3010689be73b8e5ae0c57ce35968afd7909e8 # v5.0.0
+        uses: sonarsource/sonarqube-scan-action@5.2.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_ORG_KEY: ${{ secrets.SONAR_ORG_KEY }}

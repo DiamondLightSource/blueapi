@@ -3,13 +3,14 @@
 # Version SHA has been removed, see: https://github.com/DiamondLightSource/blueapi/issues/1053
 ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION} AS developer
+COPY --from=ghcr.io/astral-sh/uv:0.7.17 /uv /uvx /bin/
 
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update && apt-get install -y --no-install-recommends \
     graphviz \
     && rm -rf /var/lib/apt/lists/*
 
-# Install helm for the dev container. This is the recommended 
+# Install helm for the dev container. This is the recommended
 # approach per the docs: https://helm.sh/docs/intro/install
 RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3; \
     chmod 700 get_helm.sh; \
@@ -18,16 +19,22 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
 RUN helm plugin install https://github.com/losisin/helm-values-schema-json.git
 
 # Set up a virtual environment and put it in PATH
-RUN python -m venv /venv
-ENV PATH=/venv/bin:$PATH
+# TODO: uv setup env
+ENV UV_PROJECT_ENVIRONMENT=/venv
+# TODO: uv cache
+RUN mkdir -p /.cache/uv; chmod 777 /.cache/uv
+ENV UV_CACHE_DIR=/.cache/uv
+# RUN python -m venv /venv
+# ENV PATH=/venv/bin:$PATH
 
 # The build stage installs the context into the venv
 FROM developer AS build
-RUN mkdir -p /.cache/pip; chmod o+wrX /.cache/pip
 # Requires buildkit 0.17.0
 COPY --chmod=o+wrX . /workspaces/blueapi
 WORKDIR /workspaces/blueapi
-RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
+# TODO: uv sync
+RUN uv sync --locked
+# RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
 
 
 FROM build AS debug
@@ -43,8 +50,11 @@ RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
 RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 
 # Make editable and debuggable
-RUN pip install debugpy
-RUN pip install -e .
+# TODO: uv tool install debugpy
+RUN uv tool install debugpy
+RUN uv tool install --editable .
+# RUN pip install debugpy
+# RUN pip install -e .
 
 # Alternate entrypoint to allow devcontainer to attach
 ENTRYPOINT [ "/bin/bash", "-c", "--" ]
@@ -58,9 +68,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime
     git \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=build --chmod=o+wrX /venv/ /venv/
-COPY --from=build --chmod=o+wrX /.cache/pip /.cache/pip
+# TODO: Update cache locations
+COPY --from=build --chmod=777 /venv/ /venv/
+COPY --from=build --chmod=777 /.cache/uv /.cache/uv
+COPY --from=build --chmod=777 /workspaces/blueapi /workspaces/blueapi
 ENV PATH=/venv/bin:$PATH
+ENV UV_CACHE_DIR=/.cache/uv
 ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
 
 # For this pod to understand finding user information from LDAP

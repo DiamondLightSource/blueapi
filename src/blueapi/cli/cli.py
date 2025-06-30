@@ -37,8 +37,6 @@ from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import SourceInfo, TaskRequest
 from blueapi.utils.caching import DiskCache
-from blueapi.service.authentication import SessionCacheManager, SessionManager
-from blueapi.service.model import SourceInfo, TaskRequest
 from blueapi.worker import ProgressEvent, WorkerEvent
 
 from .scratch import setup_scratch
@@ -254,7 +252,7 @@ def set_instrument_session(obj: dict[str, Any], instrument_session: str) -> None
         Instrument session associated with running the plan,
         used to tell blueapi where to store any data and as a security check:
         the session must be valid and active and you must be a member of it."""),
-    required=True,
+    default=None,
 )
 @check_connection
 @click.pass_obj
@@ -264,7 +262,7 @@ def run_plan(
     parameters: str | None,
     timeout: float | None,
     foreground: bool,
-    instrument_session: str,
+    instrument_session: str | None,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]

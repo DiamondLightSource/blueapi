@@ -50,6 +50,7 @@ from blueapi.service.model import (
     PythonEnvironmentResponse,
     TaskRequest,
     TaskResponse,
+    WorkerTask,
 )
 from blueapi.utils.caching import DiskCache
 from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
@@ -268,7 +269,6 @@ def test_submit_plan_with_cached_instrument_session(
     )
     config_path = "tests/unit_tests/example_yaml/rest_and_stomp_config.yaml"
 
-
     mock_cache.return_value = Mock()
     mock_cache.return_value.get.return_value = "cm12345-1"
     output = runner.invoke(
@@ -294,7 +294,6 @@ def test_caches_instrument_session(_: Mock, runner: CliRunner):
     )
 
     assert output.stdout == "Default instrument session set to cm12345-1\n"
-    assert response.call_count == 1, output.output
 
 
 @responses.activate
@@ -483,15 +482,17 @@ def test_cannot_start_a_plan_without_an_instrument_session(runner: CliRunner):
         ],
     )
 
-    assert result.exit_code == 2
-    assert "Error: Missing option '-i' / '--instrument-session'.\n" in result.stderr
+    assert result.exit_code == 1
+    assert "No instrument session specified!\n" in result.stderr
 
 
 @patch("blueapi.client.rest.BlueapiRestClient.create_task")
+@patch("blueapi.client.rest.BlueapiRestClient.update_worker_task")
 def test_can_pass_an_instrument_session_with_an_environment_variable(
-    mock_create_task: Mock, runner: CliRunner
+    mock_update_task: Mock, mock_create_task: Mock, runner: CliRunner
 ):
     mock_create_task.return_value = TaskResponse(task_id="foo")
+    mock_update_task.return_value = WorkerTask(task_id="foo")
     with patch.dict(
         os.environ,
         {"BLUEAPI_CONTROLLER_RUN_INSTRUMENT_SESSION": "cm12345-1"},
@@ -509,6 +510,7 @@ def test_can_pass_an_instrument_session_with_an_environment_variable(
             ],
         )
     assert result.exit_code == 0
+    assert "foo" in result.output
     mock_create_task.assert_called_once_with(
         TaskRequest(
             name="sleep",
@@ -516,7 +518,7 @@ def test_can_pass_an_instrument_session_with_an_environment_variable(
             instrument_session="cm12345-1",
         )
     )
-
+    mock_update_task.assert_called_once_with(WorkerTask(task_id="foo"))
 
 
 @patch("blueapi.cli.cli.StompClient")

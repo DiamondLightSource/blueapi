@@ -45,8 +45,6 @@ from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
-FAKE_INSTRUMENT_SESSION = "cm12345-1"
-
 
 @pytest.fixture
 def mock_connection() -> Mock:

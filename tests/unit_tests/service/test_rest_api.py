@@ -463,7 +463,6 @@ def test_get_task(mock_runner: Mock, client: TestClient):
         "task": {
             "name": "third_task",
             "params": {},
-
             "metadata": {
                 "foo": "bar",
             },

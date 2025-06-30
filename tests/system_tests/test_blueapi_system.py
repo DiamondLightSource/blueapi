@@ -29,7 +29,6 @@ from blueapi.service.model import (
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task_worker import TrackableTask
 
-
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
 
 _SIMPLE_TASK = TaskRequest(
@@ -41,7 +40,6 @@ _LONG_TASK = TaskRequest(
     name="sleep",
     params={"time": 1.0},
     instrument_session=FAKE_INSTRUMENT_SESSION,
-
 )
 
 _DATA_PATH = Path(__file__).parent
@@ -401,7 +399,6 @@ def test_delete_current_environment(client: BlueapiClient):
         TaskRequest(
             name="set_absolute",
             params={
-
                 "movable": "sim.x",
                 "value": "4.0",
             },

@@ -98,12 +98,26 @@ livenessProbe:
   httpGet:
     path: /healthz
     port: http
+  failureThreshold: 3
+  periodSeconds: 10
+
 # -- Readiness probe, if configured kubernetes will not route traffic to this pod if failed consecutively.
 # This is automatically disabled when in debug mode.
 readinessProbe:
   httpGet:
     path: /healthz
     port: http
+
+# -- A more lenient livenessProbe to allow the service to start fully.
+# This is automatically disabled when in debug mode.
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: liveness-port
+  failureThreshold: 5
+  periodSeconds: 10
+
+
 
 # -- Additional volumes on the output StatefulSet definition.
 # Define volumes from e.g. Secrets, ConfigMaps or the Filesystem

@@ -39,13 +39,13 @@ podLabels: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
   # capabilities:
   #   drop:
   #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
@@ -76,20 +76,23 @@ ingress:
   #      - chart-example.local
 
 # -- Sets the compute resources available to the pod.
-# When using debug mode or an internal PVC we recommend
-# limits.cpu: 2000m, limits.memory: 4000m
-# requests must be >= 0.1*limits
-resources: {}
+# These defaults are appropriate when using debug mode or an internal PVC and therefore
+# running VS Code server in the pod.
+# In the Diamond cluster, requests must be >= 0.1*limits
+# When not using either of the above, the limits may be lowered.
+# When idle but connected, blueapi consumes ~400MB of memory and 1% cpu
+# and may struggle when allocated less.
+resources:
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+  limits:
+    cpu: 2000m
+    memory: 4000Mi
+  requests:
+    cpu: 200m
+    memory: 400Mi
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 # -- Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively.
@@ -102,11 +105,15 @@ livenessProbe:
   periodSeconds: 10
 
 # -- Readiness probe, if configured kubernetes will not route traffic to this pod if failed consecutively.
+# This could allow the service time to recover if it is being overwhelmed by traffic, but without the
+# to ability to load balance or scale up/outwards, upstream services will need to know to back off.
 # This is automatically disabled when in debug mode.
-readinessProbe:
-  httpGet:
-    path: /healthz
-    port: http
+readinessProbe: {}
+  # httpGet:
+  #   path: /healthz
+  #   port: http
+  # failureThreshold: 2
+  # periodSeconds: 10
 
 # -- A more lenient livenessProbe to allow the service to start fully.
 # This is automatically disabled when in debug mode.

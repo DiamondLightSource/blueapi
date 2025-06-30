@@ -444,7 +444,12 @@ def test_get_task(mock_runner: Mock, client: TestClient):
     task_id = str(uuid.uuid4())
     task = TrackableTask(
         task_id=task_id,
-        task=Task(name="third_task"),
+        task=Task(
+            name="third_task",
+            metadata={
+                "foo": "bar",
+            },
+        ),
     )
 
     mock_runner.run.return_value = task
@@ -458,7 +463,10 @@ def test_get_task(mock_runner: Mock, client: TestClient):
         "task": {
             "name": "third_task",
             "params": {},
-            "metadata": {},
+
+            "metadata": {
+                "foo": "bar",
+            },
         },
         "task_id": f"{task_id}",
     }

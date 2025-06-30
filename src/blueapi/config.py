@@ -84,10 +84,6 @@ class EnvironmentConfig(BlueapiBaseModel):
     """
 
     sources: list[Source] = [
-        Source(
-            kind=SourceKind.DEVICE_FUNCTIONS, module="blueapi.startup.example_devices"
-        ),
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="blueapi.startup.example_plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
     ]

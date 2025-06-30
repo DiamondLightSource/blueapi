@@ -9,6 +9,8 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from bluesky.protocols import Movable, Status
+from bluesky.utils import MsgGenerator
+from dodal.common import inject
 from dodal.common.types import UpdatingPathProvider
 from observability_utils.tracing import (
     JsonObjectSpanExporter,
@@ -17,10 +19,9 @@ from observability_utils.tracing import (
 from ophyd_async.core import AsyncStatus
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
-from blueapi.core import BlueskyContext, EventStream, MsgGenerator
+from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.worker import (
-    ProgressEvent,
     Task,
     TaskStatus,
     TaskWorker,
@@ -312,26 +313,6 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
     ]
 
 
-def test_no_additional_progress_events_after_complete(worker: TaskWorker):
-    """
-    See https://github.com/bluesky/ophyd/issues/1115
-    """
-
-    progress_events: list[ProgressEvent] = []
-    worker.progress_events.subscribe(lambda event, id: progress_events.append(event))
-
-    task: Task = Task(name="move", params={"moves": {"additional_status_device": 5.0}})
-    task_id = worker.submit_task(task)
-    begin_task_and_wait_until_complete(worker, task_id)
-
-    # Extract all the display_name fields from the events
-    list_of_dict_keys = [pe.statuses.values() for pe in progress_events]
-    status_views = [item for sublist in list_of_dict_keys for item in sublist]
-    display_names = [view.display_name for view in status_views]
-
-    assert "STATUS_AFTER_FINISH" not in display_names
-
-
 @patch("queue.Queue.put_nowait")
 def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: TaskWorker):
     def raise_full(item):
@@ -440,7 +421,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     task: Task | None = None,
     timeout: float = 5.0,
 ) -> None:
-    default_task = Task(name="count", params={"detectors": {"image_det"}, "num": 1})
+    default_task = Task(name="count", params={"detectors": {"motor"}, "num": 1})
     task = task or default_task
 
     event_streams: list[EventStream[Any, int]] = [
@@ -649,7 +630,9 @@ def test_injected_devices_are_found(
     fake_device: FakeDevice,
     context: BlueskyContext,
 ):
-    def injected_device_plan(dev: FakeDevice = fake_device.name) -> MsgGenerator:  # type: ignore
+    def injected_device_plan(
+        dev: FakeDevice = inject(fake_device.name),
+    ) -> MsgGenerator:
         yield from ()
 
     context.register_plan(injected_device_plan)
@@ -660,7 +643,7 @@ def test_injected_devices_are_found(
 def test_missing_injected_devices_fail_early(
     context: BlueskyContext,
 ):
-    def missing_injection(dev: FakeDevice = "does_not_exist") -> MsgGenerator:  # type: ignore
+    def missing_injection(dev: FakeDevice = inject("does_not_exist")) -> MsgGenerator:
         yield from ()
 
     context.register_plan(missing_injection)

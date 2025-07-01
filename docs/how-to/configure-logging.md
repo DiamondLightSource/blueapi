@@ -12,7 +12,7 @@ When logging to [Graylog](https://graylog.org) is enabled, BlueAPI will also con
 :::
 
 An example logging config is shown below:
-```
+```yaml
   logging:
     level: "INFO"
     graylog:

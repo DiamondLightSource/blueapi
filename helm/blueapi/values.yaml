@@ -40,7 +40,8 @@ podSecurityContext: {}
   # fsGroup: 2000
 
 securityContext:
-  readOnlyRootFilesystem: true
+  # https://github.com/DiamondLightSource/blueapi/issues/1096
+  # readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 1000
   # capabilities:
@@ -108,12 +109,12 @@ livenessProbe:
 # This could allow the service time to recover if it is being overwhelmed by traffic, but without the
 # to ability to load balance or scale up/outwards, upstream services will need to know to back off.
 # This is automatically disabled when in debug mode.
-readinessProbe: {}
-  # httpGet:
-  #   path: /healthz
-  #   port: http
-  # failureThreshold: 2
-  # periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  failureThreshold: 2
+  periodSeconds: 10
 
 # -- A more lenient livenessProbe to allow the service to start fully.
 # This is automatically disabled when in debug mode.

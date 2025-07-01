@@ -33,6 +33,13 @@
             ]
         }
     },
+    "mounts": [
+        {
+            "source": "${localEnv:HOME}/.cache/uv",
+            "target": "/.cache/uv",
+            "type": "bind"
+        }
+    ],
     "features": {
         // add in eternal history and other bash features
         "ghcr.io/diamondlightsource/devcontainer-features/bash-config:1": {}

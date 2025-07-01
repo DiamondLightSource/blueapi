@@ -8,7 +8,7 @@ from unittest.mock import ANY
 
 import pytest
 import yaml
-from pydantic import HttpUrl, Secret, TypeAdapter
+from pydantic import Secret, TypeAdapter
 
 from blueapi.config import (
     ApplicationConfig,
@@ -17,6 +17,7 @@ from blueapi.config import (
     ScratchConfig,
     ScratchRepository,
     StompConfig,
+    StompUrl,
 )
 
 BLUEAPI_HELM_CHART = Path(__file__).parent.parent.parent / "helm" / "blueapi"
@@ -64,7 +65,7 @@ LOW_RESOURCES = {
         ApplicationConfig(
             stomp=StompConfig(
                 enabled=True,
-                url=HttpUrl("http://example.com:515/"),
+                url=StompUrl("tcp://example.com:515/"),
             ),
             logging=LoggingConfig(level="CRITICAL"),
             oidc=OIDCConfig(

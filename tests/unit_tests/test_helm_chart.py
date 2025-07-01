@@ -139,7 +139,7 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
 def test_helm_chart_creates_init_config_map(values: Values):
     manifests = render_chart(values=values)
     rendered_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        manifests["ConfigMap"]["blueapi-init-config"]["data"]["init_config.yaml"]
     )
     assert rendered_config["scratch"] == values["worker"]["scratch"]
 
@@ -333,7 +333,7 @@ def test_worker_scratch_config_used_when_init_container_enabled():
         manifests["ConfigMap"]["blueapi-config"]["data"]["config.yaml"]
     )
     init_config = yaml.safe_load(
-        manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+        manifests["ConfigMap"]["blueapi-init-config"]["data"]["init_config.yaml"]
     )
     type_adapter = TypeAdapter(ApplicationConfig)
 
@@ -589,11 +589,11 @@ def test_persistent_volume_claim_exists(
     )
 
     persistent_volume_claim = {
-        "scratch-": {
+        "scratch-0.1.0": {
             "apiVersion": "v1",
             "kind": "PersistentVolumeClaim",
             "metadata": {
-                "name": "scratch-",
+                "name": "scratch-0.1.0",
                 "annotations": {"helm.sh/resource-policy": "keep"},
             },
             "spec": {
@@ -832,7 +832,7 @@ def test_scratch_volume_uses_correct_claimName(
         assert claim_name == existingClaimName
         assert "PersistentVolumeClaim" not in manifests
     else:
-        assert claim_name == "scratch-"
+        assert claim_name == "scratch-0.1.0"
         assert claim_name in manifests["PersistentVolumeClaim"]
 
 
@@ -848,7 +848,7 @@ def worker_config_volume():
 def init_config_volume():
     return {
         "name": "init-config",
-        "projected": {"sources": [{"configMap": {"name": "blueapi-initconfig"}}]},
+        "projected": {"sources": [{"configMap": {"name": "blueapi-init-config"}}]},
     }
 
 
@@ -1094,6 +1094,8 @@ def render_chart(
 def group_manifests(ungrouped: Iterable[Mapping[str, Any]]) -> GroupedManifests:
     groups = {}
     for manifest in ungrouped:
+        if manifest is None:
+            continue
         name = manifest["metadata"]["name"]
         kind = manifest["kind"]
         group = groups.setdefault(kind, {})
@@ -1138,8 +1140,119 @@ def test_init_container_config_copied_from_worker_when_enabled():
     )
     init_config = ApplicationConfig.model_validate(
         yaml.safe_load(
-            manifests["ConfigMap"]["blueapi-initconfig"]["data"]["initconfig.yaml"]
+            manifests["ConfigMap"]["blueapi-init-config"]["data"]["init_config.yaml"]
         )
     )
 
     assert config.scratch == init_config.scratch
+
+
+@pytest.mark.parametrize("service_port", [80, 800])
+@pytest.mark.parametrize("service_type", ["LoadBalancer", "ClusterIP"])
+def test_service_created(service_type: str, service_port: int):
+    manifests = render_chart(
+        values={
+            "service": {"type": service_type, "port": service_port},
+        }
+    )
+    spec = manifests["Service"]["blueapi"]["spec"]
+    assert spec["type"] == service_type
+    assert spec["ports"][0] == {
+        "name": "http",
+        "port": service_port,
+        "protocol": "TCP",
+        "targetPort": "http",
+    }
+
+
+@pytest.mark.parametrize("ingress_host", ["blueapi.diamond.ac.uk", "ixx.diamond.ac.uk"])
+@pytest.mark.parametrize("service_type", ["LoadBalancer", "ClusterIP"])
+@pytest.mark.parametrize("service_port", [80, 800])
+def test_ingress_created(service_type: str, service_port: int, ingress_host: str):
+    manifests = render_chart(
+        values={
+            "service": {"type": service_type, "port": service_port},
+            "ingress": {
+                "enabled": True,
+                "hosts": [
+                    {
+                        "host": ingress_host,
+                        "paths": [{"path": "/", "pathType": "Prefix"}],
+                    }
+                ],
+            },
+        }
+    )
+    spec = manifests["Ingress"]["blueapi"]["spec"]
+    assert spec["ingressClassName"] == "nginx"
+    assert spec["rules"][0] == {
+        "host": ingress_host,
+        "http": {
+            "paths": [
+                {
+                    "path": "/",
+                    "pathType": "Prefix",
+                    "backend": {
+                        "service": {
+                            "name": "blueapi",
+                            "port": {"number": service_port},
+                        }
+                    },
+                }
+            ]
+        },
+    }
+
+
+def test_ingress_not_created():
+    manifests = render_chart(
+        values={
+            "ingress": {"enabled": False},
+        }
+    )
+    assert "Ingress" not in manifests
+
+
+@pytest.mark.parametrize("service_port", [80, 800])
+@pytest.mark.parametrize(
+    "worker_api_url",
+    [
+        "https://0.0.0.0",
+        "http://0.0.0.0",
+        "http://0.0.0.0:800",
+        "https://0.0.0.0:800",
+        None,
+    ],
+)
+def test_service_linked_to_api(worker_api_url: str | None, service_port: int):
+    manifests = render_chart(
+        values={
+            "service": {"port": service_port},
+            "worker": {"api": {"url": worker_api_url}} if worker_api_url else {},
+        }
+    )
+    service_spec = manifests["Service"]["blueapi"]["spec"]
+    assert service_spec["ports"][0] == {
+        "name": "http",
+        "port": service_port,
+        "protocol": "TCP",
+        "targetPort": "http",
+    }
+
+    expected_container_port = {
+        "https://0.0.0.0": 443,
+        "http://0.0.0.0": 80,
+        "http://0.0.0.0:800": 800,
+        "https://0.0.0.0:800": 800,
+        None: 8000,
+    }
+
+    container_ports = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "containers"
+    ][0]["ports"]
+    assert len(container_ports) == 1
+    assert container_ports[0] == {
+        "name": "http",
+        "containerPort": expected_container_port[worker_api_url],
+        "protocol": "TCP",
+    }

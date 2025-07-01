@@ -5,7 +5,6 @@ metadata:
   labels:
     {{- include "blueapi.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       {{- include "blueapi.selectorLabels" . | nindent 6 }}
@@ -22,17 +21,28 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "blueapi.selectorLabels" . | nindent 8 }}
+        {{- include "blueapi.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
-      hostNetwork: {{ .Values.hostNetwork }}
+      {{- if .Values.hostNetwork }}      
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "blueapi.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       volumes:
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       - name: worker-config
         projected:
           sources:
@@ -43,7 +53,7 @@ spec:
         projected:
           sources:
           - configMap:
-              name: {{ include "blueapi.fullname" . }}-initconfig
+              name: {{ include "blueapi.fullname" . }}-init-config
       - name: venv
         emptyDir:
           sizeLimit: 5Gi
@@ -65,7 +75,7 @@ spec:
       - name: nslcd  # Shared volume between main and sidecar container
         emptyDir:
           sizeLimit: 5Mi
-      {{- end }}      
+      {{- end }}
       {{- if .Values.initContainer.enabled }}
       initContainers:
       - name: setup-scratch
@@ -73,11 +83,11 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources:
           {{- .Values.initResources | default .Values.resources | toYaml | nindent 12 }}
-        command: [/bin/sh, -c]
+        command: ["/bin/sh", "-c"]
         args:
           - |
             echo "Setting up scratch area"
-            blueapi -c /config/initconfig.yaml setup-scratch
+            blueapi -c /config/init_config.yaml setup-scratch
             if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
             echo "Exporting venv as artefact"
             cp -r /venv/* /artefacts
@@ -95,12 +105,13 @@ spec:
             mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
           {{- end }}
-
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary "-debug" "" .Values.debug.enabled }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -116,12 +127,14 @@ spec:
               containerPort: 8000
               {{- end }}
               protocol: TCP
+          {{- with .Values.resources }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
-            - name: worker-config
-              mountPath: "/config"
-              readOnly: true
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
             {{- if .Values.initContainer.enabled }}
             {{- if .Values.initContainer.persistentVolume.enabled }}
             - name: scratch
@@ -145,6 +158,18 @@ spec:
             - "-c"
             - "/config/config.yaml"
             - "serve"
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- end }}
           envFrom:
             - configMapRef:

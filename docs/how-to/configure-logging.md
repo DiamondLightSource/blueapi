@@ -26,7 +26,7 @@ With this configuration, all logs at INFO level or above will be logged to both 
 # Instrumenting Libraries
 To instrument to a custom module in BlueAPI, instantiate a logger from the [standard library logging package, then use any of its log methods](https://docs.python.org/3/library/logging.html#logger-objects).
 
-BlueAPI is written to intercept logs from any python code it executes.
+BlueAPI is configured to handle logging from any python code it executes.
 
 ```
 import logging

@@ -21,7 +21,7 @@ An example logging config is shown below:
       port: 12232
 ```
 
-Here, BlueAPI will accept all messages are INFO level and above and will forward these to both the referenced Graylog address, and to stdout.
+With this configuration, all logs at INFO level or above will be logged to both stdout and the configured graylog.
 
 # Instrumenting Libraries
 To instrument to a custom module in BlueAPI, instantiate a logger from the [standard library logging package, then use any of its log methods](https://docs.python.org/3/library/logging.html#logger-objects).

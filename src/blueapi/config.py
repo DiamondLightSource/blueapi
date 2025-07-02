@@ -50,12 +50,8 @@ class Source(BlueapiBaseModel):
     module: Path | str
 
 
-class StompUrl(AnyUrl):
-    _constraints = UrlConstraints(allowed_schemes=["tcp", "udp"])
-
-
-class GraylogUrl(AnyUrl):
-    _constraints = UrlConstraints(allowed_schemes=["http", "https", "tcp", "udp"])
+class TcpUrl(AnyUrl):
+    _constraints = UrlConstraints(allowed_schemes=["tcp"])
 
 
 class StompConfig(BlueapiBaseModel):
@@ -68,7 +64,7 @@ class StompConfig(BlueapiBaseModel):
         "event publishing",
         default=False,
     )
-    url: StompUrl = StompUrl("tcp://localhost:61613")
+    url: TcpUrl = TcpUrl("tcp://localhost:61613")
     auth: BasicAuthentication | None = Field(
         description="Auth information for communicating with STOMP broker, if required",
         default=None,
@@ -103,7 +99,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
 class GraylogConfig(BlueapiBaseModel):
     enabled: bool = False
-    url: GraylogUrl = GraylogUrl("tcp://localhost:5555")
+    url: TcpUrl = TcpUrl("tcp://localhost:5555")
 
 
 class LoggingConfig(BlueapiBaseModel):

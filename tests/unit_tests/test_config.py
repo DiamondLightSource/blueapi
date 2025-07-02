@@ -241,7 +241,7 @@ def temp_yaml_config_file(
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "url": "http://graylog-log-target.diamond.ac.uk:12232/",
+                    "url": "tcp://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
             "api": {
@@ -343,7 +343,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "url": "http://graylog-log-target.diamond.ac.uk:12232/",
+                    "url": "tcp://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
             "api": {

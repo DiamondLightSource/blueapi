@@ -17,7 +17,7 @@ from blueapi.config import (
     ScratchConfig,
     ScratchRepository,
     StompConfig,
-    StompUrl,
+    TcpUrl,
 )
 
 BLUEAPI_HELM_CHART = Path(__file__).parent.parent.parent / "helm" / "blueapi"
@@ -65,7 +65,7 @@ LOW_RESOURCES = {
         ApplicationConfig(
             stomp=StompConfig(
                 enabled=True,
-                url=StompUrl("tcp://example.com:515/"),
+                url=TcpUrl("tcp://example.com:515/"),
             ),
             logging=LoggingConfig(level="CRITICAL"),
             oidc=OIDCConfig(

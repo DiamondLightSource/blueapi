@@ -51,6 +51,10 @@ def test_generate_schema(mock_get_app: Mock) -> None:
         "info": {
             "title": title(),
             "description": description(),
+            "license": {
+                "name": "Apache 2.0",
+                "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+            },
             "version": version(),
         },
         "paths": {},

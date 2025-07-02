@@ -80,6 +80,27 @@ components:
       - status
       title: HealthProbeResponse
       type: object
+    OIDCConfig:
+      additionalProperties: false
+      properties:
+        client_audience:
+          default: blueapi
+          description: Client Audience(s)
+          title: Client Audience
+          type: string
+        client_id:
+          description: Client ID
+          title: Client Id
+          type: string
+        well_known_url:
+          description: URL to fetch OIDC config from the provider
+          title: Well Known Url
+          type: string
+      required:
+      - well_known_url
+      - client_id
+      title: OIDCConfig
+      type: object
     PackageInfo:
       additionalProperties: false
       properties:
@@ -330,6 +351,22 @@ info:
   version: 1.0.1
 openapi: 3.1.0
 paths:
+  /config/oidc:
+    get:
+      description: Retrieve the OpenID Connect (OIDC) configuration for the server.
+      operationId: get_oidc_config_config_oidc_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OIDCConfig'
+          description: Successful Response
+        '204':
+          description: No Authentication configured
+      summary: Get Oidc Config
+      tags:
+      - Meta
   /devices:
     get:
       description: Retrieve information about all available devices.

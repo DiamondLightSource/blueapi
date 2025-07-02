@@ -128,7 +128,6 @@ def lifespan(config: ApplicationConfig):
 
 secure_router = APIRouter()
 open_router = APIRouter()
-oidc_router = APIRouter()
 
 
 def get_app(config: ApplicationConfig):
@@ -148,7 +147,6 @@ def get_app(config: ApplicationConfig):
         app.swagger_ui_init_oauth = {
             "clientId": "NOT_SUPPORTED",
         }
-        app.include_router(oidc_router)
     app.include_router(open_router)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
@@ -228,9 +226,12 @@ async def delete_environment(
     return EnvironmentResponse(environment_id=environment_id, initialized=False)
 
 
-@oidc_router.get(
+@open_router.get(
     "/config/oidc",
     tags=[Tag.META],
+    responses={
+        status.HTTP_204_NO_CONTENT: {"description": "No Authentication configured"}
+    },
 )
 @start_as_current_span(TRACER)
 def get_oidc_config(
@@ -238,7 +239,8 @@ def get_oidc_config(
 ) -> OIDCConfig:
     """Retrieve the OpenID Connect (OIDC) configuration for the server."""
     config = runner.run(interface.get_oidc_config)
-    assert config is not None, "Authentication not configured"
+    if config is None:
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return config
 
 

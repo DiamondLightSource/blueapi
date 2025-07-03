@@ -277,6 +277,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "url": "http://localhost:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
+            "tiled": {"enabled": False, "url": "http://localhost:8000/"},
             "auth_token_path": None,
             "env": {
                 "events": {
@@ -326,6 +327,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "url": "https://rabbitmq.diamond.ac.uk:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
+            "tiled": {"enabled": False, "url": "http://localhost:8000/"},
             "auth_token_path": None,
             "env": {
                 "sources": [

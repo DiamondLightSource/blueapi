@@ -71,6 +71,14 @@ class StompConfig(BlueapiBaseModel):
     )
 
 
+class TiledConfig(BlueapiBaseModel):
+    enabled: bool = Field(
+        description="True if blueapi should forward data to a Tiled instance",
+        default=False,
+    )
+    url: HttpUrl = HttpUrl("http://localhost:8000")
+
+
 class WorkerEventConfig(BlueapiBaseModel):
     """
     Config for event broadcasting via the message bus
@@ -214,6 +222,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     stomp: StompConfig = Field(default_factory=StompConfig)
+    tiled: TiledConfig = Field(default_factory=TiledConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)

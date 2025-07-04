@@ -10,4 +10,4 @@ env:
       module: dodal.plan_stubs.wrapped
 stomp:
   enabled: true
-  url: http://localhost:61613/
+  url: tcp://localhost:61613/

@@ -12,10 +12,12 @@ import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
+    AnyUrl,
     BaseModel,
     Field,
     HttpUrl,
     TypeAdapter,
+    UrlConstraints,
     ValidationError,
     field_validator,
 )
@@ -48,6 +50,10 @@ class Source(BlueapiBaseModel):
     module: Path | str
 
 
+class TcpUrl(AnyUrl):
+    _constraints = UrlConstraints(allowed_schemes=["tcp"])
+
+
 class StompConfig(BlueapiBaseModel):
     """
     Config for connecting to stomp broker
@@ -58,7 +64,7 @@ class StompConfig(BlueapiBaseModel):
         "event publishing",
         default=False,
     )
-    url: HttpUrl = HttpUrl("http://localhost:61613")
+    url: TcpUrl = TcpUrl("tcp://localhost:61613")
     auth: BasicAuthentication | None = Field(
         description="Auth information for communicating with STOMP broker, if required",
         default=None,
@@ -93,7 +99,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
 class GraylogConfig(BlueapiBaseModel):
     enabled: bool = False
-    url: HttpUrl = HttpUrl("http://localhost:5555")
+    url: TcpUrl = TcpUrl("tcp://localhost:5555")
 
 
 class LoggingConfig(BlueapiBaseModel):
@@ -199,7 +205,7 @@ class OIDCConfig(BlueapiBaseModel):
 
 
 class NumtrackerConfig(BlueapiBaseModel):
-    url: str = "http://localhost:8002/graphql"
+    url: HttpUrl = HttpUrl("http://localhost:8002/graphql")
 
 
 class ApplicationConfig(BlueapiBaseModel):

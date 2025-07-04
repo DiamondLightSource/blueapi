@@ -8,12 +8,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      with:
-        # Need this to get version number from last tag
-        fetch-depth: 0
-
     - name: Get version of python
       run: |
         PYTHON_VERSION="${{ inputs.python-version }}"

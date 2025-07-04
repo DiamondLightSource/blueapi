@@ -41,7 +41,7 @@ spec:
       {{- end }}
       volumes:
       {{- with .Values.volumes }}
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 6 }}
       {{- end }}
       - name: worker-config
         projected:

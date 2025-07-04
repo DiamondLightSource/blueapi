@@ -111,10 +111,10 @@ def numtracker_client() -> NumtrackerClient | None:
         return None
 
 
-def _update_scan_num(md: dict[str, Any]) -> int:
+async def _update_scan_num(md: dict[str, Any]) -> int:
     numtracker = numtracker_client()
     if numtracker is not None:
-        scan = numtracker.create_scan(md["instrument_session"], md["instrument"])
+        scan = await numtracker.create_scan(md["instrument_session"], md["instrument"])
         md["data_session_directory"] = str(scan.scan.directory.path)
         return scan.scan.scan_number
     else:

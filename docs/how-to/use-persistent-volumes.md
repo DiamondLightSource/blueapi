@@ -58,3 +58,7 @@ image:
 BlueAPI can reuse existing PVCs by setting `initContainer.persistentVolume.existingClaimName`. When this is not set it defaults to `scratch-{{ .Values.image.tag | default .Chart.AppVersion }}`. meaning the same Persistent Volume is reused when installing the same version of BlueAPI in a given namespace.
 
 This can be set to any value to create and reuse arbitrarily named PVs.
+
+## Directly Editing Persistent Volumes
+
+The easiest way to interact with the created persistent volume is via the Kubernetes plugin for VSCode. [This is documented here.](https://diamondlightsource.github.io/python-copier-template/main/how-to/debug-in-cluster.html#debugging-in-the-cluster)

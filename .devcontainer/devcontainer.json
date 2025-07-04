@@ -11,7 +11,7 @@
     },
     "remoteEnv": {
         // Allow X11 apps to run inside the container
-        "DISPLAY": "${localEnv:DISPLAY}"
+        "DISPLAY": "${localEnv:DISPLAY}",
     },
     "customizations": {
         "vscode": {
@@ -38,6 +38,10 @@
             "source": "${localEnv:HOME}/.cache/uv",
             "target": "/.cache/uv",
             "type": "bind"
+        },
+        {
+            "target": "/workspaces/blueapi/.venv",
+            "type": "volume"
         }
     ],
     "features": {
@@ -45,7 +49,7 @@
         "ghcr.io/diamondlightsource/devcontainer-features/bash-config:1": {}
     },
     // Create the config folder for the bash-config feature
-    "initializeCommand": "mkdir -p ${localEnv:HOME}/.config/bash-config",
+    "initializeCommand": "mkdir -p ${localEnv:HOME}/.config/bash-config ${localEnv:HOME}/.cache/uv",
     "runArgs": [
         // Allow the container to access the host X11 display and EPICS CA
         "--net=host",

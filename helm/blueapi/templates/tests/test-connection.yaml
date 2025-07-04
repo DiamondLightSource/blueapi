@@ -1,23 +1,18 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "blueapi.fullname" . }}-test-ping"
+  name: "{{ include "blueapi.fullname" . }}-test-connection"
   labels:
     {{- include "blueapi.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   volumes:
-  - name: worker-config
+  - name: test-config
     projected:
       sources:
         - configMap:
-            name: {{ include "blueapi.fullname" . }}-config
-        {{- with .Values.existingSecret }}
-        - secret:
-            name: {{ . }}
-        {{- end }}
+            name: {{ include "blueapi.fullname" . }}-test-config
   containers:
     - name: ping
       volumeMounts:
@@ -30,10 +25,28 @@ spec:
       args:
         - "-c"
         - "/config/config.yaml"
-        {{- with .Values.existingSecret }}
-        - "-c"
-        - "/config/secret.yaml"
-        {{- end }}
         - "controller"
         - "plans"
   restartPolicy: Never
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blueapi.fullname" . }}-test-config
+data:
+  init_config.yaml: |-
+    api:
+      url: http://{{ include "blueapi.fullname" . }}:{{ .Values.service.port }}/
+    stomp:
+      enabled: false
+      auth:
+        username: guest
+        password: guest
+      url: http://rabbitmq:61613/
+    logging:
+      level: "INFO"
+      graylog:
+        enabled: False
+        url: http://graylog-log-target.diamond.ac.uk:12232/

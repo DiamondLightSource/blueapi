@@ -23,3 +23,11 @@ repos:
         entry: ruff format --force-exclude
         types: [python]
         require_serial: true
+
+  - repo: https://github.com/norwoodj/helm-docs
+    rev:  ""
+    hooks:
+      - id: helm-docs-container
+        args:
+          # Make the tool search for charts only under the `helm` directory
+          - --chart-search-root=helm

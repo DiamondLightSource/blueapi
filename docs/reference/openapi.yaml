@@ -658,7 +658,6 @@ paths:
       summary: Get State
       tags:
       - Task
-      - Worker
     put:
       description: "Request that the worker is put into a particular state.\nReturns\
         \ the state of the worker at the end of the call.\n\n- **The following transitions\
@@ -699,7 +698,6 @@ paths:
       summary: Set State
       tags:
       - Task
-      - Worker
   /worker/task:
     get:
       operationId: get_active_task_worker_task_get
@@ -713,7 +711,6 @@ paths:
       summary: Get Active Task
       tags:
       - Task
-      - Worker
     put:
       description: 'Set a task to active status, the worker should begin it as soon
         as possible.
@@ -744,4 +741,3 @@ paths:
       summary: Set Active Task
       tags:
       - Task
-      - Worker

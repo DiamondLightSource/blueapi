@@ -28,7 +28,7 @@ By setting both `initContainer.enabled` and `initContainer.persistentVolume.enab
 
 ## Reusing Persistent Volume Claims
 
-BlueAPI can reuse existing PVCs by setting `initContainer.persistentVolume.existingClaimName`. When this is not set it defaults to `scratch-{{ .Values.image.tag | default .Chart.AppVersion }}`. meaning the same Persistent Volume is reused when installing the same version of BlueAPI in a given namespace.
+BlueAPI can reuse existing PVCs by setting `initContainer.persistentVolume.existingClaimName`. When this is not set it defaults to `scratch-<blueapi-version>`. meaning the same Persistent Volume is reused when installing the same version of BlueAPI in a given namespace.
 
 This can be set to any value to create and reuse arbitrarily named PVs.
 

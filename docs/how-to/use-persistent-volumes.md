@@ -22,7 +22,7 @@ initContainer:
     existingClaimName: ""
 ```
 
-By setting both `initContainer.enabled` and `initContainer.persistentVolume.enabled` to `true` BlueAPI will produce or reuse a Persistent Volume Claim, which when fulfilled will be used as a scratch directory.
+With both `initContainer.enabled` and `initContainer.persistentVolume.enabled` to `true`, BlueAPI will create or attempt to bind to an existing Persistent Volume Claim, which when fulfilled will be used as a scratch area.
 
 
 

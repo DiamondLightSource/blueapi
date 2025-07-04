@@ -15,7 +15,7 @@ jobs:
     with:
       tox: pre-commit,type-checking
 
-  uv_test:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -59,7 +59,7 @@ jobs:
         run: uv run tox -e system-test
 
   container:
-    needs: test
+    needs: [test, system-test]
     if: always()
     uses: ./.github/workflows/_container.yml
     with:
@@ -92,7 +92,7 @@ jobs:
       id-token: write
 
   release:
-    needs: [dist, test, docs]
+    needs: [dist, test, docs, container]
     if: github.ref_type == 'tag'
     uses: ./.github/workflows/_release.yml
     permissions:

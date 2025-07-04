@@ -73,18 +73,16 @@ PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADE
 
 class Tag(str, Enum):
     TASK = "Task"
-    WORKER = "Worker"
     PLAN = "Plan"
     DEVICE = "Device"
-    META = "Meta"
     ENV = "Environment"
+    META = "Meta"
 
 
 TAG_METADATA: list[dict[str, str]] = [
+    {"name": Tag.TASK, "description": "Endpoints related to tasks"},
     {"name": Tag.PLAN, "description": "Endpoints to get plans"},
     {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
-    {"name": Tag.TASK, "description": "Endpoints related to tasks"},
-    {"name": Tag.WORKER, "description": "Endpoints related to worker"},
     {"name": Tag.ENV, "description": "Endpoints related to server environment"},
     {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
 ]
@@ -375,7 +373,7 @@ def get_tasks(
 @secure_router.put(
     "/worker/task",
     responses={status.HTTP_409_CONFLICT: {}},
-    tags=[Tag.TASK, Tag.WORKER],
+    tags=[Tag.TASK],
 )
 @start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
@@ -419,7 +417,10 @@ def get_task(
     return task
 
 
-@secure_router.get("/worker/task", tags=[Tag.TASK, Tag.WORKER])
+@secure_router.get(
+    "/worker/task",
+    tags=[Tag.TASK],
+)
 @start_as_current_span(TRACER)
 def get_active_task(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -429,7 +430,10 @@ def get_active_task(
     return WorkerTask(task_id=task_id)
 
 
-@secure_router.get("/worker/state", tags=[Tag.TASK, Tag.WORKER])
+@secure_router.get(
+    "/worker/state",
+    tags=[Tag.TASK],
+)
 @start_as_current_span(TRACER)
 def get_state(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> WorkerState:
     """Get the State of the Worker"""
@@ -458,7 +462,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
         status.HTTP_400_BAD_REQUEST: {},
         status.HTTP_202_ACCEPTED: {},
     },
-    tags=[Tag.TASK, Tag.WORKER],
+    tags=[Tag.TASK],
 )
 @start_as_current_span(TRACER, "state_change_request.new_state")
 def set_state(

@@ -32,6 +32,8 @@ runs:
 
     - name: Install project
       run: uv sync --locked --all-extras --dev
+      shell: bash
 
     - name: List dependency tree
       run: uv export --format requirements.txt --no-hashes
+      shell: bash

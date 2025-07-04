@@ -41,7 +41,7 @@ resources:
     memory: 400Mi
 ```
 
-Finally, if installing BlueAPI from source rather than from the packaged helm chart `image.tag` value must to set to a recent BlueAPI release, else the default `0.1.0` will pull an image without the required features.
+Finally, if installing BlueAPI from source rather than from the packaged helm chart, `image.tag` value must to set to a recent BlueAPI release, else the default `0.1.0` will pull an image without the required features.
 ```yaml
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
@@ -52,3 +52,9 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
   ```
+
+## Reusing Persistent Volume Claims
+
+BlueAPI can reuse existing PVCs by setting `initContainer.persistentVolume.existingClaimName`. When this is not set it defaults to `scratch-{{ .Values.image.tag | default .Chart.AppVersion }}`. meaning the same Persistent Volume is reused when installing the same version of BlueAPI in a given namespace.
+
+This can be set to any value to create and reuse arbitrarily named PVs.

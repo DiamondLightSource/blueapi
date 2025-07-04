@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
+from enum import Enum
 from typing import Annotated
 
 import jwt
@@ -55,8 +56,12 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "1.0.0"
+REST_API_VERSION = "1.0.1"
 
+LICENSE_INFO: dict[str, str] = {
+    "name": "Apache 2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+}
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
@@ -64,6 +69,23 @@ CONTEXT_HEADER = "traceparent"
 VENDOR_CONTEXT_HEADER = "tracestate"
 AUTHORIZAITON_HEADER = "authorization"
 PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
+
+
+class Tag(str, Enum):
+    TASK = "Task"
+    PLAN = "Plan"
+    DEVICE = "Device"
+    ENV = "Environment"
+    META = "Meta"
+
+
+TAG_METADATA: list[dict[str, str]] = [
+    {"name": Tag.TASK, "description": "Endpoints related to tasks"},
+    {"name": Tag.PLAN, "description": "Endpoints to get plans"},
+    {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
+    {"name": Tag.ENV, "description": "Endpoints related to server environment"},
+    {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
+]
 
 
 def _runner() -> WorkerDispatcher:
@@ -110,8 +132,12 @@ def get_app(config: ApplicationConfig):
     app = FastAPI(
         docs_url="/docs",
         title="BlueAPI Control",
+        summary="BlueAPI wraps bluesky plans and devices and "
+        "exposes endpoints to send commands/receive data",
         lifespan=lifespan(config),
         version=REST_API_VERSION,
+        license_info=LICENSE_INFO,
+        openapi_tags=TAG_METADATA,
     )
     dependencies = []
     if config.oidc:
@@ -177,7 +203,7 @@ async def on_token_error_401(_: Request, __: Exception):
     )
 
 
-@secure_router.get("/environment")
+@secure_router.get("/environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER, "runner")
 def get_environment(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -186,7 +212,7 @@ def get_environment(
     return runner.state
 
 
-@secure_router.delete("/environment")
+@secure_router.delete("/environment", tags=[Tag.ENV])
 async def delete_environment(
     background_tasks: BackgroundTasks,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -200,6 +226,7 @@ async def delete_environment(
 
 @open_router.get(
     "/config/oidc",
+    tags=[Tag.META],
     responses={
         status.HTTP_204_NO_CONTENT: {"description": "No Authentication configured"}
     },
@@ -215,7 +242,7 @@ def get_oidc_config(
     return config
 
 
-@secure_router.get("/plans")
+@secure_router.get("/plans", tags=[Tag.PLAN])
 @start_as_current_span(TRACER)
 def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResponse:
     """Retrieve information about all available plans."""
@@ -223,9 +250,7 @@ def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResp
     return PlanResponse(plans=plans)
 
 
-@secure_router.get(
-    "/plans/{name}",
-)
+@secure_router.get("/plans/{name}", tags=[Tag.PLAN])
 @start_as_current_span(TRACER, "name")
 def get_plan_by_name(
     name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
@@ -234,7 +259,7 @@ def get_plan_by_name(
     return runner.run(interface.get_plan, name)
 
 
-@secure_router.get("/devices")
+@secure_router.get("/devices", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER)
 def get_devices(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -244,9 +269,7 @@ def get_devices(
     return DeviceResponse(devices=devices)
 
 
-@secure_router.get(
-    "/devices/{name}",
-)
+@secure_router.get("/devices/{name}", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER, "name")
 def get_device_by_name(
     name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
@@ -262,10 +285,7 @@ example_task_request = TaskRequest(
 )
 
 
-@secure_router.post(
-    "/tasks",
-    status_code=status.HTTP_201_CREATED,
-)
+@secure_router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @start_as_current_span(
     TRACER,
     "request",
@@ -304,7 +324,9 @@ def submit_task(
         ) from e
 
 
-@secure_router.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+@secure_router.delete(
+    "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
+)
 @start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
@@ -321,7 +343,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
     return TaskStatusEnum(v_upper)
 
 
-@secure_router.get("/tasks", status_code=status.HTTP_200_OK)
+@secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
 def get_tasks(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -351,6 +373,7 @@ def get_tasks(
 @secure_router.put(
     "/worker/task",
     responses={status.HTTP_409_CONFLICT: {}},
+    tags=[Tag.TASK],
 )
 @start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
@@ -381,9 +404,7 @@ def get_passthrough_headers(request: Request) -> dict[str, str]:
     }
 
 
-@secure_router.get(
-    "/tasks/{task_id}",
-)
+@secure_router.get("/tasks/{task_id}", tags=[Tag.TASK])
 @start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
@@ -396,7 +417,10 @@ def get_task(
     return task
 
 
-@secure_router.get("/worker/task")
+@secure_router.get(
+    "/worker/task",
+    tags=[Tag.TASK],
+)
 @start_as_current_span(TRACER)
 def get_active_task(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -406,7 +430,10 @@ def get_active_task(
     return WorkerTask(task_id=task_id)
 
 
-@secure_router.get("/worker/state")
+@secure_router.get(
+    "/worker/state",
+    tags=[Tag.TASK],
+)
 @start_as_current_span(TRACER)
 def get_state(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> WorkerState:
     """Get the State of the Worker"""
@@ -435,6 +462,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
         status.HTTP_400_BAD_REQUEST: {},
         status.HTTP_202_ACCEPTED: {},
     },
+    tags=[Tag.TASK],
 )
 @start_as_current_span(TRACER, "state_change_request.new_state")
 def set_state(
@@ -485,7 +513,7 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
-@secure_router.get("/python_environment")
+@secure_router.get("/python_environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER)
 def get_python_environment(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -500,10 +528,7 @@ def get_python_environment(
     return runner.run(interface.get_python_env, name, source)
 
 
-@open_router.get(
-    "/healthz",
-    status_code=status.HTTP_200_OK,
-)
+@open_router.get("/healthz", status_code=status.HTTP_200_OK, tags=[Tag.META])
 def health_probe() -> HealthProbeResponse:
     """If able to serve this, server is live and ready for requests."""
     return HealthProbeResponse(status=Health.OK)

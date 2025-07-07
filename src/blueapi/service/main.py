@@ -571,9 +571,11 @@ async def add_api_version_header(
 async def log_request_details(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    LOGGER.info(
-        f"method: {request.method} url: {request.url} body: {await request.body()}",
-    )
+    msg = f"method: {request.method} url: {request.url} body: {await request.body()}"
+    if request.url.path == "/healthz":
+        LOGGER.debug(msg)
+    else:
+        LOGGER.info(msg)
     response = await call_next(request)
     return response
 

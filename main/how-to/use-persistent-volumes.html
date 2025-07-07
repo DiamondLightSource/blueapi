@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Write Bluesky Plans for Blueapi &#8212; blueapi 1.0.0rc2.dev6+g62b70799f documentation</title>
+    <title>Enable Persistent Volumes &#8212; blueapi 1.0.0rc2.dev6+g62b70799f documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/write-plans';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/use-persistent-volumes';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
@@ -58,8 +58,8 @@
     <link rel="icon" href="../_static/blueapi-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Explanations" href="../explanations.html" />
-    <link rel="prev" title="Write Devices for Blueapi" href="write-devices.html" />
+    <link rel="next" title="Write Devices for Blueapi" href="write-devices.html" />
+    <link rel="prev" title="Run in a Container" href="run-container.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -404,10 +404,10 @@
 <li class="toctree-l1"><a class="reference internal" href="edit-live.html">Edit Plans and Device Live</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-cli.html">Control the Worker via the CLI</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a Container</a></li>
-<li class="toctree-l1"><a class="reference internal" href="use-persistent-volumes.html">Enable Persistent Volumes</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Enable Persistent Volumes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="write-devices.html">Write Devices for Blueapi</a></li>
 
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Write Bluesky Plans for Blueapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write-plans.html">Write Bluesky Plans for Blueapi</a></li>
 </ul>
 </div>
 </nav></div>
@@ -451,7 +451,7 @@
     
     <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Write Bluesky Plans for Blueapi</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Enable Persistent Volumes</span></li>
   </ul>
 </nav>
 </div>
@@ -468,84 +468,37 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="write-bluesky-plans-for-blueapi">
-<h1>Write Bluesky Plans for Blueapi<a class="headerlink" href="#write-bluesky-plans-for-blueapi" title="Link to this heading">#</a></h1>
+  <section id="enable-persistent-volumes">
+<h1>Enable Persistent Volumes<a class="headerlink" href="#enable-persistent-volumes" title="Link to this heading">#</a></h1>
+<p>BlueAPI can use persistent volumes as a scratch area. This allows the user to retain different environments for different versions of BlueAPI, and to avoid problems related to the shared file system such as permission issues.</p>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference external" href="https://blueskyproject.io/bluesky/main/index.html">The bluesky documentation</a> for an introduction to bluesky plans and general forms/advice. Blueapi has some additional requirements, which are explained below.</p>
+<p><a class="reference internal" href="configure-app.html"><span class="std std-doc">Configure the Application</span></a></p>
 </div>
-<section id="format">
-<h2>Format<a class="headerlink" href="#format" title="Link to this heading">#</a></h2>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="../explanations/plans.html"><span class="std std-doc">Explanation of why blueapi treats plans in a special way</span></a></p>
-</div>
-<p>Plans in Python files look like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Readable</span><span class="p">,</span> <span class="n">Movable</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MsgGenerator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Any</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">my_plan</span><span class="p">(</span>
-    <span class="n">detector</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> 
-    <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span> 
-    <span class="n">steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
-    <span class="n">sample_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
-    <span class="n">extra_metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-    
-    <span class="c1"># logic goes here</span>
-    <span class="o">...</span>
+<p>The relevant configuration is below:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># -- Configure the initContainer that checks out the scratch configuration repositories</span>
+<span class="nt">initContainer</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">persistentVolume</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># -- Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem</span>
+<span class="w">    </span><span class="c1"># If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="c1"># -- May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release</span>
+<span class="w">    </span><span class="nt">existingClaimName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
 </pre></div>
 </div>
+<p>With both <code class="docutils literal notranslate"><span class="pre">initContainer.enabled</span></code> and <code class="docutils literal notranslate"><span class="pre">initContainer.persistentVolume.enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>, BlueAPI will create or attempt to bind to an existing Persistent Volume Claim, which when fulfilled will be used as a scratch area.</p>
 </section>
-<section id="detection">
-<h2>Detection<a class="headerlink" href="#detection" title="Link to this heading">#</a></h2>
-<p>The type annotations in the example above (e.g. <code class="docutils literal notranslate"><span class="pre">:</span> <span class="pre">str</span></code>, <code class="docutils literal notranslate"><span class="pre">:</span> <span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">-&gt;</span> <span class="pre">MsgGenerator</span></code>) are required as blueapi uses them to detect that this function is intended to be a plan and generate its runtime API. If there is an <a class="reference external" href="https://docs.python.org/3/tutorial/modules.html#importing-from-a-package"><code class="docutils literal notranslate"><span class="pre">__all__</span></code> dunder</a> present in the module, blueapi will read that and import anything within that qualifies as a plan, per its type annotations. If not it will read everything in the module that hasn’t been imported, for example it will ignore a plan imported from another module.</p>
-<p><strong>Input annotations should be as broad as possible</strong>, the least specific implementation that is sufficient to accomplish the requirements of the plan. For example, if a plan is written to drive a specific motor (<code class="docutils literal notranslate"><span class="pre">MyMotor</span></code>), but only uses the general methods on the <a class="reference external" href="https://blueskyproject.io/bluesky/main/hardware.html#bluesky.protocols.Movable"><code class="docutils literal notranslate"><span class="pre">Movable</span></code> protocol</a>, it should take <code class="docutils literal notranslate"><span class="pre">Movable</span></code> as a parameter annotation rather than <code class="docutils literal notranslate"><span class="pre">MyMotor</span></code>.</p>
+<section id="reusing-persistent-volume-claims">
+<h2>Reusing Persistent Volume Claims<a class="headerlink" href="#reusing-persistent-volume-claims" title="Link to this heading">#</a></h2>
+<p>BlueAPI can reuse existing PVCs by setting <code class="docutils literal notranslate"><span class="pre">initContainer.persistentVolume.existingClaimName</span></code>. When this is not set it defaults to <code class="docutils literal notranslate"><span class="pre">scratch-&lt;blueapi-version&gt;</span></code>. meaning the same Persistent Volume is reused when installing the same version of BlueAPI in a given namespace.</p>
+<p>This can be set to any value to create and reuse arbitrarily named PVs.</p>
 </section>
-<section id="injecting-devices">
-<h2>Injecting Devices<a class="headerlink" href="#injecting-devices" title="Link to this heading">#</a></h2>
-<p>Some plans are created for specific sets of devices, or will almost always be used with the same devices, it is useful to be able to specify defaults. <a class="reference external" href="https://diamondlightsource.github.io/dodal/main/how-to/include-devices-in-plans.html">Dodal makes this easy with its factory functions</a>.</p>
-</section>
-<section id="injecting-metadata">
-<h2>Injecting Metadata<a class="headerlink" href="#injecting-metadata" title="Link to this heading">#</a></h2>
-<p>The bluesky event model allows for rich structured metadata to be attached to a scan. To enable this to be used consistently, blueapi encourages a standard form.</p>
-<p>Plans (<a class="reference internal" href="../explanations/plans.html"><span class="std std-doc">as opposed to stubs</span></a>) <strong>should</strong> include <code class="docutils literal notranslate"><span class="pre">metadata</span></code> as their final parameter, if they do it <strong>must</strong> have the type <code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">Any]</span> <span class="pre">|</span> <span class="pre">None</span></code>, <a class="reference external" href="https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python">and a default of None</a>. If the plan calls to a stub/plan which takes metadata, the plan <strong>must</strong> pass down its metadata, which may be a differently named parameter.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">pass_metadata</span><span class="p">(</span><span class="n">det</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-    <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">{[</span><span class="n">det</span><span class="p">],</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}}</span>
-</pre></div>
-</div>
-</section>
-<section id="docstrings">
-<h2>Docstrings<a class="headerlink" href="#docstrings" title="Link to this heading">#</a></h2>
-<p>Blueapi exposes the docstrings of plans to clients, along with the parameter types. It is therefore worthwhile to make these detailed and descriptive. This may include units of arguments (e.g. seconds or microseconds), its purpose in the function, the purpose of the plan etc.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">temp_pressure_snapshot</span><span class="p">(</span>
-    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="n">temperature</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">sample_temperature</span><span class="p">(),</span>
-    <span class="n">pressure</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">sample_pressure</span><span class="p">(),</span>
-    <span class="n">target_temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">273.0</span><span class="p">,</span>
-    <span class="n">target_pressure</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Moves devices for pressure and temperature (defaults fetched from the context)</span>
-<span class="sd">    and captures a single frame from a collection of devices</span>
-<span class="sd">    Args:</span>
-<span class="sd">        detectors (List[Readable]): A list of devices to read while the sample is at STP</span>
-<span class="sd">        temperature (Optional[Movable]): A device controlling temperature of the sample,</span>
-<span class="sd">            defaults to fetching a device name &quot;sample_temperature&quot; from the context</span>
-<span class="sd">        pressure (Optional[Movable]): A device controlling pressure on the sample,</span>
-<span class="sd">            defaults to fetching a device name &quot;sample_pressure&quot; from the context</span>
-<span class="sd">        target_pressure (Optional[float]): target temperature in Kelvin. Default 273</span>
-<span class="sd">        target_pressure (Optional[float]): target pressure in Pa. Default 10**5</span>
-<span class="sd">    Returns:</span>
-<span class="sd">        MsgGenerator: Plan</span>
-<span class="sd">    Yields:</span>
-<span class="sd">        Iterator[MsgGenerator]: Bluesky messages</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">yield from</span> <span class="n">move</span><span class="p">({</span><span class="n">temperature</span><span class="p">:</span> <span class="n">target_temperature</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="n">target_pressure</span><span class="p">})</span>
-    <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
-</pre></div>
-</div>
+<section id="directly-editing-persistent-volumes">
+<h2>Directly Editing Persistent Volumes<a class="headerlink" href="#directly-editing-persistent-volumes" title="Link to this heading">#</a></h2>
+<p>The easiest way to interact with the created persistent volume is via the Kubernetes plugin for VSCode. <a class="reference external" href="https://diamondlightsource.github.io/python-copier-template/main/how-to/debug-in-cluster.html#debugging-in-the-cluster">This is documented here.</a></p>
 </section>
 </section>
 
@@ -560,20 +513,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="write-devices.html"
+       href="run-container.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Write Devices for Blueapi</p>
+        <p class="prev-next-title">Run in a Container</p>
       </div>
     </a>
     <a class="right-next"
-       href="../explanations.html"
+       href="write-devices.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Explanations</p>
+        <p class="prev-next-title">Write Devices for Blueapi</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -596,11 +549,9 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#format">Format</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#detection">Detection</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#injecting-devices">Injecting Devices</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#injecting-metadata">Injecting Metadata</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#docstrings">Docstrings</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reusing-persistent-volume-claims">Reusing Persistent Volume Claims</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#directly-editing-persistent-volumes">Directly Editing Persistent Volumes</a></li>
 </ul>
   </nav></div>
 
@@ -608,7 +559,7 @@
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/how-to/write-plans.md">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/how-to/use-persistent-volumes.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -624,7 +575,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/how-to/write-plans.md.txt"
+      <li><a href="../_sources/how-to/use-persistent-volumes.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

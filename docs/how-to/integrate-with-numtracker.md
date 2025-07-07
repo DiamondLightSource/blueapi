@@ -22,6 +22,8 @@ env:
     instrument: <name of your instrument, e.g. i22>
 ```
 
+For a more complete example see the [p46 helm chart configuration](https://github.com/epics-containers/p46-services/blob/main/services/p46-blueapi/values.yaml).
+
 Numtracker will work for any ophyd-async [`StandardDetector`](https://blueskyproject.io/ophyd-async/main/_api/ophyd_async/ophyd_async.core.html#ophyd_async.core.StandardDetector)(s) in your project.
 
 ## Updating Plans

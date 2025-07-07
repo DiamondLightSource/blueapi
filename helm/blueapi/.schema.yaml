@@ -1,0 +1,23 @@
+# .schema.yaml
+
+values:
+  - values.yaml
+
+draft: 2020
+indent: 4
+output: values.schema.json
+
+bundle: true
+bundleRoot: .
+bundleWithoutID: false
+
+useHelmDocs: false
+
+noAdditionalProperties: false
+
+schemaRoot:
+  id: https://example.com/schema
+  title: Helm Values Schema
+  description: Schema for Helm values
+  additionalProperties: true
+  ref: config_schema.json

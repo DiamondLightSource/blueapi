@@ -38,21 +38,8 @@ repos:
           # Make the tool search for charts only under the `helm` directory
           - --chart-search-root=helm
 
-  - repo: https://github.com/dadav/helm-schema
-    rev: 0.18.1
+  - repo: https://github.com/losisin/helm-values-schema-json
+    rev: v1.7.2
     hooks:
       - id: helm-schema
-        # for all available options: helm-schema -h
-        args:
-          # directory to search recursively within for charts
-          - --chart-search-root=./helm/blueapi
-
-          # don't analyze dependencies
-          - --no-dependencies
-
-          # add references to values file if not exist
-          - --add-schema-reference
-
-          # list of fields to skip from being created by default
-          # e.g. generate a relatively permissive schema
-          # - "--skip-auto-generation=required,additionalProperties"
+        args: ["--values", "values.yaml"]

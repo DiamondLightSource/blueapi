@@ -27,7 +27,8 @@ repos:
       - id: export-config-schema
         name: export config schema
         language: system
-        entry: python src/script/export_config_schema.py > config_schema.json
+        entry: python
+        args: [src/script/export_config_schema.py]
 
   - repo: https://github.com/norwoodj/helm-docs
     rev: ""
@@ -36,3 +37,22 @@ repos:
         args:
           # Make the tool search for charts only under the `helm` directory
           - --chart-search-root=helm
+
+  - repo: https://github.com/dadav/helm-schema
+    rev: 0.18.1
+    hooks:
+      - id: helm-schema
+        # for all available options: helm-schema -h
+        args:
+          # directory to search recursively within for charts
+          - --chart-search-root=./helm/blueapi
+
+          # don't analyze dependencies
+          - --no-dependencies
+
+          # add references to values file if not exist
+          - --add-schema-reference
+
+          # list of fields to skip from being created by default
+          # e.g. generate a relatively permissive schema
+          # - "--skip-auto-generation=required,additionalProperties"

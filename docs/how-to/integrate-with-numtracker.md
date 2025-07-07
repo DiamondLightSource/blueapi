@@ -23,3 +23,7 @@ env:
 ```
 
 Numtracker will work for any ophyd-async [`StandardDetector`](https://blueskyproject.io/ophyd-async/main/_api/ophyd_async/ophyd_async.core.html#ophyd_async.core.StandardDetector)(s) in your project.
+
+## Updating Plans
+
+Numtracker should work with out-of-box plans that take data via runs. Opening a new run will make the `RunEngine` call numtracker and request a fresh data area. Some plans from before numtracker have a decorator that coordinates where detectors write their data: [`@attach_data_session_metadata_decorator`](https://github.com/DiamondLightSource/dodal/blob/10a9a124931901d7666659c6dbe77215d22a8bfd/src/dodal/plan_stubs/data_session.py#L60). This decorator becomes a no-op with numtracker and can be safely removed from plans.

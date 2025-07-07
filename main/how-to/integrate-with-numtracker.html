@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Home of Plans and Devices &#8212; blueapi 1.0.0rc3.dev1+g3c7f0916b documentation</title>
+    <title>Integrate With Numtracker &#8212; blueapi 1.0.0rc3.dev1+g3c7f0916b documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/extension-code';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/integrate-with-numtracker';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
@@ -58,8 +58,8 @@
     <link rel="icon" href="../_static/blueapi-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Lifecycle of a Plan" href="lifecycle.html" />
-    <link rel="prev" title="Events Emitted by the Worker" href="events.html" />
+    <link rel="next" title="Control the Worker via the CLI" href="run-cli.html" />
+    <link rel="prev" title="Edit Plans and Device Live" href="edit-live.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -153,14 +153,14 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../how-to.html">
     How-to Guides
   </a>
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
@@ -301,14 +301,14 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../how-to.html">
     How-to Guides
   </a>
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
@@ -397,22 +397,18 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="api-version.html">API Version</a></li>
-<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="decisions/0002-switched-to-python-copier-template.html">2. Adopt python-copier-template for project structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="decisions/0003-no-queues.html">3. No Queues</a></li>
-<li class="toctree-l2"><a class="reference internal" href="decisions/0004-api-case.html">4. API Model Case</a></li>
-<li class="toctree-l2"><a class="reference internal" href="decisions/0005-connect-devices.html">5. Connect all dodal devices during startup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="decisions/0006-conventional-commits.html">3. Short descriptive title</a></li>
-</ul>
-</details></li>
-<li class="toctree-l1"><a class="reference internal" href="events.html">Events Emitted by the Worker</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Home of Plans and Devices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="lifecycle.html">Lifecycle of a Plan</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plans.html">Plans</a></li>
-<li class="toctree-l1"><a class="reference internal" href="type_validators.html">Type Validators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="add-plans-and-devices.html">Add Plans and Devices to your Blueapi Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authenticate.html">Authenticate to BlueAPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the Application</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="edit-live.html">Edit Plans and Device Live</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Integrate With Numtracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-cli.html">Control the Worker via the CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a Container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use-persistent-volumes.html">Enable Persistent Volumes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write-devices.html">Write Devices for Blueapi</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="write-plans.html">Write Bluesky Plans for Blueapi</a></li>
 </ul>
 </div>
 </nav></div>
@@ -454,9 +450,9 @@
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../explanations.html" class="nav-link">Explanations</a></li>
+    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Home of Plans and Devices</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Integrate With Numtracker</span></li>
   </ul>
 </nav>
 </div>
@@ -473,26 +469,47 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="home-of-plans-and-devices">
-<h1>Home of Plans and Devices<a class="headerlink" href="#home-of-plans-and-devices" title="Link to this heading">#</a></h1>
-<section id="dodal">
-<h2>Dodal<a class="headerlink" href="#dodal" title="Link to this heading">#</a></h2>
-<p><a class="reference external" href="https://github.com/DiamondLightSource/dodal">Dodal</a> is a repository for DLS device configuration, providing classes and factory functions for devices used at DLS.
-For specific advice on creating new device types and adding them to new or existing beamlines, see <a class="reference external" href="https://diamondlightsource.github.io/dodal/main/how-to/create-beamline.html">Create a Beamline</a> and <a class="reference external" href="https://diamondlightsource.github.io/dodal/main/reference/device-standards.html">Device Standards</a> in the dodal documentation.</p>
+  <section id="integrate-with-numtracker">
+<h1>Integrate With Numtracker<a class="headerlink" href="#integrate-with-numtracker" title="Link to this heading">#</a></h1>
+<p><a class="reference external" href="https://github.com/DiamondLightSource/numtracker.git">Numtracker</a> is a DLS API that can be used to coordinate where detectors write their data.</p>
+<section id="prequisities">
+<h2>Prequisities<a class="headerlink" href="#prequisities" title="Link to this heading">#</a></h2>
+<p>You will need to <a class="reference external" href="https://github.com/DiamondLightSource/numtracker/wiki/new_beamline">get numtracker itself configured for your instrument</a>.</p>
+<p>Blueapi needs <a class="reference internal" href="authenticate.html"><span class="std std-doc">valid authentication configured</span></a> to communicate with numtracker. It will propogate its auth token so both blueapi and numtracker should be aware of who the user is and that they have permission to be on the instrument sessions (visits) that are intended for use.</p>
 </section>
-<section id="other-repositories">
-<h2>Other Repositories<a class="headerlink" href="#other-repositories" title="Link to this heading">#</a></h2>
-<p>Plans and devices can be in any pip-installable package, such as:</p>
-<ul class="simple">
-<li><p>A package on pypi</p></li>
-<li><p>A GitHub repository</p></li>
-<li><p>A local directory via the <a class="reference internal" href="../how-to/edit-live.html"><span class="std std-doc">scratch area</span></a>.</p></li>
-</ul>
-<p>The easiest place to put the code is a repository created with the <a class="reference external" href="https://diamondlightsource.github.io/python-copier-template/main/index.html"><code class="docutils literal notranslate"><span class="pre">python-copier-template</span></code></a>. Which can then become any of the above. <a class="reference external" href="https://github.com/DiamondLightSource/i22-bluesky">Example for the I22 beamline</a>.</p>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p>Guide to setting up a new Python project with an environment and a standard set of tools: <a class="reference external" href="https://diamondlightsource.github.io/python-copier-template/main/tutorials/create-new.html"><code class="docutils literal notranslate"><span class="pre">Create</span> <span class="pre">a</span> <span class="pre">new</span> <span class="pre">repo</span> <span class="pre">from</span> <span class="pre">the</span> <span class="pre">template</span></code></a></p>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
+<p>Numtracker integration requires the following configuration for blueapi:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># If using helm values all of the following goes under worker:</span>
+
+<span class="nt">numtracker</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://numtracker.diamond.ac.uk/graphql</span>
+<span class="nt">env</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">instrument</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;name of your instrument, e.g. i22&gt;</span>
+</pre></div>
 </div>
+<p>For a more complete example see the <a class="reference external" href="https://github.com/epics-containers/p46-services/blob/main/services/p46-blueapi/values.yaml">p46 helm chart configuration</a>.</p>
+<p>Numtracker will work for any ophyd-async <a class="reference external" href="https://blueskyproject.io/ophyd-async/main/_api/ophyd_async/ophyd_async.core.html#ophyd_async.core.StandardDetector"><code class="docutils literal notranslate"><span class="pre">StandardDetector</span></code></a>(s) in your project.</p>
+</section>
+<section id="updating-blueapi-and-dodal">
+<h2>Updating Blueapi and Dodal<a class="headerlink" href="#updating-blueapi-and-dodal" title="Link to this heading">#</a></h2>
+<p>Blueapi uses an internal <a class="reference external" href="https://blueskyproject.io/ophyd-async/main/_api/ophyd_async/ophyd_async.core.html#ophyd_async.core.PathProvider"><code class="docutils literal notranslate"><span class="pre">PathProvider</span></code></a> when integrated with numtracker, it does not support custom providers in from dodal modules, if your beamline definition in dodal is prefixed with something like this, it should be removed before attempting to use numtracker:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Currently we must hard-code the visit, determining the visit at runtime requires</span>
+<span class="c1"># infrastructure that is still WIP.</span>
+<span class="c1"># Communication with GDA is also WIP so for now we determine an arbitrary scan number</span>
+<span class="c1"># locally and write the commissioning directory. The scan number is not guaranteed to</span>
+<span class="c1"># be unique and the data is at risk - this configuration is for testing only.</span>
+<span class="n">set_path_provider</span><span class="p">(</span>
+    <span class="n">StaticVisitPathProvider</span><span class="p">(</span>
+        <span class="n">BL</span><span class="p">,</span>
+        <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/dls/i22/data/2024/cm37271-2/bluesky&quot;</span><span class="p">),</span>
+        <span class="n">client</span><span class="o">=</span><span class="n">RemoteDirectoryServiceClient</span><span class="p">(</span><span class="s2">&quot;http://i22-control:8088/api&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Numtracker should work with out-of-box plans that take data via runs. Opening a new run will make the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> call numtracker and request a fresh data area. Some plans from before numtracker have a decorator that coordinates where detectors write their data: <a class="reference external" href="https://github.com/DiamondLightSource/dodal/blob/10a9a124931901d7666659c6dbe77215d22a8bfd/src/dodal/plan_stubs/data_session.py#L60"><code class="docutils literal notranslate"><span class="pre">&#64;attach_data_session_metadata_decorator</span></code></a>. This decorator becomes a no-op with numtracker and can be safely removed from plans.</p>
 </section>
 </section>
 
@@ -507,20 +524,20 @@ For specific advice on creating new device types and adding them to new or exist
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="events.html"
+       href="edit-live.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Events Emitted by the Worker</p>
+        <p class="prev-next-title">Edit Plans and Device Live</p>
       </div>
     </a>
     <a class="right-next"
-       href="lifecycle.html"
+       href="run-cli.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Lifecycle of a Plan</p>
+        <p class="prev-next-title">Control the Worker via the CLI</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -543,8 +560,9 @@ For specific advice on creating new device types and adding them to new or exist
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dodal">Dodal</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#other-repositories">Other Repositories</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prequisities">Prequisities</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#updating-blueapi-and-dodal">Updating Blueapi and Dodal</a></li>
 </ul>
   </nav></div>
 
@@ -552,7 +570,7 @@ For specific advice on creating new device types and adding them to new or exist
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/explanations/extension-code.md">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/how-to/integrate-with-numtracker.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -568,7 +586,7 @@ For specific advice on creating new device types and adding them to new or exist
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/explanations/extension-code.md.txt"
+      <li><a href="../_sources/how-to/integrate-with-numtracker.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

@@ -1257,3 +1257,41 @@ def test_service_linked_to_api(worker_api_url: str | None, service_port: int):
         "containerPort": expected_container_port[worker_api_url],
         "protocol": "TCP",
     }
+
+
+@pytest.mark.parametrize(
+    "added_mounts",
+    [[{"name": "worker-config", "mountPath": "/config", "readOnly": True}], [], None],
+)
+@pytest.mark.parametrize(
+    "added_volumes", [[{"name": "foo", "configMap": {"name": "bar"}}], [], None]
+)
+def test_volumes_created(
+    added_volumes: list[dict[str, Any]] | None,
+    added_mounts: list[dict[str, Any]] | None,
+):
+    manifests = render_chart(
+        values={"volumes": added_volumes, "volumeMounts": added_mounts}
+    )
+
+    expected_volumes = [
+        {
+            "name": "worker-config",
+            "projected": {"sources": [{"configMap": {"name": "blueapi-config"}}]},
+        }
+    ]
+
+    if added_volumes:
+        expected_volumes += added_volumes
+    if added_mounts:
+        expected_mounts = added_mounts
+    else:
+        expected_mounts = None
+
+    container_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "containers"
+    ][0]["volumeMounts"]
+    volumes = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]["volumes"]
+
+    assert container_mounts == expected_mounts
+    assert volumes == expected_volumes

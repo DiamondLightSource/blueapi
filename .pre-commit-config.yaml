@@ -24,8 +24,13 @@ repos:
         types: [python]
         require_serial: true
 
+      - id: export-config-schema
+        name: export config schema
+        language: system
+        entry: python src/script/export_config_schema.py > config_schema.json
+
   - repo: https://github.com/norwoodj/helm-docs
-    rev:  ""
+    rev: ""
     hooks:
       - id: helm-docs-container
         args:

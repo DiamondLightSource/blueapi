@@ -2,7 +2,8 @@
 # or docker with user namespaces.
 # Version SHA has been removed, see: https://github.com/DiamondLightSource/blueapi/issues/1053
 ARG PYTHON_VERSION=3.11
-FROM ghcr.io/astral-sh/uv:0.7.19-bookworm AS developer
+FROM python:${PYTHON_VERSION} AS developer
+COPY --from=ghcr.io/astral-sh/uv:0.7.17 /uv /uvx /bin/
 
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update && apt-get install -y --no-install-recommends \

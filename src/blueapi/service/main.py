@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
+from enum import Enum
 from typing import Annotated
 
 import jwt
@@ -33,7 +34,7 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service import interface
-from blueapi.worker import Task, TrackableTask, WorkerState
+from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
 from .model import (
@@ -47,6 +48,7 @@ from .model import (
     PythonEnvironmentResponse,
     SourceInfo,
     StateChangeRequest,
+    TaskRequest,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -54,12 +56,36 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "0.0.10"
+REST_API_VERSION = "1.0.1"
 
+LICENSE_INFO: dict[str, str] = {
+    "name": "Apache 2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+}
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
 CONTEXT_HEADER = "traceparent"
+VENDOR_CONTEXT_HEADER = "tracestate"
+AUTHORIZAITON_HEADER = "authorization"
+PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
+
+
+class Tag(str, Enum):
+    TASK = "Task"
+    PLAN = "Plan"
+    DEVICE = "Device"
+    ENV = "Environment"
+    META = "Meta"
+
+
+TAG_METADATA: list[dict[str, str]] = [
+    {"name": Tag.TASK, "description": "Endpoints related to tasks"},
+    {"name": Tag.PLAN, "description": "Endpoints to get plans"},
+    {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
+    {"name": Tag.ENV, "description": "Endpoints related to server environment"},
+    {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
+]
 
 
 def _runner() -> WorkerDispatcher:
@@ -106,12 +132,19 @@ def get_app(config: ApplicationConfig):
     app = FastAPI(
         docs_url="/docs",
         title="BlueAPI Control",
+        summary="BlueAPI wraps bluesky plans and devices and "
+        "exposes endpoints to send commands/receive data",
         lifespan=lifespan(config),
         version=REST_API_VERSION,
+        license_info=LICENSE_INFO,
+        openapi_tags=TAG_METADATA,
     )
     dependencies = []
     if config.oidc:
         dependencies.append(Depends(verify_access_token(config.oidc)))
+        app.swagger_ui_init_oauth = {
+            "clientId": "NOT_SUPPORTED",
+        }
     app.include_router(open_router)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
@@ -170,7 +203,7 @@ async def on_token_error_401(_: Request, __: Exception):
     )
 
 
-@secure_router.get("/environment")
+@secure_router.get("/environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER, "runner")
 def get_environment(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -179,7 +212,7 @@ def get_environment(
     return runner.state
 
 
-@secure_router.delete("/environment")
+@secure_router.delete("/environment", tags=[Tag.ENV])
 async def delete_environment(
     background_tasks: BackgroundTasks,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -193,6 +226,7 @@ async def delete_environment(
 
 @open_router.get(
     "/config/oidc",
+    tags=[Tag.META],
     responses={
         status.HTTP_204_NO_CONTENT: {"description": "No Authentication configured"}
     },
@@ -208,7 +242,7 @@ def get_oidc_config(
     return config
 
 
-@secure_router.get("/plans")
+@secure_router.get("/plans", tags=[Tag.PLAN])
 @start_as_current_span(TRACER)
 def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResponse:
     """Retrieve information about all available plans."""
@@ -216,9 +250,7 @@ def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResp
     return PlanResponse(plans=plans)
 
 
-@secure_router.get(
-    "/plans/{name}",
-)
+@secure_router.get("/plans/{name}", tags=[Tag.PLAN])
 @start_as_current_span(TRACER, "name")
 def get_plan_by_name(
     name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
@@ -227,7 +259,7 @@ def get_plan_by_name(
     return runner.run(interface.get_plan, name)
 
 
-@secure_router.get("/devices")
+@secure_router.get("/devices", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER)
 def get_devices(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -237,9 +269,7 @@ def get_devices(
     return DeviceResponse(devices=devices)
 
 
-@secure_router.get(
-    "/devices/{name}",
-)
+@secure_router.get("/devices/{name}", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER, "name")
 def get_device_by_name(
     name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
@@ -248,43 +278,55 @@ def get_device_by_name(
     return runner.run(interface.get_device, name)
 
 
-example_task = Task(name="count", params={"detectors": ["x"]})
-
-
-@secure_router.post(
-    "/tasks",
-    status_code=status.HTTP_201_CREATED,
+example_task_request = TaskRequest(
+    name="count",
+    params={"detectors": ["x"]},
+    instrument_session="cm12345-1",
 )
-@start_as_current_span(TRACER, "request", "task.name", "task.params")
+
+
+@secure_router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
+@start_as_current_span(
+    TRACER,
+    "request",
+    "task_request.name",
+    "task_request.params",
+    "task_request.instrument_session",
+)
 def submit_task(
     request: Request,
     response: Response,
-    task: Annotated[Task, Body(..., example=example_task)],
+    task_request: Annotated[TaskRequest, Body(..., example=example_task_request)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     """Submit a task to the worker."""
-    plan_model = runner.run(interface.get_plan, task.name)
     try:
-        task_id: str = runner.run(interface.submit_task, task)
+        task_id: str = runner.run(interface.submit_task, task_request)
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
-        errors = e.errors()
-        formatted_errors = "; ".join(
-            [f"{err['loc'][0]}: {err['msg']}" for err in errors]
-        )
-        error_detail_response = f"""
-        Input validation failed: {formatted_errors},
-        supplied params {task.params},
-        do not match the expected params: {plan_model.parameter_schema}
-        """
+        # Add body/params context to location and ensure that all required
+        # fields defined in the generated schema are present
+        errors = [
+            {
+                "loc": ["body", "params", *err.get("loc", [])],
+                "msg": err.get("msg", None),
+                "type": err.get("type", None),
+                # Input is not listed as required but is useful to have if available
+                "input": err.get("input", None),
+            }
+            for err in e.errors()
+        ]
+
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=error_detail_response,
+            detail=errors,
         ) from e
 
 
-@secure_router.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+@secure_router.delete(
+    "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
+)
 @start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
@@ -301,7 +343,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
     return TaskStatusEnum(v_upper)
 
 
-@secure_router.get("/tasks", status_code=status.HTTP_200_OK)
+@secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
 def get_tasks(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -331,6 +373,7 @@ def get_tasks(
 @secure_router.put(
     "/worker/task",
     responses={status.HTTP_409_CONFLICT: {}},
+    tags=[Tag.TASK],
 )
 @start_as_current_span(TRACER, "task.task_id")
 def set_active_task(
@@ -348,18 +391,20 @@ def set_active_task(
     runner.run(
         interface.begin_task,
         task=task,
-        pass_through_headers={
-            key: value
-            for key, value in request.headers.items()
-            if key in {"Authorization"}
-        },
+        pass_through_headers=get_passthrough_headers(request),
     )
     return task
 
 
-@secure_router.get(
-    "/tasks/{task_id}",
-)
+def get_passthrough_headers(request: Request) -> dict[str, str]:
+    return {
+        key: value
+        for key, value in request.headers.items()
+        if key.casefold() in PROPAGATED_HEADERS
+    }
+
+
+@secure_router.get("/tasks/{task_id}", tags=[Tag.TASK])
 @start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
@@ -372,7 +417,10 @@ def get_task(
     return task
 
 
-@secure_router.get("/worker/task")
+@secure_router.get(
+    "/worker/task",
+    tags=[Tag.TASK],
+)
 @start_as_current_span(TRACER)
 def get_active_task(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -382,7 +430,10 @@ def get_active_task(
     return WorkerTask(task_id=task_id)
 
 
-@secure_router.get("/worker/state")
+@secure_router.get(
+    "/worker/state",
+    tags=[Tag.TASK],
+)
 @start_as_current_span(TRACER)
 def get_state(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> WorkerState:
     """Get the State of the Worker"""
@@ -411,6 +462,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
         status.HTTP_400_BAD_REQUEST: {},
         status.HTTP_202_ACCEPTED: {},
     },
+    tags=[Tag.TASK],
 )
 @start_as_current_span(TRACER, "state_change_request.new_state")
 def set_state(
@@ -461,7 +513,7 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
-@secure_router.get("/python_environment")
+@secure_router.get("/python_environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER)
 def get_python_environment(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -476,10 +528,7 @@ def get_python_environment(
     return runner.run(interface.get_python_env, name, source)
 
 
-@open_router.get(
-    "/healthz",
-    status_code=status.HTTP_200_OK,
-)
+@open_router.get("/healthz", status_code=status.HTTP_200_OK, tags=[Tag.META])
 def health_probe() -> HealthProbeResponse:
     """If able to serve this, server is live and ready for requests."""
     return HealthProbeResponse(status=Health.OK)
@@ -506,8 +555,9 @@ def start(config: ApplicationConfig):
         http_capture_headers_server_response=[",*"],
     )
     app.state.config = config
-
-    uvicorn.run(app, host=config.api.host, port=config.api.port)
+    assert config.api.url.host is not None, "API URL missing host"
+    assert config.api.url.port is not None, "API URL missing port"
+    uvicorn.run(app, host=config.api.url.host, port=config.api.url.port)
 
 
 async def add_api_version_header(
@@ -521,9 +571,11 @@ async def add_api_version_header(
 async def log_request_details(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    LOGGER.info(
-        f"method: {request.method} url: {request.url} body: {await request.body()}",
-    )
+    msg = f"method: {request.method} url: {request.url} body: {await request.body()}"
+    if request.url.path == "/healthz":
+        LOGGER.debug(msg)
+    else:
+        LOGGER.info(msg)
     response = await call_next(request)
     return response
 
@@ -534,10 +586,13 @@ async def inject_propagated_observability_context(
     """Middleware to extract any propagated observability context from the
     HTTP headers and attach it to the local one.
     """
-    if CONTEXT_HEADER in request.headers:
-        ctx = get_global_textmap().extract(
-            {CONTEXT_HEADER: request.headers[CONTEXT_HEADER]}
-        )
+    headers = request.headers
+    if CONTEXT_HEADER in headers:
+        carrier = {CONTEXT_HEADER: headers[CONTEXT_HEADER]}
+        if VENDOR_CONTEXT_HEADER in headers:
+            carrier[VENDOR_CONTEXT_HEADER] = headers[VENDOR_CONTEXT_HEADER]
+        ctx = get_global_textmap().extract(carrier)
+
         attach(ctx)
     response = await call_next(request)
     return response

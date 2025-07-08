@@ -6,9 +6,13 @@ import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
-from dodal.common.beamlines.beamline_utils import set_path_provider
-from dodal.common.visit import StartDocumentPathProvider
-from ophyd.sim import SynAxis
+from dodal.common.beamlines.beamline_utils import (
+    clear_path_provider,
+    get_path_provider,
+    set_path_provider,
+)
+from ophyd_async.epics.motor import Motor
+from pydantic import HttpUrl
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi.client.numtracker import NumtrackerClient
@@ -19,6 +23,8 @@ from blueapi.config import (
     NumtrackerConfig,
     OIDCConfig,
     ScratchConfig,
+    Source,
+    SourceKind,
     StompConfig,
 )
 from blueapi.core.context import BlueskyContext
@@ -30,12 +36,16 @@ from blueapi.service.model import (
     ProtocolInfo,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskRequest,
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
+from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
+
+FAKE_INSTRUMENT_SESSION = "cm12345-1"
 
 
 @pytest.fixture
@@ -136,7 +146,7 @@ class MyDevice(Stoppable):
 def test_get_devices(context_mock: MagicMock):
     context = BlueskyContext()
     context.register_device(MyDevice(name="my_device"))
-    context.register_device(SynAxis(name="my_axis"))
+    context.register_device(Motor("FOO:", name="my_axis"))
     context_mock.return_value = context
 
     assert interface.get_devices() == [
@@ -144,15 +154,14 @@ def test_get_devices(context_mock: MagicMock):
         DeviceModel(
             name="my_axis",
             protocols=[
-                ProtocolInfo(name="Checkable"),
-                ProtocolInfo(name="Movable"),
-                ProtocolInfo(name="Pausable"),
-                ProtocolInfo(name="Readable"),
-                ProtocolInfo(name="Stageable"),
-                ProtocolInfo(name="Stoppable"),
-                ProtocolInfo(name="Subscribable"),
-                ProtocolInfo(name="Configurable"),
-                ProtocolInfo(name="Triggerable"),
+                ProtocolInfo(name="Flyable", types=[]),
+                ProtocolInfo(name="Movable", types=[]),
+                ProtocolInfo(name="Readable", types=[]),
+                ProtocolInfo(name="Stageable", types=[]),
+                ProtocolInfo(name="Stoppable", types=[]),
+                ProtocolInfo(name="Subscribable", types=["float"]),
+                ProtocolInfo(name="Configurable", types=[]),
+                ProtocolInfo(name="Device", types=[]),
             ],
         ),
     ]
@@ -176,7 +185,10 @@ def test_get_device(context_mock: MagicMock):
 def test_submit_task(context_mock: MagicMock):
     context = BlueskyContext()
     context.register_plan(my_plan)
-    task = Task(name="my_plan")
+    task = TaskRequest(
+        name="my_plan",
+        instrument_session=FAKE_INSTRUMENT_SESSION,
+    )
     context_mock.return_value = context
     mock_uuid_value = "8dfbb9c2-7a15-47b6-bea8-b6b77c31d3d9"
     with patch.object(uuid, "uuid4") as uuid_mock:
@@ -189,7 +201,10 @@ def test_submit_task(context_mock: MagicMock):
 def test_clear_task(context_mock: MagicMock):
     context = BlueskyContext()
     context.register_plan(my_plan)
-    task = Task(name="my_plan")
+    task = TaskRequest(
+        name="my_plan",
+        instrument_session=FAKE_INSTRUMENT_SESSION,
+    )
     context_mock.return_value = context
     mock_uuid_value = "3d858a62-b40a-400f-82af-8d2603a4e59a"
     with patch.object(uuid, "uuid4") as uuid_mock:
@@ -307,12 +322,23 @@ def test_get_task_by_id(context_mock: MagicMock):
     context.register_plan(my_plan)
     context_mock.return_value = context
 
-    task_id = interface.submit_task(Task(name="my_plan"))
+    task_id = interface.submit_task(
+        TaskRequest(
+            name="my_plan",
+            instrument_session=FAKE_INSTRUMENT_SESSION,
+        )
+    )
 
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
         request_id=ANY,
-        task=Task(name="my_plan", params={}),
+        task=Task(
+            name="my_plan",
+            params={},
+            metadata={
+                "instrument_session": FAKE_INSTRUMENT_SESSION,
+            },
+        ),
         is_complete=False,
         is_pending=True,
         errors=[],
@@ -331,8 +357,17 @@ def test_stomp_config(mock_stomp_client: StompClient):
         "blueapi.service.interface.StompClient.for_broker",
         return_value=mock_stomp_client,
     ):
-        interface.set_config(ApplicationConfig(stomp=StompConfig()))
+        interface.set_config(ApplicationConfig(stomp=StompConfig(enabled=True)))
         assert interface.stomp_client() is not None
+
+
+def test_stomp_config_makes_no_client_when_disabled(mock_stomp_client: StompClient):
+    with patch(
+        "blueapi.service.interface.StompClient.for_broker",
+        return_value=mock_stomp_client,
+    ):
+        interface.set_config(ApplicationConfig(stomp=StompConfig(enabled=False)))
+        assert interface.stomp_client() is None
 
 
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
@@ -366,7 +401,9 @@ def test_get_scratch_with_config(mock_get_env: MagicMock):
 
 def test_configure_numtracker():
     conf = ApplicationConfig(
-        numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql")
+        ),
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
         ),
@@ -378,7 +415,7 @@ def test_configure_numtracker():
 
     assert isinstance(nt, NumtrackerClient)
     assert nt._headers == {"a": "b"}
-    assert nt._url == "https://numtracker-example.com/graphql"
+    assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
     interface.teardown()
 
@@ -412,39 +449,113 @@ def test_configure_numtracker_with_no_metadata_fails():
     interface.teardown()
 
 
-@patch("blueapi.service.interface.StompClient")
-def test_setup(mock_stomp: MagicMock):
+def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
+    conf = ApplicationConfig()
+    mock_provider = Mock()
+    set_path_provider(mock_provider)
+
+    assert get_path_provider() == mock_provider
+    interface.setup(conf)
+    assert get_path_provider() == mock_provider
+
+    clear_path_provider()
+    interface.teardown()
+
+
+def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
+    conf = ApplicationConfig()
+    interface.setup(conf)
+
+    with pytest.raises(NameError):
+        get_path_provider()
+
+    interface.teardown()
+
+
+def test_setup_with_numtracker_makes_start_document_provider():
     conf = ApplicationConfig(
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
         ),
         numtracker=NumtrackerConfig(),
     )
-    set_path_provider(StartDocumentPathProvider())
-    interface.set_config(conf)
     interface.setup(conf)
 
-    assert interface.worker()._ctx is not None
+    path_provider = get_path_provider()
+
+    assert isinstance(path_provider, StartDocumentPathProvider)
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 
+    clear_path_provider()
+    interface.teardown()
+
+
+def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            sources=[
+                Source(
+                    kind=SourceKind.DEVICE_FUNCTIONS,
+                    module="tests.unit_tests.service.example_beamline_with_path_provider",
+                ),
+            ],
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123"),
+        ),
+        numtracker=NumtrackerConfig(),
+    )
+
+    with pytest.raises(
+        InvalidConfigError,
+        match="Numtracker has been configured but a path provider was imported"
+        " with the devices. Remove this path provider to use numtracker.",
+    ):
+        interface.setup(conf)
+
+    clear_path_provider()
     interface.teardown()
 
 
 @patch("blueapi.client.numtracker.NumtrackerClient.create_scan")
 def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_scan):
     conf = ApplicationConfig(
-        numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql")
+        ),
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
         ),
     )
     interface.set_config(conf)
     ctx = interface.context()
+    interface.configure_context()
 
     headers = {"a": "b"}
     interface._try_configure_numtracker(headers)
     interface._update_scan_num(ctx.run_engine.md)
 
     mock_create_scan.assert_called_once_with("ab123", "p46")
+
+    interface.teardown()
+
+
+def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
+    mock_numtracker_server,
+):
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(
+            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
+        ),
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql")
+        ),
+    )
+    interface.setup(conf)
+    ctx = interface.context()
+
+    interface._update_scan_num(ctx.run_engine.md)
+
+    assert (
+        ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"
+    )
 
     interface.teardown()

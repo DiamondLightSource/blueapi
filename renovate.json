@@ -1,0 +1,64 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    ":automergeStableNonMajor"
+  ],
+  "allowScripts": true,
+  "ignoreScripts": false,
+  "packageRules": [
+    {
+      "groupName": "Templated CI",
+      "matchDepNames": [
+        "actions/checkout",
+        "actions/download-artifact",
+        "actions/setup-python",
+        "actions/upload-artifact",
+        "codecov/codecov-action",
+        "docker/build-push-action",
+        "docker/login-action",
+        "docker/metadata-action",
+        "docker/setup-buildx-action",
+        "peaceiris/actions-gh-pages",
+        "pypa/gh-action-pypi-publish",
+        "softprops/action-gh-release"
+      ],
+      "enabled": false,
+      "description": [
+        "Group and update GitHub actions through the copier template to prevent merge conflicts"
+      ]
+    },
+    {
+      "groupName": "Indirect python dependencies",
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "description": "Group non-major indirect (dev-requirements.txt only) python updates"
+    },
+    {
+      "groupName": "Direct python dependencies",
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "matchManagers": [
+        "pep621"
+      ],
+      "description": "Group patch direct (pyproject.toml) python updates"
+    },
+    {
+      "groupName": "GitHub Actions",
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "description": "Group non-major github action updates"
+    }
+  ]
+}

@@ -17,8 +17,7 @@ but you can customize this via a [configuration file](./configure-app.md).
 # custom-address.yaml
 
 api:
-    host: example.com
-    port: 8082
+    url: http://example.com:8082
 ```
 
 Then run

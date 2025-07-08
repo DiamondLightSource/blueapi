@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import os
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -336,22 +335,7 @@ def mock_jwks_fetch(json_web_keyset: JWK):
     return patch("jwt.PyJWKClient.fetch_data", mock)
 
 
-# Prevent pytest from catching exceptions when debugging in vscode so that break on
-# exception works correctly (see: https://github.com/pytest-dev/pytest/issues/7409)
-if os.getenv("PYTEST_RAISE", "0") == "1":
-
-    @pytest.hookimpl(tryfirst=True)
-    def pytest_exception_interact(call: pytest.CallInfo[Any]):
-        if call.excinfo is not None:
-            raise call.excinfo.value
-        else:
-            raise RuntimeError(
-                f"{call} has no exception data, an unknown error has occurred"
-            )
-
-    @pytest.hookimpl(tryfirst=True)
-    def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
-        raise excinfo.value
+NOT_CONFIGURED_INSTRUMENT = "p100"
 
 
 @pytest.fixture(scope="module")
@@ -428,6 +412,38 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             }
             """)
     }
+    query_200_with_errors = {
+        "query": dedent(f"""
+            mutation{{
+                scan(
+                    instrument: "{NOT_CONFIGURED_INSTRUMENT}",
+                    instrumentSession: "ab123"
+                    ) {{
+                    directory{{
+                        instrumentSession
+                        instrument
+                        path
+                    }}
+                    scanFile
+                    scanNumber
+                }}
+            }}
+            """)
+    }
+
+    response_with_errors = {
+        "data": None,
+        "errors": [
+            {
+                "message": (
+                    "No configuration available for instrument "
+                    f'"{NOT_CONFIGURED_INSTRUMENT}"'
+                ),
+                "locations": [{"line": 3, "column": 5}],
+                "path": ["scan"],
+            }
+        ],
+    }
 
     working_response = {
         "data": {
@@ -444,7 +460,7 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
     }
     empty_response = {}
 
-    with responses.RequestsMock() as requests_mock:
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as requests_mock:
         requests_mock.add(
             responses.POST,
             url="https://numtracker-example.com/graphql",
@@ -472,5 +488,12 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             match=[json_params_matcher(query_key_error)],
             status=200,
             json=empty_response,
+        )
+        requests_mock.add(
+            responses.POST,
+            "https://numtracker-example.com/graphql",
+            match=[json_params_matcher(query_200_with_errors)],
+            status=200,
+            json=response_with_errors,
         )
         yield requests_mock

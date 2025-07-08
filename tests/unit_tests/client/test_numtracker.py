@@ -2,7 +2,9 @@ from pathlib import Path
 
 import pytest
 import responses
+from pydantic import HttpUrl
 from requests import HTTPError
+from tests.conftest import NOT_CONFIGURED_INSTRUMENT
 
 from blueapi.client.numtracker import (
     DirectoryPath,
@@ -14,7 +16,7 @@ from blueapi.client.numtracker import (
 
 @pytest.fixture
 def numtracker() -> NumtrackerClient:
-    return NumtrackerClient("https://numtracker-example.com/graphql")
+    return NumtrackerClient(HttpUrl("https://numtracker-example.com/graphql"))
 
 
 def test_create_scan(
@@ -66,3 +68,11 @@ def test_create_scan_raises_key_error_on_incorrectly_formatted_responses(
         match="data",
     ):
         numtracker.create_scan("ab123", "p49")
+
+
+def test_create_scan_raises_runtime_error_on_graphql_error(
+    numtracker: NumtrackerClient,
+    mock_numtracker_server: responses.RequestsMock,
+):
+    with pytest.raises(RuntimeError, match="Numtracker error:"):
+        numtracker.create_scan("ab123", NOT_CONFIGURED_INSTRUMENT)

@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from enum import Enum
 from typing import Annotated, Any
 
@@ -58,6 +58,20 @@ class TasksListResponse(BlueapiBaseModel):
     tasks: list[TrackableTask] = Field(description="List of tasks")
 
 
+class TaskRequest(BlueapiBaseModel):
+    """
+    Request to run a task with related info
+    """
+
+    name: str = Field(description="Name of plan to run")
+    params: Mapping[str, Any] = Field(
+        description="Values for parameters to plan, if any", default_factory=dict
+    )
+    instrument_session: str = Field(
+        description="Instrument session associated with this task",
+    )
+
+
 class DeviceRequest(BlueapiBaseModel):
     """
     A query for devices
@@ -83,7 +97,7 @@ class PlanModel(BlueapiBaseModel):
     description: str | SkipJsonSchema[None] = Field(
         description="Docstring of the plan", default=None
     )
-    parameter_schema: dict[str, Any] | SkipJsonSchema[None] = Field(
+    parameter_schema: dict[str, Any] = Field(
         description="Schema of the plan's parameters",
         alias="schema",
         default_factory=dict,

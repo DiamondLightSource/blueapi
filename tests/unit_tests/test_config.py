@@ -53,6 +53,11 @@ def nested_config_yaml(package_root: Path) -> Path:
 
 
 @pytest.fixture
+def env_var_config_yaml(package_root: Path) -> Path:
+    return package_root / "env_var_config.yaml"
+
+
+@pytest.fixture
 def override_config_yaml(package_root: Path) -> Path:
     return package_root / "override_config.yaml"
 
@@ -124,6 +129,18 @@ def test_error_thrown_if_schema_does_not_match_yaml(nested_config_yaml: Path) ->
     loader.use_values_from_yaml(nested_config_yaml)
     with pytest.raises(InvalidConfigError):
         loader.load()
+
+
+@mock.patch.dict(
+    os.environ, {"ENV_NUM": "12345", "BAR": "bar", "ENABLE_BAZ": "False"}, clear=True
+)
+def test_expand_env_vars(env_var_config_yaml: Path):
+    loader = ConfigLoader(NestedConfig)
+    loader.use_values_from_yaml(env_var_config_yaml)
+    conf = loader.load()
+    assert conf.nested.foo == 12345
+    assert conf.nested.bar == "interpolated_bar_value"
+    assert not conf.baz
 
 
 @mock.patch.dict(os.environ, {"FOO": "bar"}, clear=True)
@@ -208,10 +225,10 @@ def temp_yaml_config_file(
                     {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
             },
-            "api": {"host": "0.0.0.0", "port": 8000},
+            "api": {"url": "http://0.0.0.0:8000/"},
         },
         {
-            "stomp": None,
+            "stomp": {"enabled": True},
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim"},
@@ -224,11 +241,12 @@ def temp_yaml_config_file(
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "host": "graylog-log-target.diamond.ac.uk",
-                    "port": 12232,
+                    "url": "tcp://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
-            "api": {"host": "0.0.0.0", "port": 8000, "protocol": "http"},
+            "api": {
+                "url": "http://0.0.0.0:8000/",
+            },
             "scratch": None,
         },
     ],
@@ -255,8 +273,8 @@ def test_config_yaml_parsed(temp_yaml_config_file):
         # Different configuration examples passed to the fixture
         {
             "stomp": {
-                "host": "localhost",
-                "port": 61613,
+                "enabled": True,
+                "url": "tcp://localhost:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
             "auth_token_path": None,
@@ -275,17 +293,14 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 ],
             },
             "api": {
-                "host": "0.0.0.0",
-                "port": 8000,
-                "protocol": "http",
+                "url": "http://0.0.0.0:8000/",
                 "cors": None,
             },
             "logging": {
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "host": "graylog-log-target.diamond.ac.uk",
-                    "port": 12232,
+                    "url": "tcp://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
             "numtracker": None,
@@ -307,8 +322,8 @@ def test_config_yaml_parsed(temp_yaml_config_file):
         },
         {
             "stomp": {
-                "host": "https://rabbitmq.diamond.ac.uk",
-                "port": 61613,
+                "enabled": True,
+                "url": "tcp://rabbitmq.diamond.ac.uk:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
             "auth_token_path": None,
@@ -328,14 +343,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "host": "graylog-log-target.diamond.ac.uk",
-                    "port": 12232,
+                    "url": "tcp://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
             "api": {
-                "host": "0.0.0.0",
-                "port": 8001,
-                "protocol": "http",
+                "url": "http://0.0.0.0:8001/",
                 "cors": None,
             },
             "numtracker": None,
@@ -369,7 +381,6 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
     # Parse the loaded config JSON into a dictionary
     target_dict_json = json.loads(loaded_config.model_dump_json())
 
-    assert loaded_config.stomp is not None
     assert loaded_config.stomp.auth is not None
     assert (
         loaded_config.stomp.auth.password.get_secret_value()

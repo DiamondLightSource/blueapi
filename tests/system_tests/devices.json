@@ -1,51 +1,10 @@
 {
     "devices": [
         {
-            "name": "data_class_motor",
+            "name": "det",
             "protocols": [
                 {
-                    "name": "Movable",
-                    "types": [
-                        "DataClassType"
-                    ]
-                }
-            ]
-        },
-        {
-            "name": "dynamic_motor",
-            "protocols": [
-                {
-                    "name": "Movable",
-                    "types": [
-                        "MotorPositions"
-                    ]
-                }
-            ]
-        },
-        {
-            "name": "movable_motor",
-            "protocols": [
-                {
-                    "name": "Movable",
-                    "types": [
-                        "ComplexType"
-                    ]
-                }
-            ]
-        },
-        {
-            "name": "sample_pressure",
-            "protocols": [
-                {
-                    "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "Movable",
-                    "types": []
-                },
-                {
-                    "name": "Pausable",
+                    "name": "Flyable",
                     "types": []
                 },
                 {
@@ -57,11 +16,7 @@
                     "types": []
                 },
                 {
-                    "name": "Stoppable",
-                    "types": []
-                },
-                {
-                    "name": "Subscribable",
+                    "name": "WritesExternalAssets",
                     "types": []
                 },
                 {
@@ -71,24 +26,16 @@
                 {
                     "name": "Triggerable",
                     "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
                 }
             ]
         },
         {
-            "name": "x_err",
+            "name": "sim",
             "protocols": [
-                {
-                    "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "Movable",
-                    "types": []
-                },
-                {
-                    "name": "Pausable",
-                    "types": []
-                },
                 {
                     "name": "Readable",
                     "types": []
@@ -98,286 +45,11 @@
                     "types": []
                 },
                 {
-                    "name": "Stoppable",
-                    "types": []
-                },
-                {
-                    "name": "Subscribable",
-                    "types": []
-                },
-                {
                     "name": "Configurable",
                     "types": []
                 },
                 {
-                    "name": "Triggerable",
-                    "types": []
-                }
-            ]
-        },
-        {
-            "name": "theta",
-            "protocols": [
-                {
-                    "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "Movable",
-                    "types": []
-                },
-                {
-                    "name": "Pausable",
-                    "types": []
-                },
-                {
-                    "name": "Readable",
-                    "types": []
-                },
-                {
-                    "name": "Stageable",
-                    "types": []
-                },
-                {
-                    "name": "Stoppable",
-                    "types": []
-                },
-                {
-                    "name": "Subscribable",
-                    "types": []
-                },
-                {
-                    "name": "Configurable",
-                    "types": []
-                },
-                {
-                    "name": "Triggerable",
-                    "types": []
-                }
-            ]
-        },
-        {
-            "name": "z",
-            "protocols": [
-                {
-                    "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "Movable",
-                    "types": []
-                },
-                {
-                    "name": "Pausable",
-                    "types": []
-                },
-                {
-                    "name": "Readable",
-                    "types": []
-                },
-                {
-                    "name": "Stageable",
-                    "types": []
-                },
-                {
-                    "name": "Stoppable",
-                    "types": []
-                },
-                {
-                    "name": "Subscribable",
-                    "types": []
-                },
-                {
-                    "name": "Configurable",
-                    "types": []
-                },
-                {
-                    "name": "Triggerable",
-                    "types": []
-                }
-            ]
-        },
-        {
-            "name": "y",
-            "protocols": [
-                {
-                    "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "Movable",
-                    "types": []
-                },
-                {
-                    "name": "Pausable",
-                    "types": []
-                },
-                {
-                    "name": "Readable",
-                    "types": []
-                },
-                {
-                    "name": "Stageable",
-                    "types": []
-                },
-                {
-                    "name": "Stoppable",
-                    "types": []
-                },
-                {
-                    "name": "Subscribable",
-                    "types": []
-                },
-                {
-                    "name": "Configurable",
-                    "types": []
-                },
-                {
-                    "name": "Triggerable",
-                    "types": []
-                }
-            ]
-        },
-        {
-            "name": "x",
-            "protocols": [
-                {
-                    "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "Movable",
-                    "types": []
-                },
-                {
-                    "name": "Pausable",
-                    "types": []
-                },
-                {
-                    "name": "Readable",
-                    "types": []
-                },
-                {
-                    "name": "Stageable",
-                    "types": []
-                },
-                {
-                    "name": "Stoppable",
-                    "types": []
-                },
-                {
-                    "name": "Subscribable",
-                    "types": []
-                },
-                {
-                    "name": "Configurable",
-                    "types": []
-                },
-                {
-                    "name": "Triggerable",
-                    "types": []
-                }
-            ]
-        },
-        {
-            "name": "current_det",
-            "protocols": [
-                {
-                    "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "Pausable",
-                    "types": []
-                },
-                {
-                    "name": "Readable",
-                    "types": []
-                },
-                {
-                    "name": "Stageable",
-                    "types": []
-                },
-                {
-                    "name": "Stoppable",
-                    "types": []
-                },
-                {
-                    "name": "Subscribable",
-                    "types": []
-                },
-                {
-                    "name": "Configurable",
-                    "types": []
-                },
-                {
-                    "name": "Triggerable",
-                    "types": []
-                }
-            ]
-        },
-        {
-            "name": "image_det",
-            "protocols": [
-                {
-                    "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "Pausable",
-                    "types": []
-                },
-                {
-                    "name": "Readable",
-                    "types": []
-                },
-                {
-                    "name": "Stageable",
-                    "types": []
-                },
-                {
-                    "name": "Stoppable",
-                    "types": []
-                },
-                {
-                    "name": "Subscribable",
-                    "types": []
-                },
-                {
-                    "name": "Configurable",
-                    "types": []
-                },
-                {
-                    "name": "Triggerable",
-                    "types": []
-                }
-            ]
-        },
-        {
-            "name": "sample_temperature",
-            "protocols": [
-                {
-                    "name": "Checkable",
-                    "types": []
-                },
-                {
-                    "name": "Movable",
-                    "types": []
-                },
-                {
-                    "name": "Readable",
-                    "types": []
-                },
-                {
-                    "name": "Subscribable",
-                    "types": []
-                },
-                {
-                    "name": "Configurable",
-                    "types": []
-                },
-                {
-                    "name": "Triggerable",
+                    "name": "Device",
                     "types": []
                 }
             ]

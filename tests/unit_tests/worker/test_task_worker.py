@@ -9,6 +9,8 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from bluesky.protocols import Movable, Status
+from bluesky.utils import MsgGenerator
+from dodal.common import inject
 from dodal.common.types import UpdatingPathProvider
 from observability_utils.tracing import (
     JsonObjectSpanExporter,
@@ -17,10 +19,9 @@ from observability_utils.tracing import (
 from ophyd_async.core import AsyncStatus
 
 from blueapi.config import EnvironmentConfig, Source, SourceKind
-from blueapi.core import BlueskyContext, EventStream, MsgGenerator
+from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.worker import (
-    ProgressEvent,
     Task,
     TaskStatus,
     TaskWorker,
@@ -39,6 +40,14 @@ _INDEFINITE_TASK = Task(
     params={"movable": "fake_device", "value": 4.0},
 )
 _FAILING_TASK = Task(name="failing_plan", params={})
+_TASK_WITH_METADATA = Task(
+    name="sleep",
+    params={"time": 0.0},
+    metadata={
+        "foo": "bar",
+        "baz": 0,
+    },
+)
 
 
 class FakeDevice(Movable[float]):
@@ -253,6 +262,19 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     assert active_task.errors == ["'I failed'"]
 
 
+def test_task_not_run_twice(worker: TaskWorker) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    events_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda event: event.task_status is not None and event.task_status.task_complete,
+    )
+    worker.begin_task(task_id)
+    events_future.result(timeout=5.0)
+
+    with pytest.raises(KeyError):
+        worker.begin_task(task_id)
+
+
 @pytest.mark.parametrize("num_runs", [0, 1, 2])
 def test_produces_worker_events(worker: TaskWorker, num_runs: int) -> None:
     task_ids = [worker.submit_task(_SIMPLE_TASK) for _ in range(num_runs)]
@@ -291,26 +313,6 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
     ]
 
 
-def test_no_additional_progress_events_after_complete(worker: TaskWorker):
-    """
-    See https://github.com/bluesky/ophyd/issues/1115
-    """
-
-    progress_events: list[ProgressEvent] = []
-    worker.progress_events.subscribe(lambda event, id: progress_events.append(event))
-
-    task: Task = Task(name="move", params={"moves": {"additional_status_device": 5.0}})
-    task_id = worker.submit_task(task)
-    begin_task_and_wait_until_complete(worker, task_id)
-
-    # Extract all the display_name fields from the events
-    list_of_dict_keys = [pe.statuses.values() for pe in progress_events]
-    status_views = [item for sublist in list_of_dict_keys for item in sublist]
-    display_names = [view.display_name for view in status_views]
-
-    assert "STATUS_AFTER_FINISH" not in display_names
-
-
 @patch("queue.Queue.put_nowait")
 def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: TaskWorker):
     def raise_full(item):
@@ -320,6 +322,18 @@ def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: TaskWo
     task = worker.submit_task(_SIMPLE_TASK)
     with pytest.raises(WorkerBusyError):
         worker.begin_task(task)
+
+
+def test_metadata_passed_to_context(context: BlueskyContext):
+    context.run_engine = Mock()
+    _TASK_WITH_METADATA.do_task(context)
+    context.run_engine.assert_called_once_with(
+        ANY,
+        metadata_kw={
+            "foo": "bar",
+            "baz": 0,
+        },
+    )
 
 
 #
@@ -376,10 +390,10 @@ def test_worker_and_data_events_produce_in_order(
                 errors=[],
                 warnings=[],
             ),
-            DataEvent(name="start", doc={}),
-            DataEvent(name="descriptor", doc={}),
-            DataEvent(name="event", doc={}),
-            DataEvent(name="stop", doc={}),
+            DataEvent(name="start", doc={}, task_id="0000-1111"),
+            DataEvent(name="descriptor", doc={}, task_id="0000-1111"),
+            DataEvent(name="event", doc={}, task_id="0000-1111"),
+            DataEvent(name="stop", doc={}, task_id="0000-1111"),
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
@@ -407,7 +421,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     task: Task | None = None,
     timeout: float = 5.0,
 ) -> None:
-    default_task = Task(name="count", params={"detectors": {"image_det"}, "num": 1})
+    default_task = Task(name="count", params={"detectors": {"motor"}, "num": 1})
     task = task or default_task
 
     event_streams: list[EventStream[Any, int]] = [
@@ -514,7 +528,7 @@ def take_events_from_streams(
     ],
 )
 def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
-    worker._tasks = {
+    worker._pending_tasks = {
         "task1": TrackableTask(
             task_id="task1",
             task=Task(
@@ -531,6 +545,8 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
             is_complete=False,
             is_pending=True,
         ),
+    }
+    worker._completed_tasks = {
         "task3": TrackableTask(
             task_id="task3",
             task=Task(
@@ -542,9 +558,18 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
     }
 
     result = worker.get_tasks_by_status(status)
-    result_ids = [task_id for task_id, task in worker._tasks.items() if task in result]
+    result_ids = [task.task_id for task in result]
 
     assert result_ids == expected_task_ids
+
+
+def test_submitting_completed_task_fails(worker: TaskWorker):
+    with pytest.raises(ValueError):
+        worker._submit_trackable_task(
+            TrackableTask(
+                task_id="task1", task=_SIMPLE_TASK, is_complete=True, is_pending=False
+            )
+        )
 
 
 def test_start_span_ok(
@@ -605,7 +630,9 @@ def test_injected_devices_are_found(
     fake_device: FakeDevice,
     context: BlueskyContext,
 ):
-    def injected_device_plan(dev: FakeDevice = fake_device.name) -> MsgGenerator:  # type: ignore
+    def injected_device_plan(
+        dev: FakeDevice = inject(fake_device.name),
+    ) -> MsgGenerator:
         yield from ()
 
     context.register_plan(injected_device_plan)
@@ -616,7 +643,7 @@ def test_injected_devices_are_found(
 def test_missing_injected_devices_fail_early(
     context: BlueskyContext,
 ):
-    def missing_injection(dev: FakeDevice = "does_not_exist") -> MsgGenerator:  # type: ignore
+    def missing_injection(dev: FakeDevice = inject("does_not_exist")) -> MsgGenerator:
         yield from ()
 
     context.register_plan(missing_injection)

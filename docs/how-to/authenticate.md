@@ -13,9 +13,7 @@ Here is an example configuration for authenticating to p46-blueapi:
 
 ```yaml
 api:
-  host: "p46-blueapi.diamond.ac.uk"
-  port: 443
-  protocol: "https"
+  url: "https://p46-blueapi.diamond.ac.uk"
 
 auth_token_path: "~/.cache/blueapi_cache"  # Optional: Custom path to store the token
 ```

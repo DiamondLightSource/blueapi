@@ -1,17 +1,23 @@
+import os
+import re
 import textwrap
 from collections.abc import Mapping
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
+from string import Template
 from typing import Any, Generic, Literal, TypeVar, cast
 
 import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
+    AnyUrl,
     BaseModel,
     Field,
+    HttpUrl,
     TypeAdapter,
+    UrlConstraints,
     ValidationError,
     field_validator,
 )
@@ -21,6 +27,16 @@ from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 FORBIDDEN_OWN_REMOTE_URL = "https://github.com/DiamondLightSource/blueapi.git"
+
+
+def _expand_env(loader: yaml.Loader, node: yaml.ScalarNode) -> str:
+    value = loader.construct_scalar(node)
+    return Template(value).safe_substitute(os.environ)
+
+
+# Configure yaml parser to expand environment variables
+yaml.Loader.add_implicit_resolver("!expand", re.compile(r".*\$.*"), None)
+yaml.Loader.add_constructor("!expand", _expand_env)
 
 
 class SourceKind(str, Enum):
@@ -34,14 +50,25 @@ class Source(BlueapiBaseModel):
     module: Path | str
 
 
+class TcpUrl(AnyUrl):
+    _constraints = UrlConstraints(allowed_schemes=["tcp"])
+
+
 class StompConfig(BlueapiBaseModel):
     """
     Config for connecting to stomp broker
     """
 
-    host: str = "localhost"
-    port: int = 61613
-    auth: BasicAuthentication | None = None
+    enabled: bool = Field(
+        description="True if blueapi should connect to stomp for asynchronous "
+        "event publishing",
+        default=False,
+    )
+    url: TcpUrl = TcpUrl("tcp://localhost:61613")
+    auth: BasicAuthentication | None = Field(
+        description="Auth information for communicating with STOMP broker, if required",
+        default=None,
+    )
 
 
 class WorkerEventConfig(BlueapiBaseModel):
@@ -63,10 +90,6 @@ class EnvironmentConfig(BlueapiBaseModel):
     """
 
     sources: list[Source] = [
-        Source(
-            kind=SourceKind.DEVICE_FUNCTIONS, module="blueapi.startup.example_devices"
-        ),
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="blueapi.startup.example_plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
     ]
@@ -76,8 +99,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
 class GraylogConfig(BlueapiBaseModel):
     enabled: bool = False
-    host: str = "localhost"
-    port: int = 5555
+    url: TcpUrl = TcpUrl("tcp://localhost:5555")
 
 
 class LoggingConfig(BlueapiBaseModel):
@@ -93,9 +115,7 @@ class CORSConfig(BlueapiBaseModel):
 
 
 class RestConfig(BlueapiBaseModel):
-    host: str = "localhost"
-    port: int = 8000
-    protocol: str = "http"
+    url: HttpUrl = HttpUrl("http://localhost:8000")
     cors: CORSConfig | None = None
 
 
@@ -125,9 +145,9 @@ class ScratchConfig(BlueapiBaseModel):
     )
     required_gid: int | None = Field(
         description=textwrap.dedent("""
-    Required owner GID for the scratch directory. If supplied the setup-scratch
+    Required owner GID for the scratch directory. If supplied, the setup-scratch
     command will check the scratch area ownership and raise an error if it is
-    not owned by <GID>.
+    not owned by <GID>, or if it does not have SGID permission bit set.
     """),
         default=None,
     )
@@ -185,7 +205,7 @@ class OIDCConfig(BlueapiBaseModel):
 
 
 class NumtrackerConfig(BlueapiBaseModel):
-    url: str = "http://localhost:8002/graphql"
+    url: HttpUrl = HttpUrl("http://localhost:8002/graphql")
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -194,7 +214,7 @@ class ApplicationConfig(BlueapiBaseModel):
     config tree.
     """
 
-    stomp: StompConfig | None = None
+    stomp: StompConfig = Field(default_factory=StompConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
@@ -283,3 +303,7 @@ class ConfigLoader(Generic[C]):
             raise InvalidConfigError(
                 f"Something is wrong with the configuration file: \n {error_details}"
             ) from exc
+
+
+class MissingStompConfiguration(Exception):
+    pass

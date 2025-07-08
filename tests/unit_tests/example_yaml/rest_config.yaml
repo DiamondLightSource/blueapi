@@ -1,6 +1,2 @@
 api:
-  host: a.fake.host
-  port: 12345
-stomp:
-  host: localhost
-  port: 61613
+  url: http://a.fake.host:12345

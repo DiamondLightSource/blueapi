@@ -4,8 +4,10 @@ from typing import Any
 
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
-from dodal.common.beamlines.beamline_utils import get_path_provider
-from dodal.common.visit import StartDocumentPathProvider
+from dodal.common.beamlines.beamline_utils import (
+    get_path_provider,
+    set_path_provider,
+)
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.client.numtracker import NumtrackerClient
@@ -18,9 +20,11 @@ from blueapi.service.model import (
     PlanModel,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskRequest,
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
+from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -45,8 +49,11 @@ def set_config(new_config: ApplicationConfig):
 @cache
 def context() -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx.with_config(config().env)
     return ctx
+
+
+def configure_context() -> None:
+    context().with_config(config().env)
 
 
 @cache
@@ -61,13 +68,15 @@ def worker() -> TaskWorker:
 
 @cache
 def stomp_client() -> StompClient | None:
-    stomp_config: StompConfig | None = config().stomp
-    if stomp_config is not None:
+    stomp_config: StompConfig = config().stomp
+    if stomp_config.enabled:
+        assert stomp_config.url.host is not None, "Stomp URL missing host"
+        assert stomp_config.url.port is not None, "Stomp URL missing port"
         client = StompClient.for_broker(
             broker=Broker(
-                host=stomp_config.host,
-                port=stomp_config.port,
-                auth=stomp_config.auth,  # type: ignore
+                host=stomp_config.url.host,
+                port=stomp_config.url.port,
+                auth=stomp_config.auth,
             )
         )
 
@@ -106,7 +115,7 @@ def _update_scan_num(md: dict[str, Any]) -> int:
     numtracker = numtracker_client()
     if numtracker is not None:
         scan = numtracker.create_scan(md["instrument_session"], md["instrument"])
-        md["instrument_session_directory"] = str(scan.scan.directory.path)
+        md["data_session_directory"] = str(scan.scan.directory.path)
         return scan.scan.scan_number
     else:
         raise InvalidConfigError(
@@ -117,27 +126,35 @@ def _update_scan_num(md: dict[str, Any]) -> int:
 
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
-
     set_config(config)
-
     set_up_logging(config.logging)
 
     # Eagerly initialize worker and messaging connection
-
     worker()
-    stomp_client()
+
+    # if numtracker is configured, use a StartDocumentPathProvider
     if numtracker_client() is not None:
         context().run_engine.scan_id_source = _update_scan_num
-    _hook_run_engine_and_path_provider()
+        _hook_run_engine_and_path_provider()
+
+    configure_context()
+
+    if numtracker_client() is not None and not isinstance(
+        get_path_provider(), StartDocumentPathProvider
+    ):
+        raise InvalidConfigError(
+            "Numtracker has been configured but a path provider was imported"
+            " with the devices. Remove this path provider to use numtracker."
+        )
+
+    stomp_client()
 
 
-# TODO: https://github.com/DiamondLightSource/blueapi/issues/875
 def _hook_run_engine_and_path_provider() -> None:
-    path_provider = get_path_provider()
+    path_provider = StartDocumentPathProvider()
+    set_path_provider(path_provider)
     run_engine = context().run_engine
-
-    if isinstance(path_provider, StartDocumentPathProvider):
-        run_engine.subscribe(path_provider.update_run, "start")
+    run_engine.subscribe(path_provider.update_run, "start")
 
 
 def teardown() -> None:
@@ -187,8 +204,13 @@ def get_device(name: str) -> DeviceModel:
     return DeviceModel.from_device(context().devices[name])
 
 
-def submit_task(task: Task) -> str:
+def submit_task(task_request: TaskRequest) -> str:
     """Submit a task to be run on begin_task"""
+    task = Task(
+        name=task_request.name,
+        params=task_request.params,
+        metadata={"instrument_session": task_request.instrument_session},
+    )
     return worker().submit_task(task)
 
 

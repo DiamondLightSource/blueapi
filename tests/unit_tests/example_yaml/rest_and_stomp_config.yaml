@@ -1,0 +1,5 @@
+api:
+  url: http://a.fake.host:12345
+stomp:
+  enabled: true
+  url: tcp://localhost:61613

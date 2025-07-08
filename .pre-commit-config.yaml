@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
       - id: check-yaml
@@ -13,7 +13,7 @@ repos:
       - id: ruff
         name: lint with ruff
         language: system
-        entry: ruff check --force-exclude
+        entry: ruff check --force-exclude --fix
         types: [python]
         require_serial: true
 
@@ -23,3 +23,11 @@ repos:
         entry: ruff format --force-exclude
         types: [python]
         require_serial: true
+
+  - repo: https://github.com/norwoodj/helm-docs
+    rev:  ""
+    hooks:
+      - id: helm-docs-container
+        args:
+          # Make the tool search for charts only under the `helm` directory
+          - --chart-search-root=helm

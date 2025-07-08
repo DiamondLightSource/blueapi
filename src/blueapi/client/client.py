@@ -8,7 +8,7 @@ from observability_utils.tracing import (
     start_as_current_span,
 )
 
-from blueapi.config import ApplicationConfig
+from blueapi.config import ApplicationConfig, MissingStompConfiguration
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
@@ -20,6 +20,7 @@ from blueapi.service.model import (
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskRequest,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -55,17 +56,20 @@ class BlueapiClient:
         except Exception:
             ...  # Swallow exceptions
         rest = BlueapiRestClient(config.api, session_manager=session_manager)
-        if config.stomp is None:
-            return cls(rest)
-        client = StompClient.for_broker(
-            broker=Broker(
-                host=config.stomp.host,
-                port=config.stomp.port,
-                auth=config.stomp.auth,
+        if config.stomp.enabled:
+            assert config.stomp.url.host is not None, "Stomp URL missing host"
+            assert config.stomp.url.port is not None, "Stomp URL missing port"
+            client = StompClient.for_broker(
+                broker=Broker(
+                    host=config.stomp.url.host,
+                    port=config.stomp.url.port,
+                    auth=config.stomp.auth,
+                )
             )
-        )
-        events = EventBusClient(client)
-        return cls(rest, events)
+            events = EventBusClient(client)
+            return cls(rest, events)
+        else:
+            return cls(rest)
 
     @start_as_current_span(TRACER)
     def get_plans(self) -> PlanResponse:
@@ -194,7 +198,7 @@ class BlueapiClient:
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,
-        task: Task,
+        task: TaskRequest,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> WorkerEvent:
@@ -202,7 +206,7 @@ class BlueapiClient:
         Synchronously run a task, requires a message bus connection
 
         Args:
-            task: Task to run
+            task: Request for task to run
             on_event: Callback for each event. Defaults to None.
             timeout: Time to wait until the task is finished.
             Defaults to None, so waits forever.
@@ -213,8 +217,8 @@ class BlueapiClient:
         """
 
         if self._events is None:
-            raise RuntimeError(
-                "Cannot run plans without Stomp configuration to track progress"
+            raise MissingStompConfiguration(
+                "Stomp configuration required to run plans is missing or disabled"
             )
 
         task_response = self.create_task(task)
@@ -255,13 +259,13 @@ class BlueapiClient:
             return complete.result(timeout=timeout)
 
     @start_as_current_span(TRACER, "task")
-    def create_and_start_task(self, task: Task) -> TaskResponse:
+    def create_and_start_task(self, task: TaskRequest) -> TaskResponse:
         """
         Create a new task and instruct the worker to start it
         immediately.
 
         Args:
-            task: The task to create on the worker
+            task: Request object for task to create on the worker
 
         Returns:
             TaskResponse: Acknowledgement of request
@@ -278,12 +282,12 @@ class BlueapiClient:
             )
 
     @start_as_current_span(TRACER, "task")
-    def create_task(self, task: Task) -> TaskResponse:
+    def create_task(self, task: TaskRequest) -> TaskResponse:
         """
         Create a new task, does not start execution
 
         Args:
-            task: The task to create on the worker
+            task: Request object for task to create on the worker
 
         Returns:
             TaskResponse: Acknowledgement of request

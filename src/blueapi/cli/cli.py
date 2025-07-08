@@ -1,7 +1,9 @@
 import json
+import logging
 import os
 import stat
 import sys
+import textwrap
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
@@ -10,15 +12,21 @@ import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from click.exceptions import ClickException
 from observability_utils.tracing import setup_tracing
 from pydantic import ValidationError
 from requests.exceptions import ConnectionError
 
-from blueapi import __version__
+from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
-from blueapi.client.rest import BlueskyRemoteControlError
+from blueapi.client.rest import (
+    BlueskyRemoteControlError,
+    InvalidParameters,
+    UnauthorisedAccess,
+    UnknownPlan,
+)
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -26,14 +34,16 @@ from blueapi.config import (
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
-from blueapi.service.model import SourceInfo
-from blueapi.worker import ProgressEvent, Task, WorkerEvent
+from blueapi.service.model import SourceInfo, TaskRequest
+from blueapi.worker import ProgressEvent, WorkerEvent
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 
-@click.group(invoke_without_command=True)
+@click.group(
+    invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
+)
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
@@ -177,12 +187,15 @@ def get_devices(obj: dict) -> None:
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
-    assert config.stomp is not None, "Message bus needs to be configured"
+    if not config.stomp.enabled:
+        raise BlueskyStreamingError("Message bus needs to be configured")
+    assert config.stomp.url.host is not None, "Stomp URL missing host"
+    assert config.stomp.url.port is not None, "Stomp URL missing port"
     event_bus_client = EventBusClient(
         StompClient.for_broker(
             broker=Broker(
-                host=config.stomp.host,
-                port=config.stomp.port,
+                host=config.stomp.url.host,
+                port=config.stomp.url.port,
                 auth=config.stomp.auth,
             )
         )
@@ -197,7 +210,7 @@ def listen_to_events(obj: dict) -> None:
 
     print(
         "Subscribing to all bluesky events from "
-        f"{config.stomp.host}:{config.stomp.port}",
+        f"{config.stomp.url.host}:{config.stomp.url.port}",
         file=sys.stderr,
     )
     with event_bus_client:
@@ -210,49 +223,84 @@ def listen_to_events(obj: dict) -> None:
 @click.argument("name", type=str)
 @click.argument("parameters", type=str, required=False)
 @click.option(
+    "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
+)
+@click.option(
     "-t",
     "--timeout",
     type=float,
     help="Timeout for the plan in seconds. None hangs forever",
     default=None,
 )
+@click.option(
+    "-i",
+    "--instrument-session",
+    type=str,
+    help=textwrap.dedent("""
+        Instrument session associated with running the plan,
+        used to tell blueapi where to store any data and as a security check:
+        the session must be valid and active and you must be a member of it."""),
+    required=True,
+)
 @check_connection
 @click.pass_obj
 def run_plan(
-    obj: dict, name: str, parameters: str | None, timeout: float | None
+    obj: dict,
+    name: str,
+    parameters: str | None,
+    timeout: float | None,
+    foreground: bool,
+    instrument_session: str,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
 
     parameters = parameters or "{}"
-    task_id = ""
-    parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
-
-    progress_bar = CliEventRenderer()
-    callback = BestEffortCallback()
-
-    def on_event(event: AnyEvent) -> None:
-        if isinstance(event, ProgressEvent):
-            progress_bar.on_progress_event(event)
-        elif isinstance(event, DataEvent):
-            callback(event.name, event.doc)
+    try:
+        parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
+    except json.JSONDecodeError as jde:
+        raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
 
     try:
-        task = Task(name=name, params=parsed_params)
-        resp = client.run_task(task, on_event=on_event)
-    except ValidationError as e:
-        pprint(f"failed to validate the task parameters, {task_id}, error: {e}")
-        return
-    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
-        pprint(f"server error with this message: {e}")
-        return
-    except ValueError:
-        pprint("task could not run")
-        return
+        task = TaskRequest(
+            name=name,
+            params=parsed_params,
+            instrument_session=instrument_session,
+        )
+    except ValidationError as ve:
+        ip = InvalidParameters.from_validation_error(ve)
+        raise ClickException(ip.message()) from ip
 
-    pprint(resp.model_dump())
-    if resp.task_status is not None and not resp.task_status.task_failed:
-        print("Plan Succeeded")
+    try:
+        if foreground:
+            progress_bar = CliEventRenderer()
+            callback = BestEffortCallback()
+
+            def on_event(event: AnyEvent) -> None:
+                if isinstance(event, ProgressEvent):
+                    progress_bar.on_progress_event(event)
+                elif isinstance(event, DataEvent):
+                    callback(event.name, event.doc)
+
+            resp = client.run_task(task, on_event=on_event)
+
+            if resp.task_status is not None and not resp.task_status.task_failed:
+                print("Plan Succeeded")
+        else:
+            server_task = client.create_and_start_task(task)
+            click.echo(server_task.task_id)
+    except config.MissingStompConfiguration as mse:
+        raise ClickException(*mse.args) from mse
+    except UnknownPlan as up:
+        raise ClickException(f"Plan '{name}' was not recognised") from up
+    except UnauthorisedAccess as ua:
+        raise ClickException("Unauthorised request") from ua
+    except InvalidParameters as ip:
+        raise ClickException(ip.message()) from ip
+    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
+        raise ClickException(f"server error with this message: {e}") from e
+    except ValueError as ve:
+        raise ClickException(f"task could not run: {ve}") from ve
 
 
 @controller.command(name="state")
@@ -409,3 +457,10 @@ def logout(obj: dict) -> None:
         auth.logout()
     except FileNotFoundError:
         print("Logged out")
+    except ValueError as e:
+        logging.debug("Invalid login token: %s", e)
+        raise ClickException(
+            "Login token is not valid - remove before trying again"
+        ) from e
+    except Exception as e:
+        raise ClickException(f"Error logging out: {e}") from e

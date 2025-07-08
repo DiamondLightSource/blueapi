@@ -218,10 +218,14 @@ components:
       - new_state
       title: StateChangeRequest
       type: object
-    Task:
+    TaskRequest:
       additionalProperties: false
-      description: Task that will run a plan
+      description: Request to run a task with related info
       properties:
+        instrument_session:
+          description: Instrument session associated with this task
+          title: Instrument Session
+          type: string
         name:
           description: Name of plan to run
           title: Name
@@ -232,7 +236,8 @@ components:
           type: object
       required:
       - name
-      title: Task
+      - instrument_session
+      title: TaskRequest
       type: object
     TaskResponse:
       additionalProperties: false
@@ -339,8 +344,11 @@ components:
       title: WorkerTask
       type: object
 info:
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 0.0.10
+  version: 1.0.1
 openapi: 3.1.0
 paths:
   /config/oidc:
@@ -357,6 +365,8 @@ paths:
         '204':
           description: No Authentication configured
       summary: Get Oidc Config
+      tags:
+      - Meta
   /devices:
     get:
       description: Retrieve information about all available devices.
@@ -369,6 +379,8 @@ paths:
                 $ref: '#/components/schemas/DeviceResponse'
           description: Successful Response
       summary: Get Devices
+      tags:
+      - Device
   /devices/{name}:
     get:
       description: Retrieve information about a devices by its (unique) name.
@@ -394,6 +406,8 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Device By Name
+      tags:
+      - Device
   /environment:
     delete:
       description: Delete the current environment, causing internal components to
@@ -407,6 +421,8 @@ paths:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
       summary: Delete Environment
+      tags:
+      - Environment
     get:
       description: Get the current state of the environment, i.e. initialization state.
       operationId: get_environment_environment_get
@@ -418,6 +434,8 @@ paths:
                 $ref: '#/components/schemas/EnvironmentResponse'
           description: Successful Response
       summary: Get Environment
+      tags:
+      - Environment
   /healthz:
     get:
       description: If able to serve this, server is live and ready for requests.
@@ -430,6 +448,8 @@ paths:
                 $ref: '#/components/schemas/HealthProbeResponse'
           description: Successful Response
       summary: Health Probe
+      tags:
+      - Meta
   /plans:
     get:
       description: Retrieve information about all available plans.
@@ -442,6 +462,8 @@ paths:
                 $ref: '#/components/schemas/PlanResponse'
           description: Successful Response
       summary: Get Plans
+      tags:
+      - Plan
   /plans/{name}:
     get:
       description: Retrieve information about a plan by its (unique) name.
@@ -467,6 +489,8 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Plan By Name
+      tags:
+      - Plan
   /python_environment:
     get:
       description: 'Retrieve the Python environment details.
@@ -506,6 +530,8 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Python Environment
+      tags:
+      - Environment
   /tasks:
     get:
       description: 'Retrieve tasks based on their status.
@@ -533,6 +559,8 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Tasks
+      tags:
+      - Task
     post:
       description: Submit a task to the worker.
       operationId: submit_task_tasks_post
@@ -540,12 +568,13 @@ paths:
         content:
           application/json:
             example:
+              instrument_session: cm12345-1
               name: count
               params:
                 detectors:
                 - x
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: '#/components/schemas/TaskRequest'
         required: true
       responses:
         '201':
@@ -561,6 +590,8 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Submit Task
+      tags:
+      - Task
   /tasks/{task_id}:
     delete:
       operationId: delete_submitted_task_tasks__task_id__delete
@@ -585,6 +616,8 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Delete Submitted Task
+      tags:
+      - Task
     get:
       description: Retrieve a task
       operationId: get_task_tasks__task_id__get
@@ -609,6 +642,8 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Task
+      tags:
+      - Task
   /worker/state:
     get:
       description: Get the State of the Worker
@@ -621,6 +656,8 @@ paths:
                 $ref: '#/components/schemas/WorkerState'
           description: Successful Response
       summary: Get State
+      tags:
+      - Task
     put:
       description: "Request that the worker is put into a particular state.\nReturns\
         \ the state of the worker at the end of the call.\n\n- **The following transitions\
@@ -659,6 +696,8 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Set State
+      tags:
+      - Task
   /worker/task:
     get:
       operationId: get_active_task_worker_task_get
@@ -670,6 +709,8 @@ paths:
                 $ref: '#/components/schemas/WorkerTask'
           description: Successful Response
       summary: Get Active Task
+      tags:
+      - Task
     put:
       description: 'Set a task to active status, the worker should begin it as soon
         as possible.
@@ -698,3 +739,5 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Set Active Task
+      tags:
+      - Task

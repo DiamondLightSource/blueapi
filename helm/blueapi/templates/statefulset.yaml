@@ -5,7 +5,6 @@ metadata:
   labels:
     {{- include "blueapi.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       {{- include "blueapi.selectorLabels" . | nindent 6 }}
@@ -22,48 +21,73 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "blueapi.selectorLabels" . | nindent 8 }}
+        {{- include "blueapi.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
-      hostNetwork: {{ .Values.hostNetwork }}
+      {{- if .Values.hostNetwork }}      
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "blueapi.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       volumes:
       - name: worker-config
         projected:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-config
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
       {{- if .Values.initContainer.enabled }}
       - name: init-config
         projected:
           sources:
           - configMap:
-              name: {{ include "blueapi.fullname" . }}-initconfig
+              name: {{ include "blueapi.fullname" . }}-init-config
+      - name: venv
+        emptyDir:
+          sizeLimit: 5Gi
+      {{- if .Values.initContainer.persistentVolume.enabled }}
+      - name: scratch
+        persistentVolumeClaim:
+          claimName: {{default (tpl "scratch-{{ .Values.image.tag | default .Chart.AppVersion }}" .) .Values.initContainer.persistentVolume.existingClaimName }}
+      {{- else }}
       - name: scratch-host
         hostPath:
           path: {{ required "initContainer enabled but no worker.scratch.root!" (.Values.worker.scratch).root }}
           type: Directory
-      - name: venv
+      {{- end }}
+      {{- end }}
+      {{- if or .Values.debug.enabled (and .Values.initContainer.enabled .Values.initContainer.persistentVolume.enabled)}}
+      - name: home  # Required for vscode to install plugins
         emptyDir:
-          sizeLimit: 5Gi
+          sizeLimit: 500Mi
+      - name: nslcd  # Shared volume between main and sidecar container
+        emptyDir:
+          sizeLimit: 5Mi
       {{- end }}
       {{- if .Values.initContainer.enabled }}
       initContainers:
       - name: setup-scratch
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary "-debug" "" .Values.debug.enabled }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources:
           {{- .Values.initResources | default .Values.resources | toYaml | nindent 12 }}
-        command: [/bin/sh, -c]
+        command: ["/bin/sh", "-c"]
         args:
           - |
             echo "Setting up scratch area"
-            blueapi -c /config/initconfig.yaml setup-scratch
+            blueapi -c /config/init_config.yaml setup-scratch
             if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
             echo "Exporting venv as artefact"
             cp -r /venv/* /artefacts
@@ -71,40 +95,95 @@ spec:
           - name: init-config
             mountPath: "/config"
             readOnly: true
+          - name: venv
+            mountPath: /artefacts
+          {{- if .Values.initContainer.persistentVolume.enabled }}
+          - name: scratch
+            mountPath: {{ .Values.worker.scratch.root }}
+          {{- else }}
           - name: scratch-host
             mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
-          - name: venv
-            mountPath: /artefacts
+          {{- end }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary "-debug" "" .Values.debug.enabled }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              {{- $parsed := urlParse .Values.worker.api.url }}
+              {{- if regexMatch "\\:[0-9]+" .Values.worker.api.url }}
+              containerPort: {{ trimPrefix ":" (regexFind "\\:[0-9]+" .Values.worker.api.url) }}
+              {{- else if eq $parsed.scheme  "http"}}
+              containerPort: 80
+              {{- else if eq $parsed.scheme "https" }}
+              containerPort: 443
+              {{- else }}
+              containerPort: 8000
+              {{- end }}
+              protocol: TCP
+          {{- with .Values.resources }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
-            - name: worker-config
-              mountPath: "/config"
-              readOnly: true
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
             {{- if .Values.initContainer.enabled }}
+            {{- if .Values.initContainer.persistentVolume.enabled }}
+            - name: scratch
+              mountPath: {{ .Values.worker.scratch.root }}
+            {{- else }}
             - name: scratch-host
               mountPath: {{ .Values.worker.scratch.root }}
               mountPropagation: HostToContainer
+            {{- end }}
             - name: venv
               mountPath: /venv
             {{- end }}
+            {{- if or .Values.debug.enabled (and .Values.initContainer.enabled .Values.initContainer.persistentVolume.enabled) }}
+            - mountPath: /home
+              name: home
+            - mountPath: /var/run/nslcd
+              name: nslcd
+            {{- end }}
+          {{- if not .Values.debug.enabled }}
           args:
             - "-c"
             - "/config/config.yaml"
             - "serve"
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
+        {{- if or .Values.debug.enabled (and .Values.initContainer.persistentVolume.enabled .Values.initContainer.enabled )}}
+        - name: debug-account-sync
+          image: ghcr.io/diamondlightsource/account-sync-sidecar:3.0.0
+          volumeMounts:
+          # This allows the nslcd socket to be shared between the main container and the sidecar
+          - mountPath: /var/run/nslcd
+            name: nslcd
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -1,5 +1,6 @@
 # The devcontainer should use the developer target and run as root with podman
 # or docker with user namespaces.
+# Version SHA has been removed, see: https://github.com/DiamondLightSource/blueapi/issues/1053
 ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION} AS developer
 
@@ -21,9 +22,28 @@ ENV PATH=/venv/bin:$PATH
 
 # The build stage installs the context into the venv
 FROM developer AS build
-COPY . /context
-WORKDIR /context
+RUN mkdir -p /.cache/pip; chmod o+wrX /.cache/pip
+COPY --chmod=o+wrX . /workspaces/blueapi
+WORKDIR /workspaces/blueapi
 RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
+
+FROM build AS debug
+
+# Set origin to use ssh
+RUN git remote set-url origin git@github.com:diamondlightsource/DiamondLightSource/blueapi.git
+
+# For this pod to understand finding user information from LDAP
+RUN apt update
+RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
+RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
+
+# Make editable and debuggable
+RUN pip install debugpy
+RUN pip install -e .
+
+# Alternate entrypoint to allow devcontainer to attach
+ENTRYPOINT [ "/bin/bash", "-c", "--" ]
+CMD [ "while true; do sleep 30; done;" ]
 
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim AS runtime
@@ -32,9 +52,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime
     git \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=build /venv/ /venv/
+COPY --from=build --chmod=o+wrX /venv/ /venv/
+COPY --from=build --chmod=o+wrX /.cache/pip /.cache/pip
 ENV PATH=/venv/bin:$PATH
 ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
+
+# For this pod to understand finding user information from LDAP
+RUN apt update
+RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
+RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 
 # Set the MPLCONFIGDIR environment variable to a temporary directory to avoid
 # writing to the home directory. This is necessary because the home directory
@@ -42,8 +68,6 @@ ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
 # https://matplotlib.org/stable/install/environment_variables_faq.html#envvar-MPLCONFIGDIR
 
 ENV MPLCONFIGDIR=/tmp/matplotlib
-
-RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip
 
 ENTRYPOINT ["blueapi"]
 CMD ["serve"]

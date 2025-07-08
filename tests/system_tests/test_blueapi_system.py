@@ -13,6 +13,7 @@ from blueapi.client.client import (
     BlueskyRemoteControlError,
 )
 from blueapi.client.event_bus import AnyEvent
+from blueapi.client.rest import UnknownPlan
 from blueapi.config import (
     ApplicationConfig,
     OIDCConfig,
@@ -21,15 +22,25 @@ from blueapi.config import (
 from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
+    TaskRequest,
     TaskResponse,
     WorkerTask,
 )
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
-from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
-_SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
-_LONG_TASK = Task(name="sleep", params={"time": 1.0})
+FAKE_INSTRUMENT_SESSION = "cm12345-1"
+
+_SIMPLE_TASK = TaskRequest(
+    name="sleep",
+    params={"time": 0.0},
+    instrument_session=FAKE_INSTRUMENT_SESSION,
+)
+_LONG_TASK = TaskRequest(
+    name="sleep",
+    params={"time": 1.0},
+    instrument_session=FAKE_INSTRUMENT_SESSION,
+)
 
 _DATA_PATH = Path(__file__).parent
 
@@ -44,7 +55,7 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 #   src/script/start_rabbitmq.sh
 #
 # Step 2: Start the BlueAPI server with valid configuration:
-#   blueapi -c tests/unit_tests/example_yaml/valid_stomp_config.yaml serve
+#   blueapi -c tests/system_tests/config.yaml serve
 #
 # Step 3: Run the system tests using tox:
 #   tox -e system-test
@@ -60,7 +71,8 @@ def client_with_stomp() -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
             stomp=StompConfig(
-                auth=BasicAuthentication(username="guest", password="guest")  # type: ignore
+                enabled=True,
+                auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
             )
         )
     )
@@ -184,9 +196,23 @@ def test_create_task_and_delete_task_by_id(client: BlueapiClient):
     client.clear_task(create_task.task_id)
 
 
+def test_instrument_session_propagated(client: BlueapiClient):
+    response = client.create_task(_SIMPLE_TASK)
+    trackable_task = client.get_task(response.task_id)
+    assert trackable_task.task.metadata == {
+        "instrument_session": FAKE_INSTRUMENT_SESSION
+    }
+
+
 def test_create_task_validation_error(client: BlueapiClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
-        client.create_task(Task(name="Not-exists", params={"Not-exists": 0.0}))
+    with pytest.raises(UnknownPlan):
+        client.create_task(
+            TaskRequest(
+                name="Not-exists",
+                params={"Not-exists": 0.0},
+                instrument_session="Not-exists",
+            )
+        )
 
 
 def test_get_all_tasks(client: BlueapiClient):
@@ -350,54 +376,37 @@ def test_delete_current_environment(client: BlueapiClient):
 @pytest.mark.parametrize(
     "task",
     [
-        Task(
+        TaskRequest(
             name="count",
             params={
                 "detectors": [
-                    "image_det",
-                    "current_det",
+                    "det",
                 ],
                 "num": 5,
             },
+            instrument_session="cm12345-1",
         ),
-        Task(
+        TaskRequest(
             name="spec_scan",
             params={
                 "detectors": [
-                    "image_det",
-                    "current_det",
+                    "det",
                 ],
-                "spec": Line("x", 0.0, 10.0, 2) * Line("y", 5.0, 15.0, 3),
+                "spec": Line("sim.x", 0.0, 10.0, 2) * Line("sim.y", 5.0, 15.0, 3),
             },
+            instrument_session="cm12345-1",
         ),
-        Task(
+        TaskRequest(
             name="set_absolute",
             params={
-                "movable": "dynamic_motor",
-                "value": "bar",
+                "movable": "sim.x",
+                "value": "4.0",
             },
-        ),
-        Task(
-            name="motor_plan",
-            params={
-                "motor": "movable_motor",
-            },
-        ),
-        Task(
-            name="motor_plan",
-            params={
-                "motor": "dynamic_motor",
-            },
-        ),
-        Task(
-            name="dataclass_motor_plan",
-            params={
-                "motor": "data_class_motor",
-            },
+            instrument_session="cm12345-1",
         ),
     ],
 )
-def test_plan_runs(client_with_stomp: BlueapiClient, task: Task):
+def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
     final_event = client_with_stomp.run_task(task)
     assert final_event.is_complete() and not final_event.is_error()
     assert final_event.state is WorkerState.IDLE

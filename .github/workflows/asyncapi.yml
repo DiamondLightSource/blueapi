@@ -4,16 +4,19 @@ name: AsyncAPI
 
 on:
   push:
+    branches:
+      - main
+    tags:
+      - '*'
   pull_request:
 
 jobs:
   validate:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: check asyncapi.yaml file
-        uses: WaleedAshraf/asyncapi-github-action@v0.0.10
+        uses: WaleedAshraf/asyncapi-github-action@d31f1627ac7c24132e7c4e4b89948d43b619685a # v0.0.10
         with:
           filepath: "./docs/reference/asyncapi.yaml"

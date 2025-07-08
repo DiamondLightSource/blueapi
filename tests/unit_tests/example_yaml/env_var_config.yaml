@@ -1,0 +1,4 @@
+nested:
+  foo: ${ENV_NUM}
+  bar: interpolated_${BAR}_value
+baz: ${ENABLE_BAZ}

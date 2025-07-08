@@ -1,0 +1,13 @@
+api:
+  url: http://0.0.0.0:8000
+env:
+  sources:
+    - kind: dodal
+      module: dodal.beamlines.adsim
+    - kind: planFunctions
+      module: dodal.plans
+    - kind: planFunctions
+      module: dodal.plan_stubs.wrapped
+stomp:
+  enabled: true
+  url: tcp://localhost:61613/

@@ -176,7 +176,7 @@ worker:
   api:
     # -- 0.0.0.0 required to allow non-loopback traffic
     # If using hostNetwork, the port must be free on the host
-  url: http://0.0.0.0:8000/
+    url: http://0.0.0.0:8000/
   env:
     # -- modules (must be installed in the venv) to fetch devices/plans from
     sources:

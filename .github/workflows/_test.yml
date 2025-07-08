@@ -53,6 +53,9 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           pip-install: ".[dev]"
+      
+      - name: Install helm plugins
+        uses: ./.github/actions/install_helm_plugins
 
       - name: Run tests
         run: tox -e tests

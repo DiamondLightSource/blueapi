@@ -28,7 +28,7 @@ repos:
         name: export config schema
         entry: blueapi config-schema -u
         language: python
-        files: "src/blueapi/config.py|src/blueapi/utils/*"
+        files: "src\/blueapi\/config.py|src\/blueapi\/utils\/"
         pass_filenames: false
 
   - repo: https://github.com/norwoodj/helm-docs

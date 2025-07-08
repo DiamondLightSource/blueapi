@@ -7,7 +7,7 @@ repos:
         exclude: ^helm\/.*\/templates\/.*|catalog-info.yaml
       - id: check-merge-conflict
       - id: end-of-file-fixer
-        exclude: "helm/blueapi/README.md"
+        exclude: "helm\/blueapi\/README.md"
 
   - repo: local
     hooks:

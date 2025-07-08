@@ -40,7 +40,7 @@
             "type": "bind"
         },
         {
-            "target": "/workspaces/blueapi/.venv",
+            "target": "/workspaces/${localWorkspaceFolderBasename}/.venv",
             "type": "volume"
         }
     ],

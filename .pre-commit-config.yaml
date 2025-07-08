@@ -34,7 +34,7 @@ repos:
   - repo: https://github.com/norwoodj/helm-docs
     rev: ""
     hooks:
-      - id: helm-docs-container
+      - id: helm-docs-built
         args:
           # Make the tool search for charts only under the `helm` directory
           - --chart-search-root=helm

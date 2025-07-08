@@ -116,7 +116,7 @@ def test_connection_error_caught_by_wrapper_func(
     mock_requests.side_effect = ConnectionError()
     result = runner.invoke(main, ["controller", "plans"])
 
-    assert result.stdout == "Failed to establish connection to blueapi server.\n"
+    assert result.output == "Error: Failed to establish connection to blueapi server.\n"
 
 
 @patch("requests.request")
@@ -127,8 +127,8 @@ def test_authentication_error_caught_by_wrapper_func(
     result = runner.invoke(main, ["controller", "plans"])
 
     assert (
-        result.stdout
-        == "Access denied. Please check your login status and try again.\n"
+        result.output
+        == "Error: Access denied. Please check your login status and try again.\n"
     )
 
 

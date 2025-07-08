@@ -27,8 +27,8 @@ repos:
       - id: export-config-schema
         name: export config schema
         language: system
-        entry: python
-        args: [src/script/export_config_schema.py]
+        entry: blueapi
+        args: [config-schema, -u]
 
   - repo: https://github.com/norwoodj/helm-docs
     rev: ""

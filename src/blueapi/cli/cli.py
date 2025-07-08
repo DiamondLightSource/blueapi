@@ -118,7 +118,7 @@ def schema(output: Path | None = None, update: bool = False) -> None:
 )
 @main.command(name="config-schema")
 def config_schema(output: Path | None = None, update: bool = False) -> None:
-    """Generates a json schema of the ApplicationConfig pydantic basemodel"""
+    """Generates a json schema from the ApplicationConfig pydantic basemodel"""
     schema = ApplicationConfig.model_json_schema()
 
     if update:

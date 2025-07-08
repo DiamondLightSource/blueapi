@@ -4,9 +4,11 @@ import os
 import stat
 import sys
 import textwrap
+from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
+from typing import ParamSpec, TypeVar
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -147,11 +149,15 @@ def controller(ctx: click.Context, output: str) -> None:
     ctx.obj["client"] = BlueapiClient.from_config(config)
 
 
-def check_connection(func):
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def check_connection(func: Callable[P, T]) -> Callable[P, T]:
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         except ConnectionError as ce:
             raise ClickException(
                 "Failed to establish connection to blueapi server."

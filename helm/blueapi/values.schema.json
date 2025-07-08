@@ -103,6 +103,9 @@
                 }
             }
         },
+        "initResources": {
+            "type": "object"
+        },
         "livenessProbe": {
             "type": "object",
             "properties": {

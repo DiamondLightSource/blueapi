@@ -24,7 +24,7 @@ class InstrumentTagFilter(logging.Filter):
 def set_up_logging(logging_config: LoggingConfig) -> None:
     """Configure root level logger for blueapi.
 
-    Configures root logger. Any other logger will propogate to this logger assuming the
+    Configures root logger. Any other logger will propagate to this logger assuming the
     default `logger.propagate` is True, and no filters block it.
 
     Args:

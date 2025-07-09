@@ -4,9 +4,11 @@ import os
 import stat
 import sys
 import textwrap
+from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
+from typing import ParamSpec, TypeVar
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -172,16 +174,24 @@ def controller(ctx: click.Context, output: str) -> None:
     ctx.obj["client"] = BlueapiClient.from_config(config)
 
 
-def check_connection(func):
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def check_connection(func: Callable[P, T]) -> Callable[P, T]:
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
-            func(*args, **kwargs)
-        except ConnectionError:
-            print("Failed to establish connection to blueapi server.")
+            return func(*args, **kwargs)
+        except ConnectionError as ce:
+            raise ClickException(
+                "Failed to establish connection to blueapi server."
+            ) from ce
         except BlueskyRemoteControlError as e:
             if str(e) == "<Response [401]>":
-                print("Access denied. Please check your login status and try again.")
+                raise ClickException(
+                    "Access denied. Please check your login status and try again."
+                ) from e
             else:
                 raise e
 
@@ -189,8 +199,8 @@ def check_connection(func):
 
 
 @controller.command(name="plans")
-@check_connection
 @click.pass_obj
+@check_connection
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
     client: BlueapiClient = obj["client"]
@@ -198,8 +208,8 @@ def get_plans(obj: dict) -> None:
 
 
 @controller.command(name="devices")
-@check_connection
 @click.pass_obj
+@check_connection
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiClient = obj["client"]
@@ -207,8 +217,8 @@ def get_devices(obj: dict) -> None:
 
 
 @controller.command(name="listen")
-@check_connection
 @click.pass_obj
+@check_connection
 def listen_to_events(obj: dict) -> None:
     """Listen to events output by blueapi"""
     config: ApplicationConfig = obj["config"]
@@ -267,8 +277,8 @@ def listen_to_events(obj: dict) -> None:
         the session must be valid and active and you must be a member of it."""),
     required=True,
 )
-@check_connection
 @click.pass_obj
+@check_connection
 def run_plan(
     obj: dict,
     name: str,
@@ -329,8 +339,8 @@ def run_plan(
 
 
 @controller.command(name="state")
-@check_connection
 @click.pass_obj
+@check_connection
 def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
@@ -340,8 +350,8 @@ def get_state(obj: dict) -> None:
 
 @controller.command(name="pause")
 @click.option("--defer", is_flag=True, help="Defer the pause until the next checkpoint")
-@check_connection
 @click.pass_obj
+@check_connection
 def pause(obj: dict, defer: bool = False) -> None:
     """Pause the execution of the current task"""
 
@@ -350,8 +360,8 @@ def pause(obj: dict, defer: bool = False) -> None:
 
 
 @controller.command(name="resume")
-@check_connection
 @click.pass_obj
+@check_connection
 def resume(obj: dict) -> None:
     """Resume the execution of the current task"""
 
@@ -360,9 +370,9 @@ def resume(obj: dict) -> None:
 
 
 @controller.command(name="abort")
-@check_connection
 @click.argument("reason", type=str, required=False)
 @click.pass_obj
+@check_connection
 def abort(obj: dict, reason: str | None = None) -> None:
     """
     Abort the execution of the current task, marking any ongoing runs as failed,
@@ -374,8 +384,8 @@ def abort(obj: dict, reason: str | None = None) -> None:
 
 
 @controller.command(name="stop")
-@check_connection
 @click.pass_obj
+@check_connection
 def stop(obj: dict) -> None:
     """
     Stop the execution of the current task, marking as ongoing runs as success
@@ -386,7 +396,6 @@ def stop(obj: dict) -> None:
 
 
 @controller.command(name="env")
-@check_connection
 @click.option(
     "-r",
     "--reload",
@@ -402,6 +411,7 @@ def stop(obj: dict) -> None:
     default=10.0,
 )
 @click.pass_obj
+@check_connection
 def env(
     obj: dict,
     reload: bool,
@@ -435,8 +445,8 @@ def scratch(obj: dict) -> None:
 @controller.command(name="get-python-env")
 @click.option("--name", type=str, help="Filter by the name of the installed package")
 @click.option("--source", type=SourceInfo, help="Filter by the source type")
-@check_connection
 @click.pass_obj
+@check_connection
 def get_python_env(obj: dict, name: str, source: SourceInfo) -> None:
     """
     Retrieve the installed packages and their sources in the current environment.
@@ -446,8 +456,8 @@ def get_python_env(obj: dict, name: str, source: SourceInfo) -> None:
 
 
 @main.command(name="login")
-@check_connection
 @click.pass_obj
+@check_connection
 def login(obj: dict) -> None:
     """
     Authenticate with the blueapi using the OIDC (OpenID Connect) flow.

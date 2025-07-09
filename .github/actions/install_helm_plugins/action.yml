@@ -1,9 +1,0 @@
-name: Install helm plugins
-description: Installs helm-values-schema-json plugin
-
-runs:
-  using: composite
-  steps:
-    - name: Install helm-values-schema-json
-      run: helm plugin install https://github.com/losisin/helm-values-schema-json.git
-      shell: bash

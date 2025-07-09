@@ -55,7 +55,7 @@ jobs:
           pip-install: ".[dev]"
       
       - name: Install helm plugins
-        uses: ./.github/actions/install_helm_plugins
+        run: helm plugin install https://github.com/losisin/helm-values-schema-json.git
 
       - name: Run tests
         run: tox -e tests

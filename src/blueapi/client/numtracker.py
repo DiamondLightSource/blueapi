@@ -4,7 +4,7 @@ from pathlib import Path
 from textwrap import dedent
 
 import requests
-from pydantic import Field
+from pydantic import Field, HttpUrl
 
 from blueapi.utils import BlueapiBaseModel
 
@@ -45,7 +45,7 @@ class NumtrackerClient:
 
     def __init__(
         self,
-        url: str,
+        url: HttpUrl,
     ) -> None:
         self._url = url
         self._headers: Mapping[str, str] = {}
@@ -93,7 +93,7 @@ class NumtrackerClient:
         }
 
         response = requests.post(
-            self._url,
+            self._url.unicode_string(),
             headers=self._headers,
             json=query,
         )

@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 import responses
+from pydantic import HttpUrl
 from requests import HTTPError
 from tests.conftest import NOT_CONFIGURED_INSTRUMENT
 
@@ -15,7 +16,7 @@ from blueapi.client.numtracker import (
 
 @pytest.fixture
 def numtracker() -> NumtrackerClient:
-    return NumtrackerClient("https://numtracker-example.com/graphql")
+    return NumtrackerClient(HttpUrl("https://numtracker-example.com/graphql"))
 
 
 def test_create_scan(

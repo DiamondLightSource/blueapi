@@ -40,14 +40,14 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
-      {{- with .Values.volumes }}
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       - name: worker-config
         projected:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-config
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
       {{- if .Values.initContainer.enabled }}
       - name: init-config
         projected:

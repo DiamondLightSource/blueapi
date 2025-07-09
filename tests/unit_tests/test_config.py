@@ -241,7 +241,7 @@ def temp_yaml_config_file(
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "url": "http://graylog-log-target.diamond.ac.uk:12232/",
+                    "url": "tcp://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
             "api": {
@@ -274,7 +274,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
         {
             "stomp": {
                 "enabled": True,
-                "url": "http://localhost:61613/",
+                "url": "tcp://localhost:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
             "tiled": {"enabled": False, "url": "http://localhost:8000/"},
@@ -301,7 +301,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "url": "http://graylog-log-target.diamond.ac.uk:12232/",
+                    "url": "tcp://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
             "numtracker": None,
@@ -324,7 +324,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
         {
             "stomp": {
                 "enabled": True,
-                "url": "https://rabbitmq.diamond.ac.uk:61613/",
+                "url": "tcp://rabbitmq.diamond.ac.uk:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
             "tiled": {"enabled": False, "url": "http://localhost:8000/"},
@@ -345,7 +345,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "level": "INFO",
                 "graylog": {
                     "enabled": False,
-                    "url": "http://graylog-log-target.diamond.ac.uk:12232/",
+                    "url": "tcp://graylog-log-target.diamond.ac.uk:12232/",
                 },
             },
             "api": {

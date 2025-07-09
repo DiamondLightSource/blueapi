@@ -192,7 +192,7 @@ worker:
     auth:
       username: guest
       password: guest
-    url: http://rabbitmq:61613/
+    url: tcp://rabbitmq:61613/
   # -- If initContainer is enabled the default branch of python projects in this section are installed
   # into the venv *without their dependencies*
   scratch:
@@ -205,7 +205,7 @@ worker:
     level: "INFO"
     graylog:
       enabled: False
-      url: http://graylog-log-target.diamond.ac.uk:12232/
+      url: tcp://graylog-log-target.diamond.ac.uk:12232/
 
 # -- Configure the initContainer that checks out the scratch configuration repositories
 initContainer:

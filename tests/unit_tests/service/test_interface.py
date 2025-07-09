@@ -12,6 +12,7 @@ from dodal.common.beamlines.beamline_utils import (
     set_path_provider,
 )
 from ophyd_async.epics.motor import Motor
+from pydantic import HttpUrl
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi.client.numtracker import NumtrackerClient
@@ -400,7 +401,9 @@ def test_get_scratch_with_config(mock_get_env: MagicMock):
 
 def test_configure_numtracker():
     conf = ApplicationConfig(
-        numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql")
+        ),
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
         ),
@@ -412,7 +415,7 @@ def test_configure_numtracker():
 
     assert isinstance(nt, NumtrackerClient)
     assert nt._headers == {"a": "b"}
-    assert nt._url == "https://numtracker-example.com/graphql"
+    assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
     interface.teardown()
 
@@ -515,7 +518,9 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
 @patch("blueapi.client.numtracker.NumtrackerClient.create_scan")
 def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_scan):
     conf = ApplicationConfig(
-        numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql")
+        ),
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
         ),
@@ -540,7 +545,9 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
         env=EnvironmentConfig(
             metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
         ),
-        numtracker=NumtrackerConfig(url="https://numtracker-example.com/graphql"),
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql")
+        ),
     )
     interface.setup(conf)
     ctx = interface.context()

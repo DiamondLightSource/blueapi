@@ -2,4 +2,4 @@ api:
   url: http://a.fake.host:12345
 stomp:
   enabled: true
-  url: https://localhost:61613
+  url: tcp://localhost:61613

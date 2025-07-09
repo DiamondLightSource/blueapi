@@ -126,9 +126,9 @@ def config_schema(output: Path | None = None, update: bool = False) -> None:
     if update:
         output = config.CONFIG_SCHEMA_LOCATION
     if output is not None:
-        with open(output, "w") as file:
-            json.dump(schema, file, indent=4)
-            file.write("\n")
+        with output.open("w") as stream:
+            json.dump(schema, stream, indent=4)
+            stream.write("\n")
     else:
         print(json.dumps(schema))
 

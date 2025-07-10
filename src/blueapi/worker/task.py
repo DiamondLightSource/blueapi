@@ -37,7 +37,8 @@ class Task(BlueapiBaseModel):
 
         func = ctx.plan_functions[self.name]
         prepared_params = self.prepare_params(ctx)
-        ctx.run_engine(func(**prepared_params), metadata_kw=self.metadata)
+        ctx.run_engine.md.update(self.metadata)
+        ctx.run_engine(func(**prepared_params))
 
 
 def _lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:

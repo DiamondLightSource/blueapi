@@ -356,11 +356,9 @@ def test_add_metadata_with_config(
     empty_context: BlueskyContext,
 ):
     empty_context.with_config(
-        EnvironmentConfig(
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
-        )
+        EnvironmentConfig(metadata=MetadataConfig(instrument="p46"))
     )
-    metadata = [("instrument", "p46"), ("instrument_session", "ab123")]
+    metadata = [("instrument", "p46")]
 
     for md in metadata:
         assert md in empty_context.run_engine.md.items()

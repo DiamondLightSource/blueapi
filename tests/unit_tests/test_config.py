@@ -517,6 +517,6 @@ def test_config_schema_updated() -> None:
     with CONFIG_SCHEMA_LOCATION.open("r") as stream:
         config_schema = json.load(stream)
     assert DeepDiff(config_schema, ApplicationConfig.model_json_schema()) == {}, (
-        f"Config schema is out of date with schema at {CONFIG_SCHEMA_LOCATION}. \
-            You may need to run `blueapi config-schema -u`"
+        f"ApplicationConfig model is out of date with schema at \
+            {CONFIG_SCHEMA_LOCATION}. You may need to run `blueapi config-schema -u`"
     )

@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import stat
+import subprocess
 import sys
 import textwrap
 from collections.abc import Callable
@@ -180,6 +181,13 @@ def start_application(obj: dict):
     """
     setup_tracing("BlueAPI", OTLP_EXPORT_ENABLED)
     start(config)
+
+
+@main.command(name="run-command")
+@click.argument("commands", nargs=-1)
+def run_command(commands: str) -> Any | None:
+    """Run shell command remotely"""
+    subprocess.run(commands)
 
 
 @main.group()

@@ -1324,5 +1324,7 @@ def test_config_schema(
             stream.write.assert_called()
 
     else:
-        with CONFIG_SCHEMA_LOCATION.open("r") as stream:
-            assert DeepDiff(json.loads(result.output), json.load(stream)) == {}
+        assert (
+            DeepDiff(json.loads(result.output), ApplicationConfig.model_json_schema())
+            == {}
+        )

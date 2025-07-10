@@ -37,7 +37,6 @@ from blueapi.client.rest import (
     UnknownPlan,
 )
 from blueapi.config import (
-    CONFIG_SCHEMA_LOCATION,
     ApplicationConfig,
     ScratchConfig,
     ScratchRepository,

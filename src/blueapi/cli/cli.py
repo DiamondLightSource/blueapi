@@ -157,7 +157,7 @@ def start_application(obj: dict):
 @click.argument("commands", nargs=-1)
 def run_command(commands: str) -> Any | None:
     """Run shell command remotely"""
-    subprocess.run(commands)
+    return subprocess.run(commands)
 
 
 @main.group()

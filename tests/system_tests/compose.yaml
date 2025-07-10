@@ -6,4 +6,4 @@ services:
     environment:
       NUMTRACKER_PORT: 8001
     post_start:
-      - command: /app/numtracker client configure adsim --directory '/tmp/{instrument}/data/{year}/{visit}' --scan '{subdirectory}/{instrument}-{scan_number}' --detector '{subdirectory}/{scan_number}/{instrument}-{scan_number}-{detector}'
+      - command: /app/numtracker client -H http://localhost:8001/graphql configure adsim --directory '/tmp/{instrument}/data/{year}/{visit}' --scan '{subdirectory}/{instrument}-{scan_number}' --detector '{subdirectory}/{scan_number}/{instrument}-{scan_number}-{detector}'

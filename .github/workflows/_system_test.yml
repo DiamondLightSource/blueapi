@@ -40,6 +40,11 @@ jobs:
           ports: "61613:61613"
           plugins: rabbitmq_stomp
 
+      - name: Run docker compose
+        uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
+        with:
+          compose-file: "./tests/system_tests/compose.yaml"
+
       - name: Start Blueapi Server
         env:
           EPICS_CA_NAME_SERVERS: 127.0.0.1:5094

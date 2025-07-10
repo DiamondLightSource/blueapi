@@ -329,7 +329,7 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
+    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event, timeout=10)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [
@@ -407,6 +407,6 @@ def test_delete_current_environment(client: BlueapiClient):
     ],
 )
 def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
-    final_event = client_with_stomp.run_task(task)
+    final_event = client_with_stomp.run_task(task, timeout=10)
     assert final_event.is_complete() and not final_event.is_error()
     assert final_event.state is WorkerState.IDLE

@@ -24,7 +24,7 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal>=1.46.0",
+    "dls-dodal@git+https://github.com/diamondlightsource/dodal.git@remove_adsim_pp",  # Temporary: DO NOT MERGE until a new dodal release is made
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "event-model==1.23",                           # https://github.com/DiamondLightSource/blueapi/issues/684

@@ -31,7 +31,7 @@ deepdiff==8.4.2
 deepmerge==2.0
 Deprecated==1.2.18
 distlib==0.3.9
-dls-dodal==1.46.0
+dls-dodal @ git+https://github.com/diamondlightsource/dodal.git@eae8b48cf4049fe5d73c78334a4eb13d4dd4a380
 dnspython==2.7.0
 docopt==0.6.2
 docutils==0.21.2

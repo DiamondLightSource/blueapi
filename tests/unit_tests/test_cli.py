@@ -1327,3 +1327,9 @@ def test_config_schema(
             DeepDiff(json.loads(result.output), ApplicationConfig.model_json_schema())
             == {}
         )
+
+
+def test_run_command(runner: CliRunner):
+    result = runner.invoke(main, ["run-command", "echo", "hello"])
+
+    assert result.exit_code == 0

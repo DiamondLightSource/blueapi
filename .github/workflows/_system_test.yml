@@ -25,16 +25,20 @@ jobs:
           repository: epics-containers/example-services
           path: example-services
 
-      - name: Run docker compose
+      - name: Compose devices
         uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
         with:
-          compose-file: |
-            example-services/compose.yaml
-            tests/system_tests/compose.yaml
+          compose-file: "example-services/compose.yaml"
           services: |
             bl01t-di-cam-01
             bl01t-mo-sim-01
             ca-gateway
+
+      - name: Compose services
+        uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
+        with:
+          compose-file: "tests/system_tests/compose.yaml"
+          services: |
             rabbitmq
             numtracker
 

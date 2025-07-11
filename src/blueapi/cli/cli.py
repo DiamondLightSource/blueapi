@@ -77,6 +77,10 @@ def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
     return isinstance(val, dict) and all(isinstance(k, str) for k in val)
 
 
+username = "blueapi_admin"
+password = "password123"
+
+
 @click.group(
     invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
 )

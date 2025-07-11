@@ -10,7 +10,7 @@
                         "items": {
                             "enum": [
                                 "det",
-                                "sim"
+                                "stage"
                             ],
                             "type": "bluesky.protocols.Readable"
                         },
@@ -895,7 +895,7 @@
                         "items": {
                             "enum": [
                                 "det",
-                                "sim"
+                                "stage"
                             ],
                             "type": "bluesky.protocols.Readable"
                         },

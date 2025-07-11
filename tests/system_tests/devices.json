@@ -34,7 +34,7 @@
             ]
         },
         {
-            "name": "sim",
+            "name": "stage",
             "protocols": [
                 {
                     "name": "Readable",

@@ -2,16 +2,18 @@ from collections.abc import Mapping
 from functools import cache
 from typing import Any
 
+from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from dodal.common.beamlines.beamline_utils import (
     get_path_provider,
     set_path_provider,
 )
+from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.client.numtracker import NumtrackerClient
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
@@ -111,6 +113,13 @@ def numtracker_client() -> NumtrackerClient | None:
         return None
 
 
+@cache
+def tiled_writer() -> TiledWriter:
+    tiled_config: TiledConfig = config().tiled
+    client = from_uri(tiled_config.url)
+    return TiledWriter(client, batch_size=1)
+
+
 def _update_scan_num(md: dict[str, Any]) -> int:
     numtracker = numtracker_client()
     if numtracker is not None:
@@ -148,6 +157,9 @@ def setup(config: ApplicationConfig) -> None:
         )
 
     stomp_client()
+    if config.tiled.enabled:
+        writer = tiled_writer()
+        context().run_engine.subscribe(writer)
 
 
 def _hook_run_engine_and_path_provider() -> None:
@@ -165,6 +177,7 @@ def teardown() -> None:
     worker.cache_clear()
     stomp_client.cache_clear()
     numtracker_client.cache_clear()
+    tiled_writer.cache_clear()
 
 
 def _publish_event_streams(

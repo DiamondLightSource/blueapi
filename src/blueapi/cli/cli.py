@@ -2,13 +2,14 @@ import json
 import logging
 import os
 import stat
+import subprocess
 import sys
 import textwrap
 from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -41,6 +42,9 @@ from blueapi.worker import ProgressEvent, WorkerEvent
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
+
+username = "blueapi_admin"
+password = "password123"
 
 
 @click.group(
@@ -150,6 +154,19 @@ def start_application(obj: dict):
     """
     setup_tracing("BlueAPI", OTLP_EXPORT_ENABLED)
     start(config)
+
+
+@main.command(name="run-command")
+@click.argument("commands", nargs=-1)
+def run_command(commands: str) -> Any | None:
+    """Run shell command remotely"""
+    return subprocess.run(commands)
+
+
+@main.command(name="download")
+@click.argument("path")
+def download(path: str) -> Any | None:
+    os.system("wget " + path)
 
 
 @main.group()

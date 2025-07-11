@@ -32,6 +32,8 @@ CONFIG_SCHEMA_LOCATION = (
     Path(__file__).parents[2] / "helm" / "blueapi" / "config_schema.json"
 )
 
+API_KEY = "2908fjojksdaf90-mawf90-m9-c3fmjacf98"
+
 
 def _expand_env(loader: yaml.Loader, node: yaml.ScalarNode) -> str:
     value = loader.construct_scalar(node)

@@ -43,6 +43,9 @@ from blueapi.worker import ProgressEvent, WorkerEvent
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
+username = "blueapi_admin"
+password = "password123"
+
 
 @click.group(
     invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}

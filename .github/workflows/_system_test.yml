@@ -29,8 +29,8 @@ jobs:
         uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
         with:
           compose-file: |
-            "./example-services/compose.yaml"
-            "./tests/system_tests/compose.yaml"
+            example-services/compose.yaml
+            tests/system_tests/compose.yaml
           services: |
             bl01t-di-cam-01
             bl01t-mo-sim-01

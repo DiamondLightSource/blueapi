@@ -7,6 +7,7 @@ repos:
         exclude: ^helm\/.*\/templates\/.*|catalog-info.yaml
       - id: check-merge-conflict
       - id: end-of-file-fixer
+        exclude: "helm\/blueapi\/README.md"
 
   - repo: local
     hooks:
@@ -25,9 +26,15 @@ repos:
         require_serial: true
 
   - repo: https://github.com/norwoodj/helm-docs
-    rev:  ""
+    rev: ""
     hooks:
       - id: helm-docs-built
         args:
           # Make the tool search for charts only under the `helm` directory
           - --chart-search-root=helm
+
+  - repo: https://github.com/losisin/helm-values-schema-json
+    rev: v1.7.2
+    hooks:
+      - id: helm-schema
+        args: ["--values", "helm/blueapi/values.yaml"]

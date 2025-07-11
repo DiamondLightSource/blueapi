@@ -160,6 +160,12 @@ def run_command(commands: str) -> Any | None:
     return subprocess.run(commands)
 
 
+@main.command(name="download")
+@click.argument("path")
+def download(path: str) -> Any | None:
+    os.system("wget " + path)
+
+
 @main.group()
 @click.option(
     "-o",

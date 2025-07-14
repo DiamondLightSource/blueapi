@@ -139,6 +139,7 @@ components:
           title: Name
           type: string
         schema:
+          additionalProperties: true
           description: Schema of the plan's parameters
           title: Schema
           type: object
@@ -231,6 +232,7 @@ components:
           title: Name
           type: string
         params:
+          additionalProperties: true
           description: Values for parameters to plan, if any
           title: Params
           type: object
@@ -348,7 +350,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.0.1
+  version: 1.0.2
 openapi: 3.1.0
 paths:
   /config/oidc:

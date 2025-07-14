@@ -331,7 +331,7 @@
                     },
                     "Mask_Reference_": {
                         "additionalProperties": false,
-                        "description": "Restrict Spec to only midpoints that fall inside the given Region.\n\nTypically created with the ``&`` operator. It also pushes down the\n``& | ^ -`` operators to its `Region` to avoid the need for brackets on\ncombinations of Regions.\n\nIf a Region spans multiple Frames objects, they will be squashed together.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * Line(\"x\", 3, 5, 5) & Circle(\"x\", \"y\", 4, 2, 1.2)\n\nSee Also: `why-squash-can-change-path`",
+                        "description": "Restrict Spec to only midpoints that fall inside the given Region.\n\nTypically created with the ``&`` operator. It also pushes down the\n``& | ^ -`` operators to its `Region` to avoid the need for brackets on\ncombinations of Regions.\n\nIf a Region spans multiple Dimension objects, they will be squashed together.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Line\n\n    spec = Line(\"y\", 1, 3, 3) * Line(\"x\", 3, 5, 5) & Circle(\"x\", \"y\", 4, 2, 1.2)\n\nSee Also: `why-squash-can-change-path`",
                         "properties": {
                             "spec": {
                                 "$ref": "#/$defs/Spec",
@@ -593,7 +593,7 @@
                             },
                             "gap": {
                                 "default": true,
-                                "description": "If False and the slowest of the stack of Frames is snaked then the end and start of consecutive iterations of Spec will have no gap",
+                                "description": "If False and the slowest of the stack of Dimension is snaked then the end and start of consecutive iterations of Spec will have no gap",
                                 "title": "Gap",
                                 "type": "boolean"
                             },
@@ -749,7 +749,7 @@
                     },
                     "Squash_Reference_": {
                         "additionalProperties": false,
-                        "description": "Squash a stack of Frames together into a single expanded Frames object.\n\nSee Also:\n    `why-squash-can-change-path`\n\n.. example_spec::\n\n    from scanspec.specs import Line, Squash\n\n    spec = Squash(Line(\"y\", 1, 2, 3) * Line(\"x\", 0, 1, 4))",
+                        "description": "Squash a stack of Dimension together into a single expanded Dimension object.\n\nSee Also:\n    `why-squash-can-change-path`\n\n.. example_spec::\n\n    from scanspec.specs import Line, Squash\n\n    spec = Squash(Line(\"y\", 1, 2, 3) * Line(\"x\", 0, 1, 4))",
                         "properties": {
                             "spec": {
                                 "$ref": "#/$defs/Spec",
@@ -864,7 +864,7 @@
                     },
                     "Zip_Reference_": {
                         "additionalProperties": false,
-                        "description": "Run two Specs in parallel, merging their midpoints together.\n\nTypically formed using `Spec.zip`.\n\nStacks of Frames are merged by:\n\n- If right creates a stack of a single Frames object of size 1, expand it to\n  the size of the fastest Frames object created by left\n- Merge individual Frames objects together from fastest to slowest\n\nThis means that Zipping a Spec producing stack [l2, l1] with a Spec\nproducing stack [r1] will assert len(l1)==len(r1), and produce\nstack [l2, l1.zip(r1)].\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"z\", 1, 2, 3) * Line(\"y\", 3, 4, 5).zip(Line(\"x\", 4, 5, 5))",
+                        "description": "Run two Specs in parallel, merging their midpoints together.\n\nTypically formed using `Spec.zip`.\n\nStacks of Dimension are merged by:\n\n- If right creates a stack of a single Dimension object of size 1, expand it to\n  the size of the fastest Dimension object created by left\n- Merge individual Dimension objects together from fastest to slowest\n\nThis means that Zipping a Spec producing stack [l2, l1] with a Spec\nproducing stack [r1] will assert len(l1)==len(r1), and produce\nstack [l2, l1.zip(r1)].\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = Line(\"z\", 1, 2, 3) * Line(\"y\", 3, 4, 5).zip(Line(\"x\", 4, 5, 5))",
                         "properties": {
                             "left": {
                                 "$ref": "#/$defs/Spec",

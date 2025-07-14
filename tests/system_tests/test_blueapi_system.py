@@ -392,14 +392,15 @@ def test_delete_current_environment(client: BlueapiClient):
                 "detectors": [
                     "det",
                 ],
-                "spec": Line("sim.x", 0.0, 10.0, 2) * Line("sim.y", 5.0, 15.0, 3),
+                "spec": Line("stage.x", 0.0, 10.0, 2)
+                * Line("stage.theta", 5.0, 15.0, 3),
             },
             instrument_session="cm12345-1",
         ),
         TaskRequest(
             name="set_absolute",
             params={
-                "movable": "sim.x",
+                "movable": "stage.x",
                 "value": "4.0",
             },
             instrument_session="cm12345-1",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from types import NoneType
 from typing import Generic, TypeVar, Union
 from unittest.mock import patch
 
@@ -26,6 +27,7 @@ from ophyd_async.core import (
 from ophyd_async.epics.adaravis import AravisDetector
 from ophyd_async.epics.motor import Motor
 from pydantic import TypeAdapter, ValidationError
+from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
 
 from blueapi.config import EnvironmentConfig, MetadataConfig, Source, SourceKind
@@ -431,6 +433,18 @@ def test_reference_type_conversion_new_style_union(
     assert empty_context._convert_type(Movable | int) == movable_ref | int
 
 
+def test_reference_type_conversion_new_style_optional(
+    empty_context: BlueskyContext,
+):
+    movable_ref: type = empty_context._reference(Movable)
+    assert empty_context._convert_type(Movable) == movable_ref
+    assert empty_context._convert_type(Movable | None) == movable_ref | None
+    assert (
+        empty_context._convert_type(Movable | None, no_default=False)
+        == movable_ref | SkipJsonSchema[NoneType]
+    )
+
+
 def test_default_device_reference(empty_context: BlueskyContext):
     def default_movable(mov: Movable = inject("demo")) -> MsgGenerator:
         yield from ()
@@ -596,3 +610,59 @@ qualified_name_test_data = [
 @pytest.mark.parametrize("type,expected", qualified_name_test_data)
 def test_qualified_name_with_types(type: type, expected: str):
     assert qualified_name(type) == expected
+
+
+def test_optional_arg_generated_schema(
+    empty_context: BlueskyContext,
+):
+    def demo_plan(foo: int | None = None) -> MsgGenerator:
+        yield from ()
+
+    empty_context.register_plan(demo_plan)
+    schema = empty_context.plans["demo_plan"].model.model_json_schema()
+    assert schema["properties"] == {
+        "foo": {"title": "Foo", "type": "integer"},
+    }
+    assert "foo" not in schema.get("required", [])
+
+
+def test_overloaded_arg_generated_schema(
+    empty_context: BlueskyContext,
+):
+    def demo_plan(foo: int | str) -> MsgGenerator:
+        yield from ()
+
+    empty_context.register_plan(demo_plan)
+    schema = empty_context.plans["demo_plan"].model.model_json_schema()
+    assert schema["properties"] == {
+        "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "string"}]}
+    }
+    assert "foo" in schema.get("required", [])
+
+
+def test_optional_overloaded_arg_generated_schema(
+    empty_context: BlueskyContext,
+):
+    def demo_plan(foo: int | str | None = None) -> MsgGenerator:
+        yield from ()
+
+    empty_context.register_plan(demo_plan)
+    schema = empty_context.plans["demo_plan"].model.model_json_schema()
+    assert schema["properties"] == {
+        "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "string"}]}
+    }
+    assert "foo" not in schema.get("required", [])
+
+
+def test_explicit_none_arg_generated_schema(
+    empty_context: BlueskyContext,
+):
+    def demo_plan(foo: int | None) -> MsgGenerator:
+        yield from ()
+
+    empty_context.register_plan(demo_plan)
+    schema = empty_context.plans["demo_plan"].model.model_json_schema()
+    assert schema["properties"] == {
+        "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "null"}]}
+    }
+    assert "foo" in schema.get("required", [])

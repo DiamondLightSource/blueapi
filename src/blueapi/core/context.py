@@ -3,7 +3,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
-from types import ModuleType, UnionType
+from types import ModuleType, NoneType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.protocols import HasName
@@ -12,7 +12,7 @@ from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
 from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
 from pydantic.fields import FieldInfo
-from pydantic.json_schema import JsonSchemaValue
+from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import CoreSchema, core_schema
 
 from blueapi import utils
@@ -323,12 +323,12 @@ class BlueskyContext:
             no_default = para.default is Parameter.empty
             factory = None if no_default else DefaultFactory(para.default)
             new_args[name] = (
-                self._convert_type(arg_type),
+                self._convert_type(arg_type, no_default),
                 FieldInfo(default_factory=factory),
             )
         return new_args
 
-    def _convert_type(self, typ: type | Any) -> type:
+    def _convert_type(self, typ: type | Any, no_default: bool = True) -> type:
         """
         Recursively convert a type to something that can be deserialised by
         pydantic. Bluesky protocols (and types that extend them) are replaced
@@ -344,12 +344,14 @@ class BlueskyContext:
         Returns:
             A Type that can be deserialised by Pydantic
         """
+        if typ is NoneType and not no_default:
+            return SkipJsonSchema[NoneType]
         root = get_origin(typ)
         if is_bluesky_type(typ) or (root is not None and is_bluesky_type(root)):
             return self._reference(typ)
         args = get_args(typ)
         if args:
-            new_types = tuple(self._convert_type(i) for i in args)
+            new_types = tuple(self._convert_type(i, no_default) for i in args)
             if root == UnionType:
                 root = Union
             return root[new_types] if root else typ  # type: ignore

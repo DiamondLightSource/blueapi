@@ -37,16 +37,9 @@
                         "title": "Delay"
                     },
                     "metadata": {
-                        "anyOf": [
-                            {
-                                "additionalProperties": true,
-                                "type": "object"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Metadata"
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -89,7 +82,7 @@
                             },
                             "radius": {
                                 "description": "Radius of the circle",
-                                "exclusiveMinimum": 0,
+                                "exclusiveMinimum": 0.0,
                                 "title": "Radius",
                                 "type": "number"
                             },
@@ -228,18 +221,18 @@
                             },
                             "x_radius": {
                                 "description": "The radius along the x axis of the ellipse",
-                                "exclusiveMinimum": 0,
+                                "exclusiveMinimum": 0.0,
                                 "title": "X Radius",
                                 "type": "number"
                             },
                             "y_radius": {
                                 "description": "The radius along the y axis of the ellipse",
-                                "exclusiveMinimum": 0,
+                                "exclusiveMinimum": 0.0,
                                 "title": "Y Radius",
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0,
+                                "default": 0.0,
                                 "description": "The angle of the ellipse (degrees)",
                                 "title": "Angle",
                                 "type": "number"
@@ -510,7 +503,7 @@
                                 "type": "number"
                             },
                             "angle": {
-                                "default": 0,
+                                "default": 0.0,
                                 "description": "Clockwise rotation angle of the rectangle",
                                 "title": "Angle",
                                 "type": "number"
@@ -724,7 +717,7 @@
                                 "type": "integer"
                             },
                             "rotate": {
-                                "default": 0,
+                                "default": 0.0,
                                 "description": "How much to rotate the angle of the spiral",
                                 "title": "Rotate",
                                 "type": "number"
@@ -908,16 +901,9 @@
                         "$ref": "#/$defs/Spec"
                     },
                     "metadata": {
-                        "anyOf": [
-                            {
-                                "additionalProperties": true,
-                                "type": "object"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Metadata"
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -946,15 +932,8 @@
                         "title": "Value"
                     },
                     "group": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Group"
+                        "title": "Group",
+                        "type": "string"
                     },
                     "wait": {
                         "title": "Wait",
@@ -987,15 +966,8 @@
                         "title": "Value"
                     },
                     "group": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Group"
+                        "title": "Group",
+                        "type": "string"
                     },
                     "wait": {
                         "title": "Wait",
@@ -1022,15 +994,8 @@
                         "type": "object"
                     },
                     "group": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Group"
+                        "title": "Group",
+                        "type": "string"
                     }
                 },
                 "required": [
@@ -1052,15 +1017,8 @@
                         "type": "object"
                     },
                     "group": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Group"
+                        "title": "Group",
+                        "type": "string"
                     }
                 },
                 "required": [
@@ -1095,26 +1053,12 @@
                 "additionalProperties": false,
                 "properties": {
                     "group": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Group"
+                        "title": "Group",
+                        "type": "string"
                     },
                     "timeout": {
-                        "anyOf": [
-                            {
-                                "type": "number"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Timeout"
+                        "title": "Timeout",
+                        "type": "number"
                     }
                 },
                 "title": "wait",

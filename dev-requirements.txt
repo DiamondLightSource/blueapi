@@ -32,7 +32,7 @@ deepdiff==8.4.2
 deepmerge==2.0
 Deprecated==1.2.18
 distlib==0.3.9
-dls-dodal==1.46.0
+dls-dodal==1.51.0
 dnspython==2.7.0
 docopt==0.6.2
 docutils==0.21.2
@@ -105,7 +105,7 @@ opentelemetry-sdk==1.32.1
 opentelemetry-semantic-conventions==0.53b1
 opentelemetry-util-http==0.53b1
 ophyd==1.10.6
-ophyd-async==0.10.0a3
+ophyd-async==0.11
 orderly-set==5.4.1
 orjson==3.10.18
 p4p==4.2.0
@@ -146,6 +146,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 python-multipart==0.0.20
 PyYAML==6.0.2
+pyzmq==26.3.0
 questionary==2.1.0
 redis==6.2.0
 referencing==0.36.2

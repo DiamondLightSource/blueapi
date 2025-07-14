@@ -39,6 +39,7 @@
                     "metadata": {
                         "anyOf": [
                             {
+                                "additionalProperties": true,
                                 "type": "object"
                             },
                             {
@@ -909,6 +910,7 @@
                     "metadata": {
                         "anyOf": [
                             {
+                                "additionalProperties": true,
                                 "type": "object"
                             },
                             {
@@ -1015,6 +1017,7 @@
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
+                        "additionalProperties": true,
                         "title": "Moves",
                         "type": "object"
                     },
@@ -1044,6 +1047,7 @@
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
+                        "additionalProperties": true,
                         "title": "Moves",
                         "type": "object"
                     },

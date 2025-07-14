@@ -205,7 +205,7 @@ worker:
     level: "INFO"
     graylog:
       enabled: False
-      url: tcp://graylog-log-target.diamond.ac.uk:12232/
+      url: tcp://graylog-log-target.diamond.ac.uk:12231/
 
 # -- Configure the initContainer that checks out the scratch configuration repositories
 initContainer:

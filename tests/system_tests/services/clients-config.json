@@ -1,0 +1,13 @@
+[
+    {
+        "ClientId": "blueapi-cli",
+        "ClientSecrets": [
+            "blueapi-cli-secret"
+        ],
+        "Description": "Client for command-line access",
+        "AllowedScopes": [
+            "fedid",
+            "email"
+        ]
+    }
+]

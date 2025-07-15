@@ -3,7 +3,6 @@ import time
 from pathlib import Path
 
 import pytest
-from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
 from scanspec.specs import Line
@@ -44,13 +43,6 @@ _LONG_TASK = TaskRequest(
 
 _DATA_PATH = Path(__file__).parent
 
-_REQUIRES_AUTH_MESSAGE = """
-Authentication credentials are required to run this test.
-The test has been skipped because authentication is currently disabled.
-For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
-To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
-"""
-
 # Start devices
 #   1. $ git clone https://github.com/epics-containers/example-services
 #   2. $ docker compose -f example-services/compose.yaml up \
@@ -76,17 +68,12 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 
 @pytest.fixture
 def client_without_auth(tmp_path: Path) -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig(auth_token_path=tmp_path))
-
-
-@pytest.fixture
-def client_with_stomp() -> BlueapiClient:
     return BlueapiClient.from_config(
         config=ApplicationConfig(
+            auth_token_path=tmp_path,
             stomp=StompConfig(
                 enabled=True,
-                auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
-            )
+            ),
         )
     )
 
@@ -105,10 +92,10 @@ def wait_for_server():
     raise TimeoutError("No connection to the blueapi server")
 
 
-# This client will have auth enabled if it finds cached valid token
 @pytest.fixture
-def client() -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig())
+def client(client_without_auth: BlueapiClient) -> BlueapiClient:
+    # TODO: Authenticate!
+    return client_without_auth
 
 
 @pytest.fixture
@@ -148,7 +135,6 @@ def clean_existing_tasks(client: BlueapiClient):
     yield
 
 
-@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
 ):
@@ -160,7 +146,6 @@ def test_cannot_access_endpoints(
             getattr(client_without_auth, get_method)()
 
 
-@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
     assert client_without_auth.get_oidc_config() == OIDCConfig(
         well_known_url="https://example.com/realms/master/.well-known/openid-configuration",
@@ -336,13 +321,13 @@ def test_get_task_by_status(client: BlueapiClient):
     client.clear_task(task_id=task_2.task_id)
 
 
-def test_progress_with_stomp(client_with_stomp: BlueapiClient):
+def test_progress_with_stomp(client: BlueapiClient):
     all_events: list[AnyEvent] = []
 
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event, timeout=10)
+    client.run_task(_SIMPLE_TASK, on_event=on_event, timeout=10)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [
@@ -420,7 +405,7 @@ def test_delete_current_environment(client: BlueapiClient):
         ),
     ],
 )
-def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
-    final_event = client_with_stomp.run_task(task)
+def test_plan_runs(client: BlueapiClient, task: TaskRequest):
+    final_event = client.run_task(task)
     assert final_event.is_complete() and not final_event.is_error()
     assert final_event.state is WorkerState.IDLE

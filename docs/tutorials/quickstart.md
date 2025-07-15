@@ -18,12 +18,6 @@ The worker can also be started using a custom config file:
 blueapi --config path/to/file serve
 ```
 
-An example of a config file that starts STOMP with default values can be found in:
-
-```
-    src/script/stomp_config.yml
-```
-
 ## Test that the Worker is Running
 
 Blueapi comes with a CLI so that you can query and control the worker from the terminal.

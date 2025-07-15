@@ -51,13 +51,18 @@ For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
 To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
 """
 
-# Step 1: Ensure a message bus that supports stomp is running and available:
-#   src/script/start_rabbitmq.sh
+# Start devices
+#   1. clone https://github.com/epics-containers/example-services
+#   2. cd example-services
+#   2. docker compose up bl01t-di-cam-01 bl01t-mo-sim-01 ca-gateway
 #
-# Step 2: Start the BlueAPI server with valid configuration:
-#   blueapi -c tests/system_tests/config.yaml serve
+# Start services
+#   docker compose up
 #
-# Step 3: Run the system tests using tox:
+# Start blueapi server
+#   blueapi -c config.yaml serve
+#
+# Run the system tests using tox:
 #   tox -e system-test
 
 
@@ -329,7 +334,7 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
+    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event, timeout=10)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [

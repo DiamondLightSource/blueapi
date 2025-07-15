@@ -15,3 +15,6 @@ stomp:
   url: tcp://localhost:61613/
 numtracker:
   url: http://localhost:8001/graphql
+oidc:
+  well_known_url: http://localhost:4011/.well-known/openid-configuration
+  client_id: blueapi-cli

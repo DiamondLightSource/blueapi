@@ -8,7 +8,7 @@ The worker requires a running instance of RabbitMQ. The easiest way to start it 
  to `compose` the services in `tests/system_tests/compose.yaml`
 
 ```sh
-    docker compose run --detach -f tests/system_tests/compose.yaml rabbitmq
+    docker compose -f tests/system_tests/compose.yaml run rabbitmq --detach
 ```
 
 ## Config File

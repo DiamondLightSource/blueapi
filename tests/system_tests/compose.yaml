@@ -16,3 +16,32 @@ services:
       - type: bind
         source: ./services/rabbitmq_plugins
         target: /etc/rabbitmq/enabled_plugins
+      - type: bind
+        source: ./services/rabbitmq.conf
+        target: /etc/rabbitmq/rabbitmq.conf
+
+  oidc-server-mock:
+    image: ghcr.io/soluto/oidc-server-mock:latest
+    ports:
+      - '4011:8080'
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      SERVER_OPTIONS_PATH: /tmp/config/server-config.json
+      USERS_CONFIGURATION_PATH: /tmp/config/users-config.json
+      CLIENTS_CONFIGURATION_PATH: /tmp/config/clients-config.json
+      ASPNET_SERVICES_OPTIONS_INLINE: |
+        {
+          "ForwardedHeadersOptions": {
+            "ForwardedHeaders" : "All"
+          }
+        }
+    volumes:
+      - type: bind
+        source: ./services/clients-config.json
+        target: /tmp/config/clients-config.json
+      - type: bind
+        source: ./services/users-config.json
+        target: /tmp/config/users-config.json
+      - type: bind
+        source: ./services/server-config.json
+        target: /tmp/config/server-config.json

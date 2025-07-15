@@ -1,0 +1,19 @@
+[
+    {
+        "SubjectId": "1",
+        "Username": "aa1",
+        "Password": "alice",
+        "Claims": [
+            {
+                "Type": "email",
+                "Value": "alice@example.com",
+                "ValueType": "string"
+            },
+            {
+                "Type": "fedid",
+                "Value": "aa1",
+                "ValueType": "string"
+            }
+        ]
+    }
+]

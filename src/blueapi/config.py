@@ -157,7 +157,7 @@ class ScratchConfig(BlueapiBaseModel):
 
 
 class OIDCConfig(BlueapiBaseModel):
-    well_known_url: str = Field(
+    well_known_url: HttpUrl = Field(
         description="URL to fetch OIDC config from the provider"
     )
     client_id: str = Field(description="Client ID")
@@ -165,7 +165,7 @@ class OIDCConfig(BlueapiBaseModel):
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
-        response: requests.Response = requests.get(self.well_known_url)
+        response: requests.Response = requests.get(str(self.well_known_url))
         response.raise_for_status()
         return response.json()
 

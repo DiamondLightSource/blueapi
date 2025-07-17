@@ -57,7 +57,7 @@ ENTRYPOINT ["blueapi"]
 CMD ["serve"]
 
 FROM runtime AS debug
-COPY --from=build --chmod=o+wrX /blueapi /blueapi
+COPY --from=build --chmod=o+wrX /workspaces/blueapi /blueapi
 WORKDIR /blueapi
 # Make editable
 RUN pip install -e .

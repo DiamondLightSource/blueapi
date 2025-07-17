@@ -91,6 +91,7 @@ spec:
             if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
             echo "Exporting venv as artefact"
             cp -r /venv/* /artefacts
+            {{if .Values.initContainer.persistentVolume.enabled }}chmod o+wrX -R {{ .Values.worker.scratch.root }}{{- end}}
         volumeMounts:
           - name: init-config
             mountPath: "/config"

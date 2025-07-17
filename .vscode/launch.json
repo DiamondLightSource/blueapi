@@ -16,6 +16,30 @@
             "console": "integratedTerminal",
         },
         {
+            "name": "Attach debugger",
+            "type": "debugpy",
+            "request": "attach",
+            "justMyCode": false,
+            "connect": {
+                "host": "0.0.0.0",
+                "port": 5678,
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${input:mount_path}",
+                    "remoteRoot": "/workspaces_git"
+                },
+                {
+                    "localRoot": "./src/blueapi",
+                    "remoteRoot": "/venv/lib/python3.1*/site-packages/blueapi"
+                },
+                {
+                    "localRoot": ".",
+                    "remoteRoot": "/blueapi"
+                },
+            ]
+        },
+        {
             "name": "Blueapi Server",
             "type": "debugpy",
             "request": "launch",
@@ -61,6 +85,12 @@
         },
     ],
     "inputs": [
+        {
+            "id": "mount_path",
+            "type": "promptString",
+            "description": "Mounted location of PVC containing /workspace_git/",
+            "default": ""
+        },
         {
             "id": "controller_args",
             "type": "promptString",

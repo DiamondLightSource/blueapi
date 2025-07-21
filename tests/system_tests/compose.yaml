@@ -4,7 +4,7 @@ services:
     ports:
       - "8001:8000"
     post_start:
-      - command: /app/numtracker client configure adsim --directory '/tmp/' --scan '{instrument}-{scan_number}' --detector '{instrument}-{scan_number}-{detector}'
+      - command: /app/numtracker client configure adsim --directory '/tmp/' --scan '{instrument}-{scan_number}' --detector '{instrument}-{scan_number}-{detector}' --number 43
 
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management

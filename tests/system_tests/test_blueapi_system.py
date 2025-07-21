@@ -1,5 +1,6 @@
 import inspect
 import time
+from asyncio import Queue
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from blueapi.config import (
     OIDCConfig,
     StompConfig,
 )
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
@@ -30,6 +32,7 @@ from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task_worker import TrackableTask
 
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
+CURRENT_NUMTRACKER_NUM = 43
 
 _SIMPLE_TASK = TaskRequest(
     name="sleep",
@@ -387,40 +390,69 @@ def test_delete_current_environment(client: BlueapiClient):
 
 
 @pytest.mark.parametrize(
-    "task",
+    "task,scan_id",
     [
-        TaskRequest(
-            name="count",
-            params={
-                "detectors": [
-                    "det",
-                ],
-                "num": 5,
-            },
-            instrument_session="cm12345-1",
+        (
+            TaskRequest(
+                name="count",
+                params={
+                    "detectors": [
+                        "det",
+                    ],
+                    "num": 5,
+                },
+                instrument_session="cm12345-1",
+            ),
+            CURRENT_NUMTRACKER_NUM + 1,
         ),
-        TaskRequest(
-            name="spec_scan",
-            params={
-                "detectors": [
-                    "det",
-                ],
-                "spec": Line("stage.x", 0.0, 10.0, 2)
-                * Line("stage.theta", 5.0, 15.0, 3),
-            },
-            instrument_session="cm12345-1",
+        (
+            TaskRequest(
+                name="spec_scan",
+                params={
+                    "detectors": [
+                        "det",
+                    ],
+                    "spec": Line("stage.x", 0.0, 10.0, 2)
+                    * Line("stage.theta", 5.0, 15.0, 3),
+                },
+                instrument_session="cm12345-1",
+            ),
+            CURRENT_NUMTRACKER_NUM + 2,
         ),
-        TaskRequest(
-            name="set_absolute",
-            params={
-                "movable": "stage.x",
-                "value": "4.0",
-            },
-            instrument_session="cm12345-1",
+        (
+            TaskRequest(
+                name="set_absolute",
+                params={
+                    "movable": "stage.x",
+                    "value": "4.0",
+                },
+                instrument_session="cm12345-1",
+            ),
+            CURRENT_NUMTRACKER_NUM + 3,
         ),
     ],
 )
-def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
-    final_event = client_with_stomp.run_task(task)
+def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int):
+    resource = Queue(maxsize=1)
+    start = Queue(maxsize=1)
+
+    def on_event(event: AnyEvent) -> None:
+        if isinstance(event, DataEvent):
+            if event.name == "start":
+                start.put_nowait(event.doc)
+            if event.name == "stream_resource":
+                resource.put_nowait(event.doc)
+
+    final_event = client_with_stomp.run_task(task, on_event)
     assert final_event.is_complete() and not final_event.is_error()
     assert final_event.state is WorkerState.IDLE
+
+    start_doc = start.get_nowait()
+    assert start_doc["scan_id"] == scan_id
+    assert start_doc["instrument"] == "adsim"
+    assert start_doc["instrument_session"] == FAKE_INSTRUMENT_SESSION
+    assert start_doc["data_session_directory"] == "/tmp"
+
+    stream_resource = resource.get_nowait()
+    assert stream_resource["run_start"] == start_doc["uid"]
+    assert stream_resource["uri"] == f"file://localhost/tmp/adsim-{scan_id}-det.h5"

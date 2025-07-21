@@ -11,6 +11,79 @@
                 "cwd": "${workspaceRoot}"
             },
             "problemMatcher": [],
+        },
+        {
+            "type": "shell",
+            "label": "kubectl pv-mounter",
+            "command": "kubectl",
+            "args": [
+                "pv-mounter",
+                "mount",
+                "${input:namespace}",
+                "${input:PVC Name}",
+                "${input:Mount Point}",
+                "--cpu-limit",
+                "100m"
+            ],
+            "problemMatcher": [],
+        },
+        {
+            "dependsOn": "kubectl pv-mounter",
+            "type": "shell",
+            "label": "kubectl port-forward",
+            "command": "kubectl",
+            "args": [
+                "port-forward",
+                "-n",
+                "${input:namespace}",
+                "${input:pod}",
+                "5678",
+                "&"
+            ],
+            "problemMatcher": [],
+        },
+        {
+            "type": "shell",
+            "label": "pv-unmount",
+            "command": "kubectl",
+            "args": [
+                "pv-mounter",
+                "clean",
+                "${input:namespace}",
+                "${promptStringRemember:PVC Name}",
+                "${promptStringRemember:Mount Point}",
+            ],
+            "problemMatcher": [],
         }
+    ],
+    "inputs": [
+        {
+            "id": "namespace",
+            "type": "promptString",
+            "description": "Beamline namespace in the cluster",
+            "default": "ixx-beamline"
+        },
+        {
+            "id": "pod",
+            "type": "promptString",
+            "description": "Blueapi pod name",
+            "default": "ixx-blueapi-0"
+        },
+        {
+            "id": "PVC Name",
+            "type": "command",
+            "command": "extension.commandvariable.remember",
+            "args": {
+                "key": "PVC Name"
+            }
+        },
+        {
+            "id": "Mount Point",
+            "type": "command",
+            "command": "extension.commandvariable.remember",
+            "args": {
+                "key": "Mount Point"
+            }
+        },
     ]
 }

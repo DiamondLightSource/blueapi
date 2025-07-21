@@ -155,6 +155,18 @@ spec:
               name: nslcd
             {{- end }}
           {{- if not .Values.debug.enabled }}
+          command: [
+            "python",
+            "-Xfrozen_modules=off",
+            "-m",
+            "debugpy",
+            "--listen",
+            "0.0.0.0:5678",
+            "--configure-subProcess",
+            "true", 
+            "-m",
+            "blueapi"
+          ]
           args:
             - "-c"
             - "/config/config.yaml"

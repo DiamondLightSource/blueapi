@@ -448,17 +448,15 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
 
 
 @pytest.mark.parametrize(
-    "task,scan_id",
+    "task",
     [
-        (
-            TaskRequest(
-                name="set_absolute",
-                params={
-                    "movable": "stage.x",
-                    "value": "4.0",
-                },
-                instrument_session="cm12345-1",
-            ),
+        TaskRequest(
+            name="set_absolute",
+            params={
+                "movable": "stage.x",
+                "value": "4.0",
+            },
+            instrument_session="cm12345-1",
         ),
     ],
 )

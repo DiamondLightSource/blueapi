@@ -345,7 +345,7 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event, timeout=10)
+    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [

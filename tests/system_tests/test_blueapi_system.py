@@ -419,17 +419,6 @@ def test_delete_current_environment(client: BlueapiClient):
             ),
             CURRENT_NUMTRACKER_NUM + 2,
         ),
-        (
-            TaskRequest(
-                name="set_absolute",
-                params={
-                    "movable": "stage.x",
-                    "value": "4.0",
-                },
-                instrument_session="cm12345-1",
-            ),
-            CURRENT_NUMTRACKER_NUM + 3,
-        ),
     ],
 )
 def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int):
@@ -456,3 +445,24 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
     stream_resource = resource.get_nowait()
     assert stream_resource["run_start"] == start_doc["uid"]
     assert stream_resource["uri"] == f"file://localhost/tmp/det-adsim-{scan_id}.h5"
+
+
+@pytest.mark.parametrize(
+    "task,scan_id",
+    [
+        (
+            TaskRequest(
+                name="set_absolute",
+                params={
+                    "movable": "stage.x",
+                    "value": "4.0",
+                },
+                instrument_session="cm12345-1",
+            ),
+        ),
+    ],
+)
+def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
+    final_event = client_with_stomp.run_task(task)
+    assert final_event.is_complete() and not final_event.is_error()
+    assert final_event.state is WorkerState.IDLE

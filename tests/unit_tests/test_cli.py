@@ -1299,7 +1299,6 @@ def test_config_schema(
     tmp_path = tmp_path / "foo.json"
 
     if output_flag:
-        # args.append(f"-o {output}")
         args.append("-o")
         args.append(f"{tmp_path}")
 

@@ -13,10 +13,8 @@ bundleWithoutID: false
 
 useHelmDocs: false
 
-noAdditionalProperties: false
+noAdditionalProperties: true
 
 schemaRoot:
-  id: https://example.com/schema
   title: Helm Values Schema
   description: Schema for Helm values
-  additionalProperties: false

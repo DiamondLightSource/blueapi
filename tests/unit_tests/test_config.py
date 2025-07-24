@@ -11,7 +11,6 @@ import pytest
 import responses
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from deepdiff import DeepDiff
 from pydantic import BaseModel, Field
 
 from blueapi.config import (

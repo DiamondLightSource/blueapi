@@ -5,8 +5,7 @@
     "type": "object",
     "properties": {
         "affinity": {
-            "type": "object",
-            "additionalProperties": false
+            "type": "object"
         },
         "debug": {
             "type": "object",
@@ -14,8 +13,7 @@
                 "enabled": {
                     "type": "boolean"
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "extraEnvVars": {
             "type": "array"
@@ -38,8 +36,7 @@
                 "tag": {
                     "type": "string"
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "imagePullSecrets": {
             "type": "array"
@@ -48,8 +45,7 @@
             "type": "object",
             "properties": {
                 "annotations": {
-                    "type": "object",
-                    "additionalProperties": false
+                    "type": "object"
                 },
                 "className": {
                     "type": "string"
@@ -76,19 +72,16 @@
                                         "pathType": {
                                             "type": "string"
                                         }
-                                    },
-                                    "additionalProperties": false
+                                    }
                                 }
                             }
-                        },
-                        "additionalProperties": false
+                        }
                     }
                 },
                 "tls": {
                     "type": "array"
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "initContainer": {
             "type": "object",
@@ -105,15 +98,12 @@
                         "existingClaimName": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "initResources": {
-            "type": "object",
-            "additionalProperties": false
+            "type": "object"
         },
         "livenessProbe": {
             "type": "object",
@@ -130,33 +120,27 @@
                         "port": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 },
                 "periodSeconds": {
                     "type": "integer"
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "nameOverride": {
             "type": "string"
         },
         "nodeSelector": {
-            "type": "object",
-            "additionalProperties": false
+            "type": "object"
         },
         "podAnnotations": {
-            "type": "object",
-            "additionalProperties": false
+            "type": "object"
         },
         "podLabels": {
-            "type": "object",
-            "additionalProperties": false
+            "type": "object"
         },
         "podSecurityContext": {
-            "type": "object",
-            "additionalProperties": false
+            "type": "object"
         },
         "readinessProbe": {
             "type": "object",
@@ -173,14 +157,12 @@
                         "port": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 },
                 "periodSeconds": {
                     "type": "integer"
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "resources": {
             "type": "object",
@@ -194,8 +176,7 @@
                         "memory": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 },
                 "requests": {
                     "type": "object",
@@ -206,11 +187,9 @@
                         "memory": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "restartOnConfigChange": {
             "type": "boolean"
@@ -224,8 +203,7 @@
                 "runAsUser": {
                     "type": "integer"
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "service": {
             "type": "object",
@@ -236,15 +214,13 @@
                 "type": {
                     "type": "string"
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "serviceAccount": {
             "type": "object",
             "properties": {
                 "annotations": {
-                    "type": "object",
-                    "additionalProperties": false
+                    "type": "object"
                 },
                 "automount": {
                     "type": "boolean"
@@ -255,8 +231,7 @@
                 "name": {
                     "type": "string"
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "startupProbe": {
             "type": "object",
@@ -273,14 +248,12 @@
                         "port": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 },
                 "periodSeconds": {
                     "type": "integer"
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "tolerations": {
             "type": "array"
@@ -306,14 +279,11 @@
                                 "port": {
                                     "type": "integer"
                                 }
-                            },
-                            "additionalProperties": false
+                            }
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 }
-            },
-            "additionalProperties": false
+            }
         },
         "volumeMounts": {
             "type": "array",
@@ -329,8 +299,7 @@
                     "readOnly": {
                         "type": "boolean"
                     }
-                },
-                "additionalProperties": false
+                }
             }
         },
         "volumes": {
@@ -346,8 +315,7 @@
                         "url": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 },
                 "env": {
                     "type": "object",
@@ -363,12 +331,10 @@
                                     "module": {
                                         "type": "string"
                                     }
-                                },
-                                "additionalProperties": false
+                                }
                             }
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 },
                 "logging": {
                     "type": "object",
@@ -382,14 +348,12 @@
                                 "url": {
                                     "type": "string"
                                 }
-                            },
-                            "additionalProperties": false
+                            }
                         },
                         "level": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 },
                 "scratch": {
                     "type": "object",
@@ -400,8 +364,7 @@
                         "root": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 },
                 "stomp": {
                     "type": "object",
@@ -415,8 +378,7 @@
                                 "username": {
                                     "type": "string"
                                 }
-                            },
-                            "additionalProperties": false
+                            }
                         },
                         "enabled": {
                             "type": "boolean"
@@ -424,11 +386,9 @@
                         "url": {
                             "type": "string"
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 }
-            },
-            "additionalProperties": false
+            }
         }
     },
     "additionalProperties": false,

@@ -13,8 +13,11 @@ bundleWithoutID: false
 
 useHelmDocs: false
 
-noAdditionalProperties: true
+# Additional properties must be allowed for eg. initResources:
+noAdditionalProperties: false
 
 schemaRoot:
   title: Helm Values Schema
   description: Schema for Helm values
+  # No additional properties in schema root for tighter protection:
+  additionalProperties: false

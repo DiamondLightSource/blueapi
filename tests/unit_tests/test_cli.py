@@ -17,7 +17,6 @@ from bluesky.protocols import Movable
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import MessageTopic
 from click.testing import CliRunner
-from deepdiff import DeepDiff
 from opentelemetry import trace
 from ophyd_async.core import AsyncStatus
 from pydantic import BaseModel
@@ -1310,19 +1309,13 @@ def test_config_schema(
         args,
     )
 
+    expected = ApplicationConfig.model_json_schema()
     if output_flag and (not update):
         with tmp_path.open("r") as stream:
-            assert (
-                DeepDiff(json.load(stream), ApplicationConfig.model_json_schema()) == {}
-            )
-
+            assert json.load(stream) == expected
     elif update:
         config_schema_location_mock.open.assert_called()
         with config_schema_location_mock.open() as stream:
             stream.write.assert_called()
-
     else:
-        assert (
-            DeepDiff(json.loads(result.output), ApplicationConfig.model_json_schema())
-            == {}
-        )
+        assert json.loads(result.output) == expected

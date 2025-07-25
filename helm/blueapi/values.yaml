@@ -94,6 +94,10 @@ resources:
   requests:
     cpu: 200m
     memory: 400Mi
+  
+
+# -- Override resources for init container. By default copies resources of main container.
+initResources: {}
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 # -- Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively.
@@ -170,6 +174,7 @@ tracing:
       host: http://opentelemetry-collector.tracing
       port: 4318
 
+# @schema $ref: config_schema.json
 # -- Config for the worker goes here, will be mounted into a config file
 worker:
   api:

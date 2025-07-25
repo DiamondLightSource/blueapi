@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 4.0.1
+_commit: 4.1.0
 _src_path: https://github.com/DiamondLightSource/python-copier-template
 author_email: callum.forrester@diamond.ac.uk
 author_name: Callum Forrester
@@ -10,6 +10,7 @@ description: Lightweight bluesky-as-a-service wrapper application. Also usable a
     a library.
 distribution_name: blueapi
 docker: true
+docker_debug: true
 docs_type: sphinx
 git_platform: github.com
 github_org: DiamondLightSource

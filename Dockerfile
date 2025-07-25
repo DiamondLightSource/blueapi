@@ -22,15 +22,18 @@ ENV PATH=/venv/bin:$PATH
 
 # The build stage installs the context into the venv
 FROM developer AS build
-RUN mkdir -p /.cache/pip; chmod o+wrX /.cache/pip
+# Requires buildkit 0.17.0
 COPY --chmod=o+wrX . /workspaces/blueapi
 WORKDIR /workspaces/blueapi
-RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
+RUN touch dev-requirements.txt && pip install -c dev-requirements.txt .
+
 
 FROM build AS debug
 
+
 # Set origin to use ssh
-RUN git remote set-url origin git@github.com:diamondlightsource/DiamondLightSource/blueapi.git
+RUN git remote set-url origin git@github.com:DiamondLightSource/blueapi.git
+
 
 # For this pod to understand finding user information from LDAP
 RUN apt update
@@ -44,6 +47,7 @@ RUN pip install -e .
 # Alternate entrypoint to allow devcontainer to attach
 ENTRYPOINT [ "/bin/bash", "-c", "--" ]
 CMD [ "while true; do sleep 30; done;" ]
+
 
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim AS runtime

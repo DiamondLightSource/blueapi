@@ -22,10 +22,11 @@ ENV PATH=/venv/bin:$PATH
 
 # The build stage installs the context into the venv
 FROM developer AS build
+RUN mkdir -p /.cache/pip; chmod o+wrX /.cache/pip
 # Requires buildkit 0.17.0
 COPY --chmod=o+wrX . /workspaces/blueapi
 WORKDIR /workspaces/blueapi
-RUN touch dev-requirements.txt && pip install -c dev-requirements.txt .
+RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
 
 
 FROM build AS debug

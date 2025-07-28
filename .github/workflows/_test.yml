@@ -54,9 +54,6 @@ jobs:
           python-version: ${{ inputs.python-version }}
           pip-install: ".[dev]"
       
-      - name: Install helm plugins
-        run: helm plugin install https://github.com/losisin/helm-values-schema-json.git
-
       - name: Run tests
         run: tox -e tests
 

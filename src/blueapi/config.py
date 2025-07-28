@@ -76,7 +76,8 @@ class TiledConfig(BlueapiBaseModel):
         description="True if blueapi should forward data to a Tiled instance",
         default=False,
     )
-    url: HttpUrl = HttpUrl("http://localhost:8000")
+    url: HttpUrl = HttpUrl("http://localhost:8407")
+    api_key: str | None = os.environ.get("TILED_SINGLE_USER_API_KEY", None)
 
 
 class WorkerEventConfig(BlueapiBaseModel):
@@ -212,7 +213,7 @@ class OIDCConfig(BlueapiBaseModel):
 
 
 class NumtrackerConfig(BlueapiBaseModel):
-    url: HttpUrl = HttpUrl("http://localhost:8002/graphql")
+    url: HttpUrl = HttpUrl("http://localhost:8406/graphql")
 
 
 class ApplicationConfig(BlueapiBaseModel):

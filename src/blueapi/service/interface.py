@@ -116,7 +116,7 @@ def numtracker_client() -> NumtrackerClient | None:
 @cache
 def tiled_writer() -> TiledWriter:
     tiled_config: TiledConfig = config().tiled
-    client = from_uri(tiled_config.url)
+    client = from_uri(str(tiled_config.url), api_key=tiled_config.api_key)
     return TiledWriter(client, batch_size=1)
 
 

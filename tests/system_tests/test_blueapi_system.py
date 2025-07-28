@@ -4,6 +4,7 @@ from asyncio import Queue
 from pathlib import Path
 
 import pytest
+import requests
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
@@ -61,13 +62,15 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 # Should the system tests CI fail, testing with a live blueapi server (e.g. with the
 # training rigs) may be a simpler solution than running the system tests locally.
 # The github action for the system tests are the best example to follow.
-# Start devices
+#
+# Start devices (Do this in a normal terminal if using the dev container in VSCode)
 #   1. $ git clone https://github.com/epics-containers/example-services
 #   2. $ docker compose -f example-services/compose.yaml up \
 #           bl01t-di-cam-01 bl01t-mo-sim-01 ca-gateway --detach
 #
-# Start services
+# Start services (Do this in a normal terminal if using the dev container in VSCode)
 #   in this directory (i.e. blueapi/tests/system_tests)
+#   $ export TILED_SINGLE_USER_API_KEY=unknown
 #   $ docker compose up --detach
 #
 # Start blueapi server configured to talk via the ca-gateway
@@ -452,6 +455,22 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
     stream_resource = resource.get_nowait()
     assert stream_resource["run_start"] == start_doc["uid"]
     assert stream_resource["uri"] == f"file://localhost/tmp/det-adsim-{scan_id}.h5"
+
+    tiled_url = f"http://localhost:8407/api/v1/metadata/{start_doc['uid']}"
+    response = requests.get(tiled_url)
+    assert response.status_code == 200
+    json = response.json()
+    assert "data" in json
+    assert "attributes" in json["data"]
+    assert "metadata" in json["data"]["attributes"]
+    assert "start" in json["data"]["attributes"]["metadata"]
+    start_metadata = response.json()["data"]["attributes"]["metadata"]["start"]
+    assert "instrument_session" in start_metadata
+    assert start_metadata["instrument_session"] == "cm12345-1"
+    assert "scan_id" in start_metadata
+    assert start_metadata["scan_id"] == scan_id
+    assert "detectors" in start_metadata
+    assert "det" in start_metadata["detectors"]
 
 
 @pytest.mark.parametrize(

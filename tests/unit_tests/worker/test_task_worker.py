@@ -326,14 +326,10 @@ def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: TaskWo
 
 def test_metadata_passed_to_context(context: BlueskyContext):
     context.run_engine = Mock()
+    context.run_engine.md = {}
     _TASK_WITH_METADATA.do_task(context)
-    context.run_engine.assert_called_once_with(
-        ANY,
-        metadata_kw={
-            "foo": "bar",
-            "baz": 0,
-        },
-    )
+    for metadata in [("foo", "bar"), ("baz", 0)]:
+        assert metadata in context.run_engine.md.items()
 
 
 #

@@ -84,7 +84,6 @@ class WorkerEventConfig(BlueapiBaseModel):
 
 
 class MetadataConfig(BlueapiBaseModel):
-    instrument_session: str
     instrument: str
 
 

@@ -404,9 +404,7 @@ def test_configure_numtracker():
         numtracker=NumtrackerConfig(
             url=HttpUrl("https://numtracker-example.com/graphql")
         ),
-        env=EnvironmentConfig(
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
-        ),
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
     )
     interface.set_config(conf)
     headers = {"a": "b"}
@@ -422,9 +420,7 @@ def test_configure_numtracker():
 
 def test_configure_numtracker_with_no_numtracker_config_fails():
     conf = ApplicationConfig(
-        env=EnvironmentConfig(
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
-        ),
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
     )
     interface.set_config(conf)
     headers = {"a": "b"}
@@ -474,9 +470,7 @@ def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
 
 def test_setup_with_numtracker_makes_start_document_provider():
     conf = ApplicationConfig(
-        env=EnvironmentConfig(
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
-        ),
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
         numtracker=NumtrackerConfig(),
     )
     interface.setup(conf)
@@ -499,7 +493,7 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
                     module="tests.unit_tests.service.example_beamline_with_path_provider",
                 ),
             ],
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123"),
+            metadata=MetadataConfig(instrument="p46"),
         ),
         numtracker=NumtrackerConfig(),
     )
@@ -521,9 +515,7 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
         numtracker=NumtrackerConfig(
             url=HttpUrl("https://numtracker-example.com/graphql")
         ),
-        env=EnvironmentConfig(
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
-        ),
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
     )
     interface.set_config(conf)
     ctx = interface.context()
@@ -531,6 +523,7 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
 
     headers = {"a": "b"}
     interface._try_configure_numtracker(headers)
+    ctx.run_engine.md["instrument_session"] = "ab123"
     interface._update_scan_num(ctx.run_engine.md)
 
     mock_create_scan.assert_called_once_with("ab123", "p46")
@@ -542,9 +535,7 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     mock_numtracker_server,
 ):
     conf = ApplicationConfig(
-        env=EnvironmentConfig(
-            metadata=MetadataConfig(instrument="p46", instrument_session="ab123")
-        ),
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
         numtracker=NumtrackerConfig(
             url=HttpUrl("https://numtracker-example.com/graphql")
         ),
@@ -552,6 +543,7 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     interface.setup(conf)
     ctx = interface.context()
 
+    ctx.run_engine.md["instrument_session"] = "ab123"
     interface._update_scan_num(ctx.run_engine.md)
 
     assert (

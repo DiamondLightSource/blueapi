@@ -155,11 +155,11 @@ restartOnConfigChange: true
 
 # -- Additional envVars to mount to the pod
 extraEnvVars: []
-# - name: RABBITMQ_PASSWORD
-#   valueFrom:
-#     secretKeyRef:
-#       name: rabbitmq-password
-#       key: rabbitmq-password
+#  - name: TILED_API_KEY
+#    valueFrom:
+#      secretKeyRef:
+#        name: tiled_api_key
+#        key: tiled_api_key
 
 # -- Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters
 tracing:

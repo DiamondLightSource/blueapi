@@ -152,17 +152,12 @@
         "MetadataConfig": {
             "additionalProperties": false,
             "properties": {
-                "instrument_session": {
-                    "title": "Instrument Session",
-                    "type": "string"
-                },
                 "instrument": {
                     "title": "Instrument",
                     "type": "string"
                 }
             },
             "required": [
-                "instrument_session",
                 "instrument"
             ],
             "title": "MetadataConfig",

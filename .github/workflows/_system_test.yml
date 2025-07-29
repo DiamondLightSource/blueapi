@@ -4,7 +4,7 @@ on:
 env:
   # https://github.com/pytest-dev/pytest/issues/2042
   PY_IGNORE_IMPORTMISMATCH: "1"
-  TILED_SINGLE_USER_API_KEY: ${TILED_SINGLE_USER_API_KEY}
+  TILED_SINGLE_USER_API_KEY: unknown # ${TILED_SINGLE_USER_API_KEY}
 
 jobs:
   run:

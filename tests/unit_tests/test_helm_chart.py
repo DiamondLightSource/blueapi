@@ -206,7 +206,7 @@ def test_container_gets_container_resources():
     "url,expected_port",
     [
         ("http://0.0.0.0", 80),
-        ("http://0.0.0.0:8406", 8406),
+        ("http://0.0.0.0:8001", 8001),
         ("https://0.0.0.0", 443),
         ("https://0.0.0.0:9090/path", 9090),
         ("https://0.0.0.0:9000", 9000),

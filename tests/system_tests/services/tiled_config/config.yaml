@@ -1,6 +1,5 @@
 authentication:
-  # The default is false. Set to true to enable any HTTP client that can
-  # connect to _read_. An API key is still required to write.
+  # Any HTTP client that can connect can read, an API key is still required to write.
   allow_anonymous_access: true
 trees:
   - path: /
@@ -8,12 +7,4 @@ trees:
     args:
       uri: "sqlite:////storage/catalog.db"
       writable_storage: "sqlite:////storage/catalog.db"
-      # This creates the database if it does not exist. This is convenient, but in
-      # a horizontally-scaled deployment, this can be a race condition and multiple
-      # containers may simultaneously attempt to create the database.
-      # If that is a problem, set this to false, and run:
-      #
-      # tiled catalog init URI
-      #
-      # separately.
       init_if_not_exists: true

@@ -36,7 +36,8 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
+podSecurityContext:
+  {}
   # fsGroup: 2000
 
 securityContext:
@@ -61,7 +62,8 @@ service:
 ingress:
   enabled: false
   className: "nginx"
-  annotations: {}
+  annotations:
+    {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
@@ -125,8 +127,6 @@ startupProbe:
   failureThreshold: 5
   periodSeconds: 10
 
-
-
 # -- Additional volumes on the output StatefulSet definition.
 # Define volumes from e.g. Secrets, ConfigMaps or the Filesystem
 volumes: []
@@ -134,9 +134,9 @@ volumes: []
 # -- Additional volumeMounts on the output StatefulSet definition.
 # Define how volumes are mounted to the container referenced by using the same name.
 volumeMounts:
-- name: worker-config
-  mountPath: "/config"
-  readOnly: true
+  - name: worker-config
+    mountPath: "/config"
+    readOnly: true
 
 # -- May be required to run on specific nodes (e.g. the control machine)
 nodeSelector: {}
@@ -148,18 +148,18 @@ affinity: {}
 # blueapi specific fields
 
 # -- May be needed for EPICS depending on gateway configuration
-hostNetwork: false 
+hostNetwork: false
 
 # -- If enabled the blueapi pod will restart on changes to `worker`
 restartOnConfigChange: true
 
 # -- Additional envVars to mount to the pod
 extraEnvVars: []
-#  - name: TILED_API_KEY
-#    valueFrom:
-#      secretKeyRef:
-#        name: tiled_api_key
-#        key: tiled_api_key
+# - name: TILED_API_KEY
+#   valueFrom:
+#     secretKeyRef:
+#       name: tiled_api_key
+#       key: tiled_api_key
 
 # -- Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters
 tracing:
@@ -186,7 +186,7 @@ worker:
       - kind: planFunctions
         module: dodal.plan_stubs.wrapped
   # -- Message bus configuration for returning status to GDA/forwarding documents downstream
-  # Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret 
+  # Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret
   stomp:
     enabled: false
     auth:

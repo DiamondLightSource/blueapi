@@ -114,10 +114,13 @@ def numtracker_client() -> NumtrackerClient | None:
 
 
 @cache
-def tiled_writer() -> TiledWriter:
+def tiled_writer() -> TiledWriter | None:
     tiled_config: TiledConfig = config().tiled
-    client = from_uri(str(tiled_config.url), api_key=tiled_config.api_key)
-    return TiledWriter(client, batch_size=1)
+    if tiled_config.enabled:
+        client = from_uri(str(tiled_config.url), api_key=tiled_config.api_key)
+        return TiledWriter(client, batch_size=1)
+    else:
+        return None
 
 
 def _update_scan_num(md: dict[str, Any]) -> int:
@@ -157,8 +160,7 @@ def setup(config: ApplicationConfig) -> None:
         )
 
     stomp_client()
-    if config.tiled.enabled:
-        writer = tiled_writer()
+    if writer := tiled_writer():
         context().run_engine.subscribe(writer)
 
 

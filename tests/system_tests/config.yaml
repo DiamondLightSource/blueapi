@@ -1,6 +1,8 @@
 api:
   url: http://0.0.0.0:8000
 env:
+  metadata:
+    instrument: adsim
   sources:
     - kind: dodal
       module: dodal.beamlines.adsim
@@ -11,3 +13,5 @@ env:
 stomp:
   enabled: true
   url: tcp://localhost:61613/
+numtracker:
+  url: http://localhost:8406/graphql

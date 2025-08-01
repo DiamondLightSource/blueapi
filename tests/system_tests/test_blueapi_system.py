@@ -54,6 +54,13 @@ For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
 To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
 """
 
+# These system tests are primarily intended to be run from the Github CI,
+# and therefore these instructions may require multiple terminals, running
+# outside of the officially support devcontainer and other inefficiencies.
+#
+# Should the system tests CI fail, testing with a live blueapi server (e.g. with the
+# training rigs) may be a simpler solution than running the system tests locally.
+# The github action for the system tests are the best example to follow.
 # Start devices
 #   1. $ git clone https://github.com/epics-containers/example-services
 #   2. $ docker compose -f example-services/compose.yaml up \

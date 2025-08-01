@@ -25,7 +25,6 @@ dependencies = [
     "uvicorn",
     "requests",
     "dls-dodal>=1.54.0",
-    "scanspec<=0.8.0",                             # https://github.com/bluesky/scanspec/issues/179 
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "event-model==1.23",                           # https://github.com/DiamondLightSource/blueapi/issues/684

@@ -1,5 +1,5 @@
 accessible-pygments==0.0.5
-aioca==1.8.1
+aioca==2.0a4
 aiofiles==24.1.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.14
@@ -30,15 +30,14 @@ cycler==0.12.1
 dataclasses-json==0.6.7
 deepdiff==8.5.0
 deepmerge==2.0
-Deprecated==1.2.18
 distlib==0.3.9
-dls-dodal==1.51.0
+dls-dodal==1.54.0
 dnspython==2.7.0
 docopt==0.6.2
 docutils==0.21.2
 dunamai==1.25.0
 email_validator==2.2.0
-epicscorelibs==7.0.7.99.1.2a1
+epicscorelibs==7.0.7.99.1.2
 event-model==1.23
 fastapi==0.116.1
 fastapi-cli==0.0.8
@@ -106,7 +105,7 @@ opentelemetry-sdk==1.35.0
 opentelemetry-semantic-conventions==0.56b0
 opentelemetry-util-http==0.56b0
 ophyd==1.10.7
-ophyd-async==0.11
+ophyd-async==0.12.3
 orderly-set==5.5.0
 orjson==3.10.18
 p4p==4.2.0
@@ -164,7 +163,6 @@ ruff==0.12.3
 scanspec==0.8.0
 semver==3.0.4
 sentry-sdk==2.32.0
-setuptools==80.9.0
 setuptools_dso==2.12.2
 shellingham==1.5.4
 six==1.17.0
@@ -186,9 +184,11 @@ sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-openapi==0.8.4
 sphinxcontrib-qthelp==2.0.0
 sphinxcontrib-serializinghtml==2.0.0
+stamina==25.1.0
 starlette==0.47.2
 stomp.py==8.2.0
 super-state-machine==2.0.2
+tenacity==9.1.2
 tomlkit==0.13.3
 toolz==1.0.0
 tox==3.28.0

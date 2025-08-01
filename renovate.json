@@ -60,5 +60,20 @@
       ],
       "description": "Group non-major github action updates"
     }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "^\\.github/workflows/[^/]+\\.ya?ml$"
+      ],
+      "matchStringsStrategy": "combination",
+      "matchStrings": [
+        "uses: actions/checkout@v*\\s",
+        "repository: (?<depName>.*?)\\s",
+        "ref: (?<currentValue>.*?)\\s"
+      ],
+      "datasourceTemplate": "github-tags"
+    }
   ]
 }

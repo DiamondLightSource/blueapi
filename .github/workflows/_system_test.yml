@@ -24,6 +24,7 @@ jobs:
         with:
           repository: epics-containers/example-services
           path: example-services
+          ref: '2025.8.1'
 
       - name: Run docker compose
         uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0

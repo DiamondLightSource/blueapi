@@ -24,21 +24,24 @@ jobs:
         with:
           repository: epics-containers/example-services
           path: example-services
+          ref: '2025.8.1'
 
-      - name: Run docker compose
+      - name: Compose devices
         uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
         with:
-          compose-file: "./example-services/compose.yaml"
+          compose-file: "example-services/compose.yaml"
           services: |
             bl01t-di-cam-01
             bl01t-mo-sim-01
             ca-gateway
 
-      - name: Start RabbitMQ
-        uses: namoshek/rabbitmq-github-action@d1d4455f4a8f72db66111c24cb0dc5654047a975 # v1
+      - name: Compose services
+        uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
         with:
-          ports: "61613:61613"
-          plugins: rabbitmq_stomp
+          compose-file: "tests/system_tests/compose.yaml"
+          services: |
+            rabbitmq
+            numtracker
 
       - name: Start Blueapi Server
         env:

@@ -71,8 +71,8 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 #   $ docker compose up --detach
 #
 # Start blueapi server configured to talk via the ca-gateway
-#   $ EPICS_CA_NAME_SERVERS=127.0.0.1:5094 EPICS_PVA_NAME_SERVERS=127.0.0.1:5095 \
-#        EPICS_CA_ADDR_LIST=127.0.0.1:5094 blueapi -c config.yaml serve
+#   $ EPICS_CA_NAME_SERVERS=127.0.0.1:9064 EPICS_PVA_NAME_SERVERS=127.0.0.1:9075 \
+#        blueapi -c config.yaml serve
 #
 # Run the system tests using tox:
 #   $ tox -e system-test

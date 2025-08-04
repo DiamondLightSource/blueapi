@@ -5,10 +5,10 @@ Blueapi can publish updates to a message bus asynchronously, the CLI can then vi
 ## Start RabbitMQ
 
 The worker requires a running instance of RabbitMQ. The easiest way to start it is
- to execute the provided script:
+ to `compose` the services in `tests/system_tests/compose.yaml`
 
-```
-    src/script/start_rabbitmq.sh
+```sh
+    docker compose -f tests/system_tests/compose.yaml run rabbitmq --detach
 ```
 
 ## Config File

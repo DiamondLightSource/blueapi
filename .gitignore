@@ -71,3 +71,6 @@ lockfiles/
 
 # Editor/IDE project files
 .idea/
+
+# Example IOCs
+example-services/

@@ -167,6 +167,40 @@
                         "title": "Concat",
                         "type": "object"
                     },
+                    "ConstantDuration_Reference_": {
+                        "additionalProperties": false,
+                        "description": "A special spec used to hold information about the duration of each frame.",
+                        "properties": {
+                            "constant_duration": {
+                                "description": "The value at each point",
+                                "title": "Constant Duration",
+                                "type": "number"
+                            },
+                            "spec": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/$defs/Spec"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "description": "Spec contaning the path to be followed"
+                            },
+                            "type": {
+                                "const": "ConstantDuration",
+                                "default": "ConstantDuration",
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "constant_duration"
+                        ],
+                        "title": "ConstantDuration",
+                        "type": "object"
+                    },
                     "DifferenceOf_Reference_": {
                         "additionalProperties": false,
                         "description": "A point is in DifferenceOf(a, b) if in a and not in b.\n\nTypically created with the ``-`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) - Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False, False, False])",
@@ -253,6 +287,27 @@
                             "y_radius"
                         ],
                         "title": "Ellipse",
+                        "type": "object"
+                    },
+                    "Fly_Reference_": {
+                        "additionalProperties": false,
+                        "description": "Spec that represents a fly scan.",
+                        "properties": {
+                            "spec": {
+                                "$ref": "#/$defs/Spec",
+                                "description": "Spec contaning the path to be followed"
+                            },
+                            "type": {
+                                "const": "Fly",
+                                "default": "Fly",
+                                "title": "Type",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "spec"
+                        ],
+                        "title": "Fly",
                         "type": "object"
                     },
                     "IntersectionOf_Reference_": {
@@ -629,6 +684,8 @@
                         "discriminator": {
                             "mapping": {
                                 "Concat": "#/$defs/Concat_Reference_",
+                                "ConstantDuration": "#/$defs/ConstantDuration_Reference_",
+                                "Fly": "#/$defs/Fly_Reference_",
                                 "Line": "#/$defs/Line_Reference_",
                                 "Mask": "#/$defs/Mask_Reference_",
                                 "Product": "#/$defs/Product_Reference_",
@@ -665,6 +722,12 @@
                             },
                             {
                                 "$ref": "#/$defs/Line_Reference_"
+                            },
+                            {
+                                "$ref": "#/$defs/Fly_Reference_"
+                            },
+                            {
+                                "$ref": "#/$defs/ConstantDuration_Reference_"
                             },
                             {
                                 "$ref": "#/$defs/Static_Reference_"

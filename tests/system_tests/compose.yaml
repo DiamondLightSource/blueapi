@@ -1,3 +1,6 @@
+include:
+  - ../../example-services/compose.yaml
+
 services:
   numtracker:
     image: ghcr.io/diamondlightsource/numtracker:1.0.1

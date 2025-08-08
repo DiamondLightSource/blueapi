@@ -54,34 +54,28 @@ For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
 To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
 """
 
-# These system tests are primarily intended to be run from the Github CI,
-# and therefore these instructions may require multiple terminals, running
-# outside of the officially support devcontainer and other inefficiencies.
+
+# These system tests are run in the "system_tests" CI job, they can also be run
+# and debugged locally.
 #
-# Should the system tests CI fail, testing with a live blueapi server (e.g. with the
-# training rigs) may be a simpler solution than running the system tests locally.
-# The github action for the system tests are the best example to follow.
-# Start devices
-#   1. $ git clone https://github.com/epics-containers/example-services
-#   2. $ docker compose -f example-services/compose.yaml up \
-#           bl01t-di-cam-01 bl01t-mo-sim-01 ca-gateway --detach
+# 1. Spin up dummy versions of assocaited services
+# (outside of devcontainer)
 #
-# Start services
-#   in this directory (i.e. blueapi/tests/system_tests)
-#   $ docker compose up --detach
+# git submodule init
+# docker compose -f tests/system_tests/compose.yaml up -d
 #
-# Start blueapi server configured to talk via the ca-gateway
-#   $ EPICS_CA_NAME_SERVERS=127.0.0.1:9064 EPICS_PVA_NAME_SERVERS=127.0.0.1:9075 \
-#        blueapi -c config.yaml serve
+# 2. Spin up blueapi server (inside devcontainer)
 #
-# Run the system tests using tox:
-#   $ tox -e system-test
+# source tests/system_tests/.env
+# blueapi -c tests/system_tests/config.yaml serve
 #
-# Tear down
-#  Tear down blueapi by passing SIGINT in the console where it was started (ctrl+c)
-#  Remove the containers and networking configured by the compose files:
-#  $ docker compose -f example-services/compose.yaml down
-#  $ docker compose down
+# 3. Run the system tests
+# tox -e system-test
+#
+# 4. To tear down the associated services
+# (outside of devcontainer)
+#
+# docker compose -f tests/system_tests/compose.yaml down
 
 
 @pytest.fixture

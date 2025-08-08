@@ -31,7 +31,7 @@ dataclasses-json==0.6.7
 deepdiff==8.5.0
 deepmerge==2.0
 distlib==0.4.0
-dls-dodal==1.54.0
+dls-dodal==1.55.1
 dnspython==2.7.0
 docopt==0.6.2
 docutils==0.21.2
@@ -105,7 +105,7 @@ opentelemetry-sdk==1.36.0
 opentelemetry-semantic-conventions==0.57b0
 opentelemetry-util-http==0.57b0
 ophyd==1.10.7
-ophyd-async==0.12.3
+ophyd-async==0.13.0
 orderly-set==5.5.0
 orjson==3.11.1
 p4p==4.2.1
@@ -160,7 +160,7 @@ rpds-py==0.26.0
 ruamel.yaml==0.18.14
 ruamel.yaml.clib==0.2.12
 ruff==0.12.7
-scanspec==0.8.0
+scanspec==1.0a1
 semver==3.0.4
 sentry-sdk==2.34.1
 setuptools_dso==2.12.2

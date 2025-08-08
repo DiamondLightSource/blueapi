@@ -211,11 +211,10 @@ class SessionManager:
         device_code = cast(str, response_json.get("device_code"))
         interval = cast(float, response_json.get("interval"))
         expires_in = cast(float, response_json.get("expires_in"))
-        if not webbrowser.open_new_tab(response_json["verification_uri_complete"]):
-            print(
-                "Please login from this URL:- "
-                f"{response_json['verification_uri_complete']}"
-            )
+        webbrowser.open_new_tab(response_json["verification_uri_complete"])
+        print(
+            f"Please login from this URL:- {response_json['verification_uri_complete']}"
+        )
         auth_token_json: dict[str, Any] = self.poll_for_token(
             device_code, interval, expires_in
         )

@@ -1,0 +1,10 @@
+authentication:
+  # Any HTTP client that can connect can read, an API key is still required to write.
+  allow_anonymous_access: true
+trees:
+  - path: /
+    tree: catalog
+    args:
+      uri: "sqlite:////storage/catalog.db"
+      writable_storage: "sqlite:////storage/catalog.db"
+      init_if_not_exists: true

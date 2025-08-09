@@ -277,6 +277,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "url": "tcp://localhost:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
+            "tiled": {
+                "api_key": None,
+                "enabled": False,
+                "url": "http://localhost:8407/",
+            },
             "auth_token_path": None,
             "env": {
                 "events": {
@@ -324,6 +329,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "enabled": True,
                 "url": "tcp://rabbitmq.diamond.ac.uk:61613/",
                 "auth": {"username": "guest", "password": "guest"},
+            },
+            "tiled": {
+                "api_key": None,
+                "enabled": False,
+                "url": "http://localhost:8407/",
             },
             "auth_token_path": None,
             "env": {

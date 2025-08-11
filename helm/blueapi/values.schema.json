@@ -1,27 +1,31 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "Helm Values Schema",
-    "description": "Schema for Helm values",
+    "title": "Blueapi Helm chart scheam",
+    "description": "Schema to allow validation of values passed to Blueapi Helm chart",
     "type": "object",
     "properties": {
         "affinity": {
+            "description": "May be required to run on specific nodes (e.g. the control machine)",
             "type": "object"
         },
         "debug": {
             "type": "object",
             "properties": {
                 "enabled": {
+                    "description": "If enabled, disables liveness and readiness probes, and does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster",
                     "type": "boolean"
                 }
             }
         },
         "extraEnvVars": {
+            "description": "Additional envVars to mount to the pod",
             "type": "array"
         },
         "fullnameOverride": {
             "type": "string"
         },
         "hostNetwork": {
+            "description": "May be needed for EPICS depending on gateway configuration",
             "type": "boolean"
         },
         "image": {
@@ -31,6 +35,7 @@
                     "type": "string"
                 },
                 "repository": {
+                    "description": "To use a container image that extends the blueapi one, set it here",
                     "type": "string"
                 },
                 "tag": {
@@ -42,6 +47,7 @@
             "type": "array"
         },
         "ingress": {
+            "description": "Configuring and enabling an ingress allows blueapi to be served at a nicer address, e.g. ixx-blueapi.diamond.ac.uk",
             "type": "object",
             "properties": {
                 "annotations": {
@@ -84,6 +90,7 @@
             }
         },
         "initContainer": {
+            "description": "Configure the initContainer that checks out the scratch configuration repositories",
             "type": "object",
             "properties": {
                 "enabled": {
@@ -93,9 +100,11 @@
                     "type": "object",
                     "properties": {
                         "enabled": {
+                            "description": "Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container",
                             "type": "boolean"
                         },
                         "existingClaimName": {
+                            "description": "May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release",
                             "type": "string"
                         }
                     }
@@ -103,9 +112,11 @@
             }
         },
         "initResources": {
+            "description": "Override resources for init container. By default copies resources of main container.",
             "type": "object"
         },
         "livenessProbe": {
+            "description": "Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively. This is automatically disabled when in debug mode.",
             "type": "object",
             "properties": {
                 "failureThreshold": {
@@ -131,6 +142,7 @@
             "type": "string"
         },
         "nodeSelector": {
+            "description": "May be required to run on specific nodes (e.g. the control machine)",
             "type": "object"
         },
         "podAnnotations": {
@@ -143,6 +155,7 @@
             "type": "object"
         },
         "readinessProbe": {
+            "description": "Readiness probe, if configured kubernetes will not route traffic to this pod if failed consecutively. This could allow the service time to recover if it is being overwhelmed by traffic, but without the to ability to load balance or scale up/outwards, upstream services will need to know to back off. This is automatically disabled when in debug mode.",
             "type": "object",
             "properties": {
                 "failureThreshold": {
@@ -165,6 +178,7 @@
             }
         },
         "resources": {
+            "description": "Sets the compute resources available to the pod. These defaults are appropriate when using debug mode or an internal PVC and therefore running VS Code server in the pod. In the Diamond cluster, requests must be \u003e= 0.1*limits When not using either of the above, the limits may be lowered. When idle but connected, blueapi consumes ~400MB of memory and 1% cpu and may struggle when allocated less.",
             "type": "object",
             "properties": {
                 "limits": {
@@ -192,6 +206,7 @@
             }
         },
         "restartOnConfigChange": {
+            "description": "If enabled the blueapi pod will restart on changes to `worker`",
             "type": "boolean"
         },
         "securityContext": {
@@ -212,6 +227,7 @@
                     "type": "integer"
                 },
                 "type": {
+                    "description": "To make blueapi available on an IP outside of the cluster prior to an Ingress being created, change this to LoadBalancer",
                     "type": "string"
                 }
             }
@@ -234,6 +250,7 @@
             }
         },
         "startupProbe": {
+            "description": "A more lenient livenessProbe to allow the service to start fully. This is automatically disabled when in debug mode.",
             "type": "object",
             "properties": {
                 "failureThreshold": {
@@ -256,9 +273,11 @@
             }
         },
         "tolerations": {
+            "description": "May be required to run on specific nodes (e.g. the control machine)",
             "type": "array"
         },
         "tracing": {
+            "description": "Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters",
             "type": "object",
             "properties": {
                 "otlp": {
@@ -286,6 +305,7 @@
             }
         },
         "volumeMounts": {
+            "description": "Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name.",
             "type": "array",
             "items": {
                 "type": "object",
@@ -303,9 +323,11 @@
             }
         },
         "volumes": {
+            "description": "Additional volumes on the output StatefulSet definition. Define volumes from e.g. Secrets, ConfigMaps or the Filesystem",
             "type": "array"
         },
         "worker": {
+            "description": "Config for the worker goes here, will be mounted into a config file",
             "$ref": "config_schema.json",
             "type": "object",
             "properties": {
@@ -313,6 +335,7 @@
                     "type": "object",
                     "properties": {
                         "url": {
+                            "description": "0.0.0.0 required to allow non-loopback traffic If using hostNetwork, the port must be free on the host",
                             "type": "string"
                         }
                     }
@@ -321,6 +344,7 @@
                     "type": "object",
                     "properties": {
                         "sources": {
+                            "description": "modules (must be installed in the venv) to fetch devices/plans from",
                             "type": "array",
                             "items": {
                                 "type": "object",
@@ -337,6 +361,7 @@
                     }
                 },
                 "logging": {
+                    "description": "Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`",
                     "type": "object",
                     "properties": {
                         "graylog": {
@@ -356,6 +381,7 @@
                     }
                 },
                 "scratch": {
+                    "description": "If initContainer is enabled the default branch of python projects in this section are installed into the venv *without their dependencies*",
                     "type": "object",
                     "properties": {
                         "repositories": {
@@ -367,6 +393,7 @@
                     }
                 },
                 "stomp": {
+                    "description": "Message bus configuration for returning status to GDA/forwarding documents downstream Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret",
                     "type": "object",
                     "properties": {
                         "auth": {
@@ -606,16 +633,11 @@
                     "title": "MetadataConfig",
                     "type": "object",
                     "required": [
-                        "instrument_session",
                         "instrument"
                     ],
                     "properties": {
                         "instrument": {
                             "title": "Instrument",
-                            "type": "string"
-                        },
-                        "instrument_session": {
-                            "title": "Instrument Session",
                             "type": "string"
                         }
                     },

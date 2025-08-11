@@ -191,7 +191,7 @@ super-state-machine==2.0.2
 tenacity==9.1.2
 tomlkit==0.13.3
 toolz==1.0.0
-tox==3.28.0
+tox==4.28.4
 tox-direct==0.4
 tqdm==4.67.1
 typer==0.16.0

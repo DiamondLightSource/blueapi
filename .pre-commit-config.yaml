@@ -32,8 +32,13 @@ repos:
           # Make the tool search for charts only under the `helm` directory
           - --chart-search-root=helm
 
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+
   - repo: https://github.com/losisin/helm-values-schema-json
-    rev: v1.7.2
+    rev: v2.2.1
     hooks:
       - id: helm-schema
         args: ["--values", "helm/blueapi/values.yaml"]

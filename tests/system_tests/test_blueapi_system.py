@@ -1,5 +1,6 @@
 import inspect
 import time
+from asyncio import Queue
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from blueapi.config import (
     OIDCConfig,
     StompConfig,
 )
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
@@ -30,6 +32,7 @@ from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task_worker import TrackableTask
 
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
+CURRENT_NUMTRACKER_NUM = 43
 
 _SIMPLE_TASK = TaskRequest(
     name="sleep",
@@ -51,14 +54,34 @@ For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
 To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
 """
 
-# Step 1: Ensure a message bus that supports stomp is running and available:
-#   src/script/start_rabbitmq.sh
+# These system tests are primarily intended to be run from the Github CI,
+# and therefore these instructions may require multiple terminals, running
+# outside of the officially support devcontainer and other inefficiencies.
 #
-# Step 2: Start the BlueAPI server with valid configuration:
-#   blueapi -c tests/system_tests/config.yaml serve
+# Should the system tests CI fail, testing with a live blueapi server (e.g. with the
+# training rigs) may be a simpler solution than running the system tests locally.
+# The github action for the system tests are the best example to follow.
+# Start devices
+#   1. $ git clone https://github.com/epics-containers/example-services
+#   2. $ docker compose -f example-services/compose.yaml up \
+#           bl01t-di-cam-01 bl01t-mo-sim-01 ca-gateway --detach
 #
-# Step 3: Run the system tests using tox:
-#   tox -e system-test
+# Start services
+#   in this directory (i.e. blueapi/tests/system_tests)
+#   $ docker compose up --detach
+#
+# Start blueapi server configured to talk via the ca-gateway
+#   $ EPICS_CA_NAME_SERVERS=127.0.0.1:9064 EPICS_PVA_NAME_SERVERS=127.0.0.1:9075 \
+#        blueapi -c config.yaml serve
+#
+# Run the system tests using tox:
+#   $ tox -e system-test
+#
+# Tear down
+#  Tear down blueapi by passing SIGINT in the console where it was started (ctrl+c)
+#  Remove the containers and networking configured by the compose files:
+#  $ docker compose -f example-services/compose.yaml down
+#  $ docker compose down
 
 
 @pytest.fixture
@@ -374,29 +397,66 @@ def test_delete_current_environment(client: BlueapiClient):
 
 
 @pytest.mark.parametrize(
+    "task,scan_id",
+    [
+        (
+            TaskRequest(
+                name="count",
+                params={
+                    "detectors": [
+                        "det",
+                    ],
+                    "num": 5,
+                },
+                instrument_session="cm12345-1",
+            ),
+            CURRENT_NUMTRACKER_NUM + 1,
+        ),
+        (
+            TaskRequest(
+                name="spec_scan",
+                params={
+                    "detectors": [
+                        "det",
+                    ],
+                    "spec": Line("stage.x", 0.0, 10.0, 2)
+                    * Line("stage.theta", 5.0, 15.0, 3),
+                },
+                instrument_session="cm12345-1",
+            ),
+            CURRENT_NUMTRACKER_NUM + 2,
+        ),
+    ],
+)
+def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int):
+    resource = Queue(maxsize=1)
+    start = Queue(maxsize=1)
+
+    def on_event(event: AnyEvent) -> None:
+        if isinstance(event, DataEvent):
+            if event.name == "start":
+                start.put_nowait(event.doc)
+            if event.name == "stream_resource":
+                resource.put_nowait(event.doc)
+
+    final_event = client_with_stomp.run_task(task, on_event)
+    assert final_event.is_complete() and not final_event.is_error()
+    assert final_event.state is WorkerState.IDLE
+
+    start_doc = start.get_nowait()
+    assert start_doc["scan_id"] == scan_id
+    assert start_doc["instrument"] == "adsim"
+    assert start_doc["instrument_session"] == FAKE_INSTRUMENT_SESSION
+    assert start_doc["data_session_directory"] == "/tmp"
+
+    stream_resource = resource.get_nowait()
+    assert stream_resource["run_start"] == start_doc["uid"]
+    assert stream_resource["uri"] == f"file://localhost/tmp/det-adsim-{scan_id}.h5"
+
+
+@pytest.mark.parametrize(
     "task",
     [
-        TaskRequest(
-            name="count",
-            params={
-                "detectors": [
-                    "det",
-                ],
-                "num": 5,
-            },
-            instrument_session="cm12345-1",
-        ),
-        TaskRequest(
-            name="spec_scan",
-            params={
-                "detectors": [
-                    "det",
-                ],
-                "spec": Line("stage.x", 0.0, 10.0, 2)
-                * Line("stage.theta", 5.0, 15.0, 3),
-            },
-            instrument_session="cm12345-1",
-        ),
         TaskRequest(
             name="set_absolute",
             params={
@@ -407,7 +467,7 @@ def test_delete_current_environment(client: BlueapiClient):
         ),
     ],
 )
-def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
+def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
     final_event = client_with_stomp.run_task(task)
     assert final_event.is_complete() and not final_event.is_error()
     assert final_event.state is WorkerState.IDLE

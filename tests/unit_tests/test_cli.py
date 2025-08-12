@@ -1281,3 +1281,41 @@ def test_python_env_output_formatting():
         """)
 
     _assert_matching_formatting(OutputFormat.FULL, empty_python_env, full)
+
+
+@pytest.mark.parametrize("output_flag", [True, False])
+@pytest.mark.parametrize("update", [True, False])
+@patch("blueapi.cli.cli.config.CONFIG_SCHEMA_LOCATION")
+def test_config_schema(
+    config_schema_location_mock: Mock,
+    runner: CliRunner,
+    output_flag: bool,
+    update: bool,
+    tmp_path: Path,
+):
+    args = ["config-schema"]
+
+    tmp_path = tmp_path / "foo.json"
+
+    if output_flag:
+        args.append("-o")
+        args.append(f"{tmp_path}")
+
+    if update:
+        args.append("-u")
+
+    result = runner.invoke(
+        main,
+        args,
+    )
+
+    expected = ApplicationConfig.model_json_schema()
+    if output_flag and (not update):
+        with tmp_path.open("r") as stream:
+            assert json.load(stream) == expected
+    elif update:
+        config_schema_location_mock.open.assert_called()
+        with config_schema_location_mock.open() as stream:
+            stream.write.assert_called()
+    else:
+        assert json.loads(result.output) == expected

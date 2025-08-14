@@ -63,3 +63,9 @@ To log out and securely remove the cached access token, follow these steps:
    ```
    Logged out
    ```
+
+
+> [!NOTE]
+> The login and logout instructions above apply to the CLI. If you are using `oauth2-proxy` to secure the Swagger
+> UI documentation page, you can log out by visiting the `/logout` URL. For other OIDC providers, update the 
+> `oidc.logout_redirect_endpoint` configuration to the appropriate logout endpoint.

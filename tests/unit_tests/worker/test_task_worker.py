@@ -696,9 +696,9 @@ def test_injected_composite_devices_are_found(
         dev_a: FakeDevice = inject(fake_device.name)
         dev_b: FakeDevice = inject(second_fake_device.name)
 
-    def injected_device_plan(
-        composite: MyComposite,
-    ) -> MsgGenerator:
+        model_config = {"arbitrary_types_allowed": True}
+
+    def injected_device_plan(composite: MyComposite = inject("")) -> MsgGenerator:
         yield from ()
 
     context.register_plan(injected_device_plan)

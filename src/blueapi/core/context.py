@@ -10,7 +10,7 @@ from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
-from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
+from pydantic import BaseModel, GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import CoreSchema, core_schema
@@ -76,6 +76,9 @@ def qualified_generic_name(target: type) -> str:
 
 def is_bluesky_type(typ: type) -> bool:
     return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
+
+
+C = TypeVar("C", bound=BaseModel, covariant=True)
 
 
 @dataclass
@@ -321,7 +324,13 @@ class BlueskyContext:
                 )
 
             no_default = para.default is Parameter.empty
-            factory = None if no_default else DefaultFactory(para.default)
+            default = (
+                self._inject_composite(para.annotation)
+                if issubclass(para.annotation, BaseModel)
+                and isinstance(para.default, str)
+                else para.default
+            )
+            factory = None if no_default else DefaultFactory(default)
             new_args[name] = (
                 self._convert_type(arg_type, no_default),
                 FieldInfo(default_factory=factory),
@@ -356,6 +365,17 @@ class BlueskyContext:
                 root = Union
             return root[new_types] if root else typ  # type: ignore
         return typ
+
+    def _inject_composite(self, composite_class: type[C]) -> C:
+        devices = {
+            field: self.find_device(info.default)
+            if info.annotation is not None
+            and is_bluesky_type(info.annotation)
+            and isinstance(info.default, str)
+            else info.default
+            for field, info in composite_class.model_fields.items()
+        }
+        return composite_class(**devices)
 
 
 D = TypeVar("D")

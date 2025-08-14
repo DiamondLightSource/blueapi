@@ -4,7 +4,8 @@ repos:
     hooks:
       - id: check-added-large-files
       - id: check-yaml
-        exclude: ^helm\/.*\/templates\/.*|catalog-info.yaml
+        exclude: ^helm/blueapi/templates/
+        args: [--allow-multiple-documents]
       - id: check-merge-conflict
       - id: end-of-file-fixer
 
@@ -31,3 +32,8 @@ repos:
         args:
           # Make the tool search for charts only under the `helm` directory
           - --chart-search-root=helm
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks

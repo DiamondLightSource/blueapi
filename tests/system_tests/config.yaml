@@ -15,3 +15,6 @@ stomp:
   url: tcp://localhost:61613/
 numtracker:
   url: http://localhost:8406/graphql
+tiled:
+  enabled: true
+  url: http://localhost:8407/

@@ -542,6 +542,7 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> RedirectRes
     if config is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return RedirectResponse(
+        status_code=status.HTTP_308_PERMANENT_REDIRECT,
         url=config.logout_redirect_endpoint,
         headers={"X-Auth-Request-Redirect": config.end_session_endpoint},
     )

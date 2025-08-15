@@ -1,4 +1,8 @@
-# Authenticate to BlueAPI
+> [!NOTE]
+> If you are using `oauth2-proxy` to secure the Swagger UI documentation page, you can log out by visiting the `/logout` URL. For this to work correctly, ensure that the blueapi server is configured with 
+> `oidc.logout_redirect_endpoint` set to `/oauth2/sign_out`, which is required for `oauth2-proxy`.
+
+# Authenticate to BlueAPI-Cli
 
 ## Introduction
 BlueAPI provides a secure and efficient way to interact with its services. This guide walks you through the steps to log in and log out using BlueAPI with OpenID Connect (OIDC) authentication.

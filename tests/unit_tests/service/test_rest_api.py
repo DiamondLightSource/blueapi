@@ -7,6 +7,7 @@ import jwt
 import pytest
 from bluesky.protocols import Stoppable
 from fastapi import status
+from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
@@ -67,6 +68,29 @@ def client_with_auth(
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(runner=mock_runner)
         yield TestClient(main.get_app(ApplicationConfig(oidc=oidc_config)))
+        main.teardown_runner()
+
+
+@pytest.fixture
+def client_authenticated(
+    mock_runner: Mock, oidc_config: OIDCConfig
+) -> Iterator[TestClient]:
+    with patch("blueapi.service.interface.worker"):
+        main.setup_runner(runner=mock_runner)
+        app = main.get_app(ApplicationConfig(oidc=oidc_config))
+        dependant_dependencies = []
+        for route in app.routes:
+            if isinstance(route, APIRoute) and route.path == "/config/oidc":
+                dependant_dependencies = route.dependant.dependencies
+                break
+
+        for route in app.routes:
+            if isinstance(route, APIRoute):
+                route.dependencies = []
+                temp = dependant_dependencies
+                temp[0].path = route.path
+                route.dependant.dependencies = temp
+        yield TestClient(app)
         main.teardown_runner()
 
 
@@ -720,3 +744,39 @@ def test_health_probe(client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"status": "ok"}
+
+
+def test_logout(
+    mock_runner: Mock,
+    mock_authn_server,
+    oidc_config: OIDCConfig,
+    client_authenticated: TestClient,
+):
+    oidc_config.logout_redirect_endpoint = "/oauth2/logout"
+    mock_runner.run.return_value = oidc_config
+    client_authenticated.follow_redirects = False
+    response = client_authenticated.get("/logout")
+    assert response.status_code == status.HTTP_308_PERMANENT_REDIRECT
+    assert (
+        response.headers.get("X-Auth-Request-Redirect")
+        == oidc_config.end_session_endpoint
+    )
+    assert response.headers.get("location") == oidc_config.logout_redirect_endpoint
+
+
+@pytest.mark.parametrize("has_oidc_config", [True, False])
+def test_logout_when_oidc_config_invalid(
+    has_oidc_config: bool,
+    mock_runner: Mock,
+    oidc_config: OIDCConfig,
+    mock_authn_server,
+    client_authenticated: TestClient,
+):
+    if has_oidc_config:
+        oidc_config.logout_redirect_endpoint = None
+        mock_runner.run.return_value = oidc_config
+    else:
+        mock_runner.run.return_value = None
+
+    response = client_authenticated.get("/logout")
+    assert response.status_code == status.HTTP_205_RESET_CONTENT

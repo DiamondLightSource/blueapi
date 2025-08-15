@@ -57,7 +57,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "1.0.3"
+REST_API_VERSION = "1.1.0"
 
 LICENSE_INFO: dict[str, str] = {
     "name": "Apache 2.0",
@@ -535,7 +535,7 @@ def health_probe() -> HealthProbeResponse:
     return HealthProbeResponse(status=Health.OK)
 
 
-@secure_router.get("/logout", status_code=status.HTTP_200_OK, include_in_schema=False)
+@secure_router.get("/logout", include_in_schema=False)
 def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> RedirectResponse:
     """Redirect to logout url"""
     config = runner.run(interface.get_oidc_config)

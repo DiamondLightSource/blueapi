@@ -307,7 +307,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
-                "logout_redirect_endpoint": "/oauth2/sign_out",
+                "logout_redirect_endpoint": None,
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
@@ -354,7 +354,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
-                "logout_redirect_endpoint": "/oauth2/sign_out",
+                "logout_redirect_endpoint": None,
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",

@@ -162,8 +162,8 @@ class OIDCConfig(BlueapiBaseModel):
     )
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
-    logout_redirect_endpoint: str = Field(
-        description="The oidc endpoint required to logout", default="/oauth2/sign_out"
+    logout_redirect_endpoint: str | None = Field(
+        description="The oidc endpoint required to logout", default=None
     )
 
     @cached_property

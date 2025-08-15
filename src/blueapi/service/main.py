@@ -536,11 +536,11 @@ def health_probe() -> HealthProbeResponse:
 
 
 @secure_router.get("/logout", include_in_schema=False)
-def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> RedirectResponse:
+def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     """Redirect to logout url"""
     config = runner.run(interface.get_oidc_config)
-    if config is None:
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+    if config is None or config.logout_redirect_endpoint is None:
+        raise HTTPException(status_code=status.HTTP_205_RESET_CONTENT)
     return RedirectResponse(
         status_code=status.HTTP_308_PERMANENT_REDIRECT,
         url=config.logout_redirect_endpoint,

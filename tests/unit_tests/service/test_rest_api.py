@@ -752,6 +752,7 @@ def test_logout(
     oidc_config: OIDCConfig,
     client_authenticated: TestClient,
 ):
+    oidc_config.logout_redirect_endpoint = "/oauth2/logout"
     mock_runner.run.return_value = oidc_config
     client_authenticated.follow_redirects = False
     response = client_authenticated.get("/logout")
@@ -760,11 +761,22 @@ def test_logout(
         response.headers.get("X-Auth-Request-Redirect")
         == oidc_config.end_session_endpoint
     )
+    assert response.headers.get("location") == oidc_config.logout_redirect_endpoint
 
 
+@pytest.mark.parametrize("has_oidc_config", [True, False])
 def test_logout_when_oidc_config_invalid(
-    mock_runner: Mock, mock_authn_server, client_authenticated: TestClient
+    has_oidc_config: bool,
+    mock_runner: Mock,
+    oidc_config: OIDCConfig,
+    mock_authn_server,
+    client_authenticated: TestClient,
 ):
-    mock_runner.run.return_value = None
+    if has_oidc_config:
+        oidc_config.logout_redirect_endpoint = None
+        mock_runner.run.return_value = oidc_config
+    else:
+        mock_runner.run.return_value = None
+
     response = client_authenticated.get("/logout")
-    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.status_code == status.HTTP_205_RESET_CONTENT

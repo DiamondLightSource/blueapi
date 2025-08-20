@@ -28,6 +28,10 @@ LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 FORBIDDEN_OWN_REMOTE_URL = "https://github.com/DiamondLightSource/blueapi.git"
 
+CONFIG_SCHEMA_LOCATION = (
+    Path(__file__).parents[2] / "helm" / "blueapi" / "config_schema.json"
+)
+
 
 def _expand_env(loader: yaml.Loader, node: yaml.ScalarNode) -> str:
     value = loader.construct_scalar(node)

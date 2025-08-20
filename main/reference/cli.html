@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Command-Line Interface &#8212; blueapi 1.0.3.dev4+g6eca7b830 documentation</title>
+    <title>Command-Line Interface &#8212; blueapi 1.0.3.dev5+g08334bc62 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=78292556"></script>
+    <script src="../_static/documentation_options.js?v=7f8e4d6a"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -490,6 +490,26 @@ environment variable <code class="docutils literal notranslate"><span class="pre
 <dd><p>Path to configuration YAML file</p>
 </dd></dl>
 
+<section id="blueapi-config-schema">
+<h3>config-schema<a class="headerlink" href="#blueapi-config-schema" title="Link to this heading">#</a></h3>
+<p>Generates a json schema from the ApplicationConfig pydantic basemodel</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>blueapi<span class="w"> </span>config-schema<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-config-schema-u">
+<span id="cmdoption-blueapi-config-schema-update"></span><span class="sig-name descname"><span class="pre">-u</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--update</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-blueapi-config-schema-u" title="Link to this definition">#</a></dt>
+<dd><p>[Development only] update the config schema in the documentation</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-blueapi-config-schema-o">
+<span id="cmdoption-blueapi-config-schema-output"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--output</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;output&gt;</span></span><a class="headerlink" href="#cmdoption-blueapi-config-schema-o" title="Link to this definition">#</a></dt>
+<dd><p>Path to file to save the config schema</p>
+</dd></dl>
+
+</section>
 <section id="blueapi-controller">
 <h3>controller<a class="headerlink" href="#blueapi-controller" title="Link to this heading">#</a></h3>
 <p>Client utility for controlling and introspecting the worker</p>
@@ -758,6 +778,7 @@ the schema, not the controller as a new FastAPI app will be started each time.</
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi">blueapi</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-config-schema">config-schema</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller">controller</a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-abort">abort</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#blueapi-controller-devices">devices</a></li>

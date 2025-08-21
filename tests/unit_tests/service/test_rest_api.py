@@ -773,7 +773,7 @@ def test_logout_when_oidc_config_invalid(
     client_authenticated: TestClient,
 ):
     if has_oidc_config:
-        oidc_config.logout_redirect_endpoint = None
+        oidc_config.logout_redirect_endpoint = ""
         mock_runner.run.return_value = oidc_config
     else:
         mock_runner.run.return_value = None

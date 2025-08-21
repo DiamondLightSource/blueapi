@@ -93,6 +93,7 @@ components:
           title: Client Id
           type: string
         logout_redirect_endpoint:
+          default: ''
           description: The oidc endpoint required to logout
           title: Logout Redirect Endpoint
           type: string

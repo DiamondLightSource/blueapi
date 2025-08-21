@@ -539,7 +539,7 @@ def health_probe() -> HealthProbeResponse:
 def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     """Redirect to logout url"""
     config = runner.run(interface.get_oidc_config)
-    if config is None or config.logout_redirect_endpoint is None:
+    if config is None or not config.logout_redirect_endpoint:
         raise HTTPException(status_code=status.HTTP_205_RESET_CONTENT)
     return RedirectResponse(
         status_code=status.HTTP_308_PERMANENT_REDIRECT,

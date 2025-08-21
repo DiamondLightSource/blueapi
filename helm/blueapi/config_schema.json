@@ -198,7 +198,7 @@
                     "type": "string"
                 },
                 "logout_redirect_endpoint": {
-                    "default": null,
+                    "default": "",
                     "description": "The oidc endpoint required to logout",
                     "title": "Logout Redirect Endpoint",
                     "type": "string"

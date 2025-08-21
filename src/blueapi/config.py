@@ -21,7 +21,6 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
-from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -167,8 +166,8 @@ class OIDCConfig(BlueapiBaseModel):
     )
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
-    logout_redirect_endpoint: str | SkipJsonSchema[None] = Field(
-        description="The oidc endpoint required to logout", default=None
+    logout_redirect_endpoint: str = Field(
+        description="The oidc endpoint required to logout", default=""
     )
 
     @cached_property

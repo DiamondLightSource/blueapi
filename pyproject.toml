@@ -211,3 +211,6 @@ extend-immutable-calls = [
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
 # Remove this line to forbid private member access in tests
 "tests/**/*" = ["SLF001"]
+
+[tool.uv]
+constraint-dependencies = ["httpx<1.0"]

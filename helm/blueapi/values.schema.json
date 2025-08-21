@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "Blueapi Helm chart scheam",
+    "title": "Blueapi Helm chart schema",
     "description": "Schema to allow validation of values passed to Blueapi Helm chart",
     "type": "object",
     "properties": {

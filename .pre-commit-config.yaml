@@ -26,7 +26,7 @@ repos:
         require_serial: true
 
   - repo: https://github.com/norwoodj/helm-docs
-    rev:  ""
+    rev: ""
     hooks:
       - id: helm-docs-built
         args:
@@ -37,3 +37,11 @@ repos:
     rev: v8.28.0
     hooks:
       - id: gitleaks
+
+  - repo: https://github.com/losisin/helm-values-schema-json
+    rev: v2.2.1
+    hooks:
+      - id: helm-schema
+        args:
+        - "--config"
+        - "helm/blueapi/.schema.yaml"

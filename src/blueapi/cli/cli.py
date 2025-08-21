@@ -108,6 +108,31 @@ def schema(output: Path | None = None, update: bool = False) -> None:
         print_schema_as_yaml(schema)
 
 
+@click.option(
+    "-o", "--output", type=Path, help="Path to file to save the config schema"
+)
+@click.option(
+    "-u",
+    "--update",
+    type=bool,
+    is_flag=True,
+    help="[Development only] update the config schema in the documentation",
+)
+@main.command(name="config-schema")
+def config_schema(output: Path | None = None, update: bool = False) -> None:
+    """Generates a json schema from the ApplicationConfig pydantic basemodel"""
+    schema = ApplicationConfig.model_json_schema()
+
+    if update:
+        output = config.CONFIG_SCHEMA_LOCATION
+    if output is not None:
+        with output.open("w") as stream:
+            json.dump(schema, stream, indent=4)
+            stream.write("\n")
+    else:
+        print(json.dumps(schema))
+
+
 @main.command(name="serve")
 @click.pass_obj
 def start_application(obj: dict):

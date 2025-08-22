@@ -24,6 +24,10 @@
         "fullnameOverride": {
             "type": "string"
         },
+        "global": {
+            "description": "Not used, but must be present for validation when using as a dependency of another chart",
+            "type": "object"
+        },
         "hostNetwork": {
             "description": "May be needed for EPICS depending on gateway configuration",
             "type": "boolean"

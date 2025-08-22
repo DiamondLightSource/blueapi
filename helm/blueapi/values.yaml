@@ -226,3 +226,6 @@ debug:
   # -- If enabled, disables liveness and readiness probes, and does not start the service on startup
   # This allows connecting to the pod and starting the service manually to allow debugging on the cluster
   enabled: false
+
+# -- Not used, but must be present for validation when using as a dependency of another chart
+global: {}

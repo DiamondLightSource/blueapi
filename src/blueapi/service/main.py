@@ -17,6 +17,7 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
@@ -56,7 +57,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "1.0.2"
+REST_API_VERSION = "1.1.0"
 
 LICENSE_INFO: dict[str, str] = {
     "name": "Apache 2.0",
@@ -532,6 +533,19 @@ def get_python_environment(
 def health_probe() -> HealthProbeResponse:
     """If able to serve this, server is live and ready for requests."""
     return HealthProbeResponse(status=Health.OK)
+
+
+@secure_router.get("/logout", include_in_schema=False)
+def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
+    """Redirect to logout url"""
+    config = runner.run(interface.get_oidc_config)
+    if config is None or not config.logout_redirect_endpoint:
+        raise HTTPException(status_code=status.HTTP_205_RESET_CONTENT)
+    return RedirectResponse(
+        status_code=status.HTTP_308_PERMANENT_REDIRECT,
+        url=config.logout_redirect_endpoint,
+        headers={"X-Auth-Request-Redirect": config.end_session_endpoint},
+    )
 
 
 @start_as_current_span(TRACER, "config")

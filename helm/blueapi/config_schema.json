@@ -196,6 +196,12 @@
                     "description": "Client Audience(s)",
                     "title": "Client Audience",
                     "type": "string"
+                },
+                "logout_redirect_endpoint": {
+                    "default": "",
+                    "description": "The oidc endpoint required to logout",
+                    "title": "Logout Redirect Endpoint",
+                    "type": "string"
                 }
             },
             "required": [

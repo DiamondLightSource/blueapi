@@ -1,14 +1,15 @@
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
+from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import jwt
 import pytest
 from bluesky.protocols import Stoppable
 from fastapi import status
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
+from httpx import Headers
 from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError
@@ -63,34 +64,15 @@ def client(mock_runner: Mock) -> Iterator[TestClient]:
 
 @pytest.fixture
 def client_with_auth(
-    mock_runner: Mock, oidc_config: OIDCConfig
+    mock_runner: Mock, oidc_config: OIDCConfig, valid_token_with_jwt: dict[str, Any]
 ) -> Iterator[TestClient]:
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(runner=mock_runner)
-        yield TestClient(main.get_app(ApplicationConfig(oidc=oidc_config)))
-        main.teardown_runner()
-
-
-@pytest.fixture
-def client_authenticated(
-    mock_runner: Mock, oidc_config: OIDCConfig
-) -> Iterator[TestClient]:
-    with patch("blueapi.service.interface.worker"):
-        main.setup_runner(runner=mock_runner)
-        app = main.get_app(ApplicationConfig(oidc=oidc_config))
-        dependant_dependencies = []
-        for route in app.routes:
-            if isinstance(route, APIRoute) and route.path == "/config/oidc":
-                dependant_dependencies = route.dependant.dependencies
-                break
-
-        for route in app.routes:
-            if isinstance(route, APIRoute):
-                route.dependencies = []
-                temp = dependant_dependencies
-                temp[0].path = route.path
-                route.dependant.dependencies = temp
-        yield TestClient(app)
+        access_token = valid_token_with_jwt.get("access_token")
+        assert access_token is not None
+        client = TestClient(main.get_app(ApplicationConfig(oidc=oidc_config)))
+        client.headers = Headers(headers={"Authorization": f"Bearer {access_token}"})
+        yield client
         main.teardown_runner()
 
 
@@ -750,12 +732,12 @@ def test_logout(
     mock_runner: Mock,
     mock_authn_server,
     oidc_config: OIDCConfig,
-    client_authenticated: TestClient,
+    client_with_auth: TestClient,
 ):
     oidc_config.logout_redirect_endpoint = "/oauth2/logout"
     mock_runner.run.return_value = oidc_config
-    client_authenticated.follow_redirects = False
-    response = client_authenticated.get("/logout")
+    client_with_auth.follow_redirects = False
+    response = client_with_auth.get("/logout")
     assert response.status_code == status.HTTP_308_PERMANENT_REDIRECT
     assert (
         response.headers.get("X-Auth-Request-Redirect")
@@ -770,7 +752,7 @@ def test_logout_when_oidc_config_invalid(
     mock_runner: Mock,
     oidc_config: OIDCConfig,
     mock_authn_server,
-    client_authenticated: TestClient,
+    client_with_auth: TestClient,
 ):
     if has_oidc_config:
         oidc_config.logout_redirect_endpoint = ""
@@ -778,5 +760,5 @@ def test_logout_when_oidc_config_invalid(
     else:
         mock_runner.run.return_value = None
 
-    response = client_authenticated.get("/logout")
+    response = client_with_auth.get("/logout")
     assert response.status_code == status.HTTP_205_RESET_CONTENT

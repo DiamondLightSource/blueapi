@@ -58,7 +58,7 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 # These system tests are run in the "system_tests" CI job, they can also be run
 # and debugged locally.
 #
-# 1. Spin up dummy versions of assocaited services
+# 1. Spin up dummy versions of associated services
 # (outside of devcontainer)
 #
 # git submodule init

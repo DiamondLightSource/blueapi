@@ -442,6 +442,7 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
     assert start_doc["instrument"] == "adsim"
     assert start_doc["instrument_session"] == FAKE_INSTRUMENT_SESSION
     assert start_doc["data_session_directory"] == "/tmp"
+    assert start_doc["scan_file"] == f"adsim-{scan_id}"
 
     stream_resource = resource.get_nowait()
     assert stream_resource["run_start"] == start_doc["uid"]

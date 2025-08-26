@@ -551,3 +551,23 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     )
 
     interface.teardown()
+
+
+def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
+    mock_numtracker_server,
+):
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql")
+        ),
+    )
+    interface.setup(conf)
+    ctx = interface.context()
+
+    ctx.run_engine.md["instrument_session"] = "ab123"
+    interface._update_scan_num(ctx.run_engine.md)
+
+    assert ctx.run_engine.md["scan_file"] == "p46-11"
+
+    interface.teardown()

@@ -234,9 +234,9 @@ def test_begin_task_no_task_id(worker_mock: MagicMock):
 
 @patch("blueapi.service.interface.TaskWorker.get_tasks_by_status")
 def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
-    pending_task1 = TrackableTask(task_id="0", task=None)
-    pending_task2 = TrackableTask(task_id="1", task=None)
-    running_task = TrackableTask(task_id="2", task=None)
+    pending_task1 = TrackableTask(task_id="0", task=Task(name="pending_task1"))
+    pending_task2 = TrackableTask(task_id="1", task=Task(name="pending_task2"))
+    running_task = TrackableTask(task_id="2", task=Task(name="running_task"))
 
     def mock_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
         if status == TaskStatusEnum.PENDING:
@@ -307,9 +307,9 @@ def test_cancel_active_task(cancel_active_task_mock: MagicMock):
 @patch("blueapi.service.interface.TaskWorker.get_tasks")
 def test_get_tasks(get_tasks_mock: MagicMock):
     tasks = [
-        TrackableTask(task_id="0", task=None),
-        TrackableTask(task_id="1", task=None),
-        TrackableTask(task_id="2", task=None),
+        TrackableTask(task_id="0", task=Task(name="0")),
+        TrackableTask(task_id="1", task=Task(name="1")),
+        TrackableTask(task_id="2", task=Task(name="1")),
     ]
     get_tasks_mock.return_value = tasks
 

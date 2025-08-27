@@ -39,19 +39,8 @@ blueapi controller env -r
 The helm chart can be configured to mount a scratch area from the
 host machine, include the following in your `values.yaml`:
 
-```yaml
-  worker:
-    scratch:
-      root: /path/to/my/scratch/directory
-      required_gid: 12345
-      repositories:
-        - name: dodal
-          remote_url: https://github.com/DiamondLightSource/dodal.git
-        - name: mx-bluesky
-          remote_url: https://github.com/DiamondLightSource/mx-bluesky.git
-
-  initContainer:
-    enabled: true
+```{literalinclude} ../../tests/unit_tests/helm_examples/scratch-k8s.yaml
+:language: yaml
 ```
 
 When `initContainer` is enabled, it will iterate over the scratch configuration, cloning the specified repositories and setting the correct group ownership based on the `required_gid`. This ensures that the scratch area is properly initialized before the main container starts.

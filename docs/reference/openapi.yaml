@@ -224,6 +224,28 @@ components:
       - new_state
       title: StateChangeRequest
       type: object
+    Task:
+      additionalProperties: false
+      description: Task that will run a plan
+      properties:
+        metadata:
+          additionalProperties: true
+          description: Any metadata to apply to all runs within this task
+          title: Metadata
+          type: object
+        name:
+          description: Name of plan to run
+          title: Name
+          type: string
+        params:
+          additionalProperties: true
+          description: Values for parameters to plan, if any
+          title: Params
+          type: object
+      required:
+      - name
+      title: Task
+      type: object
     TaskRequest:
       additionalProperties: false
       description: Request to run a task with related info
@@ -293,7 +315,9 @@ components:
           title: Request Id
           type: string
         task:
-          title: Task
+          anyOf:
+          - $ref: '#/components/schemas/Task'
+          - type: 'null'
         task_id:
           title: Task Id
           type: string

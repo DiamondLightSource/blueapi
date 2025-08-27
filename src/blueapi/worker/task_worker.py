@@ -64,7 +64,7 @@ class TrackableTask(BlueapiBaseModel):
     """
 
     task_id: str
-    task: Task
+    task: Task | None
     request_id: str | SkipJsonSchema[None] = None
     is_complete: bool = False
     is_pending: bool = True
@@ -205,7 +205,7 @@ class TaskWorker:
         if task is None:
             raise KeyError(f"No pending task with ID {task_id}")
         else:
-            with plan_tag_filter_context(task.task.name, LOGGER):
+            with plan_tag_filter_context(getattr(task.task, "name", "None"), LOGGER):
                 self._submit_trackable_task(task)
 
     @start_as_current_span(TRACER, "task.name", "task.params")

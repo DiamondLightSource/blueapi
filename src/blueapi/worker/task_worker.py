@@ -31,6 +31,7 @@ from blueapi.core import (
     WatchableStatus,
 )
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
+from blueapi.log import plan_tag_filter_context
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
 
@@ -201,10 +202,11 @@ class TaskWorker:
     @start_as_current_span(TRACER, "task_id")
     def begin_task(self, task_id: str) -> None:
         task = self._pending_tasks.get(task_id)
-        if task is None:
-            raise KeyError(f"No pending task with ID {task_id}")
-        else:
-            self._submit_trackable_task(task)
+        with plan_tag_filter_context(task.name, LOGGER):
+            if task is None:
+                raise KeyError(f"No pending task with ID {task_id}")
+            else:
+                self._submit_trackable_task(task)
 
     @start_as_current_span(TRACER, "task.name", "task.params")
     def submit_task(self, task: Task) -> str:

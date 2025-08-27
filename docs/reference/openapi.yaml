@@ -315,9 +315,7 @@ components:
           title: Request Id
           type: string
         task:
-          anyOf:
-          - $ref: '#/components/schemas/Task'
-          - type: 'null'
+          $ref: '#/components/schemas/Task'
         task_id:
           title: Task Id
           type: string

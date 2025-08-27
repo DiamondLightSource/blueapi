@@ -1,12 +1,13 @@
 import logging
-from unittest.mock import patch
+from collections.abc import Generator
+from unittest.mock import Mock, patch
 
 import pytest
 from bluesky.log import logger as bluesky_logger
 from dodal.log import LOGGER as dodal_logger
 
 from blueapi.config import GraylogConfig, LoggingConfig
-from blueapi.log import set_up_logging
+from blueapi.log import PlanTagFilter, plan_tag_filter_context, set_up_logging
 
 
 def clear_all_loggers_and_handlers(logger):
@@ -23,7 +24,7 @@ LOGGER_NAMES = ["", "blueapi", "blueapi.test"]
 
 
 @pytest.fixture(params=LOGGER_NAMES)
-def logger_with_graylog(request):
+def logger_with_graylog(request) -> Generator[logging.Logger]:
     logger = logging.getLogger(request.param)
     graylog_config = GraylogConfig(enabled=True)
     set_up_logging(LoggingConfig(graylog=graylog_config))
@@ -32,7 +33,7 @@ def logger_with_graylog(request):
 
 
 @pytest.fixture(params=LOGGER_NAMES)
-def logger_without_graylog(request):
+def logger_without_graylog(request) -> Generator[logging.Logger]:
     logger = logging.getLogger(request.param)
     graylog_config = GraylogConfig(enabled=False)
     set_up_logging(LoggingConfig(graylog=graylog_config))
@@ -41,19 +42,19 @@ def logger_without_graylog(request):
 
 
 @pytest.fixture
-def logger(logger_with_graylog):
+def logger(logger_with_graylog) -> logging.Logger:
     return logger_with_graylog
 
 
 @pytest.fixture
-def mock_stream_handler_emit():
+def mock_stream_handler_emit() -> Generator[Mock]:
     with patch("blueapi.log.logging.StreamHandler.emit") as stream_handler_emit:
         # stream_handler_emit.reset_mock()
         yield stream_handler_emit
 
 
 @pytest.fixture
-def mock_graylog_emit():
+def mock_graylog_emit() -> Generator[Mock]:
     with patch("blueapi.log.GELFTCPHandler.emit") as graylog_emit:
         yield graylog_emit
 
@@ -65,7 +66,7 @@ MOCK_HANDLER_EMIT_STRINGS = [
 
 
 @pytest.fixture(params=MOCK_HANDLER_EMIT_STRINGS)
-def mock_handler_emit(request):
+def mock_handler_emit(request) -> Generator[Mock]:
     with patch(request.param) as mock_emit:
         yield mock_emit
 
@@ -101,3 +102,19 @@ def test_library_logger_intergrations(logger, library_logger, mock_handler_emit)
     mock_handler_emit.assert_not_called()
     library_logger.info("FOO")
     mock_handler_emit.assert_called()
+
+
+def test_plan_tag_filter_context_adds_filter(logger):
+    assert logger.filters == []
+    with plan_tag_filter_context("foo", logger):
+        filters = logger.filters
+        assert len(filters) == 1
+        assert isinstance(filters[0], PlanTagFilter)
+
+
+def test_plan_tag_filter_context_removes_filter(logger):
+    with plan_tag_filter_context("foo", logger):
+        filters = logger.filters
+        assert len(filters) == 1
+        assert isinstance(filters[0], PlanTagFilter)
+    assert logger.filters == []

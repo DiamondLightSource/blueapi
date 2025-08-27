@@ -8,25 +8,15 @@ The worker requires a running instance of RabbitMQ. The easiest way to start it 
  to `compose` the services in `tests/system_tests/compose.yaml`
 
 ```sh
-    docker compose -f tests/system_tests/compose.yaml run rabbitmq --detach
+docker compose -f tests/system_tests/compose.yaml run rabbitmq --detach
 ```
 
 ## Config File
 
 Create a YAML file for configuring blueapi:
 
-```yaml
-# stomp.yaml
-
-# Edit this if your message bus of choice is running on a different host, 
-# if it has different credentials, 
-# or if its STOMP plugin is running on a different port
-stomp:
-    enabled: true  # All other stomp settings will be ignored if this is false
-    url: http://localhost:61613
-    auth:
-        username: guest
-        password: guest  # This is for local development only, production systems should use good passwords
+```{literalinclude} ../../tests/unit_tests/valid_example_config/stomp.yaml
+:language: yaml
 ```
 
 ## Run the Server

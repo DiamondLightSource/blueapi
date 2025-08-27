@@ -5,22 +5,8 @@ You may want to tweak/edit your plans and devices live, i.e. without having to m
 ## Configuration
 
 Blueapi can be configured to install editable Python packages from a chosen directory:
-
-```yaml
-# my-scratch.yaml
-
-scratch:
-    root: /path/to/my/scratch/directory
-    # Required GID for the scratch area
-    required_gid: 12345
-    repositories:
-        # Repository for DLS devices
-        - name: dodal
-          remote_url: https://github.com/DiamondLightSource/dodal.git
-
-        # Example repository full of custom plans for a particular science technique
-        - name: mx-bluesky
-          remote_url: https://github.com/DiamondLightSource/mx-bluesky.git
+```{literalinclude} ../../tests/unit_tests/valid_example_config/scratch.yaml
+:language: yaml
 ```
 
 Note the `required_gid` field, which is useful for stopping blueapi from locking the files it clones

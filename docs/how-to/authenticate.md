@@ -14,12 +14,8 @@ BlueAPI provides a secure and efficient way to interact with its services. This 
 :::
 
 Here is an example configuration for authenticating to p46-blueapi:
-
-```yaml
-api:
-  url: "https://p46-blueapi.diamond.ac.uk"
-
-auth_token_path: "~/.cache/blueapi_cache"  # Optional: Custom path to store the token
+```{literalinclude} ../../tests/unit_tests/valid_example_config/client_auth.yaml
+:language: yaml
 ```
 
 - **auth_token_path**: (Optional) Specify where to save the token. If omitted, the default is `~/.cache/blueapi_cache` or `$XDG_CACHE_HOME/blueapi_cache` if `XDG_CACHE_HOME` is set.

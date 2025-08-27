@@ -12,13 +12,8 @@ When logging to [Graylog](https://graylog.org) is enabled, BlueAPI will also con
 :::
 
 An example logging config is shown below:
-```yaml
-  logging:
-    level: "INFO"
-    graylog:
-      enabled: True
-      host: "graylog-log-target.diamond.ac.uk"
-      port: 12232
+```{literalinclude} ../../tests/unit_tests/valid_example_config/graylog.yaml
+:language: yaml
 ```
 
 With this configuration, all logs at INFO level or above will be logged to both stdout and the configured graylog.

@@ -245,6 +245,15 @@ def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
     assert active_task.task == _SIMPLE_TASK
 
 
+@patch("blueapi.worker.task_worker.plan_tag_filter_context")
+def test_begin_task_uses_plan_name_filter(
+    filter_mock: Mock, worker: TaskWorker
+) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    worker.begin_task(task_id)
+    filter_mock.assert_called_once()
+
+
 def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_FAILING_TASK)
     events_future: Future[list[WorkerEvent]] = take_events(

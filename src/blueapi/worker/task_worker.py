@@ -202,10 +202,10 @@ class TaskWorker:
     @start_as_current_span(TRACER, "task_id")
     def begin_task(self, task_id: str) -> None:
         task = self._pending_tasks.get(task_id)
-        with plan_tag_filter_context(task.name, LOGGER):
-            if task is None:
-                raise KeyError(f"No pending task with ID {task_id}")
-            else:
+        if task is None:
+            raise KeyError(f"No pending task with ID {task_id}")
+        else:
+            with plan_tag_filter_context(task.task.name, LOGGER):
                 self._submit_trackable_task(task)
 
     @start_as_current_span(TRACER, "task.name", "task.params")

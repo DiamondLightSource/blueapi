@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import partial
 from queue import Full, Queue
 from threading import Event, RLock
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from bluesky.protocols import Status
 from observability_utils.tracing import (
@@ -58,13 +58,13 @@ WORKER_THREAD_STATE = "worker thread state"
 T = TypeVar("T")
 
 
-class TrackableTask(BlueapiBaseModel, Generic[T]):
+class TrackableTask(BlueapiBaseModel):
     """
     A representation of a task that the worker recognizes
     """
 
     task_id: str
-    task: T
+    task: Task
     request_id: str | SkipJsonSchema[None] = None
     is_complete: bool = False
     is_pending: bool = True

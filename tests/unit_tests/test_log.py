@@ -118,3 +118,9 @@ def test_plan_tag_filter_context_removes_filter(logger):
         assert len(filters) == 1
         assert isinstance(filters[0], PlanTagFilter)
     assert logger.filters == []
+
+
+def test_filter_tags_plan_name(logger, mock_handler_emit):
+    logger.addFilter(PlanTagFilter("foo"))
+    logger.info("FOO")
+    assert mock_handler_emit.call_args[0][0].plan_name == "foo"

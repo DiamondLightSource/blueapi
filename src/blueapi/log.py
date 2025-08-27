@@ -21,6 +21,42 @@ class InstrumentTagFilter(logging.Filter):
         return True
 
 
+class PlanTagFilter(logging.Filter):
+    """Filter to attach name of plan as an attribute to LogRecords.
+
+    Attaches the attribute `plan_name` to all LogRecords that are passed through.
+    """
+
+    def __init__(self, plan_name: str):
+        self.plan_name = plan_name
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.plan_name = self.plan_name
+        return True
+
+
+class PlanTagFilterContext:
+    """Context manager that attaches and removes `PlanTagFilter` to a given logger.
+
+    Creates an instance of PlanTagFilter and attaches it to the given logger for the
+    duration of the context. On exit the filter is removed."""
+
+    def __init__(self, plan_name: str, logger: logging.Logger):
+        """
+        Args:
+            plan_name: str name of plan being executed
+            logger: logging.Logger to attach filter to
+        """
+        self.logger = logger
+        self.filter = PlanTagFilter(plan_name)
+
+    def __enter__(self) -> None:
+        self.logger.addFilter(self.filter)
+
+    def __exit__(self) -> None:
+        self.logger.removeFilter(self.filter)
+
+
 def set_up_logging(logging_config: LoggingConfig) -> None:
     """Configure root level logger for blueapi.
 

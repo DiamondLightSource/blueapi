@@ -26,7 +26,7 @@ from blueapi.service.model import (
     TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker import Task, TrackableTask, WorkerState
+from blueapi.worker import TrackableTask, WorkerState
 
 T = TypeVar("T")
 
@@ -172,8 +172,8 @@ class BlueapiRestClient:
             data={"new_state": state, "defer": defer},
         )
 
-    def get_task(self, task_id: str) -> TrackableTask[Task]:
-        return self._request_and_deserialize(f"/tasks/{task_id}", TrackableTask[Task])
+    def get_task(self, task_id: str) -> TrackableTask:
+        return self._request_and_deserialize(f"/tasks/{task_id}", TrackableTask)
 
     def get_all_tasks(self) -> TasksListResponse:
         return self._request_and_deserialize("/tasks", TasksListResponse)

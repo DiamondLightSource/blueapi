@@ -193,7 +193,7 @@ class TaskWorker:
         return []
 
     @start_as_current_span(TRACER)
-    def get_active_task(self) -> TrackableTask[Task] | None:
+    def get_active_task(self) -> TrackableTask | None:
         current = self._current
         if current is not None:
             add_span_attributes({"Active Task": current.task_id})

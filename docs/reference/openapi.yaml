@@ -377,7 +377,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 2.0.0
+  version: 1.1.1
 openapi: 3.1.0
 paths:
   /config/oidc:

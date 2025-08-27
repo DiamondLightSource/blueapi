@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import contextmanager
 
 from graypy import GELFTCPHandler
 
@@ -35,26 +36,23 @@ class PlanTagFilter(logging.Filter):
         return True
 
 
-class PlanTagFilterContext:
+@contextmanager
+def plan_tag_filter_context(plan_name: str, logger: logging.Logger):
     """Context manager that attaches and removes `PlanTagFilter` to a given logger.
 
     Creates an instance of PlanTagFilter and attaches it to the given logger for the
-    duration of the context. On exit the filter is removed."""
+    duration of the context. On exit the filter is removed.
 
-    def __init__(self, plan_name: str, logger: logging.Logger):
-        """
         Args:
             plan_name: str name of plan being executed
             logger: logging.Logger to attach filter to
-        """
-        self.logger = logger
-        self.filter = PlanTagFilter(plan_name)
-
-    def __enter__(self) -> None:
-        self.logger.addFilter(self.filter)
-
-    def __exit__(self) -> None:
-        self.logger.removeFilter(self.filter)
+    """
+    filter = PlanTagFilter(plan_name)
+    try:
+        logger.addFilter(filter)
+        yield
+    finally:
+        logger.removeFilter(filter)
 
 
 def set_up_logging(logging_config: LoggingConfig) -> None:

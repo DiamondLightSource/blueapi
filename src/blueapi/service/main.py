@@ -57,7 +57,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "2.1.0"
+REST_API_VERSION = "2.0.0"
 
 LICENSE_INFO: dict[str, str] = {
     "name": "Apache 2.0",

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Write Bluesky Plans for Blueapi &#8212; blueapi 1.2.2.dev3+gf8d1dea95 documentation</title>
+    <title>Write Bluesky Plans for Blueapi &#8212; blueapi 1.2.2.dev4+gd8ca24dc3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c2b11158"></script>
+    <script src="../_static/documentation_options.js?v=b2057c06"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -413,7 +413,6 @@
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a Container</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-persistent-volumes.html">Enable Persistent Volumes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="write-devices.html">Write Devices for Blueapi</a></li>
-
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Write Bluesky Plans for Blueapi</a></li>
 </ul>
 </div>
@@ -488,17 +487,19 @@
 <p><a class="reference internal" href="../explanations/plans.html"><span class="std std-doc">Explanation of why blueapi treats plans in a special way</span></a></p>
 </div>
 <p>Plans in Python files look like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Readable</span><span class="p">,</span> <span class="n">Movable</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Movable</span><span class="p">,</span> <span class="n">Readable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MsgGenerator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Any</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">my_plan</span><span class="p">(</span>
-    <span class="n">detector</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> 
-    <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span> 
-    <span class="n">steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
-    <span class="n">sample_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
-    <span class="n">extra_metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-    
+    <span class="n">detector</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
+    <span class="n">motor</span><span class="p">:</span> <span class="n">Movable</span><span class="p">,</span>
+    <span class="n">steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">sample_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">extra_metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
     <span class="c1"># logic goes here</span>
     <span class="o">...</span>
 </pre></div>
@@ -517,40 +518,68 @@
 <h2>Injecting Metadata<a class="headerlink" href="#injecting-metadata" title="Link to this heading">#</a></h2>
 <p>The bluesky event model allows for rich structured metadata to be attached to a scan. To enable this to be used consistently, blueapi encourages a standard form.</p>
 <p>Plans (<a class="reference internal" href="../explanations/plans.html"><span class="std std-doc">as opposed to stubs</span></a>) <strong>should</strong> include <code class="docutils literal notranslate"><span class="pre">metadata</span></code> as their final parameter, if they do it <strong>must</strong> have the type <code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">Any]</span> <span class="pre">|</span> <span class="pre">None</span></code>, <a class="reference external" href="https://stackoverflow.com/questions/26320899/why-is-the-empty-dictionary-a-dangerous-default-value-in-python">and a default of None</a>. If the plan calls to a stub/plan which takes metadata, the plan <strong>must</strong> pass down its metadata, which may be a differently named parameter.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">pass_metadata</span><span class="p">(</span><span class="n">det</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-    <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">{[</span><span class="n">det</span><span class="p">],</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Readable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MsgGenerator</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">pass_metadata</span><span class="p">(</span>
+    <span class="n">det</span><span class="p">:</span> <span class="n">Readable</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+    <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">([</span><span class="n">det</span><span class="p">],</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
 </pre></div>
 </div>
 </section>
 <section id="docstrings">
 <h2>Docstrings<a class="headerlink" href="#docstrings" title="Link to this heading">#</a></h2>
 <p>Blueapi exposes the docstrings of plans to clients, along with the parameter types. It is therefore worthwhile to make these detailed and descriptive. This may include units of arguments (e.g. seconds or microseconds), its purpose in the function, the purpose of the plan etc.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">temp_pressure_snapshot</span><span class="p">(</span>
-    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-    <span class="n">temperature</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">sample_temperature</span><span class="p">(),</span>
-    <span class="n">pressure</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">sample_pressure</span><span class="p">(),</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plan_stubs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bps</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Movable</span><span class="p">,</span> <span class="n">Readable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MsgGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dodal.common.coordination</span><span class="w"> </span><span class="kn">import</span> <span class="n">inject</span>
+
+<span class="n">_DEFAULT_TEMPERATURE_CONTROLLER</span> <span class="o">=</span> <span class="n">inject</span><span class="p">(</span><span class="s2">&quot;sample_temperature_controller&quot;</span><span class="p">)</span>
+<span class="n">_DEFAULT_PRESSURE_CONTROLLER</span> <span class="o">=</span> <span class="n">inject</span><span class="p">(</span><span class="s2">&quot;sample_pressure_controller&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">temp_pressure_snapshot</span><span class="p">(</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">_DEFAULT_TEMPERATURE_CONTROLLER</span><span class="p">,</span>
+    <span class="n">pressure</span><span class="p">:</span> <span class="n">Movable</span> <span class="o">=</span> <span class="n">_DEFAULT_PRESSURE_CONTROLLER</span><span class="p">,</span>
     <span class="n">target_temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">273.0</span><span class="p">,</span>
     <span class="n">target_pressure</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Moves devices for pressure and temperature (defaults fetched from the context)</span>
 <span class="sd">    and captures a single frame from a collection of devices</span>
 <span class="sd">    Args:</span>
-<span class="sd">        detectors (List[Readable]): A list of devices to read while the sample is at STP</span>
-<span class="sd">        temperature (Optional[Movable]): A device controlling temperature of the sample,</span>
+<span class="sd">        detectors: A list of devices to read while the sample is at STP</span>
+<span class="sd">        temperature: A device controlling temperature of the sample,</span>
 <span class="sd">            defaults to fetching a device name &quot;sample_temperature&quot; from the context</span>
-<span class="sd">        pressure (Optional[Movable]): A device controlling pressure on the sample,</span>
+<span class="sd">        pressure: A device controlling pressure on the sample,</span>
 <span class="sd">            defaults to fetching a device name &quot;sample_pressure&quot; from the context</span>
-<span class="sd">        target_pressure (Optional[float]): target temperature in Kelvin. Default 273</span>
-<span class="sd">        target_pressure (Optional[float]): target pressure in Pa. Default 10**5</span>
+<span class="sd">        target_pressure: target temperature in Kelvin. Default 273</span>
+<span class="sd">        target_pressure: target pressure in Pa. Default 10**5</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        MsgGenerator: Plan</span>
 <span class="sd">    Yields:</span>
 <span class="sd">        Iterator[MsgGenerator]: Bluesky messages</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">yield from</span> <span class="n">move</span><span class="p">({</span><span class="n">temperature</span><span class="p">:</span> <span class="n">target_temperature</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="n">target_pressure</span><span class="p">})</span>
-    <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
+
+    <span class="c1"># Prepare sample environment</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">abs_set</span><span class="p">(</span><span class="n">temperature</span><span class="p">,</span> <span class="n">target_temperature</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;init&quot;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">abs_set</span><span class="p">(</span><span class="n">pressure</span><span class="p">,</span> <span class="n">target_pressure</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;init&quot;</span><span class="p">)</span>
+    <span class="k">yield from</span> <span class="n">bps</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;init&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Take data</span>
+    <span class="k">yield from</span> <span class="n">bp</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
 </pre></div>
 </div>
 </section>

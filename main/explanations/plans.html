@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Plans &#8212; blueapi 1.2.2.dev3+gf8d1dea95 documentation</title>
+    <title>Plans &#8212; blueapi 1.2.2.dev4+gd8ca24dc3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c2b11158"></script>
+    <script src="../_static/documentation_options.js?v=b2057c06"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -486,39 +486,27 @@
 <h3>Disallowed Plan arguments<a class="headerlink" href="#disallowed-plan-arguments" title="Link to this heading">#</a></h3>
 <p>Positional-only arguments are not supported because plan parameters are passed as keyword arguments.</p>
 <p>Example of unsupported plan arguments</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">demo</span><span class="p">(</span><span class="n">foo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">bar</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MsgGenerator</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">demo</span><span class="p">(</span><span class="n">foo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">bar</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
     <span class="k">yield from</span> <span class="p">()</span>
 </pre></div>
 </div>
-<p>This plan will raise <code class="docutils literal notranslate"><span class="pre">pydantic</span> <span class="pre">missing_positional_only_argument</span> <span class="pre">Validation</span> <span class="pre">Error</span></code>.</p>
+<p>When blueapi is told to run this plan it will raise <code class="docutils literal notranslate"><span class="pre">TypeError:</span> <span class="pre">demo()</span> <span class="pre">got</span> <span class="pre">some</span> <span class="pre">positional-only</span> <span class="pre">arguments</span> <span class="pre">passed</span> <span class="pre">as</span> <span class="pre">keyword</span> <span class="pre">arguments:</span> <span class="pre">'foo'</span></code>.</p>
 <blockquote>
 <div><p><strong>Note</strong>: Variadic arguments like <code class="docutils literal notranslate"><span class="pre">*args</span></code>, <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> are also disallowed plan arguments.</p>
 </div></blockquote>
 </section>
 </section>
-<section id="stubs">
-<h2>Stubs<a class="headerlink" href="#stubs" title="Link to this heading">#</a></h2>
-<p>Some functionality in your plans may make sense to factor out to allow re-use. These pieces of functionality may or may not make sense outside of the context of a plan. Some will, such as nudging a motor, but others may not, such as waiting to consume data from the previous position, or opening a run without an equivalent closure.</p>
-<p>To enable blueapi to expose the stubs that it makes sense to, but not the others, blueapi will only expose a subset of <code class="docutils literal notranslate"><span class="pre">MsgGenerator</span></code>’s under the following conditions:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> in directory has <code class="docutils literal notranslate"><span class="pre">__exports__</span></code>: List[str]: only those named in <code class="docutils literal notranslate"><span class="pre">__exports__</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> in directory has <code class="docutils literal notranslate"><span class="pre">__all__</span></code>: List[str] but no <code class="docutils literal notranslate"><span class="pre">__exports__</span></code>: only those named in <code class="docutils literal notranslate"><span class="pre">__all__</span></code></p></li>
-</ul>
-<p>This allows other python packages (such as <code class="docutils literal notranslate"><span class="pre">plans</span></code>) to access every function in <code class="docutils literal notranslate"><span class="pre">__all__</span></code>, while only allowing a subset to be called from blueapi as standalone.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Rehomes all of the beamline&#39;s devices. May require to be run standalone</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.package</span><span class="w"> </span><span class="kn">import</span> <span class="n">rehome_devices</span>
-<span class="c1"># Awaits a standard callback from analysis. Should not be run standalone</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.package</span><span class="w"> </span><span class="kn">import</span> <span class="n">await_callback</span>
-
-<span class="c1"># Exported from the module for use by other modules</span>
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;rehome_devices&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;await_callback&quot;</span><span class="p">,</span>
-<span class="p">]</span>
+<section id="exporting-with-all">
+<h2>Exporting with <code class="docutils literal notranslate"><span class="pre">__all__</span></code><a class="headerlink" href="#exporting-with-all" title="Link to this heading">#</a></h2>
+<p>Blueapi will observe <code class="docutils literal notranslate"><span class="pre">__all__</span></code> and only import plans defined there</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">plan_docstrings</span><span class="w"> </span><span class="kn">import</span> <span class="n">temp_pressure_snapshot</span>
 
 <span class="c1"># Imported by instances of blueapi and allowed to be run</span>
-<span class="n">__exports__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;rehome_devices&quot;</span><span class="p">,</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;temp_pressure_snapshot&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 </pre></div>
 </div>
@@ -576,7 +564,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#disallowed-plan-arguments">Disallowed Plan arguments</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stubs">Stubs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exporting-with-all">Exporting with <code class="docutils literal notranslate"><span class="pre">__all__</span></code></a></li>
 </ul>
   </nav></div>
 

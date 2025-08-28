@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Lifecycle of a Plan &#8212; blueapi 1.2.2.dev3+gf8d1dea95 documentation</title>
+    <title>Lifecycle of a Plan &#8212; blueapi 1.2.2.dev4+gd8ca24dc3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c2b11158"></script>
+    <script src="../_static/documentation_options.js?v=b2057c06"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -477,19 +477,22 @@
 <h1>Lifecycle of a Plan<a class="headerlink" href="#lifecycle-of-a-plan" title="Link to this heading">#</a></h1>
 <p>The following demonstrates exactly what the code does with a plan through its lifecycle
 of being written, loaded and run. Take the following plan.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bp</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
-
+<span class="kn">import</span><span class="w"> </span><span class="nn">bluesky.plans</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Readable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MsgGenerator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dodal.beamlines</span><span class="w"> </span><span class="kn">import</span> <span class="n">my_beamline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dodal.common.coordination</span><span class="w"> </span><span class="kn">import</span> <span class="n">inject</span>
+
+<span class="n">_DEFAULT_DETECTORS</span> <span class="o">=</span> <span class="p">[</span><span class="n">inject</span><span class="p">(</span><span class="s2">&quot;my_detector&quot;</span><span class="p">)]</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span>
-    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">my_beamline</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">connect_immediately</span><span class="o">=</span><span class="kc">False</span><span class="p">)],</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="n">_DEFAULT_DETECTORS</span><span class="p">,</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Take `n` readings from a collection of detectors</span>
@@ -523,18 +526,27 @@ if it detects that they are plans.</p>
 <p>At the point of registration it will inspect the plan’s parameters and their type hints, from which it
 will build a <a class="reference external" href="https://docs.pydantic.dev/">pydantic</a> model of the parameters to validate against. In other words, it will build something
 like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dodal.beamlines</span><span class="w"> </span><span class="kn">import</span> <span class="n">my_beamline</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bluesky.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Readable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dodal.common.coordination</span><span class="w"> </span><span class="kn">import</span> <span class="n">inject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">ConfigDict</span>
+
+<span class="n">_DEFAULT_DETECTORS</span> <span class="o">=</span> <span class="p">[</span><span class="n">inject</span><span class="p">(</span><span class="s2">&quot;my_detector&quot;</span><span class="p">)]</span>
+
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CountParameters</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">my_beamline</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">connect_immediately</span><span class="o">=</span><span class="kc">False</span><span class="p">)]</span>
+    <span class="n">detectors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Readable</span><span class="p">]</span> <span class="o">=</span> <span class="n">_DEFAULT_DETECTORS</span>
     <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="n">delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">class</span><span class="w"> </span><span class="nc">Config</span><span class="p">:</span>
-        <span class="n">arbitrary_types_allowed</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="n">validate_all</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">&quot;forbid&quot;</span><span class="p">,</span>
+        <span class="n">arbitrary_types_allowed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">validate_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
 </pre></div>
 </div>
 <p>This is for illustrative purposes only, this code is not actually generated, but an object resembling this class is constructed in memory. The default arguments will be validated by the context when the plan is run. <code class="docutils literal notranslate"><span class="pre">my_beamline.det(connect_immediately=False)</span></code> evaluates to a lazily created singleton device. The model is also stored in the context.</p>
@@ -561,29 +573,33 @@ It takes the form of JSON and may look something like this:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>The <code class="docutils literal notranslate"><span class="pre">Service</span></code> receives the request and passes it to the worker, which holds it in an internal queue
-and executes it as soon as it can.</p>
-</section>
-<section id="validation">
-<h2>Validation<a class="headerlink" href="#validation" title="Link to this heading">#</a></h2>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="type_validators.html"><span class="std std-doc">Type Validators</span></a> for an in-depth explanation of how blueapi knows when to resolve strings as device names</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Service</span></code> receives the request and passes it to the worker, which holds it in an internal queue</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> and passes it to the worker, which holds it in an internal queue
+and executes it as soon as it can. 
+
+
+## Validation
+
+:::{seealso}
+[Type Validators](./type_validators.md) for an in-depth explanation of how blueapi knows when to resolve strings as device names 
+:::
+
+The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry. The parameter values in the request are validated against the model, this includes looking up devices with names `andor` and `pilatus` or, if detectors was not passed `det`.
+
+## Execution
+
+The validated parameter values are then passed to the plan function, which is passed to the `RunEngine`.
+The plan is executed. While it is running, the `Worker` will publish
+
+* Changes to the state of the `RunEngine`
+* Changes to any device statuses running within the plan (e.g. when a motor changes position)
+* Event model documents emitted by the `RunEngine`
+* When the plan starts, finishes or fails.
+
+If an error occurs during any of the stages from &quot;Request&quot; onwards it is sent back to the user
+over the message bus.
+</pre></div>
 </div>
-<p>The pydantic model from earlier, as well as the plan function itself, is loaded out of the registry. The parameter values in the request are validated against the model, this includes looking up devices with names <code class="docutils literal notranslate"><span class="pre">andor</span></code> and <code class="docutils literal notranslate"><span class="pre">pilatus</span></code> or, if detectors was not passed <code class="docutils literal notranslate"><span class="pre">det</span></code>.</p>
-</section>
-<section id="execution">
-<h2>Execution<a class="headerlink" href="#execution" title="Link to this heading">#</a></h2>
-<p>The validated parameter values are then passed to the plan function, which is passed to the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>.
-The plan is executed. While it is running, the <code class="docutils literal notranslate"><span class="pre">Worker</span></code> will publish</p>
-<ul class="simple">
-<li><p>Changes to the state of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code></p></li>
-<li><p>Changes to any device statuses running within the plan (e.g. when a motor changes position)</p></li>
-<li><p>Event model documents emitted by the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code></p></li>
-<li><p>When the plan starts, finishes or fails.</p></li>
-</ul>
-<p>If an error occurs during any of the stages from “Request” onwards it is sent back to the user
-over the message bus.</p>
 </section>
 </section>
 
@@ -637,8 +653,6 @@ over the message bus.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#loading-and-registration">Loading and Registration</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#startup">Startup</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#request">Request</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validation">Validation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#execution">Execution</a></li>
 </ul>
   </nav></div>
 

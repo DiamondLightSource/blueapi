@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Write Devices for Blueapi &#8212; blueapi 1.2.2.dev3+gf8d1dea95 documentation</title>
+    <title>Write Devices for Blueapi &#8212; blueapi 1.2.2.dev4+gd8ca24dc3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c2b11158"></script>
+    <script src="../_static/documentation_options.js?v=b2057c06"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -413,7 +413,6 @@
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a Container</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-persistent-volumes.html">Enable Persistent Volumes</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Write Devices for Blueapi</a></li>
-
 <li class="toctree-l1"><a class="reference internal" href="write-plans.html">Write Bluesky Plans for Blueapi</a></li>
 </ul>
 </div>
@@ -488,59 +487,22 @@
 <p><a class="reference external" href="https://github.com/DiamondLightSource/dodal">Dodal</a> for many more examples</p>
 </div>
 <p>Devices are made using the <a class="reference external" href="https://github.com/DiamondLightSource/dodal">dodal</a> style available through factory functions like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">my_facility_devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyTypeOfDetector</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dodal.common.beamlines.beamline_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">device_factory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dodal.devices.bimorph_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">BimorphMirror</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">my_detector</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MyTypeOfDetector</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">MyTypeOfDetector</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;other_config&quot;</span><span class="p">:</span> <span class="s2">&quot;foo&quot;</span><span class="p">})</span>
+
+<span class="nd">@device_factory</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">oav</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">BimorphMirror</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">BimorphMirror</span><span class="p">(</span><span class="s2">&quot;BLXXI-BMRPH-01:&quot;</span><span class="p">,</span> <span class="n">number_of_channels</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The return type annotation <code class="docutils literal notranslate"><span class="pre">-&gt;</span> <span class="pre">MyTypeOfDetector</span></code> is required as blueapi uses it to determine that this function creates a device. Meaning you can have a Python file where only some functions create devices, and they will be automatically picked up. Similarly, these functions can be organized per-preference into files.</p>
 <p>The device is created via a function rather than a global to preserve side-effect-free imports. Each device must have its own factory function.</p>
-</section>
-</section>
-<section id="how-to-configure-detectors-to-write-files">
-<h1>How to Configure Detectors to Write Files<a class="headerlink" href="#how-to-configure-detectors-to-write-files" title="Link to this heading">#</a></h1>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><strong>This is an absolute requirement to write data onto the Diamond Filesystem</strong>. This decorator must be used every time a new data collection is intended to begin. For an example, see below.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="integrate-with-numtracker.html"><span class="std std-doc">Numtracker integration</span></a> for how to configure where detectors write files.</p>
 </div>
-<p>Dodal defines a decorator, <code class="docutils literal notranslate"><span class="pre">&#64;attach_data_session_metadata_decorator()</span></code>, for configuring <code class="docutils literal notranslate"><span class="pre">ophyd-async</span></code> detectors to write data to a common location.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>   <span class="nd">@attach_metadata</span>
-   <span class="k">def</span><span class="w"> </span><span class="nf">ophyd_async_snapshot</span><span class="p">(</span>
-       <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-       <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-       <span class="n">Configures</span> <span class="n">a</span> <span class="n">number</span> <span class="n">of</span> <span class="n">devices</span><span class="p">,</span> <span class="n">which</span> <span class="n">may</span> <span class="n">be</span> <span class="n">Ophyd</span><span class="o">-</span><span class="n">Async</span> <span class="n">detectors</span> <span class="ow">and</span> <span class="n">require</span>
-       <span class="n">knowledge</span> <span class="n">of</span> <span class="n">where</span> <span class="n">to</span> <span class="n">write</span> <span class="n">their</span> <span class="n">files</span><span class="p">,</span> <span class="n">then</span> <span class="n">takes</span> <span class="n">a</span> <span class="n">snapshot</span> <span class="k">with</span> <span class="n">them</span><span class="o">.</span>
-       <span class="n">Args</span><span class="p">:</span>
-           <span class="n">detectors</span> <span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]):</span> <span class="n">Devices</span><span class="p">,</span> <span class="n">maybe</span> <span class="n">including</span> <span class="n">Ophyd</span><span class="o">-</span><span class="n">Async</span> <span class="n">detectors</span><span class="o">.</span>
-       <span class="n">Returns</span><span class="p">:</span>
-           <span class="n">MsgGenerator</span><span class="p">:</span> <span class="n">Plan</span>
-       <span class="n">Yields</span><span class="p">:</span>
-               <span class="n">Iterator</span><span class="p">[</span><span class="n">MsgGenerator</span><span class="p">]:</span> <span class="n">Bluesky</span> <span class="n">messages</span>
-       <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
-
-   <span class="k">def</span><span class="w"> </span><span class="nf">repeated_snapshot</span><span class="p">(</span>
-       <span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">],</span>
-       <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MsgGenerator</span><span class="p">:</span>
-       <span class="n">Configures</span> <span class="n">a</span> <span class="n">number</span> <span class="n">of</span> <span class="n">devices</span><span class="p">,</span> <span class="n">which</span> <span class="n">may</span> <span class="n">be</span> <span class="n">Ophyd</span><span class="o">-</span><span class="n">Async</span> <span class="n">detectors</span> <span class="ow">and</span> <span class="n">require</span>
-       <span class="n">knowledge</span> <span class="n">of</span> <span class="n">where</span> <span class="n">to</span> <span class="n">write</span> <span class="n">their</span> <span class="n">files</span><span class="p">,</span> <span class="n">then</span> <span class="n">takes</span> <span class="n">multiple</span> <span class="n">snapshot</span> <span class="k">with</span> <span class="n">them</span><span class="o">.</span>
-       <span class="n">Args</span><span class="p">:</span>
-           <span class="n">detectors</span> <span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Readable</span><span class="p">]):</span> <span class="n">Devices</span><span class="p">,</span> <span class="n">maybe</span> <span class="n">including</span> <span class="n">Ophyd</span><span class="o">-</span><span class="n">Async</span> <span class="n">detectors</span><span class="o">.</span>
-       <span class="n">Returns</span><span class="p">:</span>
-           <span class="n">MsgGenerator</span><span class="p">:</span> <span class="n">Plan</span>
-       <span class="n">Yields</span><span class="p">:</span>
-               <span class="n">Iterator</span><span class="p">[</span><span class="n">MsgGenerator</span><span class="p">]:</span> <span class="n">Bluesky</span> <span class="n">messages</span>
-       <span class="nd">@attach_metadata</span>
-       <span class="k">def</span><span class="w"> </span><span class="nf">inner_function</span><span class="p">():</span>
-           <span class="k">yield from</span> <span class="n">count</span><span class="p">(</span><span class="n">detectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
-
-
-       <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
-           <span class="k">yield from</span> <span class="n">inner_function</span><span class="p">()</span>
-</pre></div>
-</div>
+</section>
 </section>
 
 
@@ -590,13 +552,8 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Write Devices for Blueapi</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#format">Format</a></li>
 </ul>
-</li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#how-to-configure-detectors-to-write-files">How to Configure Detectors to Write Files</a></li>
-</ul>
-
   </nav></div>
 
   <div class="sidebar-secondary-item">

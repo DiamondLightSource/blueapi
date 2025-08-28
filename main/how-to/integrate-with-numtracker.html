@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Integrate With Numtracker &#8212; blueapi 1.2.2.dev3+gf8d1dea95 documentation</title>
+    <title>Integrate With Numtracker &#8212; blueapi 1.2.2.dev4+gd8ca24dc3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c2b11158"></script>
+    <script src="../_static/documentation_options.js?v=b2057c06"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -413,7 +413,6 @@
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a Container</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-persistent-volumes.html">Enable Persistent Volumes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="write-devices.html">Write Devices for Blueapi</a></li>
-
 <li class="toctree-l1"><a class="reference internal" href="write-plans.html">Write Bluesky Plans for Blueapi</a></li>
 </ul>
 </div>
@@ -500,21 +499,7 @@
 </section>
 <section id="updating-blueapi-and-dodal">
 <h2>Updating Blueapi and Dodal<a class="headerlink" href="#updating-blueapi-and-dodal" title="Link to this heading">#</a></h2>
-<p>Blueapi uses an internal <a class="reference external" href="https://blueskyproject.io/ophyd-async/main/_api/ophyd_async/ophyd_async.core.html#ophyd_async.core.PathProvider"><code class="docutils literal notranslate"><span class="pre">PathProvider</span></code></a> when integrated with numtracker, it does not support custom providers in from dodal modules, if your beamline definition in dodal is prefixed with something like this, it should be removed before attempting to use numtracker:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Currently we must hard-code the visit, determining the visit at runtime requires</span>
-<span class="c1"># infrastructure that is still WIP.</span>
-<span class="c1"># Communication with GDA is also WIP so for now we determine an arbitrary scan number</span>
-<span class="c1"># locally and write the commissioning directory. The scan number is not guaranteed to</span>
-<span class="c1"># be unique and the data is at risk - this configuration is for testing only.</span>
-<span class="n">set_path_provider</span><span class="p">(</span>
-    <span class="n">StaticVisitPathProvider</span><span class="p">(</span>
-        <span class="n">BL</span><span class="p">,</span>
-        <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/dls/i22/data/2024/cm37271-2/bluesky&quot;</span><span class="p">),</span>
-        <span class="n">client</span><span class="o">=</span><span class="n">RemoteDirectoryServiceClient</span><span class="p">(</span><span class="s2">&quot;http://i22-control:8088/api&quot;</span><span class="p">),</span>
-    <span class="p">)</span>
-<span class="p">)</span>
-</pre></div>
-</div>
+<p>Blueapi uses an internal <a class="reference external" href="https://blueskyproject.io/ophyd-async/main/_api/ophyd_async/ophyd_async.core.html#ophyd_async.core.PathProvider"><code class="docutils literal notranslate"><span class="pre">PathProvider</span></code></a> when integrated with numtracker, it does not support custom providers in from dodal modules, if your beamline definition in dodal is prefixed with a call to <code class="docutils literal notranslate"><span class="pre">set_path_provider</span></code>, it should be removed before attempting to use numtracker:</p>
 <p>Numtracker should work with out-of-box plans that take data via runs. Opening a new run will make the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code> call numtracker and request a fresh data area. Some plans from before numtracker have a decorator that coordinates where detectors write their data: <a class="reference external" href="https://github.com/DiamondLightSource/dodal/blob/10a9a124931901d7666659c6dbe77215d22a8bfd/src/dodal/plan_stubs/data_session.py#L60"><code class="docutils literal notranslate"><span class="pre">&#64;attach_data_session_metadata_decorator</span></code></a>. This decorator becomes a no-op with numtracker and can be safely removed from plans.</p>
 </section>
 </section>

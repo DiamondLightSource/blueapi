@@ -18,39 +18,19 @@ Allowed argument types for Pydantic BaseModels include the primitives, types tha
 Positional-only arguments are not supported because plan parameters are passed as keyword arguments.
 
 Example of unsupported plan arguments
-```python
-def demo(foo: int, /, bar: int) -> MsgGenerator:
-    yield from ()
+
+```{literalinclude} ../../tests/unit_tests/code_examples/invalid_plan_args.py
+:language: python
 ```
-This plan will raise `pydantic missing_positional_only_argument Validation Error`.
+
+When blueapi is told to run this plan it will raise `TypeError: demo() got some positional-only arguments passed as keyword arguments: 'foo'`.
 
 > **Note**: Variadic arguments like `*args`, `**kwargs` are also disallowed plan arguments.
 
-## Stubs
+## Exporting with `__all__`
 
-Some functionality in your plans may make sense to factor out to allow re-use. These pieces of functionality may or may not make sense outside of the context of a plan. Some will, such as nudging a motor, but others may not, such as waiting to consume data from the previous position, or opening a run without an equivalent closure.
+Blueapi will observe `__all__` and only import plans defined there
 
-To enable blueapi to expose the stubs that it makes sense to, but not the others, blueapi will only expose a subset of `MsgGenerator`'s under the following conditions:
-
-- `__init__.py` in directory has `__exports__`: List[str]: only those named in `__exports__`
-- `__init__.py` in directory has `__all__`: List[str] but no `__exports__`: only those named in `__all__`
-
-This allows other python packages (such as `plans`) to access every function in `__all__`, while only allowing a subset to be called from blueapi as standalone.
-
-```python
-# Rehomes all of the beamline's devices. May require to be run standalone
-from .package import rehome_devices
-# Awaits a standard callback from analysis. Should not be run standalone
-from .package import await_callback
-
-# Exported from the module for use by other modules
-__all__ = [
-    "rehome_devices",
-    "await_callback",
-]
-
-# Imported by instances of blueapi and allowed to be run
-__exports__ = [
-    "rehome_devices",
-]
+```{literalinclude} ../../tests/unit_tests/code_examples/deferred_plans.py
+:language: python
 ```

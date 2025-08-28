@@ -654,3 +654,13 @@ def test_missing_injected_devices_fail_early(
     context.register_plan(missing_injection)
     with pytest.raises(ValueError):
         Task(name="missing_injection").prepare_params(context)
+
+
+@patch("blueapi.worker.task_worker.plan_tag_filter_context")
+def test_worker_uses_plan_tag_filter_context(
+    mock_context: Mock, inert_worker: TaskWorker
+):
+    inert_worker._task_channel.put_nowait(_SIMPLE_TASK)
+    mock_context.assert_not_called()
+    inert_worker._cycle()
+    mock_context.assert_called_once()

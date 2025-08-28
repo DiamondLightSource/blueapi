@@ -8,4 +8,4 @@ stomp:
   url: tcp://localhost:61613
   auth:
     username: guest
-    password: guest # This is for local development only, production systems should use good passwords
+    password: guest

@@ -660,7 +660,9 @@ def test_missing_injected_devices_fail_early(
 def test_worker_uses_plan_tag_filter_context(
     mock_context: Mock, inert_worker: TaskWorker
 ):
-    inert_worker._task_channel.put_nowait(TrackableTask(task_id="0", task=_SIMPLE_TASK))
+    task = TrackableTask(task_id="0", task=_SIMPLE_TASK)
+    inert_worker._task_channel.put_nowait(task)
+    inert_worker._pending_tasks["0"] = task
     mock_context.assert_not_called()
     inert_worker._cycle()
     mock_context.assert_called_once()

@@ -2,4 +2,4 @@ logging:
   level: "INFO"
   graylog:
     enabled: True
-    url: "tcp://graylog-log-target.diamond.ac.uk:12232"
+    url: "tcp://graylog-log-target.diamond.ac.uk:12231"

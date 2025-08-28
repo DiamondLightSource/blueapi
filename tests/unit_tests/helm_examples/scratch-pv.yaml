@@ -1,0 +1,9 @@
+# -- Configure the initContainer that checks out the scratch configuration repositories
+initContainer:
+  enabled: true
+  persistentVolume:
+    # -- Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem
+    # If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container
+    enabled: false
+    # -- May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release
+    existingClaimName: ""

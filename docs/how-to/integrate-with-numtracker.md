@@ -11,15 +11,8 @@ Blueapi needs [valid authentication configured](./authenticate.md) to communicat
 ## Configuration
 
 Numtracker integration requires the following configuration for blueapi:
-
-```yaml
-# If using helm values all of the following goes under worker:
-
-numtracker:
-  url: https://numtracker.diamond.ac.uk/graphql
-env:
-  metadata:
-    instrument: <name of your instrument, e.g. i22>
+```{literalinclude} ../../tests/unit_tests/valid_example_config/numtracker.yaml
+:language: yaml
 ```
 
 For a more complete example see the [p46 helm chart configuration](https://github.com/epics-containers/p46-services/blob/main/services/p46-blueapi/values.yaml).

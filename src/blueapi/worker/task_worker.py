@@ -348,13 +348,16 @@ class TaskWorker:
                         context=self._current_task_otel_context,
                         kind=SpanKind.SERVER,
                     ):
-                        LOGGER.info(f"Got new task: {next_task}")
-                        self._current = next_task
-                        self._current_task_otel_context = get_current()
-                        add_span_attributes({"next_task.task_id": next_task.task_id})
+                        with plan_tag_filter_context(next_task.task.name, LOGGER):
+                            LOGGER.info(f"Got new task: {next_task}")
+                            self._current = next_task
+                            self._current_task_otel_context = get_current()
+                            add_span_attributes(
+                                {"next_task.task_id": next_task.task_id}
+                            )
 
-                        self._current.is_pending = False
-                        self._current.task.do_task(self._ctx)
+                            self._current.is_pending = False
+                            self._current.task.do_task(self._ctx)
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't

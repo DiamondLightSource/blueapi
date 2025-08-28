@@ -664,3 +664,17 @@ def test_worker_uses_plan_tag_filter_context(
     mock_context.assert_not_called()
     inert_worker._cycle()
     mock_context.assert_called_once()
+
+
+@patch("blueapi.worker.task_worker.LOGGER")
+def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker):
+    task = TrackableTask(task_id="0", task=_SIMPLE_TASK)
+    inert_worker._task_channel.put_nowait(task)
+    inert_worker._pending_tasks["0"] = task
+    inert_worker._cycle()
+    assert inert_worker._current_task_otel_context is None
+    # Bad way to tell that this branch ahs been run, but I can't think of a better way
+    # Have to set these values to match output
+    task.is_complete = False
+    task.is_pending = True
+    mock_logger.info.assert_called_with(f"Got new task: {task}")

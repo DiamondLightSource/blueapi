@@ -13,11 +13,8 @@ blueapi controller devices
 By default, the CLI will talk to the worker via a message broker on `tcp://localhost:61613`,
 but you can customize this via a [configuration file](./configure-app.md).
 
-```yaml
-# custom-address.yaml
-
-api:
-    url: http://example.com:8082
+```{literalinclude} ../../tests/unit_tests/valid_example_config/client.yaml
+:language: yaml
 ```
 
 Then run

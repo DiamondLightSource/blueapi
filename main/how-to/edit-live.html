@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Edit Plans and Device Live &#8212; blueapi 1.2.2.dev2+g603e29238 documentation</title>
+    <title>Edit Plans and Device Live &#8212; blueapi 1.2.2.dev3+gf8d1dea95 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=d2276642"></script>
+    <script src="../_static/documentation_options.js?v=c2b11158"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -484,17 +484,17 @@
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># my-scratch.yaml</span>
 
 <span class="nt">scratch</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/my/scratch/directory</span>
-<span class="w">    </span><span class="c1"># Required GID for the scratch area</span>
-<span class="w">    </span><span class="nt">required_gid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12345</span>
-<span class="w">    </span><span class="nt">repositories</span><span class="p">:</span>
-<span class="w">        </span><span class="c1"># Repository for DLS devices</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dodal</span>
-<span class="w">          </span><span class="nt">remote_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/dodal.git</span>
+<span class="w">  </span><span class="nt">root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/my/scratch/directory</span>
+<span class="w">  </span><span class="c1"># Required GID for the scratch area</span>
+<span class="w">  </span><span class="nt">required_gid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12345</span>
+<span class="w">  </span><span class="nt">repositories</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Repository for DLS devices</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dodal</span>
+<span class="w">      </span><span class="nt">remote_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/dodal.git</span>
 
-<span class="w">        </span><span class="c1"># Example repository full of custom plans for a particular science technique</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mx-bluesky</span>
-<span class="w">          </span><span class="nt">remote_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/mx-bluesky.git</span>
+<span class="w">    </span><span class="c1"># Example repository full of custom plans for a particular science technique</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mx-bluesky</span>
+<span class="w">      </span><span class="nt">remote_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/mx-bluesky.git</span>
 </pre></div>
 </div>
 <p>Note the <code class="docutils literal notranslate"><span class="pre">required_gid</span></code> field, which is useful for stopping blueapi from locking the files it clones
@@ -523,18 +523,18 @@ to a particular owner.</p>
 <h2>Kubernetes<a class="headerlink" href="#kubernetes" title="Link to this heading">#</a></h2>
 <p>The helm chart can be configured to mount a scratch area from the
 host machine, include the following in your <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="nt">worker</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">scratch</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/my/scratch/directory</span>
-<span class="w">      </span><span class="nt">required_gid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12345</span>
-<span class="w">      </span><span class="nt">repositories</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dodal</span>
-<span class="w">          </span><span class="nt">remote_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/dodal.git</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mx-bluesky</span>
-<span class="w">          </span><span class="nt">remote_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/mx-bluesky.git</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">worker</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scratch</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/my/scratch/directory</span>
+<span class="w">    </span><span class="nt">required_gid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12345</span>
+<span class="w">    </span><span class="nt">repositories</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dodal</span>
+<span class="w">        </span><span class="nt">remote_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/dodal.git</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mx-bluesky</span>
+<span class="w">        </span><span class="nt">remote_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DiamondLightSource/mx-bluesky.git</span>
 
-<span class="w">  </span><span class="nt">initContainer</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">initContainer</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
 <p>When <code class="docutils literal notranslate"><span class="pre">initContainer</span></code> is enabled, it will iterate over the scratch configuration, cloning the specified repositories and setting the correct group ownership based on the <code class="docutils literal notranslate"><span class="pre">required_gid</span></code>. This ensures that the scratch area is properly initialized before the main container starts.</p>

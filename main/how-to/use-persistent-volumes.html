@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Enable Persistent Volumes &#8212; blueapi 1.2.2.dev2+g603e29238 documentation</title>
+    <title>Enable Persistent Volumes &#8212; blueapi 1.2.2.dev3+gf8d1dea95 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=d2276642"></script>
+    <script src="../_static/documentation_options.js?v=c2b11158"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -487,7 +487,7 @@
 <p>The relevant configuration is below:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># -- Configure the initContainer that checks out the scratch configuration repositories</span>
 <span class="nt">initContainer</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">persistentVolume</span><span class="p">:</span>
 <span class="w">    </span><span class="c1"># -- Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem</span>
 <span class="w">    </span><span class="c1"># If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container</span>

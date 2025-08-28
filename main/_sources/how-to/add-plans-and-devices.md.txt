@@ -20,22 +20,17 @@ import my_plan_library.tomography.plans
 ```
 
 To add plans, you would add the following into your configuration file:
-```yaml
-env:
-  sources:
-    - kind: planFunctions
-      module: my_plan_library.tomography.plans
+
+```{literalinclude} ../../tests/unit_tests/valid_example_config/plan_functions.yaml
+:language: yaml
 ```
 
+
 Devices are added similarly, using `dodal` as the `kind`, like so: 
-```yaml
-env:
-  sources:
-    - kind: planFunctions
-      module: my_plan_library.tomography.plans
-    - kind: dodal
-      module: dodal.beamlines.i04
+```{literalinclude} ../../tests/unit_tests/valid_example_config/plans_and_devices.yaml
+:language: yaml
 ```
+
 
 You can have as many sources for plans and devices as are needed.
 

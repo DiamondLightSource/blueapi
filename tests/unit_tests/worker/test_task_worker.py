@@ -655,4 +655,4 @@ def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker)
     inert_worker._cycle()
     assert inert_worker._current_task_otel_context is None
     # Bad way to tell that this branch ahs been run, but I can't think of a better way:
-    assert mock_logger.info.called_with(f"Got new task: {_SIMPLE_TASK}")
+    mock_logger.info.assert_called_with(f"Got new task: {_SIMPLE_TASK}")

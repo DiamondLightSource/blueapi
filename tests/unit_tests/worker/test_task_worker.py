@@ -246,11 +246,12 @@ def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
 
 
 @patch("blueapi.worker.task_worker.plan_tag_filter_context")
+@patch("blueapi.worker.task_worker.TaskWorker._submit_trackable_task")
 def test_begin_task_uses_plan_name_filter(
-    filter_mock: Mock, worker: TaskWorker
+    submit_trackable_task_mock: Mock, filter_mock: Mock, inert_worker: TaskWorker
 ) -> None:
-    task_id = worker.submit_task(_SIMPLE_TASK)
-    worker.begin_task(task_id)
+    task_id = inert_worker.submit_task(_SIMPLE_TASK)
+    inert_worker.begin_task(task_id)
     filter_mock.assert_called_once()
 
 

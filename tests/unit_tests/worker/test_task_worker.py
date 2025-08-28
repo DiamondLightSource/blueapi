@@ -645,3 +645,14 @@ def test_missing_injected_devices_fail_early(
     context.register_plan(missing_injection)
     with pytest.raises(ValueError):
         Task(name="missing_injection").prepare_params(context)
+
+
+@patch("blueapi.worker.task_worker.LOGGER")
+def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker):
+    task = TrackableTask(task_id="0", task=_SIMPLE_TASK)
+    inert_worker._task_channel.put_nowait(task)
+    inert_worker._pending_tasks["0"] = task
+    inert_worker._cycle()
+    assert inert_worker._current_task_otel_context is None
+    # Bad way to tell that this branch ahs been run, but I can't think of a better way:
+    assert mock_logger.info.called_with(f"Got new task: {_SIMPLE_TASK}")

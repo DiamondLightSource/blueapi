@@ -1,6 +1,6 @@
 # -- Configure the initContainer that checks out the scratch configuration repositories
 initContainer:
-  enabled: false
+  enabled: true
   persistentVolume:
     # -- Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem
     # If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container

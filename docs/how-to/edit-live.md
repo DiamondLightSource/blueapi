@@ -5,22 +5,8 @@ You may want to tweak/edit your plans and devices live, i.e. without having to m
 ## Configuration
 
 Blueapi can be configured to install editable Python packages from a chosen directory:
-
-```yaml
-# my-scratch.yaml
-
-scratch:
-    root: /path/to/my/scratch/directory
-    # Required GID for the scratch area
-    required_gid: 12345
-    repositories:
-        # Repository for DLS devices
-        - name: dodal
-          remote_url: https://github.com/DiamondLightSource/dodal.git
-
-        # Example repository full of custom plans for a particular science technique
-        - name: mx-bluesky
-          remote_url: https://github.com/DiamondLightSource/mx-bluesky.git
+```{literalinclude} ../../tests/unit_tests/valid_example_config/scratch.yaml
+:language: yaml
 ```
 
 Note the `required_gid` field, which is useful for stopping blueapi from locking the files it clones
@@ -53,19 +39,8 @@ blueapi controller env -r
 The helm chart can be configured to mount a scratch area from the
 host machine, include the following in your `values.yaml`:
 
-```yaml
-  worker:
-    scratch:
-      root: /path/to/my/scratch/directory
-      required_gid: 12345
-      repositories:
-        - name: dodal
-          remote_url: https://github.com/DiamondLightSource/dodal.git
-        - name: mx-bluesky
-          remote_url: https://github.com/DiamondLightSource/mx-bluesky.git
-
-  initContainer:
-    enabled: true
+```{literalinclude} ../../tests/unit_tests/helm_examples/scratch-k8s.yaml
+:language: yaml
 ```
 
 When `initContainer` is enabled, it will iterate over the scratch configuration, cloning the specified repositories and setting the correct group ownership based on the `required_gid`. This ensures that the scratch area is properly initialized before the main container starts.

@@ -1,0 +1,12 @@
+worker:
+  scratch:
+    root: /path/to/my/scratch/directory
+    required_gid: 12345
+    repositories:
+      - name: dodal
+        remote_url: https://github.com/DiamondLightSource/dodal.git
+      - name: mx-bluesky
+        remote_url: https://github.com/DiamondLightSource/mx-bluesky.git
+
+initContainer:
+  enabled: true

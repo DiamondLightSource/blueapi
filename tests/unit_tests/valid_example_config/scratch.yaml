@@ -1,0 +1,14 @@
+# my-scratch.yaml
+
+scratch:
+  root: /path/to/my/scratch/directory
+  # Required GID for the scratch area
+  required_gid: 12345
+  repositories:
+    # Repository for DLS devices
+    - name: dodal
+      remote_url: https://github.com/DiamondLightSource/dodal.git
+
+    # Example repository full of custom plans for a particular science technique
+    - name: mx-bluesky
+      remote_url: https://github.com/DiamondLightSource/mx-bluesky.git

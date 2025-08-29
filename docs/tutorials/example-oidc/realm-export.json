@@ -664,7 +664,7 @@
     {
       "id": "96265cb5-8046-4e06-9095-37ecf65d5bf6",
       "clientId": "blueapi",
-      "name": "blueapi",
+      "name": "Blueapi",
       "description": "Standard flow client used for the docs page of blueapi using oauth2-proxy",
       "rootUrl": "http://localhost:4180",
       "adminUrl": "http://localhost:4180",
@@ -819,6 +819,7 @@
         "client.secret.creation.time": "1748358661",
         "backchannel.logout.session.required": "true",
         "standard.token.exchange.enabled": "false",
+        "post.logout.redirect.uris": "+",
         "oauth2.device.authorization.grant.enabled": "false",
         "display.on.consent.screen": "false",
         "backchannel.logout.revoke.offline.tokens": "false"
@@ -911,7 +912,7 @@
     {
       "id": "5fdb4ea5-7bd9-4863-9610-141176f82906",
       "clientId": "blueapi-cli",
-      "name": "",
+      "name": "Blueapi cli",
       "description": "Device flow client is used for blueapi-cli ",
       "rootUrl": "",
       "adminUrl": "",
@@ -939,6 +940,7 @@
       "attributes": {
         "standard.token.exchange.enabled": "false",
         "frontchannel.logout.session.required": "true",
+        "post.logout.redirect.uris": "+",
         "oauth2.device.authorization.grant.enabled": "true",
         "backchannel.logout.revoke.offline.tokens": "false",
         "use.refresh.tokens": "true",
@@ -1924,14 +1926,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-user-property-mapper",
+            "saml-user-attribute-mapper",
+            "saml-role-list-mapper",
             "oidc-sha256-pairwise-sub-mapper",
-            "oidc-usermodel-property-mapper",
             "oidc-address-mapper",
             "oidc-full-name-mapper",
-            "saml-role-list-mapper",
-            "saml-user-attribute-mapper",
-            "oidc-usermodel-attribute-mapper"
+            "oidc-usermodel-attribute-mapper",
+            "oidc-usermodel-property-mapper",
+            "saml-user-property-mapper"
           ]
         }
       },
@@ -1943,14 +1945,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
+            "oidc-usermodel-attribute-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-usermodel-property-mapper",
             "saml-user-attribute-mapper",
             "saml-user-property-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "oidc-usermodel-property-mapper",
-            "oidc-full-name-mapper",
             "saml-role-list-mapper",
-            "oidc-sha256-pairwise-sub-mapper",
-            "oidc-address-mapper"
+            "oidc-address-mapper",
+            "oidc-full-name-mapper"
           ]
         }
       },

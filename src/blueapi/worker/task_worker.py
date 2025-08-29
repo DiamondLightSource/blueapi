@@ -164,7 +164,11 @@ class TaskWorker:
     ) -> str:
         """
         Remove the currently active task from the worker if there is one
-        Returns the task_id of the active task
+        Args:
+            failure: Flag cancellation as error
+            reason: Reason for cancellation
+        Returns:
+            The task_id of the active task
         """
         if self._current is None:
             # Persuades type checker that self._current is not None

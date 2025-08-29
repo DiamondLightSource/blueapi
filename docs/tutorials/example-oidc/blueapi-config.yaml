@@ -1,0 +1,4 @@
+oidc:
+  well_known_url: http://localhost:8080/realms/master/.well-known/openid-configuration
+  client_id: blueapi-cli
+  logout_redirect_endpoint: oauth2/sign_out/

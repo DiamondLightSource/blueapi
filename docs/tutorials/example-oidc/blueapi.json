@@ -1,0 +1,125 @@
+{
+  "clientId": "blueapi",
+  "name": "blueapi",
+  "description": "",
+  "rootUrl": "http://localhost:8000",
+  "adminUrl": "http://localhost:8000",
+  "baseUrl": "http://localhost:8000",
+  "surrogateAuthRequired": false,
+  "enabled": true,
+  "alwaysDisplayInConsole": false,
+  "clientAuthenticatorType": "client-secret",
+  "secret": "31updkXkR1Llf2Zp0VI7JHIJ1JvJCm9x",
+  "redirectUris": [
+    "http://localhost:4180/*",
+    "http://localhost:8000/*"
+  ],
+  "webOrigins": [
+    "http://localhost:4180/*",
+    "http://localhost:8000",
+    "http://localhost:8000/*"
+  ],
+  "notBefore": 0,
+  "bearerOnly": false,
+  "consentRequired": false,
+  "standardFlowEnabled": true,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": false,
+  "publicClient": false,
+  "frontchannelLogout": true,
+  "protocol": "openid-connect",
+  "attributes": {
+    "realm_client": "false",
+    "oidc.ciba.grant.enabled": "false",
+    "client.secret.creation.time": "1727263413",
+    "backchannel.logout.session.required": "true",
+    "post.logout.redirect.uris": "http://localhost:8000/*##http://localhost:4180/*",
+    "frontchannel.logout.session.required": "true",
+    "oauth2.device.authorization.grant.enabled": "true",
+    "display.on.consent.screen": "false",
+    "use.jwks.url": "false",
+    "backchannel.logout.revoke.offline.tokens": "false"
+  },
+  "authenticationFlowBindingOverrides": {},
+  "fullScopeAllowed": true,
+  "nodeReRegistrationTimeout": -1,
+  "protocolMappers": [
+    {
+      "name": "full name",
+      "protocol": "cas",
+      "protocolMapper": "cas-full-name-mapper",
+      "consentRequired": false,
+      "config": {
+        "claim.name": "cn",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "given name",
+      "protocol": "cas",
+      "protocolMapper": "cas-usermodel-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "claim.name": "givenName",
+        "user.attribute": "firstName",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "email",
+      "protocol": "cas",
+      "protocolMapper": "cas-usermodel-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "claim.name": "mail",
+        "user.attribute": "email",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "family name",
+      "protocol": "cas",
+      "protocolMapper": "cas-usermodel-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "claim.name": "sn",
+        "user.attribute": "lastName",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "blueapi",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-audience-mapper",
+      "consentRequired": false,
+      "config": {
+        "id.token.claim": "false",
+        "lightweight.claim": "false",
+        "introspection.token.claim": "true",
+        "access.token.claim": "true",
+        "included.custom.audience": "blueapi",
+        "userinfo.token.claim": "false"
+      }
+    }
+  ],
+  "defaultClientScopes": [
+    "web-origins",
+    "acr",
+    "roles",
+    "profile",
+    "basic",
+    "email"
+  ],
+  "optionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access",
+    "microprofile-jwt"
+  ],
+  "access": {
+    "view": true,
+    "configure": true,
+    "manage": true
+  }
+}

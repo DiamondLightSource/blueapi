@@ -212,7 +212,7 @@ class TaskWorker:
         """
         Retrieve a list of tasks based on their status.
         Args:
-           str: The status to filter tasks by.
+           TaskStatusEnum: The status to filter tasks by.
         Returns:
           list[TrackableTask]: A list of tasks that match the given status.
         """
@@ -233,7 +233,7 @@ class TaskWorker:
         """
         Returns the task the worker is currently running
         Returns:
-            Optional[TrackableTask[T]]: The current task,
+            Optional[TrackableTask[Task]]: The current task,
                 None if the worker is idle.
         """
         current = self._current
@@ -248,7 +248,6 @@ class TaskWorker:
         Args:
             task_id: The ID of the task to be triggered
         Throws:
-            WorkerBusyError: If the worker is already running a task.
             KeyError: If the task ID does not exist
         """
         task = self._pending_tasks.get(task_id)
@@ -392,6 +391,9 @@ class TaskWorker:
     def pause(self, defer=False):
         """
         Command the worker to pause.
+
+        Args:
+            defer: Optional, if true wait till next checkpoint
         """
         LOGGER.info("Requesting to pause the worker")
         self._ctx.run_engine.request_pause(defer)

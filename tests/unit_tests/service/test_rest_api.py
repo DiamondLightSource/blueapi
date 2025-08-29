@@ -734,14 +734,14 @@ def test_logout(
     oidc_config: OIDCConfig,
     client_with_auth: TestClient,
 ):
-    oidc_config.logout_redirect_endpoint = "/oauth2/logout/"
+    oidc_config.logout_redirect_endpoint = "/oauth2/sign_out/"
     mock_runner.run.return_value = oidc_config
     client_with_auth.follow_redirects = False
     response = client_with_auth.get("/logout")
     assert response.status_code == status.HTTP_308_PERMANENT_REDIRECT
     assert (
         response.headers.get("location")
-        == "/oauth2/logout/https%3A%2F%2Fexample.com%2Fend_session"
+        == "/oauth2/sign_out?rd=https%3A%2F%2Fexample.com%2Fend_session"
     )
 
 

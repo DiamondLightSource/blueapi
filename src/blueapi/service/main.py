@@ -546,7 +546,7 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     encoded_url = urllib.parse.quote_plus(config.end_session_endpoint)
     return RedirectResponse(
         status_code=status.HTTP_308_PERMANENT_REDIRECT,
-        url=urllib.parse.urljoin(config.logout_redirect_endpoint, encoded_url),
+        url=config.logout_redirect_endpoint.rstrip("/") + "?rd=" + encoded_url,
     )
 
 

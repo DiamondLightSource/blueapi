@@ -145,6 +145,13 @@ class TaskWorker:
 
     @start_as_current_span(TRACER, "task_id")
     def clear_task(self, task_id: str) -> str:
+        """
+        Remove a task from the worker
+        Args:
+            task_id: The ID of the task to be removed
+        Returns:
+            task_id of the removed task
+        """
         pending = self._pending_tasks.pop(task_id, None)
         task = pending or self._completed_tasks.pop(task_id)
         return task.task_id
@@ -155,6 +162,10 @@ class TaskWorker:
         failure: bool = False,
         reason: str | None = None,
     ) -> str:
+        """
+        Remove the currently active task from the worker if there is one
+        Returns the task_id of the active task
+        """
         if self._current is None:
             # Persuades type checker that self._current is not None
             # We only allow this method to be called if a Plan is active
@@ -171,14 +182,36 @@ class TaskWorker:
 
     @start_as_current_span(TRACER)
     def get_tasks(self) -> list[TrackableTask]:
+        """
+        Return a list of all tasks on the worker,
+        any one of which can be triggered with begin_task.
+        Returns:
+            List[TrackableTask[T]]: List of task objects
+        """
         return list(self._pending_tasks.values()) + list(self._completed_tasks.values())
 
     @start_as_current_span(TRACER, "task_id")
     def get_task_by_id(self, task_id: str) -> TrackableTask | None:
+        """
+        Returns a task matching the task ID supplied,
+        if the worker knows of it.
+        Args:
+            task_id: The ID of the task
+        Returns:
+            Optional[TrackableTask[T]]: The task matching the ID,
+                None if the task ID is unknown to the worker.
+        """
         return self._pending_tasks.get(task_id, None) or self._completed_tasks[task_id]
 
     @start_as_current_span(TRACER, "status")
     def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
+        """
+        Retrieve a list of tasks based on their status.
+        Args:
+           str: The status to filter tasks by.
+        Returns:
+          list[TrackableTask]: A list of tasks that match the given status.
+        """
         if status == TaskStatusEnum.RUNNING:
             return [
                 task
@@ -193,6 +226,12 @@ class TaskWorker:
 
     @start_as_current_span(TRACER)
     def get_active_task(self) -> TrackableTask[Task] | None:
+        """
+        Returns the task the worker is currently running
+        Returns:
+            Optional[TrackableTask[T]]: The current task,
+                None if the worker is idle.
+        """
         current = self._current
         if current is not None:
             add_span_attributes({"Active Task": current.task_id})
@@ -200,6 +239,14 @@ class TaskWorker:
 
     @start_as_current_span(TRACER, "task_id")
     def begin_task(self, task_id: str) -> None:
+        """
+        Trigger a pending task. Will fail if the worker is busy.
+        Args:
+            task_id: The ID of the task to be triggered
+        Throws:
+            WorkerBusyError: If the worker is already running a task.
+            KeyError: If the task ID does not exist
+        """
         task = self._pending_tasks.get(task_id)
         if task is None:
             raise KeyError(f"No pending task with ID {task_id}")
@@ -208,6 +255,13 @@ class TaskWorker:
 
     @start_as_current_span(TRACER, "task.name", "task.params")
     def submit_task(self, task: Task) -> str:
+        """
+        Submit a task to be run on begin_task
+        Args:
+            task: A description of the task
+        Returns:
+            str: A unique ID to refer to this task
+        """
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
         add_span_attributes({"TaskId": task_id})
@@ -264,6 +318,10 @@ class TaskWorker:
 
     @start_as_current_span(TRACER)
     def start(self) -> None:
+        """
+        Start worker in a new thread. Does not block, configures the bluesky
+        event loop in the new thread.
+        """
         if self._started.is_set():
             raise WorkerAlreadyStartedError("Worker is already running")
         self._wait_until_stopped()
@@ -272,6 +330,9 @@ class TaskWorker:
 
     @start_as_current_span(TRACER)
     def stop(self) -> None:
+        """
+        Command the worker to gracefully stop. Blocks until it has shut down.
+        """
         LOGGER.info("Attempting to stop worker")
 
         # If the worker has not yet started there is nothing to do.
@@ -299,10 +360,16 @@ class TaskWorker:
 
     @property
     def state(self) -> WorkerState:
+        """
+        :return: state of the worker
+        """
         return self._state
 
     @start_as_current_span(TRACER)
     def run(self) -> None:
+        """
+        Run all tasks that are submitted to the worker. Blocks thread.
+        """
         LOGGER.info("Worker starting")
         self._ctx.run_engine.state_hook = self._on_state_change  # type: ignore
         self._ctx.run_engine.subscribe(self._on_document)
@@ -319,11 +386,17 @@ class TaskWorker:
 
     @start_as_current_span(TRACER, "defer")
     def pause(self, defer=False):
+        """
+        Command the worker to pause.
+        """
         LOGGER.info("Requesting to pause the worker")
         self._ctx.run_engine.request_pause(defer)
 
     @start_as_current_span(TRACER)
     def resume(self):
+        """
+        Command the worker to resume
+        """
         LOGGER.info("Requesting to resume the worker")
         self._ctx.run_engine.resume()
 
@@ -378,14 +451,29 @@ class TaskWorker:
 
     @property
     def worker_events(self) -> EventStream[WorkerEvent, int]:
+        """
+        Events representing changes/errors in worker state
+        Returns:
+            EventStream[WorkerEvent, int]: Subscribable stream of events
+        """
         return self._worker_events
 
     @property
     def progress_events(self) -> EventStream[ProgressEvent, int]:
+        """
+        Events representing progress in running a task
+        Returns:
+            EventStream[ProgressEvent, int]: Subscribable stream of events
+        """
         return self._progress_events
 
     @property
     def data_events(self) -> EventStream[DataEvent, int]:
+        """
+        Events representing collection of data
+        Returns:
+            EventStream[DataEvent, int]: Subscribable stream of events
+        """
         return self._data_events
 
     @start_as_current_span(TRACER, "raw_new_state", "raw_old_state")

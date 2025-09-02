@@ -309,7 +309,7 @@ def test_get_tasks(get_tasks_mock: MagicMock):
     tasks = [
         TrackableTask(task_id="0", task=Task(name="0")),
         TrackableTask(task_id="1", task=Task(name="1")),
-        TrackableTask(task_id="2", task=Task(name="1")),
+        TrackableTask(task_id="2", task=Task(name="2")),
     ]
     get_tasks_mock.return_value = tasks
 

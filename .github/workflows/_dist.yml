@@ -13,6 +13,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build sdist and wheel
+        uses: ./.github/actions/install_requirements
         run: >
           export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) &&
           uv build

@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-yaml
@@ -26,7 +26,7 @@ repos:
         require_serial: true
 
   - repo: https://github.com/norwoodj/helm-docs
-    rev: ""
+    rev: "v1.14.2"
     hooks:
       - id: helm-docs-built
         args:
@@ -39,7 +39,7 @@ repos:
       - id: gitleaks
 
   - repo: https://github.com/losisin/helm-values-schema-json
-    rev: v2.2.1
+    rev: v2.3.0
     hooks:
       - id: helm-schema
         args:

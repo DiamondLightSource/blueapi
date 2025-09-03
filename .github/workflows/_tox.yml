@@ -19,7 +19,9 @@ jobs:
         uses: ./.github/actions/install_requirements
 
       - name: Install helm plugins
-        run: helm plugin install https://github.com/losisin/helm-values-schema-json.git
+        # The version here matches the one used by pre-commit - ideally this wouldn't need to be manually
+        # kept in sync.
+        run: helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.2.1
 
       - name: Run tox
         run: uv run --frozen tox -e ${{ inputs.tox }}

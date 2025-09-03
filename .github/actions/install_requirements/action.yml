@@ -29,5 +29,5 @@ runs:
       shell: bash
 
     - name: List dependency tree
-      run: uv export --format requirements.txt --no-hashes
+      run: uv export --frozen --format requirements.txt --no-hashes
       shell: bash

@@ -18,7 +18,7 @@ jobs:
       - name: Build sdist and wheel
         run: >
           export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) &&
-          uv build
+          uv build --frozen
 
       - name: Upload sdist and wheel as artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

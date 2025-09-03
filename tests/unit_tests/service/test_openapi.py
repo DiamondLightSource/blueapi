@@ -9,6 +9,7 @@ import git
 import pytest
 import yaml
 from deepdiff import DeepDiff
+from git.exc import GitCommandError
 from semver import Version
 
 from blueapi.config import ApplicationConfig
@@ -25,7 +26,7 @@ def reference_schema() -> Mapping[str, Any] | None:
         relative_path_to_schema = DOCS_SCHEMA_LOCATION.relative_to(TOP)
         raw_yaml = repo.git.show(f"{MAIN}:{relative_path_to_schema}")
         return yaml.safe_load(raw_yaml)
-    except git.exc.GitCommandError:
+    except GitCommandError:
         return None
 
 

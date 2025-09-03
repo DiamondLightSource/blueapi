@@ -43,30 +43,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   system-test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:
-          # Need this to get version number from last tag
-          fetch-depth: 0
-      - name: Setup project
-        uses: ./.github/actions/install_requirements
-        with:
-          python-version: 3.12
-
-      - name: Start RabbitMQ
-        uses: namoshek/rabbitmq-github-action@d1d4455f4a8f72db66111c24cb0dc5654047a975 # v1
-        with:
-          ports: "61613:61613"
-          plugins: rabbitmq_stomp
-
-      - name: Start Blueapi Server
-        run: uv run --frozen blueapi -c ${{ github.workspace }}/tests/unit_tests/example_yaml/valid_stomp_config.yaml serve &
-
-      - name: Run tests
-        run: uv run --frozen tox -e system-test
+    uses: ./.github/workflows/_system_test.yml
 
   container:
     needs: [test, system-test]

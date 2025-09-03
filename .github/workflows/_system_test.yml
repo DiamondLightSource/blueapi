@@ -50,4 +50,4 @@ jobs:
         run: blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
 
       - name: Run tests
-        run: tox -e system-test
+        run: uv run --frozen tox -e system-test

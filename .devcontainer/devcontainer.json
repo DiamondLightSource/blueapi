@@ -11,7 +11,7 @@
     },
     "remoteEnv": {
         // Allow X11 apps to run inside the container
-        "DISPLAY": "${localEnv:DISPLAY}"
+        "DISPLAY": "${localEnv:DISPLAY}",
     },
     "customizations": {
         "vscode": {
@@ -33,12 +33,23 @@
             ]
         }
     },
+    "mounts": [
+        {
+            "source": "${localEnv:HOME}/.cache/uv",
+            "target": "/.cache/uv",
+            "type": "bind"
+        },
+        {
+            "target": "/workspaces/${localWorkspaceFolderBasename}/.venv",
+            "type": "volume"
+        }
+    ],
     "features": {
         // add in eternal history and other bash features
         "ghcr.io/diamondlightsource/devcontainer-features/bash-config:1": {}
     },
     // Create the config folder for the bash-config feature
-    "initializeCommand": "mkdir -p ${localEnv:HOME}/.config/bash-config",
+    "initializeCommand": "mkdir -p ${localEnv:HOME}/.config/bash-config ${localEnv:HOME}/.cache/uv",
     "runArgs": [
         // Allow the container to access the host X11 display and EPICS CA
         "--net=host",
@@ -48,5 +59,5 @@
     // Mount the parent as /workspaces so we can pip install peers as editable
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
     // After the container is created, install the python project in editable form
-    "postCreateCommand": "pip install $([ -f dev-requirements.txt ] && echo '-c dev-requirements.txt') -e '.[dev]' && pre-commit install"
+    "postCreateCommand": "uv sync --frozen && uvx pre-commit install && SHELL=bash uv tool update-shell"
 }

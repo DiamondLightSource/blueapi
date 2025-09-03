@@ -16,27 +16,37 @@ jobs:
       tox: pre-commit,type-checking
 
   test:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        runs-on: ["ubuntu-latest"] # can add windows-latest, macos-latest
         python-version: ["3.11", "3.12"]
-        include:
-          # Include one that runs in the dev environment
-          - runs-on: "ubuntu-latest"
-            python-version: "dev"
-      fail-fast: false
-    uses: ./.github/workflows/_test.yml
-    with:
-      runs-on: ${{ matrix.runs-on }}
-      python-version: ${{ matrix.python-version }}
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          # Need this to get version number from last tag
+          fetch-depth: 0
+      - name: Setup project
+        uses: ./.github/actions/install_requirements
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Unit tests
+        run: uv run --frozen tox -e tests
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5
+        with:
+          name: ${{ matrix.python-version }}/ubuntu-latest
+          files: cov.xml
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   system-test:
     uses: ./.github/workflows/_system_test.yml
 
   container:
-    needs: test
+    needs: [test, system-test]
     if: always()
     uses: ./.github/workflows/_container.yml
     with:
@@ -69,7 +79,7 @@ jobs:
       id-token: write
 
   release:
-    needs: [dist, test, docs]
+    needs: [dist, test, docs, container]
     if: github.ref_type == 'tag'
     uses: ./.github/workflows/_release.yml
     permissions:

@@ -1,12 +1,9 @@
-name: Install requirements
-description: Install a version of python then call pip install and report what was installed
+name: Setup UV
+description: Setup UV and install the project
 inputs:
   python-version:
     description: Python version to install, default is from Dockerfile
     default: "dev"
-  pip-install:
-    description: Parameters to pass to pip install
-    default: "$([ -f dev-requirements.txt ] && echo '-c dev-requirements.txt') -e .[dev]"
 
 runs:
   using: composite
@@ -21,15 +18,16 @@ runs:
         echo "PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
       shell: bash
 
-    - name: Setup python
-      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
+        enable-cache: true
 
-    - name: Install packages
-      run: pip install ${{ inputs.pip-install }}
+    - name: Install project
+      run: uv sync --frozen --all-extras --dev
       shell: bash
 
-    - name: Report what was installed
-      run: pip freeze
+    - name: List dependency tree
+      run: uv export --frozen --format requirements.txt --no-hashes
       shell: bash

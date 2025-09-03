@@ -29,7 +29,7 @@ FROM developer AS build
 COPY --chmod=o+wrX . /workspaces/blueapi
 
 WORKDIR /workspaces/blueapi
-RUN uv sync --locked
+RUN uv sync --frozen
 
 
 FROM build AS debug

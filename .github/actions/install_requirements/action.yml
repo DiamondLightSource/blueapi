@@ -25,7 +25,7 @@ runs:
         enable-cache: true
 
     - name: Install project
-      run: uv sync --locked --all-extras --dev
+      run: uv sync --frozen --all-extras --dev
       shell: bash
 
     - name: List dependency tree

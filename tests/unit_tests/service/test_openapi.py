@@ -19,11 +19,14 @@ MAIN = "main"
 
 
 @pytest.fixture
-def reference_schema() -> Mapping[str, Any]:
-    repo = git.Repo(TOP)
-    relative_path_to_schema = DOCS_SCHEMA_LOCATION.relative_to(TOP)
-    raw_yaml = repo.git.show(f"{MAIN}:{relative_path_to_schema}")
-    return yaml.safe_load(raw_yaml)
+def reference_schema() -> Mapping[str, Any] | None:
+    try:
+        repo = git.Repo(TOP)
+        relative_path_to_schema = DOCS_SCHEMA_LOCATION.relative_to(TOP)
+        raw_yaml = repo.git.show(f"{MAIN}:{relative_path_to_schema}")
+        return yaml.safe_load(raw_yaml)
+    except git.exc.GitCommandError:
+        return None
 
 
 @mock.patch("blueapi.service.openapi.get_app")
@@ -77,7 +80,10 @@ def test_schema_updated() -> None:
     reason="If the schema file does not exist, the test is being run"
     " with a non-editable install",
 )
-def test_schema_version_bump_required(reference_schema: Mapping[str, Any]) -> None:
+def test_schema_version_bump_required(reference_schema: Mapping[str, Any] | None):
+    if reference_schema is None:
+        pytest.skip("The reference schema is not available")
+        return
     current_version = _get_version(generate_schema(), "schema in working tree")
     main_version = _get_version(reference_schema, "schema in main")
     if reference_schema != generate_schema():

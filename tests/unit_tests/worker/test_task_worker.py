@@ -636,12 +636,13 @@ def test_injected_devices_are_found(
     assert params["dev"] == fake_device
 
 
-def test_missing_injected_devices_fail_early(
+def test_missing_injected_devices_fail_early_and_give_list_of_known_devices(
     context: BlueskyContext,
 ):
     def missing_injection(dev: FakeDevice = inject("does_not_exist")) -> MsgGenerator:
         yield from ()
 
     context.register_plan(missing_injection)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as excinfo:
         Task(name="missing_injection").prepare_params(context)
+        assert "fake_device" in str(excinfo.value)

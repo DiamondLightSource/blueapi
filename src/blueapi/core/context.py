@@ -445,9 +445,13 @@ class BlueskyContext:
                 ) -> CoreSchema:
                     def valid(value):
                         val = self.find_device(value)
-                        if not val or not is_compatible(
-                            val, cls.origin or target, cls.args
-                        ):
+                        if not val:
+                            device_names = list(self.devices.keys())
+                            raise ValueError(
+                                f"Device {value} cannot be found, "
+                                f"available devices are: {device_names}"
+                            )
+                        elif not is_compatible(val, cls.origin or target, cls.args):
                             required = qualified_generic_name(target)
                             raise ValueError(
                                 f"Device {value} is not of type {required}"

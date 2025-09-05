@@ -15,7 +15,7 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
     chmod 700 get_helm.sh; \
     ./get_helm.sh; \
     rm get_helm.sh
-RUN helm plugin install https://github.com/losisin/helm-values-schema-json.git
+RUN helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.2.1
 
 # Set up a virtual environment and put it in PATH
 RUN python -m venv /venv

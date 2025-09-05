@@ -74,7 +74,7 @@ kiwisolver==1.4.8
 lz4==4.4.4
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
-marshmallow==3.26.1
+marshmallow==4.0.1
 matplotlib==3.10.5
 mdit-py-plugins==0.4.2
 mdurl==0.1.2

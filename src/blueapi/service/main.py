@@ -1,4 +1,5 @@
 import logging
+import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from enum import Enum
@@ -541,10 +542,11 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     config = runner.run(interface.get_oidc_config)
     if config is None or not config.logout_redirect_endpoint:
         raise HTTPException(status_code=status.HTTP_205_RESET_CONTENT)
+
+    encoded_url = urllib.parse.quote_plus(config.end_session_endpoint)
     return RedirectResponse(
         status_code=status.HTTP_308_PERMANENT_REDIRECT,
-        url=config.logout_redirect_endpoint,
-        headers={"X-Auth-Request-Redirect": config.end_session_endpoint},
+        url=config.logout_redirect_endpoint.rstrip("/") + "?rd=" + encoded_url,
     )
 
 

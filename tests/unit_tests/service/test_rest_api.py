@@ -300,7 +300,7 @@ def test_put_plan_fails_if_not_idle(mock_runner: Mock, client: TestClient) -> No
 
     # Set to non idle
     mock_runner.run.return_value = TrackableTask(
-        task=None, task_id=task_id_current, is_complete=False
+        task=Task(name="none"), task_id=task_id_current, is_complete=False
     )
 
     resp = client.put("/worker/task", json={"task_id": task_id_new})

@@ -25,7 +25,7 @@ from blueapi.service.model import (
     TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker import Task, TrackableTask, WorkerEvent, WorkerState
+from blueapi.worker import TrackableTask, WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 
 from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
@@ -159,7 +159,7 @@ class BlueapiClient:
         return self._rest.set_state(WorkerState.RUNNING, defer=False)
 
     @start_as_current_span(TRACER, "task_id")
-    def get_task(self, task_id: str) -> TrackableTask[Task]:
+    def get_task(self, task_id: str) -> TrackableTask:
         """
         Get a task stored by the worker
 
@@ -167,7 +167,7 @@ class BlueapiClient:
             task_id: Unique ID for the task
 
         Returns:
-            TrackableTask[Task]: Task details
+            TrackableTask: Task details
         """
         assert task_id, "Task ID not provided!"
         return self._rest.get_task(task_id)

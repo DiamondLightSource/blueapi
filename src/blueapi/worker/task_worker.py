@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import partial
 from queue import Full, Queue
 from threading import Event, RLock
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from bluesky.protocols import Status
 from observability_utils.tracing import (
@@ -31,6 +31,7 @@ from blueapi.core import (
     WatchableStatus,
 )
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
+from blueapi.log import plan_tag_filter_context
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
 
@@ -57,13 +58,13 @@ WORKER_THREAD_STATE = "worker thread state"
 T = TypeVar("T")
 
 
-class TrackableTask(BlueapiBaseModel, Generic[T]):
+class TrackableTask(BlueapiBaseModel):
     """
     A representation of a task that the worker recognizes
     """
 
     task_id: str
-    task: T
+    task: Task
     request_id: str | SkipJsonSchema[None] = None
     is_complete: bool = False
     is_pending: bool = True
@@ -229,7 +230,7 @@ class TaskWorker:
         return []
 
     @start_as_current_span(TRACER)
-    def get_active_task(self) -> TrackableTask[Task] | None:
+    def get_active_task(self) -> TrackableTask | None:
         """
         Returns the task the worker is currently running
         Returns:
@@ -254,7 +255,8 @@ class TaskWorker:
         if task is None:
             raise KeyError(f"No pending task with ID {task_id}")
         else:
-            self._submit_trackable_task(task)
+            with plan_tag_filter_context(task.task.name, LOGGER):
+                self._submit_trackable_task(task)
 
     @start_as_current_span(TRACER, "task.name", "task.params")
     def submit_task(self, task: Task) -> str:
@@ -419,19 +421,29 @@ class TaskWorker:
             LOGGER.info("Awaiting task")
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
-                if self._current_task_otel_context is not None:
-                    with TRACER.start_as_current_span(
-                        "_cycle",
-                        context=self._current_task_otel_context,
-                        kind=SpanKind.SERVER,
-                    ):
-                        LOGGER.info(f"Got new task: {next_task}")
-                        self._current = next_task
-                        self._current_task_otel_context = get_current()
-                        add_span_attributes({"next_task.task_id": next_task.task_id})
 
-                        self._current.is_pending = False
-                        self._current.task.do_task(self._ctx)
+                def process_task():
+                    LOGGER.info(f"Got new task: {next_task}")
+                    self._current = next_task
+                    self._current.is_pending = False
+                    self._current.task.do_task(self._ctx)
+
+                with plan_tag_filter_context(next_task.task.name, LOGGER):
+                    if self._current_task_otel_context is not None:
+                        with TRACER.start_as_current_span(
+                            "_cycle",
+                            context=self._current_task_otel_context,
+                            kind=SpanKind.SERVER,
+                        ):
+                            self._current_task_otel_context = get_current()
+                            add_span_attributes(
+                                {"next_task.task_id": next_task.task_id}
+                            )
+
+                            process_task()
+                    else:
+                        process_task()
+
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't

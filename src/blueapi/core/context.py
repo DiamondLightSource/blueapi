@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 from importlib import import_module
 from inspect import Parameter, signature
 from types import ModuleType, NoneType, UnionType
@@ -8,6 +8,7 @@ from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
+from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
 from dodal.utils import make_all_devices
 from ophyd_async.core import NotConnected
 from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
@@ -16,12 +17,15 @@ from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import CoreSchema, core_schema
 
 from blueapi import utils
-from blueapi.config import EnvironmentConfig, SourceKind
+from blueapi.client.numtracker import NumtrackerClient
+from blueapi.config import ApplicationConfig, EnvironmentConfig, SourceKind
 from blueapi.utils import (
     BlueapiPlanModelConfig,
     is_function_sourced_from_module,
     load_module_all,
 )
+from blueapi.utils.invalid_config_error import InvalidConfigError
+from blueapi.utils.path_provider import StartDocumentPathProvider
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
@@ -86,14 +90,56 @@ class BlueskyContext:
     The context holds the RunEngine and any plans/devices that you may want to use.
     """
 
+    configuration: InitVar[ApplicationConfig | None] = None
+
     run_engine: RunEngine = field(
         default_factory=lambda: RunEngine(context_managers=[])
     )
+    numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
+
+    def __post_init__(self, configuration: ApplicationConfig | None):
+        print(f"Init context with config: {configuration=}")
+        if not configuration:
+            return
+
+        if configuration.numtracker is not None:
+            if configuration.env.metadata is not None:
+                self.numtracker = NumtrackerClient(url=configuration.numtracker.url)
+            else:
+                raise InvalidConfigError(
+                    "Numtracker url has been configured, but there is no instrument or"
+                    " instrument_session in the environment metadata"
+                )
+
+        if self.numtracker is not None:
+            numtracker = self.numtracker
+
+            def _update_scan_num(md: dict[str, Any]) -> int:
+                scan = numtracker.create_scan(
+                    md["instrument_session"], md["instrument"]
+                )
+                md["data_session_directory"] = str(scan.scan.directory.path)
+                md["scan_file"] = scan.scan.scan_file
+                return scan.scan.scan_number
+
+            self.run_engine.scan_id_source = _update_scan_num
+            path_provider = StartDocumentPathProvider()
+            set_path_provider(path_provider)
+            self.run_engine.subscribe(path_provider.update_run, "start")
+
+        self.with_config(configuration.env)
+        if self.numtracker and not isinstance(
+            get_path_provider(), StartDocumentPathProvider
+        ):
+            raise InvalidConfigError(
+                "Numtracker has been configured but a path provider was imported with "
+                "the devices. Remove this path provider to use numtracker."
+            )
 
     def find_device(self, addr: str | list[str]) -> Device | None:
         """

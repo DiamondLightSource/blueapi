@@ -256,15 +256,15 @@ def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
     assert interface.get_tasks_by_status(TaskStatusEnum.COMPLETE) == []
 
 
-@patch("blueapi.service.interface._try_configure_numtracker")
+@patch("blueapi.service.interface.BlueskyContext.numtracker")
 @patch("blueapi.service.interface.TaskWorker.begin_task")
-def test_begin_task_with_headers(worker_mock: MagicMock, mock_configure: MagicMock):
+def test_begin_task_with_headers(worker_mock: MagicMock, mock_numtracker: MagicMock):
     uuid_value = "350043fd-597e-41a7-9a92-5d5478232cf7"
     task = WorkerTask(task_id=uuid_value)
     headers = {"a": "b"}
 
     returned_task = interface.begin_task(task, headers)
-    mock_configure.assert_called_once_with(headers)
+    mock_numtracker.set_headers.assert_called_once_with(headers)
 
     assert task == returned_task
     worker_mock.assert_called_once_with(uuid_value)
@@ -406,10 +406,10 @@ def test_configure_numtracker():
     )
     interface.set_config(conf)
     headers = {"a": "b"}
-    interface._try_configure_numtracker(headers)
-    nt = interface.numtracker_client()
+    nt = interface.context().numtracker
 
     assert isinstance(nt, NumtrackerClient)
+    nt.set_headers(headers)
     assert nt._headers == {"a": "b"}
     assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
@@ -506,7 +506,6 @@ def test_setup_with_numtracker_makes_start_document_provider():
     path_provider = get_path_provider()
 
     assert isinstance(path_provider, StartDocumentPathProvider)
-    assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 
     clear_path_provider()
 
@@ -545,12 +544,15 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
     )
     interface.set_config(conf)
     ctx = interface.context()
-    interface.configure_context()
 
     headers = {"a": "b"}
-    interface._try_configure_numtracker(headers)
+
+    assert ctx.numtracker is not None
+    assert ctx.run_engine.scan_id_source is not None
+
+    ctx.numtracker.set_headers(headers)
     ctx.run_engine.md["instrument_session"] = "ab123"
-    interface._update_scan_num(ctx.run_engine.md)
+    ctx.run_engine.scan_id_source(ctx.run_engine.md)
 
     mock_create_scan.assert_called_once_with("ab123", "p46")
 
@@ -567,8 +569,10 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     interface.setup(conf)
     ctx = interface.context()
 
+    assert ctx.run_engine.scan_id_source is not None
+
     ctx.run_engine.md["instrument_session"] = "ab123"
-    interface._update_scan_num(ctx.run_engine.md)
+    ctx.run_engine.scan_id_source(ctx.run_engine.md)
 
     assert (
         ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"
@@ -587,7 +591,9 @@ def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
     interface.setup(conf)
     ctx = interface.context()
 
+    assert ctx.run_engine.scan_id_source is not None
+
     ctx.run_engine.md["instrument_session"] = "ab123"
-    interface._update_scan_num(ctx.run_engine.md)
+    ctx.run_engine.scan_id_source(ctx.run_engine.md)
 
     assert ctx.run_engine.md["scan_file"] == "p46-11"

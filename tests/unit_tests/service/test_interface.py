@@ -476,6 +476,22 @@ def test_configure_numtracker_with_no_metadata_fails():
         interface._try_configure_numtracker(headers)
 
 
+def test_numtracker_requires_instrument_metadata():
+    conf = ApplicationConfig(
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql"),
+        )
+    )
+    interface.set_config(conf)
+    print("Post config")
+    with pytest.raises(InvalidConfigError):
+        interface.context()
+
+    # Clearing the config here prevents the same exception as above being
+    # raised in the ensure_worker_stopped fixture
+    interface.set_config(ApplicationConfig())
+
+
 def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
     conf = ApplicationConfig()
     mock_provider = Mock()

@@ -103,7 +103,6 @@ class BlueskyContext:
     _reference_cache: dict[type, type] = field(default_factory=dict)
 
     def __post_init__(self, configuration: ApplicationConfig | None):
-        print(f"Init context with config: {configuration=}")
         if not configuration:
             return
 

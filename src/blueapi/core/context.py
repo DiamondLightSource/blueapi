@@ -118,6 +118,10 @@ class BlueskyContext:
         if self.numtracker is not None:
             numtracker = self.numtracker
 
+            path_provider = StartDocumentPathProvider()
+            set_path_provider(path_provider)
+            self.run_engine.subscribe(path_provider.update_run, "start")
+
             def _update_scan_num(md: dict[str, Any]) -> int:
                 scan = numtracker.create_scan(
                     md["instrument_session"], md["instrument"]
@@ -127,10 +131,6 @@ class BlueskyContext:
                 return scan.scan.scan_number
 
             self.run_engine.scan_id_source = _update_scan_num
-
-            path_provider = StartDocumentPathProvider()
-            set_path_provider(path_provider)
-            self.run_engine.subscribe(path_provider.update_run, "start")
 
         self.with_config(configuration.env)
         if self.numtracker and not isinstance(

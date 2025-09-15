@@ -443,14 +443,16 @@ def test_headers_are_cleared(mock_post):
     headers = {"foo": "bar"}
 
     interface.begin_task(task=WorkerTask(task_id=None), pass_through_headers=headers)
-    interface.context().run_engine.scan_id_source(
+    ctx = interface.context()
+    assert ctx.run_engine.scan_id_source is not None
+    ctx.run_engine.scan_id_source(
         {"instrument_session": "cm12345-1", "instrument": "p46"}
     )
     mock_post.assert_called_once()
     assert mock_post.call_args.kwargs["headers"] == headers
 
     interface.begin_task(task=WorkerTask(task_id=None))
-    interface.context().run_engine.scan_id_source(
+    ctx.run_engine.scan_id_source(
         {"instrument_session": "cm12345-1", "instrument": "p46"}
     )
     assert mock_post.call_count == 2

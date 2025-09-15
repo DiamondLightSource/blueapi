@@ -418,6 +418,45 @@ def test_configure_numtracker():
     interface.teardown()
 
 
+@patch("blueapi.client.numtracker.requests.post")
+def test_headers_are_cleared(mock_post):
+    mock_response = Mock()
+    mock_post.return_value = mock_response
+    mock_response.raise_for_status.side_effect = None
+    mock_response.json.return_value = {
+        "data": {
+            "scan": {
+                "scanNumber": 42,
+                "directory": {
+                    "path": "/tmp",
+                    "instrument": "p46",
+                    "instrument_session": "cm12345-1",
+                },
+                "scanFile": "p46-42",
+            }
+        }
+    }
+
+    conf = ApplicationConfig(
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker.example.com/graphql")
+        ),
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
+    )
+    interface.set_config(conf)
+    headers = {"foo": "bar"}
+
+    interface.begin_task(task=WorkerTask(task_id=None), pass_through_headers=headers)
+    interface._update_scan_num({"instrument_session": "cm12345-1", "instrument": "p46"})
+    mock_post.assert_called_once()
+    assert mock_post.call_args.kwargs["headers"] == headers
+
+    interface.begin_task(task=WorkerTask(task_id=None))
+    interface._update_scan_num({"instrument_session": "cm12345-1", "instrument": "p46"})
+    assert mock_post.call_count == 2
+    assert mock_post.call_args.kwargs["headers"] == {}
+
+
 def test_configure_numtracker_with_no_numtracker_config_fails():
     conf = ApplicationConfig(
         env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),

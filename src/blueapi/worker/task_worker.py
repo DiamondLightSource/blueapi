@@ -377,7 +377,7 @@ class TaskWorker:
         """
         LOGGER.info("Worker starting")
         self._ctx.run_engine.state_hook = self._on_state_change  # type: ignore
-        self._ctx.run_engine.subscribe(self._on_document)
+        subs = self._ctx.run_engine.subscribe(self._on_document)
         if self._broadcast_statuses:
             self._ctx.run_engine.waiting_hook = self._waiting_hook  # type: ignore
 
@@ -388,6 +388,7 @@ class TaskWorker:
         self._started.clear()
         self._stopping.clear()
         self._stopped.set()
+        self._ctx.run_engine.unsubscribe(subs)
 
     @start_as_current_span(TRACER, "defer")
     def pause(self, defer=False):

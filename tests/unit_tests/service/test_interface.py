@@ -443,37 +443,18 @@ def test_headers_are_cleared(mock_post):
     headers = {"foo": "bar"}
 
     interface.begin_task(task=WorkerTask(task_id=None), pass_through_headers=headers)
-    interface._update_scan_num({"instrument_session": "cm12345-1", "instrument": "p46"})
+    interface.context().run_engine.scan_id_source(
+        {"instrument_session": "cm12345-1", "instrument": "p46"}
+    )
     mock_post.assert_called_once()
     assert mock_post.call_args.kwargs["headers"] == headers
 
     interface.begin_task(task=WorkerTask(task_id=None))
-    interface._update_scan_num({"instrument_session": "cm12345-1", "instrument": "p46"})
+    interface.context().run_engine.scan_id_source(
+        {"instrument_session": "cm12345-1", "instrument": "p46"}
+    )
     assert mock_post.call_count == 2
     assert mock_post.call_args.kwargs["headers"] == {}
-
-
-def test_configure_numtracker_with_no_numtracker_config_fails():
-    conf = ApplicationConfig(
-        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
-    )
-    interface.set_config(conf)
-    headers = {"a": "b"}
-    interface._try_configure_numtracker(headers)
-    nt = interface.numtracker_client()
-
-    assert nt is None
-
-
-def test_configure_numtracker_with_no_metadata_fails():
-    conf = ApplicationConfig(numtracker=NumtrackerConfig())
-    interface.set_config(conf)
-    headers = {"a": "b"}
-
-    assert conf.env.metadata is None
-
-    with pytest.raises(InvalidConfigError):
-        interface._try_configure_numtracker(headers)
 
 
 def test_numtracker_requires_instrument_metadata():

@@ -349,8 +349,6 @@ def test_get_oidc_config(oidc_config: OIDCConfig):
     interface.set_config(ApplicationConfig(oidc=oidc_config))
     assert interface.get_oidc_config() == oidc_config
 
-    interface.teardown()
-
 
 def test_stomp_config(mock_stomp_client: StompClient):
     with patch(
@@ -415,8 +413,6 @@ def test_configure_numtracker():
     assert nt._headers == {"a": "b"}
     assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
-    interface.teardown()
-
 
 @patch("blueapi.client.numtracker.requests.post")
 def test_headers_are_cleared(mock_post):
@@ -468,8 +464,6 @@ def test_configure_numtracker_with_no_numtracker_config_fails():
 
     assert nt is None
 
-    interface.teardown()
-
 
 def test_configure_numtracker_with_no_metadata_fails():
     conf = ApplicationConfig(numtracker=NumtrackerConfig())
@@ -480,8 +474,6 @@ def test_configure_numtracker_with_no_metadata_fails():
 
     with pytest.raises(InvalidConfigError):
         interface._try_configure_numtracker(headers)
-
-    interface.teardown()
 
 
 def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
@@ -494,7 +486,6 @@ def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_prov
     assert get_path_provider() == mock_provider
 
     clear_path_provider()
-    interface.teardown()
 
 
 def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
@@ -503,8 +494,6 @@ def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
 
     with pytest.raises(NameError):
         get_path_provider()
-
-    interface.teardown()
 
 
 def test_setup_with_numtracker_makes_start_document_provider():
@@ -520,7 +509,6 @@ def test_setup_with_numtracker_makes_start_document_provider():
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 
     clear_path_provider()
-    interface.teardown()
 
 
 def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
@@ -545,7 +533,6 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
         interface.setup(conf)
 
     clear_path_provider()
-    interface.teardown()
 
 
 @patch("blueapi.client.numtracker.NumtrackerClient.create_scan")
@@ -567,8 +554,6 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
 
     mock_create_scan.assert_called_once_with("ab123", "p46")
 
-    interface.teardown()
-
 
 def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     mock_numtracker_server,
@@ -589,8 +574,6 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
         ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"
     )
 
-    interface.teardown()
-
 
 def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
     mock_numtracker_server,
@@ -608,5 +591,3 @@ def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
     interface._update_scan_num(ctx.run_engine.md)
 
     assert ctx.run_engine.md["scan_file"] == "p46-11"
-
-    interface.teardown()

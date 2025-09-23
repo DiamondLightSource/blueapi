@@ -167,7 +167,7 @@
             "additionalProperties": false,
             "properties": {
                 "url": {
-                    "default": "http://localhost:8002/graphql",
+                    "default": "http://localhost:8406/graphql",
                     "format": "uri",
                     "maxLength": 2083,
                     "minLength": 1,
@@ -359,6 +359,32 @@
             "title": "StompConfig",
             "type": "object"
         },
+        "TiledConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "default": false,
+                    "description": "True if blueapi should forward data to a Tiled instance",
+                    "title": "Enabled",
+                    "type": "boolean"
+                },
+                "url": {
+                    "default": "http://localhost:8407/",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1,
+                    "title": "Url",
+                    "type": "string"
+                },
+                "api_key": {
+                    "default": null,
+                    "title": "Api Key",
+                    "type": "string"
+                }
+            },
+            "title": "TiledConfig",
+            "type": "object"
+        },
         "WorkerEventConfig": {
             "additionalProperties": false,
             "description": "Config for event broadcasting via the message bus",
@@ -378,6 +404,9 @@
     "properties": {
         "stomp": {
             "$ref": "#/$defs/StompConfig"
+        },
+        "tiled": {
+            "$ref": "#/$defs/TiledConfig"
         },
         "env": {
             "$ref": "#/$defs/EnvironmentConfig"

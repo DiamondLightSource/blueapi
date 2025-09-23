@@ -482,6 +482,9 @@
                 },
                 "stomp": {
                     "$ref": "#/$defs/StompConfig"
+                },
+                "tiled": {
+                    "$ref": "#/$defs/TiledConfig"
                 }
             },
             "additionalProperties": false,
@@ -653,7 +656,7 @@
                     "properties": {
                         "url": {
                             "title": "Url",
-                            "default": "http://localhost:8002/graphql",
+                            "default": "http://localhost:8406/graphql",
                             "type": "string",
                             "maxLength": 2083,
                             "minLength": 1
@@ -830,6 +833,30 @@
                             "title": "Url",
                             "default": "tcp://localhost:61613",
                             "type": "string",
+                            "minLength": 1
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "TiledConfig": {
+                    "title": "TiledConfig",
+                    "type": "object",
+                    "properties": {
+                        "api_key": {
+                            "title": "Api Key",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "title": "Enabled",
+                            "description": "True if blueapi should forward data to a Tiled instance",
+                            "default": false,
+                            "type": "boolean"
+                        },
+                        "url": {
+                            "title": "Url",
+                            "default": "http://localhost:8407/",
+                            "type": "string",
+                            "maxLength": 2083,
                             "minLength": 1
                         }
                     },

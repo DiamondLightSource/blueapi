@@ -92,6 +92,11 @@ components:
           description: Client ID
           title: Client Id
           type: string
+        logout_redirect_endpoint:
+          default: ''
+          description: The oidc endpoint required to logout
+          title: Logout Redirect Endpoint
+          type: string
         well_known_url:
           description: URL to fetch OIDC config from the provider
           title: Well Known Url
@@ -219,6 +224,28 @@ components:
       - new_state
       title: StateChangeRequest
       type: object
+    Task:
+      additionalProperties: false
+      description: Task that will run a plan
+      properties:
+        metadata:
+          additionalProperties: true
+          description: Any metadata to apply to all runs within this task
+          title: Metadata
+          type: object
+        name:
+          description: Name of plan to run
+          title: Name
+          type: string
+        params:
+          additionalProperties: true
+          description: Values for parameters to plan, if any
+          title: Params
+          type: object
+      required:
+      - name
+      title: Task
+      type: object
     TaskRequest:
       additionalProperties: false
       description: Request to run a task with related info
@@ -288,7 +315,7 @@ components:
           title: Request Id
           type: string
         task:
-          title: Task
+          $ref: '#/components/schemas/Task'
         task_id:
           title: Task Id
           type: string
@@ -350,7 +377,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.0.2
+  version: 1.1.1
 openapi: 3.1.0
 paths:
   /config/oidc:

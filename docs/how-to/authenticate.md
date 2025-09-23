@@ -1,4 +1,8 @@
-# Authenticate to BlueAPI
+> [!NOTE]
+> If you are using `oauth2-proxy` to secure the Swagger UI documentation page, you can log out by visiting the `/logout` URL. For this to work correctly, ensure that the blueapi server is configured with 
+> `oidc.logout_redirect_endpoint` set to `/oauth2/sign_out`, which is required for `oauth2-proxy`.
+
+# Authenticate to BlueAPI-Cli
 
 ## Introduction
 BlueAPI provides a secure and efficient way to interact with its services. This guide walks you through the steps to log in and log out using BlueAPI with OpenID Connect (OIDC) authentication.
@@ -10,12 +14,8 @@ BlueAPI provides a secure and efficient way to interact with its services. This 
 :::
 
 Here is an example configuration for authenticating to p46-blueapi:
-
-```yaml
-api:
-  url: "https://p46-blueapi.diamond.ac.uk"
-
-auth_token_path: "~/.cache/blueapi_cache"  # Optional: Custom path to store the token
+```{literalinclude} ../../tests/unit_tests/valid_example_config/client_auth.yaml
+:language: yaml
 ```
 
 - **auth_token_path**: (Optional) Specify where to save the token. If omitted, the default is `~/.cache/blueapi_cache` or `$XDG_CACHE_HOME/blueapi_cache` if `XDG_CACHE_HOME` is set.

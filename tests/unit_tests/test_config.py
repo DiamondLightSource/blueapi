@@ -13,7 +13,12 @@ import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import BaseModel, Field
 
-from blueapi.config import ApplicationConfig, ConfigLoader, OIDCConfig
+from blueapi.config import (
+    CONFIG_SCHEMA_LOCATION,
+    ApplicationConfig,
+    ConfigLoader,
+    OIDCConfig,
+)
 from blueapi.utils import InvalidConfigError
 
 
@@ -312,6 +317,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
+                "logout_redirect_endpoint": "",
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
@@ -363,6 +369,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
+                "logout_redirect_endpoint": "",
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
@@ -507,3 +514,17 @@ def validate_field_annotations(model_class: Any, model_field: str) -> None:
             check_no_extra_fields(annotation)
     else:
         check_no_extra_fields(extracted_annotations)
+
+
+@pytest.mark.skipif(
+    not CONFIG_SCHEMA_LOCATION.exists(),
+    reason="If the schema file does not exist, the test is being run"
+    " with a non-editable install",
+)
+def test_config_schema_updated() -> None:
+    with CONFIG_SCHEMA_LOCATION.open("r") as stream:
+        config_schema = json.load(stream)
+    assert config_schema == ApplicationConfig.model_json_schema(), (
+        f"ApplicationConfig model is out of date with schema at \
+            {CONFIG_SCHEMA_LOCATION}. You may need to run `blueapi config-schema -u`"
+    )

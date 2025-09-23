@@ -10,16 +10,8 @@ BlueAPI can use persistent volumes as a scratch area. This allows the user to re
 
 The relevant configuration is below:
 
-```yaml
-# -- Configure the initContainer that checks out the scratch configuration repositories
-initContainer:
-  enabled: false
-  persistentVolume:
-    # -- Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem
-    # If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container
-    enabled: false
-    # -- May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release
-    existingClaimName: ""
+```{literalinclude} ../../tests/unit_tests/helm_examples/scratch-pv.yaml
+:language: yaml
 ```
 
 With both `initContainer.enabled` and `initContainer.persistentVolume.enabled` to `true`, BlueAPI will create or attempt to bind to an existing Persistent Volume Claim, which when fulfilled will be used as a scratch area.

@@ -17,6 +17,9 @@ jobs:
 
       - name: Install python packages
         uses: ./.github/actions/install_requirements
-
+      
+      - name: Install helm plugins
+        run: helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.2.1
+        
       - name: Run tox
         run: tox -e ${{ inputs.tox }}

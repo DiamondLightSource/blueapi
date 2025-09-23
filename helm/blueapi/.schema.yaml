@@ -1,0 +1,24 @@
+# .schema.yaml
+
+# Define input, output and source for $refs relative to repository root for pre-commit
+values:
+  - helm/blueapi/values.yaml
+
+output: helm/blueapi/values.schema.json
+
+bundleRoot: helm/blueapi/
+
+# Include $refs
+bundle: true
+
+# Include comments for the helm-docs plugin into the schema, to allow e.g. documentation in VSCode
+useHelmDocs: true
+
+# Allow additional properties for eg. initResources, different types of volumes/volumeMounts
+noAdditionalProperties: false
+
+schemaRoot:
+  title: Blueapi Helm chart schema
+  description: Schema to allow validation of values passed to Blueapi Helm chart
+  # No additional properties in schema root for tighter protection:
+  additionalProperties: false

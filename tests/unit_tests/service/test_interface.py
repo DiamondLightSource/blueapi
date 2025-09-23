@@ -234,9 +234,9 @@ def test_begin_task_no_task_id(worker_mock: MagicMock):
 
 @patch("blueapi.service.interface.TaskWorker.get_tasks_by_status")
 def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
-    pending_task1 = TrackableTask(task_id="0", task=None)
-    pending_task2 = TrackableTask(task_id="1", task=None)
-    running_task = TrackableTask(task_id="2", task=None)
+    pending_task1 = TrackableTask(task_id="0", task=Task(name="pending_task1"))
+    pending_task2 = TrackableTask(task_id="1", task=Task(name="pending_task2"))
+    running_task = TrackableTask(task_id="2", task=Task(name="running_task"))
 
     def mock_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
         if status == TaskStatusEnum.PENDING:
@@ -307,9 +307,9 @@ def test_cancel_active_task(cancel_active_task_mock: MagicMock):
 @patch("blueapi.service.interface.TaskWorker.get_tasks")
 def test_get_tasks(get_tasks_mock: MagicMock):
     tasks = [
-        TrackableTask(task_id="0", task=None),
-        TrackableTask(task_id="1", task=None),
-        TrackableTask(task_id="2", task=None),
+        TrackableTask(task_id="0", task=Task(name="0")),
+        TrackableTask(task_id="1", task=Task(name="1")),
+        TrackableTask(task_id="2", task=Task(name="2")),
     ]
     get_tasks_mock.return_value = tasks
 
@@ -348,8 +348,6 @@ def test_get_task_by_id(context_mock: MagicMock):
 def test_get_oidc_config(oidc_config: OIDCConfig):
     interface.set_config(ApplicationConfig(oidc=oidc_config))
     assert interface.get_oidc_config() == oidc_config
-
-    interface.teardown()
 
 
 def test_stomp_config(mock_stomp_client: StompClient):
@@ -415,7 +413,44 @@ def test_configure_numtracker():
     assert nt._headers == {"a": "b"}
     assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
-    interface.teardown()
+
+@patch("blueapi.client.numtracker.requests.post")
+def test_headers_are_cleared(mock_post):
+    mock_response = Mock()
+    mock_post.return_value = mock_response
+    mock_response.raise_for_status.side_effect = None
+    mock_response.json.return_value = {
+        "data": {
+            "scan": {
+                "scanNumber": 42,
+                "directory": {
+                    "path": "/tmp",
+                    "instrument": "p46",
+                    "instrument_session": "cm12345-1",
+                },
+                "scanFile": "p46-42",
+            }
+        }
+    }
+
+    conf = ApplicationConfig(
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker.example.com/graphql")
+        ),
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
+    )
+    interface.set_config(conf)
+    headers = {"foo": "bar"}
+
+    interface.begin_task(task=WorkerTask(task_id=None), pass_through_headers=headers)
+    interface._update_scan_num({"instrument_session": "cm12345-1", "instrument": "p46"})
+    mock_post.assert_called_once()
+    assert mock_post.call_args.kwargs["headers"] == headers
+
+    interface.begin_task(task=WorkerTask(task_id=None))
+    interface._update_scan_num({"instrument_session": "cm12345-1", "instrument": "p46"})
+    assert mock_post.call_count == 2
+    assert mock_post.call_args.kwargs["headers"] == {}
 
 
 def test_configure_numtracker_with_no_numtracker_config_fails():
@@ -429,8 +464,6 @@ def test_configure_numtracker_with_no_numtracker_config_fails():
 
     assert nt is None
 
-    interface.teardown()
-
 
 def test_configure_numtracker_with_no_metadata_fails():
     conf = ApplicationConfig(numtracker=NumtrackerConfig())
@@ -441,8 +474,6 @@ def test_configure_numtracker_with_no_metadata_fails():
 
     with pytest.raises(InvalidConfigError):
         interface._try_configure_numtracker(headers)
-
-    interface.teardown()
 
 
 def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
@@ -455,7 +486,6 @@ def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_prov
     assert get_path_provider() == mock_provider
 
     clear_path_provider()
-    interface.teardown()
 
 
 def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
@@ -464,8 +494,6 @@ def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
 
     with pytest.raises(NameError):
         get_path_provider()
-
-    interface.teardown()
 
 
 def test_setup_with_numtracker_makes_start_document_provider():
@@ -481,7 +509,6 @@ def test_setup_with_numtracker_makes_start_document_provider():
     assert interface.context().run_engine.scan_id_source == interface._update_scan_num
 
     clear_path_provider()
-    interface.teardown()
 
 
 def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
@@ -506,7 +533,6 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
         interface.setup(conf)
 
     clear_path_provider()
-    interface.teardown()
 
 
 @patch("blueapi.client.numtracker.NumtrackerClient.create_scan")
@@ -528,8 +554,6 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
 
     mock_create_scan.assert_called_once_with("ab123", "p46")
 
-    interface.teardown()
-
 
 def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     mock_numtracker_server,
@@ -550,4 +574,20 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
         ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"
     )
 
-    interface.teardown()
+
+def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
+    mock_numtracker_server,
+):
+    conf = ApplicationConfig(
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql")
+        ),
+    )
+    interface.setup(conf)
+    ctx = interface.context()
+
+    ctx.run_engine.md["instrument_session"] = "ab123"
+    interface._update_scan_num(ctx.run_engine.md)
+
+    assert ctx.run_engine.md["scan_file"] == "p46-11"

@@ -1,0 +1,6 @@
+env:
+  sources:
+    - kind: planFunctions
+      module: my_plan_library.tomography.plans
+    - kind: dodal
+      module: dodal.beamlines.i04

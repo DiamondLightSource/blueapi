@@ -12,6 +12,7 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | debug.enabled | bool | `false` | If enabled, disables liveness and readiness probes, and does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster |
 | extraEnvVars | list | `[]` | Additional envVars to mount to the pod |
 | fullnameOverride | string | `""` |  |
+| global | object | `{}` | Not used, but must be present for validation when using as a dependency of another chart |
 | hostNetwork | bool | `false` | May be needed for EPICS depending on gateway configuration |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.repository | string | `"ghcr.io/diamondlightsource/blueapi"` | To use a container image that extends the blueapi one, set it here |
@@ -22,6 +23,7 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | initContainer | object | `{"enabled":false,"persistentVolume":{"enabled":false,"existingClaimName":""}}` | Configure the initContainer that checks out the scratch configuration repositories |
 | initContainer.persistentVolume.enabled | bool | `false` | Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container |
 | initContainer.persistentVolume.existingClaimName | string | `""` | May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release |
+| initResources | object | `{}` | Override resources for init container. By default copies resources of main container. |
 | livenessProbe | object | `{"failureThreshold":3,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively. This is automatically disabled when in debug mode. |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` | May be required to run on specific nodes (e.g. the control machine) |

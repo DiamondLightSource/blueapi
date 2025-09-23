@@ -28,6 +28,10 @@ LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 FORBIDDEN_OWN_REMOTE_URL = "https://github.com/DiamondLightSource/blueapi.git"
 
+CONFIG_SCHEMA_LOCATION = (
+    Path(__file__).parents[2] / "helm" / "blueapi" / "config_schema.json"
+)
+
 
 def _expand_env(loader: yaml.Loader, node: yaml.ScalarNode) -> str:
     value = loader.construct_scalar(node)
@@ -171,6 +175,9 @@ class OIDCConfig(BlueapiBaseModel):
     )
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
+    logout_redirect_endpoint: str = Field(
+        description="The oidc endpoint required to logout", default=""
+    )
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:

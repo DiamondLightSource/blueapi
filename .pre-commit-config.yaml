@@ -1,10 +1,11 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-yaml
-        exclude: ^helm\/.*\/templates\/.*|catalog-info.yaml
+        exclude: ^helm/blueapi/templates/
+        args: [--allow-multiple-documents]
       - id: check-merge-conflict
       - id: end-of-file-fixer
 
@@ -25,9 +26,22 @@ repos:
         require_serial: true
 
   - repo: https://github.com/norwoodj/helm-docs
-    rev:  ""
+    rev: "v1.14.2"
     hooks:
       - id: helm-docs-built
         args:
           # Make the tool search for charts only under the `helm` directory
           - --chart-search-root=helm
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/losisin/helm-values-schema-json
+    rev: v2.2.1
+    hooks:
+      - id: helm-schema
+        args:
+        - "--config"
+        - "helm/blueapi/.schema.yaml"

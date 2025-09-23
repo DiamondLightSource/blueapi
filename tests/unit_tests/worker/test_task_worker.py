@@ -245,6 +245,16 @@ def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
     assert active_task.task == _SIMPLE_TASK
 
 
+@patch("blueapi.worker.task_worker.plan_tag_filter_context")
+@patch("blueapi.worker.task_worker.TaskWorker._submit_trackable_task")
+def test_begin_task_uses_plan_name_filter(
+    submit_trackable_task_mock: Mock, filter_mock: Mock, inert_worker: TaskWorker
+) -> None:
+    task_id = inert_worker.submit_task(_SIMPLE_TASK)
+    inert_worker.begin_task(task_id)
+    filter_mock.assert_called_once()
+
+
 def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_FAILING_TASK)
     events_future: Future[list[WorkerEvent]] = take_events(
@@ -645,3 +655,29 @@ def test_missing_injected_devices_fail_early(
     context.register_plan(missing_injection)
     with pytest.raises(ValueError):
         Task(name="missing_injection").prepare_params(context)
+
+
+@patch("blueapi.worker.task_worker.plan_tag_filter_context")
+def test_worker_uses_plan_tag_filter_context(
+    mock_context: Mock, inert_worker: TaskWorker
+):
+    task = TrackableTask(task_id="0", task=_SIMPLE_TASK)
+    inert_worker._task_channel.put_nowait(task)
+    inert_worker._pending_tasks["0"] = task
+    mock_context.assert_not_called()
+    inert_worker._cycle()
+    mock_context.assert_called_once()
+
+
+@patch("blueapi.worker.task_worker.LOGGER")
+def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker):
+    task = TrackableTask(task_id="0", task=_SIMPLE_TASK)
+    inert_worker._task_channel.put_nowait(task)
+    inert_worker._pending_tasks["0"] = task
+    inert_worker._cycle()
+    assert inert_worker._current_task_otel_context is None
+    # Bad way to tell that this branch ahs been run, but I can't think of a better way
+    # Have to set these values to match output
+    task.is_complete = False
+    task.is_pending = True
+    mock_logger.info.assert_called_with(f"Got new task: {task}")

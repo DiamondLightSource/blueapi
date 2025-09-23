@@ -128,6 +128,7 @@ def _update_scan_num(md: dict[str, Any]) -> int:
     if numtracker is not None:
         scan = numtracker.create_scan(md["instrument_session"], md["instrument"])
         md["data_session_directory"] = str(scan.scan.directory.path)
+        md["scan_file"] = scan.scan.scan_file
         return scan.scan.scan_number
     else:
         raise InvalidConfigError(
@@ -238,8 +239,7 @@ def begin_task(
     task: WorkerTask, pass_through_headers: Mapping[str, str] | None = None
 ) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
-    if pass_through_headers:
-        _try_configure_numtracker(pass_through_headers)
+    _try_configure_numtracker(pass_through_headers or {})
 
     if task.task_id is not None:
         worker().begin_task(task.task_id)

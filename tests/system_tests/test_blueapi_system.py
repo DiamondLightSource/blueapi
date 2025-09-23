@@ -4,6 +4,7 @@ from asyncio import Queue
 from pathlib import Path
 
 import pytest
+import requests
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
@@ -447,6 +448,22 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
     stream_resource = resource.get_nowait()
     assert stream_resource["run_start"] == start_doc["uid"]
     assert stream_resource["uri"] == f"file://localhost/tmp/det-adsim-{scan_id}.h5"
+
+    tiled_url = f"http://localhost:8407/api/v1/metadata/{start_doc['uid']}"
+    response = requests.get(tiled_url)
+    assert response.status_code == 200
+    json = response.json()
+    assert "data" in json
+    assert "attributes" in json["data"]
+    assert "metadata" in json["data"]["attributes"]
+    assert "start" in json["data"]["attributes"]["metadata"]
+    start_metadata = response.json()["data"]["attributes"]["metadata"]["start"]
+    assert "instrument_session" in start_metadata
+    assert start_metadata["instrument_session"] == "cm12345-1"
+    assert "scan_id" in start_metadata
+    assert start_metadata["scan_id"] == scan_id
+    assert "detectors" in start_metadata
+    assert "det" in start_metadata["detectors"]
 
 
 @pytest.mark.parametrize(

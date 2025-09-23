@@ -21,6 +21,7 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -72,6 +73,17 @@ class StompConfig(BlueapiBaseModel):
     auth: BasicAuthentication | None = Field(
         description="Auth information for communicating with STOMP broker, if required",
         default=None,
+    )
+
+
+class TiledConfig(BlueapiBaseModel):
+    enabled: bool = Field(
+        description="True if blueapi should forward data to a Tiled instance",
+        default=False,
+    )
+    url: HttpUrl = HttpUrl("http://localhost:8407")
+    api_key: str | SkipJsonSchema[None] = os.environ.get(
+        "TILED_SINGLE_USER_API_KEY", None
     )
 
 
@@ -211,7 +223,7 @@ class OIDCConfig(BlueapiBaseModel):
 
 
 class NumtrackerConfig(BlueapiBaseModel):
-    url: HttpUrl = HttpUrl("http://localhost:8002/graphql")
+    url: HttpUrl = HttpUrl("http://localhost:8406/graphql")
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -221,6 +233,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     stomp: StompConfig = Field(default_factory=StompConfig)
+    tiled: TiledConfig = Field(default_factory=TiledConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)

@@ -5,14 +5,9 @@ from typing import Any
 from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
-from dodal.common.beamlines.beamline_utils import (
-    get_path_provider,
-    set_path_provider,
-)
 from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
-from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
@@ -25,8 +20,6 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
-from blueapi.utils.invalid_config_error import InvalidConfigError
-from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -50,12 +43,8 @@ def set_config(new_config: ApplicationConfig):
 
 @cache
 def context() -> BlueskyContext:
-    ctx = BlueskyContext()
+    ctx = BlueskyContext(config())
     return ctx
-
-
-def configure_context() -> None:
-    context().with_config(config().env)
 
 
 @cache
@@ -99,21 +88,6 @@ def stomp_client() -> StompClient | None:
 
 
 @cache
-def numtracker_client() -> NumtrackerClient | None:
-    conf = config()
-    if conf.numtracker is not None:
-        if conf.env.metadata is not None:
-            return NumtrackerClient(url=conf.numtracker.url)
-        else:
-            raise InvalidConfigError(
-                "Numtracker url has been configured, but there is no instrument or"
-                " instrument_session in the environment metadata"
-            )
-    else:
-        return None
-
-
-@cache
 def tiled_writer() -> TiledWriter | None:
     tiled_config: TiledConfig = config().tiled
     if tiled_config.enabled:
@@ -123,20 +97,6 @@ def tiled_writer() -> TiledWriter | None:
         return None
 
 
-def _update_scan_num(md: dict[str, Any]) -> int:
-    numtracker = numtracker_client()
-    if numtracker is not None:
-        scan = numtracker.create_scan(md["instrument_session"], md["instrument"])
-        md["data_session_directory"] = str(scan.scan.directory.path)
-        md["scan_file"] = scan.scan.scan_file
-        return scan.scan.scan_number
-    else:
-        raise InvalidConfigError(
-            "Blueapi was configured to talk to numtracker but numtracker is not"
-            "configured, this should not happen, please contact the DAQ team"
-        )
-
-
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
     set_config(config)
@@ -144,32 +104,9 @@ def setup(config: ApplicationConfig) -> None:
 
     # Eagerly initialize worker and messaging connection
     worker()
-
-    # if numtracker is configured, use a StartDocumentPathProvider
-    if numtracker_client() is not None:
-        context().run_engine.scan_id_source = _update_scan_num
-        _hook_run_engine_and_path_provider()
-
-    configure_context()
-
-    if numtracker_client() is not None and not isinstance(
-        get_path_provider(), StartDocumentPathProvider
-    ):
-        raise InvalidConfigError(
-            "Numtracker has been configured but a path provider was imported"
-            " with the devices. Remove this path provider to use numtracker."
-        )
-
     stomp_client()
     if writer := tiled_writer():
         context().run_engine.subscribe(writer)
-
-
-def _hook_run_engine_and_path_provider() -> None:
-    path_provider = StartDocumentPathProvider()
-    set_path_provider(path_provider)
-    run_engine = context().run_engine
-    run_engine.subscribe(path_provider.update_run, "start")
 
 
 def teardown() -> None:
@@ -179,7 +116,6 @@ def teardown() -> None:
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
-    numtracker_client.cache_clear()
     tiled_writer.cache_clear()
 
 
@@ -239,17 +175,11 @@ def begin_task(
     task: WorkerTask, pass_through_headers: Mapping[str, str] | None = None
 ) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
-    _try_configure_numtracker(pass_through_headers or {})
-
+    if nt := context().numtracker:
+        nt.set_headers(pass_through_headers or {})
     if task.task_id is not None:
         worker().begin_task(task.task_id)
     return task
-
-
-def _try_configure_numtracker(pass_through_headers: Mapping[str, str]) -> None:
-    numtracker = numtracker_client()
-    if numtracker is not None:
-        numtracker.set_headers(pass_through_headers)
 
 
 def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:

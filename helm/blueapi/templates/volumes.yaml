@@ -12,3 +12,19 @@ spec:
     requests:
       storage: 1Gi
 {{- end }}
+---
+# PVC for debugging volume
+{{- if .Values.debug.enabled }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "blueapi.fullname" . }}-develop
+  labels:
+    app: {{ include "blueapi.fullname" . }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: "1Gi"
+{{- end }}

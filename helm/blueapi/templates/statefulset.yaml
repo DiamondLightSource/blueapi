@@ -105,6 +105,28 @@ spec:
             mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
           {{- end }}
+      {{- if .Values.debug.enabled }}
+      {{- if not .Values.initContainer.enabled }}
+      initContainers:
+      {{- end}}
+      # add in an init container to copy out virtual environment and workspaces
+      - name: {{ include "blueapi.fullname" . }}-init-debug
+        image: "{{ .Values.image.repository }}-debug:{{ .Values.image.tag }}"
+        imagePullPolicy: IfNotPresent
+        resources:
+          {{- .Values.initResources | default .Values.resources | toYaml | nindent 12 }}
+        {{- with .Values.securityContext }}
+        securityContext:
+          {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with .Values.initCommand }}
+        command:
+          {{- toYaml . | nindent 12 }}
+        {{- end }}
+        volumeMounts:
+          - name: {{ include "blueapi.fullname" . }}-develop
+            mountPath: /dest
+      {{- end }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
@@ -147,7 +169,19 @@ spec:
             - name: venv
               mountPath: /venv
             {{- end }}
-            {{- if or .Values.debug.enabled (and .Values.initContainer.enabled .Values.initContainer.persistentVolume.enabled) }}
+            {{- if or .Values.debug.enabled }}
+            - mountPath: /home
+              name: home
+            - mountPath: /var/run/nslcd
+              name: nslcd
+            - name: {{ include "blueapi.fullname" . }}-develop
+              mountPath: /workspaces
+              subPath: workspaces
+            - name: {{ include "blueapi.fullname" . }}-develop
+              mountPath: /venv
+              subPath: venv
+            {{- end }}
+            {{- if and .Values.initContainer.enabled .Values.initContainer.persistentVolume.enabled }}
             - mountPath: /home
               name: home
             - mountPath: /var/run/nslcd

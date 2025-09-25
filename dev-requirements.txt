@@ -15,7 +15,7 @@ bidict==0.23.1
 bluesky==1.14.2
 bluesky-stomp==0.1.7
 certifi==2025.7.14
-cffi==1.17.1
+cffi==2.0.0
 cfgv==3.4.0
 charset-normalizer==3.4.2
 click==8.2.1

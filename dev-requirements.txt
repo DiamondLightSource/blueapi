@@ -160,7 +160,7 @@ rpds-py==0.26.0
 ruamel.yaml==0.18.14
 ruamel.yaml.clib==0.2.12
 ruff==0.12.7
-scanspec==1.0a1
+scanspec==0.8
 semver==3.0.4
 sentry-sdk==2.34.1
 setuptools_dso==2.12.2

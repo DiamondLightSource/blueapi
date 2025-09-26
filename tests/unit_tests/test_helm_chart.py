@@ -577,10 +577,10 @@ def test_init_container_venv_volume_mount(
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
 def test_persistent_volume_claim_exists(
-    initContainer_enabled,
-    persistentVolume_enabled,
-    existingClaimName,
-    debug_enabled,
+    initContainer_enabled: bool,
+    persistentVolume_enabled: bool,
+    existingClaimName: str | None,
+    debug_enabled: bool,
 ):
     manifests = render_persistent_volume_chart(
         initContainer_enabled,
@@ -589,7 +589,7 @@ def test_persistent_volume_claim_exists(
         debug_enabled,
     )
 
-    persistent_volume_claim = {
+    scratch_claim = {
         "scratch-0.1.0": {
             "apiVersion": "v1",
             "kind": "PersistentVolumeClaim",
@@ -603,9 +603,26 @@ def test_persistent_volume_claim_exists(
             },
         }
     }
+    debug_claim = {
+        "blueapi-develop": {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {"labels": {"app": "blueapi"}, "name": "blueapi-develop"},
+            "spec": {
+                "accessModes": ["ReadWriteMany"],
+                "resources": {"requests": {"storage": "1Gi"}},
+            },
+        }
+    }
 
-    if persistentVolume_enabled and not existingClaimName:
-        assert persistent_volume_claim == manifests["PersistentVolumeClaim"]
+    is_existing_claim = existingClaimName is not None
+
+    if (persistentVolume_enabled and not is_existing_claim) and not debug_enabled:
+        assert scratch_claim == manifests["PersistentVolumeClaim"]
+    elif not (persistentVolume_enabled and not is_existing_claim) and debug_enabled:
+        assert debug_claim == manifests["PersistentVolumeClaim"]
+    elif persistentVolume_enabled and not is_existing_claim and debug_enabled:
+        assert {**scratch_claim, **debug_claim} == manifests["PersistentVolumeClaim"]
     else:
         assert "PersistentVolumeClaim" not in manifests
 
@@ -750,12 +767,12 @@ def test_main_container_venv_volume_mount(
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
 def test_main_container_home_and_nslcd_volume_mounts(
-    initContainer_enabled,
-    persistentVolume_enabled,
-    existingClaimName,
-    debug_enabled,
-    home_volume_mount,
-    nslcd_volume_mount,
+    initContainer_enabled: bool,
+    persistentVolume_enabled: bool,
+    existingClaimName: str | None,
+    debug_enabled: bool,
+    home_volume_mount: dict,
+    nslcd_volume_mount: dict,
 ):
     manifests = render_persistent_volume_chart(
         initContainer_enabled,
@@ -815,8 +832,8 @@ def test_main_container_args(
 @pytest.mark.parametrize("existingClaimName", [None, "foo"])
 @pytest.mark.parametrize("debug_enabled", [True, False])
 def test_scratch_volume_uses_correct_claimName(
-    existingClaimName,
-    debug_enabled,
+    existingClaimName: str | None,
+    debug_enabled: bool,
 ):
     manifests = render_persistent_volume_chart(
         True,
@@ -831,7 +848,6 @@ def test_scratch_volume_uses_correct_claimName(
 
     if existingClaimName:
         assert claim_name == existingClaimName
-        assert "PersistentVolumeClaim" not in manifests
     else:
         assert claim_name == "scratch-0.1.0"
         assert claim_name in manifests["PersistentVolumeClaim"]

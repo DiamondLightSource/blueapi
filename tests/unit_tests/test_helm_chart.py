@@ -842,15 +842,46 @@ def test_scratch_volume_uses_correct_claimName(
         debug_enabled,
     )
 
-    claim_name = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
-        "volumes"
-    ][3]["persistentVolumeClaim"]["claimName"]
+    volumes = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]["volumes"]
+    claim_names = [
+        volume["persistentVolumeClaim"]["claimName"]
+        for volume in volumes
+        if "persistentVolumeClaim" in volume
+    ]
 
     if existingClaimName:
-        assert claim_name == existingClaimName
+        assert existingClaimName in claim_names
     else:
-        assert claim_name == "scratch-0.1.0"
-        assert claim_name in manifests["PersistentVolumeClaim"]
+        assert "scratch-0.1.0" in claim_names
+
+
+@pytest.mark.parametrize("initContainer_enabled", [True, False])
+@pytest.mark.parametrize("persistentVolume_enabled", [True, False])
+@pytest.mark.parametrize("existingClaimName", [None, "foo"])
+@pytest.mark.parametrize("debug_enabled", [True, False])
+def test_debug_volume_exists(
+    initContainer_enabled: bool,
+    persistentVolume_enabled: bool,
+    existingClaimName: str | None,
+    debug_enabled: bool,
+):
+    manifests = render_persistent_volume_chart(
+        initContainer_enabled,
+        persistentVolume_enabled,
+        existingClaimName,
+        debug_enabled,
+    )
+
+    expected_volume = {
+        "name": "blueapi-develop",
+        "persistentVolumeClaim": {"claimName": "blueapi-develop"},
+    }
+
+    volumes = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"]["volumes"]
+    if debug_enabled:
+        assert expected_volume in volumes
+    else:
+        assert expected_volume not in volumes
 
 
 @pytest.fixture

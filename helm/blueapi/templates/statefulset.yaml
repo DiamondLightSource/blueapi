@@ -45,6 +45,11 @@ spec:
           sources:
           - configMap:
               name: {{ include "blueapi.fullname" . }}-config
+      {{- if .Values.debug.enabled }}
+      - name: {{ include "blueapi.fullname" . }}-develop
+        persistentVolumeClaim:
+          claimName: {{ include "blueapi.fullname" . }}-develop
+      {{- end }}
       {{- with .Values.volumes }}
         {{- toYaml . | nindent 6 }}
       {{- end }}

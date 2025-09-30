@@ -116,7 +116,7 @@ spec:
       {{- if .Values.debug.enabled }}
       # add in an init container to copy out virtual environment and workspaces
       - name: {{ include "blueapi.fullname" . }}-init-debug
-        image: "{{ .Values.image.repository }}-debug:{{ .Values.image.tag }}"
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}-debug"
         imagePullPolicy: IfNotPresent
         resources:
           {{- .Values.initResources | default .Values.resources | toYaml | nindent 12 }}

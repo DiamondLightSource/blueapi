@@ -165,6 +165,23 @@ def test_init_container_spec_generated():
     assert len(init_containers) == 1
 
 
+def test_init_container_spec_generated_in_debug_mode_even_if_disabled():
+    manifests = render_chart(
+        values={
+            "initContainer": {
+                "enabled": False,
+            },
+            "debug": {
+                "enabled": True,
+            },
+        },
+    )
+    init_containers = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
+        "initContainers"
+    ]
+    assert len(init_containers) == 1
+
+
 def test_init_container_spec_disablable():
     manifests = render_chart(
         values={

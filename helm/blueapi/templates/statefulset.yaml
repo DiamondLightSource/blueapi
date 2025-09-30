@@ -81,8 +81,10 @@ spec:
         emptyDir:
           sizeLimit: 5Mi
       {{- end }}
-      {{- if .Values.initContainer.enabled }}
+      {{- if or .Values.initContainer.enabled .Values.debug.enabled }}
       initContainers:
+      {{- end}}
+      {{- if .Values.initContainer.enabled }}
       - name: setup-scratch
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary "-debug" "" .Values.debug.enabled }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -110,10 +112,8 @@ spec:
             mountPath: {{ .Values.worker.scratch.root }}
             mountPropagation: HostToContainer
           {{- end }}
+      {{- end }}
       {{- if .Values.debug.enabled }}
-      {{- if not .Values.initContainer.enabled }}
-      initContainers:
-      {{- end}}
       # add in an init container to copy out virtual environment and workspaces
       - name: {{ include "blueapi.fullname" . }}-init-debug
         image: "{{ .Values.image.repository }}-debug:{{ .Values.image.tag }}"
@@ -131,7 +131,6 @@ spec:
         volumeMounts:
           - name: {{ include "blueapi.fullname" . }}-develop
             mountPath: /dest
-      {{- end }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}

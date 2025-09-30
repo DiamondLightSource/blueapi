@@ -124,10 +124,22 @@ spec:
         securityContext:
           {{- toYaml . | nindent 12 }}
         {{- end }}
-        {{- with .Values.initCommand }}
         command:
-          {{- toYaml . | nindent 12 }}
-        {{- end }}
+          - /bin/bash
+          - -c
+          - |
+            echo "Running as account"; id
+            if [ -d /dest/venv ]; then
+              echo "Virtual environment already exists, skipping copy"
+            else
+              echo "Copying virtual env to the debugging volume"
+              cp -r /venv /dest/venv
+              echo "Copying workspaces to the debugging volume"
+              cp -r /workspaces /dest/workspaces
+              echo "Setting permissions on the debugging volume"
+              chmod -R o+rwX /dest/venv /dest/workspaces
+            fi
+            echo "Init container completed successfully"
         volumeMounts:
           - name: {{ include "blueapi.fullname" . }}-develop
             mountPath: /dest

@@ -94,7 +94,6 @@ resources:
   requests:
     cpu: 200m
     memory: 400Mi
-  
 
 # -- Override resources for init container. By default copies resources of main container.
 initResources: {}
@@ -129,8 +128,6 @@ startupProbe:
   failureThreshold: 5
   periodSeconds: 10
 
-
-
 # -- Additional volumes on the output StatefulSet definition.
 # Define volumes from e.g. Secrets, ConfigMaps or the Filesystem
 volumes: []
@@ -138,9 +135,9 @@ volumes: []
 # -- Additional volumeMounts on the output StatefulSet definition.
 # Define how volumes are mounted to the container referenced by using the same name.
 volumeMounts:
-- name: worker-config
-  mountPath: "/config"
-  readOnly: true
+  - name: worker-config
+    mountPath: "/config"
+    readOnly: true
 
 # -- May be required to run on specific nodes (e.g. the control machine)
 nodeSelector: {}
@@ -152,7 +149,7 @@ affinity: {}
 # blueapi specific fields
 
 # -- May be needed for EPICS depending on gateway configuration
-hostNetwork: false 
+hostNetwork: false
 
 # -- If enabled the blueapi pod will restart on changes to `worker`
 restartOnConfigChange: true
@@ -191,7 +188,7 @@ worker:
       - kind: planFunctions
         module: dodal.plan_stubs.wrapped
   # -- Message bus configuration for returning status to GDA/forwarding documents downstream
-  # Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret 
+  # Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret
   stomp:
     enabled: false
     auth:
@@ -226,6 +223,8 @@ debug:
   # -- If enabled, disables liveness and readiness probes, and does not start the service on startup
   # This allows connecting to the pod and starting the service manually to allow debugging on the cluster
   enabled: false
+  volume:
+    size: 2Gi
 
 # -- Not used, but must be present for validation when using as a dependency of another chart
 global: {}

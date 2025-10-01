@@ -14,6 +14,14 @@
                 "enabled": {
                     "description": "If enabled, disables liveness and readiness probes, and does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster",
                     "type": "boolean"
+                },
+                "volume": {
+                    "type": "object",
+                    "properties": {
+                        "size": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },

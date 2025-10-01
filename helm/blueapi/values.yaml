@@ -96,7 +96,6 @@ resources:
   requests:
     cpu: 200m
     memory: 400Mi
-  
 
 # -- Override resources for init container. By default copies resources of main container.
 initResources: {}
@@ -226,6 +225,8 @@ debug:
   # -- If enabled, disables liveness and readiness probes, and does not start the service on startup
   # This allows connecting to the pod and starting the service manually to allow debugging on the cluster
   enabled: false
+  volume:
+    size: 2Gi
 
 # -- Not used, but must be present for validation when using as a dependency of another chart
 global: {}

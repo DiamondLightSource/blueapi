@@ -10,6 +10,7 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 |-----|------|---------|-------------|
 | affinity | object | `{}` | May be required to run on specific nodes (e.g. the control machine) |
 | debug.enabled | bool | `false` | If enabled, disables liveness and readiness probes, and does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster |
+| debug.volume.size | string | `"2Gi"` |  |
 | extraEnvVars | list | `[]` | Additional envVars to mount to the pod |
 | fullnameOverride | string | `""` |  |
 | global | object | `{}` | Not used, but must be present for validation when using as a dependency of another chart |

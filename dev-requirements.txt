@@ -141,7 +141,7 @@ pyparsing==3.2.3
 pyright==1.1.403
 pytest==8.4.1
 pytest-asyncio==1.1.0
-pytest-cov==6.2.1
+pytest-cov==7.0.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
 python-multipart==0.0.20

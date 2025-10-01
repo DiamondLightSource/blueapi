@@ -18,7 +18,7 @@ blosc2==3.6.1
 bluesky==1.14.2
 bluesky-stomp==0.1.7
 certifi==2025.7.14
-cffi==1.17.1
+cffi==2.0.0
 cfgv==3.4.0
 charset-normalizer==3.4.2
 click==8.2.1
@@ -29,7 +29,7 @@ compress-pickle==2.1.0
 contourpy==1.3.3
 copier==9.9.1
 coverage==7.10.1
-cryptography==45.0.5
+cryptography==46.0.2
 cycler==0.12.1
 dask==2025.7.0
 dataclasses-json==0.6.7
@@ -179,7 +179,7 @@ rpds-py==0.26.0
 ruamel.yaml==0.18.14
 ruamel.yaml.clib==0.2.12
 ruff==0.12.7
-scanspec==1.0a1
+scanspec==0.8
 semver==3.0.4
 sentry-sdk==2.34.1
 setuptools_dso==2.12.2
@@ -191,7 +191,7 @@ snowballstemmer==3.0.1
 soupsieve==2.7
 sparse==0.17.0
 Sphinx==8.2.3
-sphinx-autobuild==2024.10.3
+sphinx-autobuild==2025.8.25
 sphinx-click==6.0.0
 sphinx-copybutton==0.5.2
 sphinx_design==0.6.1

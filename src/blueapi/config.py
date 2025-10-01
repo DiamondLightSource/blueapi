@@ -21,7 +21,6 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
-from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -82,9 +81,7 @@ class TiledConfig(BlueapiBaseModel):
         default=False,
     )
     url: HttpUrl = HttpUrl("http://localhost:8407")
-    api_key: str | SkipJsonSchema[None] = os.environ.get(
-        "TILED_SINGLE_USER_API_KEY", None
-    )
+    api_key: str | None = os.environ.get("TILED_SINGLE_USER_API_KEY", None)
 
 
 class WorkerEventConfig(BlueapiBaseModel):

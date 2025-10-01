@@ -377,9 +377,16 @@
                     "type": "string"
                 },
                 "api_key": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
                     "default": null,
-                    "title": "Api Key",
-                    "type": "string"
+                    "title": "Api Key"
                 }
             },
             "title": "TiledConfig",

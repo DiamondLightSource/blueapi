@@ -844,7 +844,14 @@
                     "properties": {
                         "api_key": {
                             "title": "Api Key",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "enabled": {
                             "title": "Enabled",

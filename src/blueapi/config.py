@@ -75,6 +75,15 @@ class StompConfig(BlueapiBaseModel):
     )
 
 
+class TiledConfig(BlueapiBaseModel):
+    enabled: bool = Field(
+        description="True if blueapi should forward data to a Tiled instance",
+        default=False,
+    )
+    url: HttpUrl = HttpUrl("http://localhost:8407")
+    api_key: str | None = os.environ.get("TILED_SINGLE_USER_API_KEY", None)
+
+
 class WorkerEventConfig(BlueapiBaseModel):
     """
     Config for event broadcasting via the message bus
@@ -211,7 +220,7 @@ class OIDCConfig(BlueapiBaseModel):
 
 
 class NumtrackerConfig(BlueapiBaseModel):
-    url: HttpUrl = HttpUrl("http://localhost:8002/graphql")
+    url: HttpUrl = HttpUrl("http://localhost:8406/graphql")
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -221,6 +230,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     stomp: StompConfig = Field(default_factory=StompConfig)
+    tiled: TiledConfig = Field(default_factory=TiledConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)

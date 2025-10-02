@@ -2,11 +2,13 @@ from collections.abc import Mapping
 from functools import cache
 from typing import Any
 
+from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
@@ -85,6 +87,16 @@ def stomp_client() -> StompClient | None:
         return None
 
 
+@cache
+def tiled_writer() -> TiledWriter | None:
+    tiled_config: TiledConfig = config().tiled
+    if tiled_config.enabled:
+        client = from_uri(str(tiled_config.url), api_key=tiled_config.api_key)
+        return TiledWriter(client, batch_size=1)
+    else:
+        return None
+
+
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
     set_config(config)
@@ -93,6 +105,8 @@ def setup(config: ApplicationConfig) -> None:
     # Eagerly initialize worker and messaging connection
     worker()
     stomp_client()
+    if writer := tiled_writer():
+        context().run_engine.subscribe(writer)
 
 
 def teardown() -> None:
@@ -102,6 +116,7 @@ def teardown() -> None:
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
+    tiled_writer.cache_clear()
 
 
 def _publish_event_streams(

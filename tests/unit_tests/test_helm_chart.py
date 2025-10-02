@@ -627,7 +627,7 @@ def test_persistent_volume_claim_exists(
             "metadata": {"labels": {"app": "blueapi"}, "name": "blueapi-develop"},
             "spec": {
                 "accessModes": ["ReadWriteMany"],
-                "resources": {"requests": {"storage": "1Gi"}},
+                "resources": {"requests": {"storage": "2Gi"}},
             },
         }
     }

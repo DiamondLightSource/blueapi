@@ -3,7 +3,7 @@
 FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:noble AS developer
 
 # Add any system dependencies for the developer/build environment here
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
     graphviz \
     && apt-get dist-clean
 
@@ -23,6 +23,9 @@ FROM developer AS build
 WORKDIR /app
 COPY . /app
 RUN chmod o+wrX .
+
+# Tell uv sync to install python in a known location so we can copy it out later
+ENV UV_PYTHON_INSTALL_DIR=/python
 
 # Sync the project without its dev dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -44,6 +47,7 @@ RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 # Make editable and debuggable
 RUN uv pip install debugpy
 RUN uv pip install -e .
+ENV PATH=/app/.venv/bin:$PATH
 
 # Alternate entrypoint to allow devcontainer to attach
 ENTRYPOINT [ "/bin/bash", "-c", "--" ]
@@ -54,7 +58,7 @@ CMD [ "while true; do sleep 30; done;" ]
 FROM ubuntu:noble AS runtime
 
 # Add apt-get system dependecies for runtime here if needed
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime
     git \
     && rm -rf /var/lib/apt/lists/*
@@ -71,6 +75,9 @@ RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 # https://matplotlib.org/stable/install/environment_variables_faq.html#envvar-MPLCONFIGDIR
 
 ENV MPLCONFIGDIR=/tmp/matplotlib
+
+# Copy the python installation from the build stage
+COPY --from=build /python /python
 
 # Copy the environment, but not the source code
 COPY --from=build /app/.venv /app/.venv

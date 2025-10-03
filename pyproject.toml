@@ -112,7 +112,7 @@ source = ["src", "**/site-packages/"]
 [tool.tox]
 skipsdist = true
 # envs to runs automatically with tox -p
-env_list = ["pre-commit", "type-checking", "tests", "docs"]
+env_list = ["pre-commit", "type-checking", "tests", "system-test", "docs"]
 
 [tool.tox.env_run_base]
 # Pass all environment variables to the test environments
@@ -126,8 +126,7 @@ commands = [
         "run",
         "--all-files",
         "--show-diff-on-failure",
-        { replace = "posargs", default = [
-        ], extend = true },
+        { replace = "posargs", default = [], extend = true },
     ],
 ]
 
@@ -140,8 +139,7 @@ commands = [
         ".venv/bin/python",
         "src",
         "tests",
-        { replace = "posargs", default = [
-        ], extend = true },
+        { replace = "posargs", default = [], extend = true },
     ],
 ]
 
@@ -155,11 +153,19 @@ commands = [
         "term",
         "--cov-report",
         "xml:cov.xml",
-        { replace = "posargs", default = [
-        ], extend = true },
+        { replace = "posargs", default = [], extend = true },
     ],
 ]
 
+[tool.tox.env.system-test]
+description = "Run systems tests"
+commands = [
+    [
+        "pytest",
+        "tests/system_tests",
+        { replace = "posargs", default = [], extend = true}
+    ]
+]
 [tool.tox.env.docs]
 description = "Run docs build with clean environment"
 commands = [
@@ -171,8 +177,7 @@ commands = [
         "--keep-going",
         "docs",
         "build/html",
-        { replace = "posargs", default = [
-        ], extend = true },
+        { replace = "posargs", default = [], extend = true },
     ],
 ]
 
@@ -186,8 +191,7 @@ commands = [
         "README.md",
         "docs",
         "build/html",
-        { replace = "posargs", default = [
-        ], extend = true },
+        { replace = "posargs", default = [], extend = true },
     ],
 ]
 

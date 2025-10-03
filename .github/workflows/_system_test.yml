@@ -52,4 +52,4 @@ jobs:
         run: uv run blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
 
       - name: Run tests
-        run: uv run tox -e system-test
+        run: uv run --locked tox -e system-test

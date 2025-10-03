@@ -28,7 +28,7 @@ dependencies = [
     "dls-dodal>=1.55.1",
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
-    "event-model==1.23",                           # https://github.com/DiamondLightSource/blueapi/issues/684
+    "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "bluesky-stomp>=0.1.6",
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",

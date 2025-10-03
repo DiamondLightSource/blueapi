@@ -12,8 +12,8 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "tiled[client]",
-    "bluesky[plotting]>=1.13.1",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
+    "tiled[client]>=0.1.0",
+    "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd-async",
     "aioca",
     "pydantic>=2.0",
@@ -25,10 +25,10 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal>=1.55.1",
+    "dls-dodal>=1.60.0",
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
-    "event-model==1.23",                           # https://github.com/DiamondLightSource/blueapi/issues/684
+    "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "bluesky-stomp>=0.1.6",
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",

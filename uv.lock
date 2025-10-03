@@ -413,7 +413,7 @@ requires-dist = [
     { name = "bluesky-stomp", specifier = ">=0.1.6" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "dls-dodal", specifier = ">=1.55.1" },
-    { name = "event-model", specifier = "==1.23" },
+    { name = "event-model", specifier = "==1.23.1" },
     { name = "fastapi", specifier = ">=0.112.0" },
     { name = "gitpython" },
     { name = "graypy", specifier = ">=2.1.0" },
@@ -1174,7 +1174,7 @@ wheels = [
 
 [[package]]
 name = "event-model"
-version = "1.23"
+version = "1.23.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "importlib-resources" },
@@ -1182,9 +1182,9 @@ dependencies = [
     { name = "numpy" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b3/ec/c6e26b71980ae925a84c4b4da351d4a1f84fc6060c31d0a10ffc886c2633/event_model-1.23.tar.gz", hash = "sha256:7481cc97151b3ac77b5f5c6a11daf24c9c5d56bf58c88f4318f393e9a804f598", size = 184896, upload-time = "2025-06-11T15:25:36.96Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/5a/de03f05fdbc4377db89fa6daf243e89370f9bcf2d21ad96b54d4549a74ed/event_model-1.23.1.tar.gz", hash = "sha256:5bb70fd8c7f345aa32afe561aff5a306b2c8a19cbdc3066b736643c8092ddaab", size = 185271, upload-time = "2025-08-28T13:26:38.647Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/66/ee/97d558331ea905acad0b7c55a894e50884c02ccac87ebab583d50fac528b/event_model-1.23-py3-none-any.whl", hash = "sha256:223def5ab479db058243085a7860786013d21f58a22d607cbcb32e237e3a2f1f", size = 76805, upload-time = "2025-06-11T15:25:35.328Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/32/e31e3363bf48ad2ba80b644b01ad9676ce154f1b755950de81eb4ed5b6bd/event_model-1.23.1-py3-none-any.whl", hash = "sha256:e0b951b829cebcf3879beff238bb370fd997d315856bc5d5ac2a66202b854958", size = 77057, upload-time = "2025-08-28T13:26:37.228Z" },
 ]
 
 [[package]]

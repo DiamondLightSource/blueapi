@@ -1,7 +1,7 @@
 # The devcontainer should use the developer target and run as root with podman
 # or docker with user namespaces.
 # Version SHA has been removed, see: https://github.com/DiamondLightSource/blueapi/issues/1053
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.11@sha256:993edd4388f0b3929b79fd954c8878ca81ee6bc6def9375b78d06d2af1905ee3
 FROM python:${PYTHON_VERSION} AS developer
 
 # Add any system dependencies for the developer/build environment here

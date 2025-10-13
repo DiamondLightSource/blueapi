@@ -21,11 +21,14 @@ class EventBusClient:
 
     def __init__(self, app: StompClient) -> None:
         self.app = app
+        self._subscription_ids: list[str] = []
 
     def __enter__(self) -> None:
         self.app.connect()
 
     def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+        while len(self._subscription_ids) > 0:
+            self.app.unsubscribe(self._subscription_ids.pop())
         self.app.disconnect()
 
     def subscribe_to_all_events(
@@ -33,10 +36,11 @@ class EventBusClient:
         on_event: Callable[[AnyEvent, MessageContext], None],
     ) -> None:
         try:
-            self.app.subscribe(
+            subscription_id = self.app.subscribe(
                 MessageTopic(name="public.worker.event"),
                 on_event,
             )
+            self._subscription_ids.append(subscription_id)
         except Exception as err:
             raise BlueskyStreamingError(
                 "Unable to subscribe to messages from blueapi"

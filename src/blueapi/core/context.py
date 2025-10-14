@@ -2,7 +2,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field
 from importlib import import_module
-from inspect import Parameter, signature
+from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
@@ -389,7 +389,9 @@ class BlueskyContext:
             try:
                 default = (
                     self._inject_composite(arg_type)
-                    if issubclass(arg_type, BaseModel) and isinstance(para.default, str)
+                    if isclass(arg_type)
+                    and issubclass(arg_type, BaseModel)
+                    and isinstance(para.default, str)
                     else para.default
                 )
             except TypeError as e:

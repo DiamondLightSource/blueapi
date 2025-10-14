@@ -386,19 +386,13 @@ class BlueskyContext:
                 )
 
             no_default = para.default is Parameter.empty
-            try:
-                default = (
-                    self._inject_composite(arg_type)
-                    if isclass(arg_type)
-                    and issubclass(arg_type, BaseModel)
-                    and isinstance(para.default, str)
-                    else para.default
-                )
-            except TypeError as e:
-                raise TypeError(
-                    f"Unexpected TypeError for {para.name} in {func.__name__}: "
-                    f"{arg_type}, {type(arg_type)}"
-                ) from e
+            default = (
+                self._inject_composite(arg_type)
+                if isclass(arg_type)
+                and issubclass(arg_type, BaseModel)
+                and isinstance(para.default, str)
+                else para.default
+            )
             factory = None if no_default else DefaultFactory(default)
             new_args[name] = (
                 self._convert_type(arg_type, no_default),

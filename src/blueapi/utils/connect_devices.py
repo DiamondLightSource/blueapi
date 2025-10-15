@@ -58,7 +58,7 @@ def _establish_device_connections(
 
 def connect_devices(
     run_engine: RunEngine, module: ModuleType, devices: dict[str, AnyDevice], **kwargs
-):
+) -> Mapping[str, Exception]:
     factories = collect_factories(module, include_skipped=False)
 
     def is_simulated_device(name, factory, **kwargs):
@@ -81,11 +81,17 @@ def connect_devices(
         if sim_devices.get(name, None) is None and (isinstance(device, AnyDevice))
     }
 
+    exception_map = {}
     if len(real_devices) > 0:
         real_devices, exceptions = _establish_device_connections(
             run_engine, real_devices, False
         )
         _report_successful_devices(real_devices, False)
+        exception_map |= exceptions
     if len(sim_devices) > 0:
-        sim_devices, _ = _establish_device_connections(run_engine, sim_devices, True)  # type: ignore
+        sim_devices, exceptions = _establish_device_connections(
+            run_engine, sim_devices, True
+        )  # type: ignore
         _report_successful_devices(sim_devices, True)
+        exception_map |= exceptions
+    return exception_map

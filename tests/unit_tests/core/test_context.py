@@ -33,6 +33,7 @@ from pytest import LogCaptureFixture
 from blueapi.config import EnvironmentConfig, MetadataConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
+from blueapi.utils.connect_devices import _establish_device_connections
 
 SIM_MOTOR_NAME = "sim"
 ALT_MOTOR_NAME = "alt"
@@ -292,6 +293,32 @@ def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
         mock_make_all_devices.assert_called_once_with(
             device_module, some_argument=1, another_argument="two"
         )
+
+
+def test_with_dodal_module_returns_connection_exceptions(empty_context: BlueskyContext):
+    import tests.unit_tests.core.fake_device_module as device_module
+
+    def connect_sim_backend(RE, devices, sim_backend):
+        return _establish_device_connections(RE, devices, True)
+
+    with patch(
+        "blueapi.utils.connect_devices._establish_device_connections",
+        side_effect=connect_sim_backend,
+    ):
+        names_to_devices, exceptions = empty_context.with_dodal_module(device_module)
+
+    assert set(names_to_devices.keys()) == {
+        "motor_y",
+        "ophyd_async_device",
+        "ophyd_device",
+        "device_a",
+        "motor_x",
+        "motor_bundle_a",
+        "motor_bundle_b",
+    }
+    assert len(exceptions) == 2
+    assert isinstance(exceptions["ophyd_device"], RuntimeError)
+    assert isinstance(exceptions["ophyd_async_device"], RuntimeError)
 
 
 @pytest.mark.parametrize(

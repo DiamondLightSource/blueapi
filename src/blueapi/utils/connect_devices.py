@@ -90,8 +90,10 @@ def connect_devices(
         exception_map |= exceptions
     if len(sim_devices) > 0:
         sim_devices, exceptions = _establish_device_connections(
-            run_engine, sim_devices, True
-        )  # type: ignore
+            run_engine,
+            sim_devices,  # type: ignore
+            True,
+        )
         _report_successful_devices(sim_devices, True)
         exception_map |= exceptions
     return exception_map

@@ -28,7 +28,7 @@ jobs:
           ref: '2025.8.2'
 
       - name: Compose devices
-        uses: hoverkraft-tech/compose-action@b716db5b717cb9b81e391fe638e5aceaa2299e43 # v2.4.0
+        uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1
         with:
           compose-file: "example-services/compose.yaml"
           services: |
@@ -37,7 +37,7 @@ jobs:
             ca-gateway
 
       - name: Compose services
-        uses: hoverkraft-tech/compose-action@b716db5b717cb9b81e391fe638e5aceaa2299e43 # v2.4.0
+        uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1
         with:
           compose-file: "tests/system_tests/compose.yaml"
           services: |

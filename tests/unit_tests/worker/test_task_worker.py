@@ -101,6 +101,17 @@ def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyC
 
 
 @pytest.fixture
+def context_without_devices() -> BlueskyContext:
+    ctx = BlueskyContext()
+    ctx_config = EnvironmentConfig()
+    ctx_config.sources.append(
+        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
+    )
+    ctx.with_config(ctx_config)
+    return ctx
+
+
+@pytest.fixture
 def inert_worker(context: BlueskyContext) -> TaskWorker:
     return TaskWorker(context, start_stop_timeout=2.0)
 
@@ -687,21 +698,36 @@ def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker)
     mock_logger.info.assert_called_with(f"Got new task: {task}")
 
 
+class MyComposite(BlueapiBaseModel):
+    dev_a: FakeDevice = inject(fake_device.name)
+    dev_b: FakeDevice = inject(second_fake_device.name)
+
+    model_config = {"arbitrary_types_allowed": True}
+
+
+def injected_device_plan(composite: MyComposite = inject("")) -> MsgGenerator:
+    yield from ()
+
+
 def test_injected_composite_devices_are_found(
     fake_device: FakeDevice,
     second_fake_device: FakeDevice,
     context: BlueskyContext,
 ):
-    class MyComposite(BlueapiBaseModel):
-        dev_a: FakeDevice = inject(fake_device.name)
-        dev_b: FakeDevice = inject(second_fake_device.name)
-
-        model_config = {"arbitrary_types_allowed": True}
-
-    def injected_device_plan(composite: MyComposite = inject("")) -> MsgGenerator:
-        yield from ()
-
     context.register_plan(injected_device_plan)
     params = Task(name="injected_device_plan").prepare_params(context)
+    assert params["composite"].dev_a == fake_device
+    assert params["composite"].dev_b == second_fake_device
+
+
+def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
+    context_without_devices: BlueskyContext,
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+):
+    context_without_devices.register_plan(injected_device_plan)
+    context_without_devices.register_device(fake_device)
+    context_without_devices.register_device(second_fake_device)
+    params = Task(name="injected_device_plan").prepare_params(context_without_devices)
     assert params["composite"].dev_a == fake_device
     assert params["composite"].dev_b == second_fake_device

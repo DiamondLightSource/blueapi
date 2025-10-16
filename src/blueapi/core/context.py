@@ -386,14 +386,14 @@ class BlueskyContext:
                 )
 
             no_default = para.default is Parameter.empty
-            default = (
-                self._inject_composite(arg_type)
+            default_factory = (
+                self._composite_factory(arg_type)
                 if isclass(arg_type)
                 and issubclass(arg_type, BaseModel)
                 and isinstance(para.default, str)
-                else para.default
+                else DefaultFactory(para.default)
             )
-            factory = None if no_default else DefaultFactory(default)
+            factory = None if no_default else default_factory
             new_args[name] = (
                 self._convert_type(arg_type, no_default),
                 FieldInfo(default_factory=factory),
@@ -429,16 +429,19 @@ class BlueskyContext:
             return root[new_types] if root else typ  # type: ignore
         return typ
 
-    def _inject_composite(self, composite_class: type[C]) -> C:
-        devices = {
-            field: self.find_device(info.default)
-            if info.annotation is not None
-            and is_bluesky_type(info.annotation)
-            and isinstance(info.default, str)
-            else info.default
-            for field, info in composite_class.model_fields.items()
-        }
-        return composite_class(**devices)
+    def _composite_factory(self, composite_class: type[C]) -> Callable[[], C]:
+        def _inject_composite():
+            devices = {
+                field: self.find_device(info.default)
+                if info.annotation is not None
+                and is_bluesky_type(info.annotation)
+                and isinstance(info.default, str)
+                else info.default
+                for field, info in composite_class.model_fields.items()
+            }
+            return composite_class(**devices)
+
+        return _inject_composite
 
 
 D = TypeVar("D")

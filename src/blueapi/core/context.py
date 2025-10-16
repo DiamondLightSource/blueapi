@@ -9,7 +9,7 @@ from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
-from dodal.utils import make_all_devices
+from dodal.utils import AnyDevice, make_all_devices
 from ophyd_async.core import NotConnected
 from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
 from pydantic.fields import FieldInfo
@@ -207,10 +207,25 @@ class BlueskyContext:
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
 
-    def with_dodal_module(self, module: ModuleType, **kwargs) -> None:
+    def with_dodal_module(
+        self, module: ModuleType, **kwargs
+    ) -> tuple[dict[str, AnyDevice], dict[str, Exception]]:
+        """
+        Discover all device factories in the specified module,
+        construct devices by invoking them and register them with the device context,
+        Then attempt to connect to all the devices.
+
+        Args:
+            module: The python module to inspect for factories
+            kwargs: keyword arguments that will be passed to make_all_devices() and
+                to connect_devices() for construction and connection respectively
+        Returns:
+            A tuple containing a map of device name to devices, and a map of
+            device name to any exceptions encountered.
+        """
         devices, exceptions = make_all_devices(module, **kwargs)
 
-        utils.connect_devices(self.run_engine, module, devices, **kwargs)
+        exceptions |= utils.connect_devices(self.run_engine, module, devices, **kwargs)
 
         for device in devices.values():
             self.register_device(device)
@@ -222,6 +237,7 @@ class BlueskyContext:
                 f"{len(exceptions)} exceptions occurred while instantiating devices"
             )
             LOGGER.exception(NotConnected(exceptions))
+        return devices, exceptions
 
     def register_plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

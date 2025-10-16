@@ -63,11 +63,13 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 # (outside of devcontainer)
 #
 # git submodule init
+# export TILED_SINGLE_USER_API_KEY=foo
 # docker compose -f tests/system_tests/compose.yaml up -d
 #
 # 2. Spin up blueapi server (inside devcontainer)
 #
 # source tests/system_tests/.env
+# export TILED_SINGLE_USER_API_KEY=foo
 # blueapi -c tests/system_tests/config.yaml serve
 #
 # 3. Run the system tests

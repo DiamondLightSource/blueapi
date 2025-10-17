@@ -2,7 +2,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field
 from importlib import import_module
-from inspect import Parameter, signature
+from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
@@ -11,7 +11,7 @@ from bluesky.run_engine import RunEngine
 from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
 from dodal.utils import AnyDevice, make_all_devices
 from ophyd_async.core import NotConnected
-from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
+from pydantic import BaseModel, GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import CoreSchema, core_schema
@@ -80,6 +80,9 @@ def qualified_generic_name(target: type) -> str:
 
 def is_bluesky_type(typ: type) -> bool:
     return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
+
+
+C = TypeVar("C", bound=BaseModel, covariant=True)
 
 
 @dataclass
@@ -383,7 +386,14 @@ class BlueskyContext:
                 )
 
             no_default = para.default is Parameter.empty
-            factory = None if no_default else DefaultFactory(para.default)
+            default_factory = (
+                self._composite_factory(arg_type)
+                if isclass(arg_type)
+                and issubclass(arg_type, BaseModel)
+                and isinstance(para.default, str)
+                else DefaultFactory(para.default)
+            )
+            factory = None if no_default else default_factory
             new_args[name] = (
                 self._convert_type(arg_type, no_default),
                 FieldInfo(default_factory=factory),
@@ -418,6 +428,20 @@ class BlueskyContext:
                 root = Union
             return root[new_types] if root else typ  # type: ignore
         return typ
+
+    def _composite_factory(self, composite_class: type[C]) -> Callable[[], C]:
+        def _inject_composite():
+            devices = {
+                field: self.find_device(info.default)
+                if info.annotation is not None
+                and is_bluesky_type(info.annotation)
+                and isinstance(info.default, str)
+                else info.default
+                for field, info in composite_class.model_fields.items()
+            }
+            return composite_class(**devices)
+
+        return _inject_composite
 
 
 D = TypeVar("D")

@@ -21,6 +21,7 @@ from ophyd_async.core import AsyncStatus
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.worker import (
     Task,
     TaskStatus,
@@ -53,12 +54,9 @@ _TASK_WITH_METADATA = Task(
 class FakeDevice(Movable[float]):
     event: threading.Event
 
-    @property
-    def name(self) -> str:
-        return "fake_device"
-
-    def __init__(self) -> None:
+    def __init__(self, name: str = "fake_device") -> None:
         self.event = threading.Event()
+        self.name = name
 
     def set(self, value: float) -> Status:
         def when_done(_: Status):
@@ -84,7 +82,12 @@ def fake_device() -> FakeDevice:
 
 
 @pytest.fixture
-def context(fake_device: FakeDevice) -> BlueskyContext:
+def second_fake_device() -> FakeDevice:
+    return FakeDevice("second_fake_device")
+
+
+@pytest.fixture
+def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyContext:
     ctx = BlueskyContext()
     ctx_config = EnvironmentConfig()
     ctx_config.sources.append(
@@ -92,6 +95,18 @@ def context(fake_device: FakeDevice) -> BlueskyContext:
     )
     ctx.register_plan(failing_plan)
     ctx.register_device(fake_device)
+    ctx.register_device(second_fake_device)
+    ctx.with_config(ctx_config)
+    return ctx
+
+
+@pytest.fixture
+def context_without_devices() -> BlueskyContext:
+    ctx = BlueskyContext()
+    ctx_config = EnvironmentConfig()
+    ctx_config.sources.append(
+        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
+    )
     ctx.with_config(ctx_config)
     return ctx
 
@@ -681,3 +696,38 @@ def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker)
     task.is_complete = False
     task.is_pending = True
     mock_logger.info.assert_called_with(f"Got new task: {task}")
+
+
+class MyComposite(BlueapiBaseModel):
+    dev_a: FakeDevice = inject(fake_device.name)
+    dev_b: FakeDevice = inject(second_fake_device.name)
+
+    model_config = {"arbitrary_types_allowed": True}
+
+
+def injected_device_plan(composite: MyComposite = inject("")) -> MsgGenerator:
+    yield from ()
+
+
+def test_injected_composite_devices_are_found(
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+    context: BlueskyContext,
+):
+    context.register_plan(injected_device_plan)
+    params = Task(name="injected_device_plan").prepare_params(context)
+    assert params["composite"].dev_a == fake_device
+    assert params["composite"].dev_b == second_fake_device
+
+
+def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
+    context_without_devices: BlueskyContext,
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+):
+    context_without_devices.register_plan(injected_device_plan)
+    context_without_devices.register_device(fake_device)
+    context_without_devices.register_device(second_fake_device)
+    params = Task(name="injected_device_plan").prepare_params(context_without_devices)
+    assert params["composite"].dev_a == fake_device
+    assert params["composite"].dev_b == second_fake_device

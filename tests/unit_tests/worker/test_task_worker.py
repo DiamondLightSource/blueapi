@@ -1,3 +1,4 @@
+import dataclasses
 import itertools
 import threading
 from collections.abc import Callable, Iterable
@@ -712,12 +713,24 @@ class MyPydanticDataClassComposite:
     second_fake_device: FakeDevice
 
 
+@dataclasses.dataclass()
+class MyStandardDataClassComposite:
+    fake_device: FakeDevice
+    second_fake_device: FakeDevice
+
+
 def injected_device_plan(composite: MyComposite = inject("")) -> MsgGenerator:
     yield from ()
 
 
 def injected_dataclass_device_plan(
     composite: MyPydanticDataClassComposite = inject(""),
+) -> MsgGenerator:
+    yield from ()
+
+
+def injected_standard_dataclass_device_plan(
+    composite: MyStandardDataClassComposite = inject(""),
 ) -> MsgGenerator:
     yield from ()
 
@@ -740,6 +753,19 @@ def test_injected_composite_with_pydantic_dataclass(
 ):
     context.register_plan(injected_dataclass_device_plan)
     params = Task(name="injected_dataclass_device_plan").prepare_params(context)
+    assert params["composite"].fake_device == fake_device
+    assert params["composite"].second_fake_device == second_fake_device
+
+
+def test_injected_composite_with_standard_dataclass(
+    context: BlueskyContext,
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+):
+    context.register_plan(injected_standard_dataclass_device_plan)
+    params = Task(name="injected_standard_dataclass_device_plan").prepare_params(
+        context
+    )
     assert params["composite"].fake_device == fake_device
     assert params["composite"].second_fake_device == second_fake_device
 

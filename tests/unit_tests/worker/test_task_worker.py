@@ -7,6 +7,7 @@ from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
 
+import pydantic
 import pytest
 from bluesky.protocols import Movable, Status
 from bluesky.utils import MsgGenerator
@@ -699,13 +700,25 @@ def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker)
 
 
 class MyComposite(BlueapiBaseModel):
-    dev_a: FakeDevice = inject(fake_device.name)
-    dev_b: FakeDevice = inject(second_fake_device.name)
+    fake_device: FakeDevice
+    second_fake_device: FakeDevice
 
     model_config = {"arbitrary_types_allowed": True}
 
 
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class MyPydanticDataClassComposite:
+    fake_device: FakeDevice
+    second_fake_device: FakeDevice
+
+
 def injected_device_plan(composite: MyComposite = inject("")) -> MsgGenerator:
+    yield from ()
+
+
+def injected_dataclass_device_plan(
+    composite: MyPydanticDataClassComposite = inject(""),
+) -> MsgGenerator:
     yield from ()
 
 
@@ -716,8 +729,19 @@ def test_injected_composite_devices_are_found(
 ):
     context.register_plan(injected_device_plan)
     params = Task(name="injected_device_plan").prepare_params(context)
-    assert params["composite"].dev_a == fake_device
-    assert params["composite"].dev_b == second_fake_device
+    assert params["composite"].fake_device == fake_device
+    assert params["composite"].second_fake_device == second_fake_device
+
+
+def test_injected_composite_with_pydantic_dataclass(
+    context: BlueskyContext,
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+):
+    context.register_plan(injected_dataclass_device_plan)
+    params = Task(name="injected_dataclass_device_plan").prepare_params(context)
+    assert params["composite"].fake_device == fake_device
+    assert params["composite"].second_fake_device == second_fake_device
 
 
 def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
@@ -729,5 +753,5 @@ def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
     context_without_devices.register_device(fake_device)
     context_without_devices.register_device(second_fake_device)
     params = Task(name="injected_device_plan").prepare_params(context_without_devices)
-    assert params["composite"].dev_a == fake_device
-    assert params["composite"].dev_b == second_fake_device
+    assert params["composite"].fake_device == fake_device
+    assert params["composite"].second_fake_device == second_fake_device

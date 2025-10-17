@@ -6,9 +6,7 @@ services:
     image: ghcr.io/diamondlightsource/numtracker:1.0.1
     ports:
       - "8406:8000"
-    post_start:
-      - command: /app/numtracker client configure adsim --directory '/tmp/' --scan '{instrument}-{scan_number}' --detector '{instrument}-{scan_number}-{detector}' --number 43
-
+    
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management
     ports:

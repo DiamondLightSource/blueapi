@@ -18,6 +18,7 @@ from blueapi.client.event_bus import AnyEvent
 from blueapi.client.rest import UnknownPlan
 from blueapi.config import (
     ApplicationConfig,
+    ConfigLoader,
     OIDCConfig,
     StompConfig,
 )
@@ -152,6 +153,33 @@ def blueapi_client_get_methods() -> list[str]:
 def clean_existing_tasks(client: BlueapiClient):
     for task in client.get_all_tasks().tasks:
         client.clear_task(task.task_id)
+    yield
+
+
+@pytest.fixture(scope="module")
+def server_config() -> ApplicationConfig:
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(Path("tests", "system_tests", "config.yaml"))
+    return loader.load()
+
+
+@pytest.fixture(autouse=True, scope="module")
+def reset_numtracker(server_config: ApplicationConfig):
+    nt_url = server_config.numtracker.url  # type: ignore - if numtracker is None we should fail
+    requests.post(
+        str(nt_url),
+        json={
+            "query": """mutation {
+              configure(instrument: "adsim",
+                        config: {directory: "/tmp/",
+                                 scan: "{instrument}-{scan_number}",
+                                 detector: "{instrument}-{scan_number}-{detector}",
+                                 scanNumber: 43}) {
+                scanTemplate
+              }
+            }"""
+        },
+    ).raise_for_status()
     yield
 
 

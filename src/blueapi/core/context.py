@@ -173,7 +173,7 @@ class BlueskyContext:
             elif source.kind is SourceKind.DEVICE_FUNCTIONS:
                 self.with_device_module(mod)
             elif source.kind is SourceKind.DODAL:
-                self.with_dodal_module(mod)
+                self.with_dodal_module(mod, mock=source.mock)
 
     def with_plan_module(self, module: ModuleType) -> None:
         """

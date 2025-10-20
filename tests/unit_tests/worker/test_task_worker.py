@@ -23,6 +23,7 @@ from ophyd_async.core import AsyncStatus
 from blueapi.config import EnvironmentConfig, Source, SourceKind
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.service.model import PlanModel
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.worker import (
     Task,
@@ -663,6 +664,21 @@ def test_injected_devices_are_found(
     assert params["dev"] == fake_device
 
 
+def test_injected_devices_plan_model(
+    fake_device: FakeDevice,
+    context: BlueskyContext,
+):
+    def injected_device_plan(
+        dev: FakeDevice = inject(fake_device.name),
+    ) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(injected_device_plan)
+    plan = context.plans["injected_device_plan"]
+    model = PlanModel.from_plan(plan)
+    print(model)
+
+
 def test_missing_injected_devices_fail_early(
     context: BlueskyContext,
 ):
@@ -744,6 +760,16 @@ def test_injected_composite_devices_are_found(
     params = Task(name="injected_device_plan").prepare_params(context)
     assert params["composite"].fake_device == fake_device
     assert params["composite"].second_fake_device == second_fake_device
+
+
+def test_injected_composite_devices_plan_model(
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+    context: BlueskyContext,
+):
+    context.register_plan(injected_device_plan)
+    plan = context.plans["injected_device_plan"]
+    PlanModel.from_plan(plan)
 
 
 def test_injected_composite_with_pydantic_dataclass(

@@ -391,16 +391,19 @@ class BlueskyContext:
                 )
 
             no_default = para.default is Parameter.empty
-            default_factory = (
-                self._composite_factory(arg_type)
-                if isclass(arg_type)
+            if (
+                isclass(arg_type)
                 and (issubclass(arg_type, BaseModel) or is_dataclass(arg_type))
                 and isinstance(para.default, str)
-                else DefaultFactory(para.default)
-            )
+            ):
+                default_factory = self._composite_factory(arg_type)
+                _type = SkipJsonSchema[self._convert_type(arg_type, no_default)]
+            else:
+                default_factory = DefaultFactory(para.default)
+                _type = self._convert_type(arg_type, no_default)
             factory = None if no_default else default_factory
             new_args[name] = (
-                self._convert_type(arg_type, no_default),
+                _type,
                 FieldInfo(default_factory=factory),
             )
         return new_args

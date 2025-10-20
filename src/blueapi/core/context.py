@@ -441,16 +441,15 @@ class BlueskyContext:
                     field_name: self.find_device(field_name)
                     for field_name in composite_class.model_fields.keys()
                 }
-            elif is_dataclass(composite_class):
+            else:
+                assert is_dataclass(composite_class), (
+                    f"Unsupported composite type: {composite_class}, composite must be"
+                    " a pydantic BaseModel or a dataclass"
+                )
                 devices = {
                     field.name: self.find_device(field.name)
                     for field in fields(composite_class)
                 }
-            else:
-                raise RuntimeError(
-                    f"Unsupported composite type: {composite_class}, composite must be"
-                    " a pydantic BaseModel or a dataclass"
-                )
             return composite_class(**devices)
 
         return _inject_composite

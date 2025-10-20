@@ -1,8 +1,7 @@
 from pathlib import PosixPath
 
 import pytest
-from event_model import RunStop
-from event_model.documents import RunStart
+from event_model import RunStart, RunStop
 from ophyd_async.core import PathInfo
 
 from blueapi.utils.path_provider import StartDocumentPathProvider
@@ -222,7 +221,7 @@ def test_start_document_path_provider_run_start_called_with_different_document_s
     pp = StartDocumentPathProvider()
     pp.run_start(name="stop", start_document=stop_doc_default_template)  # type: ignore
 
-    assert pp._doc == {}
+    assert pp._doc is None
 
 
 def test_start_document_path_provider_run_stop_called_with_different_document_skips(
@@ -231,7 +230,7 @@ def test_start_document_path_provider_run_stop_called_with_different_document_sk
     pp = StartDocumentPathProvider()
     pp.run_stop(name="start", stop_document=start_doc_default_template)  # type: ignore
 
-    assert pp._doc == {}
+    assert pp._doc is None
 
 
 @pytest.fixture
@@ -284,20 +283,20 @@ def test_start_document_path_provider_start_doc_persists_until_stop_with_matchin
 ):
     pp = StartDocumentPathProvider()
     pp.run_start(name="start", start_document=start_doc)
+
     assert pp._doc == start_doc
-    assert pp._uid == "fa2feced-4098-4c0e-869d-285d2a69c24a"
+    assert pp._doc["uid"] == "fa2feced-4098-4c0e-869d-285d2a69c24a"  # type: ignore
 
     pp.run_start(name="start", start_document=start_doc_default_template)
     assert pp._doc == start_doc
-    assert pp._uid == "fa2feced-4098-4c0e-869d-285d2a69c24a"
+    assert pp._doc["uid"] == "fa2feced-4098-4c0e-869d-285d2a69c24a"  # type: ignore
 
     pp.run_stop(name="stop", stop_document=stop_doc_default_template)
     assert pp._doc == start_doc
-    assert pp._uid == "fa2feced-4098-4c0e-869d-285d2a69c24a"
+    assert pp._doc["uid"] == "fa2feced-4098-4c0e-869d-285d2a69c24a"  # type: ignore
 
     pp.run_stop(name="stop", stop_document=stop_doc)
-    assert pp._doc == {}
-    assert pp._uid is None
+    assert pp._doc is None
 
 
 def test_start_document_path_provider_nested_runs_use_parent_run_info(
@@ -311,7 +310,7 @@ def test_start_document_path_provider_nested_runs_use_parent_run_info(
     parent_path_info = pp("det")
 
     assert pp._doc == start_doc_default_template
-    assert pp._uid == "27c48d2f-d8c6-4ac0-8146-fedf467ce11f"
+    assert pp._doc["uid"] == "27c48d2f-d8c6-4ac0-8146-fedf467ce11f"  # type: ignore
     assert parent_path_info == PathInfo(
         directory_path=PosixPath("/p01/ab123"),
         filename="det-p01-22",
@@ -320,19 +319,18 @@ def test_start_document_path_provider_nested_runs_use_parent_run_info(
 
     pp.run_start(name="start", start_document=start_doc)
     assert pp._doc == start_doc_default_template
-    assert pp._uid == "27c48d2f-d8c6-4ac0-8146-fedf467ce11f"
+    assert pp._doc["uid"] == "27c48d2f-d8c6-4ac0-8146-fedf467ce11f"  # type: ignore
 
     assert pp("det") == parent_path_info
 
     pp.run_stop(name="stop", stop_document=stop_doc)
     assert pp._doc == start_doc_default_template
-    assert pp._uid == "27c48d2f-d8c6-4ac0-8146-fedf467ce11f"
+    assert pp._doc["uid"] == "27c48d2f-d8c6-4ac0-8146-fedf467ce11f"  # type: ignore
 
     assert pp("det") == parent_path_info
 
     pp.run_stop(name="stop", stop_document=stop_doc_default_template)
-    assert pp._doc == {}
-    assert pp._uid is None
+    assert pp._doc is None
 
 
 def test_start_document_path_provider_called_without_start_raises():

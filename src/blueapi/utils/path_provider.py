@@ -17,20 +17,20 @@ class StartDocumentPathProvider(PathProvider):
     """
 
     def __init__(self) -> None:
-        self._doc = {}
-        self._uid = None
+        self._doc: RunStart | None = None
 
     def run_start(self, name: str, start_document: RunStart) -> None:
         if name == "start":
-            if self._doc == {} and self._uid is None:
+            if self._doc is None:
                 self._doc = start_document
-                self._uid = start_document["uid"]
 
     def run_stop(self, name: str, stop_document: RunStop) -> None:
         if name == "stop":
-            if stop_document.get("doc", {}).get("run_start") == self._uid:
-                self._doc = {}
-                self._uid = None
+            if (
+                self._doc is not None
+                and stop_document.get("run_start") == self._doc["uid"]
+            ):
+                self._doc = None
 
     def __call__(self, device_name: str | None = None) -> PathInfo:
         """Returns the directory path and filename for a given data_session.
@@ -41,7 +41,7 @@ class StartDocumentPathProvider(PathProvider):
 
         If you do not provide a data_session_directory it will default to "/tmp".
         """
-        if self._doc == {}:
+        if self._doc is None:
             raise AttributeError(
                 "Start document not found. This call must be made inside a run."
             )

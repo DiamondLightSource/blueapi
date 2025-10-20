@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from event_model import RunStart, RunStop
+from event_model.basemodels import RunStart, RunStop
 from ophyd_async.core import PathInfo, PathProvider
 
 DEFAULT_TEMPLATE = "{device_name}-{instrument}-{scan_id}"
@@ -26,10 +26,7 @@ class StartDocumentPathProvider(PathProvider):
 
     def run_stop(self, name: str, stop_document: RunStop) -> None:
         if name == "stop":
-            if (
-                self._doc is not None
-                and stop_document.get("run_start") == self._doc["uid"]
-            ):
+            if self._doc is not None and stop_document.run_start == self._doc.uid:
                 self._doc = None
 
     def __call__(self, device_name: str | None = None) -> PathInfo:
@@ -46,9 +43,9 @@ class StartDocumentPathProvider(PathProvider):
                 "Start document not found. This call must be made inside a run."
             )
         else:
-            template = self._doc.get("data_file_path_template", DEFAULT_TEMPLATE)
-            sub_path = template.format_map(self._doc | {"device_name": device_name})
-            data_session_directory = Path(
-                self._doc.get("data_session_directory", "/tmp")
-            )
-            return PathInfo(directory_path=data_session_directory, filename=sub_path)
+            doc = self._doc.model_dump()
+            template = doc.get("data_file_path_template", DEFAULT_TEMPLATE)
+            data_session_directory = Path(doc.get("data_session_directory", "/tmp"))
+            filename = template.format_map(doc | {"device_name": device_name})
+
+            return PathInfo(directory_path=data_session_directory, filename=filename)

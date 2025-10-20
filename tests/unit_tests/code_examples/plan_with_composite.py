@@ -1,7 +1,6 @@
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-
-from unit_tests.code_examples.device_composite import MyDeviceComposite
+from tests.unit_tests.code_examples.device_composite import MyDeviceComposite
 
 
 def my_plan(

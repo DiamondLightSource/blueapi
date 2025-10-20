@@ -160,14 +160,16 @@ def start_doc_missing_scan_id() -> RunStart:
     )
 
 
-def test_start_document_path_provider_fails_with_missing_scan_id(
+def test_start_document_path_provider_missing_scan_id_defaults_to_0(
     start_doc_missing_scan_id: RunStart,
 ):
     pp = StartDocumentPathProvider()
     pp.run_start(name="start", start_document=start_doc_missing_scan_id)
+    path = pp("det")
 
-    with pytest.raises(KeyError, match="'scan_id'"):
-        pp("det")
+    assert path == PathInfo(
+        directory_path=PosixPath("/p01/ab123"), filename="det-p01-0", create_dir_depth=0
+    )
 
 
 @pytest.fixture

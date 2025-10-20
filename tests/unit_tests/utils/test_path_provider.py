@@ -203,15 +203,11 @@ def test_start_document_path_provider_sets_data_session_directory_default_to_tmp
 @pytest.fixture
 def stop_doc_default_template() -> dict:
     return {
-        "name": "stop",
-        "doc": {
-            "run_start": "27c48d2f-d8c6-4ac0-8146-fedf467ce11f",
-            "time": 1741264732.96875,
-            "uid": "401ad197-5456-4a7d-ba5b-9cf8ad38d914",
-            "exit_status": "success",
-            "reason": "",
-            "num_events": {"primary": 1},
-        },
+        "run_start": "27c48d2f-d8c6-4ac0-8146-fedf467ce11f",
+        "time": 1741264732.96875,
+        "uid": "401ad197-5456-4a7d-ba5b-9cf8ad38d914",
+        "exit_status": "success",
+        "reason": "",
     }
 
 
@@ -263,15 +259,12 @@ def start_doc() -> dict:
 @pytest.fixture
 def stop_doc() -> dict:
     return {
-        "name": "stop",
-        "doc": {
-            "run_start": "fa2feced-4098-4c0e-869d-285d2a69c24a",
-            "time": 1690463920.3893268,
-            "uid": "401ad197-5456-4a7d-ba5b-9cf8ad38d914",
-            "exit_status": "success",
-            "reason": "",
-            "num_events": {"primary": 1},
-        },
+        "run_start": "fa2feced-4098-4c0e-869d-285d2a69c24a",
+        "time": 1690463920.3893268,
+        "uid": "401ad197-5456-4a7d-ba5b-9cf8ad38d914",
+        "exit_status": "success",
+        "reason": "",
+        "num_events": {"primary": 1},
     }
 
 

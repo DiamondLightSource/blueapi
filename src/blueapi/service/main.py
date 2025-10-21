@@ -555,9 +555,7 @@ def start(config: ApplicationConfig):
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG
 
-    LOGGING_CONFIG["formatters"]["default"]["fmt"] = (
-        "%(asctime)s %(levelprefix)s %(message)s"
-    )
+    LOGGING_CONFIG["loggers"]["uvicorn"]["handlers"] = []
     LOGGING_CONFIG["formatters"]["access"]["fmt"] = (
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"

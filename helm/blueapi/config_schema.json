@@ -72,11 +72,13 @@
                     "default": [
                         {
                             "kind": "planFunctions",
-                            "module": "dodal.plans"
+                            "module": "dodal.plans",
+                            "mock": false
                         },
                         {
                             "kind": "planFunctions",
-                            "module": "dodal.plan_stubs.wrapped"
+                            "module": "dodal.plan_stubs.wrapped",
+                            "mock": false
                         }
                     ],
                     "items": {
@@ -295,7 +297,8 @@
             "additionalProperties": false,
             "properties": {
                 "kind": {
-                    "$ref": "#/$defs/SourceKind"
+                    "$ref": "#/$defs/SourceKind",
+                    "description": "The type of source module"
                 },
                 "module": {
                     "anyOf": [
@@ -307,7 +310,14 @@
                             "type": "string"
                         }
                     ],
+                    "description": "Module name or path to the module to be imported",
                     "title": "Module"
+                },
+                "mock": {
+                    "default": false,
+                    "description": "If true, ophyd_async device connections are mocked",
+                    "title": "Mock",
+                    "type": "boolean"
                 }
             },
             "required": [

@@ -562,6 +562,7 @@ def start(config: ApplicationConfig):
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"
     )
+    LOGGING_CONFIG["loggers"]["uvicorn"]["propagate"] = True
     app = get_app(config)
 
     FastAPIInstrumentor().instrument_app(

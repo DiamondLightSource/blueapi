@@ -109,7 +109,6 @@ class WorkerDispatcher:
                 error_message=_safe_exception_message(e),
             )
 
-    @start_as_current_span(TRACER, "function", "args", "kwargs")
     def run(
         self,
         function: Callable[P, T],

@@ -2,6 +2,7 @@ import logging
 import os
 from contextlib import contextmanager
 
+import uvicorn
 from graypy import GELFTCPHandler
 
 from blueapi.config import LoggingConfig
@@ -90,6 +91,11 @@ def set_up_stream_handler(
     """
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging_config.level)
+
+    formatter = uvicorn.logging.DefaultFormatter(
+        "%(asctime)s %(levelprefix)s %(message)s"
+    )
+    stream_handler.setFormatter(formatter)
 
     for filter in filters:
         stream_handler.addFilter(filter)

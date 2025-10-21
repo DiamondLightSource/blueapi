@@ -573,7 +573,9 @@ def start(config: ApplicationConfig):
     app.state.config = config
     assert config.api.url.host is not None, "API URL missing host"
     assert config.api.url.port is not None, "API URL missing port"
-    uvicorn.run(app, host=config.api.url.host, port=config.api.url.port)
+    uvicorn.run(
+        app, host=config.api.url.host, port=config.api.url.port, access_log=False
+    )
 
 
 async def add_api_version_header(

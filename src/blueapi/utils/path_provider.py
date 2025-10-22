@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from event_model import RunStart
+from event_model import RunStart, RunStop
 from ophyd_async.core import PathInfo, PathProvider
 
 DEFAULT_TEMPLATE = "{device_name}-{instrument}-{scan_id}"
@@ -17,15 +17,19 @@ class StartDocumentPathProvider(PathProvider):
     """
 
     def __init__(self) -> None:
-        self._doc = {}
+        self._doc: RunStart | None = None
 
-    def update_run(self, name: str, start_doc: RunStart) -> None:
-        """Cache a start document.
+    def run_start(self, name: str, start_document: RunStart) -> None:
+        if name == "start" and self._doc is None:
+            self._doc = start_document
 
-        This can be plugged into the run engine's subscribe method.
-        """
-        if name == "start":
-            self._doc = start_doc
+    def run_stop(self, name: str, stop_document: RunStop) -> None:
+        if (
+            name == "stop"
+            and self._doc is not None
+            and stop_document.get("run_start") == self._doc["uid"]
+        ):
+            self._doc = None
 
     def __call__(self, device_name: str | None = None) -> PathInfo:
         """Returns the directory path and filename for a given data_session.
@@ -36,7 +40,14 @@ class StartDocumentPathProvider(PathProvider):
 
         If you do not provide a data_session_directory it will default to "/tmp".
         """
-        template = self._doc.get("data_file_path_template", DEFAULT_TEMPLATE)
-        sub_path = template.format_map(self._doc | {"device_name": device_name})
-        data_session_directory = Path(self._doc.get("data_session_directory", "/tmp"))
-        return PathInfo(directory_path=data_session_directory, filename=sub_path)
+        if self._doc is None:
+            raise AttributeError(
+                "Start document not found. This call must be made inside a run."
+            )
+        else:
+            template = self._doc.get("data_file_path_template", DEFAULT_TEMPLATE)
+            sub_path = template.format_map(self._doc | {"device_name": device_name})
+            data_session_directory = Path(
+                self._doc.get("data_session_directory", "/tmp")
+            )
+            return PathInfo(directory_path=data_session_directory, filename=sub_path)

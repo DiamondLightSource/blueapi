@@ -555,6 +555,7 @@ def start(config: ApplicationConfig):
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG
 
+    # Enable propagation and disable default handlers, so that blueapi handles all logs
     LOGGING_CONFIG["loggers"]["uvicorn"]["handlers"] = []
     LOGGING_CONFIG["formatters"]["access"]["fmt"] = (
         "%(asctime)s %(levelprefix)s %(client_addr)s"

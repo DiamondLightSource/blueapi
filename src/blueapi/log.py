@@ -137,7 +137,7 @@ class IBMColorBlindSafeColors(enum.Enum):
 
 
 class ColorFormatter(logging.Formatter):
-    """Colors level_name of log using IBM Color blind safe palette."""
+    """Colors level_name of log using IBM color blind safe palette."""
 
     def color_level_name(self, level_name: str, level_no: int) -> str:
         match level_no:

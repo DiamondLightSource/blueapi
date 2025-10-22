@@ -20,17 +20,16 @@ class StartDocumentPathProvider(PathProvider):
         self._doc: RunStart | None = None
 
     def run_start(self, name: str, start_document: RunStart) -> None:
-        if name == "start":
-            if self._doc is None:
-                self._doc = start_document
+        if name == "start" and self._doc is None:
+            self._doc = start_document
 
     def run_stop(self, name: str, stop_document: RunStop) -> None:
-        if name == "stop":
-            if (
-                self._doc is not None
-                and stop_document.get("run_start") == self._doc["uid"]
-            ):
-                self._doc = None
+        if (
+            name == "stop"
+            and self._doc is not None
+            and stop_document.get("run_start") == self._doc["uid"]
+        ):
+            self._doc = None
 
     def __call__(self, device_name: str | None = None) -> PathInfo:
         """Returns the directory path and filename for a given data_session.

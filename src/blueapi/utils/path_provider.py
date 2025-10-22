@@ -25,12 +25,13 @@ class StartDocumentPathProvider(PathProvider):
 
     def run_stop(self, name: str, stop_document: RunStop) -> None:
         if name == "stop":
-            if stop_document.get("run_start") != self._docs[-1]["uid"]:
+            if stop_document.get("run_start") == self._docs[-1]["uid"]:
+                self._docs.pop()
+            else:
                 raise BlueskyRunStructureError(
                     "Close run called, but not for the inner most run."
                     "This is not supported. If you need to do this speak to core DAQ."
                 )
-            self._docs.pop()
 
     def __call__(self, device_name: str | None = None) -> PathInfo:
         """Returns the directory path and filename for a given data_session.

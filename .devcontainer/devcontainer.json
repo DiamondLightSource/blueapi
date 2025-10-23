@@ -11,7 +11,9 @@
     },
     "remoteEnv": {
         // Allow X11 apps to run inside the container
-        "DISPLAY": "${localEnv:DISPLAY}"
+        "DISPLAY": "${localEnv:DISPLAY}",
+        // Do the equivalent of "activate" the venv so we don't have to "uv run" everything
+        "PATH": "/workspaces/${localWorkspaceFolderBasename}/.venv/bin:${containerEnv:PATH}"
     },
     "customizations": {
         "vscode": {

@@ -50,8 +50,13 @@ class SourceKind(str, Enum):
 
 
 class Source(BlueapiBaseModel):
-    kind: SourceKind
-    module: Path | str
+    kind: SourceKind = Field(description="The type of source module")
+    module: Path | str = Field(
+        description="Module name or path to the module to be imported"
+    )
+    mock: bool = Field(
+        description="If true, ophyd_async device connections are mocked", default=False
+    )
 
 
 class TcpUrl(AnyUrl):

@@ -29,7 +29,7 @@ class StartDocumentPathProvider(PathProvider):
                 self._docs.pop()
             else:
                 raise BlueskyRunStructureError(
-                    "Close run called, but not for the inner most run."
+                    "Close run called, but not for the inner most run. "
                     "This is not supported. If you need to do this speak to core DAQ."
                 )
 

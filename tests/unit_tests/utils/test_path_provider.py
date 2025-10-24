@@ -374,7 +374,7 @@ def test_start_document_path_provider_run_stop_called_out_of_order_raises(
 
     with pytest.raises(
         BlueskyRunStructureError,
-        match="Close run called, but not for the inner most run."
+        match="Close run called, but not for the inner most run. "
         "This is not supported. If you need to do this speak to core DAQ.",
     ):
         pp.run_stop(name="stop", stop_document=stop_doc_1)

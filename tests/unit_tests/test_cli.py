@@ -30,10 +30,10 @@ from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
-    InvalidParameters,
+    InvalidParametersError,
     ParameterError,
-    UnauthorisedAccess,
-    UnknownPlan,
+    UnauthorisedAccessError,
+    UnknownPlanError,
 )
 from blueapi.config import (
     ApplicationConfig,
@@ -646,10 +646,10 @@ def test_env_reload_server_side_error(runner: CliRunner):
 @pytest.mark.parametrize(
     "exception, error_message",
     [
-        (UnknownPlan(), "Error: Plan 'sleep' was not recognised\n"),
-        (UnauthorisedAccess(), "Error: Unauthorised request\n"),
+        (UnknownPlanError(), "Error: Plan 'sleep' was not recognised\n"),
+        (UnauthorisedAccessError(), "Error: Unauthorised request\n"),
         (
-            InvalidParameters(
+            InvalidParametersError(
                 errors=[
                     ParameterError(
                         loc=["body", "params", "foo"],

@@ -33,7 +33,7 @@ T = TypeVar("T")
 TRACER = get_tracer("rest")
 
 
-class UnauthorisedAccess(Exception):
+class UnauthorisedAccessError(Exception):
     pass
 
 
@@ -46,7 +46,7 @@ class BlueskyRequestError(Exception):
         super().__init__(message, code)
 
 
-class NoContent(Exception):
+class NoContentError(Exception):
     """Request returned 204 (No Content): handle if None is allowed"""
 
     def __init__(self, target_type: type) -> None:
@@ -74,7 +74,7 @@ class ParameterError(BaseModel):
                 )
 
 
-class InvalidParameters(Exception):
+class InvalidParametersError(Exception):
     def __init__(self, errors: list[ParameterError]):
         self.errors = errors
 
@@ -96,7 +96,7 @@ class InvalidParameters(Exception):
         )
 
 
-class UnknownPlan(Exception):
+class UnknownPlanError(Exception):
     pass
 
 
@@ -115,13 +115,13 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
     if code < 400:
         return None
     elif code == 401 or code == 403:
-        return UnauthorisedAccess()
+        return UnauthorisedAccessError()
     elif code == 404:
-        return UnknownPlan()
+        return UnknownPlanError()
     elif code == 422:
         try:
             content = response.json()
-            return InvalidParameters(
+            return InvalidParametersError(
                 TypeAdapter(list[ParameterError]).validate_python(
                     content.get("detail", [])
                 )
@@ -226,7 +226,7 @@ class BlueapiRestClient:
     def get_oidc_config(self) -> OIDCConfig | None:
         try:
             return self._request_and_deserialize("/config/oidc", OIDCConfig)
-        except NoContent:
+        except NoContentError:
             # Server is not using authentication
             return None
 
@@ -264,6 +264,6 @@ class BlueapiRestClient:
         if exception is not None:
             raise exception
         if response.status_code == status.HTTP_204_NO_CONTENT:
-            raise NoContent(target_type)
+            raise NoContentError(target_type)
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized

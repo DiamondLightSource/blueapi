@@ -12,7 +12,7 @@ from observability_utils.tracing import (
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
-from blueapi.config import MissingStompConfiguration
+from blueapi.config import MissingStompConfigurationError
 from blueapi.core import DataEvent
 from blueapi.service.model import (
     DeviceModel,
@@ -394,7 +394,7 @@ def test_resume(
 
 def test_cannot_run_task_without_message_bus(client: BlueapiClient):
     with pytest.raises(
-        MissingStompConfiguration,
+        MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
         client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
@@ -663,7 +663,7 @@ def test_cannot_run_task_span_ok(
     exporter: JsonObjectSpanExporter, client: BlueapiClient
 ):
     with pytest.raises(
-        MissingStompConfiguration,
+        MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
         with asserting_span_exporter(exporter, "grun_task"):

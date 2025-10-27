@@ -25,9 +25,9 @@ from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
-    InvalidParameters,
-    UnauthorisedAccess,
-    UnknownPlan,
+    InvalidParametersError,
+    UnauthorisedAccessError,
+    UnknownPlanError,
 )
 from blueapi.config import (
     ApplicationConfig,
@@ -303,7 +303,7 @@ def run_plan(
             instrument_session=instrument_session,
         )
     except ValidationError as ve:
-        ip = InvalidParameters.from_validation_error(ve)
+        ip = InvalidParametersError.from_validation_error(ve)
         raise ClickException(ip.message()) from ip
 
     try:
@@ -324,13 +324,13 @@ def run_plan(
         else:
             server_task = client.create_and_start_task(task)
             click.echo(server_task.task_id)
-    except config.MissingStompConfiguration as mse:
+    except config.MissingStompConfigurationError as mse:
         raise ClickException(*mse.args) from mse
-    except UnknownPlan as up:
+    except UnknownPlanError as up:
         raise ClickException(f"Plan '{name}' was not recognised") from up
-    except UnauthorisedAccess as ua:
+    except UnauthorisedAccessError as ua:
         raise ClickException("Unauthorised request") from ua
-    except InvalidParameters as ip:
+    except InvalidParametersError as ip:
         raise ClickException(ip.message()) from ip
     except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
         raise ClickException(f"server error with this message: {e}") from e

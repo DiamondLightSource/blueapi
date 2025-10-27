@@ -15,7 +15,7 @@ from blueapi.client.client import (
     BlueskyRemoteControlError,
 )
 from blueapi.client.event_bus import AnyEvent
-from blueapi.client.rest import UnknownPlan
+from blueapi.client.rest import UnknownPlanError
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -253,7 +253,7 @@ def test_instrument_session_propagated(client: BlueapiClient):
 
 
 def test_create_task_validation_error(client: BlueapiClient):
-    with pytest.raises(UnknownPlan):
+    with pytest.raises(UnknownPlanError):
         client.create_task(
             TaskRequest(
                 name="Not-exists",

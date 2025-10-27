@@ -321,5 +321,5 @@ class ConfigLoader(Generic[C]):
             ) from exc
 
 
-class MissingStompConfiguration(Exception):
+class MissingStompConfigurationError(Exception):
     pass

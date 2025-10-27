@@ -10,10 +10,10 @@ from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
-    InvalidParameters,
+    InvalidParametersError,
     ParameterError,
-    UnauthorisedAccess,
-    UnknownPlan,
+    UnauthorisedAccessError,
+    UnknownPlanError,
     _create_task_exceptions,
 )
 from blueapi.config import OIDCConfig
@@ -63,9 +63,9 @@ def test_rest_error_code(
     "code,content,expected_exception",
     [
         (200, None, None),
-        (401, None, UnauthorisedAccess()),
-        (403, None, UnauthorisedAccess()),
-        (404, None, UnknownPlan()),
+        (401, None, UnauthorisedAccessError()),
+        (403, None, UnauthorisedAccessError()),
+        (404, None, UnknownPlanError()),
         (
             422,
             """{
@@ -76,7 +76,7 @@ def test_rest_error_code(
                     "input": {}
                 }]
             }""",
-            InvalidParameters(
+            InvalidParametersError(
                 [
                     ParameterError(
                         loc=["body", "params", "foo"],

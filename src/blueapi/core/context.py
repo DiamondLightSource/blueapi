@@ -123,7 +123,8 @@ class BlueskyContext:
 
             path_provider = StartDocumentPathProvider()
             set_path_provider(path_provider)
-            self.run_engine.subscribe(path_provider.update_run, "start")
+            self.run_engine.subscribe(path_provider.run_start, "start")
+            self.run_engine.subscribe(path_provider.run_stop, "stop")
 
             def _update_scan_num(md: dict[str, Any]) -> int:
                 scan = numtracker.create_scan(

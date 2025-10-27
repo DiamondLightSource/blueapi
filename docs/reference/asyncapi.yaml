@@ -5,8 +5,8 @@ info:
   version: 0.0.2
   description: Service for controlling access to and running scans based on Bluesky Plans and Ophyd Devices
   contact:
-    name: Callum Forrester
-    email: callum.forrester@diamond.ac.uk
+    name: Abigail Emery
+    email: abigail.emery@diamond.ac.uk
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html

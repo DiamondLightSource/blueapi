@@ -1,8 +1,8 @@
 # Changes here will be overwritten by Copier
-_commit: 4.1.0
+_commit: 4.3.0
 _src_path: https://github.com/DiamondLightSource/python-copier-template
-author_email: callum.forrester@diamond.ac.uk
-author_name: Callum Forrester
+author_email: abigail.emery@diamond.ac.uk
+author_name: Abigail Emery
 component_lifecycle: production
 component_owner: group:default/data-acquisition
 component_type: service

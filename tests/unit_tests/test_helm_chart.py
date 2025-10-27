@@ -416,7 +416,7 @@ def render_persistent_volume_chart(
                     "enabled": persistent_volume_enabled,
                 }
                 | (
-                    {"existing_claim_name": existing_claim_name}
+                    {"existingClaimName": existing_claim_name}
                     if existing_claim_name
                     else {}
                 ),

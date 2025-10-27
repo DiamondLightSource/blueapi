@@ -78,28 +78,8 @@ blueapi = "blueapi.cli:main"
 GitHub = "https://github.com/DiamondLightSource/blueapi"
 
 [[project.authors]] # Further authors may be added by duplicating this section
-email = "abigail.emery@diamond.ac.uk"
-name = "Abigail Emery"
-
-[[project.authors]]
-email = "keith.ralphs@diamond.ac.uk"
-name = "Keith Ralphs"
-
-[[project.authors]]
-email = "daniel.fernandes@diamond.ac.uk"
-name = "Daniel Fernandes"
-
-[[project.authors]]
-email = "peter.holloway@diamond.ac.uk"
-name = "Peter Holloway"
-
-[[project.authors]]
-email = "zoheb.shaikh@diamond.ac.uk"
-name = "Zoheb Shaikh"
-
-[[project.authors]]
-email = "joseph.ware@diamond.ac.uk"
-name = "Joseph Ware"
+email = "callum.forrester@diamond.ac.uk"
+name = "Callum Forrester"
 
 [tool.setuptools_scm]
 version_file = "src/blueapi/_version.py"

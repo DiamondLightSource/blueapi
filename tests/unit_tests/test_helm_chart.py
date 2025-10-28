@@ -402,7 +402,7 @@ def render_persistent_volume_chart(
         enabled: false
         persistentVolume:
             enabled: true
-            # existing_claim_name: foo
+            # existingClaimName: foo
 
     debug:
         enabled: false

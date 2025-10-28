@@ -81,6 +81,7 @@ GitHub = "https://github.com/DiamondLightSource/blueapi"
 email = "callum.forrester@diamond.ac.uk"
 name = "Callum Forrester"
 
+
 [tool.setuptools_scm]
 version_file = "src/blueapi/_version.py"
 

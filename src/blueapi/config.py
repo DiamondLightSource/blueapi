@@ -323,3 +323,22 @@ class ConfigLoader(Generic[C]):
 
 class MissingStompConfigurationError(Exception):
     pass
+
+
+# https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0
+def __getattr__(name: str):
+    import warnings
+
+    renames = {
+        "MissingStompConfiguration": MissingStompConfigurationError,
+    }
+    rename = renames.get(name)
+    if rename is not None:
+        warnings.warn(
+            DeprecationWarning(
+                f"{name!r} is deprecated, use {rename.__name__!r} instead"
+            ),
+            stacklevel=2,
+        )
+        return rename
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

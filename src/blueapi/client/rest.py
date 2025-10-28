@@ -267,3 +267,25 @@ class BlueapiRestClient:
             raise NoContentError(target_type)
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized
+
+
+# https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0
+def __getattr__(name: str):
+    import warnings
+
+    renames = {
+        "InvalidParameters": InvalidParametersError,
+        "NoContent": NoContentError,
+        "UnauthorisedAccess": UnauthorisedAccessError,
+        "UnknownPlan": UnknownPlanError,
+    }
+    rename = renames.get(name)
+    if rename is not None:
+        warnings.warn(
+            DeprecationWarning(
+                f"{name!r} is deprecated, use {rename.__name__!r} instead"
+            ),
+            stacklevel=2,
+        )
+        return rename
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

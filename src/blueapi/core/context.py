@@ -10,7 +10,7 @@ from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
 from dodal.utils import AnyDevice, make_all_devices
-from ophyd_async.core import NotConnected
+from ophyd_async.core import NotConnectedError
 from pydantic import BaseModel, GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
@@ -240,7 +240,7 @@ class BlueskyContext:
             LOGGER.warning(
                 f"{len(exceptions)} exceptions occurred while instantiating devices"
             )
-            LOGGER.exception(NotConnected(exceptions))
+            LOGGER.exception(NotConnectedError(exceptions))
         return devices, exceptions
 
     def register_plan(self, plan: PlanGenerator) -> PlanGenerator:

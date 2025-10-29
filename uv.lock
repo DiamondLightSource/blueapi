@@ -446,7 +446,7 @@ requires-dist = [
     { name = "bluesky", extras = ["plotting"], specifier = ">=1.14.0" },
     { name = "bluesky-stomp", specifier = ">=0.2.0" },
     { name = "click", specifier = ">=8.2.0" },
-    { name = "dls-dodal", specifier = ">=1.60.0" },
+    { name = "dls-dodal", specifier = ">=1.64.0" },
     { name = "event-model", specifier = "==1.23.1" },
     { name = "fastapi", specifier = ">=0.112.0" },
     { name = "gitpython" },
@@ -454,7 +454,7 @@ requires-dist = [
     { name = "observability-utils", specifier = ">=0.1.4" },
     { name = "opentelemetry-distro", specifier = ">=0.48b0" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.48b0" },
-    { name = "ophyd-async" },
+    { name = "ophyd-async", specifier = ">=0.13.5" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pydantic-settings" },
     { name = "pyjwt", extras = ["crypto"] },
@@ -1138,7 +1138,7 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "1.62.0"
+version = "1.64.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -1162,9 +1162,9 @@ dependencies = [
     { name = "scanspec" },
     { name = "zocalo" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d7/f9/f4d3a6fda28277492023f1fd7c8e3479716b17c9ffff981323d40b5dfa95/dls_dodal-1.62.0.tar.gz", hash = "sha256:a0e4d8a5ffb248bfe4a63e333f4b9e0ed07cde6a6cfe4c2af1d695f80f2c9c6a", size = 1408659, upload-time = "2025-10-13T09:18:00.055Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/c8/693fab2ef3e4fa5f292c090ee15b0337511f4653f459f531ad7ec3640c79/dls_dodal-1.64.0.tar.gz", hash = "sha256:cf67b92a717806a525ea03a801c1aae0692c9a206a2865112a09691f64bae930", size = 1315175, upload-time = "2025-10-28T11:49:41.416Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/3b/1530c4079e8e22089e987bbf71136ebe4c8b195bc7e73271d1aca0c95568/dls_dodal-1.62.0-py3-none-any.whl", hash = "sha256:73c75ae6f2c9a43fb410cf6145f98a6237d1e9b41944e2b81ca790c04aa176ab", size = 305201, upload-time = "2025-10-13T09:17:58.653Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/ab/741c6e1087c5f2859891bf0cfa8b5cb0cd864c741a31a3c47dedd4516b0f/dls_dodal-1.64.0-py3-none-any.whl", hash = "sha256:8dd8cea5786dcf8a2af39e6773085f3f0134b80d4033940cbf0b3b1081256221", size = 314138, upload-time = "2025-10-28T11:49:38.947Z" },
 ]
 
 [[package]]
@@ -2984,7 +2984,7 @@ wheels = [
 
 [[package]]
 name = "ophyd-async"
-version = "0.13.4"
+version = "0.13.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bluesky" },
@@ -2998,9 +2998,9 @@ dependencies = [
     { name = "stamina" },
     { name = "velocity-profile" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1f/80/482a12835ca8ca8d239df878856c099b864124f3dda994960b61790a90f3/ophyd_async-0.13.4.tar.gz", hash = "sha256:badee0b8b82278bdd3bd82c27bc92c1d7f4d347a53a8a0da95cf40377c09b6b8", size = 343330, upload-time = "2025-10-06T14:57:33.346Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a0/ba/c7b44d6253037705e56162714dbfe24a5fd41b48ea7c33e32329e399ad72/ophyd_async-0.13.5.tar.gz", hash = "sha256:2de5d1584b5ec91f35a1fd14a3208dec4be2df85f7c31121455866a0933b3cf5", size = 515043, upload-time = "2025-10-27T13:19:20.596Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/be/bbb87789480c09f074a4321b86f8d12cc068971c77bae50ea889865b36c1/ophyd_async-0.13.4-py3-none-any.whl", hash = "sha256:9dd9e8c49d552dc54ae5091fda5099d07754a2557e247c70f87e21c4dac03010", size = 200127, upload-time = "2025-10-06T14:57:31.968Z" },
+    { url = "https://files.pythonhosted.org/packages/35/e7/1529b808756332683bf8167ec0c37bc2e32b28a51c5bd7a68c874f89df73/ophyd_async-0.13.5-py3-none-any.whl", hash = "sha256:f8f23da68825cfeb5f7493d2b7053c04cc5e543859fcf9369f5873397aa24bd9", size = 202106, upload-time = "2025-10-27T13:19:18.808Z" },
 ]
 
 [package.optional-dependencies]

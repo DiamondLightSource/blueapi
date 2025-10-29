@@ -301,11 +301,10 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 },
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim", "mock": True},
-                    {"kind": "planFunctions", "module": "dodal.plans", "mock": False},
+                    {"kind": "planFunctions", "module": "dodal.plans"},
                     {
                         "kind": "planFunctions",
                         "module": "dodal.plan_stubs.wrapped",
-                        "mock": False,
                     },
                 ],
             },
@@ -353,11 +352,10 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             "env": {
                 "sources": [
                     {"kind": "dodal", "module": "dodal.adsim", "mock": False},
-                    {"kind": "planFunctions", "module": "dodal.plans", "mock": False},
+                    {"kind": "planFunctions", "module": "dodal.plans"},
                     {
                         "kind": "planFunctions",
                         "module": "dodal.plan_stubs.wrapped",
-                        "mock": False,
                     },
                 ],
                 "events": {"broadcast_status_events": True},

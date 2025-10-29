@@ -64,6 +64,41 @@
             "title": "CORSConfig",
             "type": "object"
         },
+        "DodalSource": {
+            "additionalProperties": false,
+            "properties": {
+                "kind": {
+                    "const": "dodal",
+                    "default": "dodal",
+                    "title": "Kind",
+                    "type": "string"
+                },
+                "module": {
+                    "anyOf": [
+                        {
+                            "format": "path",
+                            "type": "string"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ],
+                    "description": "Module name or path to the module to be imported",
+                    "title": "Module"
+                },
+                "mock": {
+                    "default": false,
+                    "description": "If true, ophyd_async device connections are mocked",
+                    "title": "Mock",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "module"
+            ],
+            "title": "DodalSource",
+            "type": "object"
+        },
         "EnvironmentConfig": {
             "additionalProperties": false,
             "description": "Config for the RunEngine environment",
@@ -72,17 +107,30 @@
                     "default": [
                         {
                             "kind": "planFunctions",
-                            "module": "dodal.plans",
-                            "mock": false
+                            "module": "dodal.plans"
                         },
                         {
                             "kind": "planFunctions",
-                            "module": "dodal.plan_stubs.wrapped",
-                            "mock": false
+                            "module": "dodal.plan_stubs.wrapped"
                         }
                     ],
                     "items": {
-                        "$ref": "#/$defs/Source"
+                        "discriminator": {
+                            "mapping": {
+                                "deviceFunctions": "#/$defs/Source",
+                                "dodal": "#/$defs/DodalSource",
+                                "planFunctions": "#/$defs/Source"
+                            },
+                            "propertyName": "kind"
+                        },
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/Source"
+                            },
+                            {
+                                "$ref": "#/$defs/DodalSource"
+                            }
+                        ]
                     },
                     "title": "Sources",
                     "type": "array"
@@ -297,8 +345,13 @@
             "additionalProperties": false,
             "properties": {
                 "kind": {
-                    "$ref": "#/$defs/SourceKind",
-                    "description": "The type of source module"
+                    "description": "The type of source module",
+                    "enum": [
+                        "planFunctions",
+                        "deviceFunctions"
+                    ],
+                    "title": "Kind",
+                    "type": "string"
                 },
                 "module": {
                     "anyOf": [
@@ -312,12 +365,6 @@
                     ],
                     "description": "Module name or path to the module to be imported",
                     "title": "Module"
-                },
-                "mock": {
-                    "default": false,
-                    "description": "If true, ophyd_async device connections are mocked",
-                    "title": "Mock",
-                    "type": "boolean"
                 }
             },
             "required": [
@@ -326,15 +373,6 @@
             ],
             "title": "Source",
             "type": "object"
-        },
-        "SourceKind": {
-            "enum": [
-                "planFunctions",
-                "deviceFunctions",
-                "dodal"
-            ],
-            "title": "SourceKind",
-            "type": "string"
         },
         "StompConfig": {
             "additionalProperties": false,

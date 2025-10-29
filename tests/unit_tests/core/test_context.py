@@ -30,7 +30,13 @@ from pydantic import TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
 
-from blueapi.config import EnvironmentConfig, MetadataConfig, Source, SourceKind
+from blueapi.config import (
+    DodalSource,
+    EnvironmentConfig,
+    MetadataConfig,
+    Source,
+    SourceKind,
+)
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 from blueapi.utils.connect_devices import _establish_device_connections
@@ -402,7 +408,7 @@ def test_with_config_passes_mock_to_with_dodal_module(
         empty_context.with_config(
             EnvironmentConfig(
                 sources=[
-                    Source(
+                    DodalSource(
                         kind=SourceKind.DODAL,
                         module="tests.unit_tests.core.fake_device_module",
                         mock=mock,

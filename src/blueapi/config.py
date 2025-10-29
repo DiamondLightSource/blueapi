@@ -6,7 +6,7 @@ from enum import Enum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Any, Generic, Literal, TypeVar, cast
+from typing import Annotated, Any, Generic, Literal, TypeVar, cast
 
 import requests
 import yaml
@@ -50,10 +50,16 @@ class SourceKind(str, Enum):
 
 
 class Source(BlueapiBaseModel):
-    kind: SourceKind = Field(description="The type of source module")
+    kind: Literal[SourceKind.PLAN_FUNCTIONS, SourceKind.DEVICE_FUNCTIONS] = Field(
+        description="The type of source module"
+    )
     module: Path | str = Field(
         description="Module name or path to the module to be imported"
     )
+
+
+class DodalSource(Source):
+    kind: Literal[SourceKind.DODAL] = SourceKind.DODAL  #  pyright: ignore [reportIncompatibleVariableOverride]
     mock: bool = Field(
         description="If true, ophyd_async device connections are mocked", default=False
     )
@@ -106,7 +112,7 @@ class EnvironmentConfig(BlueapiBaseModel):
     Config for the RunEngine environment
     """
 
-    sources: list[Source] = [
+    sources: list[Annotated[Source | DodalSource, Field(discriminator="kind")]] = [
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plans"),
         Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
     ]

@@ -5,7 +5,6 @@ aiohappyeyeballs==2.6.1
 aiohttp==3.12.15
 aiosignal==1.4.0
 alabaster==1.0.0
-annotated-doc==0.0.3
 annotated-types==0.7.0
 anyio==4.11.0
 asgiref==3.9.2
@@ -215,7 +214,7 @@ starlette==0.48.0
 stomp.py==8.2.0
 super_state_machine==2.1.0
 tenacity==9.1.2
-tiled==0.1.6
+tiled==0.2.0
 tomlkit==0.13.3
 toolz==1.0.0
 tox==3.28.0

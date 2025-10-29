@@ -14,7 +14,7 @@ description = "Lightweight bluesky-as-a-service wrapper application. Also usable
 dependencies = [
     "tiled[client]",
     "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
-    "ophyd-async",
+    "ophyd-async>=0.13.5",
     "aioca",
     "pydantic>=2.0",
     "scanspec>=0.9.0",
@@ -25,7 +25,7 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal>=1.60.0",
+    "dls-dodal>=1.64.0",
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
@@ -203,6 +203,7 @@ lint.select = [
     "C4",   # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
     "E",    # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
     "F",    # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "N",    # pep8-naming - https://docs.astral.sh/ruff/rules/#pep8-naming-n
     "W",    # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
     "I",    # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP",   # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up

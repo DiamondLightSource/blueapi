@@ -106,14 +106,14 @@ def has_default_nested_reference(
 
 
 @pytest.fixture
-def sim_motor(RE: RunEngine) -> Motor:
+def sim_motor(run_engine: RunEngine) -> Motor:
     with init_devices(mock=True):
         sim = Motor("FOO:")
     return sim
 
 
 @pytest.fixture
-def alt_motor(RE: RunEngine) -> Motor:
+def alt_motor(run_engine: RunEngine) -> Motor:
     with init_devices(mock=True):
         alt = Motor("BAR:")
     return alt
@@ -298,8 +298,8 @@ def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
 def test_with_dodal_module_returns_connection_exceptions(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_device_module as device_module
 
-    def connect_sim_backend(RE, devices, sim_backend):
-        return _establish_device_connections(RE, devices, True)
+    def connect_sim_backend(run_engine: RunEngine, devices, sim_backend):
+        return _establish_device_connections(run_engine, devices, True)
 
     with patch(
         "blueapi.utils.connect_devices._establish_device_connections",

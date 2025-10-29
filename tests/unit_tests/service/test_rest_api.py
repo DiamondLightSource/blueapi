@@ -129,13 +129,12 @@ def test_rest_config_with_cors(
     )
     task_id = "f8424be3-203c-494e-b22f-219933b4fa67"
     mock_runner.run.side_effect = [task_id]
-    HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
 
     # Allowed method
     response_post = client_with_cors.post(
         "/tasks",
         json=task.model_dump(),
-        headers=HEADERS,
+        headers={"Accept": "application/json", "Content-Type": "application/json"},
     )
     assert response_post.status_code == status.HTTP_201_CREATED
     assert response_post.headers["content-type"] == "application/json"

@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from bluesky.log import logger as bluesky_logger
-from dodal.log import LOGGER as dodal_logger
+from dodal.log import LOGGER as DODAL_LOGGER
 
 from blueapi.config import GraylogConfig, LoggingConfig
 from blueapi.log import PlanTagFilter, plan_tag_filter_context, set_up_logging
@@ -96,7 +96,7 @@ def test_messages_are_tagged_with_instrument(logger, mock_handler_emit):
 # Temporarily duplicated https://github.com/bluesky/ophyd-async/issues/550
 @pytest.mark.parametrize(
     "library_logger",
-    [bluesky_logger, dodal_logger, logging.getLogger("ophyd_async")],
+    [bluesky_logger, DODAL_LOGGER, logging.getLogger("ophyd_async")],
 )
 def test_library_logger_intergrations(logger, library_logger, mock_handler_emit):
     mock_handler_emit.assert_not_called()

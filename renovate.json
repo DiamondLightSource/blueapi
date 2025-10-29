@@ -1,8 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices",
-    ":automergeStableNonMajor"
+    "config:recommended"
   ],
   "allowScripts": true,
   "ignoreScripts": false,
@@ -27,27 +26,6 @@
       "description": [
         "Group and update GitHub actions through the copier template to prevent merge conflicts"
       ]
-    },
-    {
-      "groupName": "Indirect python dependencies",
-      "matchUpdateTypes": [
-        "patch",
-        "minor"
-      ],
-      "matchManagers": [
-        "pip_requirements"
-      ],
-      "description": "Group non-major indirect (dev-requirements.txt only) python updates"
-    },
-    {
-      "groupName": "Direct python dependencies",
-      "matchUpdateTypes": [
-        "patch"
-      ],
-      "matchManagers": [
-        "pep621"
-      ],
-      "description": "Group patch direct (pyproject.toml) python updates"
     },
     {
       "groupName": "GitHub Actions",

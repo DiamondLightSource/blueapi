@@ -6,7 +6,7 @@ services:
     image: ghcr.io/diamondlightsource/numtracker:1.0.1
     ports:
       - "8406:8000"
-    
+
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management
     ports:
@@ -19,7 +19,7 @@ services:
         target: /etc/rabbitmq/enabled_plugins
 
   tiled:
-    image: ghcr.io/bluesky/tiled:0.1.0-b29
+    image: ghcr.io/bluesky/tiled:0.1.0
     ports:
       - "8407:8000"
     environment:

@@ -12,20 +12,20 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v5
         with:
           # Need this to get version number from last tag
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
 
       - name: Checkout simulated devices
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: epics-containers/example-services
           path: example-services
-          ref: '2025.8.2'
+          ref: "2025.8.2"
 
       - name: Compose devices
         uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1

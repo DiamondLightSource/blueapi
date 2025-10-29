@@ -85,7 +85,7 @@ jobs:
     needs: build_container
     steps:
       - name: checkout repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v5
 
       - name: install helm
         uses: Azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4

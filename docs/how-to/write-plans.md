@@ -28,7 +28,7 @@ Some plans are created for specific sets of devices, or will almost always be us
 
 ## Injecting multiple devices
 
-If a plan requires multiple devices to be injected at once, rather than have a plan with several device parameters each of them with their own injection default, it is preferable to define a device composite which can be accepted as a parameter.
+If a plan requires multiple devices to be injected at once, rather than have a plan with several device parameters each of them with their own injection default, it is possible to define a device composite which can be accepted as a parameter.
 
 For example you could define a composite as below:
 

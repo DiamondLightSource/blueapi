@@ -52,5 +52,5 @@ repos:
     hooks:
       - id: helm-schema
         args:
-        - "--config"
-        - "helm/blueapi/.schema.yaml"
+          - "--config"
+          - "helm/blueapi/.schema.yaml"

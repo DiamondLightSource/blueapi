@@ -79,6 +79,9 @@ ENV MPLCONFIGDIR=/tmp/matplotlib
 # Copy the python installation from the build stage
 COPY --from=build /python /python
 
+# Copy the python installation from the build stage
+COPY --from=build /python /python
+
 # Copy the environment, but not the source code
 COPY --from=build /app/.venv /app/.venv
 ENV PATH=/app/.venv/bin:$PATH

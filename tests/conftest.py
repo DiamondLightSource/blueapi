@@ -27,23 +27,23 @@ from blueapi.service.model import Cache
 
 
 @pytest.fixture(scope="function")
-def RE(request):
+def run_engine(request):
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
-    RE = RunEngine({}, call_returns_result=True, loop=loop)
+    run_engine = RunEngine({}, call_returns_result=True, loop=loop)
 
     def clean_event_loop():
-        if RE.state not in ("idle", "panicked"):
+        if run_engine.state not in ("idle", "panicked"):
             try:
-                RE.halt()
+                run_engine.halt()
             except TransitionError:
                 pass
         loop.call_soon_threadsafe(loop.stop)
-        RE._th.join()
+        run_engine._th.join()
         loop.close()
 
     request.addfinalizer(clean_event_loop)
-    return RE
+    return run_engine
 
 
 @pytest.fixture(scope="session")

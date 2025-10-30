@@ -9,7 +9,7 @@ from dodal.utils import (
     collect_factories,
     filter_ophyd_devices,
 )
-from ophyd_async.core import NotConnected
+from ophyd_async.core import NotConnectedError
 from ophyd_async.plan_stubs import ensure_connected
 
 LOGGER = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ def _report_successful_devices(
 
 
 def _establish_device_connections(
-    RE: RunEngine,
+    run_engine: RunEngine,
     devices: Mapping[str, AnyDevice],
     sim_backend: bool,
 ) -> tuple[Mapping[str, AnyDevice], Mapping[str, Exception]]:
@@ -45,8 +45,8 @@ def _establish_device_connections(
 
     # Connect ophyd-async devices
     try:
-        RE(ensure_connected(*ophyd_async_devices.values(), mock=sim_backend))
-    except NotConnected as ex:
+        run_engine(ensure_connected(*ophyd_async_devices.values(), mock=sim_backend))
+    except NotConnectedError as ex:
         exceptions = {**exceptions, **ex.sub_errors}
 
     # Only return the subset of devices that haven't raised an exception

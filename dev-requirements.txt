@@ -215,7 +215,7 @@ starlette==0.48.0
 stomp.py==8.2.0
 super_state_machine==2.1.0
 tenacity==9.1.2
-tiled==0.1.6
+tiled==0.2.0
 tomlkit==0.13.3
 toolz==1.0.0
 tox==3.28.0

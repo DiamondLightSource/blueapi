@@ -189,6 +189,10 @@ def is_subset(subset: Mapping[str, Any], superset: Mapping[str, Any]) -> bool:
         if isinstance(value, dict) and isinstance(superset_value, dict):
             if not is_subset(value, superset_value):
                 return False
+        elif isinstance(value, list) and isinstance(superset_value, list):
+            for sub_val, sup_val in zip(value, superset_value, strict=True):
+                if not is_subset(sub_val, sup_val):
+                    return False
         # Check equality for non-dict values, ignoring None in superset
         elif superset_value is not None and value != superset_value:
             return False
@@ -296,9 +300,12 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     "instrument": "p01",
                 },
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "dodal", "module": "dodal.adsim", "mock": True},
                     {"kind": "planFunctions", "module": "dodal.plans"},
-                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
+                    {
+                        "kind": "planFunctions",
+                        "module": "dodal.plan_stubs.wrapped",
+                    },
                 ],
             },
             "api": {
@@ -344,9 +351,12 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             "auth_token_path": None,
             "env": {
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "dodal", "module": "dodal.adsim", "mock": False},
                     {"kind": "planFunctions", "module": "dodal.plans"},
-                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
+                    {
+                        "kind": "planFunctions",
+                        "module": "dodal.plan_stubs.wrapped",
+                    },
                 ],
                 "events": {"broadcast_status_events": True},
                 "metadata": {

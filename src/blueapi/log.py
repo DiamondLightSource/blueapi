@@ -1,7 +1,10 @@
+import enum
 import logging
 import os
 from contextlib import contextmanager
+from copy import copy
 
+import click
 from graypy import GELFTCPHandler
 
 from blueapi.config import LoggingConfig
@@ -91,6 +94,9 @@ def set_up_stream_handler(
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging_config.level)
 
+    formatter = ColorFormatter("%(asctime)s %(levelname)s %(message)s")
+    stream_handler.setFormatter(formatter)
+
     for filter in filters:
         stream_handler.addFilter(filter)
 
@@ -120,3 +126,47 @@ def set_up_graylog_handler(
 
     logger.addHandler(graylog_handler)
     return graylog_handler
+
+
+class IBMColorBlindSafeColors(enum.Enum):
+    ultramarine = (100, 143, 255)
+    indigo = (120, 94, 240)
+    magenta = (220, 38, 127)
+    orange = (254, 97, 0)
+    gold = (255, 176, 0)
+
+
+class ColorFormatter(logging.Formatter):
+    """Colors level_name of log using IBM color blind safe palette."""
+
+    def color_level_name(self, level_name: str, level_no: int) -> str:
+        match level_no:
+            case logging.DEBUG:
+                return click.style(
+                    str(level_name), fg=IBMColorBlindSafeColors.ultramarine.value
+                )
+            case logging.INFO:
+                return click.style(
+                    str(level_name), fg=IBMColorBlindSafeColors.indigo.value
+                )
+            case logging.WARNING:
+                return click.style(
+                    str(level_name), fg=IBMColorBlindSafeColors.gold.value
+                )
+            case logging.ERROR:
+                return click.style(
+                    str(level_name), fg=IBMColorBlindSafeColors.magenta.value
+                )
+            case logging.CRITICAL:
+                return click.style(
+                    str(level_name), fg=IBMColorBlindSafeColors.orange.value
+                )
+        return level_name
+
+    def formatMessage(self, record: logging.LogRecord) -> str:  # noqa: N802
+        # Copy record to avoid modifying for other handlers etc.
+        recordcopy = copy(record)
+        recordcopy.levelname = self.color_level_name(
+            recordcopy.levelname, recordcopy.levelno
+        )
+        return super().formatMessage(recordcopy)

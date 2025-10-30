@@ -7,7 +7,12 @@ from bluesky.log import logger as bluesky_logger
 from dodal.log import LOGGER as DODAL_LOGGER
 
 from blueapi.config import GraylogConfig, LoggingConfig
-from blueapi.log import PlanTagFilter, plan_tag_filter_context, set_up_logging
+from blueapi.log import (
+    ColorFormatter,
+    PlanTagFilter,
+    plan_tag_filter_context,
+    set_up_logging,
+)
 
 
 def clear_all_loggers_and_handlers(logger):
@@ -124,3 +129,56 @@ def test_filter_tags_plan_name(logger, mock_handler_emit):
     logger.addFilter(PlanTagFilter("foo"))
     logger.info("FOO")
     assert mock_handler_emit.call_args[0][0].plan_name == "foo"
+
+
+@pytest.fixture
+def color_formatter():
+    return ColorFormatter("%(levelname)s %(message)s")
+
+
+@pytest.fixture
+def foo_record():
+    return logging.LogRecord("foo", logging.INFO, "foo", 0, "foo", None, None)
+
+
+class TestColorFormatter:
+    def test_debug(self, color_formatter, foo_record):
+        foo_record.levelno = logging.DEBUG
+
+        assert (
+            color_formatter.format(foo_record)
+            == "\x1b[38;2;100;143;255mINFO\x1b[0m foo"
+        )
+
+    def test_info(self, color_formatter, foo_record):
+        foo_record.levelno = logging.INFO
+
+        assert (
+            color_formatter.format(foo_record) == "\x1b[38;2;120;94;240mINFO\x1b[0m foo"
+        )
+
+    def test_warning(self, color_formatter, foo_record):
+        foo_record.levelno = logging.WARNING
+
+        assert (
+            color_formatter.format(foo_record) == "\x1b[38;2;255;176;0mINFO\x1b[0m foo"
+        )
+
+    def test_error(self, color_formatter, foo_record):
+        foo_record.levelno = logging.ERROR
+
+        assert (
+            color_formatter.format(foo_record) == "\x1b[38;2;220;38;127mINFO\x1b[0m foo"
+        )
+
+    def test_critical(self, color_formatter, foo_record):
+        foo_record.levelno = logging.CRITICAL
+
+        assert (
+            color_formatter.format(foo_record) == "\x1b[38;2;254;97;0mINFO\x1b[0m foo"
+        )
+
+    def test_other(self, color_formatter, foo_record):
+        foo_record.levelno = -1
+
+        assert color_formatter.format(foo_record) == "INFO foo"

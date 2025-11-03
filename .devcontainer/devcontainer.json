@@ -29,7 +29,8 @@
                 "charliermarsh.ruff",
                 "ms-pyright.pyright",
                 "ms-azuretools.vscode-docker",
-                "ms-kubernetes-tools.vscode-kubernetes-tools"
+                "ms-kubernetes-tools.vscode-kubernetes-tools",
+                "rioj7.command-variable",
             ]
         }
     },

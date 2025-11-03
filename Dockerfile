@@ -27,6 +27,7 @@ RUN mkdir -p /.cache/pip; chmod o+wrX /.cache/pip
 # Requires buildkit 0.17.0
 COPY --chmod=o+wrX . /workspaces/blueapi
 WORKDIR /workspaces/blueapi
+
 RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
 
 
@@ -54,9 +55,13 @@ CMD [ "while true; do sleep 30; done;" ]
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim AS runtime
 # Add apt-get system dependecies for runtime here if needed
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime
     git \
+    # gdb required for attaching debugger
+    gdb \
+    # required if attaching devcontainer
+    libnss-ldapd \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build --chmod=o+wrX /venv/ /venv/
 COPY --from=build --chmod=o+wrX /.cache/pip /.cache/pip
@@ -64,8 +69,6 @@ ENV PATH=/venv/bin:$PATH
 ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
 
 # For this pod to understand finding user information from LDAP
-RUN apt update
-RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
 RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 
 # Set the MPLCONFIGDIR environment variable to a temporary directory to avoid
@@ -77,3 +80,15 @@ ENV MPLCONFIGDIR=/tmp/matplotlib
 
 ENTRYPOINT ["blueapi"]
 CMD ["serve"]
+
+FROM runtime AS debug
+COPY --from=build --chmod=o+wrX /workspaces/blueapi /blueapi
+WORKDIR /blueapi
+# Make editable
+RUN pip install -e .
+# Set origin to use ssh
+RUN git remote set-url origin git@github.com:diamondlightsource/DiamondLightSource/blueapi.git
+
+# Alternate entrypoint to allow devcontainer to attach
+ENTRYPOINT [ "/bin/bash", "-c", "--" ]
+CMD [ "while true; do sleep 30; done;" ]

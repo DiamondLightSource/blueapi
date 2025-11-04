@@ -593,11 +593,11 @@ def test_persistent_volume_claim_exists(
     )
 
     persistent_volume_claim = {
-        "scratch-0.1.0": {
+        "blueapi-scratch-0.1.0": {
             "apiVersion": "v1",
             "kind": "PersistentVolumeClaim",
             "metadata": {
-                "name": "scratch-0.1.0",
+                "name": "blueapi-scratch-0.1.0",
                 "annotations": {"helm.sh/resource-policy": "keep"},
             },
             "spec": {
@@ -836,7 +836,7 @@ def test_scratch_volume_uses_correct_name(
         assert claim_name == existing_claim_name
         assert "PersistentVolumeClaim" not in manifests
     else:
-        assert claim_name == "scratch-0.1.0"
+        assert claim_name == "blueapi-scratch-0.1.0"
         assert claim_name in manifests["PersistentVolumeClaim"]
 
 

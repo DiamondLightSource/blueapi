@@ -17,6 +17,28 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
     rm get_helm.sh
 RUN helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.2.1
 
+# Install Kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"; \
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"; \
+    echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+
+RUN install -m 0755 kubectl /usr/local/bin/kubectl
+
+# Install Krew
+RUN set -x; cd "$(mktemp -d)" && \
+    OS="$(uname | tr '[:upper:]' '[:lower:]')" && \
+    ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" && \
+    KREW="krew-${OS}_${ARCH}" && \
+    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" && \
+    tar zxvf "${KREW}.tar.gz" && \
+    ./"${KREW}" install krew
+
+# Install pv-mounter and oidc-login
+# Does not seem to be sufficient for below command?
+ENV PATH=$HOME/.krew/bin:$PATH
+RUN PATH=$HOME/.krew/bin:$PATH kubectl krew install pv-mounter
+RUN PATH=$HOME/.krew/bin:$PATH kubectl krew install oidc-login
+
 # Set up a virtual environment and put it in PATH
 RUN python -m venv /venv
 ENV PATH=/venv/bin:$PATH
@@ -29,28 +51,6 @@ COPY --chmod=o+wrX . /workspaces/blueapi
 WORKDIR /workspaces/blueapi
 
 RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
-
-
-FROM build AS debug
-
-
-# Set origin to use ssh
-RUN git remote set-url origin git@github.com:DiamondLightSource/blueapi.git
-
-
-# For this pod to understand finding user information from LDAP
-RUN apt update
-RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
-RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
-
-# Make editable and debuggable
-RUN pip install debugpy
-RUN pip install -e .
-
-# Alternate entrypoint to allow devcontainer to attach
-ENTRYPOINT [ "/bin/bash", "-c", "--" ]
-CMD [ "while true; do sleep 30; done;" ]
-
 
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim AS runtime

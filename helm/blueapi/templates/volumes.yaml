@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+  name: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
   annotations:
     helm.sh/resource-policy: keep
 spec:

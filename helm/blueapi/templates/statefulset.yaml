@@ -63,7 +63,7 @@ spec:
           {{- if .Values.initContainer.persistentVolume.existingClaimName }}
           claimName: {{ .Values.initContainer.persistentVolume.existingClaimName }}
           {{- else }}
-          claimName: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+          claimName: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.image.tag | default .Chart.AppVersion  | replace "." "-" }}
           {{- end }}
       {{- else }}
       - name: scratch-host

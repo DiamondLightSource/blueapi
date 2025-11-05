@@ -3,14 +3,14 @@ from pathlib import Path
 from event_model import RunStart, RunStop
 from ophyd_async.core import PathInfo, PathProvider
 
-DEFAULT_TEMPLATE = "{device_name}-{instrument}-{scan_id}"
+DEFAULT_TEMPLATE = "{instrument}-{scan_id}-{device_name}"
 
 
 class StartDocumentPathProvider(PathProvider):
     """A PathProvider that sources from metadata in a RunStart document.
 
     This uses metadata from a RunStart document to determine file names and data session
-    directories. The file naming defaults to "{device_name}-{instrument}-{scan_id}", so
+    directories. The file naming defaults to "{instrument}-{scan_id}-{device_name}}", so
     the file name is incremented by scan number. A template can be included in the
     StartDocument to allow for custom naming conventions.
 
@@ -36,9 +36,9 @@ class StartDocumentPathProvider(PathProvider):
     def __call__(self, device_name: str | None = None) -> PathInfo:
         """Returns the directory path and filename for a given data_session.
 
-        The default template for file naming is: "{device_name}-{instrument}-{scan_id}"
+        The default template for file naming is: "{instrument}-{scan_id}-{device_name}"
         however, this can be changed by providing a template in the start document. For
-        example: "template": "custom-{device_name}--{scan_id}".
+        example: "template": "custom-{device_name}-{scan_id}".
 
         If you do not provide a data_session_directory it will default to "/tmp".
         """

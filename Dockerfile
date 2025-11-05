@@ -6,7 +6,7 @@ FROM python:${PYTHON_VERSION} AS developer
 
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    graphviz \
+    graphviz sshfs\
     && rm -rf /var/lib/apt/lists/*
 
 # Install helm for the dev container. This is the recommended 
@@ -34,9 +34,9 @@ RUN set -x; cd "$(mktemp -d)" && \
     ./"${KREW}" install krew
 
 # Install pv-mounter and oidc-login
-ENV PATH=$HOME/.krew/bin:$PATH
-RUN PATH=$HOME/.krew/bin:$PATH kubectl krew install pv-mounter
-RUN PATH=$HOME/.krew/bin:$PATH kubectl krew install oidc-login
+ENV PATH=/root/.krew/bin:$PATH
+RUN kubectl krew install pv-mounter
+RUN kubectl krew install oidc-login
 
 # Set up a virtual environment and put it in PATH
 RUN python -m venv /venv

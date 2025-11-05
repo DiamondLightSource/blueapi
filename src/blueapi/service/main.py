@@ -555,13 +555,13 @@ def start(config: ApplicationConfig):
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG
 
-    LOGGING_CONFIG["formatters"]["default"]["fmt"] = (
-        "%(asctime)s %(levelprefix)s %(message)s"
-    )
+    # Enable propagation and disable default handlers, so that blueapi handles all logs
+    LOGGING_CONFIG["loggers"]["uvicorn"]["handlers"] = []
     LOGGING_CONFIG["formatters"]["access"]["fmt"] = (
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"
     )
+    LOGGING_CONFIG["loggers"]["uvicorn"]["propagate"] = True
     app = get_app(config)
 
     FastAPIInstrumentor().instrument_app(
@@ -573,7 +573,9 @@ def start(config: ApplicationConfig):
     app.state.config = config
     assert config.api.url.host is not None, "API URL missing host"
     assert config.api.url.port is not None, "API URL missing port"
-    uvicorn.run(app, host=config.api.url.host, port=config.api.url.port)
+    uvicorn.run(
+        app, host=config.api.url.host, port=config.api.url.port, access_log=False
+    )
 
 
 async def add_api_version_header(

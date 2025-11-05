@@ -342,7 +342,7 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
 
 
 @patch("queue.Queue.put_nowait")
-def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: TaskWorker):
+def test_full_queue_raises(put_nowait: MagicMock, worker: TaskWorker):
     def raise_full(item):
         raise Full()
 

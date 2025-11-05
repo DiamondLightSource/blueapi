@@ -15,9 +15,10 @@ from blueapi.client.client import (
     BlueskyRemoteControlError,
 )
 from blueapi.client.event_bus import AnyEvent
-from blueapi.client.rest import UnknownPlan
+from blueapi.client.rest import UnknownPlanError
 from blueapi.config import (
     ApplicationConfig,
+    ConfigLoader,
     OIDCConfig,
     StompConfig,
 )
@@ -155,6 +156,33 @@ def clean_existing_tasks(client: BlueapiClient):
     yield
 
 
+@pytest.fixture(scope="module")
+def server_config() -> ApplicationConfig:
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(Path("tests", "system_tests", "config.yaml"))
+    return loader.load()
+
+
+@pytest.fixture(autouse=True, scope="module")
+def reset_numtracker(server_config: ApplicationConfig):
+    nt_url = server_config.numtracker.url  # type: ignore - if numtracker is None we should fail
+    requests.post(
+        str(nt_url),
+        json={
+            "query": """mutation {
+              configure(instrument: "adsim",
+                        config: {directory: "/tmp/",
+                                 scan: "{instrument}-{scan_number}",
+                                 detector: "{instrument}-{scan_number}-{detector}",
+                                 scanNumber: 43}) {
+                scanTemplate
+              }
+            }"""
+        },
+    ).raise_for_status()
+    yield
+
+
 @pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_cannot_access_endpoints(
     client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
@@ -225,7 +253,7 @@ def test_instrument_session_propagated(client: BlueapiClient):
 
 
 def test_create_task_validation_error(client: BlueapiClient):
-    with pytest.raises(UnknownPlan):
+    with pytest.raises(UnknownPlanError):
         client.create_task(
             TaskRequest(
                 name="Not-exists",

@@ -6,9 +6,7 @@ services:
     image: ghcr.io/diamondlightsource/numtracker:1.0.1
     ports:
       - "8406:8000"
-    post_start:
-      - command: /app/numtracker client configure adsim --directory '/tmp/' --scan '{instrument}-{scan_number}' --detector '{instrument}-{scan_number}-{detector}' --number 43
-
+    
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management
     ports:
@@ -21,12 +19,10 @@ services:
         target: /etc/rabbitmq/enabled_plugins
 
   tiled:
-    image: ghcr.io/bluesky/tiled:0.1.0-b29
+    image: ghcr.io/bluesky/tiled:0.2.0
     ports:
       - "8407:8000"
     environment:
       - TILED_SINGLE_USER_API_KEY=${TILED_SINGLE_USER_API_KEY}
     volumes:
-      - type: bind
-        source: ./services/tiled_config
-        target: /deploy/config
+    - ./services/tiled_config:/deploy/config

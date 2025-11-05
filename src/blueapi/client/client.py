@@ -8,7 +8,7 @@ from observability_utils.tracing import (
     start_as_current_span,
 )
 
-from blueapi.config import ApplicationConfig, MissingStompConfiguration
+from blueapi.config import ApplicationConfig, MissingStompConfigurationError
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
@@ -217,7 +217,7 @@ class BlueapiClient:
         """
 
         if self._events is None:
-            raise MissingStompConfiguration(
+            raise MissingStompConfigurationError(
                 "Stomp configuration required to run plans is missing or disabled"
             )
 

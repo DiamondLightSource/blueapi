@@ -10,7 +10,7 @@ from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
 from dodal.utils import AnyDevice, make_all_devices
-from ophyd_async.core import NotConnected
+from ophyd_async.core import NotConnectedError
 from pydantic import (
     BaseModel,
     GetCoreSchemaHandler,
@@ -128,7 +128,8 @@ class BlueskyContext:
 
             path_provider = StartDocumentPathProvider()
             set_path_provider(path_provider)
-            self.run_engine.subscribe(path_provider.update_run, "start")
+            self.run_engine.subscribe(path_provider.run_start, "start")
+            self.run_engine.subscribe(path_provider.run_stop, "stop")
 
             def _update_scan_num(md: dict[str, Any]) -> int:
                 scan = numtracker.create_scan(
@@ -244,7 +245,7 @@ class BlueskyContext:
             LOGGER.warning(
                 f"{len(exceptions)} exceptions occurred while instantiating devices"
             )
-            LOGGER.exception(NotConnected(exceptions))
+            LOGGER.exception(NotConnectedError(exceptions))
         return devices, exceptions
 
     def register_plan(self, plan: PlanGenerator) -> PlanGenerator:

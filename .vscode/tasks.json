@@ -16,6 +16,11 @@
             "type": "shell",
             "label": "kubectl pv-mounter",
             "command": "kubectl",
+            "options": {
+                "env": {
+                    "PATH": "${env:HOME}/.krew/bin:${env:PATH}"
+                }
+            },
             "args": [
                 "pv-mounter",
                 "mount",
@@ -32,6 +37,11 @@
             "type": "shell",
             "label": "kubectl port-forward",
             "command": "kubectl",
+            "options": {
+                "env": {
+                    "PATH": "${env:HOME}/.krew/bin:${env:PATH}"
+                }
+            },
             "args": [
                 "port-forward",
                 "-n",
@@ -46,6 +56,11 @@
             "type": "shell",
             "label": "pv-unmount",
             "command": "kubectl",
+            "options": {
+                "env": {
+                    "PATH": "${env:HOME}/.krew/bin:${env:PATH}"
+                }
+            },
             "args": [
                 "pv-mounter",
                 "clean",
@@ -67,7 +82,7 @@
             "id": "pod",
             "type": "promptString",
             "description": "Blueapi pod name",
-            "default": "ixx-blueapi-0"
+            "default": "ixx-blueapi-0",
         },
         {
             "id": "PVC Name",

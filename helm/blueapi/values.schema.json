@@ -643,6 +643,11 @@
                         "instrument"
                     ],
                     "properties": {
+                        "data_file_path_template": {
+                            "title": "Data File Path Template",
+                            "default": "{instrument}-{scan_id}-{device_name}",
+                            "type": "string"
+                        },
                         "instrument": {
                             "title": "Instrument",
                             "type": "string"

@@ -155,6 +155,11 @@
                 "instrument": {
                     "title": "Instrument",
                     "type": "string"
+                },
+                "data_file_path_template": {
+                    "default": "{instrument}-{scan_id}-{device_name}",
+                    "title": "Data File Path Template",
+                    "type": "string"
                 }
             },
             "required": [

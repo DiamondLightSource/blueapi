@@ -3,16 +3,13 @@ from pathlib import Path
 from event_model import RunStart, RunStop
 from ophyd_async.core import PathInfo, PathProvider
 
-DEFAULT_TEMPLATE = "{instrument}-{scan_id}-{device_name}"
-
 
 class StartDocumentPathProvider(PathProvider):
     """A PathProvider that sources from metadata in a RunStart document.
 
-    This uses metadata from a RunStart document to determine file names and data session
-    directories. The file naming defaults to "{instrument}-{scan_id}-{device_name}}", so
-    the file name is incremented by scan number. A template can be included in the
-    StartDocument to allow for custom naming conventions.
+    This uses metadata from a RunStart document to determine file names and
+    data session directories. A template can be included in the StartDocument
+    to allow for custom naming conventions.
 
     """
 
@@ -47,7 +44,9 @@ class StartDocumentPathProvider(PathProvider):
                 "Start document not found. This call must be made inside a run."
             )
         else:
-            template = self._docs[-1].get("data_file_path_template", DEFAULT_TEMPLATE)
+            template = self._docs[-1].get("data_file_path_template")
+            if not template:
+                raise ValueError("data_file_path_template must be set in metadata")
             sub_path = template.format_map(
                 self._docs[-1] | {"device_name": device_name}
             )

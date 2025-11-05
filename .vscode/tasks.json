@@ -18,7 +18,7 @@
             "command": "kubectl",
             "options": {
                 "env": {
-                    "PATH": "${env:HOME}/.krew/bin:${env:PATH}"
+                    "KUBECONFIG": "${env:HOME}/.kube/${input:kube_config}"
                 }
             },
             "args": [
@@ -39,7 +39,7 @@
             "command": "kubectl",
             "options": {
                 "env": {
-                    "PATH": "${env:HOME}/.krew/bin:${env:PATH}"
+                    "KUBECONFIG": "${env:HOME}/.kube/${input:kube_config}"
                 }
             },
             "args": [
@@ -58,7 +58,7 @@
             "command": "kubectl",
             "options": {
                 "env": {
-                    "PATH": "${env:HOME}/.krew/bin:${env:PATH}"
+                    "KUBECONFIG": "${env:HOME}/.kube/${input:kube_config}"
                 }
             },
             "args": [
@@ -77,6 +77,12 @@
             "type": "promptString",
             "description": "Beamline namespace in the cluster",
             "default": "ixx-beamline"
+        },
+        {
+            "id": "kube_config",
+            "type": "promptString",
+            "description": "Name of a kubernetes config file in $HOME/.kube/",
+            "default": "config_k8s-ixx"
         },
         {
             "id": "pod",

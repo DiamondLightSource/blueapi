@@ -90,23 +90,15 @@
     "inputs": [
         {
             "id": "PVC Name",
-            "type": "command",
-            "command": "extension.commandvariable.promptStringRemember",
-            "args": {
-                "key": "PVC Name",
-                "description": "Name of the PVC to mount locally",
-                "default": "scratch-1.0.0"
-            }
+            "type": "promptString",
+            "description": "Name of the PVC to mount locally",
+            "default": "ixx-blueapi-scratch-1-0-0"
         },
         {
             "id": "Mount Point",
-            "type": "command",
-            "command": "extension.commandvariable.promptStringRemember",
-            "args": {
-                "key": "Mount Point",
-                "description": "Location to mount PVC locally, must exist as an empty directory",
-                "default": "/scratch/mountPoint"
-            }
+            "type": "promptString",
+            "description": "Location to mount PVC locally, must exist as an empty directory",
+            "default": "/scratch/mountPoint"
         },
         {
             "id": "controller_args",

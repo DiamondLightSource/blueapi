@@ -477,7 +477,7 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
 
     stream_resource = resource.get_nowait()
     assert stream_resource["run_start"] == start_doc["uid"]
-    assert stream_resource["uri"] == f"file://localhost/tmp/det-adsim-{scan_id}.h5"
+    assert stream_resource["uri"] == f"file://localhost/tmp/adsim-{scan_id}-det.h5"
 
     tiled_url = f"http://localhost:8407/api/v1/metadata/{start_doc['uid']}"
     response = requests.get(tiled_url)

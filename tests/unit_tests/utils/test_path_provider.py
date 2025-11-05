@@ -46,7 +46,7 @@ def test_start_document_path_provider_with_default_template_returns_correct_path
 
     assert path == PathInfo(
         directory_path=PosixPath("/p01/ab123"),
-        filename="det-p01-22",
+        filename="p01-22-det",
         create_dir_depth=0,
     )
 
@@ -88,7 +88,7 @@ def test_start_document_path_provider_with_custom_template_returns_correct_path_
 
     assert path == PathInfo(
         directory_path=PosixPath("/p01/ab123"),
-        filename="det-p01-22-custom",
+        filename="p01-22-det-custom",
         create_dir_depth=0,
     )
 

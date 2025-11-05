@@ -199,7 +199,7 @@ def test_start_document_path_provider_sets_data_session_directory_default_to_tmp
     path = pp("det")
 
     assert path == PathInfo(
-        directory_path=PosixPath("/tmp"), filename="det-p01-22", create_dir_depth=0
+        directory_path=PosixPath("/tmp"), filename="p01-22-det", create_dir_depth=0
     )
 
 
@@ -321,7 +321,7 @@ def test_start_document_path_provider_nested_runs_use_info_from_last_start_doc(
     pp.run_start(name="start", start_document=start_doc_1)
     start_doc_1_path_info = PathInfo(
         directory_path=PosixPath("/p01/ab123"),
-        filename="det-p01-50",
+        filename="p01-50-det",
         create_dir_depth=0,
     )
 
@@ -332,7 +332,7 @@ def test_start_document_path_provider_nested_runs_use_info_from_last_start_doc(
     pp.run_start(name="start", start_document=start_doc_2)
     start_doc_2_path_info = PathInfo(
         directory_path=PosixPath("/p02/ab123"),
-        filename="det-p02-51",
+        filename="p02-51-det",
         create_dir_depth=0,
     )
 

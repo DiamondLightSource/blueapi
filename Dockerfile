@@ -34,10 +34,9 @@ RUN set -x; cd "$(mktemp -d)" && \
     ./"${KREW}" install krew
 
 # Install pv-mounter and oidc-login
-# Does not seem to be sufficient for below command?
-ENV PATH=$HOME/.krew/bin:$PATH
-RUN PATH=$HOME/.krew/bin:$PATH kubectl krew install pv-mounter
-RUN PATH=$HOME/.krew/bin:$PATH kubectl krew install oidc-login
+ENV PATH $HOME/.krew/bin:$PATH
+RUN kubectl krew install pv-mounter
+RUN kubectl krew install oidc-login
 
 # Set up a virtual environment and put it in PATH
 RUN python -m venv /venv

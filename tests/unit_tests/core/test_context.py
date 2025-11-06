@@ -693,17 +693,3 @@ def test_explicit_none_arg_generated_schema(
         "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "null"}]}
     }
     assert "foo" in schema.get("required", [])
-
-
-def test_run_engine_metadata_updated(empty_context: BlueskyContext):
-    empty_context.with_config(
-        EnvironmentConfig.model_validate(
-            {
-                "metadata": {
-                    "instrument": "p45",
-                    "detector_file_template": "foo_bar_{scan_id}",
-                }
-            }
-        )
-    )
-    assert empty_context.run_engine.md["detector_file_template"] == "foo_bar_{scan_id}"

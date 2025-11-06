@@ -94,7 +94,6 @@ class WorkerEventConfig(BlueapiBaseModel):
 
 class MetadataConfig(BlueapiBaseModel):
     instrument: str
-    detector_file_template: str = "{instrument}-{scan_id}-{device_name}"
 
 
 class EnvironmentConfig(BlueapiBaseModel):
@@ -222,6 +221,7 @@ class OIDCConfig(BlueapiBaseModel):
 
 class NumtrackerConfig(BlueapiBaseModel):
     url: HttpUrl = HttpUrl("http://localhost:8406/graphql")
+    detector_file_template: str = "{instrument}-{scan_id}-{device_name}"
 
 
 class ApplicationConfig(BlueapiBaseModel):

@@ -109,35 +109,37 @@ class BlueskyContext:
         if not configuration:
             return
 
-        if configuration.numtracker is not None:
+        if (nt_conf := configuration.numtracker) is not None:
             if configuration.env.metadata is not None:
-                self.numtracker = NumtrackerClient(url=configuration.numtracker.url)
+                self.numtracker = NumtrackerClient(url=nt_conf.url)
             else:
                 raise InvalidConfigError(
                     "Numtracker url has been configured, but there is no instrument or"
                     " instrument_session in the environment metadata"
                 )
 
-        if self.numtracker is not None:
-            numtracker = self.numtracker
-
             path_provider = StartDocumentPathProvider()
             set_path_provider(path_provider)
+
             self.run_engine.subscribe(path_provider.run_start, "start")
             self.run_engine.subscribe(path_provider.run_stop, "stop")
+
+            # local reference so it's available in _update_scan_num
+            numtracker = self.numtracker
 
             def _update_scan_num(md: dict[str, Any]) -> int:
                 scan = numtracker.create_scan(
                     md["instrument_session"], md["instrument"]
                 )
                 md["data_session_directory"] = str(scan.scan.directory.path)
+                md["detector_file_template"] = nt_conf.detector_file_template
                 md["scan_file"] = scan.scan.scan_file
                 return scan.scan.scan_number
 
             self.run_engine.scan_id_source = _update_scan_num
 
         self.with_config(configuration.env)
-        if self.numtracker and not isinstance(
+        if configuration.numtracker and not isinstance(
             get_path_provider(), StartDocumentPathProvider
         ):
             raise InvalidConfigError(

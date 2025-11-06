@@ -156,9 +156,9 @@
                     "title": "Instrument",
                     "type": "string"
                 },
-                "data_file_path_template": {
+                "detector_file_template": {
                     "default": "{instrument}-{scan_id}-{device_name}",
-                    "title": "Data File Path Template",
+                    "title": "Detector File Template",
                     "type": "string"
                 }
             },

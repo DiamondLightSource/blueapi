@@ -293,7 +293,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     "broadcast_status_events": True,
                 },
                 "metadata": {
-                    "data_file_path_template": "p01_template_{scan_id}",
+                    "detector_file_template": "p01_template_{scan_id}",
                     "instrument": "p01",
                 },
                 "sources": [
@@ -351,7 +351,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 ],
                 "events": {"broadcast_status_events": True},
                 "metadata": {
-                    "data_file_path_template": "p01_template_{scan_id}",
+                    "detector_file_template": "p01_template_{scan_id}",
                     "instrument": "p01",
                 },
             },

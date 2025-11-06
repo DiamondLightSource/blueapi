@@ -94,7 +94,7 @@ class WorkerEventConfig(BlueapiBaseModel):
 
 class MetadataConfig(BlueapiBaseModel):
     instrument: str
-    data_file_path_template: str = "{instrument}-{scan_id}-{device_name}"
+    detector_file_template: str = "{instrument}-{scan_id}-{device_name}"
 
 
 class EnvironmentConfig(BlueapiBaseModel):

@@ -643,8 +643,8 @@
                         "instrument"
                     ],
                     "properties": {
-                        "data_file_path_template": {
-                            "title": "Data File Path Template",
+                        "detector_file_template": {
+                            "title": "Detector File Template",
                             "default": "{instrument}-{scan_id}-{device_name}",
                             "type": "string"
                         },

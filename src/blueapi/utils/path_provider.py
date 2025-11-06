@@ -35,7 +35,7 @@ class StartDocumentPathProvider(PathProvider):
 
         The default template for file naming is: "{instrument}-{scan_id}-{device_name}"
         however, this can be changed by providing a template in the start document. For
-        example: "template": "custom-{device_name}-{scan_id}".
+        example: "detector_file_template": "custom-{device_name}-{scan_id}".
 
         If you do not provide a data_session_directory it will default to "/tmp".
         """
@@ -44,9 +44,9 @@ class StartDocumentPathProvider(PathProvider):
                 "Start document not found. This call must be made inside a run."
             )
         else:
-            template = self._docs[-1].get("data_file_path_template")
+            template = self._docs[-1].get("detector_file_template")
             if not template:
-                raise ValueError("data_file_path_template must be set in metadata")
+                raise ValueError("detector_file_template must be set in metadata")
             sub_path = template.format_map(
                 self._docs[-1] | {"device_name": device_name}
             )

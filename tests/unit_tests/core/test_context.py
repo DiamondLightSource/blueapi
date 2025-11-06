@@ -701,9 +701,9 @@ def test_run_engine_metadata_updated(empty_context: BlueskyContext):
             {
                 "metadata": {
                     "instrument": "p45",
-                    "data_file_path_template": "foo_bar_{scan_id}",
+                    "detector_file_template": "foo_bar_{scan_id}",
                 }
             }
         )
     )
-    assert empty_context.run_engine.md["data_file_path_template"] == "foo_bar_{scan_id}"
+    assert empty_context.run_engine.md["detector_file_template"] == "foo_bar_{scan_id}"

@@ -50,7 +50,7 @@ dev = [
     "pre-commit>=3.8.0",
     "pydata-sphinx-theme>=0.15.4",
     "pytest",
-    "pyright",
+    "pyright<1.1.407",  # https://github.com/bluesky/scanspec/issues/190
     "pytest-cov",
     "pytest-asyncio",
     "responses",

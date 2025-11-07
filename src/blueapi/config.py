@@ -47,6 +47,7 @@ class SourceKind(str, Enum):
     PLAN_FUNCTIONS = "planFunctions"
     DEVICE_FUNCTIONS = "deviceFunctions"
     DODAL = "dodal"
+    DEVICE_MANAGER = "deviceManager"
 
 
 class Source(BlueapiBaseModel):
@@ -69,6 +70,18 @@ class DodalSource(Source):
     kind: Literal[SourceKind.DODAL] = Field(SourceKind.DODAL, init=False)
     mock: bool = Field(
         description="If true, ophyd_async device connections are mocked", default=False
+    )
+
+
+class DeviceManagerSource(Source):
+    kind: Literal[SourceKind.DEVICE_MANAGER] = Field(
+        SourceKind.DEVICE_MANAGER, init=False
+    )
+    mock: bool = Field(
+        description="If true, ophyd_async device connections are mocked", default=False
+    )
+    name: str = Field(
+        default="devices", description="Name of the device manager in the module"
     )
 
 
@@ -121,7 +134,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
     sources: list[
         Annotated[
-            PlanSource | DeviceSource | DodalSource,
+            PlanSource | DeviceSource | DodalSource | DeviceManagerSource,
             Field(discriminator="kind"),
         ]
     ] = [

@@ -64,6 +64,39 @@
             "title": "CORSConfig",
             "type": "object"
         },
+        "DeviceManagerSource": {
+            "additionalProperties": false,
+            "properties": {
+                "module": {
+                    "description": "Module to be imported",
+                    "title": "Module",
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "deviceManager",
+                    "default": "deviceManager",
+                    "title": "Kind",
+                    "type": "string"
+                },
+                "mock": {
+                    "default": false,
+                    "description": "If true, ophyd_async device connections are mocked",
+                    "title": "Mock",
+                    "type": "boolean"
+                },
+                "name": {
+                    "default": "devices",
+                    "description": "Name of the device manager in the module",
+                    "title": "Name",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "module"
+            ],
+            "title": "DeviceManagerSource",
+            "type": "object"
+        },
         "DeviceSource": {
             "additionalProperties": false,
             "properties": {
@@ -131,6 +164,7 @@
                         "discriminator": {
                             "mapping": {
                                 "deviceFunctions": "#/$defs/DeviceSource",
+                                "deviceManager": "#/$defs/DeviceManagerSource",
                                 "dodal": "#/$defs/DodalSource",
                                 "planFunctions": "#/$defs/PlanSource"
                             },
@@ -145,6 +179,9 @@
                             },
                             {
                                 "$ref": "#/$defs/DodalSource"
+                            },
+                            {
+                                "$ref": "#/$defs/DeviceManagerSource"
                             }
                         ]
                     },

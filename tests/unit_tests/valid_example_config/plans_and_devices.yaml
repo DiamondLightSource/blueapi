@@ -4,3 +4,7 @@ env:
       module: my_plan_library.tomography.plans
     - kind: dodal
       module: dodal.beamlines.i04
+      mock: true
+    - kind: deviceManager
+      module: dodal.beamlines.ixx
+      mock: True

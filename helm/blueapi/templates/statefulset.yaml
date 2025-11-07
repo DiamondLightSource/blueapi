@@ -63,7 +63,7 @@ spec:
           {{- if .Values.initContainer.persistentVolume.existingClaimName }}
           claimName: {{ .Values.initContainer.persistentVolume.existingClaimName }}
           {{- else }}
-          claimName: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+          claimName: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.image.tag | default .Chart.AppVersion  | replace "." "-" }}
           {{- end }}
       {{- else }}
       - name: scratch-host
@@ -95,6 +95,7 @@ spec:
             if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
             echo "Exporting venv as artefact"
             cp -r /venv/* /artefacts
+            {{if .Values.initContainer.persistentVolume.enabled }}chmod o+wrX -R {{ .Values.worker.scratch.root }}{{- end}}
         volumeMounts:
           - name: init-config
             mountPath: "/config"
@@ -158,6 +159,18 @@ spec:
               name: nslcd
             {{- end }}
           {{- if not .Values.debug.enabled }}
+          command: [
+            "python",
+            "-Xfrozen_modules=off",
+            "-m",
+            "debugpy",
+            "--listen",
+            "0.0.0.0:5678",
+            "--configure-subProcess",
+            "true", 
+            "-m",
+            "blueapi"
+          ]
           args:
             - "-c"
             - "/config/config.yaml"

@@ -6,7 +6,7 @@ FROM python:${PYTHON_VERSION} AS developer
 
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    graphviz \
+    graphviz sshfs\
     && rm -rf /var/lib/apt/lists/*
 
 # Install helm for the dev container. This is the recommended 
@@ -16,6 +16,27 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
     ./get_helm.sh; \
     rm get_helm.sh
 RUN helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.2.1
+
+# Install Kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"; \
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"; \
+    echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+
+RUN install -m 0755 kubectl /usr/local/bin/kubectl
+
+# Install Krew
+RUN set -x; cd "$(mktemp -d)" && \
+    OS="$(uname | tr '[:upper:]' '[:lower:]')" && \
+    ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" && \
+    KREW="krew-${OS}_${ARCH}" && \
+    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" && \
+    tar zxvf "${KREW}.tar.gz" && \
+    ./"${KREW}" install krew
+
+# Install pv-mounter and oidc-login
+ENV PATH=/root/.krew/bin:$PATH
+RUN kubectl krew install pv-mounter
+RUN kubectl krew install oidc-login
 
 # Set up a virtual environment and put it in PATH
 RUN python -m venv /venv
@@ -27,36 +48,19 @@ RUN mkdir -p /.cache/pip; chmod o+wrX /.cache/pip
 # Requires buildkit 0.17.0
 COPY --chmod=o+wrX . /workspaces/blueapi
 WORKDIR /workspaces/blueapi
+
 RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
-
-
-FROM build AS debug
-
-
-# Set origin to use ssh
-RUN git remote set-url origin git@github.com:DiamondLightSource/blueapi.git
-
-
-# For this pod to understand finding user information from LDAP
-RUN apt update
-RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
-RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
-
-# Make editable and debuggable
-RUN pip install debugpy
-RUN pip install -e .
-
-# Alternate entrypoint to allow devcontainer to attach
-ENTRYPOINT [ "/bin/bash", "-c", "--" ]
-CMD [ "while true; do sleep 30; done;" ]
-
 
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim AS runtime
 # Add apt-get system dependecies for runtime here if needed
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime
     git \
+    # gdb required for attaching debugger
+    gdb \
+    # required if attaching devcontainer
+    libnss-ldapd \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build --chmod=o+wrX /venv/ /venv/
 COPY --from=build --chmod=o+wrX /.cache/pip /.cache/pip
@@ -64,8 +68,6 @@ ENV PATH=/venv/bin:$PATH
 ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
 
 # For this pod to understand finding user information from LDAP
-RUN apt update
-RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
 RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 
 # Set the MPLCONFIGDIR environment variable to a temporary directory to avoid
@@ -77,3 +79,15 @@ ENV MPLCONFIGDIR=/tmp/matplotlib
 
 ENTRYPOINT ["blueapi"]
 CMD ["serve"]
+
+FROM runtime AS debug
+COPY --from=build --chmod=o+wrX /workspaces/blueapi /blueapi
+WORKDIR /blueapi
+# Make editable
+RUN pip install -e .
+# Set origin to use ssh
+RUN git remote set-url origin git@github.com:diamondlightsource/DiamondLightSource/blueapi.git
+
+# Alternate entrypoint to allow devcontainer to attach
+ENTRYPOINT [ "/bin/bash", "-c", "--" ]
+CMD [ "while true; do sleep 30; done;" ]

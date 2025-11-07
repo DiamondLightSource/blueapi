@@ -10,7 +10,97 @@
             "options": {
                 "cwd": "${workspaceRoot}"
             },
-            "problemMatcher": [],
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "kubectl pv-mounter",
+            "command": "kubectl",
+            "options": {
+                "env": {
+                    "KUBECONFIG": "${env:HOME}/.kube/${input:kube_config}"
+                }
+            },
+            "args": [
+                "pv-mounter",
+                "mount",
+                "${input:namespace}",
+                "${input:PVC Name}",
+                "${input:Mount Point}",
+                "--cpu-limit",
+                "100m"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "dependsOn": "kubectl pv-mounter",
+            "type": "shell",
+            "label": "kubectl port-forward",
+            "command": "kubectl",
+            "options": {
+                "env": {
+                    "KUBECONFIG": "${env:HOME}/.kube/${input:kube_config}"
+                }
+            },
+            "args": [
+                "port-forward",
+                "-n",
+                "${input:namespace}",
+                "${input:pod}",
+                "5678",
+                "&"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "pv-unmount",
+            "command": "kubectl",
+            "options": {
+                "env": {
+                    "KUBECONFIG": "${env:HOME}/.kube/${input:kube_config}"
+                }
+            },
+            "args": [
+                "pv-mounter",
+                "clean",
+                "${input:namespace}",
+                "${input:PVC Name}",
+                "${input:Mount Point}",
+            ],
+            "problemMatcher": []
         }
+    ],
+    "inputs": [
+        {
+            "id": "namespace",
+            "type": "promptString",
+            "description": "Beamline namespace in the cluster",
+            "default": "ixx-beamline"
+        },
+        {
+            "id": "kube_config",
+            "type": "promptString",
+            "description": "Name of a kubernetes config file in $HOME/.kube/",
+            "default": "config_k8s-ixx"
+        },
+        {
+            "id": "pod",
+            "type": "promptString",
+            "description": "Blueapi pod name",
+            "default": "ixx-blueapi-0",
+        },
+        {
+            "id": "PVC Name",
+            "type": "promptString",
+            "description": "Scratch area PVC name",
+            "default": "ixx-blueapi-scratch-1.0.0"
+        },
+        {
+            "id": "Mount Point",
+            "type": "promptString",
+            "description": "Local are to mount the PVC",
+            "default": "/workspaces/scratch"
+        },
     ]
 }

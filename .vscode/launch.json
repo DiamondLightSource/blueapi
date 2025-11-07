@@ -16,6 +16,33 @@
             "console": "integratedTerminal",
         },
         {
+            "name": "Attach debugger",
+            "type": "debugpy",
+            "request": "attach",
+            "justMyCode": false,
+            "connect": {
+                "host": "0.0.0.0",
+                "port": 5678,
+            },
+            "preLaunchTask": "kubectl port-forward",
+            "postDebugTask": "pv-unmount",
+            "subProcess": true,
+            "pathMappings": [
+                {
+                    "localRoot": "${input:Mount Point}",
+                    "remoteRoot": "${input:PVC Name}"
+                },
+                {
+                    "localRoot": "${workspaceFolder}/src/blueapi",
+                    "remoteRoot": "/venv/lib/python3.11/site-packages/blueapi"
+                },
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "/workspaces/blueapi"
+                }
+            ]
+        },
+        {
             "name": "Blueapi Server",
             "type": "debugpy",
             "request": "launch",
@@ -61,6 +88,18 @@
         },
     ],
     "inputs": [
+        {
+            "id": "PVC Name",
+            "type": "promptString",
+            "description": "Name of the PVC to mount locally",
+            "default": "ixx-blueapi-scratch-1-0-0"
+        },
+        {
+            "id": "Mount Point",
+            "type": "promptString",
+            "description": "Location to mount PVC locally, must exist as an empty directory",
+            "default": "/scratch/mountPoint"
+        },
         {
             "id": "controller_args",
             "type": "promptString",

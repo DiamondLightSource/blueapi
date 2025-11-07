@@ -18,7 +18,7 @@ from observability_utils.tracing import (
 )
 from ophyd_async.core import AsyncStatus
 
-from blueapi.config import EnvironmentConfig, Source, SourceKind
+from blueapi.config import DeviceSource, EnvironmentConfig
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.utils.base_model import BlueapiBaseModel
@@ -90,9 +90,7 @@ def second_fake_device() -> FakeDevice:
 def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyContext:
     ctx = BlueskyContext()
     ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(
-        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
-    )
+    ctx_config.sources.append(DeviceSource(module="devices"))
     ctx.register_plan(failing_plan)
     ctx.register_device(fake_device)
     ctx.register_device(second_fake_device)
@@ -104,9 +102,7 @@ def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyC
 def context_without_devices() -> BlueskyContext:
     ctx = BlueskyContext()
     ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(
-        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
-    )
+    ctx_config.sources.append(DeviceSource(module="devices"))
     ctx.with_config(ctx_config)
     return ctx
 

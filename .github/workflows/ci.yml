@@ -43,18 +43,12 @@ jobs:
       packages: write
 
   debug_container:
-    needs: [container, test]
+    needs: container
     uses: ./.github/workflows/_debug_container.yml
-    permissions:
-      contents: read
-      packages: write
 
   chart:
     needs: [container, debug_container]
     uses: ./.github/workflows/_helm.yml
-    permissions:
-      contents: read
-      packages: write
 
   docs:
     uses: ./.github/workflows/_docs.yml

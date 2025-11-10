@@ -54,9 +54,17 @@ jobs:
       contents: read
       packages: write
 
+  chart:
+    needs: [container, debug_container]
+    uses: ./.github/workflows/_helm.yml
+    with:
+      publish: ${{ needs.test.result == 'success' }}
+    permissions:
+      contents: read
+      packages: write
+
   docs:
     uses: ./.github/workflows/_docs.yml
-
 
   dist:
     uses: ./.github/workflows/_dist.yml

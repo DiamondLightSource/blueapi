@@ -37,10 +37,7 @@ jobs:
 
   container:
     needs: test
-    if: always()
     uses: ./.github/workflows/_container.yml
-    with:
-      publish: ${{ needs.test.result == 'success' }}
     permissions:
       contents: read
       packages: write
@@ -57,8 +54,6 @@ jobs:
   chart:
     needs: [container, debug_container]
     uses: ./.github/workflows/_helm.yml
-    with:
-      publish: ${{ needs.test.result == 'success' }}
     permissions:
       contents: read
       packages: write

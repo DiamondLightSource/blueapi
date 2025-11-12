@@ -1,4 +1,5 @@
 import logging
+import sys
 from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field
 from importlib import import_module
@@ -38,6 +39,15 @@ from .bluesky_types import (
 from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
+
+
+if "ophyd" in sys.modules:
+    # This is an awful hack/workaround to avoid blueapi hanging on shutdown when
+    # EPICS environment variables are set.
+    # See https://github.com/DiamondLightSource/blueapi/issues/1147#issuecomment-3242278545
+    from ophyd import EpicsSignal
+
+    _ = EpicsSignal("libca bug workaround")
 
 
 def is_compatible(val: Device, target: type, args: tuple[type, ...] | None):

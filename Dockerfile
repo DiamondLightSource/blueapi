@@ -46,6 +46,12 @@ RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 RUN pip install debugpy
 RUN pip install -e .
 
+RUN groupadd -g 1000 blueapi && \
+    useradd -m -u 1000 -g blueapi blueapi
+ 
+# Switch to the custom user
+USER blueapi
+
 # Alternate entrypoint to allow devcontainer to attach
 ENTRYPOINT [ "/bin/bash", "-c", "--" ]
 CMD [ "while true; do sleep 30; done;" ]
@@ -74,6 +80,12 @@ RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 # https://matplotlib.org/stable/install/environment_variables_faq.html#envvar-MPLCONFIGDIR
 
 ENV MPLCONFIGDIR=/tmp/matplotlib
+
+RUN groupadd -g 1000 blueapi && \
+    useradd -m -u 1000 -g blueapi blueapi
+ 
+# Switch to the custom user
+USER blueapi
 
 ENTRYPOINT ["blueapi"]
 CMD ["serve"]

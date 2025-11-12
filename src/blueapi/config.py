@@ -6,7 +6,7 @@ from enum import Enum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Any, Generic, Literal, TypeVar, cast
+from typing import Annotated, Any, Generic, Literal, TypeVar, cast
 
 import requests
 import yaml
@@ -50,8 +50,26 @@ class SourceKind(str, Enum):
 
 
 class Source(BlueapiBaseModel):
-    kind: SourceKind
-    module: Path | str
+    module: str = Field(description="Module to be imported")
+
+
+class PlanSource(Source):
+    kind: Literal[SourceKind.PLAN_FUNCTIONS] = Field(
+        SourceKind.PLAN_FUNCTIONS, init=False
+    )
+
+
+class DeviceSource(Source):
+    kind: Literal[SourceKind.DEVICE_FUNCTIONS] = Field(
+        SourceKind.DEVICE_FUNCTIONS, init=False
+    )
+
+
+class DodalSource(Source):
+    kind: Literal[SourceKind.DODAL] = Field(SourceKind.DODAL, init=False)
+    mock: bool = Field(
+        description="If true, ophyd_async device connections are mocked", default=False
+    )
 
 
 class TcpUrl(AnyUrl):
@@ -101,9 +119,14 @@ class EnvironmentConfig(BlueapiBaseModel):
     Config for the RunEngine environment
     """
 
-    sources: list[Source] = [
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plans"),
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
+    sources: list[
+        Annotated[
+            PlanSource | DeviceSource | DodalSource,
+            Field(discriminator="kind"),
+        ]
+    ] = [
+        PlanSource(module="dodal.plans"),
+        PlanSource(module="dodal.plan_stubs.wrapped"),
     ]
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
     metadata: MetadataConfig | None = Field(default=None)

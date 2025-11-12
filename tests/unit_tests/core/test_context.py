@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import NoneType
 from typing import Generic, TypeVar, Union
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytest
 from bluesky.protocols import (
@@ -30,7 +30,13 @@ from pydantic import TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
 
-from blueapi.config import EnvironmentConfig, MetadataConfig, Source, SourceKind
+from blueapi.config import (
+    DeviceSource,
+    DodalSource,
+    EnvironmentConfig,
+    MetadataConfig,
+    PlanSource,
+)
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 from blueapi.utils.connect_devices import _establish_device_connections
@@ -358,12 +364,10 @@ def test_add_devices_and_plans_from_modules_with_config(
     empty_context.with_config(
         EnvironmentConfig(
             sources=[
-                Source(
-                    kind=SourceKind.DEVICE_FUNCTIONS,
+                DeviceSource(
                     module="tests.unit_tests.core.fake_device_module",
                 ),
-                Source(
-                    kind=SourceKind.PLAN_FUNCTIONS,
+                PlanSource(
                     module="tests.unit_tests.core.fake_plan_module",
                 ),
             ]
@@ -391,6 +395,27 @@ def test_add_metadata_with_config(
 
     for md in metadata:
         assert md in empty_context.run_engine.md.items()
+
+
+@pytest.mark.parametrize("mock", [True, False])
+def test_with_config_passes_mock_to_with_dodal_module(
+    empty_context: BlueskyContext,
+    mock: bool,
+):
+    with patch.object(empty_context, "with_dodal_module") as mock_with_dodal_module:
+        empty_context.with_config(
+            EnvironmentConfig(
+                sources=[
+                    DodalSource(
+                        module="tests.unit_tests.core.fake_device_module", mock=mock
+                    ),
+                    PlanSource(
+                        module="tests.unit_tests.core.fake_plan_module",
+                    ),
+                ]
+            )
+        )
+        mock_with_dodal_module.assert_called_once_with(ANY, mock=mock)
 
 
 def test_function_spec(empty_context: BlueskyContext):

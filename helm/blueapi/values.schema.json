@@ -553,6 +553,52 @@
                     },
                     "additionalProperties": false
                 },
+                "DeviceSource": {
+                    "title": "DeviceSource",
+                    "type": "object",
+                    "required": [
+                        "module"
+                    ],
+                    "properties": {
+                        "kind": {
+                            "title": "Kind",
+                            "default": "deviceFunctions",
+                            "const": "deviceFunctions"
+                        },
+                        "module": {
+                            "title": "Module",
+                            "description": "Module to be imported",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "DodalSource": {
+                    "title": "DodalSource",
+                    "type": "object",
+                    "required": [
+                        "module"
+                    ],
+                    "properties": {
+                        "kind": {
+                            "title": "Kind",
+                            "default": "dodal",
+                            "const": "dodal"
+                        },
+                        "mock": {
+                            "title": "Mock",
+                            "description": "If true, ophyd_async device connections are mocked",
+                            "default": false,
+                            "type": "boolean"
+                        },
+                        "module": {
+                            "title": "Module",
+                            "description": "Module to be imported",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "EnvironmentConfig": {
                     "title": "EnvironmentConfig",
                     "description": "Config for the RunEngine environment",
@@ -585,7 +631,17 @@
                             ],
                             "type": "array",
                             "items": {
-                                "$ref": "#/$defs/Source"
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/$defs/PlanSource"
+                                    },
+                                    {
+                                        "$ref": "#/$defs/DeviceSource"
+                                    },
+                                    {
+                                        "$ref": "#/$defs/DodalSource"
+                                    }
+                                ]
                             }
                         }
                     },
@@ -702,6 +758,26 @@
                     },
                     "additionalProperties": false
                 },
+                "PlanSource": {
+                    "title": "PlanSource",
+                    "type": "object",
+                    "required": [
+                        "module"
+                    ],
+                    "properties": {
+                        "kind": {
+                            "title": "Kind",
+                            "default": "planFunctions",
+                            "const": "planFunctions"
+                        },
+                        "module": {
+                            "title": "Module",
+                            "description": "Module to be imported",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "RestConfig": {
                     "title": "RestConfig",
                     "type": "object",
@@ -777,40 +853,6 @@
                         }
                     },
                     "additionalProperties": false
-                },
-                "Source": {
-                    "title": "Source",
-                    "type": "object",
-                    "required": [
-                        "kind",
-                        "module"
-                    ],
-                    "properties": {
-                        "kind": {
-                            "$ref": "#/$defs/SourceKind"
-                        },
-                        "module": {
-                            "title": "Module",
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "string"
-                                }
-                            ]
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "SourceKind": {
-                    "title": "SourceKind",
-                    "type": "string",
-                    "enum": [
-                        "planFunctions",
-                        "deviceFunctions",
-                        "dodal"
-                    ]
                 },
                 "StompConfig": {
                     "title": "StompConfig",

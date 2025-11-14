@@ -19,7 +19,7 @@ from pydantic_core import CoreSchema, core_schema
 
 from blueapi import utils
 from blueapi.client.numtracker import NumtrackerClient
-from blueapi.config import ApplicationConfig, EnvironmentConfig, SourceKind
+from blueapi.config import ApplicationConfig, DodalSource, EnvironmentConfig, SourceKind
 from blueapi.utils import (
     BlueapiPlanModelConfig,
     is_function_sourced_from_module,
@@ -186,7 +186,8 @@ class BlueskyContext:
             elif source.kind is SourceKind.DEVICE_FUNCTIONS:
                 self.with_device_module(mod)
             elif source.kind is SourceKind.DODAL:
-                self.with_dodal_module(mod)
+                assert isinstance(source, DodalSource)
+                self.with_dodal_module(mod, mock=source.mock)
 
     def with_plan_module(self, module: ModuleType) -> None:
         """

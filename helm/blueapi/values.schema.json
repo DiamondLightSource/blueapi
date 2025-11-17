@@ -726,6 +726,30 @@
                     },
                     "additionalProperties": false
                 },
+                "RevisionConfig": {
+                    "title": "RevisionConfig",
+                    "type": "object",
+                    "properties": {
+                        "branch": {
+                            "title": "Branch",
+                            "description": "Branch name to check out OR create if checking out a tag",
+                            "default": "main",
+                            "type": "string"
+                        },
+                        "pull": {
+                            "title": "Pull",
+                            "description": "Whether to pull remote changes after checking out a branch",
+                            "default": false,
+                            "type": "boolean"
+                        },
+                        "tag": {
+                            "title": "Tag",
+                            "description": "Tag to check out, if named branch does not exist",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "ScratchConfig": {
                     "title": "ScratchConfig",
                     "type": "object",
@@ -774,6 +798,11 @@
                             "description": "URL to clone from",
                             "default": "https://github.com/example/example.git",
                             "type": "string"
+                        },
+                        "target_revision": {
+                            "title": "Target Revision",
+                            "description": "Target revision to check out for the repository",
+                            "$ref": "#/$defs/RevisionConfig"
                         }
                     },
                     "additionalProperties": false

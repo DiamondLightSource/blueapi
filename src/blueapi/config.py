@@ -21,6 +21,7 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -131,6 +132,20 @@ class RestConfig(BlueapiBaseModel):
     cors: CORSConfig | None = None
 
 
+class RevisionConfig(BlueapiBaseModel):
+    branch: str = Field(
+        description="Branch name to check out OR create if checking out a tag",
+        default="main",
+    )
+    tag: str | SkipJsonSchema[None] = Field(
+        description="Tag to check out, if named branch does not exist", default=None
+    )
+    pull: bool = Field(
+        description="Whether to pull remote changes after checking out a branch",
+        default=False,
+    )
+
+
 class ScratchRepository(BlueapiBaseModel):
     name: str = Field(
         description="Unique name for this repository in the scratch directory",
@@ -139,6 +154,10 @@ class ScratchRepository(BlueapiBaseModel):
     remote_url: str = Field(
         description="URL to clone from",
         default="https://github.com/example/example.git",
+    )
+    target_revision: RevisionConfig | SkipJsonSchema[None] = Field(
+        description="Target revision to check out for the repository",
+        default=None,
     )
 
     @field_validator("remote_url")

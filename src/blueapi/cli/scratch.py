@@ -9,7 +9,7 @@ from subprocess import Popen
 from git import Repo
 from tomlkit import parse
 
-from blueapi.config import FORBIDDEN_OWN_REMOTE_URL, ScratchConfig
+from blueapi.config import FORBIDDEN_OWN_REMOTE_URL, RevisionConfig, ScratchConfig
 from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, SourceInfo
 from blueapi.utils import get_owner_gid, is_sgid_set
 
@@ -48,11 +48,13 @@ def setup_scratch(
             )
     for repo in config.repositories:
         local_directory = config.root / repo.name
-        ensure_repo(repo.remote_url, local_directory)
+        repository = ensure_repo(repo.remote_url, local_directory)
+        if repo.target_revision:
+            checkout_target(repository, repo.target_revision)
         scratch_install(local_directory, timeout=install_timeout)
 
 
-def ensure_repo(remote_url: str, local_directory: Path) -> None:
+def ensure_repo(remote_url: str, local_directory: Path) -> Repo:
     """
     Ensure that a repository is checked out for use in the scratch area.
     Clone it if it isn't.
@@ -67,15 +69,43 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
 
     if not local_directory.exists():
         LOGGER.info(f"Cloning {remote_url}")
-        Repo.clone_from(remote_url, local_directory)
+        repo = Repo.clone_from(remote_url, local_directory)
         LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
+        return repo
     elif local_directory.is_dir():
-        Repo(local_directory)
+        repo = Repo(local_directory)
         LOGGER.info(f"Found {local_directory}")
+        return repo
     else:
         raise KeyError(
             f"Unable to open {local_directory} as a git repository because it is a file"
         )
+
+
+def checkout_target(repo: Repo, target_revision: RevisionConfig) -> None:
+    LOGGER.info(f"{repo.working_dir}: fetching")
+    repo.remote().fetch()
+    LOGGER.info(
+        f"{repo.working_dir}: looking for existing branch {target_revision.branch}"
+    )
+    for branch in repo.branches:
+        if branch.name == target_revision.branch:
+            LOGGER.info(
+                f"{repo.working_dir}: checking out existing branch {branch.name}"
+            )
+            repo.head.reference = branch
+    else:
+        LOGGER.info(f"{repo.working_dir}: no existing branch {target_revision.branch}")
+        if target_revision.tag_name:
+            LOGGER.info(
+                f"{repo.working_dir}: checking out tag {target_revision.tag_name}"
+            )
+            repo.head.reference = repo.tag(target_revision.tag_name)
+        LOGGER.info(f"{repo.working_dir}: creating branch {target_revision.branch}")
+        repo.create_head(target_revision.branch)
+    if target_revision.pull:
+        LOGGER.info(f"{repo.working_dir}: pulling")
+        repo.remote().pull()
 
 
 def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:

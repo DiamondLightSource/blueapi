@@ -242,6 +242,31 @@
             "title": "RestConfig",
             "type": "object"
         },
+        "RevisionConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "branch": {
+                    "default": "main",
+                    "description": "Branch name to check out OR create if checking out a tag",
+                    "title": "Branch",
+                    "type": "string"
+                },
+                "tag": {
+                    "default": null,
+                    "description": "Tag to check out, if named branch does not exist",
+                    "title": "Tag",
+                    "type": "string"
+                },
+                "pull": {
+                    "default": false,
+                    "description": "Whether to pull remote changes after checking out a branch",
+                    "title": "Pull",
+                    "type": "boolean"
+                }
+            },
+            "title": "RevisionConfig",
+            "type": "object"
+        },
         "ScratchConfig": {
             "additionalProperties": false,
             "properties": {
@@ -291,6 +316,12 @@
                     "description": "URL to clone from",
                     "title": "Remote Url",
                     "type": "string"
+                },
+                "target_revision": {
+                    "$ref": "#/$defs/RevisionConfig",
+                    "default": null,
+                    "description": "Target revision to check out for the repository",
+                    "title": "Target Revision"
                 }
             },
             "title": "ScratchRepository",

@@ -132,17 +132,22 @@ class RestConfig(BlueapiBaseModel):
     cors: CORSConfig | None = None
 
 
+class DependencyReference(BlueapiBaseModel):
+    dependency: str = Field(
+        description="Python module name to try and check out the version of- e.g. "
+        "`dls-dodal` for dodal, as that is the python module name"
+    )
+
+
 class RevisionConfig(BlueapiBaseModel):
-    branch: str = Field(
-        description="Branch name to check out OR create if checking out a tag",
-        default="main",
+    reference: str | DependencyReference = Field(
+        description="Reference to check out- either a git reference (tag, branch,"
+        "commit) or a reference to a python dependency"
     )
-    tag: str | SkipJsonSchema[None] = Field(
-        description="Tag to check out, if named branch does not exist", default=None
-    )
-    pull: bool = Field(
-        description="Whether to pull remote changes after checking out a branch",
-        default=False,
+    branch: str | SkipJsonSchema[None] = Field(
+        description="Branch name to create if checking out a reference not on a branch,"
+        " to avoid leaving head detached",
+        default=None,
     )
 
 

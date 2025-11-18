@@ -64,6 +64,21 @@
             "title": "CORSConfig",
             "type": "object"
         },
+        "DependencyReference": {
+            "additionalProperties": false,
+            "properties": {
+                "dependency": {
+                    "description": "Python module name to try and check out the version of- e.g. `dls-dodal` for dodal, as that is the python module name",
+                    "title": "Dependency",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "dependency"
+            ],
+            "title": "DependencyReference",
+            "type": "object"
+        },
         "EnvironmentConfig": {
             "additionalProperties": false,
             "description": "Config for the RunEngine environment",
@@ -245,25 +260,28 @@
         "RevisionConfig": {
             "additionalProperties": false,
             "properties": {
+                "reference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "$ref": "#/$defs/DependencyReference"
+                        }
+                    ],
+                    "description": "Reference to check out- either a git reference (tag, branch,commit) or a reference to a python dependency",
+                    "title": "Reference"
+                },
                 "branch": {
-                    "default": "main",
-                    "description": "Branch name to check out OR create if checking out a tag",
+                    "default": null,
+                    "description": "Branch name to create if checking out a reference not on a branch, to avoid leaving head detached",
                     "title": "Branch",
                     "type": "string"
-                },
-                "tag": {
-                    "default": null,
-                    "description": "Tag to check out, if named branch does not exist",
-                    "title": "Tag",
-                    "type": "string"
-                },
-                "pull": {
-                    "default": false,
-                    "description": "Whether to pull remote changes after checking out a branch",
-                    "title": "Pull",
-                    "type": "boolean"
                 }
             },
+            "required": [
+                "reference"
+            ],
             "title": "RevisionConfig",
             "type": "object"
         },

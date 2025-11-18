@@ -6,10 +6,14 @@ import textwrap
 from pathlib import Path
 from subprocess import Popen
 
-from git import Repo
+from git import HEAD, Head, Repo
 from tomlkit import parse
 
-from blueapi.config import FORBIDDEN_OWN_REMOTE_URL, RevisionConfig, ScratchConfig
+from blueapi.config import (
+    FORBIDDEN_OWN_REMOTE_URL,
+    DependencyReference,
+    ScratchConfig,
+)
 from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, SourceInfo
 from blueapi.utils import get_owner_gid, is_sgid_set
 
@@ -50,7 +54,9 @@ def setup_scratch(
         local_directory = config.root / repo.name
         repository = ensure_repo(repo.remote_url, local_directory)
         if repo.target_revision:
-            checkout_target(repository, repo.target_revision)
+            checkout_target(
+                repository, repo.target_revision.reference, repo.target_revision.branch
+            )
         scratch_install(local_directory, timeout=install_timeout)
 
 
@@ -74,7 +80,8 @@ def ensure_repo(remote_url: str, local_directory: Path) -> Repo:
         return repo
     elif local_directory.is_dir():
         repo = Repo(local_directory)
-        LOGGER.info(f"Found {local_directory}")
+        LOGGER.info(f"Found {local_directory} - fetching")
+        repo.remote().fetch()
         return repo
     else:
         raise KeyError(
@@ -82,30 +89,33 @@ def ensure_repo(remote_url: str, local_directory: Path) -> Repo:
         )
 
 
-def checkout_target(repo: Repo, target_revision: RevisionConfig) -> None:
-    LOGGER.info(f"{repo.working_dir}: fetching")
-    repo.remote().fetch()
-    LOGGER.info(
-        f"{repo.working_dir}: looking for existing branch {target_revision.branch}"
+def checkout_target(
+    repo: Repo, target_revision: str | DependencyReference, branch_name: str | None
+) -> Head | HEAD:
+    if isinstance(target_revision, DependencyReference):
+        LOGGER.info(
+            f"{repo.working_dir}: attempting to check out version"
+            " matching {target_revision.dependency}"
+        )
+        version = importlib.metadata.version(target_revision.dependency)
+        try:
+            return checkout_target(repo, version, branch_name)
+        except ValueError:
+            LOGGER.info(
+                f"{repo.working_dir}: no ref maching version {version},"
+                " attempting v{version}"
+            )
+            return checkout_target(repo, "v" + version, branch_name)
+    LOGGER.info(f"{repo.working_dir}: attempting to check out {target_revision}")
+    for ref in repo.refs:
+        if ref.name == target_revision:
+            repo.head.reference = ref
+            if repo.head.is_detached and branch_name:
+                repo.create_head(branch_name)
+            return repo.head
+    raise ValueError(
+        f"Unable to find target revision {target_revision} for repo {repo.working_dir}"
     )
-    for branch in repo.branches:
-        if branch.name == target_revision.branch:
-            LOGGER.info(
-                f"{repo.working_dir}: checking out existing branch {branch.name}"
-            )
-            repo.head.reference = branch
-    else:
-        LOGGER.info(f"{repo.working_dir}: no existing branch {target_revision.branch}")
-        if target_revision.tag_name:
-            LOGGER.info(
-                f"{repo.working_dir}: checking out tag {target_revision.tag_name}"
-            )
-            repo.head.reference = repo.tag(target_revision.tag_name)
-        LOGGER.info(f"{repo.working_dir}: creating branch {target_revision.branch}")
-        repo.create_head(target_revision.branch)
-    if target_revision.pull:
-        LOGGER.info(f"{repo.working_dir}: pulling")
-        repo.remote().pull()
 
 
 def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:

@@ -553,6 +553,21 @@
                     },
                     "additionalProperties": false
                 },
+                "DependencyReference": {
+                    "title": "DependencyReference",
+                    "type": "object",
+                    "required": [
+                        "dependency"
+                    ],
+                    "properties": {
+                        "dependency": {
+                            "title": "Dependency",
+                            "description": "Python module name to try and check out the version of- e.g. `dls-dodal` for dodal, as that is the python module name",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "EnvironmentConfig": {
                     "title": "EnvironmentConfig",
                     "description": "Config for the RunEngine environment",
@@ -726,6 +741,33 @@
                     },
                     "additionalProperties": false
                 },
+                "RevisionConfig": {
+                    "title": "RevisionConfig",
+                    "type": "object",
+                    "required": [
+                        "reference"
+                    ],
+                    "properties": {
+                        "branch": {
+                            "title": "Branch",
+                            "description": "Branch name to create if checking out a reference not on a branch, to avoid leaving head detached",
+                            "type": "string"
+                        },
+                        "reference": {
+                            "title": "Reference",
+                            "description": "Reference to check out- either a git reference (tag, branch,commit) or a reference to a python dependency",
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "$ref": "#/$defs/DependencyReference"
+                                }
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "ScratchConfig": {
                     "title": "ScratchConfig",
                     "type": "object",
@@ -774,6 +816,11 @@
                             "description": "URL to clone from",
                             "default": "https://github.com/example/example.git",
                             "type": "string"
+                        },
+                        "target_revision": {
+                            "title": "Target Revision",
+                            "description": "Target revision to check out for the repository",
+                            "$ref": "#/$defs/RevisionConfig"
                         }
                     },
                     "additionalProperties": false

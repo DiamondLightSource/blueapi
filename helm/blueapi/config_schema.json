@@ -64,6 +64,21 @@
             "title": "CORSConfig",
             "type": "object"
         },
+        "DependencyReference": {
+            "additionalProperties": false,
+            "properties": {
+                "dependency": {
+                    "description": "Python module name to try and check out the version of- e.g. `dls-dodal` for dodal, as that is the python module name",
+                    "title": "Dependency",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "dependency"
+            ],
+            "title": "DependencyReference",
+            "type": "object"
+        },
         "EnvironmentConfig": {
             "additionalProperties": false,
             "description": "Config for the RunEngine environment",
@@ -242,6 +257,34 @@
             "title": "RestConfig",
             "type": "object"
         },
+        "RevisionConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "reference": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "$ref": "#/$defs/DependencyReference"
+                        }
+                    ],
+                    "description": "Reference to check out- either a git reference (tag, branch,commit) or a reference to a python dependency",
+                    "title": "Reference"
+                },
+                "branch": {
+                    "default": null,
+                    "description": "Branch name to create if checking out a reference not on a branch, to avoid leaving head detached",
+                    "title": "Branch",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "reference"
+            ],
+            "title": "RevisionConfig",
+            "type": "object"
+        },
         "ScratchConfig": {
             "additionalProperties": false,
             "properties": {
@@ -291,6 +334,12 @@
                     "description": "URL to clone from",
                     "title": "Remote Url",
                     "type": "string"
+                },
+                "target_revision": {
+                    "$ref": "#/$defs/RevisionConfig",
+                    "default": null,
+                    "description": "Target revision to check out for the repository",
+                    "title": "Target Revision"
                 }
             },
             "title": "ScratchRepository",

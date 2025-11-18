@@ -173,6 +173,11 @@
                     "minLength": 1,
                     "title": "Url",
                     "type": "string"
+                },
+                "detector_file_template": {
+                    "default": "{instrument}-{scan_id}-{device_name}",
+                    "title": "Detector File Template",
+                    "type": "string"
                 }
             },
             "title": "NumtrackerConfig",

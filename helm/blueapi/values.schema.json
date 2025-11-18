@@ -654,6 +654,11 @@
                     "title": "NumtrackerConfig",
                     "type": "object",
                     "properties": {
+                        "detector_file_template": {
+                            "title": "Detector File Template",
+                            "default": "{instrument}-{scan_id}-{device_name}",
+                            "type": "string"
+                        },
                         "url": {
                             "title": "Url",
                             "default": "http://localhost:8406/graphql",

@@ -18,6 +18,7 @@ def start_doc_default_template() -> dict:
         "versions": {"ophyd": "1.10.0", "bluesky": "1.13"},
         "data_session": "ab123",
         "instrument": "p01",
+        "detector_file_template": "{instrument}-{scan_id}-{device_name}",
         "data_session_directory": "/p01/ab123",
         "scan_id": 22,
         "plan_type": "generator",
@@ -46,7 +47,7 @@ def test_start_document_path_provider_with_default_template_returns_correct_path
 
     assert path == PathInfo(
         directory_path=PosixPath("/p01/ab123"),
-        filename="det-p01-22",
+        filename="p01-22-det",
         create_dir_depth=0,
     )
 
@@ -61,7 +62,7 @@ def start_doc_custom_template() -> dict:
         "instrument": "p01",
         "data_session_directory": "/p01/ab123",
         "scan_id": 22,
-        "data_file_path_template": "{device_name}-{instrument}-{scan_id}-custom",
+        "detector_file_template": "{instrument}-{scan_id}-{device_name}-custom",
         "plan_type": "generator",
         "plan_name": "count",
         "detectors": ["det"],
@@ -88,7 +89,7 @@ def test_start_document_path_provider_with_custom_template_returns_correct_path_
 
     assert path == PathInfo(
         directory_path=PosixPath("/p01/ab123"),
-        filename="det-p01-22-custom",
+        filename="p01-22-det-custom",
         create_dir_depth=0,
     )
 
@@ -99,6 +100,7 @@ def start_doc_missing_instrument() -> dict:
         "uid": "27c48d2f-d8c6-4ac0-8146-fedf467ce11f",
         "time": 1741264729.96875,
         "versions": {"ophyd": "1.10.0", "bluesky": "1.13"},
+        "detector_file_template": "{instrument}-{scan_id}-{device_name}",
         "data_session": "ab123",
         "data_session_directory": "/p01/ab123",
         "scan_id": 22,
@@ -137,6 +139,7 @@ def start_doc_missing_scan_id() -> dict:
         "versions": {"ophyd": "1.10.0", "bluesky": "1.13"},
         "data_session": "ab123",
         "instrument": "p01",
+        "detector_file_template": "{instrument}-{scan_id}-{device_name}",
         "data_session_directory": "/p01/ab123",
         "plan_type": "generator",
         "plan_name": "count",
@@ -171,6 +174,7 @@ def start_doc_default_data_session_directory() -> dict:
         "uid": "27c48d2f-d8c6-4ac0-8146-fedf467ce11f",
         "time": 1741264729.96875,
         "versions": {"ophyd": "1.10.0", "bluesky": "1.13"},
+        "detector_file_template": "{instrument}-{scan_id}-{device_name}",
         "data_session": "ab123",
         "instrument": "p01",
         "scan_id": 22,
@@ -199,7 +203,7 @@ def test_start_document_path_provider_sets_data_session_directory_default_to_tmp
     path = pp("det")
 
     assert path == PathInfo(
-        directory_path=PosixPath("/tmp"), filename="det-p01-22", create_dir_depth=0
+        directory_path=PosixPath("/tmp"), filename="p01-22-det", create_dir_depth=0
     )
 
 
@@ -240,6 +244,7 @@ def start_doc_1() -> dict:
         "versions": {"ophyd": "1.10.0", "bluesky": "1.13"},
         "data_session": "ab123",
         "instrument": "p01",
+        "detector_file_template": "{instrument}-{scan_id}-{device_name}",
         "data_session_directory": "/p01/ab123",
         "scan_id": 50,
         "plan_type": "generator",
@@ -279,6 +284,7 @@ def start_doc_2() -> dict:
         "versions": {"ophyd": "1.10.0", "bluesky": "1.13"},
         "data_session": "ab123",
         "instrument": "p02",
+        "detector_file_template": "{instrument}-{scan_id}-{device_name}",
         "data_session_directory": "/p02/ab123",
         "scan_id": 51,
         "plan_type": "generator",
@@ -321,7 +327,7 @@ def test_start_document_path_provider_nested_runs_use_info_from_last_start_doc(
     pp.run_start(name="start", start_document=start_doc_1)
     start_doc_1_path_info = PathInfo(
         directory_path=PosixPath("/p01/ab123"),
-        filename="det-p01-50",
+        filename="p01-50-det",
         create_dir_depth=0,
     )
 
@@ -332,7 +338,7 @@ def test_start_document_path_provider_nested_runs_use_info_from_last_start_doc(
     pp.run_start(name="start", start_document=start_doc_2)
     start_doc_2_path_info = PathInfo(
         directory_path=PosixPath("/p02/ab123"),
-        filename="det-p02-51",
+        filename="p02-51-det",
         create_dir_depth=0,
     )
 
@@ -378,3 +384,11 @@ def test_start_document_path_provider_run_stop_called_out_of_order_raises(
         "This is not supported. If you need to do this speak to core DAQ.",
     ):
         pp.run_stop(name="stop", stop_document=stop_doc_1)
+
+
+def test_error_if_template_missing(start_doc_1: RunStart):
+    pp = StartDocumentPathProvider()
+    start_doc_1.pop("detector_file_template")
+    pp.run_start("start", start_doc_1)
+    with pytest.raises(ValueError, match="detector_file_template"):
+        pp("foo")

@@ -675,8 +675,7 @@ def test_injected_devices_plan_model(
 
     context.register_plan(injected_device_plan)
     plan = context.plans["injected_device_plan"]
-    model = PlanModel.from_plan(plan)
-    print(model)
+    PlanModel.from_plan(plan)
 
 
 def test_missing_injected_devices_fail_early(

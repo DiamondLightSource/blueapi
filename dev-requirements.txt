@@ -90,7 +90,7 @@ locket==1.0.0
 lz4==4.4.5
 markdown-it-py==3.0.0
 MarkupSafe==3.0.3
-marshmallow==3.26.1
+marshmallow==4.1.0
 matplotlib==3.10.7
 mdit-py-plugins==0.5.0
 mdurl==0.1.2

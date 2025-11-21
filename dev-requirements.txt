@@ -88,7 +88,7 @@ kiwisolver==1.4.9
 llvmlite==0.45.1
 locket==1.0.0
 lz4==4.4.5
-markdown-it-py==3.0.0
+markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 marshmallow==3.26.1
 matplotlib==3.10.7

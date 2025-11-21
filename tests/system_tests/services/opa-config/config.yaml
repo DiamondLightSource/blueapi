@@ -1,0 +1,11 @@
+services:
+  ghcr:
+    url: https://ghcr.io
+    type: oci
+bundles:
+  diamond-policies:
+    service: ghcr
+    resource: ghcr.io/zohebshaikh/authz-policy:0.0.19
+    polling:
+      min_delay_seconds: 30
+      max_delay_seconds: 120

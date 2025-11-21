@@ -7,6 +7,7 @@ from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
+from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
@@ -16,6 +17,8 @@ from pydantic import BaseModel, GetCoreSchemaHandler, GetJsonSchemaHandler, crea
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import CoreSchema, core_schema
+from tiled.client import from_uri
+from tiled.client.base import BaseClient
 
 from blueapi import utils
 from blueapi.client.numtracker import NumtrackerClient
@@ -108,6 +111,7 @@ class BlueskyContext:
     run_engine: RunEngine = field(
         default_factory=lambda: RunEngine(context_managers=[])
     )
+    tiled_client: BaseClient | None = field(default=None, init=False, repr=False)
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
@@ -156,6 +160,12 @@ class BlueskyContext:
                 "Numtracker has been configured but a path provider was imported with "
                 "the devices. Remove this path provider to use numtracker."
             )
+
+        if (tiled_conf := configuration.tiled) is not None and tiled_conf.enabled:
+            self.tiled_client = client = from_uri(
+                str(tiled_conf.url), api_key=tiled_conf.api_key
+            )
+            self.run_engine.subscribe(TiledWriter(client))
 
     def find_device(self, addr: str | list[str]) -> Device | None:
         """

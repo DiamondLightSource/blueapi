@@ -6,7 +6,7 @@ services:
     image: ghcr.io/diamondlightsource/numtracker:1.0.1
     ports:
       - "8406:8000"
-    
+
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management
     ports:
@@ -25,4 +25,38 @@ services:
     environment:
       - TILED_SINGLE_USER_API_KEY=${TILED_SINGLE_USER_API_KEY}
     volumes:
-    - ./services/tiled_config:/deploy/config
+      - ./services/tiled_config:/deploy/config
+
+  keycloak:
+    image: docker.io/keycloak:26.4
+    environment:
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+    command: ["start-dev", "--import-realm"]
+    volumes:
+      - ./services/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    ports:
+      - 8080:8080
+
+  opa:
+    network_mode: host
+    image: docker.io/openpolicyagent/opa:1.11.0-dev
+    ports:
+      - 8181:8181
+    environment:
+      - ISSUER=http://localhost:8080/realms/master
+    command: [
+        run
+        --server
+        --addr
+        0.0.0.0:8181
+        --config-file
+        /etc/opa-config/config.yaml,
+      ]
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    volumes:
+      - type: bind
+        source: ./services/opa-config
+        target: /etc/opa-config

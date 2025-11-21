@@ -26,7 +26,6 @@ from blueapi.config import (
     Source,
     SourceKind,
     StompConfig,
-    TiledConfig,
 )
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
@@ -508,34 +507,6 @@ def test_setup_with_numtracker_makes_start_document_provider():
     assert isinstance(path_provider, StartDocumentPathProvider)
 
     clear_path_provider()
-
-
-def test_setup_without_tiled_not_makes_tiled_inserter():
-    with patch("blueapi.service.interface.from_uri") as from_uri:
-        conf = ApplicationConfig()
-        interface.setup(conf)
-
-        assert from_uri.call_count == 0
-
-
-def test_setup_with_tiled_makes_tiled_inserter():
-    with patch("blueapi.service.interface.from_uri") as from_uri:
-        conf = ApplicationConfig(tiled=TiledConfig(enabled=True))
-        interface.setup(conf)
-
-        assert from_uri.call_count == 1
-        assert from_uri.call_args.args == ("http://localhost:8407/",)
-        assert from_uri.call_args.kwargs == {"api_key": None}
-
-
-def test_setup_with_tiled_api_key_makes_tiled_inserter():
-    with patch("blueapi.service.interface.from_uri") as from_uri:
-        conf = ApplicationConfig(tiled=TiledConfig(enabled=True, api_key="foobarbaz"))
-        interface.setup(conf)
-
-        assert from_uri.call_count == 1
-        assert from_uri.call_args.args == ("http://localhost:8407/",)
-        assert from_uri.call_args.kwargs == {"api_key": "foobarbaz"}
 
 
 def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():

@@ -1,0 +1,141 @@
+{
+    "clients": [
+        {
+            "id": "96265cb5-8046-4e06-9095-37ecf65d5bf6",
+            "clientId": "tiled",
+            "name": "Tiled",
+            "description": "Standard flow client used for tiled authentication using oauth2-proxy",
+            "rootUrl": "http://localhost:4180",
+            "adminUrl": "http://localhost:4180",
+            "baseUrl": "http://localhost:4180",
+            "enabled": true,
+            "alwaysDisplayInConsole": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "o8b7mIuYmzybNPVS8SSduhMdeqM8NDLp",
+            "redirectUris": [
+                "http://localhost:4180/*"
+            ],
+            "webOrigins": [
+                "http://localhost:4180/*"
+            ],
+            "notBefore": 0,
+            "bearerOnly": false,
+            "consentRequired": false,
+            "standardFlowEnabled": true,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "publicClient": false,
+            "frontchannelLogout": true,
+            "protocol": "openid-connect",
+            "attributes": {
+                "client.secret.creation.time": "1756805685",
+                "request.object.signature.alg": "any",
+                "request.object.encryption.alg": "any",
+                "client.introspection.response.allow.jwt.claim.enabled": "false",
+                "standard.token.exchange.enabled": "false",
+                "post.logout.redirect.uris": "http://localhost:4180/*",
+                "frontchannel.logout.session.required": "true",
+                "oauth2.device.authorization.grant.enabled": "false",
+                "use.jwks.url": "false",
+                "backchannel.logout.revoke.offline.tokens": "false",
+                "use.refresh.tokens": "true",
+                "realm_client": "false",
+                "oidc.ciba.grant.enabled": "false",
+                "client.use.lightweight.access.token.enabled": "false",
+                "backchannel.logout.session.required": "true",
+                "request.object.required": "not required",
+                "client_credentials.use_refresh_token": "false",
+                "access.token.header.type.rfc9068": "false",
+                "tls.client.certificate.bound.access.tokens": "false",
+                "require.pushed.authorization.requests": "false",
+                "acr.loa.map": "{}",
+                "display.on.consent.screen": "false",
+                "request.object.encryption.enc": "any",
+                "token.response.type.bearer.lower-case": "false"
+            },
+            "authenticationFlowBindingOverrides": {},
+            "fullScopeAllowed": true,
+            "nodeReRegistrationTimeout": -1,
+            "protocolMappers": [
+                {
+                    "id": "dccb8ada-64d3-40a7-8c44-002c01df48ed",
+                    "name": "Nonce",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-nonce-backwards-compatible-mapper",
+                    "consentRequired": false,
+                    "config": {}
+                },
+                {
+                    "id": "72c90cf1-f71c-434c-bf8b-6135bc5e0f81",
+                    "name": "email",
+                    "protocol": "cas",
+                    "protocolMapper": "cas-usermodel-property-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "mail",
+                        "user.attribute": "email",
+                        "jsonType.label": "String"
+                    }
+                },
+                {
+                    "id": "af58bf06-d7d3-4046-80eb-f58d5ae35aca",
+                    "name": "tiled_aud",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-audience-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "id.token.claim": "false",
+                        "lightweight.claim": "false",
+                        "access.token.claim": "true",
+                        "introspection.token.claim": "true",
+                        "included.custom.audience": "tiled_aud"
+                    }
+                },
+                {
+                    "id": "31d9504c-c1e2-4c12-bba5-abea888500e5",
+                    "name": "full name",
+                    "protocol": "cas",
+                    "protocolMapper": "cas-full-name-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "cn",
+                        "jsonType.label": "String"
+                    }
+                },
+                {
+                    "id": "ed4bb39b-8a8b-4e67-bcdc-6e1f2bbbc10f",
+                    "name": "given name",
+                    "protocol": "cas",
+                    "protocolMapper": "cas-usermodel-property-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "givenName",
+                        "user.attribute": "firstName",
+                        "jsonType.label": "String"
+                    }
+                },
+                {
+                    "id": "092ef6ba-cd44-4391-a365-3a28e1287f9c",
+                    "name": "family name",
+                    "protocol": "cas",
+                    "protocolMapper": "cas-usermodel-property-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "sn",
+                        "user.attribute": "lastName",
+                        "jsonType.label": "String"
+                    }
+                }
+            ],
+            "defaultClientScopes": [
+                "read:metadata",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": [
+                "offline_access"
+            ]
+        }
+    ]
+}

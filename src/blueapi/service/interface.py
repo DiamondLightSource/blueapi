@@ -1,14 +1,13 @@
 from collections.abc import Mapping
 from functools import cache
+from queue import Full
 from typing import Any
 
-from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
-from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
@@ -20,7 +19,7 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
-from blueapi.worker.event import TaskStatusEnum, WorkerState
+from blueapi.worker.event import TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
@@ -87,16 +86,6 @@ def stomp_client() -> StompClient | None:
         return None
 
 
-@cache
-def tiled_writer() -> TiledWriter | None:
-    tiled_config: TiledConfig = config().tiled
-    if tiled_config.enabled:
-        client = from_uri(str(tiled_config.url), api_key=tiled_config.api_key)
-        return TiledWriter(client, batch_size=1)
-    else:
-        return None
-
-
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
     set_config(config)
@@ -105,8 +94,6 @@ def setup(config: ApplicationConfig) -> None:
     # Eagerly initialize worker and messaging connection
     worker()
     stomp_client()
-    if writer := tiled_writer():
-        context().run_engine.subscribe(writer)
 
 
 def teardown() -> None:
@@ -116,7 +103,6 @@ def teardown() -> None:
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
-    tiled_writer.cache_clear()
 
 
 def _publish_event_streams(
@@ -161,7 +147,10 @@ def submit_task(task_request: TaskRequest) -> str:
     task = Task(
         name=task_request.name,
         params=task_request.params,
-        metadata={"instrument_session": task_request.instrument_session},
+        metadata={
+            "instrument_session": task_request.instrument_session,
+            "tiled_access_tags": [task_request.instrument_session],
+        },
     )
     return worker().submit_task(task)
 
@@ -175,8 +164,38 @@ def begin_task(
     task: WorkerTask, pass_through_headers: Mapping[str, str] | None = None
 ) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
+    if worker().get_active_task() is not None:
+        raise Full()
     if nt := context().numtracker:
         nt.set_headers(pass_through_headers or {})
+
+        def unset_headers_when_task_finished(
+            event: WorkerEvent, correlation_id: str | None
+        ) -> None:
+            if (
+                event.task_status
+                and event.task_status.task_id == task.task_id
+                and event.task_status.task_complete
+            ):
+                nt.set_headers({})
+
+        worker().worker_events.subscribe(unset_headers_when_task_finished)
+    if tiled_client := context().tiled_client:
+        tiled_client.context.http_client.headers.update(pass_through_headers or {})
+
+        def unset_headers_when_task_finished(
+            event: WorkerEvent, correlation_id: str | None
+        ) -> None:
+            if (
+                event.task_status
+                and event.task_status.task_id == task.task_id
+                and event.task_status.task_complete
+            ):
+                for header in pass_through_headers or {}:
+                    del tiled_client.context.http_client.headers[header]
+
+        worker().worker_events.subscribe(unset_headers_when_task_finished)
+
     if task.task_id is not None:
         worker().begin_task(task.task_id)
     return task

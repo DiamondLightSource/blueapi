@@ -1,6 +1,27 @@
 authentication:
-  # Any HTTP client that can connect can read, an API key is still required to write.
-  allow_anonymous_access: true
+  providers:
+    - provider: keycloak_oidc
+      authenticator: tiled.authenticators:ProxiedOIDCAuthenticator
+      args:
+        audience: tiled_aud
+        client_id: tiled
+        device_flow_client_id: tiled-cli
+        well_known_uri: "http://localhost:8080/realms/master/.well-known/openid-configuration"
+        scopes:
+          - openid
+          - email
+          - profile
+        confirmation_message: "You have logged in with Proxied OIDC as {id}."
+
+access_control:
+  access_policy: "tiled.access_control.access_policies:ExternalPolicyDecisionPoint"
+  args:
+    authorization_provider: http://localhost:8181/v1/data/rbac/
+    audience: tiled_aud
+    node_access: "allow"
+    filter_nodes: "tags"
+    scopes_access: "scopes"
+
 trees:
   - path: /
     tree: catalog
@@ -8,3 +29,4 @@ trees:
       uri: "sqlite:////storage/catalog.db"
       writable_storage: "sqlite:////storage/catalog.db"
       init_if_not_exists: true
+      top_level_access_blob: { "tags": ["public"] }

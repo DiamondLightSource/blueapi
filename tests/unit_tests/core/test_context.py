@@ -30,7 +30,14 @@ from pydantic import TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
 
-from blueapi.config import EnvironmentConfig, MetadataConfig, Source, SourceKind
+from blueapi.config import (
+    ApplicationConfig,
+    EnvironmentConfig,
+    MetadataConfig,
+    Source,
+    SourceKind,
+    TiledConfig,
+)
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 from blueapi.utils.connect_devices import _establish_device_connections
@@ -693,3 +700,30 @@ def test_explicit_none_arg_generated_schema(
         "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "null"}]}
     }
     assert "foo" in schema.get("required", [])
+
+
+def test_setup_without_tiled_not_makes_tiled_inserter():
+    with patch("blueapi.core.context.from_uri") as from_uri:
+        BlueskyContext(ApplicationConfig())
+
+        assert from_uri.call_count == 0
+
+
+def test_setup_with_tiled_makes_tiled_inserter():
+    with patch("blueapi.core.context.from_uri") as from_uri:
+        BlueskyContext(ApplicationConfig(tiled=TiledConfig(enabled=True)))
+
+        assert from_uri.call_count == 1
+        assert from_uri.call_args.args == ("http://localhost:8407/",)
+        assert from_uri.call_args.kwargs == {"api_key": None}
+
+
+def test_setup_with_tiled_api_key_makes_tiled_inserter():
+    with patch("blueapi.core.context.from_uri") as from_uri:
+        BlueskyContext(
+            ApplicationConfig(tiled=TiledConfig(enabled=True, api_key="foobarbaz"))
+        )
+
+        assert from_uri.call_count == 1
+        assert from_uri.call_args.args == ("http://localhost:8407/",)
+        assert from_uri.call_args.kwargs == {"api_key": "foobarbaz"}

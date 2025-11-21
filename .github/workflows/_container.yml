@@ -105,7 +105,9 @@ jobs:
             type=ref,event=tag
 
       - name: package chart and push it
+        env:
+          REPO: ${{ github.repository_owner }}
         run: |
           helm dependencies update helm/blueapi
           helm package helm/blueapi --version ${GITHUB_REF##*/} --app-version ${GITHUB_REF##*/} -d /tmp/
-          helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/diamondlightsource/charts
+          helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/${REPO@L}/charts

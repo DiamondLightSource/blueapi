@@ -45,15 +45,6 @@ jobs:
       contents: read
       packages: write
 
-  debug_container:
-    needs: [container, test]
-    uses: ./.github/workflows/_debug_container.yml
-    with:
-      publish: ${{ needs.test.result == 'success' }}
-    permissions:
-      contents: read
-      packages: write
-
   docs:
     uses: ./.github/workflows/_docs.yml
 

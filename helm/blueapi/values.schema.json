@@ -12,7 +12,15 @@
             "type": "object",
             "properties": {
                 "enabled": {
-                    "description": "If enabled, disables liveness and readiness probes, and does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster",
+                    "description": "If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance",
+                    "type": "boolean"
+                },
+                "log-to-stderr": {
+                    "description": "If enabled configures debugpy to use the option `--log-to-stderr`",
+                    "type": "boolean"
+                },
+                "suspend": {
+                    "description": "If enabled does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster",
                     "type": "boolean"
                 }
             }

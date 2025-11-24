@@ -553,6 +553,38 @@
                     },
                     "additionalProperties": false
                 },
+                "DeviceManagerSource": {
+                    "title": "DeviceManagerSource",
+                    "type": "object",
+                    "required": [
+                        "module"
+                    ],
+                    "properties": {
+                        "kind": {
+                            "title": "Kind",
+                            "default": "deviceManager",
+                            "const": "deviceManager"
+                        },
+                        "mock": {
+                            "title": "Mock",
+                            "description": "If true, ophyd_async device connections are mocked",
+                            "default": false,
+                            "type": "boolean"
+                        },
+                        "module": {
+                            "title": "Module",
+                            "description": "Module to be imported",
+                            "type": "string"
+                        },
+                        "name": {
+                            "title": "Name",
+                            "description": "Name of the device manager in the module",
+                            "default": "devices",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "DeviceSource": {
                     "title": "DeviceSource",
                     "type": "object",
@@ -640,6 +672,9 @@
                                     },
                                     {
                                         "$ref": "#/$defs/DodalSource"
+                                    },
+                                    {
+                                        "$ref": "#/$defs/DeviceManagerSource"
                                     }
                                 ]
                             }

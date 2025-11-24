@@ -64,6 +64,54 @@
             "title": "CORSConfig",
             "type": "object"
         },
+        "DeviceSource": {
+            "additionalProperties": false,
+            "properties": {
+                "module": {
+                    "description": "Module to be imported",
+                    "title": "Module",
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "deviceFunctions",
+                    "default": "deviceFunctions",
+                    "title": "Kind",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "module"
+            ],
+            "title": "DeviceSource",
+            "type": "object"
+        },
+        "DodalSource": {
+            "additionalProperties": false,
+            "properties": {
+                "module": {
+                    "description": "Module to be imported",
+                    "title": "Module",
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "dodal",
+                    "default": "dodal",
+                    "title": "Kind",
+                    "type": "string"
+                },
+                "mock": {
+                    "default": false,
+                    "description": "If true, ophyd_async device connections are mocked",
+                    "title": "Mock",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "module"
+            ],
+            "title": "DodalSource",
+            "type": "object"
+        },
         "EnvironmentConfig": {
             "additionalProperties": false,
             "description": "Config for the RunEngine environment",
@@ -71,16 +119,34 @@
                 "sources": {
                     "default": [
                         {
-                            "kind": "planFunctions",
-                            "module": "dodal.plans"
+                            "module": "dodal.plans",
+                            "kind": "planFunctions"
                         },
                         {
-                            "kind": "planFunctions",
-                            "module": "dodal.plan_stubs.wrapped"
+                            "module": "dodal.plan_stubs.wrapped",
+                            "kind": "planFunctions"
                         }
                     ],
                     "items": {
-                        "$ref": "#/$defs/Source"
+                        "discriminator": {
+                            "mapping": {
+                                "deviceFunctions": "#/$defs/DeviceSource",
+                                "dodal": "#/$defs/DodalSource",
+                                "planFunctions": "#/$defs/PlanSource"
+                            },
+                            "propertyName": "kind"
+                        },
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/PlanSource"
+                            },
+                            {
+                                "$ref": "#/$defs/DeviceSource"
+                            },
+                            {
+                                "$ref": "#/$defs/DodalSource"
+                            }
+                        ]
                     },
                     "title": "Sources",
                     "type": "array"
@@ -216,6 +282,27 @@
             "title": "OIDCConfig",
             "type": "object"
         },
+        "PlanSource": {
+            "additionalProperties": false,
+            "properties": {
+                "module": {
+                    "description": "Module to be imported",
+                    "title": "Module",
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "planFunctions",
+                    "default": "planFunctions",
+                    "title": "Kind",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "module"
+            ],
+            "title": "PlanSource",
+            "type": "object"
+        },
         "RestConfig": {
             "additionalProperties": false,
             "properties": {
@@ -295,41 +382,6 @@
             },
             "title": "ScratchRepository",
             "type": "object"
-        },
-        "Source": {
-            "additionalProperties": false,
-            "properties": {
-                "kind": {
-                    "$ref": "#/$defs/SourceKind"
-                },
-                "module": {
-                    "anyOf": [
-                        {
-                            "format": "path",
-                            "type": "string"
-                        },
-                        {
-                            "type": "string"
-                        }
-                    ],
-                    "title": "Module"
-                }
-            },
-            "required": [
-                "kind",
-                "module"
-            ],
-            "title": "Source",
-            "type": "object"
-        },
-        "SourceKind": {
-            "enum": [
-                "planFunctions",
-                "deviceFunctions",
-                "dodal"
-            ],
-            "title": "SourceKind",
-            "type": "string"
         },
         "StompConfig": {
             "additionalProperties": false,

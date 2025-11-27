@@ -57,6 +57,9 @@ RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 
 ENV MPLCONFIGDIR=/tmp/matplotlib
 
+RUN python -c 'import blueapi; print(f"BLUEAPI_PATH={blueapi.__path__[0]}")' > .env
+RUN chmod o+r .env
+
 RUN groupadd -g 1000 blueapi && \
     useradd -m -u 1000 -g blueapi blueapi
 

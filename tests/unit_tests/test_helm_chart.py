@@ -749,7 +749,7 @@ def test_main_container_args(
             "-m",
             "debugpy",
             "--listen",
-            "0.0.0.0:5678",
+            "5678",
             "--configure-subProcess",
             "true",
             "-m",

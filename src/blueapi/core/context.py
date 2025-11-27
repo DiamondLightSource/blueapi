@@ -11,7 +11,7 @@ from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
 from dodal.utils import AnyDevice, make_all_devices
-from ophyd_async.core import NotConnectedError
+from ophyd_async.core import NotConnectedError, PathProvider
 from pydantic import BaseModel, GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
@@ -19,7 +19,15 @@ from pydantic_core import CoreSchema, core_schema
 
 from blueapi import utils
 from blueapi.client.numtracker import NumtrackerClient
-from blueapi.config import ApplicationConfig, EnvironmentConfig, SourceKind
+from blueapi.config import (
+    ApplicationConfig,
+    DeviceManagerSource,
+    DeviceSource,
+    DodalSource,
+    EnvironmentConfig,
+    PlanSource,
+)
+from blueapi.core.protocols import DeviceManager
 from blueapi.utils import (
     BlueapiPlanModelConfig,
     is_function_sourced_from_module,
@@ -109,6 +117,7 @@ class BlueskyContext:
         default_factory=lambda: RunEngine(context_managers=[])
     )
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
+    path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
@@ -129,10 +138,12 @@ class BlueskyContext:
                 )
 
             path_provider = StartDocumentPathProvider()
+            # TODO: Remove this when device manager is rolled out
             set_path_provider(path_provider)
 
             self.run_engine.subscribe(path_provider.run_start, "start")
             self.run_engine.subscribe(path_provider.run_stop, "stop")
+            self.path_provider = path_provider
 
             # local reference so it's available in _update_scan_num
             numtracker = self.numtracker
@@ -179,14 +190,22 @@ class BlueskyContext:
         if config.metadata is not None:
             self.run_engine.md |= config.metadata.model_dump()
         for source in config.sources:
-            mod = import_module(str(source.module))
+            mod = import_module(source.module)
 
-            if source.kind is SourceKind.PLAN_FUNCTIONS:
-                self.with_plan_module(mod)
-            elif source.kind is SourceKind.DEVICE_FUNCTIONS:
-                self.with_device_module(mod)
-            elif source.kind is SourceKind.DODAL:
-                self.with_dodal_module(mod)
+            match source:
+                case PlanSource():
+                    self.with_plan_module(mod)
+                case DeviceSource():
+                    self.with_device_module(mod)
+                case DodalSource(mock=mock):
+                    self.with_dodal_module(mod, mock=mock)
+                case DeviceManagerSource(mock=mock, name=name):
+                    manager = getattr(mod, name)
+                    if not isinstance(manager, DeviceManager):
+                        raise ValueError(
+                            f"{name} in module {mod} is not a device manager"
+                        )
+                    self.with_device_manager(manager, mock)
 
     def with_plan_module(self, module: ModuleType) -> None:
         """
@@ -219,6 +238,30 @@ class BlueskyContext:
                 or is_function_sourced_from_module(obj, module)
             ):
                 self.register_plan(obj)
+
+    def with_device_manager(self, manager: DeviceManager, mock: bool = False):
+        fixtures = {"path_provider": self.path_provider} if self.path_provider else {}
+        build_result = manager.build_and_connect(mock=mock, fixtures=fixtures)
+
+        for device in build_result.devices.values():
+            self.register_device(device)
+
+        if errs := build_result.build_errors:
+            LOGGER.warning(
+                f"{errs} errors while building devices",
+                exc_info=ExceptionGroup(
+                    "Errors while building devices", list(errs.values())
+                ),
+            )
+        if errs := build_result.connection_errors:
+            LOGGER.warning(
+                f"{len(errs)} errors while connecting devices",
+                exc_info=NotConnectedError(errs),
+            )
+        return build_result.devices, {
+            **build_result.build_errors,
+            **build_result.connection_errors,
+        }
 
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)

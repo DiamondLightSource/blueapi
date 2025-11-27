@@ -757,7 +757,7 @@ def test_main_container_args(
         ]
 
         if debug_suspend:
-            expected_command.insert(5, "--wait-for-client")
+            expected_command.insert(6, "--wait-for-client")
 
         assert main_container["command"] == expected_command
     else:

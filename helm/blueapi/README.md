@@ -9,7 +9,9 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | May be required to run on specific nodes (e.g. the control machine) |
-| debug.enabled | bool | `false` | If enabled, disables liveness and readiness probes, and does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster |
+| debug.enabled | bool | `false` | If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance |
+| debug.log_to_stderr | bool | `false` | If enabled configures debugpy to use the option `--log-to-stderr` |
+| debug.suspend | bool | `false` | If enabled does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster |
 | extraEnvVars | list | `[]` | Additional envVars to mount to the pod |
 | fullnameOverride | string | `""` |  |
 | global | object | `{}` | Not used, but must be present for validation when using as a dependency of another chart |

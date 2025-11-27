@@ -72,7 +72,7 @@ spec:
           type: Directory
       {{- end }}
       {{- end }}
-      {{- if or .Values.debug.enabled (and .Values.initContainer.enabled .Values.initContainer.persistentVolume.enabled)}}
+      {{- if ne 1000.0 .Values.securityContext.runAsUser }}
       - name: home  # Required for vscode to install plugins
         emptyDir:
           sizeLimit: 500Mi
@@ -83,7 +83,7 @@ spec:
       {{- if .Values.initContainer.enabled }}
       initContainers:
       - name: setup-scratch
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary "-debug" "" .Values.debug.enabled }}"
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources:
           {{- .Values.initResources | default .Values.resources | toYaml | nindent 12 }}
@@ -116,7 +116,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ ternary "-debug" "" .Values.debug.enabled }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
@@ -151,17 +151,35 @@ spec:
             - name: venv
               mountPath: /venv
             {{- end }}
-            {{- if or .Values.debug.enabled (and .Values.initContainer.enabled .Values.initContainer.persistentVolume.enabled) }}
+            {{- if ne 1000.0 .Values.securityContext.runAsUser }}
             - mountPath: /home
               name: home
             - mountPath: /var/run/nslcd
               name: nslcd
             {{- end }}
-          {{- if not .Values.debug.enabled }}
           args:
             - "-c"
             - "/config/config.yaml"
             - "serve"
+          {{- if .Values.debug.enabled }}
+          command:
+          - "python"
+          - "-Xfrozen_modules=off"
+          - "-m"
+          - "debugpy"
+          - "--listen"
+          - "5678"
+          {{- if .Values.debug.log_to_stderr }}
+          - "--log-to-stderr"
+          {{- end }}
+          {{- if .Values.debug.suspend }}
+          - "--wait-for-client"
+          {{- end }}
+          - "--configure-subProcess"
+          - "true"
+          - "-m"
+          - "blueapi"
+          {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -174,13 +192,12 @@ spec:
           startupProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
-        {{- if or .Values.debug.enabled (and .Values.initContainer.persistentVolume.enabled .Values.initContainer.enabled )}}
+        {{- if ne 1000.0 .Values.securityContext.runAsUser }}
         - name: debug-account-sync
           image: ghcr.io/diamondlightsource/account-sync-sidecar:3.0.0
           volumeMounts:

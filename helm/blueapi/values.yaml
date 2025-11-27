@@ -223,9 +223,13 @@ initContainer:
     existingClaimName: ""
 
 debug:
-  # -- If enabled, disables liveness and readiness probes, and does not start the service on startup
-  # This allows connecting to the pod and starting the service manually to allow debugging on the cluster
+  # -- If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance
   enabled: false
+  # -- If enabled does not start the service on startup
+  # This allows connecting to the pod and starting the service manually to allow debugging on the cluster
+  suspend: false
+  # -- If enabled configures debugpy to use the option `--log-to-stderr`
+  log_to_stderr: false
 
 # -- Not used, but must be present for validation when using as a dependency of another chart
 global: {}

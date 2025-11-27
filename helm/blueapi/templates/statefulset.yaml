@@ -169,9 +169,9 @@ spec:
           - "debugpy"
           - "--listen"
           - "5678"
-          {{- if .Values.debug.log-to-stderr }}
+          {{- if .Values.debug.log_to_stderr }}
           - "--log-to-stderr"
-          {{ end }}
+          {{- end }}
           {{- if .Values.debug.suspend }}
           - "--wait-for-client"
           {{- end }}
@@ -179,6 +179,7 @@ spec:
           - "true"
           - "-m"
           - "blueapi"
+          {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -190,7 +191,6 @@ spec:
           {{- with .Values.startupProbe }}
           startupProbe:
             {{- toYaml . | nindent 12 }}
-          {{- end }}
           {{- end }}
           envFrom:
             - configMapRef:

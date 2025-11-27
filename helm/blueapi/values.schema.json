@@ -15,7 +15,7 @@
                     "description": "If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance",
                     "type": "boolean"
                 },
-                "log-to-stderr": {
+                "log_to_stderr": {
                     "description": "If enabled configures debugpy to use the option `--log-to-stderr`",
                     "type": "boolean"
                 },

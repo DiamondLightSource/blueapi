@@ -57,8 +57,10 @@ RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 
 ENV MPLCONFIGDIR=/tmp/matplotlib
 
-RUN python -c 'import blueapi; print(f"BLUEAPI_PATH={blueapi.__path__[0]}")' > .env
-RUN chmod o+r .env
+# Make a path to site-packages that is invariant with python version
+# This allows our pathMapping in launch.jsons to always find build blueapi
+WORKDIR /venv/lib
+RUN ln -s python python${PYTHON_VERSION}
 
 RUN groupadd -g 1000 blueapi && \
     useradd -m -u 1000 -g blueapi blueapi

@@ -46,11 +46,11 @@ def setup_scratch(
             )
     for repo in config.repositories:
         local_directory = config.root / repo.name
-        ensure_repo(repo.remote_url, local_directory)
+        ensure_repo(repo.remote_url, local_directory, repo.branch)
         scratch_install(local_directory, timeout=install_timeout)
 
 
-def ensure_repo(remote_url: str, local_directory: Path) -> None:
+def ensure_repo(remote_url: str, local_directory: Path, branch=None) -> None:
     """
     Ensure that a repository is checked out for use in the scratch area.
     Clone it if it isn't.
@@ -65,10 +65,20 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
 
     if not local_directory.exists():
         logging.info(f"Cloning {remote_url}")
-        Repo.clone_from(remote_url, local_directory)
+        if branch:
+            Repo.clone_from(
+                remote_url,
+                local_directory,
+                allow_unsafe_options=True,
+                multi_options=[f"--branch {branch}"],
+            )
+        else:
+            Repo.clone_from(remote_url, local_directory)
         logging.info(f"Cloned {remote_url} -> {local_directory}")
     elif local_directory.is_dir():
-        Repo(local_directory)
+        repo = Repo(local_directory)
+        if branch and branch != repo.active_branch.name:
+            raise Exception("Repository already exists in wrong branch")
         logging.info(f"Found {local_directory}")
     else:
         raise KeyError(

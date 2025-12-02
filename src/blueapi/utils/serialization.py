@@ -39,8 +39,8 @@ def access_blob(instrument_session: str, beamline: str) -> str:
             f"instrument session {instrument_session}"
         )
     blob = {
-        "proposal_number": int(m.group(1)),
-        "visit_number": int(m.group(2)),
+        "proposal": int(m.group(1)),
+        "visit": int(m.group(2)),
         "beamline": beamline,
     }
     return json.dumps(blob)

@@ -6,12 +6,30 @@ from blueapi.utils.serialization import access_blob
 @pytest.mark.parametrize(
     "input,output",
     [
-        ("cm12345-1", '{"proposal": 12345, "visit": 1, "beamline": "ixx"}'),
-        ("cm12345-111", '{"proposal": 12345, "visit": 111, "beamline": "ixx"}'),
-        ("cv12345-1", '{"proposal": 12345, "visit": 1, "beamline": "ixx"}'),
-        ("cm12345678-1", '{"proposal": 12345678, "visit": 1, "beamline": "ixx"}'),
-        ("cm12345678-111", '{"proposal": 12345678, "visit": 111, "beamline": "ixx"}'),
-        ("cv12345678-111", '{"proposal": 12345678, "visit": 111, "beamline": "ixx"}'),
+        (
+            "cm12345-1",
+            '{"proposal_number": 12345, "visit_number": 1, "beamline": "ixx"}',
+        ),
+        (
+            "cm12345-111",
+            '{"proposal_number": 12345, "visit_number": 111, "beamline": "ixx"}',
+        ),
+        (
+            "cv12345-1",
+            '{"proposal_number": 12345, "visit_number": 1, "beamline": "ixx"}',
+        ),
+        (
+            "cm12345678-1",
+            '{"proposal_number": 12345678, "visit_number": 1, "beamline": "ixx"}',
+        ),
+        (
+            "cm12345678-111",
+            '{"proposal_number": 12345678, "visit_number": 111, "beamline": "ixx"}',
+        ),
+        (
+            "cv12345678-111",
+            '{"proposal_number": 12345678, "visit_number": 111, "beamline": "ixx"}',
+        ),
     ],
 )
 def test_access_blob_regex(input: str, output: str):

@@ -344,7 +344,11 @@ def test_get_task_by_id(
     }
 
     if tiled_enabled:
-        expected_access_tag = {"proposal": 12345, "visit": 1, "beamline": "ixx"}
+        expected_access_tag = {
+            "proposal_number": 12345,
+            "visit_number": 1,
+            "beamline": "ixx",
+        }
         expected_metadata["tiled_access_tags"] = [json.dumps(expected_access_tag)]
 
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(

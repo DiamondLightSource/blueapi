@@ -39,7 +39,7 @@ class UserClient(BlueapiClient):
     client.run("count", detectors=["det1", "det2"])
     client.change_session("cm12345-2")
 
-    from dodal.plan_stubs.wrapped
+    from dodal.plan_stubs.wrapped import move
 
     client.run(move, moves={"base.x": 0})  # move base.x to 0
 

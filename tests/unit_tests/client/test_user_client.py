@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
@@ -9,8 +11,11 @@ from blueapi.client.rest import BlueapiRestClient
 from blueapi.client.user_client import UserClient
 from blueapi.service.model import DeviceResponse, PlanResponse
 
-BLUEAPI_CONFIG_PATH = (
-    "/workspaces/blueapi/tests/unit_tests/valid_example_config/client.yaml"
+UNIT_TEST_DIRECTORY = Path(__file__).parent.parent
+
+
+BLUEAPI_CONFIG_PATH = os.path.join(
+    UNIT_TEST_DIRECTORY, "valid_example_config/client.yaml"
 )
 
 

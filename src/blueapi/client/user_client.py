@@ -68,8 +68,8 @@ class UserClient(BlueapiClient):
         config_loader = ConfigLoader(ApplicationConfig)
         config_loader.use_values_from_yaml(blueapi_config_path)
         loaded_config = config_loader.load()
-        blueapi_class = BlueapiClient.from_config(loaded_config)
-        super().__init__(blueapi_class._rest, blueapi_class._events)  # noqa
+        rest, events = BlueapiClient.config_to_rest_and_events(loaded_config)
+        super().__init__(rest, events)
 
     def _convert_args_to_kwargs(self, plan: Callable, args: tuple) -> dict:
         """Converts args to kwargs

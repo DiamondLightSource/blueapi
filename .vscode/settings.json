@@ -14,5 +14,6 @@
     },
     "[toml]": {
         "editor.defaultFormatter": "tamasfe.even-better-toml",
-    }
+    },
+    "python-envs.pythonProjects": []
 }

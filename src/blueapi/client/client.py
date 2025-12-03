@@ -48,8 +48,10 @@ class BlueapiClient:
         self._rest = rest
         self._events = events
 
-    @classmethod
-    def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
+    @staticmethod
+    def config_to_rest_and_events(
+        config: ApplicationConfig,
+    ) -> tuple[BlueapiRestClient, EventBusClient | None]:
         session_manager: SessionManager | None = None
         try:
             session_manager = SessionManager.from_cache(config.auth_token_path)
@@ -67,9 +69,14 @@ class BlueapiClient:
                 )
             )
             events = EventBusClient(client)
-            return cls(rest, events)
+            return rest, events
         else:
-            return cls(rest)
+            return rest, None
+
+    @classmethod
+    def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
+        rest, events = BlueapiClient.config_to_rest_and_events(config)
+        return cls(rest, events)
 
     @start_as_current_span(TRACER)
     def get_plans(self) -> PlanResponse:

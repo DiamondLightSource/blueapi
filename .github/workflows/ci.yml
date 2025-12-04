@@ -5,10 +5,11 @@ on:
     branches:
       - main
     tags:
-      - "*"
+      - '*'
   pull_request:
 
 jobs:
+
   lint:
     uses: ./.github/workflows/_tox.yml
     with:
@@ -31,8 +32,8 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # system-test:
-  #   uses: ./.github/workflows/_system_test.yml
+  system-test:
+    uses: ./.github/workflows/_system_test.yml
 
   container:
     needs: test
@@ -44,8 +45,18 @@ jobs:
       contents: read
       packages: write
 
+  debug_container:
+    needs: [container, test]
+    uses: ./.github/workflows/_debug_container.yml
+    with:
+      publish: ${{ needs.test.result == 'success' }}
+    permissions:
+      contents: read
+      packages: write
+
   docs:
     uses: ./.github/workflows/_docs.yml
+
 
   dist:
     uses: ./.github/workflows/_dist.yml

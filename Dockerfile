@@ -60,7 +60,7 @@ ENV MPLCONFIGDIR=/tmp/matplotlib
 # Make a path to site-packages that is invariant with python version
 # This allows our pathMapping in launch.jsons to always find build blueapi
 WORKDIR /venv/lib
-RUN ln -s python python${PYTHON_VERSION}
+RUN ln -sf python* python
 
 RUN groupadd -g 1000 blueapi && \
     useradd -m -u 1000 -g blueapi blueapi

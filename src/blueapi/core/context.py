@@ -1,7 +1,7 @@
 import logging
 import sys
 from collections.abc import Callable
-from dataclasses import InitVar, dataclass, field
+from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
@@ -12,7 +12,12 @@ from bluesky.run_engine import RunEngine
 from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
 from dodal.utils import AnyDevice, make_all_devices
 from ophyd_async.core import NotConnectedError, PathProvider
-from pydantic import BaseModel, GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
+from pydantic import (
+    BaseModel,
+    GetCoreSchemaHandler,
+    GetJsonSchemaHandler,
+    create_model,
+)
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import CoreSchema, core_schema
@@ -100,7 +105,7 @@ def is_bluesky_type(typ: type) -> bool:
     return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
 
 
-C = TypeVar("C", bound=BaseModel, covariant=True)
+C = TypeVar("C", covariant=True)
 
 
 @dataclass
@@ -442,16 +447,19 @@ class BlueskyContext:
                 )
 
             no_default = para.default is Parameter.empty
-            default_factory = (
-                self._composite_factory(arg_type)
-                if isclass(arg_type)
-                and issubclass(arg_type, BaseModel)
+            if (
+                isclass(arg_type)
+                and (issubclass(arg_type, BaseModel) or is_dataclass(arg_type))
                 and isinstance(para.default, str)
-                else DefaultFactory(para.default)
-            )
+            ):
+                default_factory = self._composite_factory(arg_type)
+                _type = SkipJsonSchema[self._convert_type(arg_type, no_default)]
+            else:
+                default_factory = DefaultFactory(para.default)
+                _type = self._convert_type(arg_type, no_default)
             factory = None if no_default else default_factory
             new_args[name] = (
-                self._convert_type(arg_type, no_default),
+                _type,
                 FieldInfo(default_factory=factory),
             )
         return new_args
@@ -487,14 +495,20 @@ class BlueskyContext:
 
     def _composite_factory(self, composite_class: type[C]) -> Callable[[], C]:
         def _inject_composite():
-            devices = {
-                field: self.find_device(info.default)
-                if info.annotation is not None
-                and is_bluesky_type(info.annotation)
-                and isinstance(info.default, str)
-                else info.default
-                for field, info in composite_class.model_fields.items()
-            }
+            if issubclass(composite_class, BaseModel):
+                devices = {
+                    field_name: self.find_device(field_name)
+                    for field_name in composite_class.model_fields.keys()
+                }
+            else:
+                assert is_dataclass(composite_class), (
+                    f"Unsupported composite type: {composite_class}, composite must be"
+                    " a pydantic BaseModel or a dataclass"
+                )
+                devices = {
+                    field.name: self.find_device(field.name)
+                    for field in fields(composite_class)
+                }
             return composite_class(**devices)
 
         return _inject_composite

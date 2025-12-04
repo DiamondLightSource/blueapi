@@ -1,0 +1,69 @@
+{
+    "diamond": {
+        "data": {
+            "admin": {
+                "b07_admin": [
+                    "b07"
+                ]
+            },
+            "beamlines": {
+                "b07": {
+                    "sessions": [
+                        "12"
+                    ]
+                },
+                "i03": {
+                    "sessions": [
+                        11
+                    ]
+                }
+            },
+            "proposals": {
+                "1": {
+                    "sessions": {
+                        "1": 11,
+                        "2": 12
+                    }
+                }
+            },
+            "sessions": {
+                "11": {
+                    "beamline": "i03",
+                    "proposal_number": 1,
+                    "visit_number": 1
+                },
+                "12": {
+                    "beamline": "b07",
+                    "proposal_number": 1,
+                    "visit_number": 2
+                }
+            },
+            "subjects": {
+                "alice": {
+                    "permissions": [
+                        "b07_admin"
+                    ],
+                    "proposals": [
+                        1
+                    ],
+                    "sessions": []
+                },
+                "carol": {
+                    "permissions": [
+                        "super_admin"
+                    ],
+                    "proposals": [],
+                    "sessions": [
+                        "121212",
+                        "11"
+                    ]
+                },
+                "oscar": {
+                    "permissions": [],
+                    "proposals": [],
+                    "sessions": []
+                }
+            }
+        }
+    }
+}

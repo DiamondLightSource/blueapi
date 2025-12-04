@@ -6,7 +6,7 @@ services:
     image: ghcr.io/diamondlightsource/numtracker:1.0.1
     ports:
       - "8406:8000"
-    
+
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management
     ports:
@@ -19,10 +19,57 @@ services:
         target: /etc/rabbitmq/enabled_plugins
 
   tiled:
-    image: ghcr.io/bluesky/tiled:0.2.0
+    image: ghcr.io/zohebshaikh/tiled:0.4.17
     ports:
       - "8407:8000"
-    environment:
-      - TILED_SINGLE_USER_API_KEY=${TILED_SINGLE_USER_API_KEY}
     volumes:
-    - ./services/tiled_config:/deploy/config
+      - ./services/tiled_config:/deploy/config
+    command:
+      ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  keycloak:
+    image: keycloak/keycloak:26.4
+    environment:
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+    command: ["start-dev"]
+    volumes:
+      - ./services/keycloak_config/:/mnt
+    post_start:
+      - command: bash /mnt/startup.sh
+    ports:
+      - 8081:8080
+    healthcheck:
+      test: /opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  opa:
+    image: openpolicyagent/opa
+    volumes:
+      - ./services/opa_config/config.yaml:/mnt/config.yaml
+      - ./services/opa_config/opa_data/bundle.tar.gz:/mnt/bundle.tar.gz
+    environment:
+      - ISSUER=http://localhost:8080/realms/master
+    command:
+      [
+        "run",
+        "--server",
+        "--addr",
+        ":8181",
+        "-b",
+        "/mnt/bundle.tar.gz",
+        "--config-file",
+        "/mnt/config.yaml",
+      ]
+    entrypoint: "/opa"
+    ports:
+      - 8181:8181
+    depends_on:
+      keycloak:
+        condition: service_healthy

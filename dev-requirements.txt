@@ -170,7 +170,7 @@ python-dotenv==1.2.1
 python-multipart==0.0.20
 pytz==2025.2
 PyYAML==6.0.3
-pyzmq==26.3.0
+pyzmq==27.1.0
 questionary==2.1.1
 redis==7.0.1
 referencing==0.37.0

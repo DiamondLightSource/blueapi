@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Generator
 from unittest import mock
 import unittest
-
+from unittest.mock import patch
 import pytest
 import requests
 from bluesky_stomp.models import BasicAuthentication
@@ -27,7 +27,7 @@ from blueapi.config import (
     StompConfig,
 )
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.authentication import SessionManager
+from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import (
     Cache,
     DeviceResponse,
@@ -82,7 +82,7 @@ _DATA_PATH = Path(__file__).parent
 
 CLIENT_ID = "blueapi-ci"  # os.environ.get("CLIENT_ID", "")
 CLIENT_SECRET = (
-    "DJG6Ur7n5HOMlijCcisKwVLm4YDmHkUf"  # os.environ.get("CLIENT_SECRET", "")
+    "secret"  # os.environ.get("CLIENT_SECRET", "")
 )
 OIDC_TOKEN_ENDPOINT = (
     "http://localhost:8081/realms/master/protocol/openid-connect/token"
@@ -97,28 +97,17 @@ def client_without_auth(tmp_path: Path) -> BlueapiClient:
 
 @pytest.fixture
 def client_with_stomp() -> BlueapiClient:
-    return BlueapiClient.from_config(
-        config=ApplicationConfig(
-            stomp=StompConfig(
-                enabled=True,
-                auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
+    mock_session_manager = mock.MagicMock
+    mock_session_manager.get_valid_access_token = get_access_token
+    with patch("blueapi.service.authentication.SessionManager.from_cache",return_value=mock.MagicMock): 
+        yield BlueapiClient.from_config(
+            config=ApplicationConfig(
+                stomp=StompConfig(
+                    enabled=True,
+                    auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
+                )
             )
         )
-    )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def wait_for_server():
-    client = BlueapiClient.from_config(config=ApplicationConfig())
-
-    for _ in range(20):
-        try:
-            client.get_environment()
-            return
-        except ConnectionError:
-            ...
-        time.sleep(0.5)
-    raise TimeoutError("No connection to the blueapi server")
 
 def get_access_token() -> str:
     response = requests.post(
@@ -134,31 +123,24 @@ def get_access_token() -> str:
     return response.json().get("access_token")
 
 # This client will have auth enabled if it finds cached valid token
-@pytest.fixture
-def client(config:ApplicationConfig) -> Generator [BlueapiClient,None,None]:
-    # Initialize an empty cache to simulate a valid session
-    cache = Cache(
-        oidc_config=OIDCConfig(well_known_url="", client_id=""),
-        access_token="",
-        refresh_token="",
-        id_token="",
-    )
-    patcher = mock.patch(
-            "blueapi.service.authentication.SessionManager.get_valid_access_token",
-            side_effect=get_access_token,
-        )
-    patcher2 = mock.patch(
-            "blueapi.service.authentication.SessionCacheManager.load_cache",
-            return_value=cache,
-        )
+@pytest.fixture(scope="module")
+def client():
+    mock_session_manager = mock.MagicMock
+    mock_session_manager.get_valid_access_token = get_access_token
+    with patch("blueapi.service.authentication.SessionManager.from_cache",return_value=mock.MagicMock):    
+       yield BlueapiClient.from_config(config=ApplicationConfig())
 
-    patcher.start()
-    patcher2.start()
-    client = BlueapiClient.from_config(config=ApplicationConfig())
-    yield client
-    patcher2.stop()
-    patcher.stop()
 
+@pytest.fixture(scope="module", autouse=True)
+def wait_for_server(client:BlueapiClient):
+    for _ in range(20):
+        try:
+            client.get_environment()
+            return
+        except ConnectionError:
+            ...
+        time.sleep(0.5)
+    raise TimeoutError("No connection to the blueapi server")
 
 @pytest.fixture
 def expected_plans() -> PlanResponse:

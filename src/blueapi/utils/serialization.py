@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from pydantic import BaseModel
@@ -24,3 +25,17 @@ def serialize(obj: Any) -> Any:
         return serialize(obj.__pydantic_model__)
     else:
         return obj
+
+
+_INSTRUMENT_SESSION_AUTHZ_REGEX: str = r"^[a-zA-Z]{2}(\d+)-(\d+)$"
+
+
+def access_blob(instrument_session: str, beamline: str) -> str:
+    m = re.search(_INSTRUMENT_SESSION_AUTHZ_REGEX, instrument_session)
+    if m is None:
+        raise ValueError(
+            "Unable to extract proposal and visit from "
+            f"instrument session {instrument_session}"
+        )
+    return f'{{"proposal": {int(m.group(1))}, "visit": {int(m.group(2))}, \
+        "beamline": "{beamline}"}}'

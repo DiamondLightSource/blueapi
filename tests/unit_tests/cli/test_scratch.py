@@ -65,7 +65,7 @@ def test_scratch_install_installs_path(
     scratch_install("foo", directory_path_with_sgid, timeout=1.0)
 
     mock_popen.assert_called_once_with(
-        ["uv", "add", "--locked", "--editable", f"foo @ {directory_path_with_sgid}"]
+        ["uv", "add", "--frozen", "--editable", f"foo @ {directory_path_with_sgid}"]
     )
 
 

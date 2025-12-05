@@ -93,7 +93,7 @@ def scratch_install(
     _validate_directory(path)
 
     logging.info(f"Installing {path}")
-    process = Popen(["uv", "add", "--locked", "--editable", f"{name} @ {path}"])
+    process = Popen(["uv", "add", "--frozen", "--editable", f"{name} @ {path}"])
     process.wait(timeout=timeout)
     if process.returncode != 0:
         raise RuntimeError(f"Failed to install {path}: Exit Code: {process.returncode}")

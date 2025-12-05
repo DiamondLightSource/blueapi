@@ -3,7 +3,9 @@ import inspect
 import time
 from asyncio import Queue
 from pathlib import Path
+from typing import Generator
 from unittest import mock
+import unittest
 
 import pytest
 import requests
@@ -118,9 +120,7 @@ def wait_for_server():
         time.sleep(0.5)
     raise TimeoutError("No connection to the blueapi server")
 
-
 def get_access_token() -> str:
-    print("hello from get_access_token")
     response = requests.post(
         OIDC_TOKEN_ENDPOINT,
         data={
@@ -129,39 +129,35 @@ def get_access_token() -> str:
             "grant_type": "client_credentials",
         },
     )
-    print(vars(response))
-    print("hello from get_access_token")
+
     response.raise_for_status()
     return response.json().get("access_token")
 
-
 # This client will have auth enabled if it finds cached valid token
 @pytest.fixture
-@mock.patch.object(
-    SessionManager, "get_valid_access_token", side_effect=get_access_token
-)
-def client(tmp_path: Path) -> BlueapiClient:
+def client(config:ApplicationConfig) -> Generator [BlueapiClient,None,None]:
     # Initialize an empty cache to simulate a valid session
-    config = ApplicationConfig(auth_token_path=tmp_path)
     cache = Cache(
-        oidc_config=OIDCConfig(
-            well_known_url="http://example.com", client_id="blueapi"
-        ),
-        access_token="mock",
-        refresh_token="mock",
-        id_token="mock",
+        oidc_config=OIDCConfig(well_known_url="", client_id=""),
+        access_token="",
+        refresh_token="",
+        id_token="",
     )
-    print(config.auth_token_path)
-    a = base64.b64encode(cache.model_dump_json().encode("utf-8"))
-    print(f"From fixture{a=}")
-    assert config.auth_token_path
-    with open(config.auth_token_path, "xb") as token_file:
-        token_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    client = BlueapiClient.from_config(config=config)
-    # patcher.start()
-    # yield client
-    # patcher.stop()
-    return client
+    patcher = mock.patch(
+            "blueapi.service.authentication.SessionManager.get_valid_access_token",
+            side_effect=get_access_token,
+        )
+    patcher2 = mock.patch(
+            "blueapi.service.authentication.SessionCacheManager.load_cache",
+            return_value=cache,
+        )
+
+    patcher.start()
+    patcher2.start()
+    client = BlueapiClient.from_config(config=ApplicationConfig())
+    yield client
+    patcher2.stop()
+    patcher.stop()
 
 
 @pytest.fixture

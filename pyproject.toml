@@ -150,6 +150,23 @@ description = "Run tests with coverage"
 commands = [
     [
         "pytest",
+        "tests/unit_tests",
+        "--cov=blueapi",
+        "--cov-report",
+        "term",
+        "--cov-report",
+        "xml:cov.xml",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.system-test]
+description = "Run tests with coverage"
+commands = [
+    [
+        "pytest",
+        "tests/system_tests",
         "--cov=blueapi",
         "--cov-report",
         "term",

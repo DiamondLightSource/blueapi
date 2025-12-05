@@ -1,1 +1,2 @@
 tests/system_tests/services/keycloak_config/tiled.json:generic-api-key:13
+tests/system_tests/test_blueapi_system.py:generic-api-key:86

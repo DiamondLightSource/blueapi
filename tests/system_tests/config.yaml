@@ -18,3 +18,9 @@ numtracker:
 tiled:
   enabled: true
   url: http://localhost:8407/
+oidc:
+  well_known_url: "http://localhost:8081/realms/master/.well-known/openid-configuration"
+  client_id: "blueapi-cli"
+  client_audience: "account"
+logging:
+  level: DEBUG

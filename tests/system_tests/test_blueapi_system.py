@@ -1,7 +1,9 @@
+import base64
 import inspect
 import time
 from asyncio import Queue
 from pathlib import Path
+from unittest import mock
 
 import pytest
 import requests
@@ -23,7 +25,9 @@ from blueapi.config import (
     StompConfig,
 )
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
+    Cache,
     DeviceResponse,
     PlanResponse,
     TaskRequest,
@@ -49,13 +53,6 @@ _LONG_TASK = TaskRequest(
 
 _DATA_PATH = Path(__file__).parent
 
-_REQUIRES_AUTH_MESSAGE = """
-Authentication credentials are required to run this test.
-The test has been skipped because authentication is currently disabled.
-For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
-To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
-"""
-
 
 # These system tests are run in the "system_tests" CI job, they can also be run
 # and debugged locally.
@@ -80,6 +77,15 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 # (outside of devcontainer)
 #
 # docker compose -f tests/system_tests/compose.yaml down
+
+CLIENT_ID = "blueapi-ci"  # os.environ.get("CLIENT_ID", "")
+CLIENT_SECRET = (
+    "DJG6Ur7n5HOMlijCcisKwVLm4YDmHkUf"  # os.environ.get("CLIENT_SECRET", "")
+)
+OIDC_TOKEN_ENDPOINT = (
+    "http://localhost:8081/realms/master/protocol/openid-connect/token"
+)
+# os.environ.get("OIDC_TOKEN_ENDPOINT", "")
 
 
 @pytest.fixture
@@ -113,10 +119,49 @@ def wait_for_server():
     raise TimeoutError("No connection to the blueapi server")
 
 
+def get_access_token() -> str:
+    print("hello from get_access_token")
+    response = requests.post(
+        OIDC_TOKEN_ENDPOINT,
+        data={
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "grant_type": "client_credentials",
+        },
+    )
+    print(vars(response))
+    print("hello from get_access_token")
+    response.raise_for_status()
+    return response.json().get("access_token")
+
+
 # This client will have auth enabled if it finds cached valid token
 @pytest.fixture
-def client() -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig())
+@mock.patch.object(
+    SessionManager, "get_valid_access_token", side_effect=get_access_token
+)
+def client(tmp_path: Path) -> BlueapiClient:
+    # Initialize an empty cache to simulate a valid session
+    config = ApplicationConfig(auth_token_path=tmp_path)
+    cache = Cache(
+        oidc_config=OIDCConfig(
+            well_known_url="http://example.com", client_id="blueapi"
+        ),
+        access_token="mock",
+        refresh_token="mock",
+        id_token="mock",
+    )
+    print(config.auth_token_path)
+    a = base64.b64encode(cache.model_dump_json().encode("utf-8"))
+    print(f"From fixture{a=}")
+    assert config.auth_token_path
+    with open(config.auth_token_path, "xb") as token_file:
+        token_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
+    client = BlueapiClient.from_config(config=config)
+    # patcher.start()
+    # yield client
+    # patcher.stop()
+    return client
 
 
 @pytest.fixture
@@ -183,22 +228,20 @@ def reset_numtracker(server_config: ApplicationConfig):
     yield
 
 
-@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_cannot_access_endpoints(
-    client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
+    client: BlueapiClient, blueapi_client_get_methods: list[str]
 ):
     blueapi_client_get_methods.remove(
         "get_oidc_config"
     )  # get_oidc_config can be accessed without auth
     for get_method in blueapi_client_get_methods:
         with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
-            getattr(client_without_auth, get_method)()
+            getattr(client, get_method)()
 
 
-@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
     assert client_without_auth.get_oidc_config() == OIDCConfig(
-        well_known_url="https://example.com/realms/master/.well-known/openid-configuration",
+        well_known_url="http://localhost:8081/realms/master/.well-known/openid-configuration",
         client_id="blueapi-cli",
     )
 
@@ -250,7 +293,7 @@ def test_instrument_session_propagated(client: BlueapiClient):
     assert trackable_task.task.metadata == {
         "instrument_session": FAKE_INSTRUMENT_SESSION,
         "tiled_access_tags": [
-            '{"proposal_number": 12345, "visit_number": 1, "beamline": "adsim"}',
+            '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
         ],
     }
 

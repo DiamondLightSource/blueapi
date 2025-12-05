@@ -24,8 +24,7 @@ services:
       - "8407:8000"
     volumes:
       - ./services/tiled_config:/deploy/config
-    command:
-      ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8000"]
     depends_on:
       keycloak:
         condition: service_healthy
@@ -55,7 +54,7 @@ services:
       - ./services/opa_config/config.yaml:/mnt/config.yaml
       - ./services/opa_config/opa_data/bundle.tar.gz:/mnt/bundle.tar.gz
     environment:
-      - ISSUER=http://localhost:8080/realms/master
+      - ISSUER=http://keycloak:8080/realms/master
     command:
       [
         "run",

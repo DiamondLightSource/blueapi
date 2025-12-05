@@ -1,13 +1,13 @@
 authentication:
   providers:
-  - provider: keycloak_oidc
-    authenticator: tiled.authenticators:ProxiedOIDCAuthenticator
-    args:
-      audience: account
-      client_id: tiled
-      device_flow_client_id: tiled-cli
-      well_known_uri: "https://authn.diamond.ac.uk/realms/master/.well-known/openid-configuration"
-      confirmation_message: "You have logged in with authn.diamond.ac.uk as {id}."
+    - provider: keycloak_oidc
+      authenticator: tiled.authenticators:ProxiedOIDCAuthenticator
+      args:
+        audience: account
+        client_id: tiled
+        device_flow_client_id: tiled-cli
+        well_known_uri: "http://keycloak:8080/realms/master/.well-known/openid-configuration"
+        confirmation_message: "You have logged in with authn.diamond.ac.uk as {id}."
 trees:
   - path: /
     tree: catalog
@@ -19,6 +19,6 @@ trees:
 access_control:
   access_policy: "tiled.access_control.dls:DiamondOpenPolicyAgentAuthorizationPolicy"
   args:
-    authorization_provider: http://localhost:8181/v1/data/diamond/policy/
+    authorization_provider: "http://opa:8181/v1/data/diamond/policy/"
     token_audience: account
     empty_access_blob_public: true

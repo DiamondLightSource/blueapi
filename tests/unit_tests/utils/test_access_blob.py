@@ -37,7 +37,7 @@ def test_access_blob_regex(instrument_session: str, output: str):
 
 
 @pytest.mark.parametrize(
-    "instrument_session",
+    "session",
     [
         "abc12345-1",
         "ab12345--1",
@@ -48,10 +48,9 @@ def test_access_blob_regex(instrument_session: str, output: str):
         "ab12g345-1",
     ],
 )
-def test_access_blob_regex_errors(instrument_session: str):
+def test_access_blob_regex_errors(session: str):
     with pytest.raises(
         ValueError,
-        match=f"Unable to extract proposal and visit from instrument session \
-            {instrument_session}",
+        match=f"Unable to extract proposal and visit from instrument session {session}",
     ):
-        access_blob(instrument_session, beamline="ixx")
+        access_blob(session, beamline="ixx")

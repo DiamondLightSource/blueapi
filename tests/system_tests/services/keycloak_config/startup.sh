@@ -20,6 +20,6 @@ done
 
 kcreg.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin
 
-for client in tiled-cli tiled; do
+for client in blueapi-ci; do
     kcreg.sh get "$client" >/dev/null 2>&1 || kcreg.sh create --file "/mnt/$client.json"
 done

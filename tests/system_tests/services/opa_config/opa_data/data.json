@@ -19,7 +19,7 @@
                 }
             },
             "proposals": {
-                "1": {
+                "12345": {
                     "sessions": {
                         "1": 11,
                         "2": 12
@@ -34,7 +34,7 @@
                 },
                 "12": {
                     "beamline": "b07",
-                    "proposal_number": 1,
+                    "proposal_number": 12345,
                     "visit_number": 2
                 }
             },

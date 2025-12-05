@@ -1,0 +1,142 @@
+{
+  "clientId": "blueapi-ci",
+  "name": "Blueapi CI ",
+  "description": "Service account client used to run automated system tests for Blueapi.",
+  "rootUrl": "",
+  "adminUrl": "",
+  "baseUrl": "",
+  "surrogateAuthRequired": false,
+  "enabled": true,
+  "alwaysDisplayInConsole": false,
+  "clientAuthenticatorType": "client-secret",
+  "secret": "secret",
+  "redirectUris": [
+    "/*"
+  ],
+  "webOrigins": [
+    "/*"
+  ],
+  "notBefore": 0,
+  "bearerOnly": false,
+  "consentRequired": false,
+  "standardFlowEnabled": false,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": true,
+  "publicClient": false,
+  "frontchannelLogout": true,
+  "protocol": "openid-connect",
+  "attributes": {
+    "realm_client": "false",
+    "oidc.ciba.grant.enabled": "false",
+    "client.secret.creation.time": "1748358661",
+    "backchannel.logout.session.required": "true",
+    "standard.token.exchange.enabled": "false",
+    "oauth2.device.authorization.grant.enabled": "false",
+    "display.on.consent.screen": "false",
+    "backchannel.logout.revoke.offline.tokens": "false",
+    "dpop.bound.access.tokens": "false"
+  },
+  "authenticationFlowBindingOverrides": {},
+  "fullScopeAllowed": true,
+  "nodeReRegistrationTimeout": -1,
+  "protocolMappers": [
+    {
+      "name": "Client Host",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usersessionmodel-note-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.session.note": "clientHost",
+        "introspection.token.claim": "true",
+        "userinfo.token.claim": "true",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "clientHost",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "alice",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-hardcoded-claim-mapper",
+      "consentRequired": false,
+      "config": {
+        "introspection.token.claim": "true",
+        "claim.value": "alice",
+        "userinfo.token.claim": "true",
+        "id.token.claim": "true",
+        "lightweight.claim": "false",
+        "access.token.claim": "true",
+        "claim.name": "fedid",
+        "jsonType.label": "String",
+        "access.tokenResponse.claim": "false"
+      }
+    },
+    {
+      "name": "Client ID",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usersessionmodel-note-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.session.note": "client_id",
+        "introspection.token.claim": "true",
+        "userinfo.token.claim": "true",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "client_id",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "Client IP Address",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usersessionmodel-note-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.session.note": "clientAddress",
+        "introspection.token.claim": "true",
+        "userinfo.token.claim": "true",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "clientAddress",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "blueapi",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-audience-mapper",
+      "consentRequired": false,
+      "config": {
+        "id.token.claim": "false",
+        "lightweight.claim": "false",
+        "introspection.token.claim": "true",
+        "access.token.claim": "true",
+        "included.custom.audience": "blueapi",
+        "userinfo.token.claim": "false"
+      }
+    }
+  ],
+  "defaultClientScopes": [
+    "web-origins",
+    "service_account",
+    "acr",
+    "roles",
+    "profile",
+    "basic",
+    "email"
+  ],
+  "optionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access",
+    "organization",
+    "microprofile-jwt"
+  ],
+  "access": {
+    "view": true,
+    "configure": true,
+    "manage": true
+  }
+}

@@ -80,7 +80,6 @@ def test_blueapi_python_client_run(client: UserClient):
 
         # Call run while the instance methods are patched
         client.run(count)
-        client.run("count")
 
 
 def test_blueapi_python_client_without_callback_run(

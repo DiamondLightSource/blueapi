@@ -35,17 +35,21 @@ class UserClient(BlueapiClient):
 
     blueapi_config_path = "/path/to/ixx_blueapi_config.yaml"
 
-    client = UserClient(blueapi_config_path, "cm12345-1")
-    client.run("count", detectors=["det1", "det2"])
-    client.change_session("cm12345-2")
+    blueapi = UserClient(blueapi_config_path, "cm12345-1")
+    blueapi.run("count", detectors=["det1", "det2"])
+    blueapi.change_session("cm12345-2")
 
     from dodal.plan_stubs.wrapped import move
 
-    client.run(move, moves={"base.x": 0})  # move base.x to 0
+    blueapi.run(move, moves={"base.x": 0})  # move base.x to 0
 
-    or if passing the bluesky function you can just use args:
+    or you can just use args:
 
-    client.run(move, {"base.x": 0})
+    blueapi.run(move, {"base.x": 0})
+
+    or you can also call the client as if it were a bluesky run-engine:
+
+    blueapi(move, {"base.x": 0})
 
     """
 
@@ -71,6 +75,9 @@ class UserClient(BlueapiClient):
         rest, events = BlueapiClient.config_to_rest_and_events(loaded_config)
         super().__init__(rest, events)
 
+    def __call__(self, plan: Callable, *args: tuple, **kwargs: dict) -> None:
+        return self.run(plan, args, **kwargs)
+
     def _convert_args_to_kwargs(self, plan: Callable, args: tuple) -> dict:
         """Converts args to kwargs
         If the user does not give kwargs, but gives args the bluesky plan is passed
@@ -85,7 +92,7 @@ class UserClient(BlueapiClient):
         return params
 
     def _args_and_kwargs_to_params(
-        self, plan: Callable | str, args: tuple, kwargs: dict
+        self, plan: Callable, args: tuple, kwargs: dict
     ) -> dict:
         """
         Creates the params needed for TaskRequest
@@ -96,35 +103,26 @@ class UserClient(BlueapiClient):
         elif kwargs and (not args):
             params = kwargs
             return params
-        elif (
-            args
-            and (not kwargs)
-            and hasattr(plan, "__code__")
-            and not isinstance(plan, str)
-        ):
+        elif args and (not kwargs):
             params = self._convert_args_to_kwargs(plan, args)
             return params
-        elif (
-            args and kwargs and hasattr(plan, "__code__") and not isinstance(plan, str)
-        ):
+        elif args and kwargs:
             params = self._convert_args_to_kwargs(plan, args)
             params.update(kwargs)
             return params
-        elif isinstance(plan, str) and args:
-            raise ValueError("If you pass the bluesky plan str, you can't pass args ")
         else:
             raise ValueError("Could not infer parameters from args and kwargs")
 
-    def run(self, plan: str | Callable, *args, **kwargs):
+    def run(self, plan: Callable, *args, **kwargs) -> None:
         """Run a bluesky plan via BlueAPI.
         plan can be a string, or the bluesky plan name"""
 
-        if isinstance(plan, str):
-            plan_name = plan
-        elif hasattr(plan, "__name__") and hasattr(plan, "__code__"):
+        if isinstance(plan, Callable):
             plan_name = plan.__name__
         else:
-            raise ValueError("Must be a str or a bluesky plan function")
+            raise ValueError(
+                "Must be a bluesky plan function"
+            )  # incase user passes wrong argument
 
         params = self._args_and_kwargs_to_params(plan, args=args, kwargs=kwargs)
 
@@ -148,14 +146,14 @@ class UserClient(BlueapiClient):
         print(f"New instrument session: {new_session}")
         self.instrument_session = new_session
 
-    def show_plans(self):
+    def show_plans(self) -> None:
         """Shows the bluesky plan names in a nice, human readable way"""
         plans = self.get_plans().plans
         for plan in plans:
             print(plan.name)
         print(f"Total plans: {len(plans)} \n")
 
-    def show_devices(self):
+    def show_devices(self) -> None:
         """Shows the devices in a nice, human readable way"""
         devices = self.get_devices().devices
         for dev in devices:

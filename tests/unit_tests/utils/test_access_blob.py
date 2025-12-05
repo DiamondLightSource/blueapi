@@ -4,40 +4,40 @@ from blueapi.utils.serialization import access_blob
 
 
 @pytest.mark.parametrize(
-    "input,output",
+    "instrument_session,output",
     [
         (
             "cm12345-1",
-            '{"proposal_number": 12345, "visit_number": 1, "beamline": "ixx"}',
+            '{"proposal": 12345, "visit": 1, "beamline": "ixx"}',
         ),
         (
             "cm12345-111",
-            '{"proposal_number": 12345, "visit_number": 111, "beamline": "ixx"}',
+            '{"proposal": 12345, "visit": 111, "beamline": "ixx"}',
         ),
         (
             "cv12345-1",
-            '{"proposal_number": 12345, "visit_number": 1, "beamline": "ixx"}',
+            '{"proposal": 12345, "visit": 1, "beamline": "ixx"}',
         ),
         (
             "cm12345678-1",
-            '{"proposal_number": 12345678, "visit_number": 1, "beamline": "ixx"}',
+            '{"proposal": 12345678, "visit": 1, "beamline": "ixx"}',
         ),
         (
             "cm12345678-111",
-            '{"proposal_number": 12345678, "visit_number": 111, "beamline": "ixx"}',
+            '{"proposal": 12345678, "visit": 111, "beamline": "ixx"}',
         ),
         (
             "cv12345678-111",
-            '{"proposal_number": 12345678, "visit_number": 111, "beamline": "ixx"}',
+            '{"proposal": 12345678, "visit": 111, "beamline": "ixx"}',
         ),
     ],
 )
-def test_access_blob_regex(input: str, output: str):
-    assert access_blob(input, beamline="ixx") == output
+def test_access_blob_regex(instrument_session: str, output: str):
+    assert access_blob(instrument_session, beamline="ixx") == output
 
 
 @pytest.mark.parametrize(
-    "input",
+    "session",
     [
         "abc12345-1",
         "ab12345--1",
@@ -48,9 +48,9 @@ def test_access_blob_regex(input: str, output: str):
         "ab12g345-1",
     ],
 )
-def test_access_blob_regex_errors(input: str):
+def test_access_blob_regex_errors(session: str):
     with pytest.raises(
         ValueError,
-        match=f"Unable to extract proposal and visit from instrument session {input}",
+        match=f"Unable to extract proposal and visit from instrument session {session}",
     ):
-        access_blob(input, beamline="ixx")
+        access_blob(session, beamline="ixx")

@@ -3,10 +3,8 @@ from functools import cache
 from queue import Full
 from typing import Any
 
-from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
-from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
@@ -22,7 +20,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.serialization import access_blob
-from blueapi.worker.event import TaskStatusEnum, WorkerEvent, WorkerState
+from blueapi.worker.event import TaskStatusEnum, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
@@ -150,7 +148,7 @@ def submit_task(task_request: TaskRequest) -> str:
     metadata: dict[str, Any] = {
         "instrument_session": task_request.instrument_session,
     }
-    if context().tiled_conf is not None:
+    if context().tiled_writer is not None:
         md = config().env.metadata
         # We raise an InvalidConfigError if this isn't set
         assert md
@@ -180,39 +178,8 @@ def begin_task(
     if nt := context().numtracker:
         nt.set_headers(pass_through_headers or {})
 
-        def unset_headers_when_task_finished(
-            event: WorkerEvent, correlation_id: str | None
-        ) -> None:
-            if (
-                event.task_status
-                and event.task_status.task_id == task.task_id
-                and event.task_status.task_complete
-            ):
-                nt.set_headers({})
-
-        worker().worker_events.subscribe(unset_headers_when_task_finished)
-
-    if tiled_config := context().tiled_conf:
-        tiled_client = from_uri(
-            str(tiled_config.url),
-            api_key=tiled_config.api_key,
-            headers=pass_through_headers,
-        )
-        tiled_writer_token = context().run_engine.subscribe(
-            TiledWriter(tiled_client, batch_size=1)
-        )
-
-        def remove_callback_when_task_finished(
-            event: WorkerEvent, correlation_id: str | None
-        ) -> None:
-            if (
-                event.task_status
-                and event.task_status.task_id == task.task_id
-                and event.task_status.task_complete
-            ):
-                context().run_engine.unsubscribe(tiled_writer_token)
-
-        worker().worker_events.subscribe(remove_callback_when_task_finished)
+    if tiled_writer := context().tiled_writer:
+        tiled_writer.client.context.http_client.headers = pass_through_headers or {}
 
     if task.task_id is not None:
         worker().begin_task(task.task_id)

@@ -1,4 +1,3 @@
-import json
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -47,6 +46,7 @@ from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
+FAKE_ACCESS_TAG = '{"proposal": 12345, "visit": 1, "beamline": "ixx"}'
 
 
 @pytest.fixture
@@ -326,7 +326,7 @@ def test_get_task_by_id(
     context = BlueskyContext()
     context.register_plan(my_plan)
     if tiled_enabled:
-        context.tiled_conf = MagicMock()
+        context.tiled_writer = MagicMock()
         config_mock.return_value = ApplicationConfig(
             env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx"))
         )
@@ -344,12 +344,7 @@ def test_get_task_by_id(
     }
 
     if tiled_enabled:
-        expected_access_tag = {
-            "proposal_number": 12345,
-            "visit_number": 1,
-            "beamline": "ixx",
-        }
-        expected_metadata["tiled_access_tags"] = [json.dumps(expected_access_tag)]
+        expected_metadata["tiled_access_tags"] = [FAKE_ACCESS_TAG]
 
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,

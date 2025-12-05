@@ -37,7 +37,7 @@ from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task_worker import TrackableTask
 
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
-FAKE_ACCESS_TAG = '{"proposal": 12345, "visit": 1, "beamline": "b07"}'
+FAKE_ACCESS_TAG = '{"proposal": 12345, "visit": 1, "beamline": "adsim"}'
 CURRENT_NUMTRACKER_NUM = 43
 
 _SIMPLE_TASK = TaskRequest(
@@ -274,9 +274,7 @@ def test_instrument_session_propagated(client: BlueapiClient):
     trackable_task = client.get_task(response.task_id)
     assert trackable_task.task.metadata == {
         "instrument_session": FAKE_INSTRUMENT_SESSION,
-        "tiled_access_tags": [
-            '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
-        ],
+        "tiled_access_tags": [FAKE_ACCESS_TAG],
     }
 
 

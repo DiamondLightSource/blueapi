@@ -844,30 +844,42 @@ def test_non_device_manager_errors(empty_context: BlueskyContext):
 
 def test_setup_without_tiled_not_makes_tiled_inserter():
     config = TiledConfig(enabled=False)
-    context = BlueskyContext(
-        ApplicationConfig(
-            tiled=config,
-            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+    with patch("blueapi.core.context.from_uri") as from_uri:
+        BlueskyContext(
+            ApplicationConfig(
+                tiled=config,
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+            )
         )
-    )
-    assert context.tiled_conf is None
+
+        assert from_uri.call_count == 0
 
 
 def test_setup_default_not_makes_tiled_inserter():
-    context = BlueskyContext(ApplicationConfig())
-    assert context.tiled_conf is None
+    with patch("blueapi.core.context.from_uri") as from_uri:
+        BlueskyContext(
+            ApplicationConfig(
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+            )
+        )
+
+        assert from_uri.call_count == 0
 
 
 @pytest.mark.parametrize("api_key", [None, "foo"])
 def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
     config = TiledConfig(enabled=True, api_key=api_key)
-    context = BlueskyContext(
-        ApplicationConfig(
-            tiled=config,
-            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+    with patch("blueapi.core.context.from_uri") as from_uri:
+        BlueskyContext(
+            ApplicationConfig(
+                tiled=config,
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+            )
         )
-    )
-    assert context.tiled_conf == config
+
+        assert from_uri.call_count == 1
+        assert from_uri.call_args.args == ("http://localhost:8407/",)
+        assert from_uri.call_args.kwargs == {"api_key": api_key}
 
 
 @pytest.mark.parametrize("api_key", [None, "foo"])

@@ -1,4 +1,3 @@
-import json
 import re
 from typing import Any
 
@@ -38,9 +37,6 @@ def access_blob(instrument_session: str, beamline: str) -> str:
             "Unable to extract proposal and visit from "
             f"instrument session {instrument_session}"
         )
-    blob = {
-        "proposal": int(m.group(1)),
-        "visit": int(m.group(2)),
-        "beamline": beamline,
-    }
-    return json.dumps(blob)
+    p = int(m.group(1))
+    v = int(m.group(2))
+    return f'{{"proposal": {p}, "visit": {v}, "beamline": "{beamline}"}}'

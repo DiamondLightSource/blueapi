@@ -7,19 +7,16 @@ while ! kcadm.sh config credentials --server http://localhost:8080 --realm maste
 done
 
 # Add users to Keycloak
-for user in alice bob carol oscar; do
+for user in alice bob carol; do
   kcadm.sh create users -r master -s username="$user" -s enabled=true
   kcadm.sh set-password -r master --username "$user" --new-password "$user"
 done
 
 allowed_protocol_mappers=$(kcadm.sh get components -q name="Allowed Protocol Mapper Types" --fields id --format csv --noquotes)
-
-for i in $allowed_protocol_mappers;do
-  kcadm.sh update components/$i -s 'config.allowed-protocol-mapper-types=[ "saml-user-attribute-mapper", "saml-user-property-mapper", "oidc-usermodel-property-mapper", "oidc-usermodel-attribute-mapper", "oidc-full-name-mapper", "oidc-address-mapper", "oidc-audience-mapper", "oidc-sha256-pairwise-sub-mapper", "saml-role-list-mapper" ]'
+allowed_client_scopes=$(kcadm.sh get components -q name="Allowed Client Scopes" --fields id --format csv --noquotes)
+for i in $allowed_protocol_mappers $allowed_client_scopes;do
+  kcadm.sh delete components/$i
 done
 
 kcreg.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin
-
-for client in blueapi-ci; do
-    kcreg.sh get "$client" >/dev/null 2>&1 || kcreg.sh create --file "/mnt/$client.json"
-done
+kcreg.sh get "blueapi-ci" >/dev/null 2>&1 || kcreg.sh create --file "/mnt/blueapi-ci.json"

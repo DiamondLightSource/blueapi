@@ -70,6 +70,11 @@ COPY --chown=1000:1000 . blueapi
 # Make allowance for non-1000 uid
 RUN chmod o+wrX blueapi
 
+# Make invariant symlink to site-packages for debugging
+# /app/.venv/lib/python/site-packages/blueapi:/workspaces/blueapi
+WORKDIR /app/.venv/lib
+RUN ln -s python* python
+
 # Switch user 1000
 USER ubuntu
 

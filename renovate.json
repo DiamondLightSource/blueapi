@@ -1,79 +1,41 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices",
-    ":automergeStableNonMajor"
+    "config:recommended"
   ],
-  "allowScripts": true,
-  "ignoreScripts": false,
+  "lockFileMaintenance": {
+    "description": "Keep uv.lock up to date, merging if tests pass",
+    "enabled": true,
+    "automerge": true
+  },
   "packageRules": [
     {
-      "groupName": "Templated CI",
-      "matchDepNames": [
+      "description": "Disable python version as that is managed by python-copier-template",
+      "matchManagers": [
+        "pyenv"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Disable github actions that are managed by python-copier-template",
+      "matchPackageNames": [
         "actions/checkout",
-        "actions/download-artifact",
-        "actions/setup-python",
+        "astral-sh/setup-uv",
         "actions/upload-artifact",
+        "actions/download-artifact",
+        "softprops/action-gh-release",
         "codecov/codecov-action",
-        "docker/build-push-action",
-        "docker/login-action",
-        "docker/metadata-action",
         "docker/setup-buildx-action",
-        "peaceiris/actions-gh-pages",
+        "docker/login-action",
+        "docker/build-push-action",
+        "docker/metadata-action",
         "pypa/gh-action-pypi-publish",
-        "softprops/action-gh-release"
-      ],
-      "enabled": false,
-      "description": [
-        "Group and update GitHub actions through the copier template to prevent merge conflicts"
-      ]
-    },
-    {
-      "groupName": "Indirect python dependencies",
-      "matchUpdateTypes": [
-        "patch",
-        "minor"
-      ],
-      "matchManagers": [
-        "pip_requirements"
-      ],
-      "description": "Group non-major indirect (dev-requirements.txt only) python updates"
-    },
-    {
-      "groupName": "Direct python dependencies",
-      "matchUpdateTypes": [
-        "patch"
-      ],
-      "matchManagers": [
-        "pep621"
-      ],
-      "description": "Group patch direct (pyproject.toml) python updates"
-    },
-    {
-      "groupName": "GitHub Actions",
-      "matchUpdateTypes": [
-        "patch",
-        "minor"
+        "peaceiris/actions-gh-pages"
       ],
       "matchManagers": [
         "github-actions"
       ],
-      "description": "Group non-major github action updates"
-    }
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^\\.github/workflows/[^/]+\\.ya?ml$/"
-      ],
-      "matchStringsStrategy": "combination",
-      "matchStrings": [
-        "uses: actions/checkout@v*\\s",
-        "repository: (?<depName>.*?)\\s",
-        "ref: (?<currentValue>.*?)\\s"
-      ],
-      "datasourceTemplate": "github-tags"
+      "enabled": false
     }
   ]
 }

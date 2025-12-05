@@ -62,29 +62,21 @@ def test_scratch_install_installs_path(
     mock_process.returncode = 0
     mock_popen.return_value = mock_process
 
-    scratch_install(directory_path_with_sgid, timeout=1.0)
+    scratch_install("foo", directory_path_with_sgid, timeout=1.0)
 
     mock_popen.assert_called_once_with(
-        [
-            "python",
-            "-m",
-            "pip",
-            "install",
-            "--no-deps",
-            "-e",
-            str(directory_path_with_sgid),
-        ]
+        ["uv", "add", "--locked", "--editable", f"foo @ {directory_path_with_sgid}"]
     )
 
 
 def test_scratch_install_fails_on_file(file_path: Path):
     with pytest.raises(KeyError):
-        scratch_install(file_path, timeout=1.0)
+        scratch_install("foo", file_path, timeout=1.0)
 
 
 def test_scratch_install_fails_on_nonexistant_path(nonexistant_path: Path):
     with pytest.raises(KeyError):
-        scratch_install(nonexistant_path, timeout=1.0)
+        scratch_install("foo", nonexistant_path, timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Popen")
@@ -99,7 +91,7 @@ def test_scratch_install_fails_on_non_zero_exit_code(
     mock_popen.return_value = mock_process
 
     with pytest.raises(RuntimeError):
-        scratch_install(directory_path_with_sgid, timeout=1.0)
+        scratch_install("foo", directory_path_with_sgid, timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Repo")
@@ -270,8 +262,8 @@ def test_setup_scratch_iterates_repos(
 
     mock_scratch_install.assert_has_calls(
         [
-            call(directory_path_with_sgid / "foo", timeout=120.0),
-            call(directory_path_with_sgid / "bar", timeout=120.0),
+            call("foo", directory_path_with_sgid / "foo", timeout=120.0),
+            call("bar", directory_path_with_sgid / "bar", timeout=120.0),
         ]
     )
 

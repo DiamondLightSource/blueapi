@@ -47,7 +47,7 @@ def setup_scratch(
     for repo in config.repositories:
         local_directory = config.root / repo.name
         ensure_repo(repo.remote_url, local_directory)
-        scratch_install(local_directory, timeout=install_timeout)
+        scratch_install(repo.name, local_directory, timeout=install_timeout)
 
 
 def ensure_repo(remote_url: str, local_directory: Path) -> None:
@@ -76,7 +76,9 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
         )
 
 
-def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
+def scratch_install(
+    name: str, path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT
+) -> None:
     """
     Install a scratch package. Make blueapi aware of a repository checked out in
     the scratch area. Make it automatically follow code changes to that repository
@@ -91,17 +93,7 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
     _validate_directory(path)
 
     logging.info(f"Installing {path}")
-    process = Popen(
-        [
-            "python",
-            "-m",
-            "pip",
-            "install",
-            "--no-deps",
-            "-e",
-            str(path),
-        ]
-    )
+    process = Popen(["uv", "add", "--locked", "--editable", f"{name} @ {path}"])
     process.wait(timeout=timeout)
     if process.returncode != 0:
         raise RuntimeError(f"Failed to install {path}: Exit Code: {process.returncode}")

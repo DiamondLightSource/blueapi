@@ -466,7 +466,7 @@ def init_container_venv_volume_mount():
 def venv_volume_mount():
     return {
         "name": "venv",
-        "mountPath": "/venv",
+        "mountPath": "/app/.venv",
     }
 
 

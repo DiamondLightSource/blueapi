@@ -1,7 +1,10 @@
 import inspect
 import time
 from asyncio import Queue
+from collections.abc import Generator
 from pathlib import Path
+from unittest import mock
+from unittest.mock import patch
 
 import pytest
 import requests
@@ -50,13 +53,6 @@ _LONG_TASK = TaskRequest(
 
 _DATA_PATH = Path(__file__).parent
 
-_REQUIRES_AUTH_MESSAGE = """
-Authentication credentials are required to run this test.
-The test has been skipped because authentication is currently disabled.
-For more details, see: https://github.com/DiamondLightSource/blueapi/issues/676.
-To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid credentials.
-"""
-
 
 # These system tests are run in the "system_tests" CI job, they can also be run
 # and debugged locally.
@@ -82,6 +78,13 @@ To enable and execute these tests, set `REQUIRES_AUTH=1` and provide valid crede
 #
 # docker compose -f tests/system_tests/compose.yaml down
 
+# This client will give tokens for alice
+CLIENT_ID = "blueapi-ci"
+CLIENT_SECRET = "secret"
+OIDC_TOKEN_ENDPOINT = (
+    "http://localhost:8081/realms/master/protocol/openid-connect/token"
+)
+
 
 @pytest.fixture
 def client_without_auth(tmp_path: Path) -> BlueapiClient:
@@ -89,21 +92,50 @@ def client_without_auth(tmp_path: Path) -> BlueapiClient:
 
 
 @pytest.fixture
-def client_with_stomp() -> BlueapiClient:
-    return BlueapiClient.from_config(
-        config=ApplicationConfig(
-            stomp=StompConfig(
-                enabled=True,
-                auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
+def client_with_stomp() -> Generator[BlueapiClient]:
+    mock_session_manager = mock.MagicMock
+    mock_session_manager.get_valid_access_token = get_access_token
+    with patch(
+        "blueapi.service.authentication.SessionManager.from_cache",
+        return_value=mock.MagicMock,
+    ):
+        yield BlueapiClient.from_config(
+            config=ApplicationConfig(
+                stomp=StompConfig(
+                    enabled=True,
+                    auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
+                )
             )
         )
+
+
+def get_access_token() -> str:
+    response = requests.post(
+        OIDC_TOKEN_ENDPOINT,
+        data={
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "grant_type": "client_credentials",
+        },
     )
+
+    response.raise_for_status()
+    return response.json().get("access_token")
+
+
+@pytest.fixture(scope="module")
+def client() -> Generator[BlueapiClient]:
+    mock_session_manager = mock.MagicMock
+    mock_session_manager.get_valid_access_token = get_access_token
+    with patch(
+        "blueapi.service.authentication.SessionManager.from_cache",
+        return_value=mock_session_manager,
+    ):
+        yield BlueapiClient.from_config(config=ApplicationConfig())
 
 
 @pytest.fixture(scope="module", autouse=True)
-def wait_for_server():
-    client = BlueapiClient.from_config(config=ApplicationConfig())
-
+def wait_for_server(client: BlueapiClient):
     for _ in range(20):
         try:
             client.get_environment()
@@ -112,12 +144,6 @@ def wait_for_server():
             ...
         time.sleep(0.5)
     raise TimeoutError("No connection to the blueapi server")
-
-
-# This client will have auth enabled if it finds cached valid token
-@pytest.fixture
-def client() -> BlueapiClient:
-    return BlueapiClient.from_config(config=ApplicationConfig())
 
 
 @pytest.fixture
@@ -184,22 +210,20 @@ def reset_numtracker(server_config: ApplicationConfig):
     yield
 
 
-@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_cannot_access_endpoints(
-    client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
+    client: BlueapiClient, blueapi_client_get_methods: list[str]
 ):
     blueapi_client_get_methods.remove(
         "get_oidc_config"
     )  # get_oidc_config can be accessed without auth
     for get_method in blueapi_client_get_methods:
         with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
-            getattr(client_without_auth, get_method)()
+            getattr(client, get_method)()
 
 
-@pytest.mark.xfail(reason=_REQUIRES_AUTH_MESSAGE)
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
     assert client_without_auth.get_oidc_config() == OIDCConfig(
-        well_known_url="https://example.com/realms/master/.well-known/openid-configuration",
+        well_known_url="http://localhost:8081/realms/master/.well-known/openid-configuration",
         client_id="blueapi-cli",
     )
 

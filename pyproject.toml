@@ -69,6 +69,7 @@ dev = [
     "mock",
     "jwcrypto",
     "deepdiff",
+    "dls-dodal",
 ]
 
 [project.scripts]

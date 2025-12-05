@@ -1,33 +1,33 @@
-# include:
-#   - ../../example-services/compose.yaml
+include:
+  - ../../example-services/compose.yaml
 
 services:
-  # numtracker:
-  #   image: ghcr.io/diamondlightsource/numtracker:1.0.1
-  #   ports:
-  #     - "8406:8000"
+  numtracker:
+    image: ghcr.io/diamondlightsource/numtracker:1.0.1
+    ports:
+      - "8406:8000"
 
-  # rabbitmq:
-  #   image: docker.io/rabbitmq:4.0-management
-  #   ports:
-  #     - "5672:5672"
-  #     - "15672:15672"
-  #     - "61613:61613"
-  #   volumes:
-  #     - type: bind
-  #       source: ./services/rabbitmq_plugins
-  #       target: /etc/rabbitmq/enabled_plugins
+  rabbitmq:
+    image: docker.io/rabbitmq:4.0-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "61613:61613"
+    volumes:
+      - type: bind
+        source: ./services/rabbitmq_plugins
+        target: /etc/rabbitmq/enabled_plugins
 
-  # tiled:
-  #   image: ghcr.io/zohebshaikh/tiled:0.4.17
-  #   ports:
-  #     - "8407:8000"
-  #   volumes:
-  #     - ./services/tiled_config:/deploy/config
-  #   command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8000"]
-  #   depends_on:
-  #     keycloak:
-  #       condition: service_healthy
+  tiled:
+    image: ghcr.io/zohebshaikh/tiled:0.4.17
+    ports:
+      - "8407:8000"
+    volumes:
+      - ./services/tiled_config:/deploy/config
+    command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      keycloak:
+        condition: service_healthy
 
   keycloak:
     image: keycloak/keycloak:26.4
@@ -48,27 +48,27 @@ services:
       retries: 10
       start_period: 30s
 
-  # opa:
-  #   image: openpolicyagent/opa
-  #   volumes:
-  #     - ./services/opa_config/config.yaml:/mnt/config.yaml
-  #     - ./services/opa_config/opa_data/bundle.tar.gz:/mnt/bundle.tar.gz
-  #   environment:
-  #     - ISSUER=http://keycloak:8080/realms/master
-  #   command:
-  #     [
-  #       "run",
-  #       "--server",
-  #       "--addr",
-  #       ":8181",
-  #       "-b",
-  #       "/mnt/bundle.tar.gz",
-  #       "--config-file",
-  #       "/mnt/config.yaml",
-  #     ]
-  #   entrypoint: "/opa"
-  #   ports:
-  #     - 8181:8181
-  #   depends_on:
-  #     keycloak:
-  #       condition: service_healthy
+  opa:
+    image: openpolicyagent/opa
+    volumes:
+      - ./services/opa_config/config.yaml:/mnt/config.yaml
+      - ./services/opa_config/opa_data/bundle.tar.gz:/mnt/bundle.tar.gz
+    environment:
+      - ISSUER=http://keycloak:8080/realms/master
+    command:
+      [
+        "run",
+        "--server",
+        "--addr",
+        ":8181",
+        "-b",
+        "/mnt/bundle.tar.gz",
+        "--config-file",
+        "/mnt/config.yaml",
+      ]
+    entrypoint: "/opa"
+    ports:
+      - 8181:8181
+    depends_on:
+      keycloak:
+        condition: service_healthy

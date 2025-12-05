@@ -49,7 +49,6 @@ dev = [
     "myst-parser",
     "pre-commit",
     "pydata-sphinx-theme>=0.15.4",
-    "pyright",
     "pytest",
     "pyright<1.1.407",             # https://github.com/bluesky/scanspec/issues/190
     "pytest-cov",
@@ -147,7 +146,7 @@ commands = [
 ]
 
 [tool.tox.env.tests]
-description = "Run tests with coverage"
+description = "Run unit tests with coverage"
 commands = [
     [
         "pytest",
@@ -163,7 +162,7 @@ commands = [
 ]
 
 [tool.tox.env.system-test]
-description = "Run tests with coverage"
+description = "Run system tests with coverage"
 commands = [
     [
         "pytest",

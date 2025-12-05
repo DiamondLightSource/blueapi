@@ -484,7 +484,6 @@ dev = [
     { name = "myst-parser" },
     { name = "pre-commit" },
     { name = "pydata-sphinx-theme", specifier = ">=0.15.4" },
-    { name = "pyright" },
     { name = "pyright", specifier = "<1.1.407" },
     { name = "pytest" },
     { name = "pytest-asyncio" },

@@ -50,7 +50,7 @@ dev = [
     "pydata-sphinx-theme>=0.15.4",
     "pyright",
     "pytest",
-    "pyright<1.1.407",  # https://github.com/bluesky/scanspec/issues/190
+    "pyright<1.1.407",             # https://github.com/bluesky/scanspec/issues/190
     "pytest-cov",
     "pytest-asyncio",
     "responses",
@@ -61,7 +61,7 @@ dev = [
     "sphinx-click",
     "sphinx-design",
     "sphinxcontrib-openapi",
-    "tox-direct",
+    "tox-uv",
     "types-mock",
     "types-PyYAML",
     "types-requests",
@@ -149,7 +149,7 @@ commands = [
 description = "Run tests with coverage"
 commands = [
     [
-        "pytest", 
+        "pytest",
         "--cov=blueapi",
         "--cov-report",
         "term",

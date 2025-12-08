@@ -11,10 +11,6 @@ from blueapi.cli.updates import CliEventRenderer
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent
 from blueapi.client.rest import BlueskyRemoteControlError
-from blueapi.config import (
-    ApplicationConfig,
-    ConfigLoader,
-)
 from blueapi.core import DataEvent
 from blueapi.service.model import TaskRequest
 from blueapi.worker import ProgressEvent
@@ -67,11 +63,7 @@ class UserClient(BlueapiClient):
         self.timeout = timeout
         self.non_callback_delay = non_callback_delay
 
-        blueapi_config_path = Path(blueapi_config_path)
-
-        config_loader = ConfigLoader(ApplicationConfig)
-        config_loader.use_values_from_yaml(blueapi_config_path)
-        loaded_config = config_loader.load()
+        loaded_config = BlueapiClient.load_config_from_yaml(blueapi_config_path)
         rest, events = BlueapiClient.config_to_rest_and_events(loaded_config)
         super().__init__(rest, events)
 

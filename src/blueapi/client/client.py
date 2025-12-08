@@ -1,5 +1,6 @@
 import time
 from concurrent.futures import Future
+from pathlib import Path
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -8,7 +9,11 @@ from observability_utils.tracing import (
     start_as_current_span,
 )
 
-from blueapi.config import ApplicationConfig, MissingStompConfigurationError
+from blueapi.config import (
+    ApplicationConfig,
+    ConfigLoader,
+    MissingStompConfigurationError,
+)
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
@@ -76,6 +81,22 @@ class BlueapiClient:
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
         rest, events = BlueapiClient.config_to_rest_and_events(config)
+        return cls(rest, events)
+
+    @staticmethod
+    def load_config_from_yaml(blueapi_config_path: str | Path) -> ApplicationConfig:
+        if not isinstance(blueapi_config_path, Path):
+            blueapi_config_path = Path(blueapi_config_path)
+        config_loader = ConfigLoader(ApplicationConfig)
+        config_loader.use_values_from_yaml(blueapi_config_path)
+        loaded_config = config_loader.load()
+
+        return loaded_config
+
+    @classmethod
+    def from_yaml(cls, blueapi_config_path: str | Path) -> "BlueapiClient":
+        loaded_config = BlueapiClient.load_config_from_yaml(blueapi_config_path)
+        rest, events = BlueapiClient.config_to_rest_and_events(loaded_config)
         return cls(rest, events)
 
     @start_as_current_span(TRACER)

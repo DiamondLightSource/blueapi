@@ -4,8 +4,6 @@ from collections.abc import Callable
 from pathlib import Path
 
 from bluesky.callbacks.best_effort import BestEffortCallback
-from dodal.common import inject
-from ophyd_async.core import StandardReadable
 
 from blueapi.cli.updates import CliEventRenderer
 from blueapi.client.client import BlueapiClient
@@ -67,8 +65,11 @@ class UserClient(BlueapiClient):
         rest, events = BlueapiClient.config_to_rest_and_events(loaded_config)
         super().__init__(rest, events)
 
-    def __call__(self, plan: Callable, *args: tuple, **kwargs: dict) -> None:
-        return self.run(plan, args, **kwargs)
+    def __call__(self, plan: Callable, *args, **kwargs) -> None:
+        if not isinstance(plan, Callable):  # incase user passes wrong argument
+            raise ValueError("Must be a bluesky plan function")
+
+        return self._run(plan, args, **kwargs)
 
     def _convert_args_to_kwargs(self, plan: Callable, args: tuple) -> dict:
         """Converts args to kwargs
@@ -105,18 +106,23 @@ class UserClient(BlueapiClient):
         else:
             raise ValueError("Could not infer parameters from args and kwargs")
 
-    def run(self, plan: Callable, *args, **kwargs) -> None:
+    def _run(self, plan: Callable | str, *args, **kwargs) -> None:
         """Run a bluesky plan via BlueAPI.
-        plan can be a string, or the bluesky plan name"""
+        plan can be a string, or the bluesky plan name
+
+        When used as a hidden method: a str can be passed.
+        This is to allow devs to tests plans that may not be on main branch"""
 
         if isinstance(plan, Callable):
             plan_name = plan.__name__
+            params = self._args_and_kwargs_to_params(plan, args=args, kwargs=kwargs)
+        elif isinstance(plan, str) and not args:
+            params = kwargs or {}
+            plan_name = plan
+        elif isinstance(plan, str) and args:
+            raise ValueError("If passing a str you must only pass kwargs")
         else:
-            raise ValueError(
-                "Must be a bluesky plan function"
-            )  # incase user passes wrong argument
-
-        params = self._args_and_kwargs_to_params(plan, args=args, kwargs=kwargs)
+            raise ValueError("Must be a bluesky plan or name of plan")
 
         task = TaskRequest(
             name=plan_name,
@@ -128,10 +134,17 @@ class UserClient(BlueapiClient):
         else:
             self.send_without_callback(plan_name, task)
 
-    def return_detectors(self) -> list[StandardReadable]:
+    @property
+    def devices(self) -> list[str]:
         """Return a list of StandardReadable for the current beamline."""
         devices = self.get_devices().devices
-        return [inject(d.name) for d in devices]
+        return [d.name for d in devices]
+
+    @property
+    def plans(self) -> list[str]:
+        """Return a list of StandardReadable for the current beamline."""
+        plans = self.get_plans().plans
+        return [p.name for p in plans]
 
     def change_session(self, new_session: str) -> None:
         """Change the instrument session for the client."""
@@ -140,16 +153,16 @@ class UserClient(BlueapiClient):
 
     def show_plans(self) -> None:
         """Shows the bluesky plan names in a nice, human readable way"""
-        plans = self.get_plans().plans
+        plans = self.plans
         for plan in plans:
-            print(plan.name)
+            print(plan)
         print(f"Total plans: {len(plans)} \n")
 
     def show_devices(self) -> None:
         """Shows the devices in a nice, human readable way"""
-        devices = self.get_devices().devices
+        devices = self.devices
         for dev in devices:
-            print(dev.name)
+            print(dev)
         print(f"Total devices: {len(devices)} \n")
 
     def send_with_callback(self, plan_name: str, task: TaskRequest):

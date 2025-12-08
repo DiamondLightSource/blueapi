@@ -79,7 +79,9 @@ def test_blueapi_python_client_run(client: UserClient):
         client._events.__exit__ = Mock(return_value=None)
 
         # Call run while the instance methods are patched
-        client.run(count)
+        client._run(count)
+        client._run(count, detectors=["det1", "det2"], num=1)
+        client._run(count, ["det1", "det2"], 1)
 
 
 def test_blueapi_python_client_without_callback_run(
@@ -107,7 +109,7 @@ def test_blueapi_python_client_without_callback_run(
         )
         client_without_callback._events.__exit__ = Mock(return_value=None)
 
-        client_without_callback.run(count)
+        client_without_callback._run(count)
 
 
 @pytest.mark.parametrize(
@@ -134,7 +136,7 @@ def test_run_with_valid_paraneters(client: UserClient, plan, args: tuple, kwargs
         client._events.__enter__ = Mock(return_value=client._events)
         client._events.__exit__ = Mock(return_value=None)
 
-        client.run(plan, *args, **kwargs)
+        client._run(plan, *args, **kwargs)
 
 
 @pytest.mark.parametrize(
@@ -164,7 +166,7 @@ def test_run_fails_with_invalid_parameters(
 
         # Call run while the instance methods are patched
         with pytest.raises(ValueError):  # noqa
-            client.run(plan, *args, **kwargs)
+            client._run(plan, *args, **kwargs)
 
 
 def test_return_detectors(client: UserClient):
@@ -177,7 +179,7 @@ def test_return_detectors(client: UserClient):
     )
 
     # Call the method under test
-    result = client.return_detectors()
+    result = client.devices
 
     # Verify the result matches our expected data
 
@@ -217,3 +219,23 @@ def test_show_plans(client: UserClient):
 
     client.show_plans()
     client.get_plans.assert_called_once()
+
+
+def test_client_as_callable_with_valid_paraneters(client: UserClient):
+    # Patch instance methods so run executes but no re calls happen.
+    with (
+        patch.object(client, "run_task", return_value=Mock()),
+        patch.object(
+            client, "create_and_start_task", return_value=Mock(task_id="t-fake")
+        ),
+        patch.object(client, "create_task", return_value=Mock(task_id="t-fake")),
+        patch.object(client, "start_task", return_value=Mock(task_id="t-fake")),
+    ):
+        assert client._events is not None
+        # Ensure the mocked event client can be used as a context manager if run uses it
+        client._events.__enter__ = Mock(return_value=client._events)
+        client._events.__exit__ = Mock(return_value=None)
+
+        client(count, ["det1", "det2"], 2)
+        client(count, ["det1", "det2"], num=2)
+        client(count, detectors=["det1", "det2"], num=2)

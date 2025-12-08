@@ -33,17 +33,20 @@ from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
 
 from blueapi.config import (
+    ApplicationConfig,
     DeviceManagerSource,
     DeviceSource,
     DodalSource,
     EnvironmentConfig,
     MetadataConfig,
     PlanSource,
+    TiledConfig,
 )
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 from blueapi.core.protocols import DeviceConnectResult, DeviceManager
 from blueapi.utils.connect_devices import _establish_device_connections
+from blueapi.utils.invalid_config_error import InvalidConfigError
 
 SIM_MOTOR_NAME = "sim"
 ALT_MOTOR_NAME = "alt"
@@ -837,3 +840,40 @@ def test_non_device_manager_errors(empty_context: BlueskyContext):
         imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
         with pytest.raises(ValueError, match="not a device manager"):
             empty_context.with_config(env)
+
+
+def test_setup_without_tiled_not_makes_tiled_inserter():
+    config = TiledConfig(enabled=False)
+    context = BlueskyContext(
+        ApplicationConfig(
+            tiled=config,
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+        )
+    )
+    assert context.tiled_conf is None
+
+
+def test_setup_default_not_makes_tiled_inserter():
+    context = BlueskyContext(ApplicationConfig())
+    assert context.tiled_conf is None
+
+
+@pytest.mark.parametrize("api_key", [None, "foo"])
+def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
+    config = TiledConfig(enabled=True, api_key=api_key)
+    context = BlueskyContext(
+        ApplicationConfig(
+            tiled=config,
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+        )
+    )
+    assert context.tiled_conf == config
+
+
+@pytest.mark.parametrize("api_key", [None, "foo"])
+def test_must_have_instrument_set_for_tiled(api_key: str | None):
+    config = TiledConfig(enabled=True, api_key=api_key)
+    with pytest.raises(InvalidConfigError):
+        BlueskyContext(
+            ApplicationConfig(tiled=config, env=EnvironmentConfig(metadata=None))
+        )

@@ -31,6 +31,7 @@ from blueapi.config import (
     DodalSource,
     EnvironmentConfig,
     PlanSource,
+    TiledConfig,
 )
 from blueapi.core.protocols import DeviceManager
 from blueapi.utils import (
@@ -121,6 +122,7 @@ class BlueskyContext:
     run_engine: RunEngine = field(
         default_factory=lambda: RunEngine(context_managers=[])
     )
+    tiled_conf: TiledConfig | None = field(default=None, init=False, repr=False)
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
     path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
@@ -172,6 +174,14 @@ class BlueskyContext:
                 "Numtracker has been configured but a path provider was imported with "
                 "the devices. Remove this path provider to use numtracker."
             )
+
+        if (tiled_conf := configuration.tiled) is not None and tiled_conf.enabled:
+            if configuration.env.metadata is None:
+                raise InvalidConfigError(
+                    "Tiled has been configured but `instrument` metadata is not set- "
+                    "this field is required to make authorization decisions."
+                )
+            self.tiled_conf = tiled_conf
 
     def find_device(self, addr: str | list[str]) -> Device | None:
         """

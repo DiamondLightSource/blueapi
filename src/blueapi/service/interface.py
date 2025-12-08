@@ -8,7 +8,7 @@ from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
@@ -20,7 +20,8 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
-from blueapi.worker.event import TaskStatusEnum, WorkerState
+from blueapi.utils.serialization import access_blob
+from blueapi.worker.event import TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
@@ -87,16 +88,6 @@ def stomp_client() -> StompClient | None:
         return None
 
 
-@cache
-def tiled_writer() -> TiledWriter | None:
-    tiled_config: TiledConfig = config().tiled
-    if tiled_config.enabled:
-        client = from_uri(str(tiled_config.url), api_key=tiled_config.api_key)
-        return TiledWriter(client, batch_size=1)
-    else:
-        return None
-
-
 def setup(config: ApplicationConfig) -> None:
     """Creates and starts a worker with supplied config"""
     set_config(config)
@@ -105,8 +96,6 @@ def setup(config: ApplicationConfig) -> None:
     # Eagerly initialize worker and messaging connection
     worker()
     stomp_client()
-    if writer := tiled_writer():
-        context().run_engine.subscribe(writer)
 
 
 def teardown() -> None:
@@ -116,7 +105,6 @@ def teardown() -> None:
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
-    tiled_writer.cache_clear()
 
 
 def _publish_event_streams(
@@ -158,10 +146,20 @@ def get_device(name: str) -> DeviceModel:
 
 def submit_task(task_request: TaskRequest) -> str:
     """Submit a task to be run on begin_task"""
+    metadata: dict[str, Any] = {
+        "instrument_session": task_request.instrument_session,
+    }
+    if context().tiled_conf is not None:
+        md = config().env.metadata
+        # We raise an InvalidConfigError on setting tiled_conf if this isn't set
+        assert md
+        metadata["tiled_access_tags"] = [
+            access_blob(task_request.instrument_session, md.instrument)
+        ]
     task = Task(
         name=task_request.name,
         params=task_request.params,
-        metadata={"instrument_session": task_request.instrument_session},
+        metadata=metadata,
     )
     return worker().submit_task(task)
 
@@ -177,6 +175,30 @@ def begin_task(
     """Trigger a task. Will fail if the worker is busy"""
     if nt := context().numtracker:
         nt.set_headers(pass_through_headers or {})
+
+    if tiled_config := context().tiled_conf:
+        # Tiled queries the root node, so must create an authorized client
+        tiled_client = from_uri(
+            str(tiled_config.url),
+            api_key=tiled_config.api_key,
+            headers=pass_through_headers,
+        )
+        tiled_writer_token = context().run_engine.subscribe(
+            TiledWriter(tiled_client, batch_size=1)
+        )
+
+        def remove_callback_when_task_finished(
+            event: WorkerEvent, correlation_id: str | None
+        ) -> None:
+            if (
+                event.task_status
+                and event.task_status.task_id == task.task_id
+                and event.task_status.task_complete
+            ):
+                context().run_engine.unsubscribe(tiled_writer_token)
+
+        worker().worker_events.subscribe(remove_callback_when_task_finished)
+
     if task.task_id is not None:
         worker().begin_task(task.task_id)
     return task

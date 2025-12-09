@@ -61,7 +61,8 @@ ENV MPLCONFIGDIR=/tmp/matplotlib
 COPY --from=build /python /python
 
 # Copy the environment, but not the source code
-COPY --from=build /app/.venv /app/.venv
+COPY --chown=1000:1000 --from=build /app/.venv /app/.venv
+RUN chmod o+wrX /app/.venv
 ENV PATH=/app/.venv/bin:$PATH
 
 # Add copy of blueapi source to container for debugging

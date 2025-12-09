@@ -28,7 +28,9 @@ def serialize(obj: Any) -> Any:
         return obj
 
 
-_INSTRUMENT_SESSION_AUTHZ_REGEX: re.Pattern = re.compile(r"^[a-zA-Z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$")
+_INSTRUMENT_SESSION_AUTHZ_REGEX: re.Pattern = re.compile(
+    r"^[a-zA-Z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$"
+)
 
 
 def access_blob(instrument_session: str, beamline: str) -> str:

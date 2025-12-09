@@ -28,19 +28,19 @@ def serialize(obj: Any) -> Any:
         return obj
 
 
-_INSTRUMENT_SESSION_AUTHZ_REGEX: str = r"^[a-zA-Z]{2}(\d+)-(\d+)$"
+_INSTRUMENT_SESSION_AUTHZ_REGEX: re.Pattern = re.compile(r"^[a-zA-Z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$")
 
 
 def access_blob(instrument_session: str, beamline: str) -> str:
-    m = re.search(_INSTRUMENT_SESSION_AUTHZ_REGEX, instrument_session)
+    m = _INSTRUMENT_SESSION_AUTHZ_REGEX.match(instrument_session)
     if m is None:
         raise ValueError(
             "Unable to extract proposal and visit from "
             f"instrument session {instrument_session}"
         )
     blob = {
-        "proposal": int(m.group(1)),
-        "visit": int(m.group(2)),
+        "proposal": int(m["proposal"]),
+        "visit": int(m["visit"]),
         "beamline": beamline,
     }
     return json.dumps(blob)

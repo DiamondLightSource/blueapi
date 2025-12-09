@@ -27,11 +27,11 @@ RUN chmod o+wrX .
 # Tell uv sync to install python in a known location so we can copy it out later
 ENV UV_PYTHON_INSTALL_DIR=/python
 
+RUN uv add debugpy
+
 # Sync the project without its dev dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --no-dev
-
-RUN uv add debugpy
 
 # The runtime stage copies the built venv into a runtime container
 FROM ubuntu:noble AS runtime

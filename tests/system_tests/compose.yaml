@@ -18,14 +18,6 @@ services:
         source: ./services/rabbitmq_plugins
         target: /etc/rabbitmq/enabled_plugins
 
-  dummy:
-    # Placeholder service that waits for keycloak to be ready before proceeding
-    image: alpine:3.18
-    command: ["tail", "-f", "/dev/null"] 
-    depends_on:
-      keycloak:
-        condition: service_healthy
-
   keycloak:
     image: keycloak/keycloak:26.4
     environment:
@@ -44,3 +36,26 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  tiled: 
+    image: ghcr.io/zohebshaikh/tiled:0.4.17
+    network_mode: host
+    ports: 
+      - "8407:8000"
+    volumes: 
+      - ./services/tiled_config:/deploy/config
+    command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8000"] 
+    depends_on: 
+      keycloak: 
+        condition: service_healthy
+
+  opa:
+    image: openpolicyagent/opa:edge-static-debug
+    network_mode: host
+    ports:
+      - 8181:8181
+    volumes:
+      - "./services/opa_config:/mnt"
+    environment:
+      - ISSUER=http://localhost:8080/realms/master
+    entrypoint: "sh /mnt/entrypoint.sh" 

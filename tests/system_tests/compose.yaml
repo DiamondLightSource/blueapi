@@ -3,7 +3,7 @@ include:
 
 services:
   numtracker:
-    image: ghcr.io/diamondlightsource/numtracker:1.0.1
+    image: ghcr.io/diamondlightsource/numtracker:1.0.2
     ports:
       - "8406:8000"
     

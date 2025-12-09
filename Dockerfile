@@ -27,6 +27,8 @@ RUN chmod o+wrX .
 # Tell uv sync to install python in a known location so we can copy it out later
 ENV UV_PYTHON_INSTALL_DIR=/python
 
+RUN uv add debugpy
+
 # Sync the project without its dev dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --no-dev
@@ -61,7 +63,8 @@ ENV MPLCONFIGDIR=/tmp/matplotlib
 COPY --from=build /python /python
 
 # Copy the environment, but not the source code
-COPY --from=build /app/.venv /app/.venv
+COPY --chown=1000:1000 --from=build /app/.venv /app/.venv
+RUN chmod o+wrX /app/.venv
 ENV PATH=/app/.venv/bin:$PATH
 
 # Add copy of blueapi source to container for debugging

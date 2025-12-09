@@ -178,7 +178,7 @@ class BlueskyContext:
         if (tiled_conf := configuration.tiled) is not None and tiled_conf.enabled:
             if configuration.env.metadata is None:
                 raise InvalidConfigError(
-                    "Tiled has been configured but `instrument` metadata is not set- "
+                    "Tiled has been configured but `instrument` metadata is not set - "
                     "this field is required to make authorization decisions."
                 )
             self.tiled_conf = tiled_conf

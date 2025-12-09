@@ -13,7 +13,7 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "tiled[client]>=0.2.0",
+    "tiled[client]@git+https://git@github.com/zohebshaikh/tiled@v0.4.17",
     "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd-async>=0.13.5",
     "aioca",

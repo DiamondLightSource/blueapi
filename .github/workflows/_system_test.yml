@@ -26,6 +26,17 @@ jobs:
         with:
           compose-file: "tests/system_tests/compose.yaml"
       
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2.2.0
+        with:
+          version: latest
+        
+      - name: Run OPA
+        run: export ISSUER=http://localhost:8081/realms/master;opa build -b tests/system_tests/services/opa_config/opa_data;opa run --server --addr localhost:8181 -b ./bundle.tar.gz --config-file ./tests/system_tests/services/opa_config/config.yaml &
+
+      - name: Start Tiled
+        run: docker run -d --name tiled --network host -v "./tests/system_tests/services/tiled_config:/deploy/config"  ghcr.io/zohebshaikh/tiled:0.4.17  tiled serve config --host localhost --port 8407
+          
       - name: Start Blueapi Server
         env:
           EPICS_CA_NAME_SERVERS: 127.0.0.1:9064

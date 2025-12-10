@@ -1,5 +1,7 @@
+import json
 import uuid
 from dataclasses import dataclass
+from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
@@ -25,7 +27,6 @@ from blueapi.config import (
     PlanSource,
     ScratchConfig,
     StompConfig,
-    TiledConfig,
 )
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
@@ -316,10 +317,19 @@ def test_get_tasks(get_tasks_mock: MagicMock):
     assert interface.get_tasks() == tasks
 
 
+@pytest.mark.parametrize("tiled_enabled", [True, False])
 @patch("blueapi.service.interface.context")
-def test_get_task_by_id(context_mock: MagicMock):
+@patch("blueapi.service.interface.config")
+def test_get_task_by_id(
+    config_mock: MagicMock, context_mock: MagicMock, tiled_enabled: bool
+):
     context = BlueskyContext()
     context.register_plan(my_plan)
+    if tiled_enabled:
+        context.tiled_conf = MagicMock()
+        config_mock.return_value = ApplicationConfig(
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx"))
+        )
     context_mock.return_value = context
 
     task_id = interface.submit_task(
@@ -329,15 +339,25 @@ def test_get_task_by_id(context_mock: MagicMock):
         )
     )
 
+    expected_metadata: dict[str, Any] = {
+        "instrument_session": FAKE_INSTRUMENT_SESSION,
+    }
+
+    if tiled_enabled:
+        expected_access_tag = {
+            "proposal": 12345,
+            "visit": 1,
+            "beamline": "ixx",
+        }
+        expected_metadata["tiled_access_tags"] = [json.dumps(expected_access_tag)]
+
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
         request_id=ANY,
         task=Task(
             name="my_plan",
             params={},
-            metadata={
-                "instrument_session": FAKE_INSTRUMENT_SESSION,
-            },
+            metadata=expected_metadata,
         ),
         is_complete=False,
         is_pending=True,
@@ -507,34 +527,6 @@ def test_setup_with_numtracker_makes_start_document_provider():
     assert isinstance(path_provider, StartDocumentPathProvider)
 
     clear_path_provider()
-
-
-def test_setup_without_tiled_not_makes_tiled_inserter():
-    with patch("blueapi.service.interface.from_uri") as from_uri:
-        conf = ApplicationConfig()
-        interface.setup(conf)
-
-        assert from_uri.call_count == 0
-
-
-def test_setup_with_tiled_makes_tiled_inserter():
-    with patch("blueapi.service.interface.from_uri") as from_uri:
-        conf = ApplicationConfig(tiled=TiledConfig(enabled=True))
-        interface.setup(conf)
-
-        assert from_uri.call_count == 1
-        assert from_uri.call_args.args == ("http://localhost:8407/",)
-        assert from_uri.call_args.kwargs == {"api_key": None}
-
-
-def test_setup_with_tiled_api_key_makes_tiled_inserter():
-    with patch("blueapi.service.interface.from_uri") as from_uri:
-        conf = ApplicationConfig(tiled=TiledConfig(enabled=True, api_key="foobarbaz"))
-        interface.setup(conf)
-
-        assert from_uri.call_count == 1
-        assert from_uri.call_args.args == ("http://localhost:8407/",)
-        assert from_uri.call_args.kwargs == {"api_key": "foobarbaz"}
 
 
 def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():

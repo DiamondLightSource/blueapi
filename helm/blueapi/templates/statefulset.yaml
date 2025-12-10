@@ -94,7 +94,7 @@ spec:
             blueapi -c /config/init_config.yaml setup-scratch
             if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
             echo "Exporting venv as artefact"
-            cp -r /venv/* /artefacts
+            cp -r /app/.venv/* /artefacts
         volumeMounts:
           - name: init-config
             mountPath: "/config"
@@ -149,7 +149,7 @@ spec:
               mountPropagation: HostToContainer
             {{- end }}
             - name: venv
-              mountPath: /venv
+              mountPath: /app/.venv
             {{- end }}
             {{- if ne 1000.0 .Values.securityContext.runAsUser }}
             - mountPath: /home

@@ -290,7 +290,9 @@ def test_instrument_session_propagated(client: BlueapiClient):
     trackable_task = client.get_task(response.task_id)
     assert trackable_task.task.metadata == {
         "instrument_session": FAKE_INSTRUMENT_SESSION,
-        "tiled_access_tags": [FAKE_ACCESS_TAG],
+        "tiled_access_tags": [
+            '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
+        ],
     }
 
 

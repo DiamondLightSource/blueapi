@@ -35,7 +35,7 @@ jobs:
         run: export ISSUER=http://localhost:8081/realms/master;opa build -b tests/system_tests/services/opa_config/opa_data;opa run --server --addr localhost:8181 -b ./bundle.tar.gz --config-file ./tests/system_tests/services/opa_config/config.yaml &
 
       - name: Start Tiled
-        run: docker run -d --name tiled --network host -v "./tests/system_tests/services/tiled_config:/deploy/config"  ghcr.io/zohebshaikh/tiled:0.4.19  tiled serve config --host localhost --port 8407
+        run: docker run -d --name tiled --network host -v "./tests/system_tests/services/tiled_config:/deploy/config"  ghcr.io/zohebshaikh/tiled:0.4.20  tiled serve config --host localhost --port 8407
           
       - name: Start Blueapi Server
         env:

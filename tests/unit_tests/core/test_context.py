@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from types import NoneType
-from typing import Generic, TypeVar, Union
-from unittest.mock import ANY, patch
+from types import ModuleType, NoneType
+from typing import Any, Generic, TypeVar, Union
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from bluesky.protocols import (
@@ -18,7 +18,9 @@ from bluesky.protocols import (
 from bluesky.run_engine import RunEngine
 from bluesky.utils import MsgGenerator
 from dodal.common import PlanGenerator, inject
+from ophyd import Device
 from ophyd_async.core import (
+    PathProvider,
     StandardDetector,
     StaticPathProvider,
     UUIDFilenameProvider,
@@ -31,15 +33,20 @@ from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
 
 from blueapi.config import (
+    ApplicationConfig,
+    DeviceManagerSource,
     DeviceSource,
     DodalSource,
     EnvironmentConfig,
     MetadataConfig,
     PlanSource,
+    TiledConfig,
 )
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
+from blueapi.core.protocols import DeviceConnectResult, DeviceManager
 from blueapi.utils.connect_devices import _establish_device_connections
+from blueapi.utils.invalid_config_error import InvalidConfigError
 
 SIM_MOTOR_NAME = "sim"
 ALT_MOTOR_NAME = "alt"
@@ -718,3 +725,155 @@ def test_explicit_none_arg_generated_schema(
         "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "null"}]}
     }
     assert "foo" in schema.get("required", [])
+
+
+@dataclass
+class StaticDeviceManager:
+    devices: dict[str, Any] = field(default_factory=dict)
+    build_errors: dict[str, Exception] = field(default_factory=dict)
+    connection_errors: dict[str, Exception] = field(default_factory=dict)
+
+    def build_and_connect(
+        self,
+        *,
+        mock: bool = False,
+        timeout: float | None = None,
+        fixtures: dict[str, Any] | None = None,
+    ) -> DeviceConnectResult:
+        return self
+
+
+def test_empty_device_manager(empty_context: BlueskyContext):
+    sdm = StaticDeviceManager()
+    empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {}
+
+
+def test_single_device_manager(empty_context: BlueskyContext):
+    foo = Mock(spec=Device, name="foo")
+    foo.name = "foo"
+    sdm = StaticDeviceManager(devices={"foo": foo})
+    empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {"foo": foo}
+
+
+def test_device_manager_build_error(empty_context: BlueskyContext):
+    exc = ValueError("broken foo")
+    sdm = StaticDeviceManager(build_errors={"foo": exc})
+    res = empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {}
+    assert res[1] == {"foo": exc}
+
+
+def test_device_manager_connection_error(empty_context: BlueskyContext):
+    exc = ValueError("broken foo")
+    sdm = StaticDeviceManager(connection_errors={"foo": exc})
+    res = empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {}
+    assert res[1] == {"foo": exc}
+
+
+def test_device_manager_errors_are_combined(empty_context: BlueskyContext):
+    exc1 = ValueError("broken foo")
+    exc2 = ValueError("disconnected bar")
+    sdm = StaticDeviceManager(
+        build_errors={"foo": exc1}, connection_errors={"bar": exc2}
+    )
+    res = empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {}
+    assert res[1] == {"foo": exc1, "bar": exc2}
+
+
+def test_mock_passed_to_device_manager(empty_context: BlueskyContext):
+    dm = MagicMock(spec=DeviceManager)
+    bc = dm.build_and_connect.return_value
+    bc.devices = {}
+    bc.build_errors = {}
+    bc.connection_errors = {}
+    empty_context.with_device_manager(dm, mock=True)
+
+    dm.build_and_connect.assert_called_once_with(mock=True, fixtures={})
+
+
+def test_path_provider_passed_to_device_manager(empty_context: BlueskyContext):
+    dm = MagicMock(spec=DeviceManager)
+    bc = dm.build_and_connect.return_value
+    bc.devices = {}
+    bc.build_errors = {}
+    bc.connection_errors = {}
+    pp = Mock(spec=PathProvider)
+    empty_context.path_provider = pp
+    empty_context.with_device_manager(dm)
+
+    dm.build_and_connect.assert_called_once_with(
+        mock=False, fixtures={"path_provider": pp}
+    )
+
+
+def test_device_manager_environment_source(empty_context: BlueskyContext):
+    foo = Mock(spec=Device, name="foo")
+    foo.name = "foo"
+    stm = StaticDeviceManager(devices={"foo": foo})
+    dev_mod = Mock(spec=ModuleType)
+    dev_mod.devices = stm
+    env = Mock(spec=EnvironmentConfig)
+    env.metadata = None
+    env.sources = [DeviceManagerSource(module="foo.bar", mock=True)]
+    with patch("blueapi.core.context.import_module") as imp_mod:
+        imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
+        empty_context.with_config(env)
+    assert empty_context.devices == {"foo": foo}
+
+
+def test_non_device_manager_errors(empty_context: BlueskyContext):
+    dev_mod = Mock(spec=ModuleType, name="dev_mod")
+    dev_mod.devices = "not-a-device-manager"
+    env = Mock(spec=EnvironmentConfig)
+    env.metadata = None
+    env.sources = [DeviceManagerSource(module="foo.bar", mock=True)]
+    with patch("blueapi.core.context.import_module") as imp_mod:
+        imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
+        with pytest.raises(ValueError, match="not a device manager"):
+            empty_context.with_config(env)
+
+
+def test_setup_without_tiled_not_makes_tiled_inserter():
+    config = TiledConfig(enabled=False)
+    context = BlueskyContext(
+        ApplicationConfig(
+            tiled=config,
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+        )
+    )
+    assert context.tiled_conf is None
+
+
+def test_setup_default_not_makes_tiled_inserter():
+    context = BlueskyContext(ApplicationConfig())
+    assert context.tiled_conf is None
+
+
+@pytest.mark.parametrize("api_key", [None, "foo"])
+def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
+    config = TiledConfig(enabled=True, api_key=api_key)
+    context = BlueskyContext(
+        ApplicationConfig(
+            tiled=config,
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+        )
+    )
+    assert context.tiled_conf == config
+
+
+@pytest.mark.parametrize("api_key", [None, "foo"])
+def test_must_have_instrument_set_for_tiled(api_key: str | None):
+    config = TiledConfig(enabled=True, api_key=api_key)
+    with pytest.raises(InvalidConfigError):
+        BlueskyContext(
+            ApplicationConfig(tiled=config, env=EnvironmentConfig(metadata=None))
+        )

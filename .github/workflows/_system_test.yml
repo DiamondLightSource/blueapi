@@ -19,11 +19,11 @@ jobs:
           # Check out example services
           submodules: true
 
-      - name: Install python packages
-        uses: ./.github/actions/install_requirements
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Compose services
-        uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1
+        uses: hoverkraft-tech/compose-action@248470ecc5ed40d8ed3d4480d8260d77179ef579 # v2.4.2
         with:
           compose-file: "tests/system_tests/compose.yaml"
 
@@ -31,7 +31,7 @@ jobs:
         env:
           EPICS_CA_NAME_SERVERS: 127.0.0.1:9064
           EPICS_PVA_NAME_SERVERS: 127.0.0.1:9075
-        run: blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
+        run: uv run blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
 
       - name: Run tests
-        run: tox -e system-test
+        run: uv run --locked tox -e system-test

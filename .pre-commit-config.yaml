@@ -3,6 +3,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-added-large-files
+        exclude: ^uv.lock
       - id: check-yaml
         exclude: ^helm/blueapi/templates/
         args: [--allow-multiple-documents]
@@ -25,6 +26,13 @@ repos:
         types: [python]
         require_serial: true
 
+      - id: uv-sync
+        name: update uv.lock and venv
+        pass_filenames: false
+        language: system
+        entry: uv sync
+        files: ^(uv\.lock|pyproject\.toml)$
+
   - repo: https://github.com/norwoodj/helm-docs
     rev: "v1.14.2"
     hooks:
@@ -33,15 +41,15 @@ repos:
           # Make the tool search for charts only under the `helm` directory
           - --chart-search-root=helm
 
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.28.0
-    hooks:
-      - id: gitleaks
-
   - repo: https://github.com/losisin/helm-values-schema-json
     rev: v2.2.1
     hooks:
       - id: helm-schema
         args:
-        - "--config"
-        - "helm/blueapi/.schema.yaml"
+          - "--config"
+          - "helm/blueapi/.schema.yaml"
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks

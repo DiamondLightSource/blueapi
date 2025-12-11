@@ -93,8 +93,7 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
     logging.info(f"Installing {path}")
     process = Popen(
         [
-            "python",
-            "-m",
+            "uv",
             "pip",
             "install",
             "--no-deps",

@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v5
         with:
           # Need this to get version number from last tag
           fetch-depth: 0
@@ -63,7 +63,7 @@ jobs:
           tags: |
             type=ref,event=tag
             type=raw,value=latest
-            
+
       - name: Push cached image to container registry
         if: github.ref_type == 'tag'
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
@@ -105,7 +105,9 @@ jobs:
             type=ref,event=tag
 
       - name: package chart and push it
+        env:
+          REPO: ${{ github.repository_owner }}
         run: |
           helm dependencies update helm/blueapi
           helm package helm/blueapi --version ${GITHUB_REF##*/} --app-version ${GITHUB_REF##*/} -d /tmp/
-          helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/diamondlightsource/charts
+          helm push /tmp/blueapi-${GITHUB_REF##*/}.tgz oci://ghcr.io/${REPO@L}/charts

@@ -9,6 +9,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
@@ -42,15 +43,14 @@ license.file = "LICENSE"
 readme = "README.md"
 requires-python = ">=3.11"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "copier",
-    "myst-parser>=4.0.0",
-    "pipdeptree",
-    "pre-commit>=3.8.0",
+    "myst-parser",
+    "pre-commit",
     "pydata-sphinx-theme>=0.15.4",
     "pytest",
-    "pyright<1.1.407",  # https://github.com/bluesky/scanspec/issues/190
+    "pyright<1.1.407",             # https://github.com/bluesky/scanspec/issues/190
     "pytest-cov",
     "pytest-asyncio",
     "responses",
@@ -61,7 +61,7 @@ dev = [
     "sphinx-click",
     "sphinx-design",
     "sphinxcontrib-openapi",
-    "tox-direct",
+    "tox-uv",
     "types-mock",
     "types-PyYAML",
     "types-requests",
@@ -80,7 +80,6 @@ GitHub = "https://github.com/DiamondLightSource/blueapi"
 [[project.authors]] # Further authors may be added by duplicating this section
 email = "callum.forrester@diamond.ac.uk"
 name = "Callum Forrester"
-
 
 [tool.setuptools_scm]
 version_file = "src/blueapi/_version.py"
@@ -110,30 +109,104 @@ omit = ["src/blueapi/startup/**/*"]
 # Tests are run from installed location, map back to the src directory
 source = ["src", "**/site-packages/"]
 
-# tox must currently be configured via an embedded ini string
-# See: https://github.com/tox-dev/tox/issues/999
 [tool.tox]
-legacy_tox_ini = """
-[tox]
-skipsdist=True
+skipsdist = true
+# envs to runs automatically with tox -p
+env_list = ["pre-commit", "type-checking", "tests", "docs"]
 
-[testenv:{pre-commit,type-checking,tests,docs,system-test}]
-# Don't create a virtualenv for the command, requires tox-direct plugin
-direct = True
-passenv = *
-allowlist_externals =
-    pytest
-    pre-commit
-    pyright
-    sphinx-build
-    sphinx-autobuild
-commands =
-    pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
-    type-checking: pyright src tests {posargs}
-    tests: pytest --cov=blueapi --cov-report term --cov-report xml:cov.xml tests/unit_tests {posargs}
-    docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
-    system-test: pytest tests/system_tests {posargs}
-"""
+[tool.tox.env_run_base]
+# Pass all environment variables to the test environments
+passenv = ["*"]
+
+[tool.tox.env.pre-commit]
+description = "Run pre-commit on all files"
+commands = [
+    [
+        "pre-commit",
+        "run",
+        "--all-files",
+        "--show-diff-on-failure",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.type-checking]
+description = "Run pyright"
+commands = [
+    [
+        "pyright",
+        "--pythonpath",
+        ".venv/bin/python",
+        "src",
+        "tests",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.tests]
+description = "Run unit tests with coverage"
+commands = [
+    [
+        "pytest",
+        "tests/unit_tests",
+        "--cov=blueapi",
+        "--cov-report",
+        "term",
+        "--cov-report",
+        "xml:cov.xml",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.system-test]
+description = "Run system tests with coverage"
+commands = [
+    [
+        "pytest",
+        "tests/system_tests",
+        "--cov=blueapi",
+        "--cov-report",
+        "term",
+        "--cov-report",
+        "xml:cov.xml",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.docs]
+description = "Run docs build with clean environment"
+commands = [
+    [
+        "sphinx-build",
+        "--fresh-env",
+        "--show-traceback",
+        "--fail-on-warning",
+        "--keep-going",
+        "docs",
+        "build/html",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.docs-autobuild]
+description = "Run docs with autobuild on change"
+commands = [
+    [
+        "sphinx-autobuild",
+        "--show-traceback",
+        "--watch",
+        "README.md",
+        "docs",
+        "build/html",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
 
 [tool.ruff]
 src = ["src", "tests"]

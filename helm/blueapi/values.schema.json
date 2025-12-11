@@ -12,7 +12,15 @@
             "type": "object",
             "properties": {
                 "enabled": {
-                    "description": "If enabled, disables liveness and readiness probes, and does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster",
+                    "description": "If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance",
+                    "type": "boolean"
+                },
+                "log_to_stderr": {
+                    "description": "If enabled configures debugpy to use the option `--log-to-stderr`",
+                    "type": "boolean"
+                },
+                "suspend": {
+                    "description": "If enabled does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster",
                     "type": "boolean"
                 }
             }
@@ -553,6 +561,38 @@
                     },
                     "additionalProperties": false
                 },
+                "DeviceManagerSource": {
+                    "title": "DeviceManagerSource",
+                    "type": "object",
+                    "required": [
+                        "module"
+                    ],
+                    "properties": {
+                        "kind": {
+                            "title": "Kind",
+                            "default": "deviceManager",
+                            "const": "deviceManager"
+                        },
+                        "mock": {
+                            "title": "Mock",
+                            "description": "If true, ophyd_async device connections are mocked",
+                            "default": false,
+                            "type": "boolean"
+                        },
+                        "module": {
+                            "title": "Module",
+                            "description": "Module to be imported",
+                            "type": "string"
+                        },
+                        "name": {
+                            "title": "Name",
+                            "description": "Name of the device manager in the module",
+                            "default": "devices",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "DeviceSource": {
                     "title": "DeviceSource",
                     "type": "object",
@@ -640,6 +680,9 @@
                                     },
                                     {
                                         "$ref": "#/$defs/DodalSource"
+                                    },
+                                    {
+                                        "$ref": "#/$defs/DeviceManagerSource"
                                     }
                                 ]
                             }

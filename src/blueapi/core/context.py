@@ -1,7 +1,7 @@
 import logging
 import sys
 from collections.abc import Callable
-from dataclasses import InitVar, dataclass, field
+from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
@@ -11,8 +11,13 @@ from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
 from dodal.utils import AnyDevice, make_all_devices
-from ophyd_async.core import NotConnectedError
-from pydantic import BaseModel, GetCoreSchemaHandler, GetJsonSchemaHandler, create_model
+from ophyd_async.core import NotConnectedError, PathProvider
+from pydantic import (
+    BaseModel,
+    GetCoreSchemaHandler,
+    GetJsonSchemaHandler,
+    create_model,
+)
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import CoreSchema, core_schema
@@ -21,11 +26,14 @@ from blueapi import utils
 from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import (
     ApplicationConfig,
+    DeviceManagerSource,
     DeviceSource,
     DodalSource,
     EnvironmentConfig,
     PlanSource,
+    TiledConfig,
 )
+from blueapi.core.protocols import DeviceManager
 from blueapi.utils import (
     BlueapiPlanModelConfig,
     is_function_sourced_from_module,
@@ -98,7 +106,7 @@ def is_bluesky_type(typ: type) -> bool:
     return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
 
 
-C = TypeVar("C", bound=BaseModel, covariant=True)
+C = TypeVar("C", covariant=True)
 
 
 @dataclass
@@ -114,7 +122,9 @@ class BlueskyContext:
     run_engine: RunEngine = field(
         default_factory=lambda: RunEngine(context_managers=[])
     )
+    tiled_conf: TiledConfig | None = field(default=None, init=False, repr=False)
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
+    path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
@@ -135,10 +145,12 @@ class BlueskyContext:
                 )
 
             path_provider = StartDocumentPathProvider()
+            # TODO: Remove this when device manager is rolled out
             set_path_provider(path_provider)
 
             self.run_engine.subscribe(path_provider.run_start, "start")
             self.run_engine.subscribe(path_provider.run_stop, "stop")
+            self.path_provider = path_provider
 
             # local reference so it's available in _update_scan_num
             numtracker = self.numtracker
@@ -162,6 +174,14 @@ class BlueskyContext:
                 "Numtracker has been configured but a path provider was imported with "
                 "the devices. Remove this path provider to use numtracker."
             )
+
+        if (tiled_conf := configuration.tiled) is not None and tiled_conf.enabled:
+            if configuration.env.metadata is None:
+                raise InvalidConfigError(
+                    "Tiled has been configured but `instrument` metadata is not set - "
+                    "this field is required to make authorization decisions."
+                )
+            self.tiled_conf = tiled_conf
 
     def find_device(self, addr: str | list[str]) -> Device | None:
         """
@@ -194,6 +214,13 @@ class BlueskyContext:
                     self.with_device_module(mod)
                 case DodalSource(mock=mock):
                     self.with_dodal_module(mod, mock=mock)
+                case DeviceManagerSource(mock=mock, name=name):
+                    manager = getattr(mod, name)
+                    if not isinstance(manager, DeviceManager):
+                        raise ValueError(
+                            f"{name} in module {mod} is not a device manager"
+                        )
+                    self.with_device_manager(manager, mock)
 
     def with_plan_module(self, module: ModuleType) -> None:
         """
@@ -226,6 +253,30 @@ class BlueskyContext:
                 or is_function_sourced_from_module(obj, module)
             ):
                 self.register_plan(obj)
+
+    def with_device_manager(self, manager: DeviceManager, mock: bool = False):
+        fixtures = {"path_provider": self.path_provider} if self.path_provider else {}
+        build_result = manager.build_and_connect(mock=mock, fixtures=fixtures)
+
+        for device in build_result.devices.values():
+            self.register_device(device)
+
+        if errs := build_result.build_errors:
+            LOGGER.warning(
+                f"{errs} errors while building devices",
+                exc_info=ExceptionGroup(
+                    "Errors while building devices", list(errs.values())
+                ),
+            )
+        if errs := build_result.connection_errors:
+            LOGGER.warning(
+                f"{len(errs)} errors while connecting devices",
+                exc_info=NotConnectedError(errs),
+            )
+        return build_result.devices, {
+            **build_result.build_errors,
+            **build_result.connection_errors,
+        }
 
     def with_device_module(self, module: ModuleType) -> None:
         self.with_dodal_module(module)
@@ -406,16 +457,19 @@ class BlueskyContext:
                 )
 
             no_default = para.default is Parameter.empty
-            default_factory = (
-                self._composite_factory(arg_type)
-                if isclass(arg_type)
-                and issubclass(arg_type, BaseModel)
+            if (
+                isclass(arg_type)
+                and (issubclass(arg_type, BaseModel) or is_dataclass(arg_type))
                 and isinstance(para.default, str)
-                else DefaultFactory(para.default)
-            )
+            ):
+                default_factory = self._composite_factory(arg_type)
+                _type = SkipJsonSchema[self._convert_type(arg_type, no_default)]
+            else:
+                default_factory = DefaultFactory(para.default)
+                _type = self._convert_type(arg_type, no_default)
             factory = None if no_default else default_factory
             new_args[name] = (
-                self._convert_type(arg_type, no_default),
+                _type,
                 FieldInfo(default_factory=factory),
             )
         return new_args
@@ -451,14 +505,20 @@ class BlueskyContext:
 
     def _composite_factory(self, composite_class: type[C]) -> Callable[[], C]:
         def _inject_composite():
-            devices = {
-                field: self.find_device(info.default)
-                if info.annotation is not None
-                and is_bluesky_type(info.annotation)
-                and isinstance(info.default, str)
-                else info.default
-                for field, info in composite_class.model_fields.items()
-            }
+            if issubclass(composite_class, BaseModel):
+                devices = {
+                    field_name: self.find_device(field_name)
+                    for field_name in composite_class.model_fields.keys()
+                }
+            else:
+                assert is_dataclass(composite_class), (
+                    f"Unsupported composite type: {composite_class}, composite must be"
+                    " a pydantic BaseModel or a dataclass"
+                )
+                devices = {
+                    field.name: self.find_device(field.name)
+                    for field in fields(composite_class)
+                }
             return composite_class(**devices)
 
         return _inject_composite

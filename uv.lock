@@ -470,7 +470,7 @@ requires-dist = [
     { name = "scanspec", specifier = ">=0.9.0" },
     { name = "stomp-py" },
     { name = "super-state-machine" },
-    { name = "tiled", extras = ["client"], git = "https://github.com/zohebshaikh/tiled?rev=v0.4.17" },
+    { name = "tiled", extras = ["client"], git = "https://github.com/zohebshaikh/tiled?rev=v0.4.20" },
     { name = "tomlkit" },
     { name = "uvicorn" },
 ]
@@ -4899,8 +4899,8 @@ wheels = [
 
 [[package]]
 name = "tiled"
-version = "0.4.17"
-source = { git = "https://github.com/zohebshaikh/tiled?rev=v0.4.17#7bc126a87fad802ae8f5da64ade844fde2a0926a" }
+version = "0.4.20"
+source = { git = "https://github.com/zohebshaikh/tiled?rev=v0.4.20#4d7d0649696d365ec62d433366f68eb90bd7117e" }
 dependencies = [
     { name = "httpx" },
     { name = "json-merge-patch" },

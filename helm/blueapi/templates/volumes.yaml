@@ -5,6 +5,7 @@ metadata:
   name: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
   annotations:
     helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Delete=false
 spec:
   accessModes:
     - ReadWriteMany

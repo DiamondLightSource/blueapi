@@ -142,43 +142,52 @@ def foo_record():
 
 
 class TestColorFormatter:
+    def _update_record(self, record: logging.LogRecord, level: int):
+        record.levelno = level
+        record.levelname = logging.getLevelName(level)
+
     def test_debug(self, color_formatter, foo_record):
-        foo_record.levelno = logging.DEBUG
+        self._update_record(foo_record, logging.DEBUG)
 
         assert (
             color_formatter.format(foo_record)
-            == "\x1b[38;2;100;143;255mINFO\x1b[0m foo"
+            == "\x1b[38;2;100;143;255m   DEBUG\x1b[0m foo"
         )
 
     def test_info(self, color_formatter, foo_record):
-        foo_record.levelno = logging.INFO
+        self._update_record(foo_record, logging.INFO)
 
         assert (
-            color_formatter.format(foo_record) == "\x1b[38;2;120;94;240mINFO\x1b[0m foo"
+            color_formatter.format(foo_record)
+            == "\x1b[38;2;120;94;240m    INFO\x1b[0m foo"
         )
 
     def test_warning(self, color_formatter, foo_record):
-        foo_record.levelno = logging.WARNING
+        self._update_record(foo_record, logging.WARNING)
 
         assert (
-            color_formatter.format(foo_record) == "\x1b[38;2;255;176;0mINFO\x1b[0m foo"
+            color_formatter.format(foo_record)
+            == "\x1b[38;2;255;176;0m WARNING\x1b[0m foo"
         )
 
     def test_error(self, color_formatter, foo_record):
-        foo_record.levelno = logging.ERROR
+        self._update_record(foo_record, logging.ERROR)
 
         assert (
-            color_formatter.format(foo_record) == "\x1b[38;2;220;38;127mINFO\x1b[0m foo"
+            color_formatter.format(foo_record)
+            == "\x1b[38;2;220;38;127m   ERROR\x1b[0m foo"
         )
 
     def test_critical(self, color_formatter, foo_record):
-        foo_record.levelno = logging.CRITICAL
+        self._update_record(foo_record, logging.CRITICAL)
 
         assert (
-            color_formatter.format(foo_record) == "\x1b[38;2;254;97;0mINFO\x1b[0m foo"
+            color_formatter.format(foo_record)
+            == "\x1b[38;2;254;97;0mCRITICAL\x1b[0m foo"
         )
 
     def test_other(self, color_formatter, foo_record):
         foo_record.levelno = -1
+        foo_record.levelname = "UNKNOWN"
 
-        assert color_formatter.format(foo_record) == "INFO foo"
+        assert color_formatter.format(foo_record) == " UNKNOWN\x1b[0m foo"

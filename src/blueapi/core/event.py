@@ -1,4 +1,5 @@
 import itertools
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Generic, TypeVar
@@ -8,6 +9,8 @@ E = TypeVar("E")
 
 #: Subscription token type
 S = TypeVar("S")
+
+LOGGER = logging.getLogger(__name__)
 
 
 class EventStream(ABC, Generic[E, S]):
@@ -77,4 +80,10 @@ class EventPublisher(EventStream[E, int]):
         """
 
         for callback in list(self._subscriptions.values()):
-            callback(event, correlation_id)
+            try:
+                callback(event, correlation_id)
+            except Exception as e:
+                LOGGER.error(
+                    f"Failed to send event {event} with {correlation_id=}",
+                    exc_info=e,
+                )

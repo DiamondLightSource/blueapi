@@ -17,4 +17,8 @@ numtracker:
   url: http://localhost:8406/graphql
 tiled:
   enabled: true
-  url: http://localhost:8407/
+  url: http://localhost:8407/api/v1
+oidc:
+  well_known_url: "http://localhost:8081/realms/master/.well-known/openid-configuration"
+  client_id: "blueapi"
+  client_audience: "blueapi"

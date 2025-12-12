@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from concurrent.futures import Future
 from dataclasses import dataclass
 from queue import Queue
+from unittest import mock
 
 import pytest
 
@@ -74,6 +75,21 @@ def test_correlation_id(publisher: EventPublisher[MyEvent]) -> None:
     publisher.subscribe(lambda _, c: f.set_result(c))
     publisher.publish(event, correlation_id)
     assert f.result(timeout=_TIMEOUT) == correlation_id
+
+
+def test_callback_exceptions_are_contained(publisher: EventPublisher[MyEvent]):
+    event = MyEvent("foo")
+    c_id = "bar"
+
+    # First call should raise exception, next should be fine
+    handler = mock.Mock(side_effect=[ValueError("Bad Event"), ()])
+    publisher.subscribe(handler)
+    publisher.subscribe(handler)
+
+    publisher.publish(event, c_id)
+
+    # Both handlers should be called and the exception should not be raised from publish
+    handler.assert_has_calls([mock.call(event, c_id), mock.call(event, c_id)])
 
 
 def _drain(queue: Queue) -> Iterable:

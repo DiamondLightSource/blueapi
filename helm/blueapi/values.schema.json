@@ -27,7 +27,7 @@
         },
         "extraEnvVars": {
             "description": "Additional envVars to mount to the pod",
-            "type": "null"
+            "type": "array"
         },
         "fullnameOverride": {
             "type": "string"

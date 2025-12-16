@@ -155,7 +155,7 @@ hostNetwork: false
 restartOnConfigChange: true
 
 # -- Additional envVars to mount to the pod
-extraEnvVars:
+extraEnvVars: []
 # - name: TILED_API_KEY
 #   valueFrom:
 #     secretKeyRef:

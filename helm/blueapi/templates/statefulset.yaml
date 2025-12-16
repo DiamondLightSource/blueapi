@@ -95,6 +95,9 @@ spec:
             if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
             echo "Exporting venv as artefact"
             cp -r /app/.venv/* /artefacts
+        - env:
+          - name: UV_CACHE_DIR
+            value: {{ .Values.worker.scratch.root }}
         volumeMounts:
           - name: init-config
             mountPath: "/config"
@@ -196,6 +199,8 @@ spec:
             - configMapRef:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
+            - name: UV_CACHE_DIR
+              value: {{ .Values.worker.scratch.root }}
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
         {{- if ne 1000.0 .Values.securityContext.runAsUser }}
         - name: debug-account-sync

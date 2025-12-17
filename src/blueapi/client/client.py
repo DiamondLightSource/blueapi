@@ -1,5 +1,8 @@
 import time
 from concurrent.futures import Future
+from functools import singledispatch, singledispatchmethod
+from pathlib import Path
+from typing import Any, Generic, ParamSpec, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -7,8 +10,13 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
+from pydantic import BaseModel, model_serializer
 
-from blueapi.config import ApplicationConfig, MissingStompConfigurationError
+from blueapi.config import (
+    ApplicationConfig,
+    ConfigLoader,
+    MissingStompConfigurationError,
+)
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
@@ -18,14 +26,14 @@ from blueapi.service.model import (
     OIDCConfig,
     PlanModel,
     PlanResponse,
+    ProtocolInfo,
     PythonEnvironmentResponse,
     SourceInfo,
     TaskRequest,
     TaskResponse,
-    TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker import TrackableTask, WorkerEvent, WorkerState
+from blueapi.worker import WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 
 from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
@@ -33,12 +41,113 @@ from .rest import BlueapiRestClient, BlueskyRemoteControlError
 
 TRACER = get_tracer("client")
 
+import logging
+
+log = logging.getLogger(__name__)
+
+
+class MissingInstrumentSessionError(Exception):
+    pass
+
+
+class PlanCache:
+    def __init__(self, client: "BlueapiClient"):
+        self._client = client
+        self._cache = {}
+
+    def _get_device(self, name: str) -> "Plan":
+        if name.startswith("_"):
+            raise AttributeError("No such plan")
+        # TODO: Catch 404 and return AttributeError
+        if not (plan := self._cache.get(name)):
+            model = self._client._rest.get_plan(name)
+            plan = Plan[int](
+                name=model.name,
+                args=model.parameter_schema,
+                client=self._client,
+            )
+            self._cache[name] = plan
+
+        return plan
+
+    def __getitem__(self, name: str) -> "Plan":
+        return self._get_device(name)
+
+    def __getattr__(self, name: str) -> "Plan":
+        return self._get_device(name)
+
+
+class DeviceCache:
+    def __init__(self, client: "BlueapiClient"):
+        self._client = client
+        self._cache = {}
+
+    def _get_device(self, name: str) -> "Device":
+        if name.startswith("_"):
+            raise AttributeError("No such device")
+        if not (device := self._cache.get(name)):
+            model = self._client._rest.get_device(name)
+            device = Device(name=model.name, protocols=model.protocols)
+            self._cache[name] = device
+        # TODO: Catch 404 and return AttributeError
+        return device
+
+    def __getitem__(self, name: str) -> "Device":
+        return self._get_device(name)
+
+    def __getattr__(self, name: str) -> "Device":
+        return self._get_device(name)
+
+
+class Device(BaseModel):
+    name: str
+    protocols: list[ProtocolInfo]
+
+    def __repr__(self):
+        return f"Device({self.name})"
+
+    @model_serializer(mode="plain")
+    def _to_json(self):
+        return self.name
+
+
+PlanArgs = ParamSpec("PlanArgs")
+
+
+class Plan(Generic[PlanArgs]):
+    def __init__(self, name, args: dict[str, Any], client: "BlueapiClient"):
+        self._name = name
+        self._args = args
+        self._client = client
+
+    def __call__(self, *args: PlanArgs.args, **kwargs: PlanArgs.kwargs):
+        req = TaskRequest(
+            name=self._name,
+            params=self._build_args(args, kwargs),
+            instrument_session=self._client.instrument_session,
+        )
+        self._client.run_task(req)
+
+    def _build_args(self, args, kwargs):
+        log.info(
+            "Building args for %s, using %s and %s",
+            self._args["properties"],
+            args,
+            kwargs,
+        )
+        log.info("Required: %s", self._args["required"])
+        return kwargs
+
+    def __repr__(self):
+        return f"{self._name}({', '.join(self._args['properties'].keys())})"
+
 
 class BlueapiClient:
     """Unified client for controlling blueapi"""
 
     _rest: BlueapiRestClient
     _events: EventBusClient | None
+    _instrument_session: str | None = None
 
     def __init__(
         self,
@@ -47,9 +156,32 @@ class BlueapiClient:
     ):
         self._rest = rest
         self._events = events
+        self.plans = PlanCache(self)
+        self.devices = DeviceCache(self)
 
+    @singledispatchmethod
     @classmethod
-    def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
+    def from_config(cls, conf) -> Self:
+        raise ValueError("Unsupported construction arg")
+
+    @from_config.register
+    @classmethod
+    def _(cls, config_file: str) -> Self:
+        return cls.from_config(Path(config_file))
+
+    @from_config.register
+    @classmethod
+    def _(cls, config_file: Path) -> Self:
+        conf = ConfigLoader(ApplicationConfig)
+        conf.use_values_from_yaml(config_file)
+        return cls.from_config(conf.load())
+
+    @from_config.register
+    @classmethod
+    def _(
+        cls,
+        config: ApplicationConfig,
+    ) -> Self:
         session_manager: SessionManager | None = None
         try:
             session_manager = SessionManager.from_cache(config.auth_token_path)
@@ -71,53 +203,15 @@ class BlueapiClient:
         else:
             return cls(rest)
 
-    @start_as_current_span(TRACER)
-    def get_plans(self) -> PlanResponse:
-        """
-        List plans available
+    @property
+    def instrument_session(self) -> str:
+        if self._instrument_session is None:
+            raise MissingInstrumentSessionError()
+        return self._instrument_session
 
-        Returns:
-            PlanResponse: Plans that can be run
-        """
-        return self._rest.get_plans()
-
-    @start_as_current_span(TRACER, "name")
-    def get_plan(self, name: str) -> PlanModel:
-        """
-        Get details of a single plan
-
-        Args:
-            name: Plan name
-
-        Returns:
-            PlanModel: Details of the plan if found
-        """
-        return self._rest.get_plan(name)
-
-    @start_as_current_span(TRACER)
-    def get_devices(self) -> DeviceResponse:
-        """
-        List devices available
-
-        Returns:
-            DeviceResponse: Devices that can be used in plans
-        """
-
-        return self._rest.get_devices()
-
-    @start_as_current_span(TRACER, "name")
-    def get_device(self, name: str) -> DeviceModel:
-        """
-        Get details of a single device
-
-        Args:
-            name: Device name
-
-        Returns:
-            DeviceModel: Details of the device if found
-        """
-
-        return self._rest.get_device(name)
+    @instrument_session.setter
+    def instrument_session(self, session):
+        self._instrument_session = session
 
     @start_as_current_span(TRACER)
     def get_state(self) -> WorkerState:
@@ -158,31 +252,6 @@ class BlueapiClient:
 
         return self._rest.set_state(WorkerState.RUNNING, defer=False)
 
-    @start_as_current_span(TRACER, "task_id")
-    def get_task(self, task_id: str) -> TrackableTask:
-        """
-        Get a task stored by the worker
-
-        Args:
-            task_id: Unique ID for the task
-
-        Returns:
-            TrackableTask: Task details
-        """
-        assert task_id, "Task ID not provided!"
-        return self._rest.get_task(task_id)
-
-    @start_as_current_span(TRACER)
-    def get_all_tasks(self) -> TasksListResponse:
-        """
-        Get a list of all task stored by the worker
-
-        Returns:
-            TasksListResponse: List of all Trackable Task
-        """
-
-        return self._rest.get_all_tasks()
-
     @start_as_current_span(TRACER)
     def get_active_task(self) -> WorkerTask:
         """
@@ -221,7 +290,7 @@ class BlueapiClient:
                 "Stomp configuration required to run plans is missing or disabled"
             )
 
-        task_response = self.create_task(task)
+        task_response = self._rest.create_task(task)
         task_id = task_response.task_id
 
         complete: Future[WorkerEvent] = Future()
@@ -255,7 +324,7 @@ class BlueapiClient:
 
         with self._events:
             self._events.subscribe_to_all_events(inner_on_event)
-            self.start_task(WorkerTask(task_id=task_id))
+            self._rest.update_worker_task(WorkerTask(task_id=task_id))
             return complete.result(timeout=timeout)
 
     @start_as_current_span(TRACER, "task")
@@ -271,8 +340,10 @@ class BlueapiClient:
             TaskResponse: Acknowledgement of request
         """
 
-        response = self.create_task(task)
-        worker_response = self.start_task(WorkerTask(task_id=response.task_id))
+        response = self._rest.create_task(task)
+        worker_response = self._rest.update_worker_task(
+            WorkerTask(task_id=response.task_id)
+        )
         if worker_response.task_id == response.task_id:
             return response
         else:
@@ -281,47 +352,47 @@ class BlueapiClient:
                 f"but {worker_response.task_id} was started instead"
             )
 
-    @start_as_current_span(TRACER, "task")
-    def create_task(self, task: TaskRequest) -> TaskResponse:
-        """
-        Create a new task, does not start execution
+    # @start_as_current_span(TRACER, "task")
+    # def create_task(self, task: TaskRequest) -> TaskResponse:
+    #     """
+    #     Create a new task, does not start execution
 
-        Args:
-            task: Request object for task to create on the worker
+    #     Args:
+    #         task: Request object for task to create on the worker
 
-        Returns:
-            TaskResponse: Acknowledgement of request
-        """
+    #     Returns:
+    #         TaskResponse: Acknowledgement of request
+    #     """
 
-        return self._rest.create_task(task)
+    #     return self._rest.create_task(task)
 
-    @start_as_current_span(TRACER)
-    def clear_task(self, task_id: str) -> TaskResponse:
-        """
-        Delete a stored task on the worker
+    # @start_as_current_span(TRACER)
+    # def clear_task(self, task_id: str) -> TaskResponse:
+    #     """
+    #     Delete a stored task on the worker
 
-        Args:
-            task_id: ID for the task
+    #     Args:
+    #         task_id: ID for the task
 
-        Returns:
-            TaskResponse: Acknowledgement of request
-        """
+    #     Returns:
+    #         TaskResponse: Acknowledgement of request
+    #     """
 
-        return self._rest.clear_task(task_id)
+    #     return self._rest.clear_task(task_id)
 
-    @start_as_current_span(TRACER, "task")
-    def start_task(self, task: WorkerTask) -> WorkerTask:
-        """
-        Instruct the worker to start a stored task immediately
+    # @start_as_current_span(TRACER, "task")
+    # def start_task(self, task: WorkerTask) -> WorkerTask:
+    #     """
+    #     Instruct the worker to start a stored task immediately
 
-        Args:
-            task: WorkerTask to start
+    #     Args:
+    #         task: WorkerTask to start
 
-        Returns:
-            WorkerTask: Acknowledgement of request
-        """
+    #     Returns:
+    #         WorkerTask: Acknowledgement of request
+    #     """
 
-        return self._rest.update_worker_task(task)
+    #     return self._rest.update_worker_task(task)
 
     @start_as_current_span(TRACER, "reason")
     def abort(self, reason: str | None = None) -> WorkerState:

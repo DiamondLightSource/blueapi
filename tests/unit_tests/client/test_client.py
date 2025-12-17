@@ -143,76 +143,8 @@ def test_get_state(client: BlueapiClient):
     assert client.get_state() == WorkerState.IDLE
 
 
-def test_get_task(client: BlueapiClient):
-    assert client.get_task("foo") == TASK
-
-
-def test_get_nonexistent_task(
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    mock_rest.get_task.side_effect = KeyError("Not found")
-    with pytest.raises(KeyError):
-        client.get_task("baz")
-
-
-def test_get_task_with_empty_id(client: BlueapiClient):
-    with pytest.raises(AssertionError) as exc:
-        client.get_task("")
-        assert str(exc) == "Task ID not provided!"
-
-
-def test_get_all_tasks(
-    client: BlueapiClient,
-):
-    assert client.get_all_tasks() == TASKS
-
-
-def test_create_task(
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    client.create_task(task=TaskRequest(name="foo", instrument_session="cm12345-1"))
-    mock_rest.create_task.assert_called_once_with(
-        TaskRequest(name="foo", instrument_session="cm12345-1")
-    )
-
-
-def test_create_task_does_not_start_task(
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    client.create_task(task=TaskRequest(name="foo", instrument_session="cm12345-1"))
-    mock_rest.update_worker_task.assert_not_called()
-
-
-def test_clear_task(
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    client.clear_task(task_id="foo")
-    mock_rest.clear_task.assert_called_once_with("foo")
-
-
 def test_get_active_task(client: BlueapiClient):
     assert client.get_active_task() == ACTIVE_TASK
-
-
-def test_start_task(
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    client.start_task(task=WorkerTask(task_id="bar"))
-    mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="bar"))
-
-
-def test_start_nonexistant_task(
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    mock_rest.update_worker_task.side_effect = KeyError("Not found")
-    with pytest.raises(KeyError):
-        client.start_task(task=WorkerTask(task_id="bar"))
 
 
 def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
@@ -546,51 +478,11 @@ def test_get_state_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
         client.get_state()
 
 
-def test_get_task_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
-    with asserting_span_exporter(exporter, "get_task", "task_id"):
-        client.get_task("foo")
-
-
-def test_get_all_tasks_span_ok(
-    exporter: JsonObjectSpanExporter,
-    client: BlueapiClient,
-):
-    with asserting_span_exporter(exporter, "get_all_tasks"):
-        client.get_all_tasks()
-
-
-def test_create_task_span_ok(
-    exporter: JsonObjectSpanExporter,
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    with asserting_span_exporter(exporter, "create_task", "task"):
-        client.create_task(task=TaskRequest(name="foo", instrument_session="cm12345-1"))
-
-
-def test_clear_task_span_ok(
-    exporter: JsonObjectSpanExporter,
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    with asserting_span_exporter(exporter, "clear_task"):
-        client.clear_task(task_id="foo")
-
-
 def test_get_active_task_span_ok(
     exporter: JsonObjectSpanExporter, client: BlueapiClient
 ):
     with asserting_span_exporter(exporter, "get_active_task"):
         client.get_active_task()
-
-
-def test_start_task_span_ok(
-    exporter: JsonObjectSpanExporter,
-    client: BlueapiClient,
-    mock_rest: Mock,
-):
-    with asserting_span_exporter(exporter, "start_task", "task"):
-        client.start_task(task=WorkerTask(task_id="bar"))
 
 
 def test_create_and_start_task_span_ok(

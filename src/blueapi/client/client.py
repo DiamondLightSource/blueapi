@@ -3,7 +3,6 @@ import time
 from concurrent.futures import Future
 from functools import cached_property, singledispatchmethod
 from pathlib import Path
-from typing import Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -203,17 +202,17 @@ class BlueapiClient:
 
     @singledispatchmethod
     @classmethod
-    def from_config(cls, conf) -> Self:
+    def from_config(cls, conf) -> "BlueapiClient":
         raise ValueError("Unsupported construction arg")
 
     @from_config.register
     @classmethod
-    def _(cls, config_file: str) -> Self:
+    def _(cls, config_file: str) -> "BlueapiClient":
         return cls.from_config(Path(config_file))
 
     @from_config.register
     @classmethod
-    def _(cls, config_file: Path) -> Self:
+    def _(cls, config_file: Path) -> "BlueapiClient":
         conf = ConfigLoader(ApplicationConfig)
         conf.use_values_from_yaml(config_file)
         return cls.from_config(conf.load())
@@ -223,7 +222,7 @@ class BlueapiClient:
     def _(
         cls,
         config: ApplicationConfig,
-    ) -> Self:
+    ) -> "BlueapiClient":
         session_manager: SessionManager | None = None
         try:
             session_manager = SessionManager.from_cache(config.auth_token_path)

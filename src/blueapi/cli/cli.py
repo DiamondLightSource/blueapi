@@ -204,7 +204,7 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display(client.get_plans())
+    obj["fmt"].display([p.model for p in client.plans])
 
 
 @controller.command(name="devices")
@@ -213,7 +213,7 @@ def get_plans(obj: dict) -> None:
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display(client.get_devices())
+    obj["fmt"].display([dev.model for dev in client.devices])
 
 
 @controller.command(name="listen")
@@ -345,7 +345,7 @@ def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
     client: BlueapiClient = obj["client"]
-    print(client.get_state().name)
+    print(client.state.name)
 
 
 @controller.command(name="pause")
@@ -428,7 +428,7 @@ def env(
         status = client.reload_environment(timeout=timeout)
         print("Environment is initialized")
     else:
-        status = client.get_environment()
+        status = client.environment
     print(status)
 
 

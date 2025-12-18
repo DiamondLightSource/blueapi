@@ -3,7 +3,7 @@ import time
 from concurrent.futures import Future
 from functools import cached_property, singledispatchmethod
 from pathlib import Path
-from typing import Any, Self
+from typing import Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -20,10 +20,10 @@ from blueapi.config import (
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
+    DeviceModel,
     EnvironmentResponse,
     OIDCConfig,
     PlanModel,
-    ProtocolInfo,
     PythonEnvironmentResponse,
     SourceInfo,
     TaskRequest,
@@ -49,9 +49,7 @@ class MissingInstrumentSessionError(Exception):
 class PlanCache:
     def __init__(self, client: "BlueapiClient", plans: list[PlanModel]):
         self._cache = {
-            model.name: Plan(
-                name=model.name, args=model.parameter_schema, client=client
-            )
+            model.name: Plan(name=model.name, model=model, client=client)
             for model in plans
         }
         for name, plan in self._cache.items():
@@ -62,14 +60,15 @@ class PlanCache:
     def __getattr__(self, name: str) -> "Plan":
         raise AttributeError(f"No plan named '{name}' available")
 
+    def __iter__(self):
+        return iter(self._cache.values())
+
 
 class DeviceCache:
     def __init__(self, rest: BlueapiRestClient):
         self._rest = rest
         self._cache = {
-            model.name: DeviceRef(
-                name=model.name, cache=self, protocols=model.protocols
-            )
+            model.name: DeviceRef(name=model.name, cache=self, model=model)
             for model in rest.get_devices().devices
         }
         for name, device in self._cache.items():
@@ -82,7 +81,7 @@ class DeviceCache:
             return dev
         try:
             model = self._rest.get_device(name)
-            device = DeviceRef(name=name, cache=self, protocols=model.protocols)
+            device = DeviceRef(name=name, cache=self, model=model)
             self._cache[name] = device
             setattr(self, model.name, device)
             return device
@@ -95,14 +94,17 @@ class DeviceCache:
             return super().__getattribute__(name)
         return self[name]
 
+    def __iter__(self):
+        return iter(self._cache.values())
+
 
 class DeviceRef(str):
-    protocols: list[ProtocolInfo]
+    model: DeviceModel
     _cache: DeviceCache
 
-    def __new__(cls, name, cache, protocols):
+    def __new__(cls, name: str, cache: DeviceCache, model: DeviceModel):
         instance = super().__new__(cls, name)
-        instance.protocols = protocols
+        instance.model = model
         instance._cache = cache
         return instance
 
@@ -116,10 +118,11 @@ class DeviceRef(str):
 
 
 class Plan:
-    def __init__(self, name, args: dict[str, Any], client: "BlueapiClient"):
+    def __init__(self, name, model: PlanModel, client: "BlueapiClient"):
         self._name = name
-        self._args = args
+        self.model = model
         self._client = client
+        self.__doc__ = model.description
 
     def __call__(self, *args, **kwargs):
         req = TaskRequest(
@@ -129,26 +132,35 @@ class Plan:
         )
         self._client.run_task(req)
 
-    def _build_args(self, *args, **kwargs):
-        props = self._args["properties"]
-        required = self._args["required"]
+    @property
+    def help_text(self) -> str:
+        return self.model.description or f"Plan {self!r}"
 
+    @property
+    def properties(self) -> set[str]:
+        return self.model.parameter_schema["properties"]
+
+    @property
+    def required(self) -> list[str]:
+        return self.model.parameter_schema["required"]
+
+    def _build_args(self, *args, **kwargs):
         log.info(
             "Building args for %s, using %s and %s",
-            "[" + ",".join(props) + "]",
+            "[" + ",".join(self.properties) + "]",
             args,
             kwargs,
         )
 
-        if len(args) > len(props):
+        if len(args) > len(self.properties):
             raise TypeError(f"{self._name} got too many arguments")
-        if extra := {k for k in kwargs if k not in props}:
+        if extra := {k for k in kwargs if k not in self.properties}:
             raise TypeError(f"{self._name} got unexpected arguments: {extra}")
 
         params = {}
         # Initially fill parameters using positional args assuming the order
         # from the parameter_schema
-        for req, arg in zip(props, args, strict=False):
+        for req, arg in zip(self.properties, args, strict=False):
             params[req] = arg
 
         # Then append any values given via kwargs
@@ -158,12 +170,12 @@ class Plan:
                 raise TypeError(f"{self._name} got multiple values for {key}")
             params[key] = value
 
-        if missing := {k for k in required if k not in params}:
+        if missing := {k for k in self.required if k not in params}:
             raise TypeError(f"Missing argument(s) for {missing}")
         return params
 
     def __repr__(self):
-        return f"{self._name}({', '.join(self._args['properties'].keys())})"
+        return f"{self._name}({', '.join(self.properties)})"
 
 
 class BlueapiClient:

@@ -204,7 +204,7 @@ spec:
             {{- if .Values.extraEnvVars }}
               {{- toYaml .Values.extraEnvVars | nindent 12 }}
             {{- end }}
-      {{- if ne 1000.0 .Values.securityContext.runAsUser }}
+        {{- if ne 1000.0 .Values.securityContext.runAsUser }}
         - name: debug-account-sync
           image: ghcr.io/diamondlightsource/account-sync-sidecar:3.0.0
           volumeMounts:

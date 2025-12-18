@@ -12,7 +12,9 @@ from pydantic import BaseModel
 
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
+    DeviceModel,
     DeviceResponse,
+    PlanModel,
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
@@ -54,17 +56,21 @@ def display_full(obj: Any, stream: Stream):
     match obj:
         case PlanResponse(plans=plans):
             for plan in plans:
-                print(plan.name)
-                if desc := plan.description:
-                    print(indent(dedent(desc).strip(), "    "))
-                if schema := plan.parameter_schema:
-                    print("    Schema")
-                    print(indent(json.dumps(schema, indent=2), "        "))
+                display_full(plan, stream)
+        case PlanModel(name=name, description=desc, parameter_schema=schema):
+            print(name)
+            if desc:
+                print(indent(dedent(desc).strip(), "    "))
+            if schema:
+                print("    Schema")
+                print(indent(json.dumps(schema, indent=2), "        "))
         case DeviceResponse(devices=devices):
             for dev in devices:
-                print(dev.name)
-                for proto in dev.protocols:
-                    print(f"    {proto}")
+                display_full(dev, stream)
+        case DeviceModel(name=name, protocols=protocols):
+            print(name)
+            for proto in protocols:
+                print(f"    {proto}")
         case DataEvent(name=name, doc=doc):
             print(f"{name.title()}:{fmt_dict(doc)}")
         case WorkerEvent(state=st, task_status=task):
@@ -90,6 +96,9 @@ def display_full(obj: Any, stream: Stream):
         case BaseModel():
             print(obj.__class__.__name__, end="")
             print(fmt_dict(obj.model_dump()))
+        case list():
+            for item in obj:
+                display_full(item, stream)
         case other:
             FALLBACK(other, stream=stream)
 
@@ -98,11 +107,13 @@ def display_json(obj: Any, stream: Stream):
     print = partial(builtins.print, file=stream)
     match obj:
         case PlanResponse(plans=plans):
-            print(json.dumps([p.model_dump() for p in plans], indent=2))
+            display_json(plans, stream)
         case DeviceResponse(devices=devices):
-            print(json.dumps([d.model_dump() for d in devices], indent=2))
+            display_json(devices, stream)
         case BaseModel():
             print(json.dumps(obj.model_dump()))
+        case list():
+            print(json.dumps([it.model_dump() for it in obj], indent=2))
         case _:
             print(json.dumps(obj))
 
@@ -112,26 +123,30 @@ def display_compact(obj: Any, stream: Stream):
     match obj:
         case PlanResponse(plans=plans):
             for plan in plans:
-                print(plan.name)
-                if desc := plan.description:
-                    print(indent(dedent(desc.split("\n\n")[0].strip("\n")), "    "))
-                if schema := plan.parameter_schema:
-                    print("    Args")
-                    for arg, spec in schema.get("properties", {}).items():
-                        req = arg in schema.get("required", {})
-                        print(f"      {arg}={_describe_type(spec, req)}")
+                display_compact(plan, stream)
+        case PlanModel(name=name, description=desc, parameter_schema=schema):
+            print(name)
+            if desc:
+                print(indent(dedent(desc.split("\n\n")[0].strip("\n")), "    "))
+            if schema:
+                print("    Args")
+                for arg, spec in schema.get("properties", {}).items():
+                    req = arg in schema.get("required", {})
+                    print(f"      {arg}={_describe_type(spec, req)}")
         case DeviceResponse(devices=devices):
             for dev in devices:
-                print(dev.name)
-                print(
-                    indent(
-                        textwrap.fill(
-                            ", ".join(str(proto) for proto in dev.protocols),
-                            80,
-                        ),
-                        "    ",
-                    )
+                display_compact(dev, stream)
+        case DeviceModel(name=name, protocols=protocols):
+            print(name)
+            print(
+                indent(
+                    textwrap.fill(
+                        ", ".join(str(proto) for proto in protocols),
+                        80,
+                    ),
+                    "    ",
                 )
+            )
         case DataEvent(name=name):
             print(f"Data Event: {name}")
         case WorkerEvent(state=state):
@@ -158,6 +173,9 @@ def display_compact(obj: Any, stream: Stream):
                         extra += " (Scratch)"
                     print(f"- {package.name} @ ({package.version}){extra}")
 
+        case list():
+            for item in obj:
+                display_compact(item, stream)
         case other:
             FALLBACK(other, stream=stream)
 

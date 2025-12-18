@@ -1,6 +1,7 @@
+import logging
 import time
 from concurrent.futures import Future
-from functools import singledispatch, singledispatchmethod
+from functools import cached_property, singledispatchmethod
 from pathlib import Path
 from typing import Any, Generic, ParamSpec, Self
 
@@ -21,11 +22,9 @@ from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
     DeviceModel,
-    DeviceResponse,
     EnvironmentResponse,
     OIDCConfig,
     PlanModel,
-    PlanResponse,
     ProtocolInfo,
     PythonEnvironmentResponse,
     SourceInfo,
@@ -41,7 +40,6 @@ from .rest import BlueapiRestClient, BlueskyRemoteControlError
 
 TRACER = get_tracer("client")
 
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -51,52 +49,36 @@ class MissingInstrumentSessionError(Exception):
 
 
 class PlanCache:
-    def __init__(self, client: "BlueapiClient"):
-        self._client = client
-        self._cache = {}
-
-    def _get_device(self, name: str) -> "Plan":
-        if name.startswith("_"):
-            raise AttributeError("No such plan")
-        # TODO: Catch 404 and return AttributeError
-        if not (plan := self._cache.get(name)):
-            model = self._client._rest.get_plan(name)
-            plan = Plan[int](
-                name=model.name,
-                args=model.parameter_schema,
-                client=self._client,
+    def __init__(self, client: "BlueapiClient", plans: list[PlanModel]):
+        self._cache = {
+            model.name: Plan(
+                name=model.name, args=model.parameter_schema, client=client
             )
-            self._cache[name] = plan
-
-        return plan
-
-    def __getitem__(self, name: str) -> "Plan":
-        return self._get_device(name)
+            for model in plans
+        }
+        for name, plan in self._cache.items():
+            if name.startswith("_"):
+                continue
+            setattr(self, name, plan)
 
     def __getattr__(self, name: str) -> "Plan":
-        return self._get_device(name)
+        raise AttributeError(f"No plan named '{name}' available")
 
 
 class DeviceCache:
-    def __init__(self, client: "BlueapiClient"):
+    def __init__(self, client: "BlueapiClient", devices: list[DeviceModel]):
         self._client = client
-        self._cache = {}
-
-    def _get_device(self, name: str) -> "Device":
-        if name.startswith("_"):
-            raise AttributeError("No such device")
-        if not (device := self._cache.get(name)):
-            model = self._client._rest.get_device(name)
-            device = Device(name=model.name, protocols=model.protocols)
-            self._cache[name] = device
-        # TODO: Catch 404 and return AttributeError
-        return device
-
-    def __getitem__(self, name: str) -> "Device":
-        return self._get_device(name)
+        self._cache = {
+            model.name: Device(name=model.name, protocols=model.protocols)
+            for model in devices
+        }
+        for name, device in self._cache.items():
+            if name.startswith("_"):
+                continue
+            setattr(self, name, device)
 
     def __getattr__(self, name: str) -> "Device":
-        return self._get_device(name)
+        raise AttributeError(f"No device named '{name}' available")
 
 
 class Device(BaseModel):
@@ -156,8 +138,14 @@ class BlueapiClient:
     ):
         self._rest = rest
         self._events = events
-        self.plans = PlanCache(self)
-        self.devices = DeviceCache(self)
+
+    @cached_property
+    def plans(self) -> PlanCache:
+        return PlanCache(self, self._rest.get_plans().plans)
+
+    @cached_property
+    def devices(self) -> DeviceCache:
+        return DeviceCache(self, self._rest.get_devices().devices)
 
     @singledispatchmethod
     @classmethod

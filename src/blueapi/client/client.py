@@ -3,7 +3,7 @@ import time
 from concurrent.futures import Future
 from functools import cached_property, singledispatchmethod
 from pathlib import Path
-from typing import Any, Generic, ParamSpec, Self
+from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -11,7 +11,6 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from pydantic import BaseModel, model_serializer
 
 from blueapi.config import (
     ApplicationConfig,
@@ -21,7 +20,6 @@ from blueapi.config import (
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
-    DeviceModel,
     EnvironmentResponse,
     OIDCConfig,
     PlanModel,
@@ -66,59 +64,103 @@ class PlanCache:
 
 
 class DeviceCache:
-    def __init__(self, client: "BlueapiClient", devices: list[DeviceModel]):
-        self._client = client
+    def __init__(self, rest: BlueapiRestClient):
+        self._rest = rest
         self._cache = {
-            model.name: Device(name=model.name, protocols=model.protocols)
-            for model in devices
+            model.name: DeviceRef(
+                name=model.name, cache=self, protocols=model.protocols
+            )
+            for model in rest.get_devices().devices
         }
         for name, device in self._cache.items():
             if name.startswith("_"):
                 continue
             setattr(self, name, device)
 
-    def __getattr__(self, name: str) -> "Device":
-        raise AttributeError(f"No device named '{name}' available")
+    def __getitem__(self, name: str) -> "DeviceRef":
+        if dev := self._cache.get(name):
+            return dev
+        try:
+            model = self._rest.get_device(name)
+            device = DeviceRef(name=name, cache=self, protocols=model.protocols)
+            self._cache[name] = device
+            setattr(self, model.name, device)
+            return device
+        except KeyError:
+            pass
+        raise AttributeError(f"No device name '{name}' available")
+
+    def __getattr__(self, name: str) -> "DeviceRef":
+        if name.startswith("_"):
+            return super().__getattribute__(name)
+        return self[name]
 
 
-class Device(BaseModel):
-    name: str
+class DeviceRef(str):
     protocols: list[ProtocolInfo]
+    _cache: DeviceCache
+
+    def __new__(cls, name, cache, protocols):
+        instance = super().__new__(cls, name)
+        instance.protocols = protocols
+        instance._cache = cache
+        return instance
+
+    def __getattr__(self, name) -> "DeviceRef":
+        if name.startswith("_"):
+            raise AttributeError(f"No child device named {name}")
+        return self._cache[f"{self}.{name}"]
 
     def __repr__(self):
-        return f"Device({self.name})"
-
-    @model_serializer(mode="plain")
-    def _to_json(self):
-        return self.name
+        return f"Device({self})"
 
 
-PlanArgs = ParamSpec("PlanArgs")
-
-
-class Plan(Generic[PlanArgs]):
+class Plan:
     def __init__(self, name, args: dict[str, Any], client: "BlueapiClient"):
         self._name = name
         self._args = args
         self._client = client
 
-    def __call__(self, *args: PlanArgs.args, **kwargs: PlanArgs.kwargs):
+    def __call__(self, *args, **kwargs):
         req = TaskRequest(
             name=self._name,
-            params=self._build_args(args, kwargs),
+            params=self._build_args(*args, **kwargs),
             instrument_session=self._client.instrument_session,
         )
         self._client.run_task(req)
 
-    def _build_args(self, args, kwargs):
+    def _build_args(self, *args, **kwargs):
+        props = self._args["properties"]
+        required = self._args["required"]
+
         log.info(
             "Building args for %s, using %s and %s",
-            self._args["properties"],
+            "[" + ",".join(props) + "]",
             args,
             kwargs,
         )
-        log.info("Required: %s", self._args["required"])
-        return kwargs
+
+        if len(args) > len(props):
+            raise TypeError(f"{self._name} got too many arguments")
+        if extra := {k for k in kwargs if k not in props}:
+            raise TypeError(f"{self._name} got unexpected arguments: {extra}")
+
+        params = {}
+        # Initially fill parameters using positional args assuming the order
+        # from the parameter_schema
+        for req, arg in zip(props, args, strict=False):
+            params[req] = arg
+
+        # Then append any values given via kwargs
+        for key, value in kwargs.items():
+            # If we've already assumed a positional arg was this value, bail out
+            if key in params:
+                raise TypeError(f"{self._name} got multiple values for {key}")
+            params[key] = value
+
+        if missing := {k for k in required if k not in params}:
+            raise TypeError(f"Missing argument(s) for {missing}")
+        return params
 
     def __repr__(self):
         return f"{self._name}({', '.join(self._args['properties'].keys())})"
@@ -145,7 +187,7 @@ class BlueapiClient:
 
     @cached_property
     def devices(self) -> DeviceCache:
-        return DeviceCache(self, self._rest.get_devices().devices)
+        return DeviceCache(self._rest)
 
     @singledispatchmethod
     @classmethod
@@ -198,11 +240,13 @@ class BlueapiClient:
         return self._instrument_session
 
     @instrument_session.setter
-    def instrument_session(self, session):
+    def instrument_session(self, session: str):
+        log.debug("Setting instrument_session to %s", session)
         self._instrument_session = session
 
+    @property
     @start_as_current_span(TRACER)
-    def get_state(self) -> WorkerState:
+    def state(self) -> WorkerState:
         """
         Get current state of the blueapi worker
 
@@ -240,8 +284,9 @@ class BlueapiClient:
 
         return self._rest.set_state(WorkerState.RUNNING, defer=False)
 
+    @property
     @start_as_current_span(TRACER)
-    def get_active_task(self) -> WorkerTask:
+    def active_task(self) -> WorkerTask:
         """
         Get the currently active task, if any
 
@@ -417,15 +462,10 @@ class BlueapiClient:
 
         return self._rest.cancel_current_task(WorkerState.STOPPING)
 
+    @property
     @start_as_current_span(TRACER)
-    def get_environment(self) -> EnvironmentResponse:
-        """
-        Get details of the worker environment
-
-        Returns:
-            EnvironmentResponse: Details of the worker
-            environment.
-        """
+    def environment(self) -> EnvironmentResponse:
+        """Details of the worker environment"""
 
         return self._rest.get_environment()
 
@@ -492,14 +532,10 @@ class BlueapiClient:
             "seconds, a server restart is recommended"
         )
 
+    @property
     @start_as_current_span(TRACER)
-    def get_oidc_config(self) -> OIDCConfig | None:
-        """
-        Get oidc config from the server
-
-        Returns:
-            OIDCConfig: Details of the oidc Config
-        """
+    def oidc_config(self) -> OIDCConfig | None:
+        """OIDC config from the server"""
 
         return self._rest.get_oidc_config()
 

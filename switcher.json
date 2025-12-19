@@ -12,6 +12,10 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-persistent-volume-retention-1/"
   },
   {
+    "version": "1.11.3-pvfix1",
+    "url": "https://DiamondLightSource.github.io/blueapi/1.11.3-pvfix1/"
+  },
+  {
     "version": "1.11.3-a1",
     "url": "https://DiamondLightSource.github.io/blueapi/1.11.3-a1/"
   },

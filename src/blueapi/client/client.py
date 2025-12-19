@@ -387,48 +387,6 @@ class BlueapiClient:
                 f"but {worker_response.task_id} was started instead"
             )
 
-    # @start_as_current_span(TRACER, "task")
-    # def create_task(self, task: TaskRequest) -> TaskResponse:
-    #     """
-    #     Create a new task, does not start execution
-
-    #     Args:
-    #         task: Request object for task to create on the worker
-
-    #     Returns:
-    #         TaskResponse: Acknowledgement of request
-    #     """
-
-    #     return self._rest.create_task(task)
-
-    # @start_as_current_span(TRACER)
-    # def clear_task(self, task_id: str) -> TaskResponse:
-    #     """
-    #     Delete a stored task on the worker
-
-    #     Args:
-    #         task_id: ID for the task
-
-    #     Returns:
-    #         TaskResponse: Acknowledgement of request
-    #     """
-
-    #     return self._rest.clear_task(task_id)
-
-    # @start_as_current_span(TRACER, "task")
-    # def start_task(self, task: WorkerTask) -> WorkerTask:
-    #     """
-    #     Instruct the worker to start a stored task immediately
-
-    #     Args:
-    #         task: WorkerTask to start
-
-    #     Returns:
-    #         WorkerTask: Acknowledgement of request
-    #     """
-
-    #     return self._rest.update_worker_task(task)
-
     @start_as_current_span(TRACER, "reason")
     def abort(self, reason: str | None = None) -> WorkerState:
         """

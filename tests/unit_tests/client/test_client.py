@@ -20,6 +20,7 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
+    ProtocolInfo,
     TaskRequest,
     TaskResponse,
     TasksListResponse,
@@ -72,9 +73,9 @@ def mock_rest() -> BlueapiRestClient:
     mock = Mock(spec=BlueapiRestClient)
 
     mock.get_plans.return_value = PLANS
-    mock.get_plan.return_value = PLAN
+    mock.get_plan.side_effect = lambda n: {p.name: p for p in PLANS.plans}[n]
     mock.get_devices.return_value = DEVICES
-    mock.get_device.return_value = DEVICE
+    mock.get_device.side_effect = lambda n: {d.name: d for d in DEVICES.devices}[n]
     mock.get_state.return_value = WorkerState.IDLE
     mock.get_task.return_value = TASK
     mock.get_all_tasks.return_value = TASKS
@@ -106,45 +107,53 @@ def client_with_events(mock_rest: Mock, mock_events: MagicMock):
 
 
 def test_get_plans(client: BlueapiClient):
-    assert client.get_plans() == PLANS
+    assert PlanResponse(plans=[p.model for p in client.plans]) == PLANS
 
 
 def test_get_plan(client: BlueapiClient):
-    assert client.get_plan("foo") == PLAN
+    assert client.plans.foo.model == PLAN
 
 
 def test_get_nonexistant_plan(
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
-    mock_rest.get_plan.side_effect = KeyError("Not found")
-    with pytest.raises(KeyError):
-        client.get_plan("baz")
+    with pytest.raises(AttributeError):
+        _ = client.plans.fizz_buzz.model
 
 
 def test_get_devices(client: BlueapiClient):
-    assert client.get_devices() == DEVICES
+    assert DeviceResponse(devices=[d.model for d in client.devices]) == DEVICES
 
 
 def test_get_device(client: BlueapiClient):
-    assert client.get_device("foo") == DEVICE
+    assert client.devices.foo.model == DEVICE
 
 
-def test_get_nonexistant_device(
+def test_get_nonexistent_device(
     client: BlueapiClient,
-    mock_rest: Mock,
 ):
-    mock_rest.get_device.side_effect = KeyError("Not found")
-    with pytest.raises(KeyError):
-        client.get_device("baz")
+    with pytest.raises(AttributeError):
+        _ = client.devices.baz
+
+
+def test_get_child_device(mock_rest: Mock, client: BlueapiClient):
+    mock_rest.get_device.side_effect = (
+        lambda name: DeviceModel(name="foo.x", protocols=[ProtocolInfo(name="One")])
+        if name == "foo.x"
+        else None
+    )
+    foo = client.devices.foo
+    assert foo == "foo"
+    x = client.devices.foo.x
+    assert x == "foo.x"
 
 
 def test_get_state(client: BlueapiClient):
-    assert client.get_state() == WorkerState.IDLE
+    assert client.state == WorkerState.IDLE
 
 
 def test_get_active_task(client: BlueapiClient):
-    assert client.get_active_task() == ACTIVE_TASK
+    assert client.active_task == ACTIVE_TASK
 
 
 def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
@@ -198,7 +207,7 @@ def test_create_and_start_task_fails_if_task_start_fails(
 
 
 def test_get_environment(client: BlueapiClient):
-    assert client.get_environment() == ENV
+    assert client.environment == ENV
 
 
 def test_reload_environment(
@@ -454,35 +463,35 @@ def test_run_task_ignores_non_matching_events(
 
 
 def test_get_plans_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
-    with asserting_span_exporter(exporter, "get_plans"):
-        client.get_plans()
+    with asserting_span_exporter(exporter, "plans"):
+        _ = client.plans
 
 
 def test_get_plan_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
-    with asserting_span_exporter(exporter, "get_plan", "name"):
-        client.get_plan("foo")
+    with asserting_span_exporter(exporter, "plans"):
+        _ = client.plans.foo
 
 
 def test_get_devices_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
-    with asserting_span_exporter(exporter, "get_devices"):
-        client.get_devices()
+    with asserting_span_exporter(exporter, "devices"):
+        _ = client.devices
 
 
 def test_get_device_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
-    with asserting_span_exporter(exporter, "get_device", "name"):
-        client.get_device("foo")
+    with asserting_span_exporter(exporter, "devices"):
+        _ = client.devices.foo
 
 
-def test_get_state_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
-    with asserting_span_exporter(exporter, "get_state"):
-        client.get_state()
+def test_get_state_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
+    with asserting_span_exporter(exporter, "state"):
+        _ = client.state
 
 
 def test_get_active_task_span_ok(
     exporter: JsonObjectSpanExporter, client: BlueapiClient
 ):
-    with asserting_span_exporter(exporter, "get_active_task"):
-        client.get_active_task()
+    with asserting_span_exporter(exporter, "active_task"):
+        _ = client.active_task
 
 
 def test_create_and_start_task_span_ok(
@@ -501,8 +510,8 @@ def test_create_and_start_task_span_ok(
 def test_get_environment_span_ok(
     exporter: JsonObjectSpanExporter, client: BlueapiClient
 ):
-    with asserting_span_exporter(exporter, "get_environment"):
-        client.get_environment()
+    with asserting_span_exporter(exporter, "environment"):
+        _ = client.environment
 
 
 def test_reload_environment_span_ok(

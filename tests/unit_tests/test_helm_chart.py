@@ -600,7 +600,10 @@ def test_persistent_volume_claim_exists(
             "kind": "PersistentVolumeClaim",
             "metadata": {
                 "name": "blueapi-scratch-0.1.0",
-                "annotations": {"helm.sh/resource-policy": "keep"},
+                "annotations": {
+                    "helm.sh/resource-policy": "keep",
+                    "argocd.argoproj.io/sync-options": "Delete=false",
+                },
             },
             "spec": {
                 "accessModes": ["ReadWriteMany"],

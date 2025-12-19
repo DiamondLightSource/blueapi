@@ -2,6 +2,7 @@ import logging
 import time
 from concurrent.futures import Future
 from functools import cached_property
+from itertools import chain
 from pathlib import Path
 from typing import Self
 
@@ -175,7 +176,9 @@ class Plan:
         return params
 
     def __repr__(self):
-        return f"{self.name}({', '.join(self.properties)})"
+        opts = [p for p in self.properties if p not in self.required]
+        params = ", ".join(chain(self.required, (f"{opt}=None" for opt in opts)))
+        return f"{self.name}({params})"
 
 
 class BlueapiClient:

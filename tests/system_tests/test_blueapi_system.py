@@ -68,6 +68,7 @@ _DATA_PATH = Path(__file__).parent
 # export TILED_SINGLE_USER_API_KEY=foo
 # blueapi -c tests/system_tests/config.yaml serve
 #
+# Note: You can login into blueapi using username: admin and password: admin
 # 3. Run the system tests
 # tox -e system-test
 #

@@ -13,5 +13,7 @@ for i in $allowed_protocol_mappers $allowed_client_scopes;do
 done
 
 kcreg.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin
-client="ixx-blueapi"
-kcreg.sh get $client >/dev/null 2>&1 || kcreg.sh create --file "/mnt/$client.json"
+
+for client in "ixx-blueapi" "ixx-blueapi-cli"; do
+  kcreg.sh get $client >/dev/null 2>&1 || kcreg.sh create --file "/mnt/$client.json"
+done

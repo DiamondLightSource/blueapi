@@ -1,0 +1,187 @@
+{
+  "clientId": "ixx-blueapi",
+  "name": "Blueapi",
+  "description": "Service account client used to run automated system tests for Blueapi.",
+  "rootUrl": "",
+  "adminUrl": "",
+  "baseUrl": "",
+  "surrogateAuthRequired": false,
+  "enabled": true,
+  "alwaysDisplayInConsole": false,
+  "clientAuthenticatorType": "client-secret",
+  "secret": "secret",
+  "redirectUris": [
+    "/*"
+  ],
+  "webOrigins": [
+    "/*"
+  ],
+  "notBefore": 0,
+  "bearerOnly": false,
+  "consentRequired": false,
+  "standardFlowEnabled": false,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": true,
+  "publicClient": false,
+  "frontchannelLogout": true,
+  "protocol": "openid-connect",
+  "attributes": {
+    "realm_client": "false",
+    "oidc.ciba.grant.enabled": "false",
+    "client.secret.creation.time": "1748358661",
+    "backchannel.logout.session.required": "true",
+    "standard.token.exchange.enabled": "false",
+    "frontchannel.logout.session.required": "true",
+    "oauth2.device.authorization.grant.enabled": "false",
+    "display.on.consent.screen": "false",
+    "backchannel.logout.revoke.offline.tokens": "false",
+    "dpop.bound.access.tokens": "false",
+    "pkce.code.challenge.method": "",
+    "login_theme": "",
+    "consent.screen.text": "",
+    "frontchannel.logout.url": "",
+    "use.jwks.url": "false",
+    "logoUri": "",
+    "policyUri": "",
+    "tosUri": "",
+    "access.token.signed.response.alg": "",
+    "access.token.header.type.rfc9068": "false",
+    "id.token.signed.response.alg": "",
+    "id.token.encrypted.response.alg": "",
+    "id.token.encrypted.response.enc": "",
+    "id.token.as.detached.signature": "false",
+    "user.info.response.signature.alg": "",
+    "user.info.encrypted.response.alg": "",
+    "user.info.encrypted.response.enc": "",
+    "request.object.signature.alg": "any",
+    "request.object.encryption.alg": "any",
+    "request.object.encryption.enc": "any",
+    "request.object.required": "not required",
+    "authorization.signed.response.alg": "",
+    "authorization.encrypted.response.alg": "",
+    "authorization.encrypted.response.enc": "",
+    "exclude.session.state.from.auth.response": "",
+    "exclude.issuer.from.auth.response": "",
+    "use.refresh.tokens": "true",
+    "client_credentials.use_refresh_token": "false",
+    "token.response.type.bearer.lower-case": "false",
+    "standard.token.exchange.enableRefreshRequestedTokenType": "",
+    "access.token.lifespan": 3600,
+    "client.session.idle.timeout": "",
+    "client.session.max.lifespan": "",
+    "client.offline.session.idle.timeout": "",
+    "tls.client.certificate.bound.access.tokens": "false",
+    "require.pushed.authorization.requests": "false",
+    "client.use.lightweight.access.token.enabled": "false",
+    "client.introspection.response.allow.jwt.claim.enabled": "false",
+    "minimum.acr.value": "",
+    "acr.loa.map": "{}"
+  },
+  "authenticationFlowBindingOverrides": {
+    "browser": "",
+    "direct_grant": ""
+  },
+  "fullScopeAllowed": true,
+  "nodeReRegistrationTimeout": -1,
+  "protocolMappers": [
+    {
+      "name": "alice",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-hardcoded-claim-mapper",
+      "consentRequired": false,
+      "config": {
+        "introspection.token.claim": "true",
+        "claim.value": "alice",
+        "userinfo.token.claim": "true",
+        "id.token.claim": "true",
+        "lightweight.claim": "false",
+        "access.token.claim": "true",
+        "claim.name": "fedid",
+        "jsonType.label": "String",
+        "access.tokenResponse.claim": "false"
+      }
+    },
+    {
+      "name": "Client Host",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usersessionmodel-note-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.session.note": "clientHost",
+        "introspection.token.claim": "true",
+        "userinfo.token.claim": "true",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "clientHost",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "Client ID",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usersessionmodel-note-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.session.note": "client_id",
+        "introspection.token.claim": "true",
+        "userinfo.token.claim": "true",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "client_id",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "blueapi",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-audience-mapper",
+      "consentRequired": false,
+      "config": {
+        "id.token.claim": "false",
+        "lightweight.claim": "false",
+        "introspection.token.claim": "true",
+        "access.token.claim": "true",
+        "included.custom.audience": "blueapi",
+        "userinfo.token.claim": "false"
+      }
+    },
+    {
+      "name": "Client IP Address",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usersessionmodel-note-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.session.note": "clientAddress",
+        "introspection.token.claim": "true",
+        "userinfo.token.claim": "true",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "clientAddress",
+        "jsonType.label": "String"
+      }
+    }
+  ],
+  "defaultClientScopes": [
+    "service_account",
+    "web-origins",
+    "acr",
+    "profile",
+    "roles",
+    "basic",
+    "email"
+  ],
+  "optionalClientScopes": [
+    "address",
+    "phone",
+    "organization",
+    "offline_access",
+    "microprofile-jwt"
+  ],
+  "access": {
+    "view": true,
+    "configure": true,
+    "manage": true
+  },
+  "authorizationServicesEnabled": false
+}

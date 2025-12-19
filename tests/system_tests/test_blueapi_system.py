@@ -125,17 +125,6 @@ def client_with_stomp() -> Generator[BlueapiClient]:
         )
 
 
-@pytest.fixture(scope="module")
-def client() -> Generator[BlueapiClient]:
-    mock_session_manager = MagicMock
-    mock_session_manager.get_valid_access_token = get_access_token
-    with patch(
-        "blueapi.service.authentication.SessionManager.from_cache",
-        return_value=mock_session_manager,
-    ):
-        yield BlueapiClient.from_config(config=ApplicationConfig())
-
-
 @pytest.fixture(scope="module", autouse=True)
 def wait_for_server(client: BlueapiClient):
     for _ in range(20):
@@ -146,6 +135,17 @@ def wait_for_server(client: BlueapiClient):
             ...
         time.sleep(0.5)
     raise TimeoutError("No connection to the blueapi server")
+
+
+@pytest.fixture(scope="module")
+def client() -> Generator[BlueapiClient]:
+    mock_session_manager = MagicMock
+    mock_session_manager.get_valid_access_token = get_access_token
+    with patch(
+        "blueapi.service.authentication.SessionManager.from_cache",
+        return_value=mock_session_manager,
+    ):
+        yield BlueapiClient.from_config(config=ApplicationConfig())
 
 
 @pytest.fixture

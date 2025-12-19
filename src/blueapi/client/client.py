@@ -88,7 +88,7 @@ class DeviceCache:
             return device
         except KeyError:
             pass
-        raise AttributeError(f"No device name '{name}' available")
+        raise AttributeError(f"No device named '{name}' available")
 
     def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):

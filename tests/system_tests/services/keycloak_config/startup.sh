@@ -14,6 +14,6 @@ done
 
 kcreg.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin
 
-for client in "ixx-blueapi" "ixx-blueapi-cli"; do
+for client in "ixx-blueapi" "ixx-cli-blueapi"; do
   kcreg.sh get $client >/dev/null 2>&1 || kcreg.sh create --file "/mnt/$client.json"
 done

@@ -227,7 +227,7 @@ def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
     assert client_without_auth.get_oidc_config() == OIDCConfig(
         well_known_url=KEYCLOAK_BASE_URL
         + "realms/master/.well-known/openid-configuration",
-        client_id="ixx-blueapi-cli",
+        client_id="ixx-cli-blueapi",
     )
 
 

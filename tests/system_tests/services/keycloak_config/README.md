@@ -1,6 +1,6 @@
 # Keycloak Configuration
 
-This Keycloak instance has two clients: `ixx-blueapi` and `ixx-blueapi-cli`.
+This Keycloak instance has two clients: `ixx-blueapi` and `ixx-cli-blueapi`.
 
 ## ixx-blueapi
 
@@ -11,7 +11,7 @@ A service account client used to obtain access tokens from Keycloak during syste
 - In CI, this acts as `alice` to validate permissions
 - The hardcoded value tests [authz](https://github.com/DiamondLightSource/authz/) policies
 
-## ixx-blueapi-cli
+## ixx-cli-blueapi
 
 A client for testing all services with admin privileges. Note that while the production `blueapi-cli` client has no write access, this test instance has write permissions for testing purposes.
 

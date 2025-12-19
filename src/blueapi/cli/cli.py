@@ -16,7 +16,7 @@ from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 from click.exceptions import ClickException
 from observability_utils.tracing import setup_tracing
-from pydantic import ValidationError
+from pydantic import HttpUrl, ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__, config
@@ -32,6 +32,7 @@ from blueapi.client.rest import (
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
+    StompConfig,
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
@@ -159,8 +160,18 @@ def start_application(obj: dict):
     type=click.Choice([o.name.lower() for o in OutputFormat]),
     default="compact",
 )
+@click.option(
+    "--url",
+    type=str,
+    help="URL for the blueapi server to connect to.",
+    default=None,
+)
 @click.pass_context
-def controller(ctx: click.Context, output: str) -> None:
+def controller(
+    ctx: click.Context,
+    output: str,
+    url: str | None,
+) -> None:
     """Client utility for controlling and introspecting the worker"""
 
     setup_tracing("BlueAPICLI", OTLP_EXPORT_ENABLED)
@@ -170,7 +181,16 @@ def controller(ctx: click.Context, output: str) -> None:
 
     ctx.ensure_object(dict)
     config: ApplicationConfig = ctx.obj["config"]
+
+    if url is not None:
+        config.api.url = HttpUrl(url)
+
     ctx.obj["fmt"] = OutputFormat(output)
+    ctx.obj["client"] = BlueapiClient.from_config(config)
+
+    client: BlueapiClient = ctx.obj["client"]
+    stomp_config: StompConfig = client.get_stomp_config()
+    config.stomp = stomp_config
     ctx.obj["client"] = BlueapiClient.from_config(config)
 
 
@@ -196,6 +216,15 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
                 raise e
 
     return wrapper
+
+
+@controller.command(name="stomp")
+@click.pass_obj
+@check_connection
+def get_stomp_config(obj: dict) -> None:
+    """Get the stomp config the server is using"""
+    client: BlueapiClient = obj["client"]
+    obj["fmt"].display(client.get_stomp_config())
 
 
 @controller.command(name="plans")

@@ -119,14 +119,14 @@ class DeviceRef(str):
 
 class Plan:
     def __init__(self, name, model: PlanModel, client: "BlueapiClient"):
-        self._name = name
+        self.name = name
         self.model = model
         self._client = client
         self.__doc__ = model.description
 
     def __call__(self, *args, **kwargs):
         req = TaskRequest(
-            name=self._name,
+            name=self.name,
             params=self._build_args(*args, **kwargs),
             instrument_session=self._client.instrument_session,
         )
@@ -153,9 +153,9 @@ class Plan:
         )
 
         if len(args) > len(self.properties):
-            raise TypeError(f"{self._name} got too many arguments")
+            raise TypeError(f"{self.name} got too many arguments")
         if extra := {k for k in kwargs if k not in self.properties}:
-            raise TypeError(f"{self._name} got unexpected arguments: {extra}")
+            raise TypeError(f"{self.name} got unexpected arguments: {extra}")
 
         params = {}
         # Initially fill parameters using positional args assuming the order
@@ -167,7 +167,7 @@ class Plan:
         for key, value in kwargs.items():
             # If we've already assumed a positional arg was this value, bail out
             if key in params:
-                raise TypeError(f"{self._name} got multiple values for {key}")
+                raise TypeError(f"{self.name} got multiple values for {key}")
             params[key] = value
 
         if missing := {k for k in self.required if k not in params}:
@@ -175,7 +175,7 @@ class Plan:
         return params
 
     def __repr__(self):
-        return f"{self._name}({', '.join(self.properties)})"
+        return f"{self.name}({', '.join(self.properties)})"
 
 
 class BlueapiClient:

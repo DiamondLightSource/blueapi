@@ -31,13 +31,6 @@
                     "sessions": [
                         1
                     ]
-                },
-                "admin": {
-                    "permissions": [
-                        "super_admin"
-                    ],
-                    "proposals": [],
-                    "sessions": []
                 }
             }
         }

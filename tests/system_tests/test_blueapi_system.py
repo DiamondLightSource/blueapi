@@ -546,3 +546,6 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
     final_event = client_with_stomp.run_task(task)
     assert final_event.is_complete() and not final_event.is_error()
     assert final_event.state is WorkerState.IDLE
+
+
+def test(): ...

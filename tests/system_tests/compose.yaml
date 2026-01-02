@@ -27,9 +27,9 @@ services:
       - KC_HOSTNAME=http://localhost:8081
     command: ["start-dev"]
     volumes:
-      - ./services/keycloak_config/:/mnt/
+      - ./services/keycloak_config/startup.sh:/tmp/startup.sh
     post_start:
-      - command: bash /mnt/startup.sh
+      - command: bash /tmp/startup.sh
     ports:
       - 8081:8080
     healthcheck:

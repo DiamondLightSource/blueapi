@@ -18,7 +18,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Install helm plugins
-        run: helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.2.1
+        run: helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.3.1
 
       - name: Run tox
         run: uv run --locked tox -e ${{ inputs.tox }}

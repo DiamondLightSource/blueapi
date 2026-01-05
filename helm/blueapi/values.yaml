@@ -230,6 +230,3 @@ debug:
   suspend: false
   # -- If enabled configures debugpy to use the option `--log-to-stderr`
   log_to_stderr: false
-
-# -- Not used, but must be present for validation when using as a dependency of another chart
-global: {}

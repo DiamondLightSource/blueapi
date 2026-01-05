@@ -119,7 +119,7 @@ def schema(output: Path | None = None, update: bool = False) -> None:
     help="[Development only] update the config schema in the documentation",
 )
 @main.command(name="config-schema")
-def config_schema(output: Path | None = None, update: bool = False) -> None:  #
+def config_schema(output: Path | None = None, update: bool = False) -> None:
     from blueapi.config import generate_config_schema
 
     schema = generate_config_schema()

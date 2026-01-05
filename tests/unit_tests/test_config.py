@@ -535,7 +535,6 @@ def validate_field_annotations(model_class: Any, model_field: str) -> None:
 def test_config_schema_updated() -> None:
     with CONFIG_SCHEMA_LOCATION.open("r") as stream:
         config_schema = json.load(stream)
-
     assert config_schema == generate_config_schema(), (
         f"ApplicationConfig model is out of date with schema at \
             {CONFIG_SCHEMA_LOCATION}. You may need to run `blueapi config-schema -u`"

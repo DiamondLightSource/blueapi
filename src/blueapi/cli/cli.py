@@ -120,7 +120,7 @@ def schema(output: Path | None = None, update: bool = False) -> None:
 )
 @main.command(name="config-schema")
 def config_schema(output: Path | None = None, update: bool = False) -> None:  #
-    from blueapi.utils.serialization import generate_config_schema
+    from blueapi.config import generate_config_schema
 
     schema = generate_config_schema()
     if update:

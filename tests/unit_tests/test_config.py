@@ -18,9 +18,9 @@ from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
     OIDCConfig,
+    generate_config_schema,
 )
 from blueapi.utils import InvalidConfigError
-from blueapi.utils.serialization import generate_config_schema
 
 
 class Config(BaseModel):

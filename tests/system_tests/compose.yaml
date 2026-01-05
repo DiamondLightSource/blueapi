@@ -3,13 +3,14 @@ include:
 
 services:
   numtracker:
-    image: ghcr.io/diamondlightsource/numtracker:1.0.1
+    image: ghcr.io/diamondlightsource/numtracker:1.0.2
     ports:
       - "8406:8000"
     
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management
     ports:
+      - "1883:1883"
       - "5672:5672"
       - "15672:15672"
       - "61613:61613"

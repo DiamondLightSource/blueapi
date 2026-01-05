@@ -377,7 +377,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.1.1
+  version: 1.1.2
 openapi: 3.1.0
 paths:
   /config/oidc:
@@ -596,14 +596,14 @@ paths:
       requestBody:
         content:
           application/json:
-            example:
-              instrument_session: cm12345-1
-              name: count
-              params:
-                detectors:
-                - x
             schema:
               $ref: '#/components/schemas/TaskRequest'
+              examples:
+              - instrument_session: cm12345-1
+                name: count
+                params:
+                  detectors:
+                  - x
         required: true
       responses:
         '201':

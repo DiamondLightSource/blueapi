@@ -58,6 +58,9 @@ class PlanCache:
                 continue
             setattr(self, name, plan)
 
+    def __getitem__(self, name: str) -> "Plan":
+        return self._cache[name]
+
     def __getattr__(self, name: str) -> "Plan":
         raise AttributeError(f"No plan named '{name}' available")
 

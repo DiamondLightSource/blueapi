@@ -16,7 +16,7 @@ from blueapi.client.client import (
     BlueapiClient,
     BlueskyRemoteControlError,
 )
-from blueapi.client.event_bus import AnyEvent
+from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError
 from blueapi.client.rest import BlueskyRequestError
 from blueapi.config import (
     ApplicationConfig,
@@ -35,19 +35,20 @@ from blueapi.service.model import (
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task_worker import TrackableTask
 
-FAKE_INSTRUMENT_SESSION = "cm12345-1"
+AUTHORIZED_INSTRUMENT_SESSION = "cm12345-1"
+UNAUTHORIZED_INSTRUMENT_SESSION = "cm54321-1"
 FAKE_ACCESS_TAG = '{"proposal": 12345, "visit": 1, "beamline": "adsim"}'
 CURRENT_NUMTRACKER_NUM = 43
 
 _SIMPLE_TASK = TaskRequest(
     name="sleep",
     params={"time": 0.0},
-    instrument_session=FAKE_INSTRUMENT_SESSION,
+    instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
 )
 _LONG_TASK = TaskRequest(
     name="sleep",
     params={"time": 1.0},
-    instrument_session=FAKE_INSTRUMENT_SESSION,
+    instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
 )
 
 _DATA_PATH = Path(__file__).parent
@@ -78,7 +79,7 @@ _DATA_PATH = Path(__file__).parent
 # docker compose -f tests/system_tests/compose.yaml down
 
 # This client will give tokens for alice
-CLIENT_ID = "ixx-blueapi"
+CLIENT_ID = "system-test-blueapi"
 CLIENT_SECRET = "secret"
 KEYCLOAK_BASE_URL = "http://localhost:8081/"
 OIDC_TOKEN_ENDPOINT = KEYCLOAK_BASE_URL + "realms/master/protocol/openid-connect/token"
@@ -276,7 +277,7 @@ def test_instrument_session_propagated(client: BlueapiClient):
     response = client.create_task(_SIMPLE_TASK)
     trackable_task = client.get_task(response.task_id)
     assert trackable_task.task.metadata == {
-        "instrument_session": FAKE_INSTRUMENT_SESSION,
+        "instrument_session": AUTHORIZED_INSTRUMENT_SESSION,
         "tiled_access_tags": [
             '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
         ],
@@ -464,7 +465,7 @@ def test_delete_current_environment(client: BlueapiClient):
                     ],
                     "num": 5,
                 },
-                instrument_session="cm12345-1",
+                instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
             ),
             CURRENT_NUMTRACKER_NUM + 1,
         ),
@@ -478,7 +479,7 @@ def test_delete_current_environment(client: BlueapiClient):
                     "spec": Line("stage.x", 0.0, 10.0, 2)
                     * Line("stage.theta", 5.0, 15.0, 3),
                 },
-                instrument_session="cm12345-1",
+                instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
             ),
             CURRENT_NUMTRACKER_NUM + 2,
         ),
@@ -502,7 +503,7 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
     start_doc = start.get_nowait()
     assert start_doc["scan_id"] == scan_id
     assert start_doc["instrument"] == "adsim"
-    assert start_doc["instrument_session"] == FAKE_INSTRUMENT_SESSION
+    assert start_doc["instrument_session"] == AUTHORIZED_INSTRUMENT_SESSION
     assert start_doc["data_session_directory"] == "/tmp"
     assert start_doc["scan_file"] == f"adsim-{scan_id}"
 
@@ -522,7 +523,7 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
     assert "start" in json["data"]["attributes"]["metadata"]
     start_metadata = response.json()["data"]["attributes"]["metadata"]["start"]
     assert "instrument_session" in start_metadata
-    assert start_metadata["instrument_session"] == "cm12345-1"
+    assert start_metadata["instrument_session"] == AUTHORIZED_INSTRUMENT_SESSION
     assert "scan_id" in start_metadata
     assert start_metadata["scan_id"] == scan_id
     assert "detectors" in start_metadata
@@ -538,7 +539,7 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
                 "movable": "stage.x",
                 "value": "4.0",
             },
-            instrument_session="cm12345-1",
+            instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
         ),
     ],
 )
@@ -548,4 +549,39 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
     assert final_event.state is WorkerState.IDLE
 
 
-def test(): ...
+@pytest.mark.parametrize(
+    "task,scan_id",
+    [
+        (
+            TaskRequest(
+                name="count",
+                params={
+                    "detectors": [
+                        "det",
+                    ],
+                    "num": 5,
+                },
+                instrument_session=UNAUTHORIZED_INSTRUMENT_SESSION,
+            ),
+            CURRENT_NUMTRACKER_NUM + 1,
+        ),
+    ],
+)
+def test_unauthozied_plan_run(
+    client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int
+):
+    resource = Queue(maxsize=1)
+    start = Queue(maxsize=1)
+
+    def on_event(event: AnyEvent) -> None:
+        if isinstance(event, DataEvent):
+            if event.name == "start":
+                start.put_nowait(event.doc)
+            if event.name == "stream_resource":
+                resource.put_nowait(event.doc)
+
+    with pytest.raises(
+        BlueskyStreamingError,
+        match="404: No such entry",
+    ):
+        client_with_stomp.run_task(task, on_event)

@@ -44,12 +44,12 @@ protocolMappers='{
 }'
 
 
-for client in "ixx-blueapi" "ixx-cli-blueapi" "ixx-blueapi-denied"; do
+for client in "system-test-blueapi" "ixx-cli-blueapi"; do
   if ! kcreg.sh get "$client" >/dev/null 2>&1; then
       tmpfile=$(mktemp)
       echo $protocolMappers > $tmpfile
       case $client in
-      "ixx-system-test-blueapi")
+      "system-test-blueapi")
       kcreg.sh create -x \
       -s clientId=$client \
       -s secret="secret" \
@@ -68,7 +68,6 @@ for client in "ixx-blueapi" "ixx-cli-blueapi" "ixx-blueapi-denied"; do
       -s 'attributes={"access.token.lifespan":"86400","frontchannel.logout.session.required":"true","oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true","backchannel.logout.session.required":"true"}' \
       -f $tmpfile
       ;;
-      ""
       esac
       rm $tmpfile
   fi

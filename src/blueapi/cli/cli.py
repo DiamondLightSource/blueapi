@@ -472,14 +472,13 @@ def login(obj: dict) -> None:
         print("Logged in")
     except Exception:
         client = BlueapiClient.from_config(config)
-        oidc_config = client.get_oidc_config()
-        if oidc_config is None:
+        if oidc := client.oidc_config:
+            auth = SessionManager(
+                oidc, cache_manager=SessionCacheManager(config.auth_token_path)
+            )
+            auth.start_device_flow()
+        else:
             print("Server is not configured to use authentication!")
-            return
-        auth = SessionManager(
-            oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
-        )
-        auth.start_device_flow()
 
 
 @main.command(name="logout")

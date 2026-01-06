@@ -198,15 +198,15 @@ def test_invalid_config_path_handling(runner: CliRunner):
     assert result.exit_code == 1
 
 
-@patch("blueapi.cli.cli.BlueapiClient.get_plans")
+@patch("blueapi.cli.cli.BlueapiClient.plans")
 @patch("blueapi.cli.cli.OutputFormat.FULL.display")
 def test_options_via_env(mock_display, mock_plans, runner: CliRunner):
     result = runner.invoke(
         main, args=["controller", "plans"], env={"BLUEAPI_CONTROLLER_OUTPUT": "full"}
     )
 
-    mock_plans.assert_called_once_with()
-    mock_display.assert_called_once_with(mock_plans.return_value)
+    mock_plans.__iter__.assert_called_once_with()
+    mock_display.assert_called_once_with(list(mock_plans))
     assert result.exit_code == 0
 
 

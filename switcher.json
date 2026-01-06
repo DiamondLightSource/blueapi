@@ -4,22 +4,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/main/"
   },
   {
-    "version": "fix-persistent-volume-retention-2",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-persistent-volume-retention-2/"
-  },
-  {
-    "version": "fix-persistent-volume-retention-1",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-persistent-volume-retention-1/"
-  },
-  {
-    "version": "1.11.3-pvfix1",
-    "url": "https://DiamondLightSource.github.io/blueapi/1.11.3-pvfix1/"
-  },
-  {
-    "version": "1.11.3-a1",
-    "url": "https://DiamondLightSource.github.io/blueapi/1.11.3-a1/"
-  },
-  {
     "version": "1.11.2",
     "url": "https://DiamondLightSource.github.io/blueapi/1.11.2/"
   },
@@ -708,6 +692,14 @@
     "url": "https://DiamondLightSource.github.io/blueapi/0.3.5-beta9a/"
   },
   {
+    "version": "1.11.3-a1",
+    "url": "https://DiamondLightSource.github.io/blueapi/1.11.3-a1/"
+  },
+  {
+    "version": "1.11.3-pvfix1",
+    "url": "https://DiamondLightSource.github.io/blueapi/1.11.3-pvfix1/"
+  },
+  {
     "version": "1.11.3_fix.persistent.volume.retention.2",
     "url": "https://DiamondLightSource.github.io/blueapi/1.11.3_fix.persistent.volume.retention.2/"
   },
@@ -818,6 +810,14 @@
   {
     "version": "fix-310",
     "url": "https://DiamondLightSource.github.io/blueapi/fix-310/"
+  },
+  {
+    "version": "fix-persistent-volume-retention-1",
+    "url": "https://DiamondLightSource.github.io/blueapi/fix-persistent-volume-retention-1/"
+  },
+  {
+    "version": "fix-persistent-volume-retention-2",
+    "url": "https://DiamondLightSource.github.io/blueapi/fix-persistent-volume-retention-2/"
   },
   {
     "version": "fix_flake8_failure",

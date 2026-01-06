@@ -25,10 +25,8 @@ jobs:
       runs-on: ${{ matrix.runs-on }}
       python-version: ${{ matrix.python-version }}
 
-  # https://github.com/DiamondLightSource/blueapi/issues/1297
-  # Temporarily disabled until Tiled release with authz
-  # system-test:
-  #   uses: ./.github/workflows/_system_test.yml
+  system-test:
+    uses: ./.github/workflows/_system_test.yml
 
   container:
     needs: test

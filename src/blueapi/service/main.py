@@ -58,7 +58,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "1.1.1"
+REST_API_VERSION = "1.1.2"
 
 LICENSE_INFO: dict[str, str] = {
     "name": "Apache 2.0",
@@ -298,7 +298,7 @@ example_task_request = TaskRequest(
 def submit_task(
     request: Request,
     response: Response,
-    task_request: Annotated[TaskRequest, Body(..., example=example_task_request)],
+    task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     """Submit a task to the worker."""

@@ -91,6 +91,12 @@
                     "description": "Name of the device manager in the module",
                     "title": "Name",
                     "type": "string"
+                },
+                "ensure_connected": {
+                    "default": false,
+                    "description": "If true, all devices must be successfully connected at startup.",
+                    "title": "Ensure Connected",
+                    "type": "boolean"
                 }
             },
             "required": [

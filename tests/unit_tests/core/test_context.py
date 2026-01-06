@@ -20,6 +20,7 @@ from bluesky.utils import MsgGenerator
 from dodal.common import PlanGenerator, inject
 from ophyd import Device
 from ophyd_async.core import (
+    NotConnectedError,
     PathProvider,
     StandardDetector,
     StaticPathProvider,
@@ -151,6 +152,20 @@ def devicey_context(sim_motor: Motor, sim_detector: StandardDetector) -> Bluesky
     ctx.register_device(sim_motor)
     ctx.register_device(sim_detector)
     return ctx
+
+
+@pytest.fixture
+def beamline_with_connection_and_build_errors():
+    stm = StaticDeviceManager(
+        devices={},
+        build_errors={"foo": RuntimeError("Simulated Build Error")},
+        connection_errors={"bar": NotConnectedError("Simulated Connection Error")},
+    )
+    dev_mod = Mock(spec=ModuleType)
+    dev_mod.devices = stm
+    with patch("blueapi.core.context.import_module") as imp_mod:
+        imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
+        yield
 
 
 class SomeConfigurable:
@@ -423,6 +438,28 @@ def test_with_config_passes_mock_to_with_dodal_module(
             )
         )
         mock_with_dodal_module.assert_called_once_with(ANY, mock=mock)
+
+
+def test_with_config_raises_exception_group_on_connection_errors_when_ensure_connected(
+    empty_context: BlueskyContext, beamline_with_connection_and_build_errors: None
+):
+    with pytest.raises(ExceptionGroup, match="Errors occurred while connecting.*") as e:
+        empty_context.with_config(
+            EnvironmentConfig(
+                sources=[DeviceManagerSource(module="foo.bar", ensure_connected=True)]
+            )
+        )
+
+    assert e.value.exceptions[0].args[0] == "Simulated Build Error"
+    assert e.value.exceptions[1].args[0] == "Simulated Connection Error"
+
+
+def test_with_config_ignores_build_connect_exceptions_by_default(
+    empty_context: BlueskyContext, beamline_with_connection_and_build_errors: None
+):
+    empty_context.with_config(
+        EnvironmentConfig(sources=[DeviceManagerSource(module="foo.bar")])
+    )
 
 
 def test_function_spec(empty_context: BlueskyContext):

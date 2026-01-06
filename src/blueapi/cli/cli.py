@@ -120,9 +120,9 @@ def schema(output: Path | None = None, update: bool = False) -> None:
 )
 @main.command(name="config-schema")
 def config_schema(output: Path | None = None, update: bool = False) -> None:
-    """Generates a json schema from the ApplicationConfig pydantic basemodel"""
-    schema = ApplicationConfig.model_json_schema()
+    from blueapi.config import generate_config_schema
 
+    schema = generate_config_schema()
     if update:
         output = config.CONFIG_SCHEMA_LOCATION
     if output is not None:

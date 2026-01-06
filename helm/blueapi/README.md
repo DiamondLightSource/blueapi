@@ -14,7 +14,6 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | debug.suspend | bool | `false` | If enabled does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster |
 | extraEnvVars | list | `[]` | Additional envVars to mount to the pod |
 | fullnameOverride | string | `""` |  |
-| global | object | `{}` | Not used, but must be present for validation when using as a dependency of another chart |
 | hostNetwork | bool | `false` | May be needed for EPICS depending on gateway configuration |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.repository | string | `"ghcr.io/diamondlightsource/blueapi"` | To use a container image that extends the blueapi one, set it here |

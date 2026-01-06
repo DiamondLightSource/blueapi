@@ -39,6 +39,7 @@ from blueapi.config import (
     ApplicationConfig,
     ScratchConfig,
     ScratchRepository,
+    generate_config_schema,
 )
 from blueapi.core.bluesky_types import DataEvent, Plan
 from blueapi.service.model import (
@@ -1309,7 +1310,7 @@ def test_config_schema(
         args,
     )
 
-    expected = ApplicationConfig.model_json_schema()
+    expected = generate_config_schema()
     if output_flag and (not update):
         with tmp_path.open("r") as stream:
             assert json.load(stream) == expected

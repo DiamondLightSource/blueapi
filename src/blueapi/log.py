@@ -139,34 +139,25 @@ class IBMColorBlindSafeColors(enum.Enum):
 class ColorFormatter(logging.Formatter):
     """Colors level_name of log using IBM color blind safe palette."""
 
-    def color_level_name(self, level_name: str, level_no: int) -> str:
+    def _level_colour(self, level_no: int) -> tuple[int, int, int] | None:
         match level_no:
             case logging.DEBUG:
-                return click.style(
-                    str(level_name), fg=IBMColorBlindSafeColors.ultramarine.value
-                )
+                return IBMColorBlindSafeColors.ultramarine.value
             case logging.INFO:
-                return click.style(
-                    str(level_name), fg=IBMColorBlindSafeColors.indigo.value
-                )
+                return IBMColorBlindSafeColors.indigo.value
             case logging.WARNING:
-                return click.style(
-                    str(level_name), fg=IBMColorBlindSafeColors.gold.value
-                )
+                return IBMColorBlindSafeColors.gold.value
             case logging.ERROR:
-                return click.style(
-                    str(level_name), fg=IBMColorBlindSafeColors.magenta.value
-                )
+                return IBMColorBlindSafeColors.magenta.value
             case logging.CRITICAL:
-                return click.style(
-                    str(level_name), fg=IBMColorBlindSafeColors.orange.value
-                )
-        return level_name
+                return IBMColorBlindSafeColors.orange.value
+            case _:
+                return None
 
     def formatMessage(self, record: logging.LogRecord) -> str:  # noqa: N802
         # Copy record to avoid modifying for other handlers etc.
         recordcopy = copy(record)
-        recordcopy.levelname = self.color_level_name(
-            recordcopy.levelname, recordcopy.levelno
+        recordcopy.levelname = click.style(
+            f"{recordcopy.levelname:>8}", fg=self._level_colour(recordcopy.levelno)
         )
         return super().formatMessage(recordcopy)

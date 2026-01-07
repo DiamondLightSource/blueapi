@@ -1,0 +1,38 @@
+{
+    "diamond": {
+        "data": {
+            "beamlines": {
+                "adsim": {
+                    "sessions": [
+                        "1"
+                    ]
+                }
+            },
+            "proposals": {
+                "12345": {
+                    "sessions": {
+                        "1": 1
+                    }
+                }
+            },
+            "sessions": {
+                "1": {
+                    "beamline": "adsim",
+                    "proposal_number": 12345,
+                    "visit_number": 1
+                }
+            },
+            "subjects": {
+                "alice": {
+                    "permissions": [],
+                    "proposals": [
+                        12345
+                    ],
+                    "sessions": [
+                        1
+                    ]
+                }
+            }
+        }
+    }
+}

@@ -20,7 +20,8 @@
                 "password"
             ],
             "title": "BasicAuthentication",
-            "type": "object"
+            "type": "object",
+            "$id": "BasicAuthentication"
         },
         "CORSConfig": {
             "additionalProperties": false,
@@ -62,7 +63,8 @@
                 "origins"
             ],
             "title": "CORSConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "CORSConfig"
         },
         "DeviceManagerSource": {
             "additionalProperties": false,
@@ -95,7 +97,8 @@
                 "module"
             ],
             "title": "DeviceManagerSource",
-            "type": "object"
+            "type": "object",
+            "$id": "DeviceManagerSource"
         },
         "DeviceSource": {
             "additionalProperties": false,
@@ -116,7 +119,8 @@
                 "module"
             ],
             "title": "DeviceSource",
-            "type": "object"
+            "type": "object",
+            "$id": "DeviceSource"
         },
         "DodalSource": {
             "additionalProperties": false,
@@ -143,7 +147,8 @@
                 "module"
             ],
             "title": "DodalSource",
-            "type": "object"
+            "type": "object",
+            "$id": "DodalSource"
         },
         "EnvironmentConfig": {
             "additionalProperties": false,
@@ -163,25 +168,25 @@
                     "items": {
                         "discriminator": {
                             "mapping": {
-                                "deviceFunctions": "#/$defs/DeviceSource",
-                                "deviceManager": "#/$defs/DeviceManagerSource",
-                                "dodal": "#/$defs/DodalSource",
-                                "planFunctions": "#/$defs/PlanSource"
+                                "deviceFunctions": "DeviceSource",
+                                "deviceManager": "DeviceManagerSource",
+                                "dodal": "DodalSource",
+                                "planFunctions": "PlanSource"
                             },
                             "propertyName": "kind"
                         },
                         "oneOf": [
                             {
-                                "$ref": "#/$defs/PlanSource"
+                                "$ref": "PlanSource"
                             },
                             {
-                                "$ref": "#/$defs/DeviceSource"
+                                "$ref": "DeviceSource"
                             },
                             {
-                                "$ref": "#/$defs/DodalSource"
+                                "$ref": "DodalSource"
                             },
                             {
-                                "$ref": "#/$defs/DeviceManagerSource"
+                                "$ref": "DeviceManagerSource"
                             }
                         ]
                     },
@@ -189,12 +194,12 @@
                     "type": "array"
                 },
                 "events": {
-                    "$ref": "#/$defs/WorkerEventConfig"
+                    "$ref": "WorkerEventConfig"
                 },
                 "metadata": {
                     "anyOf": [
                         {
-                            "$ref": "#/$defs/MetadataConfig"
+                            "$ref": "MetadataConfig"
                         },
                         {
                             "type": "null"
@@ -204,7 +209,8 @@
                 }
             },
             "title": "EnvironmentConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "EnvironmentConfig"
         },
         "GraylogConfig": {
             "additionalProperties": false,
@@ -223,7 +229,8 @@
                 }
             },
             "title": "GraylogConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "GraylogConfig"
         },
         "LoggingConfig": {
             "additionalProperties": false,
@@ -242,7 +249,7 @@
                     "type": "string"
                 },
                 "graylog": {
-                    "$ref": "#/$defs/GraylogConfig",
+                    "$ref": "GraylogConfig",
                     "default": {
                         "enabled": false,
                         "url": "tcp://localhost:5555"
@@ -250,7 +257,8 @@
                 }
             },
             "title": "LoggingConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "LoggingConfig"
         },
         "MetadataConfig": {
             "additionalProperties": false,
@@ -264,7 +272,8 @@
                 "instrument"
             ],
             "title": "MetadataConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "MetadataConfig"
         },
         "NumtrackerConfig": {
             "additionalProperties": false,
@@ -284,7 +293,8 @@
                 }
             },
             "title": "NumtrackerConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "NumtrackerConfig"
         },
         "OIDCConfig": {
             "additionalProperties": false,
@@ -317,7 +327,8 @@
                 "client_id"
             ],
             "title": "OIDCConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "OIDCConfig"
         },
         "PlanSource": {
             "additionalProperties": false,
@@ -338,7 +349,8 @@
                 "module"
             ],
             "title": "PlanSource",
-            "type": "object"
+            "type": "object",
+            "$id": "PlanSource"
         },
         "RestConfig": {
             "additionalProperties": false,
@@ -354,7 +366,7 @@
                 "cors": {
                     "anyOf": [
                         {
-                            "$ref": "#/$defs/CORSConfig"
+                            "$ref": "CORSConfig"
                         },
                         {
                             "type": "null"
@@ -364,7 +376,8 @@
                 }
             },
             "title": "RestConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "RestConfig"
         },
         "ScratchConfig": {
             "additionalProperties": false,
@@ -392,14 +405,15 @@
                 "repositories": {
                     "description": "Details of repositories to be cloned and imported into blueapi",
                     "items": {
-                        "$ref": "#/$defs/ScratchRepository"
+                        "$ref": "ScratchRepository"
                     },
                     "title": "Repositories",
                     "type": "array"
                 }
             },
             "title": "ScratchConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "ScratchConfig"
         },
         "ScratchRepository": {
             "additionalProperties": false,
@@ -418,7 +432,8 @@
                 }
             },
             "title": "ScratchRepository",
-            "type": "object"
+            "type": "object",
+            "$id": "ScratchRepository"
         },
         "StompConfig": {
             "additionalProperties": false,
@@ -440,7 +455,7 @@
                 "auth": {
                     "anyOf": [
                         {
-                            "$ref": "#/$defs/BasicAuthentication"
+                            "$ref": "BasicAuthentication"
                         },
                         {
                             "type": "null"
@@ -451,7 +466,8 @@
                 }
             },
             "title": "StompConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "StompConfig"
         },
         "TiledConfig": {
             "additionalProperties": false,
@@ -484,7 +500,8 @@
                 }
             },
             "title": "TiledConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "TiledConfig"
         },
         "WorkerEventConfig": {
             "additionalProperties": false,
@@ -497,31 +514,32 @@
                 }
             },
             "title": "WorkerEventConfig",
-            "type": "object"
+            "type": "object",
+            "$id": "WorkerEventConfig"
         }
     },
     "additionalProperties": false,
     "description": "Config for the worker application as a whole. Root of\nconfig tree.",
     "properties": {
         "stomp": {
-            "$ref": "#/$defs/StompConfig"
+            "$ref": "StompConfig"
         },
         "tiled": {
-            "$ref": "#/$defs/TiledConfig"
+            "$ref": "TiledConfig"
         },
         "env": {
-            "$ref": "#/$defs/EnvironmentConfig"
+            "$ref": "EnvironmentConfig"
         },
         "logging": {
-            "$ref": "#/$defs/LoggingConfig"
+            "$ref": "LoggingConfig"
         },
         "api": {
-            "$ref": "#/$defs/RestConfig"
+            "$ref": "RestConfig"
         },
         "scratch": {
             "anyOf": [
                 {
-                    "$ref": "#/$defs/ScratchConfig"
+                    "$ref": "ScratchConfig"
                 },
                 {
                     "type": "null"
@@ -532,7 +550,7 @@
         "oidc": {
             "anyOf": [
                 {
-                    "$ref": "#/$defs/OIDCConfig"
+                    "$ref": "OIDCConfig"
                 },
                 {
                     "type": "null"
@@ -556,7 +574,7 @@
         "numtracker": {
             "anyOf": [
                 {
-                    "$ref": "#/$defs/NumtrackerConfig"
+                    "$ref": "NumtrackerConfig"
                 },
                 {
                     "type": "null"

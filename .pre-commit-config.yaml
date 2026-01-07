@@ -42,7 +42,7 @@ repos:
           - --chart-search-root=helm
 
   - repo: https://github.com/losisin/helm-values-schema-json
-    rev: v2.2.1
+    rev: v2.3.1
     hooks:
       - id: helm-schema
         args:

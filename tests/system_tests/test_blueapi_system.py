@@ -17,8 +17,7 @@ from blueapi.client.client import (
     BlueskyRemoteControlError,
 )
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError
-from blueapi.client.rest import BlueskyRequestError
-from blueapi.client.rest import BlueapiRestClient, UnknownPlanError
+from blueapi.client.rest import BlueapiRestClient, BlueskyRequestError
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -170,18 +169,15 @@ def expected_devices() -> DeviceResponse:
 
 
 @pytest.fixture
-def blueapi_client_get_methods() -> list[str]:
+def blueapi_rest_client_get_methods() -> list[str]:
     # Get a list of methods that take only one argument (self)
-    # This will currently return
-    # ['get_plans', 'get_devices', 'get_state', 'get_all_tasks',
-    # 'get_active_task','get_environment','resume', 'stop','get_oidc_config']
     return [
-        method
-        for method in BlueapiClient.__dict__
-        if callable(getattr(BlueapiClient, method))
-        and not method.startswith("__")
-        and len(inspect.signature(getattr(BlueapiClient, method)).parameters) == 1
-        and "self" in inspect.signature(getattr(BlueapiClient, method)).parameters
+        name
+        for name, method in BlueapiRestClient.__dict__.items()
+        if not name.startswith("__")
+        and callable(method)
+        and len(params := inspect.signature(method).parameters) == 1
+        and "self" in params
     ]
 
 
@@ -220,14 +216,14 @@ def reset_numtracker(server_config: ApplicationConfig):
 
 
 def test_cannot_access_endpoints(
-    client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
+    client_without_auth: BlueapiClient, blueapi_rest_client_get_methods: list[str]
 ):
-    blueapi_client_get_methods.remove(
+    blueapi_rest_client_get_methods.remove(
         "get_oidc_config"
     )  # get_oidc_config can be accessed without auth
-    for get_method in blueapi_client_get_methods:
+    for get_method in blueapi_rest_client_get_methods:
         with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
-            getattr(client_without_auth, get_method)()
+            getattr(client_without_auth._rest, get_method)()
 
 
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
@@ -248,7 +244,7 @@ def test_get_plans(rest_client: BlueapiRestClient, expected_plans: PlanResponse)
 
 def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
     for plan in expected_plans.plans:
-        assert getattr(client.plans, plan.name).model == plan
+        assert client.plans[plan.name].model == plan
 
 
 def test_get_non_existent_plan(rest_client: BlueapiRestClient):

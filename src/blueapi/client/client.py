@@ -71,6 +71,9 @@ class BlueapiClient:
         else:
             return cls(rest)
 
+    def get_stomp_config(self):
+        return self._rest.get_stomp_config()
+
     @start_as_current_span(TRACER)
     def get_plans(self) -> PlanResponse:
         """

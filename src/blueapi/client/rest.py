@@ -10,7 +10,7 @@ from observability_utils.tracing import (
 )
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from blueapi.config import RestConfig
+from blueapi.config import RestConfig, StompConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
     DeviceModel,
@@ -214,6 +214,9 @@ class BlueapiRestClient:
             method="PUT",
             data={"new_state": state, "reason": reason},
         )
+
+    def get_stomp_config(self):
+        return self._request_and_deserialize("/config/stomp", StompConfig)
 
     def get_environment(self) -> EnvironmentResponse:
         return self._request_and_deserialize("/environment", EnvironmentResponse)

@@ -142,11 +142,11 @@ class Plan:
 
     @property
     def properties(self) -> set[str]:
-        return self.model.parameter_schema["properties"]
+        return self.model.parameter_schema.get("properties", {}).keys()
 
     @property
     def required(self) -> list[str]:
-        return self.model.parameter_schema["required"]
+        return self.model.parameter_schema.get("required", [])
 
     def _build_args(self, *args, **kwargs):
         log.info(

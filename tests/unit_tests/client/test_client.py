@@ -8,8 +8,16 @@ from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
 )
+from pydantic import HttpUrl
 
-from blueapi.client.client import BlueapiClient
+from blueapi.client.client import (
+    BlueapiClient,
+    DeviceCache,
+    DeviceRef,
+    MissingInstrumentSessionError,
+    Plan,
+    PlanCache,
+)
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
 from blueapi.config import MissingStompConfigurationError
@@ -36,6 +44,19 @@ PLANS = PlanResponse(
     ]
 )
 PLAN = PlanModel(name="foo")
+FULL_PLAN = PlanModel(
+    name="foobar",
+    description="Description of plan foobar",
+    schema={
+        "title": "foobar",
+        "description": "Model description of plan foobar",
+        "properties": {
+            "one": {},
+            "two": {},
+        },
+        "required": ["one"],
+    },
+)
 DEVICES = DeviceResponse(
     devices=[
         DeviceModel(name="foo", protocols=[]),
@@ -106,12 +127,20 @@ def client_with_events(mock_rest: Mock, mock_events: MagicMock):
     return BlueapiClient(rest=mock_rest, events=mock_events)
 
 
+def test_client_from_config():
+    bc = BlueapiClient.from_config_file(
+        "tests/unit_tests/valid_example_config/client.yaml"
+    )
+    assert bc._rest._config.url == HttpUrl("http://example.com:8082")
+
+
 def test_get_plans(client: BlueapiClient):
     assert PlanResponse(plans=[p.model for p in client.plans]) == PLANS
 
 
 def test_get_plan(client: BlueapiClient):
     assert client.plans.foo.model == PLAN
+    assert client.plans["foo"].model == PLAN
 
 
 def test_get_nonexistant_plan(
@@ -462,6 +491,10 @@ def test_run_task_ignores_non_matching_events(
     mock_on_event.assert_called_once_with(COMPLETE_EVENT)
 
 
+def test_get_oidc_config(client, mock_rest):
+    assert client.oidc_config == mock_rest.get_oidc_config()
+
+
 def test_get_plans_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
     with asserting_span_exporter(exporter, "plans"):
         _ = client.plans
@@ -569,3 +602,157 @@ def test_cannot_run_task_span_ok(
     ):
         with asserting_span_exporter(exporter, "grun_task"):
             client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+
+
+def test_instrument_session_required(client):
+    with pytest.raises(MissingInstrumentSessionError):
+        _ = client.instrument_session
+
+
+def test_setting_instrument_session(client):
+    # This looks like a completely pointless test but instrument_session is a
+    # property with some logic so it's not purely to get coverage up
+    client.instrument_session = "cm12345-4"
+    assert client.instrument_session == "cm12345-4"
+
+
+def test_plan_cache_ignores_underscores(client):
+    cache = PlanCache(client, [PlanModel(name="_ignored"), PlanModel(name="used")])
+    with pytest.raises(AttributeError, match="_ignored"):
+        _ = cache._ignored
+
+
+def test_device_cache_ignores_underscores():
+    rest = Mock()
+    rest.get_devices.return_value = DeviceResponse(
+        devices=[
+            DeviceModel(name="_ignored", protocols=[]),
+        ]
+    )
+    cache = DeviceCache(rest)
+    with pytest.raises(AttributeError, match="_ignored"):
+        _ = cache._ignored
+
+    rest.get_devices.reset_mock()
+    with pytest.raises(AttributeError, match="_anything"):
+        _ = cache._anything
+    rest.get_device.assert_not_called()
+
+
+def test_devices_are_cached(mock_rest):
+    cache = DeviceCache(mock_rest)
+    _ = cache.foo
+    mock_rest.get_device.assert_not_called()
+    _ = cache["foo"]
+    mock_rest.get_device.assert_not_called()
+
+
+def test_device_repr():
+    cache = Mock()
+    model = Mock()
+    dev = DeviceRef(name="foo", cache=cache, model=model)
+    assert repr(dev) == "Device(foo)"
+
+
+def test_device_ignores_underscores():
+    cache = MagicMock()
+    model = Mock()
+    dev = DeviceRef(name="foo", cache=cache, model=model)
+    with pytest.raises(AttributeError, match="_underscore"):
+        _ = dev._underscore
+    cache.__getitem__.assert_not_called()
+
+
+def test_plan_help_text(client):
+    plan = Plan("foo", PlanModel(name="foo", description="help for foo"), client)
+    assert plan.help_text == "help for foo"
+
+
+def test_plan_fallback_help_text(client):
+    plan = Plan(
+        "foo",
+        PlanModel(
+            name="foo",
+            schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
+        ),
+        client,
+    )
+    assert plan.help_text == "Plan foo(one, two=None)"
+
+
+def test_plan_properties(client):
+    plan = Plan(
+        "foo",
+        PlanModel(
+            name="foo",
+            schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
+        ),
+        client,
+    )
+
+    assert plan.properties == {"one", "two"}
+    assert plan.required == ["one"]
+
+
+def test_plan_empty_fallback_help_text(client):
+    plan = Plan(
+        "foo", PlanModel(name="foo", schema={"properties": {}, "required": []}), client
+    )
+    assert plan.help_text == "Plan foo()"
+
+
+p = pytest.param
+
+
+@pytest.mark.parametrize(
+    "args,kwargs,params",
+    [
+        p((1,), {}, {"one": 1}, id="required_as_positional"),
+        p((), {"one": 7}, {"one": 7}, id="required_as_keyword"),
+        p((1,), {"two": 23}, {"one": 1, "two": 23}, id="all_as_mixed_args_kwargs"),
+        p((1, 2), {}, {"one": 1, "two": 2}, id="all_as_positional"),
+        p((), {"one": 21, "two": 42}, {"one": 21, "two": 42}, id="all_as_keyword"),
+    ],
+)
+def test_plan_param_mapping(args, kwargs, params):
+    client = Mock()
+    client.instrument_session = "cm12345-1"
+    plan = Plan(
+        FULL_PLAN.name,
+        FULL_PLAN,
+        client,
+    )
+
+    plan(*args, **kwargs)
+    client.run_task.assert_called_once_with(
+        TaskRequest(name="foobar", instrument_session="cm12345-1", params=params)
+    )
+
+
+@pytest.mark.parametrize(
+    "args,kwargs,msg",
+    [
+        p((), {}, r"Missing argument\(s\) for \{'one'\}", id="missing_required"),
+        p((1,), {"one": 7}, "multiple values for one", id="duplicate_required"),
+        p((1, 2), {"two": 23}, "multiple values for two", id="duplicate_optional"),
+        p((1, 2, 3), {}, "too many arguments", id="too_many_args"),
+        p(
+            (),
+            {"unknown_key": 42},
+            r"got unexpected arguments: \{'unknown_key'\}",
+            id="unknown_arg",
+        ),
+    ],
+)
+def test_plan_invalid_param_mapping(args, kwargs, msg):
+    client = Mock()
+    client.instrument_session = "cm12345-1"
+    plan = Plan(
+        FULL_PLAN.name,
+        FULL_PLAN,
+        client,
+    )
+
+    with pytest.raises(TypeError, match=msg):
+        plan(*args, **kwargs)
+    client.run_task.assert_not_called()

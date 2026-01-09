@@ -252,14 +252,17 @@ class BlueapiRestClient:
         url = self._config.url.unicode_string().removesuffix("/") + suffix
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
-        response = requests.request(
-            method,
-            url,
-            json=data,
-            params=params,
-            headers=carr,
-            auth=JWTAuth(self._session_manager),
-        )
+        try:
+            response = requests.request(
+                method,
+                url,
+                json=data,
+                params=params,
+                headers=carr,
+                auth=JWTAuth(self._session_manager),
+            )
+        except requests.exceptions.ConnectionError as ce:
+            raise ServiceUnavailableError() from ce
         exception = get_exception(response)
         if exception is not None:
             raise exception
@@ -289,3 +292,7 @@ def __getattr__(name: str):
         )
         return rename
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+class ServiceUnavailableError(Exception):
+    pass

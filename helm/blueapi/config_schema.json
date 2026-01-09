@@ -92,10 +92,10 @@
                     "title": "Name",
                     "type": "string"
                 },
-                "ensure_connected": {
+                "check_connected": {
                     "default": false,
                     "description": "If true, all devices must be successfully connected at startup.",
-                    "title": "Ensure Connected",
+                    "title": "Check Connected",
                     "type": "boolean"
                 }
             },

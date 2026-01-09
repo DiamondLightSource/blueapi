@@ -215,19 +215,18 @@ class BlueskyContext:
                 case DodalSource(mock=mock):
                     self.with_dodal_module(mod, mock=mock)
                 case DeviceManagerSource(
-                    mock=mock, name=name, ensure_connected=ensure_connected
+                    mock=mock, name=name, check_connected=check_connected
                 ):
                     manager = getattr(mod, name)
                     if not isinstance(manager, DeviceManager):
                         raise ValueError(
                             f"{name} in module {mod} is not a device manager"
                         )
-                    device_map, error_map = self.with_device_manager(manager, mock)
-                    if ensure_connected and error_map:
-                        raise ExceptionGroup(
-                            "Errors occurred while connecting the following devices: "
-                            f"{', '.join(error_map.keys())}",
-                            list(error_map.values()),
+                    _, error_map = self.with_device_manager(manager, mock)
+                    if check_connected and error_map:
+                        raise RuntimeError(
+                            "Errors occurred while building/connecting the following "
+                            f"devices: {', '.join(error_map)}",
                         )
 
     def with_plan_module(self, module: ModuleType) -> None:

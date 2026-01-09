@@ -83,7 +83,7 @@ class DeviceManagerSource(Source):
     name: str = Field(
         default="devices", description="Name of the device manager in the module"
     )
-    ensure_connected: bool = Field(
+    check_connected: bool = Field(
         default=False,
         description="If true, all devices must be successfully connected at startup.",
     )

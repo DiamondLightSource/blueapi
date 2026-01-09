@@ -443,15 +443,14 @@ def test_with_config_passes_mock_to_with_dodal_module(
 def test_with_config_raises_exception_group_on_connection_errors_when_ensure_connected(
     empty_context: BlueskyContext, beamline_with_connection_and_build_errors: None
 ):
-    with pytest.raises(ExceptionGroup, match="Errors occurred while connecting.*") as e:
+    with pytest.raises(
+        RuntimeError, match="Errors occurred while building/connecting.*"
+    ):
         empty_context.with_config(
             EnvironmentConfig(
-                sources=[DeviceManagerSource(module="foo.bar", ensure_connected=True)]
+                sources=[DeviceManagerSource(module="foo.bar", check_connected=True)]
             )
         )
-
-    assert e.value.exceptions[0].args[0] == "Simulated Build Error"
-    assert e.value.exceptions[1].args[0] == "Simulated Connection Error"
 
 
 def test_with_config_ignores_build_connect_exceptions_by_default(

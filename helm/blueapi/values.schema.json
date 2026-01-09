@@ -510,8 +510,8 @@
                 "module"
             ],
             "properties": {
-                "ensure_connected": {
-                    "title": "Ensure Connected",
+                "check_connected": {
+                    "title": "Check Connected",
                     "description": "If true, all devices must be successfully connected at startup.",
                     "default": false,
                     "type": "boolean"

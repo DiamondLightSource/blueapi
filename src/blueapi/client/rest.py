@@ -136,6 +136,7 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
 
 class BlueapiRestClient:
     _config: RestConfig
+    _pool: requests.Session
 
     def __init__(
         self,
@@ -144,6 +145,7 @@ class BlueapiRestClient:
     ) -> None:
         self._config = config or RestConfig()
         self._session_manager = session_manager
+        self._pool = requests.Session()
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -253,7 +255,7 @@ class BlueapiRestClient:
         # Get the trace context to propagate to the REST API
         carr = get_context_propagator()
         try:
-            response = requests.request(
+            response = self._pool.request(
                 method,
                 url,
                 json=data,

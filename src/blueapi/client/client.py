@@ -67,6 +67,9 @@ class PlanCache:
     def __iter__(self):
         return iter(self._cache.values())
 
+    def __repr__(self) -> str:
+        return f"PlanCache({len(self._cache)} plans)"
+
 
 class DeviceCache:
     def __init__(self, rest: BlueapiRestClient):
@@ -100,6 +103,9 @@ class DeviceCache:
 
     def __iter__(self):
         return iter(self._cache.values())
+
+    def __repr__(self) -> str:
+        return f"DeviceCache({len(self._cache)} devices)"
 
 
 class DeviceRef(str):

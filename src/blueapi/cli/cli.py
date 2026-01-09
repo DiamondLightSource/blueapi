@@ -17,7 +17,6 @@ from bluesky_stomp.models import Broker
 from click.exceptions import ClickException
 from observability_utils.tracing import setup_tracing
 from pydantic import ValidationError
-from requests.exceptions import ConnectionError
 
 from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
@@ -26,6 +25,7 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
     InvalidParametersError,
+    ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
 )
@@ -183,7 +183,7 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
             return func(*args, **kwargs)
-        except ConnectionError as ce:
+        except ServiceUnavailableError as ce:
             raise ClickException(
                 "Failed to establish connection to blueapi server."
             ) from ce
@@ -204,7 +204,7 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display(client.get_plans())
+    obj["fmt"].display([p.model for p in client.plans])
 
 
 @controller.command(name="devices")
@@ -213,7 +213,7 @@ def get_plans(obj: dict) -> None:
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display(client.get_devices())
+    obj["fmt"].display([dev.model for dev in client.devices])
 
 
 @controller.command(name="listen")
@@ -345,7 +345,7 @@ def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
     client: BlueapiClient = obj["client"]
-    print(client.get_state().name)
+    print(client.state.name)
 
 
 @controller.command(name="pause")
@@ -428,7 +428,7 @@ def env(
         status = client.reload_environment(timeout=timeout)
         print("Environment is initialized")
     else:
-        status = client.get_environment()
+        status = client.environment
     print(status)
 
 
@@ -470,14 +470,13 @@ def login(obj: dict) -> None:
         print("Logged in")
     except Exception:
         client = BlueapiClient.from_config(config)
-        oidc_config = client.get_oidc_config()
-        if oidc_config is None:
+        if oidc := client.oidc_config:
+            auth = SessionManager(
+                oidc, cache_manager=SessionCacheManager(config.auth_token_path)
+            )
+            auth.start_device_flow()
+        else:
             print("Server is not configured to use authentication!")
-            return
-        auth = SessionManager(
-            oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
-        )
-        auth.start_device_flow()
 
 
 @main.command(name="logout")

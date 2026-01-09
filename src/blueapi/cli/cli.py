@@ -17,7 +17,6 @@ from bluesky_stomp.models import Broker
 from click.exceptions import ClickException
 from observability_utils.tracing import setup_tracing
 from pydantic import ValidationError
-from requests.exceptions import ConnectionError
 
 from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
@@ -26,6 +25,7 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
     InvalidParametersError,
+    ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
 )
@@ -183,7 +183,7 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
             return func(*args, **kwargs)
-        except ConnectionError as ce:
+        except ServiceUnavailableError as ce:
             raise ClickException(
                 "Failed to establish connection to blueapi server."
             ) from ce

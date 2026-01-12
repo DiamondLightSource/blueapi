@@ -286,22 +286,36 @@ def run_plan(
 
     plan = client.plans[name]
 
-    import argparse
+    args = []
+    kwargs = {}
+    cur = None
+    for arg in parameters:
+        if arg.startswith("--"):
+            if cur:
+                kwargs[cur] = True
+            cur = arg[2:]
+        elif arg.startswith("-"):
+            if cur:
+                kwargs[cur] = True
+                cur = None
+            if len(arg) > 2:
+                kwargs[arg[1]] = arg[2:]
+            else:
+                cur = arg[1]
+        else:
+            if cur:
+                kwargs[cur] = json.loads(arg)
+                cur = None
+            else:
+                args.append(json.loads(arg))
 
-    parser = argparse.ArgumentParser(name, description=plan.model.description)
-    for arg in plan.properties:
-        pref = "-" if len(arg) == 1 else "--"
-        parser.add_argument(pref + arg, required=False)
-
-    args = parser.parse_args(parameters)
-    args = {k: json.loads(v) for k, v in vars(args).items() if v}
-    print(f"{args=}")
-    plan(**args)
+    if cur:
+        kwargs[cur] = True
 
     try:
         task = TaskRequest(
             name=name,
-            params=args,
+            params=plan._build_args(*args, **kwargs),
             instrument_session=instrument_session,
         )
     except ValidationError as ve:

@@ -254,18 +254,10 @@ def listen_to_events(obj: dict) -> None:
         input()
 
 
-@controller.command(name="run")
+@controller.command(name="run", context_settings={"ignore_unknown_options": True})
 @click.argument("name", type=str)
-@click.argument("parameters", type=str, required=False)
 @click.option(
     "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
-)
-@click.option(
-    "-t",
-    "--timeout",
-    type=float,
-    help="Timeout for the plan in seconds. None hangs forever",
-    default=None,
 )
 @click.option(
     "-i",
@@ -277,29 +269,39 @@ def listen_to_events(obj: dict) -> None:
         the session must be valid and active and you must be a member of it."""),
     required=True,
 )
+@click.argument("parameters", type=str, required=False, nargs=-1)
 @click.pass_obj
 @check_connection
 def run_plan(
     obj: dict,
     name: str,
-    parameters: str | None,
-    timeout: float | None,
     foreground: bool,
     instrument_session: str,
+    parameters: list[str],
 ) -> None:
     """Run a plan with parameters"""
-    client: BlueapiClient = obj["client"]
 
-    parameters = parameters or "{}"
-    try:
-        parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
-    except json.JSONDecodeError as jde:
-        raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
+    client: BlueapiClient = obj["client"]
+    client.instrument_session = instrument_session
+
+    plan = client.plans[name]
+
+    import argparse
+
+    parser = argparse.ArgumentParser(name, description=plan.model.description)
+    for arg in plan.properties:
+        pref = "-" if len(arg) == 1 else "--"
+        parser.add_argument(pref + arg, required=False)
+
+    args = parser.parse_args(parameters)
+    args = {k: json.loads(v) for k, v in vars(args).items() if v}
+    print(f"{args=}")
+    plan(**args)
 
     try:
         task = TaskRequest(
             name=name,
-            params=parsed_params,
+            params=args,
             instrument_session=instrument_session,
         )
     except ValidationError as ve:

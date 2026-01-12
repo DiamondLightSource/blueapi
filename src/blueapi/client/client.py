@@ -35,7 +35,7 @@ from blueapi.worker import WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 
 from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError
+from .rest import BlueapiRestClient, BlueskyRemoteControlError, UnknownPlanError
 
 TRACER = get_tracer("client")
 
@@ -59,7 +59,10 @@ class PlanCache:
             setattr(self, name, plan)
 
     def __getitem__(self, name: str) -> "Plan":
-        return self._cache[name]
+        try:
+            return self._cache[name]
+        except KeyError:
+            raise UnknownPlanError() from None
 
     def __getattr__(self, name: str) -> "Plan":
         raise AttributeError(f"No plan named '{name}' available")

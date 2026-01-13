@@ -9,7 +9,6 @@ import pytest
 import requests
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
-from requests.exceptions import ConnectionError
 
 from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError
@@ -17,8 +16,8 @@ from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
+    ServiceUnavailableError,
 )
-from blueapi.client.rest import BlueapiRestClient, BlueskyRequestError
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -133,7 +132,7 @@ def wait_for_server(client: BlueapiClient):
         try:
             _ = client.environment
             return
-        except ConnectionError:
+        except ServiceUnavailableError:
             ...
         time.sleep(0.5)
     raise TimeoutError("No connection to the blueapi server")

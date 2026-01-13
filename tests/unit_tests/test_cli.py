@@ -110,7 +110,7 @@ def test_runs_with_umask_002(
     mock_umask.assert_called_once_with(0o002)
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_connection_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
@@ -120,7 +120,7 @@ def test_connection_error_caught_by_wrapper_func(
     assert result.output == "Error: Failed to establish connection to blueapi server.\n"
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_authentication_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
@@ -133,7 +133,7 @@ def test_authentication_error_caught_by_wrapper_func(
     )
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
     mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
 

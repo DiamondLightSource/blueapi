@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 from pydantic import TypeAdapter
-from requests.exceptions import ConnectionError
 
 from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError
@@ -16,8 +15,8 @@ from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
+    ServiceUnavailableError,
 )
-from blueapi.client.rest import BlueapiRestClient, BlueskyRequestError
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -137,9 +136,9 @@ def client() -> Generator[BlueapiClient]:
 def wait_for_server(client_without_auth: BlueapiClient):
     for _ in range(20):
         try:
-            client_without_auth.oidc_config
+            _ = client_without_auth.oidc_config
             return
-        except ConnectionError:
+        except ServiceUnavailableError:
             ...
         time.sleep(0.5)
     raise TimeoutError("No connection to the blueapi server")

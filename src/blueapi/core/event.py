@@ -78,12 +78,11 @@ class EventPublisher(EventStream[E, int]):
             correlation_id: An optional ID that may be used to correlate this
                 event with other events
         """
-
+        errs = []
         for callback in list(self._subscriptions.values()):
             try:
                 callback(event, correlation_id)
             except Exception as e:
-                LOGGER.error(
-                    f"Failed to send event {event} with {correlation_id=}",
-                    exc_info=e,
-                )
+                errs.append(e)
+        if errs:
+            raise ExceptionGroup(f"Error(s) publishing event: {event}", errs)

@@ -86,9 +86,10 @@ def test_callback_exceptions_are_contained(publisher: EventPublisher[MyEvent]):
     publisher.subscribe(handler)
     publisher.subscribe(handler)
 
-    publisher.publish(event, c_id)
+    with pytest.RaisesGroup(ValueError):
+        publisher.publish(event, c_id)
 
-    # Both handlers should be called and the exception should not be raised from publish
+    # Both handlers should be called but the exception should still be raised
     handler.assert_has_calls([mock.call(event, c_id), mock.call(event, c_id)])
 
 

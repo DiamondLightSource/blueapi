@@ -373,6 +373,12 @@
                         }
                     ],
                     "default": null
+                },
+                "docs_endpoint": {
+                    "default": "/docs",
+                    "description": "Relative url of the OpenAPI docs endpoint",
+                    "title": "Docs Endpoint",
+                    "type": "string"
                 }
             },
             "title": "RestConfig",

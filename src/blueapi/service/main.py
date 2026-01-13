@@ -132,7 +132,7 @@ open_router = APIRouter()
 
 def get_app(config: ApplicationConfig):
     app = FastAPI(
-        docs_url="/docs",
+        docs_url=config.api.docs_endpoint,
         title="BlueAPI Control",
         summary="BlueAPI wraps bluesky plans and devices and "
         "exposes endpoints to send commands/receive data",
@@ -208,9 +208,11 @@ async def on_token_error_401(_: Request, __: Exception):
 @secure_router.get("/", include_in_schema=False)
 def root_redirect(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     """Redirect to docs url"""
+    config = runner.run(interface.config)
+
     return RedirectResponse(
         status_code=status.HTTP_308_PERMANENT_REDIRECT,
-        url="/docs",
+        url=config.api.docs_endpoint,
     )
 
 

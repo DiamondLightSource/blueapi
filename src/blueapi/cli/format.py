@@ -98,9 +98,6 @@ def display_full(obj: Any, stream: Stream):
         case BaseModel():
             print(obj.__class__.__name__, end="")
             print(fmt_dict(obj.model_dump()))
-        case list():
-            for item in obj:
-                display_full(item, stream)
         case other:
             FALLBACK(other, stream=stream)
 
@@ -175,9 +172,6 @@ def display_compact(obj: Any, stream: Stream):
                         extra += " (Scratch)"
                     print(f"- {package.name} @ ({package.version}){extra}")
 
-        case list():
-            for item in obj:
-                display_compact(item, stream)
         case other:
             FALLBACK(other, stream=stream)
 

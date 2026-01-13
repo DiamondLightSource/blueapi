@@ -173,17 +173,20 @@ def begin_task(
     task: WorkerTask, pass_through_headers: Mapping[str, str] | None = None
 ) -> WorkerTask:
     """Trigger a task. Will fail if the worker is busy"""
-    if nt := context().numtracker:
+
+    active_worker = worker()
+    active_context = context()
+    if nt := active_context.numtracker:
         nt.set_headers(pass_through_headers or {})
 
-    if tiled_config := context().tiled_conf:
+    if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
         tiled_client = from_uri(
             str(tiled_config.url),
             api_key=tiled_config.api_key,
             headers=pass_through_headers,
         )
-        tiled_writer_token = context().run_engine.subscribe(
+        tiled_writer_token = active_context.run_engine.subscribe(
             TiledWriter(tiled_client, batch_size=1)
         )
 
@@ -195,12 +198,15 @@ def begin_task(
                 and event.task_status.task_id == task.task_id
                 and event.task_status.task_complete
             ):
-                context().run_engine.unsubscribe(tiled_writer_token)
+                active_context.run_engine.unsubscribe(tiled_writer_token)
+                active_worker.worker_events.unsubscribe(remove_callback)
 
-        worker().worker_events.subscribe(remove_callback_when_task_finished)
+        remove_callback = active_worker.worker_events.subscribe(
+            remove_callback_when_task_finished
+        )
 
     if task.task_id is not None:
-        worker().begin_task(task.task_id)
+        active_worker.begin_task(task.task_id)
     return task
 
 

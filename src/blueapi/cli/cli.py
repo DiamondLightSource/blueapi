@@ -36,7 +36,7 @@ from blueapi.config import (
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
-from blueapi.service.model import SourceInfo, TaskRequest
+from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
 from blueapi.worker import ProgressEvent, WorkerEvent
 
 from .scratch import setup_scratch
@@ -206,7 +206,7 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display([p.model for p in client.plans])
+    obj["fmt"].display(PlanResponse(plans=[p.model for p in client.plans]))
 
 
 @controller.command(name="devices")
@@ -215,7 +215,7 @@ def get_plans(obj: dict) -> None:
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display([dev.model for dev in client.devices])
+    obj["fmt"].display(DeviceResponse(devices=[dev.model for dev in client.devices]))
 
 
 @controller.command(name="listen")

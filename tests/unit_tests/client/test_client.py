@@ -622,6 +622,10 @@ def test_plan_cache_ignores_underscores(client):
         _ = cache._ignored
 
 
+def test_plan_cache_repr(client):
+    assert repr(client.plans) == "PlanCache(2 plans)"
+
+
 def test_device_cache_ignores_underscores():
     rest = Mock()
     rest.get_devices.return_value = DeviceResponse(
@@ -645,6 +649,10 @@ def test_devices_are_cached(mock_rest):
     mock_rest.get_device.assert_not_called()
     _ = cache["foo"]
     mock_rest.get_device.assert_not_called()
+
+
+def test_device_cache_repr(client):
+    assert repr(client.devices) == "DeviceCache(2 devices)"
 
 
 def test_device_repr():

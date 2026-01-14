@@ -750,7 +750,7 @@ def test_docs_redirect(
 ):
     client_with_auth.follow_redirects = False
     response = client_with_auth.get("/")
-    assert response.headers.get("location") == RestConfig().docs_endpoint
+    assert response.headers.get("location") == main.DOCS_ENDPOINT
 
 
 @pytest.mark.parametrize("has_oidc_config", [True, False])

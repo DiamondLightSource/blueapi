@@ -165,10 +165,6 @@ class CORSConfig(BlueapiBaseModel):
 class RestConfig(BlueapiBaseModel):
     url: HttpUrl = HttpUrl("http://localhost:8000")
     cors: CORSConfig | None = None
-    docs_endpoint: str = Field(
-        description="Relative url of the OpenAPI docs endpoint",
-        default="/docs",
-    )
 
 
 class ScratchRepository(BlueapiBaseModel):

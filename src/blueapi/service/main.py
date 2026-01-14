@@ -71,6 +71,7 @@ CONTEXT_HEADER = "traceparent"
 VENDOR_CONTEXT_HEADER = "tracestate"
 AUTHORIZAITON_HEADER = "authorization"
 PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
+DOCS_ENDPOINT = "/docs"
 
 
 class Tag(str, Enum):
@@ -132,7 +133,7 @@ open_router = APIRouter()
 
 def get_app(config: ApplicationConfig):
     app = FastAPI(
-        docs_url=config.api.docs_endpoint,
+        docs_url=DOCS_ENDPOINT,
         title="BlueAPI Control",
         summary="BlueAPI wraps bluesky plans and devices and "
         "exposes endpoints to send commands/receive data",
@@ -209,8 +210,7 @@ async def on_token_error_401(_: Request, __: Exception):
 def root_redirect(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     """Redirect to docs url"""
     return RedirectResponse(
-        status_code=status.HTTP_308_PERMANENT_REDIRECT,
-        url=interface.config().api.docs_endpoint,
+        status_code=status.HTTP_308_PERMANENT_REDIRECT, url=DOCS_ENDPOINT
     )
 
 

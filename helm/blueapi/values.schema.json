@@ -789,12 +789,6 @@
                         }
                     ]
                 },
-                "docs_endpoint": {
-                    "title": "Docs Endpoint",
-                    "description": "Relative url of the OpenAPI docs endpoint",
-                    "default": "/docs",
-                    "type": "string"
-                },
                 "url": {
                     "title": "Url",
                     "default": "http://localhost:8000/",

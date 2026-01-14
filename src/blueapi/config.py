@@ -379,3 +379,24 @@ def __getattr__(name: str):
         )
         return rename
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def generate_config_schema() -> dict[str, Any]:
+    """
+    Generate a JSON schema from the ApplicationConfig Pydantic model.
+
+    This schema is used to create config_schema.json, which is consumed by the
+    helm-values-schema plugin for validation.
+    """
+    from pydantic.json_schema import GenerateJsonSchema
+
+    class _GenerateJsonSchema(GenerateJsonSchema):
+        def generate(self, schema, mode="validation"):
+            json_schema = super().generate(schema, mode=mode)
+            for i in json_schema["$defs"]:
+                json_schema["$defs"][i]["$id"] = i
+            return json_schema
+
+    return ApplicationConfig.model_json_schema(
+        schema_generator=_GenerateJsonSchema, ref_template="{model}"
+    )

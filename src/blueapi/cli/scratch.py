@@ -15,6 +15,7 @@ from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
+LOGGER = logging.getLogger(__name__)
 
 def setup_scratch(
     config: ScratchConfig, install_timeout: float = _DEFAULT_INSTALL_TIMEOUT
@@ -30,7 +31,7 @@ def setup_scratch(
 
     _validate_root_directory(config.root, config.required_gid)
 
-    logging.info(f"Setting up scratch area: {config.root}")
+    LOGGER.info(f"Setting up scratch area: {config.root}")
 
     """ fail early """
     for repo in config.repositories:

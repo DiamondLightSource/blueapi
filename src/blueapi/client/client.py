@@ -1,5 +1,7 @@
+import itertools
 import logging
 import time
+from collections.abc import Iterable
 from concurrent.futures import Future
 from functools import cached_property
 from itertools import chain
@@ -196,6 +198,8 @@ class BlueapiClient:
     _rest: BlueapiRestClient
     _events: EventBusClient | None
     _instrument_session: str | None = None
+    _callbacks: dict[int, OnAnyEvent]
+    _callback_id: itertools.count
 
     def __init__(
         self,
@@ -204,6 +208,8 @@ class BlueapiClient:
     ):
         self._rest = rest
         self._events = events
+        self._callbacks = {}
+        self._callback_id = itertools.count()
 
     @cached_property
     @start_as_current_span(TRACER)
@@ -257,6 +263,22 @@ class BlueapiClient:
     def instrument_session(self, session: str):
         log.debug("Setting instrument_session to %s", session)
         self._instrument_session = session
+
+    def with_instrument_session(self, session: str) -> Self:
+        self.instrument_session = session
+        return self
+
+    def add_callback(self, callback: OnAnyEvent) -> int:
+        cb_id = next(self._callback_id)
+        self._callbacks[cb_id] = callback
+        return cb_id
+
+    def remove_callback(self, id: int):
+        self._callbacks.pop(id)
+
+    @property
+    def callbacks(self) -> Iterable[OnAnyEvent]:
+        return self._callbacks.values()
 
     @property
     @start_as_current_span(TRACER)
@@ -355,6 +377,13 @@ class BlueapiClient:
             if relates_to_task:
                 if on_event is not None:
                     on_event(event)
+                for cb in self._callbacks.values():
+                    try:
+                        cb(event)
+                    except Exception as e:
+                        log.error(
+                            f"Callback ({cb}) failed for event: {event}", exc_info=e
+                        )
                 if isinstance(event, WorkerEvent) and (
                     (event.is_complete()) and (ctx.correlation_id == task_id)
                 ):

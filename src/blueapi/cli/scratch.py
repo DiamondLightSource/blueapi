@@ -17,6 +17,7 @@ _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
 LOGGER = logging.getLogger(__name__)
 
+
 def setup_scratch(
     config: ScratchConfig, install_timeout: float = _DEFAULT_INSTALL_TIMEOUT
 ) -> None:

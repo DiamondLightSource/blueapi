@@ -764,3 +764,82 @@ def test_plan_invalid_param_mapping(args, kwargs, msg):
     with pytest.raises(TypeError, match=msg):
         plan(*args, **kwargs)
     client.run_task.assert_not_called()
+
+
+def test_adding_removing_callback(client):
+    def callback(*a, **kw):
+        pass
+
+    cb_id = client.add_callback(callback)
+    assert len(client.callbacks) == 1
+    client.remove_callback(cb_id)
+    assert len(client.callbacks) == 0
+
+
+@pytest.mark.parametrize(
+    "test_event",
+    [
+        WorkerEvent(
+            state=WorkerState.RUNNING,
+            task_status=TaskStatus(
+                task_id="foo",
+                task_complete=False,
+                task_failed=False,
+            ),
+        ),
+        ProgressEvent(task_id="foo"),
+        DataEvent(name="start", doc={}, task_id="0000-1111"),
+    ],
+)
+def test_client_callbacks(
+    client_with_events: BlueapiClient,
+    mock_rest: Mock,
+    mock_events: MagicMock,
+    test_event: AnyEvent,
+):
+    callback = Mock()
+    client_with_events.add_callback(callback)
+    mock_rest.create_task.return_value = TaskResponse(task_id="foo")
+    mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
+
+    ctx = Mock()
+    ctx.correlation_id = "foo"
+
+    def subscribe(on_event: Callable[[AnyEvent, MessageContext], None]):
+        on_event(test_event, ctx)
+        on_event(COMPLETE_EVENT, ctx)
+
+    mock_events.subscribe_to_all_events = subscribe  # type: ignore
+
+    client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+
+    assert callback.mock_calls == [call(test_event), call(COMPLETE_EVENT)]
+
+
+def test_client_callback_failures(
+    client_with_events: BlueapiClient,
+    mock_rest: Mock,
+    mock_events: MagicMock,
+):
+    failing_callback = Mock(side_effect=ValueError("Broken callback"))
+    callback = Mock()
+    client_with_events.add_callback(failing_callback)
+    client_with_events.add_callback(callback)
+    mock_rest.create_task.return_value = TaskResponse(task_id="foo")
+    mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
+
+    ctx = Mock()
+    ctx.correlation_id = "foo"
+
+    evt = DataEvent(name="start", doc={}, task_id="foo")
+
+    def subscribe(on_event: Callable[[AnyEvent, MessageContext], None]):
+        on_event(evt, ctx)
+        on_event(COMPLETE_EVENT, ctx)
+
+    mock_events.subscribe_to_all_events = subscribe  # type: ignore
+
+    client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+
+    assert failing_callback.mock_calls == [call(evt), call(COMPLETE_EVENT)]
+    assert callback.mock_calls == [call(evt), call(COMPLETE_EVENT)]

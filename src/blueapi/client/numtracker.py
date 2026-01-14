@@ -8,6 +8,8 @@ from pydantic import Field, HttpUrl
 
 from blueapi.utils import BlueapiBaseModel
 
+LOGGER = logging.getLogger(__name__)
+
 
 class DirectoryPath(BlueapiBaseModel):
     """
@@ -105,5 +107,5 @@ class NumtrackerClient:
             raise RuntimeError(f"Numtracker error: {json['errors']}")
 
         new_collection = NumtrackerScanMutationResponse.model_validate(json["data"])
-        logging.debug("New NumtrackerNewScan: %s", new_collection)
+        LOGGER.debug("New NumtrackerNewScan: %s", new_collection)
         return new_collection

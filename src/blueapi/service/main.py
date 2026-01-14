@@ -210,7 +210,7 @@ async def on_token_error_401(_: Request, __: Exception):
 def root_redirect(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     """Redirect to docs url"""
     return RedirectResponse(
-        status_code=status.HTTP_308_PERMANENT_REDIRECT, url=DOCS_ENDPOINT
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT, url=DOCS_ENDPOINT
     )
 
 

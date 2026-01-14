@@ -208,11 +208,9 @@ async def on_token_error_401(_: Request, __: Exception):
 @secure_router.get("/", include_in_schema=False)
 def root_redirect(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     """Redirect to docs url"""
-    config = runner.run(interface.config)
-
     return RedirectResponse(
         status_code=status.HTTP_308_PERMANENT_REDIRECT,
-        url=config.api.docs_endpoint,
+        url=interface.config().api.docs_endpoint,
     )
 
 

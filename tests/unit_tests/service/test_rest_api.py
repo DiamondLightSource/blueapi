@@ -744,6 +744,15 @@ def test_logout(
     )
 
 
+def test_docs_redirect(
+    mock_authn_server,
+    client_with_auth: TestClient,
+):
+    client_with_auth.follow_redirects = False
+    response = client_with_auth.get("/")
+    assert response.headers.get("location") == RestConfig().docs_endpoint
+
+
 @pytest.mark.parametrize("has_oidc_config", [True, False])
 def test_logout_when_oidc_config_invalid(
     has_oidc_config: bool,

@@ -207,7 +207,7 @@ async def on_token_error_401(_: Request, __: Exception):
 
 
 @secure_router.get("/", include_in_schema=False)
-def root_redirect(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
+def root_redirect() -> RedirectResponse:
     """Redirect to docs url"""
     return RedirectResponse(
         status_code=status.HTTP_307_TEMPORARY_REDIRECT, url=DOCS_ENDPOINT

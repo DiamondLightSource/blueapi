@@ -42,6 +42,8 @@ from blueapi.worker import ProgressEvent, WorkerEvent
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
+LOGGER = logging.getLogger(__name__)
+
 
 @click.group(
     invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
@@ -493,7 +495,7 @@ def logout(obj: dict) -> None:
     except FileNotFoundError:
         print("Logged out")
     except ValueError as e:
-        logging.debug("Invalid login token: %s", e)
+        LOGGER.debug("Invalid login token: %s", e)
         raise ClickException(
             "Login token is not valid - remove before trying again"
         ) from e

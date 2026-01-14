@@ -296,6 +296,9 @@ class BlueskyContext:
             or build_result.connection_errors
         ):
             LOGGER.warning("Device manager did not build any devices")
+
+        utils.report_successful_devices(build_result.devices, mock)
+
         return build_result.devices, {
             **build_result.build_errors,
             **build_result.connection_errors,

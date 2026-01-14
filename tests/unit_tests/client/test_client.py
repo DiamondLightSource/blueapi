@@ -616,6 +616,12 @@ def test_setting_instrument_session(client):
     assert client.instrument_session == "cm12345-4"
 
 
+def test_fluent_instrument_session_setter(client):
+    client2 = client.with_instrument_session("cm12345-3")
+    assert client is client2
+    assert client.instrument_session == "cm12345-3"
+
+
 def test_plan_cache_ignores_underscores(client):
     cache = PlanCache(client, [PlanModel(name="_ignored"), PlanModel(name="used")])
     with pytest.raises(AttributeError, match="_ignored"):

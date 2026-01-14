@@ -27,6 +27,7 @@ from blueapi.config import (
     PlanSource,
     ScratchConfig,
     StompConfig,
+    TiledConfig,
 )
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
@@ -42,7 +43,7 @@ from blueapi.service.model import (
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.utils.path_provider import StartDocumentPathProvider
-from blueapi.worker.event import TaskStatusEnum, WorkerState
+from blueapi.worker.event import TaskStatus, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -363,6 +364,54 @@ def test_get_task_by_id(
         is_pending=True,
         errors=[],
     )
+
+
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_remove_tiled_subscriber(worker, context, from_uri, writer):
+    task = WorkerTask(task_id="foo_bar")
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.subscribe.return_value = 17
+    worker().worker_events.subscribe.return_value = 42
+
+    interface.begin_task(task)
+
+    writer.assert_called_once_with(from_uri(), batch_size=1)
+    context().run_engine.subscribe.assert_called_once_with(writer())
+    worker().worker_events.subscribe.assert_called_once()
+
+    inner_callback = worker().worker_events.subscribe.call_args.args[0]
+
+    inner_callback(
+        WorkerEvent(
+            state=WorkerState.RUNNING,
+            task_status=TaskStatus(
+                task_id="foo_bar",
+                task_complete=False,
+                task_failed=False,
+            ),
+        ),
+        "c_id",
+    )
+    context().run_engine.unsubscribe.assert_not_called()
+    worker().worker_events.unsubscribe.assert_not_called()
+
+    inner_callback(
+        WorkerEvent(
+            state=WorkerState.IDLE,
+            task_status=TaskStatus(
+                task_id="foo_bar",
+                task_complete=True,
+                task_failed=False,
+            ),
+        ),
+        "c_id",
+    )
+    context().run_engine.unsubscribe.assert_called_once_with(17)
+    worker().worker_events.unsubscribe.assert_called_once_with(42)
 
 
 def test_get_oidc_config(oidc_config: OIDCConfig):

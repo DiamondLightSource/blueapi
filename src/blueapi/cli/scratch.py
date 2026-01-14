@@ -66,12 +66,12 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
     os.umask(stat.S_IWOTH)
 
     if not local_directory.exists():
-        logging.info(f"Cloning {remote_url}")
+        LOGGER.info(f"Cloning {remote_url}")
         Repo.clone_from(remote_url, local_directory)
-        logging.info(f"Cloned {remote_url} -> {local_directory}")
+        LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
     elif local_directory.is_dir():
         Repo(local_directory)
-        logging.info(f"Found {local_directory}")
+        LOGGER.info(f"Found {local_directory}")
     else:
         raise KeyError(
             f"Unable to open {local_directory} as a git repository because it is a file"
@@ -92,7 +92,7 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
 
     _validate_directory(path)
 
-    logging.info(f"Installing {path}")
+    LOGGER.info(f"Installing {path}")
     process = Popen(
         [
             "uv",

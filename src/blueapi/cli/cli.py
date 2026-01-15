@@ -42,6 +42,8 @@ from blueapi.worker import ProgressEvent, WorkerEvent
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
+LOGGER = logging.getLogger(__name__)
+
 
 @click.group(
     invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
@@ -120,9 +122,9 @@ def schema(output: Path | None = None, update: bool = False) -> None:
 )
 @main.command(name="config-schema")
 def config_schema(output: Path | None = None, update: bool = False) -> None:
-    """Generates a json schema from the ApplicationConfig pydantic basemodel"""
-    schema = ApplicationConfig.model_json_schema()
+    from blueapi.config import generate_config_schema
 
+    schema = generate_config_schema()
     if update:
         output = config.CONFIG_SCHEMA_LOCATION
     if output is not None:
@@ -493,7 +495,7 @@ def logout(obj: dict) -> None:
     except FileNotFoundError:
         print("Logged out")
     except ValueError as e:
-        logging.debug("Invalid login token: %s", e)
+        LOGGER.debug("Invalid login token: %s", e)
         raise ClickException(
             "Login token is not valid - remove before trying again"
         ) from e

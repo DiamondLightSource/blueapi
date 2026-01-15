@@ -15,6 +15,8 @@ from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
+LOGGER = logging.getLogger(__name__)
+
 
 def setup_scratch(
     config: ScratchConfig, install_timeout: float = _DEFAULT_INSTALL_TIMEOUT
@@ -30,7 +32,7 @@ def setup_scratch(
 
     _validate_root_directory(config.root, config.required_gid)
 
-    logging.info(f"Setting up scratch area: {config.root}")
+    LOGGER.info(f"Setting up scratch area: {config.root}")
 
     """ fail early """
     for repo in config.repositories:
@@ -64,12 +66,12 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
     os.umask(stat.S_IWOTH)
 
     if not local_directory.exists():
-        logging.info(f"Cloning {remote_url}")
+        LOGGER.info(f"Cloning {remote_url}")
         Repo.clone_from(remote_url, local_directory)
-        logging.info(f"Cloned {remote_url} -> {local_directory}")
+        LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
     elif local_directory.is_dir():
         Repo(local_directory)
-        logging.info(f"Found {local_directory}")
+        LOGGER.info(f"Found {local_directory}")
     else:
         raise KeyError(
             f"Unable to open {local_directory} as a git repository because it is a file"
@@ -90,7 +92,7 @@ def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> No
 
     _validate_directory(path)
 
-    logging.info(f"Installing {path}")
+    LOGGER.info(f"Installing {path}")
     process = Popen(
         [
             "uv",

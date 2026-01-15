@@ -12,4 +12,6 @@ spec:
   resources:
     requests:
       storage: 1Gi
+  storageClassName: ""
+  volumeName: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
 {{- end }}

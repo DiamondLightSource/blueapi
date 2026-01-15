@@ -4,9 +4,8 @@ import time
 from collections.abc import Iterable
 from concurrent.futures import Future
 from functools import cached_property
-from itertools import chain
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -41,6 +40,7 @@ from blueapi.worker import WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
+from .cache import DeviceCache, PlanCache
 from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
 from .rest import BlueapiRestClient, BlueskyRemoteControlError
 
@@ -52,149 +52,6 @@ log = logging.getLogger(__name__)
 
 class MissingInstrumentSessionError(Exception):
     pass
-
-
-class PlanCache:
-    def __init__(self, client: "BlueapiClient", plans: list[PlanModel]):
-        self._cache = {
-            model.name: Plan(name=model.name, model=model, client=client)
-            for model in plans
-        }
-        for name, plan in self._cache.items():
-            if name.startswith("_"):
-                continue
-            setattr(self, name, plan)
-
-    def __getitem__(self, name: str) -> "Plan":
-        return self._cache[name]
-
-    def __getattr__(self, name: str) -> "Plan":
-        raise AttributeError(f"No plan named '{name}' available")
-
-    def __iter__(self):
-        return iter(self._cache.values())
-
-    def __repr__(self) -> str:
-        return f"PlanCache({len(self._cache)} plans)"
-
-
-class DeviceCache:
-    def __init__(self, rest: BlueapiRestClient):
-        self._rest = rest
-        self._cache = {
-            model.name: DeviceRef(name=model.name, cache=self, model=model)
-            for model in rest.get_devices().devices
-        }
-        for name, device in self._cache.items():
-            if name.startswith("_"):
-                continue
-            setattr(self, name, device)
-
-    def __getitem__(self, name: str) -> "DeviceRef":
-        if dev := self._cache.get(name):
-            return dev
-        try:
-            model = self._rest.get_device(name)
-            device = DeviceRef(name=name, cache=self, model=model)
-            self._cache[name] = device
-            setattr(self, model.name, device)
-            return device
-        except KeyError:
-            pass
-        raise AttributeError(f"No device named '{name}' available")
-
-    def __getattr__(self, name: str) -> "DeviceRef":
-        if name.startswith("_"):
-            return super().__getattribute__(name)
-        return self[name]
-
-    def __iter__(self):
-        return iter(self._cache.values())
-
-    def __repr__(self) -> str:
-        return f"DeviceCache({len(self._cache)} devices)"
-
-
-class DeviceRef(str):
-    model: DeviceModel
-    _cache: DeviceCache
-
-    def __new__(cls, name: str, cache: DeviceCache, model: DeviceModel):
-        instance = super().__new__(cls, name)
-        instance.model = model
-        instance._cache = cache
-        return instance
-
-    def __getattr__(self, name) -> "DeviceRef":
-        if name.startswith("_"):
-            raise AttributeError(f"No child device named {name}")
-        return self._cache[f"{self}.{name}"]
-
-    def __repr__(self):
-        return f"Device({self})"
-
-
-class Plan:
-    def __init__(self, name, model: PlanModel, client: "BlueapiClient"):
-        self.name = name
-        self.model = model
-        self._client = client
-        self.__doc__ = model.description
-
-    def __call__(self, *args, **kwargs):
-        req = TaskRequest(
-            name=self.name,
-            params=self._build_args(*args, **kwargs),
-            instrument_session=self._client.instrument_session,
-        )
-        self._client.run_task(req)
-
-    @property
-    def help_text(self) -> str:
-        return self.model.description or f"Plan {self!r}"
-
-    @property
-    def properties(self) -> set[str]:
-        return self.model.parameter_schema.get("properties", {}).keys()
-
-    @property
-    def required(self) -> list[str]:
-        return self.model.parameter_schema.get("required", [])
-
-    def _build_args(self, *args, **kwargs):
-        log.info(
-            "Building args for %s, using %s and %s",
-            "[" + ",".join(self.properties) + "]",
-            args,
-            kwargs,
-        )
-
-        if len(args) > len(self.properties):
-            raise TypeError(f"{self.name} got too many arguments")
-        if extra := {k for k in kwargs if k not in self.properties}:
-            raise TypeError(f"{self.name} got unexpected arguments: {extra}")
-
-        params = {}
-        # Initially fill parameters using positional args assuming the order
-        # from the parameter_schema
-        for req, arg in zip(self.properties, args, strict=False):
-            params[req] = arg
-
-        # Then append any values given via kwargs
-        for key, value in kwargs.items():
-            # If we've already assumed a positional arg was this value, bail out
-            if key in params:
-                raise TypeError(f"{self.name} got multiple values for {key}")
-            params[key] = value
-
-        if missing := {k for k in self.required if k not in params}:
-            raise TypeError(f"Missing argument(s) for {missing}")
-        return params
-
-    def __repr__(self):
-        opts = [p for p in self.properties if p not in self.required]
-        params = ", ".join(chain(self.required, (f"{opt}=None" for opt in opts)))
-        return f"{self.name}({params})"
 
 
 class BlueapiClient:
@@ -248,7 +105,7 @@ class BlueapiClient:
     @cached_property
     @start_as_current_span(TRACER)
     def plans(self) -> PlanCache:
-        return PlanCache(self, self._rest.get_plans().plans)
+        return PlanCache(self.run_plan, self._rest.get_plans().plans)
 
     @cached_property
     @start_as_current_span(TRACER)
@@ -438,6 +295,15 @@ class BlueapiClient:
         """
 
         return self.active_task
+
+    @start_as_current_span(TRACER, "name", "params")
+    def run_plan(self, name: str, params: dict[str, Any]) -> WorkerEvent:
+        req = TaskRequest(
+            name=name,
+            params=params,
+            instrument_session=self.instrument_session,
+        )
+        return self.run_task(req)
 
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(

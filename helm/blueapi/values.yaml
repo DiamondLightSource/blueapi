@@ -36,8 +36,7 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext:
-  {}
+podSecurityContext: {}
   # fsGroup: 2000
 
 securityContext:
@@ -62,8 +61,7 @@ service:
 ingress:
   enabled: false
   className: "nginx"
-  annotations:
-    {}
+  annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
@@ -96,7 +94,6 @@ resources:
   requests:
     cpu: 200m
     memory: 400Mi
-  
 
 # -- Override resources for init container. By default copies resources of main container.
 initResources: {}
@@ -201,7 +198,7 @@ worker:
   # -- If initContainer is enabled the default branch of python projects in this section are installed
   # into the venv *without their dependencies*
   scratch:
-    root: /blueapi-plugins/scratch
+    root: /workspace
     repositories: []
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
@@ -230,6 +227,3 @@ debug:
   suspend: false
   # -- If enabled configures debugpy to use the option `--log-to-stderr`
   log_to_stderr: false
-
-# -- Not used, but must be present for validation when using as a dependency of another chart
-global: {}

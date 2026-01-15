@@ -58,7 +58,7 @@ from .model import (
 from .runner import WorkerDispatcher
 
 #: API version to publish in OpenAPI schema
-REST_API_VERSION = "1.1.1"
+REST_API_VERSION = "1.1.2"
 
 LICENSE_INFO: dict[str, str] = {
     "name": "Apache 2.0",
@@ -71,6 +71,7 @@ CONTEXT_HEADER = "traceparent"
 VENDOR_CONTEXT_HEADER = "tracestate"
 AUTHORIZAITON_HEADER = "authorization"
 PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
+DOCS_ENDPOINT = "/docs"
 
 
 class Tag(str, Enum):
@@ -132,7 +133,7 @@ open_router = APIRouter()
 
 def get_app(config: ApplicationConfig):
     app = FastAPI(
-        docs_url="/docs",
+        docs_url=DOCS_ENDPOINT,
         title="BlueAPI Control",
         summary="BlueAPI wraps bluesky plans and devices and "
         "exposes endpoints to send commands/receive data",
@@ -202,6 +203,14 @@ async def on_token_error_401(_: Request, __: Exception):
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Not authenticated"},
         headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+@secure_router.get("/", include_in_schema=False)
+def root_redirect() -> RedirectResponse:
+    """Redirect to docs url"""
+    return RedirectResponse(
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT, url=DOCS_ENDPOINT
     )
 
 
@@ -298,7 +307,7 @@ example_task_request = TaskRequest(
 def submit_task(
     request: Request,
     response: Response,
-    task_request: Annotated[TaskRequest, Body(..., example=example_task_request)],
+    task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     """Submit a task to the worker."""

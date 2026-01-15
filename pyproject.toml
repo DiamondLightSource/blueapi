@@ -13,7 +13,7 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "tiled[client]>=0.2.0",
+    "tiled[client]>=0.2.3",
     "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd-async>=0.13.5",
     "aioca",
@@ -50,7 +50,7 @@ dev = [
     "pre-commit",
     "pydata-sphinx-theme>=0.15.4",
     "pytest",
-    "pyright<1.1.407",             # https://github.com/bluesky/scanspec/issues/190
+    "pyright!=1.1.407",             # https://github.com/bluesky/scanspec/issues/190
     "pytest-cov",
     "pytest-asyncio",
     "responses",
@@ -69,6 +69,7 @@ dev = [
     "mock",
     "jwcrypto",
     "deepdiff",
+    "tiled[minimal-server]>=0.2.3", # For system-test of dls.py
 ]
 
 [project.scripts]

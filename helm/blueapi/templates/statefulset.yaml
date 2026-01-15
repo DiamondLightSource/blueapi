@@ -97,7 +97,7 @@ spec:
             cp -r /app/.venv/* /artefacts
         env:
         - name: UV_CACHE_DIR
-          value: {{ (.Values.worker.scratch).root }}
+          value: {{ (.Values.worker.scratch).root }}/.uv-cache
         volumeMounts:
           - name: init-config
             mountPath: "/config"
@@ -200,7 +200,7 @@ spec:
                 name: {{ include "blueapi.fullname" . }}-otel-config
           env:
             - name: UV_CACHE_DIR
-              value: {{ (.Values.worker.scratch).root }}
+              value: {{ (.Values.worker.scratch).root }}/.uv-cache
             {{- if .Values.extraEnvVars }}
               {{- toYaml .Values.extraEnvVars | nindent 12 }}
             {{- end }}

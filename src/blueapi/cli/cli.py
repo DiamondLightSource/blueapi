@@ -154,6 +154,19 @@ def start_application(obj: dict):
     start(config)
 
 
+@main.command()
+@click.pass_obj
+@click.argument("target", type=click.Path(file_okay=False))
+def generate_stubs(obj: dict, target: Path):
+    click.echo(f"Writing stubs to {target}")
+
+    config: ApplicationConfig = obj["config"]
+    bc = BlueapiClient.from_config(config)
+    from . import stubgen
+
+    stubgen.generate_stubs(Path(target), list(bc.plans), list(bc.devices))
+
+
 @main.group()
 @click.option(
     "-o",

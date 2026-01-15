@@ -43,8 +43,8 @@ class Plan:
         self._runner = runner
         self.__doc__ = model.description
 
-    def __call__(self, *args, **kwargs):
-        self._runner(self.name, self._build_args(*args, **kwargs))
+    def __call__(self, *args, **kwargs) -> WorkerEvent:
+        return self._runner(self.name, self._build_args(*args, **kwargs))
 
     @property
     def help_text(self) -> str:

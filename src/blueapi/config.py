@@ -112,7 +112,9 @@ class TiledConfig(BlueapiBaseModel):
         default=False,
     )
     url: HttpUrl = HttpUrl("http://localhost:8407")
-    api_key: str | None = os.environ.get("TILED_SINGLE_USER_API_KEY", None)
+    token_exchange_secret: str | None = os.environ.get("TOKEN_EXCHANGE_SECRET", None)
+    token_url: str | None = None
+    token_exchange_client_id: str = Field(description="Token exchange Client ID")
 
 
 class WorkerEventConfig(BlueapiBaseModel):

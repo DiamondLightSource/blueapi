@@ -1,17 +1,21 @@
+import asyncio
+import threading
 from collections.abc import Mapping
 from functools import cache
 from typing import Any
 
+import httpx
 from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
+from blueapi.service.main import AUTHORIZAITON_HEADER
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,
@@ -169,6 +173,48 @@ def clear_task(task_id: str) -> str:
     return worker().clear_task(task_id)
 
 
+class TiledAuth(httpx.Auth):
+    def __init__(self, tiled_config: TiledConfig, access_token: str):
+        self._tiled_config = tiled_config
+        from fastapi.security.utils import get_authorization_scheme_param
+
+        _, self._access_token = get_authorization_scheme_param(access_token)
+        self._sync_lock = threading.RLock()
+        self._async_lock = asyncio.Lock()
+
+    def sync_get_token(self):
+        request_data = {
+            "client_id": self._tiled_config.token_exchange_client_id,
+            "client_secret": self._tiled_config.token_exchange_secret,
+            "subject_token": self._access_token,
+            "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+        }
+        with self._sync_lock:
+            assert self._tiled_config.token_url
+            response = httpx.post(
+                self._tiled_config.token_url,
+                data=request_data,
+            )
+            response.raise_for_status()
+            return response.json().get("access_token")
+
+    def sync_auth_flow(self, request):
+        token = self.sync_get_token()
+        request.headers["Authorization"] = f"Bearer {token}"
+        yield request
+
+    async def async_get_token(self):
+        raise RuntimeError
+        # async with self._async_lock:
+        #     ...
+
+    async def async_auth_flow(self, request):
+        token = await self.async_get_token()
+        request.headers["Authorization"] = f"Bearer {token}"
+        yield request
+
+
 def begin_task(
     task: WorkerTask, pass_through_headers: Mapping[str, str] | None = None
 ) -> WorkerTask:
@@ -181,10 +227,13 @@ def begin_task(
 
     if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
+        assert pass_through_headers
         tiled_client = from_uri(
             str(tiled_config.url),
-            api_key=tiled_config.api_key,
-            headers=pass_through_headers,
+            auth=TiledAuth(
+                tiled_config,
+                access_token=pass_through_headers.get(AUTHORIZAITON_HEADER, ""),
+            ),
         )
         tiled_writer_token = active_context.run_engine.subscribe(
             TiledWriter(tiled_client, batch_size=1)

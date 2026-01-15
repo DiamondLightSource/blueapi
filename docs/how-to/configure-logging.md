@@ -25,8 +25,8 @@ BlueAPI is configured to handle logging from any python code it executes.
 
 ```
 import logging
-logger = logging.getLogger(__name__)
-logger.info("FOO")
+LOGGER = logging.getLogger(__name__)
+LOGGER.info("FOO")
 ```
 
 # Kubernetes

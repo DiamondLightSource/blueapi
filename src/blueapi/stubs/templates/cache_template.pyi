@@ -4,6 +4,13 @@ from blueapi.client.rest import BlueapiRestClient
 from blueapi.service.model import DeviceModel, PlanModel
 from blueapi.worker.event import WorkerEvent
 
+{#-
+ This file is based on the cache.py file in blueapi/client/cache.py and should
+ be kept in sync with changes there.
+#}
+
+# This file is auto-generated for a live server and should not be modified directly
+
 PlanRunner = Callable[[str, dict[str, Any]], WorkerEvent]
 
 class PlanCache:
@@ -24,6 +31,7 @@ class PlanCache:
 
 
 class Plan:
+    model: PlanModel
     name: str
     def __init__(self, name, model: PlanModel, runner: PlanRunner) -> None: ...
     def __call__(self, *args, **kwargs):  # -> None:
@@ -47,7 +55,6 @@ class DeviceRef(str):
 class DeviceCache:
     def __init__(self, rest: BlueapiRestClient) -> None: ...
     def __getitem__(self, name: str) -> DeviceRef: ...
-    def __getattr__(self, name: str) -> DeviceRef: ...
     def __iter__(self):  # -> Iterator[DeviceRef]:
         ...
     def __repr__(self) -> str: ...

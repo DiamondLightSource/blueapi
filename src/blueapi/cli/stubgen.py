@@ -7,6 +7,8 @@ from typing import Self
 from jinja2 import Environment, PackageLoader
 
 from blueapi.client.cache import DeviceRef, Plan
+from blueapi.core import context
+from blueapi.core.bluesky_types import BLUESKY_PROTOCOLS
 
 log = logging.getLogger(__name__)
 
@@ -27,8 +29,37 @@ class PlanSpec:
     @classmethod
     def from_plan(cls, plan: Plan) -> Self:
         req = set(plan.required)
-        args = [ArgSpec(arg, "Any", arg not in req) for arg in plan.properties]
+        args = [
+            ArgSpec(arg, _map_type(spec), arg not in req)
+            for arg, spec in plan.model.parameter_schema.get("properties", {}).items()
+        ]
         return cls(plan.name, plan.help_text, args)
+
+
+BLUESKY_PROTOCOL_NAMES = {context.qualified_name(proto) for proto in BLUESKY_PROTOCOLS}
+
+
+def _map_type(spec) -> str:
+    """Best effort attempt at making useful type hints for plans"""
+    match spec.get("type"):
+        case "array":
+            return f"list[{_map_type(spec.get('items'))}]"
+        case "integer":
+            return "int"
+        case "number":
+            return "float"
+        case proto if proto in BLUESKY_PROTOCOL_NAMES:
+            return "DeviceRef"
+        case "object":
+            return "dict[str, Any]"
+        case "string":
+            return "str"
+        case "boolean":
+            return "bool"
+        case None if opts := spec.get("anyOf"):
+            return "|".join(_map_type(opt) for opt in opts)
+        case _:
+            return "Any"
 
 
 def generate_stubs(target: Path, plans: list[Plan], devices: list[DeviceRef]):

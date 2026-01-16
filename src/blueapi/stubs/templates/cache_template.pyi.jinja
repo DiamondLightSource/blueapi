@@ -20,7 +20,8 @@ class PlanCache:
         ...
     def __repr__(self) -> str: ...
 
-    {% for item in plans -%}
+### Generated plans
+{%- for item in plans %}
     def {{ item.name }}(self,{% for arg in item.args %}
             {{ arg.name }}: {{ arg.type }}{% if arg.optional %} | None = None{% endif %},
             {%- endfor %}
@@ -29,7 +30,8 @@ class PlanCache:
         {{ item.docs | docstring | indent(8) }}
         """
         ...
-    {% endfor %}
+{% endfor -%}
+### End
 
 
 class Plan:
@@ -61,6 +63,8 @@ class DeviceCache:
         ...
     def __repr__(self) -> str: ...
 
-    {% for item in devices -%}
+### Generated devices
+    {%- for item in devices %}
     {{ item }}: DeviceRef
-    {% endfor %}
+    {%- endfor %}
+### End

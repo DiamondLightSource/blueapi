@@ -69,7 +69,7 @@ class BlueapiClient:
     @cached_property
     @start_as_current_span(TRACER)
     def plans(self) -> PlanCache:
-        return PlanCache(self, self._rest.get_plans().plans)
+        return PlanCache(self.run_plan, self._rest.get_plans().plans)
 
     @cached_property
     @start_as_current_span(TRACER)

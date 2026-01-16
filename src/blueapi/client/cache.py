@@ -9,10 +9,18 @@ from blueapi.worker.event import WorkerEvent
 
 log = logging.getLogger(__name__)
 
+
+# This file should be kept in sync with the type stub template in stubs/templates
+
+
 PlanRunner = Callable[[str, dict[str, Any]], WorkerEvent]
 
 
 class PlanCache:
+    """
+    Cache of plans available on the server
+    """
+
     def __init__(self, runner: PlanRunner, plans: list[PlanModel]):
         self._cache = {
             model.name: Plan(name=model.name, model=model, runner=runner)
@@ -37,6 +45,21 @@ class PlanCache:
 
 
 class Plan:
+    """
+    An interface to a plan on the blueapi server
+
+    This allows remote plans to be called (mostly) as if they were local
+    methods when writing user scripts.
+
+    If you are seeing this help while using blueapi as a library, generating
+    type stubs may be helpful for type checking and plan discovery, eg
+
+        blueapi generate-stubs /tmp/blueapi-stubs
+        uv add --editable /tmp/blueapi-stubs
+    """
+
+    model: PlanModel
+
     def __init__(self, name, model: PlanModel, runner: PlanRunner):
         self.name = name
         self.model = model
@@ -44,6 +67,9 @@ class Plan:
         self.__doc__ = model.description
 
     def __call__(self, *args, **kwargs) -> WorkerEvent:
+        """
+        Run the plan on the server mapping the given args into the required parameters
+        """
         return self._runner(self.name, self._build_args(*args, **kwargs))
 
     @property

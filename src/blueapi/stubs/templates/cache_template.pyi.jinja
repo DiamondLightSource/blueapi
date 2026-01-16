@@ -25,7 +25,9 @@ class PlanCache:
             {{ arg.name }}: {{ arg.type }}{% if arg.optional %} | None = None{% endif %},
             {%- endfor %}
     ) -> WorkerEvent:
-        """{{ item.docs }}"""
+        """
+        {{ item.docs | docstring | indent(8) }}
+        """
         ...
     {% endfor %}
 

@@ -158,6 +158,11 @@ def start_application(obj: dict):
 @click.pass_obj
 @click.argument("target", type=click.Path(file_okay=False))
 def generate_stubs(obj: dict, target: Path):
+    """
+    Generate a type-stubs project for blueapi for the currently running server.
+    This enables users using blueapi as a library to benefit from type checking
+    and linting when writing scripts against the BlueapiClient.
+    """
     click.echo(f"Writing stubs to {target}")
 
     config: ApplicationConfig = obj["config"]

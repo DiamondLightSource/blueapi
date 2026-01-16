@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from inspect import cleandoc
 from pathlib import Path
 from textwrap import dedent
-from typing import Self
+from typing import Self, TextIO
 
 from jinja2 import Environment, PackageLoader
 
@@ -96,7 +96,9 @@ def generate_stubs(target: Path, plans: list[Plan], devices: list[DeviceRef]):
     with open(py_typed, "w") as out:
         out.write("partial\n")
 
-    render_stub_file(stub_file, plans, devices)
+    log.debug("Writing stub file to %s", stub_file)
+    with open(stub_file, "w") as out:
+        render_stub_file(out, plans, devices)
 
 
 def _docstring(text: str) -> str:
@@ -105,13 +107,11 @@ def _docstring(text: str) -> str:
 
 
 def render_stub_file(
-    stub_file: Path, plan_models: list[Plan], devices: list[DeviceRef]
+    stub_file: TextIO, plan_models: list[Plan], devices: list[DeviceRef]
 ):
-    log.debug("Writing stub file to %s", stub_file)
     plans = [PlanSpec.from_plan(p) for p in plan_models]
 
     env = Environment(loader=PackageLoader("blueapi", package_path="stubs/templates"))
     env.filters["docstring"] = _docstring
     tmpl = env.get_template("cache_template.pyi.jinja")
-    with open(stub_file, "w") as out:
-        out.write(tmpl.render(plans=plans, devices=devices))
+    stub_file.write(tmpl.render(plans=plans, devices=devices))

@@ -109,13 +109,15 @@ def get_access_token() -> str:
     return response.json().get("access_token")
 
 
+def load_config(path: Path) -> ApplicationConfig:
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(path)
+    return loader.load()
+
+
 @pytest.fixture
 def client_with_stomp() -> BlueapiClient:
-    loader = ConfigLoader(ApplicationConfig)
-    loader.use_values_from_yaml(_DATA_PATH / "config-cli.yaml")
-    client = BlueapiClient.from_config(config=loader.load())
-
-    return client
+    return BlueapiClient.from_config(config=load_config(_DATA_PATH / "config-cli.yaml"))
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -132,9 +134,9 @@ def wait_for_server(client: BlueapiClient):
 
 @pytest.fixture(scope="module")
 def client() -> BlueapiClient:
-    loader = ConfigLoader(ApplicationConfig)
-    loader.use_values_from_yaml(_DATA_PATH / "config-cli-without-stomp.yaml")
-    return BlueapiClient.from_config(config=loader.load())
+    return BlueapiClient.from_config(
+        config=load_config(_DATA_PATH / "config-cli-without-stomp.yaml")
+    )
 
 
 @pytest.fixture

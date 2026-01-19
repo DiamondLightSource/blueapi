@@ -1,4 +1,3 @@
-import asyncio
 import threading
 import time
 from collections.abc import Mapping
@@ -18,6 +17,7 @@ from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConf
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
+from blueapi.service.constants import AUTHORIZAITON_HEADER
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,
@@ -221,18 +221,10 @@ class Token(BaseModel):
 
 
 class TiledAuth(httpx.Auth):
-    def __init__(self, tiled_config: TiledConfig, authorization_header_value: str):
+    def __init__(self, tiled_config: TiledConfig, blueapi_jwt_token: str):
         self._tiled_config = tiled_config
-        if self._tiled_config.token_url is None:
-            raise Exception("Token URL cannot be None")
-        self._token_url = self._tiled_config.token_url
-        from fastapi.security.utils import get_authorization_scheme_param
-
-        _, self._blueapi_token = get_authorization_scheme_param(
-            authorization_header_value
-        )
+        self._blueapi_jwt_token = blueapi_jwt_token
         self._sync_lock = threading.RLock()
-        self._async_lock = asyncio.Lock()
         self._access_token: Token | None = None
         self._refresh_token: Token | None = None
 
@@ -240,14 +232,14 @@ class TiledAuth(httpx.Auth):
         request_data = {
             "client_id": self._tiled_config.token_exchange_client_id,
             "client_secret": self._tiled_config.token_exchange_secret,
-            "subject_token": self._blueapi_token,
+            "subject_token": self._blueapi_jwt_token,
             "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
             "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
             "requested_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
         }
         with self._sync_lock:
             response = httpx.post(
-                self._token_url,
+                self._tiled_config.token_url,
                 data=request_data,
             )
             response.raise_for_status()
@@ -258,7 +250,7 @@ class TiledAuth(httpx.Auth):
             raise Exception("Cannot refresh tokens as no refresh token available")
         with self._sync_lock:
             response = httpx.post(
-                self._token_url,
+                self._tiled_config.token_url,
                 data={
                     "client_id": self._tiled_config.token_exchange_client_id,
                     "client_secret": self._tiled_config.token_exchange_secret,
@@ -304,14 +296,25 @@ def begin_task(
 
     if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
-        assert pass_through_headers
+        blueapi_jwt_token = ""
+        if pass_through_headers is None:
+            raise ValueError(
+                f"Tiled config is enabled but no {AUTHORIZAITON_HEADER} in request"
+            )
+        authorization_header_value = pass_through_headers.get(AUTHORIZAITON_HEADER)
+        from fastapi.security.utils import get_authorization_scheme_param
+
+        _, blueapi_jwt_token = get_authorization_scheme_param(
+            authorization_header_value
+        )
+
+        if blueapi_jwt_token == "":
+            raise KeyError("Tiled config is enabled but no Bearer Token in request")
         tiled_client = from_uri(
             str(tiled_config.url),
             auth=TiledAuth(
                 tiled_config,
-                authorization_header_value=pass_through_headers.get(
-                    "authorization", ""
-                ),
+                blueapi_jwt_token=blueapi_jwt_token,
             ),
         )
         tiled_writer_token = active_context.run_engine.subscribe(

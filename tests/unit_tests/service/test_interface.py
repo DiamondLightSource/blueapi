@@ -31,6 +31,7 @@ from blueapi.config import (
 )
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
+from blueapi.service.constants import AUTHORIZAITON_HEADER
 from blueapi.service.model import (
     DeviceModel,
     PackageInfo,
@@ -377,7 +378,9 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
     context().run_engine.subscribe.return_value = 17
     worker().worker_events.subscribe.return_value = 42
 
-    interface.begin_task(task)
+    interface.begin_task(
+        task, pass_through_headers={AUTHORIZAITON_HEADER: "Bearer blueapi_token"}
+    )
 
     writer.assert_called_once_with(from_uri(), batch_size=1)
     context().run_engine.subscribe.assert_called_once_with(writer())

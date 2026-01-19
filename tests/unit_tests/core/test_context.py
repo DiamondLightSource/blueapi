@@ -39,6 +39,7 @@ from blueapi.config import (
     DodalSource,
     EnvironmentConfig,
     MetadataConfig,
+    OIDCConfig,
     PlanSource,
     TiledConfig,
 )
@@ -858,21 +859,22 @@ def test_setup_default_not_makes_tiled_inserter():
     assert context.tiled_conf is None
 
 
-@pytest.mark.parametrize("api_key", [None, "foo"])
-def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
-    config = TiledConfig(enabled=True, api_key=api_key)
+def test_setup_with_tiled_makes_tiled_inserter(
+    oidc_config: OIDCConfig, mock_authn_server
+):
+    config = TiledConfig(enabled=True, token_exchange_secret="secret")
     context = BlueskyContext(
         ApplicationConfig(
             tiled=config,
             env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+            oidc=oidc_config,
         )
     )
     assert context.tiled_conf == config
 
 
-@pytest.mark.parametrize("api_key", [None, "foo"])
-def test_must_have_instrument_set_for_tiled(api_key: str | None):
-    config = TiledConfig(enabled=True, api_key=api_key)
+def test_must_have_instrument_set_for_tiled():
+    config = TiledConfig(enabled=True)
     with pytest.raises(InvalidConfigError):
         BlueskyContext(
             ApplicationConfig(tiled=config, env=EnvironmentConfig(metadata=None))

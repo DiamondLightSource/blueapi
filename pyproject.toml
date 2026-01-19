@@ -70,6 +70,8 @@ dev = [
     "jwcrypto",
     "deepdiff",
     "tiled[minimal-server] @ git+https://github.com/bluesky/tiled.git@add-auth-for-client", # For system-test of dls.py
+    "playwright",
+    "pytest-playwright",
 ]
 
 [project.scripts]

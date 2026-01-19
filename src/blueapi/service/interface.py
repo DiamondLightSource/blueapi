@@ -1,13 +1,16 @@
 import asyncio
 import threading
+import time
 from collections.abc import Mapping
+from enum import Enum
 from functools import cache
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from pydantic import BaseModel, computed_field
 from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
@@ -15,7 +18,6 @@ from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConf
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
-from blueapi.service.main import AUTHORIZAITON_HEADER
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,
@@ -173,46 +175,121 @@ def clear_task(task_id: str) -> str:
     return worker().clear_task(task_id)
 
 
+class TokenType(str, Enum):
+    refresh_token = "refresh_token"
+    access_token = "access_token"
+
+
+class Token(BaseModel):
+    token: str
+    expires_at: float | None
+
+    @computed_field
+    @property
+    def expired(self) -> bool:
+        if self.expires_at is None:
+            # Assume token is valid
+            return False
+        return time.time() > self.expires_at
+
+    def _get_token_expires_at(
+        self, token_dict: dict[str, Any], token_type: TokenType
+    ) -> int | None:
+        expires_at = None
+        if token_type == TokenType.access_token:
+            if "expires_at" in token_dict:
+                expires_at = int(token_dict["expires_at"])
+            elif "expires_in" in token_dict:
+                expires_at = int(time.time()) + int(token_dict["expires_in"])
+        elif token_type == TokenType.refresh_token:
+            if "refresh_expires_at" in token_dict:
+                expires_at = int(token_dict["refresh_expires_at"])
+            elif "refresh_expires_in" in token_dict:
+                expires_at = int(time.time()) + int(token_dict["refresh_expires_in"])
+        return expires_at
+
+    def __init__(self, token_dict: dict[str, Any], token_type: TokenType):
+        token = token_dict.get(token_type)
+        if token is None:
+            raise ValueError(f"Not able to find {token_type} in response")
+        super().__init__(
+            token=token, expires_at=self._get_token_expires_at(token_dict, token_type)
+        )
+
+    def __str__(self) -> str:
+        return str(self.token)
+
+
 class TiledAuth(httpx.Auth):
-    def __init__(self, tiled_config: TiledConfig, access_token: str):
+    def __init__(self, tiled_config: TiledConfig, authorization_header_value: str):
         self._tiled_config = tiled_config
+        if self._tiled_config.token_url is None:
+            raise Exception("Token URL cannot be None")
+        self._token_url = self._tiled_config.token_url
         from fastapi.security.utils import get_authorization_scheme_param
 
-        _, self._access_token = get_authorization_scheme_param(access_token)
+        _, self._blueapi_token = get_authorization_scheme_param(
+            authorization_header_value
+        )
         self._sync_lock = threading.RLock()
         self._async_lock = asyncio.Lock()
+        self._access_token: Token | None = None
+        self._refresh_token: Token | None = None
 
-    def sync_get_token(self):
+    def exchange_access_token(self):
         request_data = {
             "client_id": self._tiled_config.token_exchange_client_id,
             "client_secret": self._tiled_config.token_exchange_secret,
-            "subject_token": self._access_token,
+            "subject_token": self._blueapi_token,
             "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
             "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "requested_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
         }
         with self._sync_lock:
-            assert self._tiled_config.token_url
             response = httpx.post(
-                self._tiled_config.token_url,
+                self._token_url,
                 data=request_data,
             )
             response.raise_for_status()
-            return response.json().get("access_token")
+            self.sync_tokens(response.json())
+
+    def refresh_token(self):
+        if self._refresh_token is None:
+            raise Exception("Cannot refresh tokens as no refresh token available")
+        with self._sync_lock:
+            response = httpx.post(
+                self._token_url,
+                data={
+                    "client_id": self._tiled_config.token_exchange_client_id,
+                    "client_secret": self._tiled_config.token_exchange_secret,
+                    "grant_type": "refresh_token",
+                    "refresh_token": self._refresh_token,
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            response.raise_for_status()
+            self.sync_tokens(response.json())
+
+    def sync_tokens(self, response):
+        self._access_token = Token(response, TokenType.access_token)
+        self._refresh_token = Token(response, TokenType.refresh_token)
 
     def sync_auth_flow(self, request):
-        token = self.sync_get_token()
-        request.headers["Authorization"] = f"Bearer {token}"
-        yield request
-
-    async def async_get_token(self):
-        raise RuntimeError
-        # async with self._async_lock:
-        #     ...
-
-    async def async_auth_flow(self, request):
-        token = await self.async_get_token()
-        request.headers["Authorization"] = f"Bearer {token}"
-        yield request
+        response = None
+        if self._access_token is not None and self._access_token.expired is not True:
+            request.headers["Authorization"] = f"Bearer {self._access_token}"
+            response = yield request
+        elif self._access_token is None:
+            self.exchange_access_token()
+            request.headers["Authorization"] = f"Bearer {self._access_token}"
+            response = yield request
+        elif (
+            cast(httpx.Response, response).status_code == httpx.codes.UNAUTHORIZED
+            or self._access_token.expired
+        ):
+            self.refresh_token()
+            request.headers["Authorization"] = f"Bearer {self._access_token}"
+            response = yield request
 
 
 def begin_task(
@@ -232,7 +309,9 @@ def begin_task(
             str(tiled_config.url),
             auth=TiledAuth(
                 tiled_config,
-                access_token=pass_through_headers.get(AUTHORIZAITON_HEADER, ""),
+                authorization_header_value=pass_through_headers.get(
+                    "authorization", ""
+                ),
             ),
         )
         tiled_writer_token = active_context.run_engine.subscribe(

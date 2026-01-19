@@ -507,7 +507,7 @@ requires-dist = [
     { name = "scanspec", specifier = ">=0.9.0" },
     { name = "stomp-py" },
     { name = "super-state-machine" },
-    { name = "tiled", extras = ["client"], specifier = ">=0.2.3" },
+    { name = "tiled", extras = ["client"], git = "https://github.com/bluesky/tiled.git?rev=add-auth-for-client" },
     { name = "tomlkit" },
     { name = "uvicorn" },
 ]
@@ -533,7 +533,7 @@ dev = [
     { name = "sphinx-copybutton" },
     { name = "sphinx-design" },
     { name = "sphinxcontrib-openapi" },
-    { name = "tiled", extras = ["minimal-server"], specifier = ">=0.2.3" },
+    { name = "tiled", extras = ["minimal-server"], git = "https://github.com/bluesky/tiled.git?rev=add-auth-for-client" },
     { name = "tox-uv" },
     { name = "types-mock" },
     { name = "types-pyyaml" },
@@ -5227,8 +5227,8 @@ wheels = [
 
 [[package]]
 name = "tiled"
-version = "0.2.3"
-source = { registry = "https://pypi.org/simple" }
+version = "0.2.4.dev2+g306833209"
+source = { git = "https://github.com/bluesky/tiled.git?rev=add-auth-for-client#3068332094c0c1f5588683d2bab9e0282d51ad44" }
 dependencies = [
     { name = "httpx" },
     { name = "json-merge-patch" },
@@ -5241,10 +5241,6 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyyaml" },
     { name = "typer" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/7e/1e/cc60843c6f40655718dcf2fc9947e2b360fdfa40d4374db361643c1e5341/tiled-0.2.3.tar.gz", hash = "sha256:ce6a8acc5047e767dcc70520d166b10e0840f3e2b9970a06dcf7f9f9f1fb3f7b", size = 2493279, upload-time = "2025-12-17T20:36:45.781Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/3c/5098fb82017078cd7324b78c34f136d389e44251719f6332abbad455815d/tiled-0.2.3-py3-none-any.whl", hash = "sha256:f926cd097a430739ad0baddb45540aaeeb868eba9650100e9ec0200ddb866ba5", size = 1846157, upload-time = "2025-12-17T20:36:42.93Z" },
 ]
 
 [package.optional-dependencies]

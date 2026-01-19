@@ -6,7 +6,7 @@ services:
     image: ghcr.io/diamondlightsource/numtracker:1.0.2
     ports:
       - "8406:8000"
-    
+
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management
     ports:
@@ -39,17 +39,22 @@ services:
       retries: 10
       start_period: 30s
 
-  tiled: 
+  tiled:
     image: ghcr.io/bluesky/tiled:0.2.3
     network_mode: host
     environment:
       - PYTHONPATH=/deploy/
-    volumes: 
+    volumes:
       - ./services/tiled_config:/deploy/config
-    command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8407"] 
-    depends_on: 
-      keycloak: 
+    command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8407"]
+    depends_on:
+      keycloak:
         condition: service_healthy
+    develop:
+      watch:
+        - action: restart
+          path: ./services/tiled_config
+          target: /deploy/config
 
   opa:
     image: openpolicyagent/opa:edge-static-debug
@@ -59,3 +64,27 @@ services:
     environment:
       - ISSUER=http://localhost:8081/realms/master
     entrypoint: "sh /mnt/entrypoint.sh"
+
+  blueapi-oauth2-proxy:
+    network_mode: host
+    image: "quay.io/oauth2-proxy/oauth2-proxy:v7.13.0"
+    volumes:
+      - ./services/blueapi-oauth2-proxy/:/opt/config
+    command: ["--alpha-config=/opt/config/oauth2-alpha.yaml","--config=/opt/config/oauth2-proxy.cfg"]
+    # ports:
+    #   - 4180:4180
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  tiled-oauth2-proxy:
+    network_mode: host
+    image: "quay.io/oauth2-proxy/oauth2-proxy:v7.13.0"
+    volumes:
+      - ./services/tiled-oauth2-proxy/:/opt/config
+    command: ["--alpha-config=/opt/config/oauth2-alpha.yaml","--config=/opt/config/oauth2-proxy.cfg"]
+    # ports:
+    #   - 4181:4181
+    depends_on:
+      keycloak:
+        condition: service_healthy

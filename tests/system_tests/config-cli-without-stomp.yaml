@@ -1,0 +1,5 @@
+api:
+  url: http://localhost:8000
+logging:
+  level: ERROR
+auth_token_path: /tmp/blueapi-system-test-cache

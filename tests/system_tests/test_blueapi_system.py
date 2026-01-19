@@ -3,11 +3,10 @@ import time
 from asyncio import Queue
 from collections.abc import Generator
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import requests
-from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
 from scanspec.specs import Line
@@ -22,7 +21,6 @@ from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
     OIDCConfig,
-    StompConfig,
 )
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
@@ -66,10 +64,13 @@ _DATA_PATH = Path(__file__).parent
 # 2. Spin up blueapi server (inside devcontainer)
 #
 # source tests/system_tests/.env
-# export TILED_SINGLE_USER_API_KEY=foo
 # blueapi -c tests/system_tests/config.yaml serve
 #
-# Note: You can login into blueapi using username: admin and password: admin
+# Note: You can login into blueapi and tiled using username: admin and password: admin
+# blueapi -c tests/system_tests/config-cli.yaml login
+# Blueapi is hosted at http://localhost:4180 and
+# Tiled is hosted at http://localhost:4181
+#
 # 3. Run the system tests
 # tox -e system-test
 #
@@ -109,21 +110,12 @@ def get_access_token() -> str:
 
 
 @pytest.fixture
-def client_with_stomp() -> Generator[BlueapiClient]:
-    mock_session_manager = MagicMock
-    mock_session_manager.get_valid_access_token = get_access_token
-    with patch(
-        "blueapi.service.authentication.SessionManager.from_cache",
-        return_value=mock_session_manager,
-    ):
-        yield BlueapiClient.from_config(
-            config=ApplicationConfig(
-                stomp=StompConfig(
-                    enabled=True,
-                    auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
-                )
-            )
-        )
+def client_with_stomp() -> BlueapiClient:
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(_DATA_PATH / "config-cli.yaml")
+    client = BlueapiClient.from_config(config=loader.load())
+
+    return client
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -139,14 +131,10 @@ def wait_for_server(client: BlueapiClient):
 
 
 @pytest.fixture(scope="module")
-def client() -> Generator[BlueapiClient]:
-    mock_session_manager = MagicMock
-    mock_session_manager.get_valid_access_token = get_access_token
-    with patch(
-        "blueapi.service.authentication.SessionManager.from_cache",
-        return_value=mock_session_manager,
-    ):
-        yield BlueapiClient.from_config(config=ApplicationConfig())
+def client() -> BlueapiClient:
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(_DATA_PATH / "config-cli-without-stomp.yaml")
+    return BlueapiClient.from_config(config=loader.load())
 
 
 @pytest.fixture

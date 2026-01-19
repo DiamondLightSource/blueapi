@@ -1,22 +1,18 @@
-import threading
-import time
 from collections.abc import Mapping
-from enum import Enum
 from functools import cache
-from typing import Any, cast
+from typing import Any
 
-import httpx
 from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
-from pydantic import BaseModel, computed_field
 from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, TiledConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
+from blueapi.service.authentication import TiledAuth
 from blueapi.service.constants import AUTHORIZAITON_HEADER
 from blueapi.service.model import (
     DeviceModel,
@@ -175,115 +171,6 @@ def clear_task(task_id: str) -> str:
     return worker().clear_task(task_id)
 
 
-class TokenType(str, Enum):
-    refresh_token = "refresh_token"
-    access_token = "access_token"
-
-
-class Token(BaseModel):
-    token: str
-    expires_at: float | None
-
-    @computed_field
-    @property
-    def expired(self) -> bool:
-        if self.expires_at is None:
-            # Assume token is valid
-            return False
-        return time.time() > self.expires_at
-
-    def _get_token_expires_at(
-        self, token_dict: dict[str, Any], token_type: TokenType
-    ) -> int | None:
-        expires_at = None
-        if token_type == TokenType.access_token:
-            if "expires_at" in token_dict:
-                expires_at = int(token_dict["expires_at"])
-            elif "expires_in" in token_dict:
-                expires_at = int(time.time()) + int(token_dict["expires_in"])
-        elif token_type == TokenType.refresh_token:
-            if "refresh_expires_at" in token_dict:
-                expires_at = int(token_dict["refresh_expires_at"])
-            elif "refresh_expires_in" in token_dict:
-                expires_at = int(time.time()) + int(token_dict["refresh_expires_in"])
-        return expires_at
-
-    def __init__(self, token_dict: dict[str, Any], token_type: TokenType):
-        token = token_dict.get(token_type)
-        if token is None:
-            raise ValueError(f"Not able to find {token_type} in response")
-        super().__init__(
-            token=token, expires_at=self._get_token_expires_at(token_dict, token_type)
-        )
-
-    def __str__(self) -> str:
-        return str(self.token)
-
-
-class TiledAuth(httpx.Auth):
-    def __init__(self, tiled_config: TiledConfig, blueapi_jwt_token: str):
-        self._tiled_config = tiled_config
-        self._blueapi_jwt_token = blueapi_jwt_token
-        self._sync_lock = threading.RLock()
-        self._access_token: Token | None = None
-        self._refresh_token: Token | None = None
-
-    def exchange_access_token(self):
-        request_data = {
-            "client_id": self._tiled_config.token_exchange_client_id,
-            "client_secret": self._tiled_config.token_exchange_secret,
-            "subject_token": self._blueapi_jwt_token,
-            "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
-            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
-            "requested_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
-        }
-        with self._sync_lock:
-            response = httpx.post(
-                self._tiled_config.token_url,
-                data=request_data,
-            )
-            response.raise_for_status()
-            self.sync_tokens(response.json())
-
-    def refresh_token(self):
-        if self._refresh_token is None:
-            raise Exception("Cannot refresh tokens as no refresh token available")
-        with self._sync_lock:
-            response = httpx.post(
-                self._tiled_config.token_url,
-                data={
-                    "client_id": self._tiled_config.token_exchange_client_id,
-                    "client_secret": self._tiled_config.token_exchange_secret,
-                    "grant_type": "refresh_token",
-                    "refresh_token": self._refresh_token,
-                },
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-            )
-            response.raise_for_status()
-            self.sync_tokens(response.json())
-
-    def sync_tokens(self, response):
-        self._access_token = Token(response, TokenType.access_token)
-        self._refresh_token = Token(response, TokenType.refresh_token)
-
-    def sync_auth_flow(self, request):
-        response = None
-        if self._access_token is not None and self._access_token.expired is not True:
-            request.headers["Authorization"] = f"Bearer {self._access_token}"
-            response = yield request
-        elif self._access_token is None:
-            self.exchange_access_token()
-            request.headers["Authorization"] = f"Bearer {self._access_token}"
-            response = yield request
-        elif (
-            cast(httpx.Response, response).status_code == httpx.codes.UNAUTHORIZED
-            or self._access_token.expired
-        ):
-            self.refresh_token()
-            request.headers["Authorization"] = f"Bearer {self._access_token}"
-            response = yield request
-
-
 def begin_task(
     task: WorkerTask, pass_through_headers: Mapping[str, str] | None = None
 ) -> WorkerTask:
@@ -312,7 +199,7 @@ def begin_task(
             raise KeyError("Tiled config is enabled but no Bearer Token in request")
         tiled_client = from_uri(
             str(tiled_config.url),
-            auth=TiledAuth(
+            auth=TiledAuth.build_tiled_auth(
                 tiled_config,
                 blueapi_jwt_token=blueapi_jwt_token,
             ),

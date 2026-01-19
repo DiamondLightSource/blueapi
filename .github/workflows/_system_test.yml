@@ -31,6 +31,9 @@ jobs:
           EPICS_CA_NAME_SERVERS: 127.0.0.1:9064
           EPICS_PVA_NAME_SERVERS: 127.0.0.1:9075
         run: uv run blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
+      
+      - name: Install playwright browsers
+        run: uv run playwright install --with-deps 
 
       - name: Run tests
         run: uv run --locked tox -e system-test

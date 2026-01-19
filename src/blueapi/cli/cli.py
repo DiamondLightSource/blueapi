@@ -39,6 +39,7 @@ from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
 from blueapi.worker import ProgressEvent, WorkerEvent
 
+from . import stubgen
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
@@ -167,7 +168,6 @@ def generate_stubs(obj: dict, target: Path):
 
     config: ApplicationConfig = obj["config"]
     bc = BlueapiClient.from_config(config)
-    from . import stubgen
 
     stubgen.generate_stubs(Path(target), list(bc.plans), list(bc.devices))
 

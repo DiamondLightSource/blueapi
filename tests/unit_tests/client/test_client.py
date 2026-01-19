@@ -689,13 +689,12 @@ def test_device_ignores_underscores():
 
 
 def test_plan_help_text():
-    plan = Plan("foo", PlanModel(name="foo", description="help for foo"), Mock())
+    plan = Plan(PlanModel(name="foo", description="help for foo"), Mock())
     assert plan.help_text == "help for foo"
 
 
 def test_plan_fallback_help_text():
     plan = Plan(
-        "foo",
         PlanModel(
             name="foo",
             schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
@@ -707,7 +706,6 @@ def test_plan_fallback_help_text():
 
 def test_plan_properties():
     plan = Plan(
-        "foo",
         PlanModel(
             name="foo",
             schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
@@ -721,7 +719,7 @@ def test_plan_properties():
 
 def test_plan_empty_fallback_help_text():
     plan = Plan(
-        "foo", PlanModel(name="foo", schema={"properties": {}, "required": []}), Mock()
+        PlanModel(name="foo", schema={"properties": {}, "required": []}), Mock()
     )
     assert plan.help_text == "Plan foo()"
 
@@ -741,7 +739,7 @@ p = pytest.param
 )
 def test_plan_param_mapping(args, kwargs, params):
     runner = Mock()
-    plan = Plan(FULL_PLAN.name, FULL_PLAN, runner)
+    plan = Plan(FULL_PLAN, runner)
 
     plan(*args, **kwargs)
     runner.assert_called_once_with("foobar", params)
@@ -765,7 +763,6 @@ def test_plan_param_mapping(args, kwargs, params):
 def test_plan_invalid_param_mapping(args, kwargs, msg):
     runner = Mock(spec=Callable)
     plan = Plan(
-        FULL_PLAN.name,
         FULL_PLAN,
         runner,
     )

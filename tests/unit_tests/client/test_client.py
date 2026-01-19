@@ -416,6 +416,15 @@ def test_run_task_fails_on_failing_event(
     on_event.assert_called_with(FAILED_EVENT)
 
 
+@patch("blueapi.client.client.BlueapiClient.run_task")
+def test_run_plan(run_task, client, mock_rest):
+    client.instrument_session = "cm12345-2"
+    client.run_plan("foo", {"foo": "bar"})
+    run_task.assert_called_once_with(
+        TaskRequest(name="foo", params={"foo": "bar"}, instrument_session="cm12345-2")
+    )
+
+
 @pytest.mark.parametrize(
     "test_event",
     [

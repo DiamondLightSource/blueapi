@@ -1329,3 +1329,17 @@ def test_config_schema(
             stream.write.assert_called()
     else:
         assert json.loads(result.output) == expected
+    pass
+
+
+@patch("blueapi.client.client.BlueapiClient.from_config")
+@patch("blueapi.cli.cli.stubgen")
+def test_genstubs(
+    stubgen,
+    client,
+    runner: CliRunner,
+):
+    runner.invoke(main, ["generate-stubs", "/path/to/stub_dir"])
+    stubgen.generate_stubs.assert_called_once_with(
+        Path("/path/to/stub_dir"), list(client().plans), list(client().devices)
+    )

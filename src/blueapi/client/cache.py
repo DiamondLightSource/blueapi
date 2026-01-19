@@ -22,10 +22,7 @@ class PlanCache:
     """
 
     def __init__(self, runner: PlanRunner, plans: list[PlanModel]):
-        self._cache = {
-            model.name: Plan(name=model.name, model=model, runner=runner)
-            for model in plans
-        }
+        self._cache = {model.name: Plan(model=model, runner=runner) for model in plans}
         for name, plan in self._cache.items():
             if name.startswith("_"):
                 continue
@@ -56,12 +53,12 @@ class Plan:
 
         blueapi generate-stubs /tmp/blueapi-stubs
         uv add --editable /tmp/blueapi-stubs
+
     """
 
     model: PlanModel
 
-    def __init__(self, name, model: PlanModel, runner: PlanRunner):
-        self.name = name
+    def __init__(self, model: PlanModel, runner: PlanRunner):
         self.model = model
         self._runner = runner
         self.__doc__ = model.description
@@ -71,6 +68,10 @@ class Plan:
         Run the plan on the server mapping the given args into the required parameters
         """
         return self._runner(self.name, self._build_args(*args, **kwargs))
+
+    @property
+    def name(self) -> str:
+        return self.model.name
 
     @property
     def help_text(self) -> str:

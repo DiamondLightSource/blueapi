@@ -30,16 +30,18 @@ class PlanCache:
         {{ item.docs | docstring | indent(8) }}
         """
         ...
-{% endfor -%}
+{%- endfor %}
 ### End
 
 
 class Plan:
     model: PlanModel
-    name: str
-    def __init__(self, name, model: PlanModel, runner: PlanRunner) -> None: ...
+    def __init__(self, model: PlanModel, runner: PlanRunner) -> None: ...
     def __call__(self, *args, **kwargs):  # -> None:
         ...
+
+    @property
+    def name(self) -> str: ...
     @property
     def help_text(self) -> str: ...
     @property

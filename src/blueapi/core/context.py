@@ -273,6 +273,7 @@ class BlueskyContext:
                 f"{len(errs)} errors while connecting devices",
                 exc_info=NotConnectedError(errs),
             )
+        utils.report_successful_devices(build_result.devices, mock)
         return build_result.devices, {
             **build_result.build_errors,
             **build_result.connection_errors,

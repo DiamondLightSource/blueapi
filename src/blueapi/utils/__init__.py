@@ -1,5 +1,5 @@
 from .base_model import BlueapiBaseModel, BlueapiModelConfig, BlueapiPlanModelConfig
-from .connect_devices import connect_devices
+from .connect_devices import connect_devices, report_successful_devices
 from .file_permissions import get_owner_gid, is_sgid_set
 from .invalid_config_error import InvalidConfigError
 from .modules import is_function_sourced_from_module, load_module_all
@@ -15,6 +15,7 @@ __all__ = [
     "BlueapiPlanModelConfig",
     "InvalidConfigError",
     "connect_devices",
+    "report_successful_devices",
     "is_sgid_set",
     "get_owner_gid",
     "is_function_sourced_from_module",

@@ -1,0 +1,772 @@
+components:
+  schemas:
+    DeviceModel:
+      additionalProperties: false
+      description: Representation of a device
+      properties:
+        name:
+          description: Name of the device
+          title: Name
+          type: string
+        protocols:
+          description: Protocols that a device conforms to, indicating its capabilities
+          items:
+            $ref: '#/components/schemas/ProtocolInfo'
+          title: Protocols
+          type: array
+      required:
+      - name
+      - protocols
+      title: DeviceModel
+      type: object
+    DeviceResponse:
+      additionalProperties: false
+      description: Response to a query for devices
+      properties:
+        devices:
+          description: Devices available to use in plans
+          items:
+            $ref: '#/components/schemas/DeviceModel'
+          title: Devices
+          type: array
+      required:
+      - devices
+      title: DeviceResponse
+      type: object
+    EnvironmentResponse:
+      additionalProperties: false
+      description: State of internal environment.
+      properties:
+        environment_id:
+          description: Unique ID for the environment instance, can be used to differentiate
+            between a new environment and old that has been torn down
+          format: uuid
+          title: Environment Id
+          type: string
+        error_message:
+          description: If present - error loading context
+          minLength: 1
+          title: Error Message
+          type: string
+        initialized:
+          description: blueapi context initialized
+          title: Initialized
+          type: boolean
+      required:
+      - environment_id
+      - initialized
+      title: EnvironmentResponse
+      type: object
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    Health:
+      enum:
+      - ok
+      title: Health
+      type: string
+    HealthProbeResponse:
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/Health'
+      required:
+      - status
+      title: HealthProbeResponse
+      type: object
+    OIDCConfig:
+      additionalProperties: false
+      properties:
+        client_audience:
+          default: blueapi
+          description: Client Audience(s)
+          title: Client Audience
+          type: string
+        client_id:
+          description: Client ID
+          title: Client Id
+          type: string
+        logout_redirect_endpoint:
+          default: ''
+          description: The oidc endpoint required to logout
+          title: Logout Redirect Endpoint
+          type: string
+        well_known_url:
+          description: URL to fetch OIDC config from the provider
+          title: Well Known Url
+          type: string
+      required:
+      - well_known_url
+      - client_id
+      title: OIDCConfig
+      type: object
+    PackageInfo:
+      additionalProperties: false
+      properties:
+        is_dirty:
+          description: Does the package have uncommitted changes
+          title: Is Dirty
+          type: boolean
+        location:
+          description: Location of the package
+          title: Location
+          type: string
+        name:
+          description: Name of the package
+          title: Name
+          type: string
+        source:
+          $ref: '#/components/schemas/SourceInfo'
+          default: pypi
+          description: Source of the package
+        version:
+          description: Version of the package
+          title: Version
+          type: string
+      title: PackageInfo
+      type: object
+    PlanModel:
+      additionalProperties: false
+      description: Representation of a plan
+      properties:
+        description:
+          description: Docstring of the plan
+          title: Description
+          type: string
+        name:
+          description: Name of the plan
+          title: Name
+          type: string
+        schema:
+          additionalProperties: true
+          description: Schema of the plan's parameters
+          title: Schema
+          type: object
+      required:
+      - name
+      title: PlanModel
+      type: object
+    PlanResponse:
+      additionalProperties: false
+      description: Response to a query for plans
+      properties:
+        plans:
+          description: Plans available to use by a worker
+          items:
+            $ref: '#/components/schemas/PlanModel'
+          title: Plans
+          type: array
+      required:
+      - plans
+      title: PlanResponse
+      type: object
+    ProtocolInfo:
+      additionalProperties: false
+      properties:
+        name:
+          title: Name
+          type: string
+        types:
+          default: []
+          items:
+            type: string
+          title: Types
+          type: array
+      required:
+      - name
+      title: ProtocolInfo
+      type: object
+    PythonEnvironmentResponse:
+      additionalProperties: false
+      description: State of the Python environment.
+      properties:
+        installed_packages:
+          description: List of installed packages
+          items:
+            $ref: '#/components/schemas/PackageInfo'
+          title: Installed Packages
+          type: array
+        scratch_enabled:
+          default: false
+          description: Scratch status
+          title: Scratch Enabled
+          type: boolean
+      title: PythonEnvironmentResponse
+      type: object
+    SourceInfo:
+      enum:
+      - pypi
+      - scratch
+      title: SourceInfo
+      type: string
+    StateChangeRequest:
+      additionalProperties: false
+      description: Request to change the state of the worker.
+      properties:
+        defer:
+          default: false
+          description: Should worker defer Pausing until the next checkpoint
+          title: Defer
+          type: boolean
+        new_state:
+          $ref: '#/components/schemas/WorkerState'
+        reason:
+          description: The reason for the current run to be aborted
+          title: Reason
+          type: string
+      required:
+      - new_state
+      title: StateChangeRequest
+      type: object
+    Task:
+      additionalProperties: false
+      description: Task that will run a plan
+      properties:
+        metadata:
+          additionalProperties: true
+          description: Any metadata to apply to all runs within this task
+          title: Metadata
+          type: object
+        name:
+          description: Name of plan to run
+          title: Name
+          type: string
+        params:
+          additionalProperties: true
+          description: Values for parameters to plan, if any
+          title: Params
+          type: object
+      required:
+      - name
+      title: Task
+      type: object
+    TaskRequest:
+      additionalProperties: false
+      description: Request to run a task with related info
+      properties:
+        instrument_session:
+          description: Instrument session associated with this task
+          title: Instrument Session
+          type: string
+        name:
+          description: Name of plan to run
+          title: Name
+          type: string
+        params:
+          additionalProperties: true
+          description: Values for parameters to plan, if any
+          title: Params
+          type: object
+      required:
+      - name
+      - instrument_session
+      title: TaskRequest
+      type: object
+    TaskResponse:
+      additionalProperties: false
+      description: Acknowledgement that a task has started, includes its ID
+      properties:
+        task_id:
+          description: Unique identifier for the task
+          title: Task Id
+          type: string
+      required:
+      - task_id
+      title: TaskResponse
+      type: object
+    TasksListResponse:
+      additionalProperties: false
+      description: Diagnostic information on the tasks
+      properties:
+        tasks:
+          description: List of tasks
+          items:
+            $ref: '#/components/schemas/TrackableTask'
+          title: Tasks
+          type: array
+      required:
+      - tasks
+      title: TasksListResponse
+      type: object
+    TrackableTask:
+      additionalProperties: false
+      description: A representation of a task that the worker recognizes
+      properties:
+        errors:
+          items:
+            type: string
+          title: Errors
+          type: array
+        is_complete:
+          default: false
+          title: Is Complete
+          type: boolean
+        is_pending:
+          default: true
+          title: Is Pending
+          type: boolean
+        request_id:
+          title: Request Id
+          type: string
+        task:
+          $ref: '#/components/schemas/Task'
+        task_id:
+          title: Task Id
+          type: string
+      required:
+      - task_id
+      - task
+      title: TrackableTask
+      type: object
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
+    WorkerState:
+      description: The state of the Worker.
+      enum:
+      - IDLE
+      - RUNNING
+      - PAUSING
+      - PAUSED
+      - HALTING
+      - STOPPING
+      - ABORTING
+      - SUSPENDING
+      - PANICKED
+      - UNKNOWN
+      title: WorkerState
+      type: string
+    WorkerTask:
+      additionalProperties: false
+      description: Worker's active task ID, can be None
+      properties:
+        task_id:
+          description: The ID of the current task, None if the worker is idle
+          title: Task Id
+          type: string
+      required:
+      - task_id
+      title: WorkerTask
+      type: object
+info:
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  title: BlueAPI Control
+  version: 1.1.2
+openapi: 3.1.0
+paths:
+  /config/oidc:
+    get:
+      description: Retrieve the OpenID Connect (OIDC) configuration for the server.
+      operationId: get_oidc_config_config_oidc_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OIDCConfig'
+          description: Successful Response
+        '204':
+          description: No Authentication configured
+      summary: Get Oidc Config
+      tags:
+      - Meta
+  /devices:
+    get:
+      description: Retrieve information about all available devices.
+      operationId: get_devices_devices_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+          description: Successful Response
+      summary: Get Devices
+      tags:
+      - Device
+  /devices/{name}:
+    get:
+      description: Retrieve information about a devices by its (unique) name.
+      operationId: get_device_by_name_devices__name__get
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          title: Name
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceModel'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Device By Name
+      tags:
+      - Device
+  /environment:
+    delete:
+      description: Delete the current environment, causing internal components to
+        be reloaded.
+      operationId: delete_environment_environment_delete
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentResponse'
+          description: Successful Response
+      summary: Delete Environment
+      tags:
+      - Environment
+    get:
+      description: Get the current state of the environment, i.e. initialization state.
+      operationId: get_environment_environment_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentResponse'
+          description: Successful Response
+      summary: Get Environment
+      tags:
+      - Environment
+  /healthz:
+    get:
+      description: If able to serve this, server is live and ready for requests.
+      operationId: health_probe_healthz_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthProbeResponse'
+          description: Successful Response
+      summary: Health Probe
+      tags:
+      - Meta
+  /plans:
+    get:
+      description: Retrieve information about all available plans.
+      operationId: get_plans_plans_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanResponse'
+          description: Successful Response
+      summary: Get Plans
+      tags:
+      - Plan
+  /plans/{name}:
+    get:
+      description: Retrieve information about a plan by its (unique) name.
+      operationId: get_plan_by_name_plans__name__get
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          title: Name
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanModel'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Plan By Name
+      tags:
+      - Plan
+  /python_environment:
+    get:
+      description: 'Retrieve the Python environment details.
+
+        This endpoint fetches information about the Python environment,
+
+        such as the installed packages and scratch packages.'
+      operationId: get_python_environment_python_environment_get
+      parameters:
+      - in: query
+        name: name
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+      - in: query
+        name: source
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/SourceInfo'
+          - type: 'null'
+          title: Source
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PythonEnvironmentResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Python Environment
+      tags:
+      - Environment
+  /tasks:
+    get:
+      description: 'Retrieve tasks based on their status.
+
+        The status of a newly created task is ''unstarted''.'
+      operationId: get_tasks_tasks_get
+      parameters:
+      - in: query
+        name: task_status
+        required: false
+        schema:
+          title: Task Status
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TasksListResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Tasks
+      tags:
+      - Task
+    post:
+      description: Submit a task to the worker.
+      operationId: submit_task_tasks_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRequest'
+              examples:
+              - instrument_session: cm12345-1
+                name: count
+                params:
+                  detectors:
+                  - x
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Submit Task
+      tags:
+      - Task
+  /tasks/{task_id}:
+    delete:
+      operationId: delete_submitted_task_tasks__task_id__delete
+      parameters:
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          title: Task Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Delete Submitted Task
+      tags:
+      - Task
+    get:
+      description: Retrieve a task
+      operationId: get_task_tasks__task_id__get
+      parameters:
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          title: Task Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackableTask'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Task
+      tags:
+      - Task
+  /worker/state:
+    get:
+      description: Get the State of the Worker
+      operationId: get_state_worker_state_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerState'
+          description: Successful Response
+      summary: Get State
+      tags:
+      - Task
+    put:
+      description: "Request that the worker is put into a particular state.\nReturns\
+        \ the state of the worker at the end of the call.\n\n- **The following transitions\
+        \ are allowed and return 202: Accepted**\n- If the worker is **PAUSED**, new_state\
+        \ may be **RUNNING** to resume.\n- If the worker is **RUNNING**, new_state\
+        \ may be **PAUSED** to pause:\n    - If defer is False (default): pauses and\
+        \ rewinds to the previous checkpoint\n    - If defer is True: waits until\
+        \ the next checkpoint to pause\n    - **If the task has no checkpoints, the\
+        \ task will instead be Aborted**\n- If the worker is **RUNNING/PAUSED**, new_state\
+        \ may be **STOPPING** to stop.\n    Stop marks any currently open Runs in\
+        \ the Task as a success and ends the task.\n- If the worker is **RUNNING/PAUSED**,\
+        \ new_state may be **ABORTING** to abort.\n    Abort marks any currently open\
+        \ Runs in the Task as a Failure and ends the task.\n    - If reason is set,\
+        \ the reason will be passed as the reason for the Run failure.\n- **All other\
+        \ transitions return 400: Bad Request**"
+      operationId: set_state_worker_state_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StateChangeRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerState'
+          description: Successful Response
+        '400':
+          description: Bad Request
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Set State
+      tags:
+      - Task
+  /worker/task:
+    get:
+      operationId: get_active_task_worker_task_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerTask'
+          description: Successful Response
+      summary: Get Active Task
+      tags:
+      - Task
+    put:
+      description: 'Set a task to active status, the worker should begin it as soon
+        as possible.
+
+        This will return an error response if the worker is not idle.'
+      operationId: set_active_task_worker_task_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkerTask'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerTask'
+          description: Successful Response
+        '409':
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Set Active Task
+      tags:
+      - Task

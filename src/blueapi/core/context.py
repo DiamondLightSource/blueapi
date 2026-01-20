@@ -416,11 +416,13 @@ class BlueskyContext:
                     json_schema = handler(core_schema)
                     json_schema = handler.resolve_ref_schema(json_schema)
                     json_schema["type"] = qualified_name(target)
-                    json_schema["enum"] = [
-                        name
-                        for name, device in self.devices.items()
-                        if isinstance(device, cls.origin or target)
-                    ]
+                    json_schema["enum"] = sorted(
+                        [
+                            name
+                            for name, device in self.devices.items()
+                            if isinstance(device, cls.origin or target)
+                        ]
+                    )
                     if cls.args:
                         json_schema["types"] = [qualified_name(arg) for arg in cls.args]
                     return json_schema

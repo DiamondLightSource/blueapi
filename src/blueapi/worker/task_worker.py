@@ -370,7 +370,6 @@ class TaskWorker:
         """
         return self._state
 
-    @start_as_current_span(TRACER)
     def run(self) -> None:
         """
         Run all tasks that are submitted to the worker. Blocks thread.

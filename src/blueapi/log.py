@@ -94,7 +94,7 @@ def set_up_stream_handler(
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging_config.level)
 
-    formatter = ColorFormatter("%(asctime)s %(levelname)s %(message)s")
+    formatter = ColorFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
     stream_handler.setFormatter(formatter)
 
     for filter in filters:
@@ -160,4 +160,5 @@ class ColorFormatter(logging.Formatter):
         recordcopy.levelname = click.style(
             f"{recordcopy.levelname:>8}", fg=self._level_colour(recordcopy.levelno)
         )
+        recordcopy.name = click.style(recordcopy.name, fg="green")
         return super().formatMessage(recordcopy)

@@ -667,3 +667,32 @@ def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
     ctx.run_engine.scan_id_source(ctx.run_engine.md)
 
     assert ctx.run_engine.md["scan_file"] == "p46-11"
+
+
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_tiled_raises_if_authorization_header_missing(worker, context):
+    task = WorkerTask(task_id="foo_bar")
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+
+    with pytest.raises(
+        ValueError,
+        match="Tiled config is enabled but no authorization header in request",
+    ):
+        interface.begin_task(task, pass_through_headers=None)
+
+
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_tiled_raises_if_bearer_token_missing(worker, context):
+    task = WorkerTask(task_id="foo_bar")
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+
+    with pytest.raises(
+        KeyError, match="Tiled config is enabled but no Bearer Token in request"
+    ):
+        interface.begin_task(
+            task, pass_through_headers={AUTHORIZAITON_HEADER: "Bearer"}
+        )

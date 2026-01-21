@@ -875,7 +875,40 @@ def test_setup_with_tiled_makes_tiled_inserter(
 
 def test_must_have_instrument_set_for_tiled():
     config = TiledConfig(enabled=True)
-    with pytest.raises(InvalidConfigError):
+    with pytest.raises(
+        InvalidConfigError,
+        match="Tiled has been configured but `instrument` metadata is not set",
+    ):
         BlueskyContext(
             ApplicationConfig(tiled=config, env=EnvironmentConfig(metadata=None))
+        )
+
+
+def test_must_have_oidc_config_for_tiled():
+    config = TiledConfig(enabled=True)
+    with pytest.raises(
+        InvalidConfigError,
+        match="Tiled has been configured but oidc configuration is missing",
+    ):
+        BlueskyContext(
+            ApplicationConfig(
+                tiled=config,
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+                oidc=None,
+            )
+        )
+
+
+def test_token_exchange_secret_is_set_for_tiled(oidc_config: OIDCConfig):
+    config = TiledConfig(enabled=True)
+    with pytest.raises(
+        InvalidConfigError,
+        match="Tiled has been enabled but Token exchange secret has not been",
+    ):
+        BlueskyContext(
+            ApplicationConfig(
+                tiled=config,
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+                oidc=oidc_config,
+            )
         )

@@ -266,14 +266,10 @@ class Token(BaseModel):
     ) -> int | None:
         expires_at = None
         if token_type == TokenType.access_token:
-            if "expires_at" in token_dict:
-                expires_at = int(token_dict["expires_at"])
-            elif "expires_in" in token_dict:
+            if "expires_in" in token_dict:
                 expires_at = int(time.time()) + int(token_dict["expires_in"])
         elif token_type == TokenType.refresh_token:
-            if "refresh_expires_at" in token_dict:
-                expires_at = int(token_dict["refresh_expires_at"])
-            elif "refresh_expires_in" in token_dict:
+            if "refresh_expires_in" in token_dict:
                 expires_at = int(time.time()) + int(token_dict["refresh_expires_in"])
         return expires_at
 
@@ -297,12 +293,6 @@ class TiledAuth(httpx.Auth):
         self._access_token: Token | None = None
         self._refresh_token: Token | None = None
 
-    @classmethod
-    def build_tiled_auth(
-        cls, tiled_config: TiledConfig, blueapi_jwt_token: str
-    ) -> TiledAuth:
-        return TiledAuth(tiled_config, blueapi_jwt_token)
-
     def exchange_access_token(self):
         request_data = {
             "client_id": self._tiled_config.token_exchange_client_id,
@@ -322,7 +312,7 @@ class TiledAuth(httpx.Auth):
 
     def refresh_token(self):
         if self._refresh_token is None:
-            raise Exception("Cannot refresh tokens as no refresh token available")
+            raise Exception("Cannot refresh session as no refresh token available")
         with self._sync_lock:
             response = httpx.post(
                 self._tiled_config.token_url,
@@ -342,18 +332,14 @@ class TiledAuth(httpx.Auth):
         self._refresh_token = Token(response, TokenType.refresh_token)
 
     def sync_auth_flow(self, request):
-        response = None
         if self._access_token is not None and self._access_token.expired is not True:
             request.headers["Authorization"] = f"Bearer {self._access_token}"
-            response = yield request
+            yield request
         elif self._access_token is None:
             self.exchange_access_token()
             request.headers["Authorization"] = f"Bearer {self._access_token}"
-            response = yield request
-        elif (
-            cast(httpx.Response, response).status_code == httpx.codes.UNAUTHORIZED
-            or self._access_token.expired
-        ):
+            yield request
+        else:
             self.refresh_token()
             request.headers["Authorization"] = f"Bearer {self._access_token}"
-            response = yield request
+            yield request

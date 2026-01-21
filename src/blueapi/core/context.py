@@ -183,12 +183,12 @@ class BlueskyContext:
                 )
             if configuration.oidc is None:
                 raise InvalidConfigError(
-                    "Tiled has been configured but oidc configuration is missing  "
+                    "Tiled has been configured but oidc configuration is missing "
                     "this field is required to make authorization decisions."
                 )
             if tiled_conf.token_exchange_secret == "":
                 raise InvalidConfigError(
-                    "Tiled has been enabled but Token exchange secret has not been set"
+                    "Tiled has been enabled but Token exchange secret has not been set "
                     "this field is required to enable tiled insertion."
                 )
             tiled_conf.token_url = configuration.oidc.token_endpoint

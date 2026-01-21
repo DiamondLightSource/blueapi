@@ -186,7 +186,8 @@ def begin_task(
         blueapi_jwt_token = ""
         if pass_through_headers is None:
             raise ValueError(
-                f"Tiled config is enabled but no {AUTHORIZAITON_HEADER} in request"
+                "Tiled config is enabled but no "
+                "{AUTHORIZAITON_HEADER} header in request"
             )
         authorization_header_value = pass_through_headers.get(AUTHORIZAITON_HEADER)
         from fastapi.security.utils import get_authorization_scheme_param
@@ -199,7 +200,7 @@ def begin_task(
             raise KeyError("Tiled config is enabled but no Bearer Token in request")
         tiled_client = from_uri(
             str(tiled_config.url),
-            auth=TiledAuth.build_tiled_auth(
+            auth=TiledAuth(
                 tiled_config,
                 blueapi_jwt_token=blueapi_jwt_token,
             ),

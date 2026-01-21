@@ -16,7 +16,7 @@ from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 from click.exceptions import ClickException
 from observability_utils.tracing import setup_tracing
-from pydantic import ValidationError
+from pydantic import HttpUrl, ValidationError
 from requests.exceptions import ConnectionError
 
 from blueapi import __version__, config
@@ -44,13 +44,74 @@ from .updates import CliEventRenderer
 
 LOGGER = logging.getLogger(__name__)
 
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def check_connection(func: Callable[P, T]) -> Callable[P, T]:
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        try:
+            return func(*args, **kwargs)
+        except ConnectionError as ce:
+            raise ClickException(
+                "Failed to establish connection to blueapi server."
+            ) from ce
+        except BlueskyRemoteControlError as e:
+            if str(e) == "<Response [401]>":
+                raise ClickException(
+                    "Access denied. Please check your login status and try again."
+                ) from e
+            else:
+                raise e
+
+    return wrapper
+
+
+def _default_config(ctx: click.Context) -> None:
+    ctx.ensure_object(dict)
+    config_loader = ConfigLoader(ApplicationConfig)
+
+    loaded_config: ApplicationConfig = config_loader.load()
+
+    set_up_logging(loaded_config.logging)
+
+    ctx.obj["config"] = loaded_config
+
+
+def _load_config(
+    ctx: click.Context,
+    config: Path | None | tuple[Path, ...],
+) -> None:
+    ctx.ensure_object(dict)
+
+    config_loader = ConfigLoader(ApplicationConfig)
+    ctx.obj["custom_config"] = False
+
+    if config is not None:
+        ctx.obj["custom_config"] = True
+        configs = (config,) if isinstance(config, Path) else config
+        for path in configs:
+            if path.exists():
+                config_loader.use_values_from_yaml(path)
+            else:
+                raise FileNotFoundError(f"Cannot find file: {path}")
+
+    loaded_config: ApplicationConfig = config_loader.load()
+    set_up_logging(loaded_config.logging)
+    ctx.obj["config"] = loaded_config
+
 
 @click.group(
     invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
 )
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option(
-    "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
+    "-c",
+    "--config",
+    type=Path,
+    help="Path to configuration YAML file",
+    multiple=True,
 )
 @click.pass_context
 def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
@@ -59,21 +120,10 @@ def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
     # Set umask to DLS standard
     os.umask(stat.S_IWOTH)
 
-    config_loader = ConfigLoader(ApplicationConfig)
-    if config is not None:
-        configs = (config,) if isinstance(config, Path) else config
-        for path in configs:
-            if path.exists():
-                config_loader.use_values_from_yaml(path)
-            else:
-                raise FileNotFoundError(f"Cannot find file: {path}")
+    if config == ():
+        config = None
 
-    ctx.ensure_object(dict)
-    loaded_config: ApplicationConfig = config_loader.load()
-
-    set_up_logging(loaded_config.logging)
-
-    ctx.obj["config"] = loaded_config
+    _load_config(ctx, config)
 
     if ctx.invoked_subcommand is None:
         print("Please invoke subcommand!")
@@ -136,10 +186,10 @@ def config_schema(output: Path | None = None, update: bool = False) -> None:
 
 
 @main.command(name="serve")
-@click.pass_obj
-def start_application(obj: dict):
+@click.pass_context
+def start_application(ctx: click.Context):
     """Run a worker that accepts plans to run"""
-    config: ApplicationConfig = obj["config"]
+    config: ApplicationConfig = ctx.obj["config"]
 
     """Only import the service functions when starting the service or generating
     the schema, not the controller as a new FastAPI app will be started each time.
@@ -154,6 +204,88 @@ def start_application(obj: dict):
     start(config)
 
 
+@main.command(name="login")
+@click.option(
+    "--url",
+    type=HttpUrl,
+    help="The url of the blueapi server you want to connect to.",
+    default=None,
+)
+@click.pass_obj
+@check_connection
+def login(
+    obj: dict,
+    url: HttpUrl | None,
+) -> None:
+    """
+    Authenticate with the blueapi using the OIDC (OpenID Connect) flow.
+    """
+    config: ApplicationConfig = obj["config"]
+
+    if url is not None:
+        if obj["custom_config"] is True:
+            LOGGER.warning(
+                "Custom config has been used. This will take precidence "
+                "over a provided url"
+            )
+        else:
+            config.api.url = HttpUrl(url)
+    try:
+        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
+        access_token = auth.get_valid_access_token()
+        assert access_token
+        print("Logged in")
+    except Exception:
+        client = BlueapiClient.from_config(config)
+        oidc_config = client.get_oidc_config()
+        if oidc_config is None:
+            print("Server is not configured to use authentication!")
+            return
+        auth = SessionManager(
+            oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
+        )
+        auth.start_device_flow()
+
+
+@main.command(name="logout")
+@click.option(
+    "--url",
+    type=HttpUrl,
+    help="The url of the blueapi server you want to connect to.",
+    default=None,
+)
+@click.pass_obj
+def logout(
+    obj: dict,
+    url: HttpUrl | None,
+) -> None:
+    """
+    Logs out from the OIDC provider and removes the cached access token.
+    """
+    config: ApplicationConfig = obj["config"]
+
+    if url is not None:
+        if obj["custom_config"] is True:
+            LOGGER.warning(
+                "Custom config has been used. This will take precidence "
+                "over a provided url"
+            )
+        else:
+            config.api.url = HttpUrl(url)
+    try:
+        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
+        auth.logout()
+    except FileNotFoundError:
+        print("Logged out")
+    except ValueError as e:
+        LOGGER.debug("Invalid login token: %s", e)
+        raise ClickException(
+            "Login token is not valid - remove before trying again"
+        ) from e
+    except Exception as e:
+        raise ClickException(f"Error logging out: {e}") from e
+
+
 @main.group()
 @click.option(
     "-o",
@@ -161,8 +293,18 @@ def start_application(obj: dict):
     type=click.Choice([o.name.lower() for o in OutputFormat]),
     default="compact",
 )
+@click.option(
+    "--url",
+    type=HttpUrl,
+    help="The url of the blueapi server you want to connect to.",
+    default=None,
+)
 @click.pass_context
-def controller(ctx: click.Context, output: str) -> None:
+def controller(
+    ctx: click.Context,
+    output: str,
+    url: HttpUrl | None,
+) -> None:
     """Client utility for controlling and introspecting the worker"""
 
     setup_tracing("BlueAPICLI", OTLP_EXPORT_ENABLED)
@@ -171,33 +313,25 @@ def controller(ctx: click.Context, output: str) -> None:
         return
 
     ctx.ensure_object(dict)
-    config: ApplicationConfig = ctx.obj["config"]
     ctx.obj["fmt"] = OutputFormat(output)
+
+    config: ApplicationConfig = ctx.obj["config"]
+
+    if url is not None:
+        if ctx.obj["custom_config"] is True:
+            LOGGER.warning(
+                "Custom config has been used. This will take precidence "
+                "over a provided url"
+            )
+        else:
+            config.api.url = HttpUrl(url)
+
+            tmp_client = BlueapiClient.from_config(config)
+            config.stomp = tmp_client.get_stomp_config()
+            ctx.obj["config"] = config
+
+    set_up_logging(config.logging)
     ctx.obj["client"] = BlueapiClient.from_config(config)
-
-
-P = ParamSpec("P")
-T = TypeVar("T")
-
-
-def check_connection(func: Callable[P, T]) -> Callable[P, T]:
-    @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        try:
-            return func(*args, **kwargs)
-        except ConnectionError as ce:
-            raise ClickException(
-                "Failed to establish connection to blueapi server."
-            ) from ce
-        except BlueskyRemoteControlError as e:
-            if str(e) == "<Response [401]>":
-                raise ClickException(
-                    "Access denied. Please check your login status and try again."
-                ) from e
-            else:
-                raise e
-
-    return wrapper
 
 
 @controller.command(name="plans")
@@ -455,49 +589,3 @@ def get_python_env(obj: dict, name: str, source: SourceInfo) -> None:
     """
     client: BlueapiClient = obj["client"]
     obj["fmt"].display(client.get_python_env(name=name, source=source))
-
-
-@main.command(name="login")
-@click.pass_obj
-@check_connection
-def login(obj: dict) -> None:
-    """
-    Authenticate with the blueapi using the OIDC (OpenID Connect) flow.
-    """
-    config: ApplicationConfig = obj["config"]
-    try:
-        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
-        access_token = auth.get_valid_access_token()
-        assert access_token
-        print("Logged in")
-    except Exception:
-        client = BlueapiClient.from_config(config)
-        oidc_config = client.get_oidc_config()
-        if oidc_config is None:
-            print("Server is not configured to use authentication!")
-            return
-        auth = SessionManager(
-            oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
-        )
-        auth.start_device_flow()
-
-
-@main.command(name="logout")
-@click.pass_obj
-def logout(obj: dict) -> None:
-    """
-    Logs out from the OIDC provider and removes the cached access token.
-    """
-    config: ApplicationConfig = obj["config"]
-    try:
-        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
-        auth.logout()
-    except FileNotFoundError:
-        print("Logged out")
-    except ValueError as e:
-        LOGGER.debug("Invalid login token: %s", e)
-        raise ClickException(
-            "Login token is not valid - remove before trying again"
-        ) from e
-    except Exception as e:
-        raise ClickException(f"Error logging out: {e}") from e

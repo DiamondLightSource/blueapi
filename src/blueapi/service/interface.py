@@ -187,7 +187,7 @@ def begin_task(
         if pass_through_headers is None:
             raise ValueError(
                 "Tiled config is enabled but no "
-                "{AUTHORIZAITON_HEADER} header in request"
+                f"{AUTHORIZAITON_HEADER} header in request"
             )
         authorization_header_value = pass_through_headers.get(AUTHORIZAITON_HEADER)
         from fastapi.security.utils import get_authorization_scheme_param

@@ -143,7 +143,10 @@ def get_devices() -> list[DeviceModel]:
 
 def get_device(name: str) -> DeviceModel:
     """Retrieve device by name from the BlueskyContext"""
-    return DeviceModel.from_device(context().devices[name])
+    if not (device := context().find_device(name)):
+        raise KeyError(name)
+
+    return DeviceModel.from_device(device)
 
 
 def submit_task(task_request: TaskRequest) -> str:

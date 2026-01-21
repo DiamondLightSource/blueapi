@@ -493,7 +493,7 @@ requires-dist = [
     { name = "bluesky", extras = ["plotting"], specifier = ">=1.14.0" },
     { name = "bluesky-stomp", specifier = ">=0.1.6" },
     { name = "click", specifier = ">=8.2.0" },
-    { name = "dls-dodal", specifier = ">=1.64.0" },
+    { name = "dls-dodal", specifier = ">=1.69.0" },
     { name = "event-model", specifier = "==1.23.1" },
     { name = "fastapi", specifier = ">=0.112.0" },
     { name = "gitpython" },
@@ -1185,7 +1185,7 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "1.68.0"
+version = "1.69.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -1208,9 +1208,9 @@ dependencies = [
     { name = "scanspec" },
     { name = "zocalo" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8f/a2/5e9b52b7e9c33a49d7ed498de811a10cf50f9d3e78414c9cea234ed8c98a/dls_dodal-1.68.0.tar.gz", hash = "sha256:e24b1c555c0e02e90fab327ed1024480555eecc0ca74f90389d6ac8519f97794", size = 1345787, upload-time = "2025-12-18T10:49:23.995Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/aa/20/98438b7b9bf9b81ae7b1454b090020e86977fde5796d236596838c98d166/dls_dodal-1.69.0.tar.gz", hash = "sha256:5181bf4e0fd9a818fec169ba060a8865cc53e5c28b5ead15824271a529c18682", size = 1587248, upload-time = "2026-01-19T14:50:52.909Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/69/d16626e7cb65d6baa8022abb13acbdf1655cc03886f77fb00215646f35b0/dls_dodal-1.68.0-py3-none-any.whl", hash = "sha256:7a20c9b0140ea5363f906d67e762d1f24f382b4738682022a962b390446dabd5", size = 337957, upload-time = "2025-12-18T10:49:22.527Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/39/f781c83cfae7a62a5009dbe1cc656000097575c93ef23271d2096cf9aefe/dls_dodal-1.69.0-py3-none-any.whl", hash = "sha256:99d0aa3c4b9e94ec981e3690babaeb0b6a389183cddf5cf0544073944ae1e9a3", size = 345661, upload-time = "2026-01-19T14:50:51.65Z" },
 ]
 
 [[package]]

@@ -601,8 +601,8 @@ def test_persistent_volume_claim_exists(
             "metadata": {
                 "name": "blueapi-scratch-0.1.0",
                 "annotations": {
-                    "helm.sh/resource-policy": "keep",
-                    "argocd.argoproj.io/sync-options": "Delete=false",
+                    "argocd.argoproj.io/sync-options": "Prune=false,Delete=false",
+                    "argocd.argoproj.io/compare-options": "IgnoreExtraneous",
                 },
             },
             "spec": {

@@ -217,15 +217,18 @@ class BlueapiClient:
     @cached_property
     @start_as_current_span(TRACER)
     def plans(self) -> PlanCache:
+        """Access to plans available on the server as if they were local methods"""
         return PlanCache(self, self._rest.get_plans().plans)
 
     @cached_property
     @start_as_current_span(TRACER)
     def devices(self) -> DeviceCache:
+        """References to devices available on the server"""
         return DeviceCache(self._rest)
 
     @classmethod
     def from_config_file(cls, config_file: str) -> Self:
+        """Load config from the given file and build client from it"""
         conf = ConfigLoader(ApplicationConfig)
         conf.use_values_from_yaml(Path(config_file))
         return cls.from_config(conf.load())

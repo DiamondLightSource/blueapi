@@ -23,7 +23,6 @@ from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import CoreSchema, core_schema
 
 from blueapi import utils
-from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import (
     ApplicationConfig,
     DeviceManagerSource,
@@ -36,6 +35,7 @@ from blueapi.config import (
 from blueapi.core.protocols import DeviceManager
 from blueapi.utils import (
     BlueapiPlanModelConfig,
+    NumtrackerClient,
     is_function_sourced_from_module,
     load_module_all,
 )

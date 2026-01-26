@@ -1,5 +1,12 @@
+import itertools
+import logging
 import time
+from collections.abc import Iterable
 from concurrent.futures import Future
+from functools import cached_property
+from itertools import chain
+from pathlib import Path
+from typing import Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -8,24 +15,25 @@ from observability_utils.tracing import (
     start_as_current_span,
 )
 
-from blueapi.config import ApplicationConfig, MissingStompConfigurationError
+from blueapi.config import (
+    ApplicationConfig,
+    ConfigLoader,
+    MissingStompConfigurationError,
+)
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
     DeviceModel,
-    DeviceResponse,
     EnvironmentResponse,
     OIDCConfig,
     PlanModel,
-    PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
     TaskRequest,
     TaskResponse,
-    TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker import TrackableTask, WorkerEvent, WorkerState
+from blueapi.worker import WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 
 from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
@@ -34,11 +42,167 @@ from .rest import BlueapiRestClient, BlueskyRemoteControlError
 TRACER = get_tracer("client")
 
 
+log = logging.getLogger(__name__)
+
+
+class MissingInstrumentSessionError(Exception):
+    pass
+
+
+class PlanCache:
+    def __init__(self, client: "BlueapiClient", plans: list[PlanModel]):
+        self._cache = {
+            model.name: Plan(name=model.name, model=model, client=client)
+            for model in plans
+        }
+        for name, plan in self._cache.items():
+            if name.startswith("_"):
+                continue
+            setattr(self, name, plan)
+
+    def __getitem__(self, name: str) -> "Plan":
+        return self._cache[name]
+
+    def __getattr__(self, name: str) -> "Plan":
+        raise AttributeError(f"No plan named '{name}' available")
+
+    def __iter__(self):
+        return iter(self._cache.values())
+
+    def __repr__(self) -> str:
+        return f"PlanCache({len(self._cache)} plans)"
+
+
+class DeviceCache:
+    def __init__(self, rest: BlueapiRestClient):
+        self._rest = rest
+        self._cache = {
+            model.name: DeviceRef(name=model.name, cache=self, model=model)
+            for model in rest.get_devices().devices
+        }
+        for name, device in self._cache.items():
+            if name.startswith("_"):
+                continue
+            setattr(self, name, device)
+
+    def __getitem__(self, name: str) -> "DeviceRef":
+        if dev := self._cache.get(name):
+            return dev
+        try:
+            model = self._rest.get_device(name)
+            device = DeviceRef(name=name, cache=self, model=model)
+            self._cache[name] = device
+            setattr(self, model.name, device)
+            return device
+        except KeyError:
+            pass
+        raise AttributeError(f"No device named '{name}' available")
+
+    def __getattr__(self, name: str) -> "DeviceRef":
+        if name.startswith("_"):
+            return super().__getattribute__(name)
+        return self[name]
+
+    def __iter__(self):
+        return iter(self._cache.values())
+
+    def __repr__(self) -> str:
+        return f"DeviceCache({len(self._cache)} devices)"
+
+
+class DeviceRef(str):
+    model: DeviceModel
+    _cache: DeviceCache
+
+    def __new__(cls, name: str, cache: DeviceCache, model: DeviceModel):
+        instance = super().__new__(cls, name)
+        instance.model = model
+        instance._cache = cache
+        return instance
+
+    def __getattr__(self, name) -> "DeviceRef":
+        if name.startswith("_"):
+            raise AttributeError(f"No child device named {name}")
+        return self._cache[f"{self}.{name}"]
+
+    def __repr__(self):
+        return f"Device({self})"
+
+
+class Plan:
+    def __init__(self, name, model: PlanModel, client: "BlueapiClient"):
+        self.name = name
+        self.model = model
+        self._client = client
+        self.__doc__ = model.description
+
+    def __call__(self, *args, **kwargs):
+        req = TaskRequest(
+            name=self.name,
+            params=self._build_args(*args, **kwargs),
+            instrument_session=self._client.instrument_session,
+        )
+        try:
+            self._client.run_task(req)
+        except KeyboardInterrupt:
+            self._client.abort()
+
+    @property
+    def help_text(self) -> str:
+        return self.model.description or f"Plan {self!r}"
+
+    @property
+    def properties(self) -> set[str]:
+        return self.model.parameter_schema.get("properties", {}).keys()
+
+    @property
+    def required(self) -> list[str]:
+        return self.model.parameter_schema.get("required", [])
+
+    def _build_args(self, *args, **kwargs):
+        log.info(
+            "Building args for %s, using %s and %s",
+            "[" + ",".join(self.properties) + "]",
+            args,
+            kwargs,
+        )
+
+        if len(args) > len(self.properties):
+            raise TypeError(f"{self.name} got too many arguments")
+        if extra := {k for k in kwargs if k not in self.properties}:
+            raise TypeError(f"{self.name} got unexpected arguments: {extra}")
+
+        params = {}
+        # Initially fill parameters using positional args assuming the order
+        # from the parameter_schema
+        for req, arg in zip(self.properties, args, strict=False):
+            params[req] = arg
+
+        # Then append any values given via kwargs
+        for key, value in kwargs.items():
+            # If we've already assumed a positional arg was this value, bail out
+            if key in params:
+                raise TypeError(f"{self.name} got multiple values for {key}")
+            params[key] = value
+
+        if missing := {k for k in self.required if k not in params}:
+            raise TypeError(f"Missing argument(s) for {missing}")
+        return params
+
+    def __repr__(self):
+        opts = [p for p in self.properties if p not in self.required]
+        params = ", ".join(chain(self.required, (f"{opt}=None" for opt in opts)))
+        return f"{self.name}({params})"
+
+
 class BlueapiClient:
     """Unified client for controlling blueapi"""
 
     _rest: BlueapiRestClient
     _events: EventBusClient | None
+    _instrument_session: str | None = None
+    _callbacks: dict[int, OnAnyEvent]
+    _callback_id: itertools.count
 
     def __init__(
         self,
@@ -47,9 +211,33 @@ class BlueapiClient:
     ):
         self._rest = rest
         self._events = events
+        self._callbacks = {}
+        self._callback_id = itertools.count()
+
+    @cached_property
+    @start_as_current_span(TRACER)
+    def plans(self) -> PlanCache:
+        """Access to plans available on the server as if they were local methods"""
+        return PlanCache(self, self._rest.get_plans().plans)
+
+    @cached_property
+    @start_as_current_span(TRACER)
+    def devices(self) -> DeviceCache:
+        """References to devices available on the server"""
+        return DeviceCache(self._rest)
 
     @classmethod
-    def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
+    def from_config_file(cls, config_file: str) -> Self:
+        """Load config from the given file and build client from it"""
+        conf = ConfigLoader(ApplicationConfig)
+        conf.use_values_from_yaml(Path(config_file))
+        return cls.from_config(conf.load())
+
+    @classmethod
+    def from_config(
+        cls,
+        config: ApplicationConfig,
+    ) -> Self:
         session_manager: SessionManager | None = None
         try:
             session_manager = SessionManager.from_cache(config.auth_token_path)
@@ -71,56 +259,36 @@ class BlueapiClient:
         else:
             return cls(rest)
 
+    @property
+    def instrument_session(self) -> str:
+        if self._instrument_session is None:
+            raise MissingInstrumentSessionError()
+        return self._instrument_session
+
+    @instrument_session.setter
+    def instrument_session(self, session: str):
+        log.debug("Setting instrument_session to %s", session)
+        self._instrument_session = session
+
+    def with_instrument_session(self, session: str) -> Self:
+        self.instrument_session = session
+        return self
+
+    def add_callback(self, callback: OnAnyEvent) -> int:
+        cb_id = next(self._callback_id)
+        self._callbacks[cb_id] = callback
+        return cb_id
+
+    def remove_callback(self, id: int):
+        self._callbacks.pop(id)
+
+    @property
+    def callbacks(self) -> Iterable[OnAnyEvent]:
+        return self._callbacks.values()
+
+    @property
     @start_as_current_span(TRACER)
-    def get_plans(self) -> PlanResponse:
-        """
-        List plans available
-
-        Returns:
-            PlanResponse: Plans that can be run
-        """
-        return self._rest.get_plans()
-
-    @start_as_current_span(TRACER, "name")
-    def get_plan(self, name: str) -> PlanModel:
-        """
-        Get details of a single plan
-
-        Args:
-            name: Plan name
-
-        Returns:
-            PlanModel: Details of the plan if found
-        """
-        return self._rest.get_plan(name)
-
-    @start_as_current_span(TRACER)
-    def get_devices(self) -> DeviceResponse:
-        """
-        List devices available
-
-        Returns:
-            DeviceResponse: Devices that can be used in plans
-        """
-
-        return self._rest.get_devices()
-
-    @start_as_current_span(TRACER, "name")
-    def get_device(self, name: str) -> DeviceModel:
-        """
-        Get details of a single device
-
-        Args:
-            name: Device name
-
-        Returns:
-            DeviceModel: Details of the device if found
-        """
-
-        return self._rest.get_device(name)
-
-    @start_as_current_span(TRACER)
-    def get_state(self) -> WorkerState:
+    def state(self) -> WorkerState:
         """
         Get current state of the blueapi worker
 
@@ -158,33 +326,9 @@ class BlueapiClient:
 
         return self._rest.set_state(WorkerState.RUNNING, defer=False)
 
-    @start_as_current_span(TRACER, "task_id")
-    def get_task(self, task_id: str) -> TrackableTask:
-        """
-        Get a task stored by the worker
-
-        Args:
-            task_id: Unique ID for the task
-
-        Returns:
-            TrackableTask: Task details
-        """
-        assert task_id, "Task ID not provided!"
-        return self._rest.get_task(task_id)
-
+    @property
     @start_as_current_span(TRACER)
-    def get_all_tasks(self) -> TasksListResponse:
-        """
-        Get a list of all task stored by the worker
-
-        Returns:
-            TasksListResponse: List of all Trackable Task
-        """
-
-        return self._rest.get_all_tasks()
-
-    @start_as_current_span(TRACER)
-    def get_active_task(self) -> WorkerTask:
+    def active_task(self) -> WorkerTask:
         """
         Get the currently active task, if any
 
@@ -221,7 +365,7 @@ class BlueapiClient:
                 "Stomp configuration required to run plans is missing or disabled"
             )
 
-        task_response = self.create_task(task)
+        task_response = self._rest.create_task(task)
         task_id = task_response.task_id
 
         complete: Future[WorkerEvent] = Future()
@@ -239,6 +383,13 @@ class BlueapiClient:
             if relates_to_task:
                 if on_event is not None:
                     on_event(event)
+                for cb in self._callbacks.values():
+                    try:
+                        cb(event)
+                    except Exception as e:
+                        log.error(
+                            f"Callback ({cb}) failed for event: {event}", exc_info=e
+                        )
                 if isinstance(event, WorkerEvent) and (
                     (event.is_complete()) and (ctx.correlation_id == task_id)
                 ):
@@ -255,7 +406,7 @@ class BlueapiClient:
 
         with self._events:
             self._events.subscribe_to_all_events(inner_on_event)
-            self.start_task(WorkerTask(task_id=task_id))
+            self._rest.update_worker_task(WorkerTask(task_id=task_id))
             return complete.result(timeout=timeout)
 
     @start_as_current_span(TRACER, "task")
@@ -271,8 +422,10 @@ class BlueapiClient:
             TaskResponse: Acknowledgement of request
         """
 
-        response = self.create_task(task)
-        worker_response = self.start_task(WorkerTask(task_id=response.task_id))
+        response = self._rest.create_task(task)
+        worker_response = self._rest.update_worker_task(
+            WorkerTask(task_id=response.task_id)
+        )
         if worker_response.task_id == response.task_id:
             return response
         else:
@@ -280,48 +433,6 @@ class BlueapiClient:
                 f"Tried to create and start task {response.task_id} "
                 f"but {worker_response.task_id} was started instead"
             )
-
-    @start_as_current_span(TRACER, "task")
-    def create_task(self, task: TaskRequest) -> TaskResponse:
-        """
-        Create a new task, does not start execution
-
-        Args:
-            task: Request object for task to create on the worker
-
-        Returns:
-            TaskResponse: Acknowledgement of request
-        """
-
-        return self._rest.create_task(task)
-
-    @start_as_current_span(TRACER)
-    def clear_task(self, task_id: str) -> TaskResponse:
-        """
-        Delete a stored task on the worker
-
-        Args:
-            task_id: ID for the task
-
-        Returns:
-            TaskResponse: Acknowledgement of request
-        """
-
-        return self._rest.clear_task(task_id)
-
-    @start_as_current_span(TRACER, "task")
-    def start_task(self, task: WorkerTask) -> WorkerTask:
-        """
-        Instruct the worker to start a stored task immediately
-
-        Args:
-            task: WorkerTask to start
-
-        Returns:
-            WorkerTask: Acknowledgement of request
-        """
-
-        return self._rest.update_worker_task(task)
 
     @start_as_current_span(TRACER, "reason")
     def abort(self, reason: str | None = None) -> WorkerState:
@@ -358,15 +469,10 @@ class BlueapiClient:
 
         return self._rest.cancel_current_task(WorkerState.STOPPING)
 
+    @property
     @start_as_current_span(TRACER)
-    def get_environment(self) -> EnvironmentResponse:
-        """
-        Get details of the worker environment
-
-        Returns:
-            EnvironmentResponse: Details of the worker
-            environment.
-        """
+    def environment(self) -> EnvironmentResponse:
+        """Details of the worker environment"""
 
         return self._rest.get_environment()
 
@@ -433,14 +539,10 @@ class BlueapiClient:
             "seconds, a server restart is recommended"
         )
 
+    @property
     @start_as_current_span(TRACER)
-    def get_oidc_config(self) -> OIDCConfig | None:
-        """
-        Get oidc config from the server
-
-        Returns:
-            OIDCConfig: Details of the oidc Config
-        """
+    def oidc_config(self) -> OIDCConfig | None:
+        """OIDC config from the server"""
 
         return self._rest.get_oidc_config()
 

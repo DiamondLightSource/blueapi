@@ -40,12 +40,12 @@ def rest_with_auth(oidc_config: OIDCConfig, tmp_path) -> BlueapiRestClient:
     "code,expected_exception",
     [
         (404, KeyError),
-        (401, BlueskyRemoteControlError),
+        (401, UnauthorisedAccessError),
         (450, BlueskyRemoteControlError),
         (500, BlueskyRemoteControlError),
     ],
 )
-@patch("blueapi.client.rest.requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_rest_error_code(
     mock_request: Mock,
     rest: BlueapiRestClient,

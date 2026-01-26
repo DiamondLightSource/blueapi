@@ -142,7 +142,10 @@ class Plan:
             params=self._build_args(*args, **kwargs),
             instrument_session=self._client.instrument_session,
         )
-        self._client.run_task(req)
+        try:
+            self._client.run_task(req)
+        except KeyboardInterrupt:
+            self._client.abort()
 
     @property
     def help_text(self) -> str:

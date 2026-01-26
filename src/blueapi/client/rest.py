@@ -104,6 +104,8 @@ def _exception(response: requests.Response) -> Exception | None:
     code = response.status_code
     if code < 400:
         return None
+    elif code == 401 or code == 403:
+        return UnauthorisedAccessError()
     elif code == 404:
         return KeyError(str(response.json()))
     else:

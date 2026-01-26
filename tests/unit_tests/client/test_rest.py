@@ -40,7 +40,7 @@ def rest_with_auth(oidc_config: OIDCConfig, tmp_path) -> BlueapiRestClient:
     "code,expected_exception",
     [
         (404, KeyError),
-        (401, BlueskyRemoteControlError),
+        (401, UnauthorisedAccessError),
         (450, BlueskyRemoteControlError),
         (500, BlueskyRemoteControlError),
     ],

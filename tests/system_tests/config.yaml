@@ -23,4 +23,4 @@ tiled:
 oidc:
   well_known_url: "http://localhost:8081/realms/master/.well-known/openid-configuration"
   client_id: "ixx-cli-blueapi"
-  client_audience: "blueapi"
+  client_audience: "ixx-blueapi"

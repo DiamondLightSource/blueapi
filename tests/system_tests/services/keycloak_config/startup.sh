@@ -44,19 +44,19 @@ create_client() {
 # --- Create Clients ---
 
 # System Test
-create_client "system-test-blueapi" "blueapi" \
+create_client "system-test-blueapi" "ixx-blueapi" \
     -s secret="secret" -s standardFlowEnabled=false -s serviceAccountsEnabled=true -s 'redirectUris=["/*"]'
 
 # ixx CLI
-create_client "ixx-cli-blueapi" "blueapi" \
+create_client "ixx-cli-blueapi" "ixx-blueapi" \
     -s standardFlowEnabled=false -s publicClient=true -s 'redirectUris=["/*"]' \
     -s 'attributes={"oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true"}'
 
 # ixx BlueAPI
-create_client "ixx-blueapi" "blueapi" \
+create_client "ixx-blueapi" "ixx-blueapi" \
     -s standardFlowEnabled=true -s secret="blueapi-secret" -s rootUrl="http://localhost:4180" \
     -s 'redirectUris=["http://localhost:4180/*"]' \
-    -s 'attributes={"standard.token.exchange.enabled":"true"}'
+    -s 'attributes={"frontchannel.logout.session.required":"true","use.refresh.tokens":"true","standard.token.exchange.enabled": "true","standard.token.exchange.enableRefreshRequestedTokenType": "SAME_SESSION"}'
 
 # Tiled
 create_client "tiled" "tiled" \
@@ -66,4 +66,4 @@ create_client "tiled" "tiled" \
 # Tiled CLI
 create_client "tiled-cli" "tiled" \
     -s standardFlowEnabled=false -s publicClient=true -s 'redirectUris=["/*"]' \
-    -s 'attributes={"oauth2.device.authorization.grant.enabled":"true"}'
+    -s 'attributes={"oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true"}'

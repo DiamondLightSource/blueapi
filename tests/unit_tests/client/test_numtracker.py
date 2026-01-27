@@ -6,7 +6,7 @@ from pydantic import HttpUrl
 from requests import HTTPError
 from tests.conftest import NOT_CONFIGURED_INSTRUMENT
 
-from blueapi.client.numtracker import (
+from blueapi.utils.numtracker import (
     DirectoryPath,
     NumtrackerClient,
     NumtrackerScanMutationResponse,

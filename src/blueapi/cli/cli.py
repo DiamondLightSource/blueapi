@@ -21,7 +21,7 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
-from blueapi.client.client import BlueapiClient
+from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import (
     BlueskyRemoteControlError,

@@ -9,7 +9,7 @@ from observability_utils.tracing import (
     asserting_span_exporter,
 )
 
-from blueapi.client.client import BlueapiClient
+from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
 from blueapi.config import MissingStompConfigurationError

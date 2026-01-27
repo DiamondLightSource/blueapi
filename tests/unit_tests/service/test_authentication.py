@@ -192,7 +192,7 @@ def tiled_config(oidc_config: OIDCConfig, mock_authn_server, tiled_url: str):
         enabled=True,
         url=HttpUrl(tiled_url),
         token_url=oidc_config.token_endpoint,
-        token_exchange_client_id="token_exchange_id",
+        requester_client_id="token_exchange_id",
         token_exchange_secret=SecretStr("secret"),
     )
 

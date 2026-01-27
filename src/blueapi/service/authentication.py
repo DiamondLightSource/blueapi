@@ -296,7 +296,7 @@ class TiledAuth(httpx.Auth):
     def exchange_access_token(self):
         client_secret = self._tiled_config.token_exchange_secret.get_secret_value()
         request_data = {
-            "client_id": self._tiled_config.token_exchange_client_id,
+            "client_id": self._tiled_config.requester_client_id,
             "client_secret": client_secret,
             "subject_token": self._blueapi_jwt_token,
             "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
@@ -319,7 +319,7 @@ class TiledAuth(httpx.Auth):
             response = requests.post(
                 self._tiled_config.token_url,
                 data={
-                    "client_id": self._tiled_config.token_exchange_client_id,
+                    "client_id": self._tiled_config.requester_client_id,
                     "client_secret": client_secret,
                     "grant_type": "refresh_token",
                     "refresh_token": str(self._refresh_token),

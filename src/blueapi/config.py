@@ -117,9 +117,7 @@ class TiledConfig(BlueapiBaseModel):
         description="Token exchange client secret", default=SecretStr("")
     )
     token_url: str = Field(default="")
-    token_exchange_client_id: str = Field(
-        description="Token exchange Client ID", default=""
-    )
+    requester_client_id: str = Field(description="Token exchange Client ID", default="")
 
 
 class WorkerEventConfig(BlueapiBaseModel):

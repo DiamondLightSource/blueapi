@@ -499,10 +499,10 @@
                     "title": "Token Url",
                     "type": "string"
                 },
-                "token_exchange_client_id": {
+                "requester_client_id": {
                     "default": "",
                     "description": "Token exchange Client ID",
-                    "title": "Token Exchange Client Id",
+                    "title": "Requester Client Id",
                     "type": "string"
                 }
             },

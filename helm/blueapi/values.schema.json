@@ -899,8 +899,8 @@
                     "default": false,
                     "type": "boolean"
                 },
-                "token_exchange_client_id": {
-                    "title": "Token Exchange Client Id",
+                "requester_client_id": {
+                    "title": "Requester Client Id",
                     "description": "Token exchange Client ID",
                     "default": "",
                     "type": "string"

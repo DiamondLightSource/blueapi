@@ -17,7 +17,6 @@ from ophyd_async.epics.motor import Motor
 from pydantic import HttpUrl
 from stomp.connect import StompConnection11 as Connection
 
-from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import (
     ApplicationConfig,
     EnvironmentConfig,
@@ -43,6 +42,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
+from blueapi.utils.numtracker import NumtrackerClient
 from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import TaskStatus, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
@@ -486,7 +486,7 @@ def test_configure_numtracker():
     assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
 
-@patch("blueapi.client.numtracker.requests.post")
+@patch("blueapi.utils.numtracker.requests.post")
 def test_headers_are_cleared(mock_post):
     mock_response = Mock()
     mock_post.return_value = mock_response
@@ -604,7 +604,7 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
     clear_path_provider()
 
 
-@patch("blueapi.client.numtracker.NumtrackerClient.create_scan")
+@patch("blueapi.utils.numtracker.NumtrackerClient.create_scan")
 def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_scan):
     conf = ApplicationConfig(
         numtracker=NumtrackerConfig(

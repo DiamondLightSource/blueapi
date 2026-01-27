@@ -50,7 +50,7 @@ create_client "system-test-blueapi" "ixx-blueapi" \
 # ixx CLI
 create_client "ixx-cli-blueapi" "ixx-blueapi" \
     -s standardFlowEnabled=false -s publicClient=true -s 'redirectUris=["/*"]' \
-    -s 'attributes={"oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true"}'
+    -s 'attributes={"frontchannel.logout.session.required":"true","oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true","backchannel.logout.session.required":"true"}'
 
 # ixx BlueAPI
 create_client "ixx-blueapi" "ixx-blueapi" \
@@ -66,4 +66,4 @@ create_client "tiled" "tiled" \
 # Tiled CLI
 create_client "tiled-cli" "tiled" \
     -s standardFlowEnabled=false -s publicClient=true -s 'redirectUris=["/*"]' \
-    -s 'attributes={"oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true"}'
+    -s 'attributes={"frontchannel.logout.session.required":"true","oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true","backchannel.logout.session.required":"true"}'

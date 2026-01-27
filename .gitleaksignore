@@ -1,0 +1,2 @@
+tests/system_tests/services/blueapi-oauth2-proxy/oauth2-proxy.cfg:generic-api-key:16
+tests/system_tests/services/tiled-oauth2-proxy/oauth2-proxy.cfg:generic-api-key:14

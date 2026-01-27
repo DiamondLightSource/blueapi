@@ -1,0 +1,27 @@
+injectRequestHeaders:
+- name: Authorization
+  values:
+  - claim: access_token
+    prefix: "Bearer "
+providers:
+- provider: oidc
+  clientID: ixx-blueapi
+  clientSecret: blueapi-secret
+  id: authn
+  oidcConfig:
+    audienceClaims: ["aud"]
+    extraAudiences: ["account"]
+    emailClaim: sub
+    insecureAllowUnverifiedEmail: true
+    insecureSkipNonce: true
+    issuerURL: http://localhost:8081/realms/master
+server:
+  BindAddress: localhost:4180
+  SecureBindAddress: ""
+  TLS: null
+upstreamConfig:
+  proxyRawPath: true
+  upstreams:
+  - id: ixx-blueapi
+    path: /
+    uri: http://localhost:8000

@@ -1,27 +1,36 @@
 import os
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import httpx
 import jwt
 import pytest
 import responses
+import respx
+from pydantic import HttpUrl, SecretStr
 from starlette.status import HTTP_403_FORBIDDEN
 
-from blueapi.config import OIDCConfig
+from blueapi.config import OIDCConfig, TiledConfig
 from blueapi.service import main
-from blueapi.service.authentication import SessionCacheManager, SessionManager
+from blueapi.service.authentication import (
+    SessionCacheManager,
+    SessionManager,
+    TiledAuth,
+    Token,
+    TokenType,
+)
 
 
 @pytest.fixture
-def auth_token_path(tmp_path) -> Path:
+def auth_token_path(tmp_path: Path) -> Path:
     return tmp_path / "blueapi_cache"
 
 
 @pytest.fixture
 def session_manager(
     oidc_config: OIDCConfig,
-    auth_token_path,
+    auth_token_path: Path,
     mock_authn_server: responses.RequestsMock,
 ) -> SessionManager:
     return SessionManager(
@@ -125,15 +134,179 @@ def test_server_raises_exception_for_invalid_token(
 def test_processes_valid_token(
     oidc_config: OIDCConfig,
     mock_authn_server: responses.RequestsMock,
-    valid_token_with_jwt,
+    valid_token_with_jwt: dict[str, Any],
 ):
     inner = main.verify_access_token(oidc_config)
     inner(access_token=valid_token_with_jwt["access_token"])
 
 
-def test_session_cache_manager_returns_writable_file_path(tmp_path):
+def test_session_cache_manager_returns_writable_file_path(tmp_path: Path):
     os.environ["XDG_CACHE_HOME"] = str(tmp_path)
     cache = SessionCacheManager(token_path=None)
     Path(cache._file_path).touch()
     assert os.path.isfile(cache._file_path)
     assert cache._file_path == f"{tmp_path}/blueapi_cache"
+
+
+@pytest.fixture
+def token_exchange_response():
+    return {
+        "access_token": "token-exchange-access-token",
+        "expires_in": 900,
+        "issued_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
+        "not-before-policy": 0,
+        "refresh_expires_in": 1800,
+        "refresh_token": "token-exchange-refresh-token",
+        "scope": "openid profile email fedid",
+        "session_state": "c1311c2b-a4e1-456b-2ff7-9f0a7e2f516b",
+        "token_type": "Bearer",
+    }
+
+
+@pytest.fixture
+def refresh_token_response():
+    return {
+        "access_token": "new-access-token",
+        "expires_in": 900,
+        "refresh_expires_in": 1800,
+        "refresh_token": "token-exchange-refresh-token",
+        "not-before-policy": 0,
+        "session_state": "c1311c2b-a4e1-406b-9ff7-9f0a7e2f516b",
+        "scope": "openid profile email fedid",
+    }
+
+
+@pytest.fixture
+def tiled_url() -> str:
+    return "http://tiled.com"
+
+
+@pytest.fixture
+def blueapi_jwt():
+    return "blueapi-token"
+
+
+@pytest.fixture
+def tiled_config(oidc_config: OIDCConfig, mock_authn_server, tiled_url: str):
+    return TiledConfig(
+        enabled=True,
+        url=HttpUrl(tiled_url),
+        token_url=oidc_config.token_endpoint,
+        requester_client_id="token_exchange_id",
+        token_exchange_secret=SecretStr("secret"),
+    )
+
+
+@pytest.fixture()
+def tiled_auth(tiled_config, blueapi_jwt):
+    return TiledAuth(
+        tiled_config=tiled_config,
+        blueapi_jwt_token=blueapi_jwt,
+    )
+
+
+@pytest.fixture
+def mock_token_exchange(
+    oidc_config: OIDCConfig,
+    token_exchange_response,
+    refresh_token_response,
+    tiled_config,
+    blueapi_jwt,
+):
+    token_exchange_data = {
+        "client_id": tiled_config.requester_client_id,
+        "client_secret": tiled_config.token_exchange_secret.get_secret_value(),
+        "subject_token": blueapi_jwt,
+        "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
+        "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+        "requested_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
+    }
+    token_exchange_refresh_data = {
+        "client_id": tiled_config.requester_client_id,
+        "client_secret": tiled_config.token_exchange_secret.get_secret_value(),
+        "grant_type": "refresh_token",
+        "refresh_token": token_exchange_response["refresh_token"],
+    }
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as requests_mock:
+        exchange_tokens = requests_mock.post(
+            oidc_config.token_endpoint,
+            match=[responses.matchers.urlencoded_params_matcher(token_exchange_data)],
+            json=token_exchange_response,
+        )
+        # Refresh token
+        refresh_tokens = requests_mock.post(
+            oidc_config.token_endpoint,
+            match=[
+                responses.matchers.urlencoded_params_matcher(
+                    token_exchange_refresh_data
+                )
+            ],
+            json=refresh_token_response,
+        )
+
+        yield {"exchange_tokens": exchange_tokens, "refresh_tokens": refresh_tokens}
+
+
+def test_blueapi_token_exchange(
+    tiled_auth: TiledAuth, tiled_url: str, mock_token_exchange
+):
+    respx.get(tiled_url).mock(side_effect=[httpx.Response(200), httpx.Response(200)])
+    with httpx.Client(auth=tiled_auth) as tiled_client:
+        tiled_client.get(tiled_url)
+        assert mock_token_exchange["exchange_tokens"].call_count == 1
+        assert mock_token_exchange["refresh_tokens"].call_count == 0
+        tiled_client.get(tiled_url)
+
+
+def test_blueapi_token_exchange_refresh_token(
+    tiled_auth: TiledAuth, tiled_url: str, mock_token_exchange
+):
+    respx.get(tiled_url).mock(
+        side_effect=[httpx.Response(200), httpx.Response(401), httpx.Response(200)]
+    )
+    with httpx.Client(auth=tiled_auth) as tiled_client:
+        tiled_client.get(tiled_url)
+        assert mock_token_exchange["exchange_tokens"].call_count == 1
+        assert mock_token_exchange["refresh_tokens"].call_count == 0
+        # Make access token expired
+        tiled_auth._access_token = MagicMock()
+        tiled_auth._access_token.expired = True
+        tiled_client.get(tiled_url)
+        assert mock_token_exchange["refresh_tokens"].call_count == 1
+
+
+def test_blueapi_token_exchange_refresh_token_exception(
+    tiled_auth: TiledAuth, tiled_url: str, mock_token_exchange
+):
+    respx.get(tiled_url).mock(
+        side_effect=[httpx.Response(200), httpx.Response(401), httpx.Response(200)]
+    )
+    with httpx.Client(auth=tiled_auth) as tiled_client:
+        tiled_client.get(tiled_url)
+        assert mock_token_exchange["exchange_tokens"].call_count == 1
+        assert mock_token_exchange["refresh_tokens"].call_count == 0
+        # Make access token expired
+        tiled_auth._access_token = MagicMock()
+        tiled_auth._access_token.expired = True
+        # Make refresh token None
+        tiled_auth._refresh_token = None
+        with pytest.raises(
+            Exception, match="Cannot refresh session as no refresh token available"
+        ):
+            tiled_client.get(tiled_url)
+        assert mock_token_exchange["refresh_tokens"].call_count == 0
+
+
+def test_token_is_assumed_valid_if_information_not_available():
+    access_token = Token(
+        token_dict={"access_token": "foo", "refresh_token": "bar"},
+        token_type=TokenType.access_token,
+    )
+    assert not access_token.expired
+
+
+def test_token_raise_value_error_if_not_found():
+    with pytest.raises(
+        ValueError, match=f"Not able to find {TokenType.access_token} in response"
+    ):
+        Token(token_dict={"refresh_token": "bar"}, token_type=TokenType.access_token)

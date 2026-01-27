@@ -36,6 +36,11 @@ from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service import interface
+from blueapi.service.constants import (
+    CONTEXT_HEADER,
+    PROPAGATED_HEADERS,
+    VENDOR_CONTEXT_HEADER,
+)
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -67,10 +72,7 @@ LICENSE_INFO: dict[str, str] = {
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
-CONTEXT_HEADER = "traceparent"
-VENDOR_CONTEXT_HEADER = "tracestate"
-AUTHORIZAITON_HEADER = "authorization"
-PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
+
 DOCS_ENDPOINT = "/docs"
 
 

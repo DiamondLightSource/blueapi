@@ -16,6 +16,7 @@ from pydantic import (
     BaseModel,
     Field,
     HttpUrl,
+    SecretStr,
     TypeAdapter,
     UrlConstraints,
     ValidationError,
@@ -112,7 +113,11 @@ class TiledConfig(BlueapiBaseModel):
         default=False,
     )
     url: HttpUrl = HttpUrl("http://localhost:8407")
-    api_key: str | None = os.environ.get("TILED_SINGLE_USER_API_KEY", None)
+    token_exchange_secret: SecretStr = Field(
+        description="Token exchange client secret", default=SecretStr("")
+    )
+    token_url: str = Field(default="")
+    requester_client_id: str = Field(description="Token exchange Client ID", default="")
 
 
 class WorkerEventConfig(BlueapiBaseModel):

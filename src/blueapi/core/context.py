@@ -181,6 +181,17 @@ class BlueskyContext:
                     "Tiled has been configured but `instrument` metadata is not set - "
                     "this field is required to make authorization decisions."
                 )
+            if configuration.oidc is None:
+                raise InvalidConfigError(
+                    "Tiled has been configured but oidc configuration is missing "
+                    "this field is required to make authorization decisions."
+                )
+            if tiled_conf.token_exchange_secret.get_secret_value() == "":
+                raise InvalidConfigError(
+                    "Tiled has been enabled but Token exchange secret has not been set "
+                    "this field is required to enable tiled insertion."
+                )
+            tiled_conf.token_url = configuration.oidc.token_endpoint
             self.tiled_conf = tiled_conf
 
     def find_device(self, addr: str | list[str]) -> Device | None:

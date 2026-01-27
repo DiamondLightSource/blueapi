@@ -1,0 +1,11 @@
+stomp:
+  enabled: true
+  auth:
+    username: guest
+    password: guest
+  url: tcp://localhost:61613
+api:
+  url: http://localhost:8000
+logging:
+  level: ERROR
+auth_token_path: /tmp/blueapi-system-test-cache

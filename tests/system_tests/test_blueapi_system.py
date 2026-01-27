@@ -1,13 +1,13 @@
 import inspect
+import re
+import subprocess
 import time
 from asyncio import Queue
-from collections.abc import Generator
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
-from bluesky_stomp.models import BasicAuthentication
+from playwright.sync_api import sync_playwright
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
 from scanspec.specs import Line
@@ -22,9 +22,9 @@ from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
     OIDCConfig,
-    StompConfig,
 )
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.service.authentication import SessionCacheManager
 from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
@@ -66,10 +66,13 @@ _DATA_PATH = Path(__file__).parent
 # 2. Spin up blueapi server (inside devcontainer)
 #
 # source tests/system_tests/.env
-# export TILED_SINGLE_USER_API_KEY=foo
 # blueapi -c tests/system_tests/config.yaml serve
 #
-# Note: You can login into blueapi using username: admin and password: admin
+# Note: You can login into blueapi and tiled using username: admin and password: admin
+# blueapi -c tests/system_tests/config-cli.yaml login
+# Blueapi is hosted at http://localhost:4180 and
+# Tiled is hosted at http://localhost:4181
+#
 # 3. Run the system tests
 # tox -e system-test
 #
@@ -85,13 +88,21 @@ KEYCLOAK_BASE_URL = "http://localhost:8081/"
 OIDC_TOKEN_ENDPOINT = KEYCLOAK_BASE_URL + "realms/master/protocol/openid-connect/token"
 
 
-@pytest.fixture
-def client_without_auth() -> Generator[BlueapiClient]:
-    with patch(
-        "blueapi.service.authentication.SessionManager.from_cache",
-        return_value=None,
-    ):
-        yield BlueapiClient.from_config(config=ApplicationConfig())
+@pytest.fixture(scope="module")
+def client_without_auth() -> BlueapiClient:
+    return BlueapiClient.from_config(config=ApplicationConfig())
+
+
+@pytest.fixture(scope="module", autouse=True)
+def wait_for_server(client_without_auth: BlueapiClient):
+    for _ in range(20):
+        try:
+            client_without_auth.get_oidc_config()
+            return
+        except ConnectionError:
+            ...
+        time.sleep(0.5)
+    raise TimeoutError("No connection to the blueapi server")
 
 
 def get_access_token() -> str:
@@ -108,45 +119,86 @@ def get_access_token() -> str:
     return response.json().get("access_token")
 
 
-@pytest.fixture
-def client_with_stomp() -> Generator[BlueapiClient]:
-    mock_session_manager = MagicMock
-    mock_session_manager.get_valid_access_token = get_access_token
-    with patch(
-        "blueapi.service.authentication.SessionManager.from_cache",
-        return_value=mock_session_manager,
-    ):
-        yield BlueapiClient.from_config(
-            config=ApplicationConfig(
-                stomp=StompConfig(
-                    enabled=True,
-                    auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
-                )
-            )
-        )
+def load_config(path: Path) -> ApplicationConfig:
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(path)
+    return loader.load()
 
 
 @pytest.fixture(scope="module", autouse=True)
-def wait_for_server(client: BlueapiClient):
-    for _ in range(20):
+def device_flow_login():
+    path = _DATA_PATH / "config-cli-without-stomp.yaml"
+    config = load_config(path)
+    assert config.auth_token_path
+
+    token_path = Path(config.auth_token_path)
+
+    if token_path.exists():
         try:
-            client.get_environment()
+            SessionCacheManager(config.auth_token_path).load_cache()
             return
-        except ConnectionError:
-            ...
-        time.sleep(0.5)
-    raise TimeoutError("No connection to the blueapi server")
+        except Exception:
+            pass
+
+    proc = subprocess.Popen(
+        ["uv", "run", "blueapi", "-c", str(path), "login"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
+        text=True,
+    )
+
+    try:
+        url = None
+        assert proc.stdout
+
+        for line in proc.stdout:
+            if match := re.search(r"(https?://\S+)", line):
+                url = match.group(1)
+                break
+
+        assert url, "No login URL printed"
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+
+            page.goto(url)
+            page.fill("input[name='username']", "admin")
+            page.fill("input[name='password']", "admin")
+            page.click("button[type='submit']")
+            page.get_by_role("button", name="Yes").click()
+
+            browser.close()
+
+        # wait for token
+        for _ in range(20):
+            if token_path.exists():
+                try:
+                    SessionCacheManager(config.auth_token_path).load_cache()
+                    break
+                except Exception:
+                    pass
+            time.sleep(0.25)
+        return
+    finally:
+        if proc.poll() is None:
+            proc.terminate()
+            proc.wait(timeout=5)
+        if proc.stdout:
+            proc.stdout.close()
 
 
-@pytest.fixture(scope="module")
-def client() -> Generator[BlueapiClient]:
-    mock_session_manager = MagicMock
-    mock_session_manager.get_valid_access_token = get_access_token
-    with patch(
-        "blueapi.service.authentication.SessionManager.from_cache",
-        return_value=mock_session_manager,
-    ):
-        yield BlueapiClient.from_config(config=ApplicationConfig())
+@pytest.fixture
+def client_with_stomp() -> BlueapiClient:
+    return BlueapiClient.from_config(config=load_config(_DATA_PATH / "config-cli.yaml"))
+
+
+@pytest.fixture
+def client() -> BlueapiClient:
+    return BlueapiClient.from_config(
+        config=load_config(_DATA_PATH / "config-cli-without-stomp.yaml")
+    )
 
 
 @pytest.fixture
@@ -179,22 +231,9 @@ def blueapi_client_get_methods() -> list[str]:
     ]
 
 
-@pytest.fixture(autouse=True)
-def clean_existing_tasks(client: BlueapiClient):
-    for task in client.get_all_tasks().tasks:
-        client.clear_task(task.task_id)
-    yield
-
-
-@pytest.fixture(scope="module")
-def server_config() -> ApplicationConfig:
-    loader = ConfigLoader(ApplicationConfig)
-    loader.use_values_from_yaml(Path("tests", "system_tests", "config.yaml"))
-    return loader.load()
-
-
 @pytest.fixture(autouse=True, scope="module")
-def reset_numtracker(server_config: ApplicationConfig):
+def reset_numtracker():
+    server_config = load_config(Path("tests", "system_tests", "config.yaml"))
     nt_url = server_config.numtracker.url  # type: ignore - if numtracker is None we should fail
     requests.post(
         str(nt_url),
@@ -229,6 +268,7 @@ def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
         well_known_url=KEYCLOAK_BASE_URL
         + "realms/master/.well-known/openid-configuration",
         client_id="ixx-cli-blueapi",
+        client_audience="ixx-blueapi",
     )
 
 
@@ -296,6 +336,9 @@ def test_create_task_validation_error(client: BlueapiClient):
 
 
 def test_get_all_tasks(client: BlueapiClient):
+    for task in client.get_all_tasks().tasks:
+        client.clear_task(task.task_id)
+
     created_tasks: list[TaskResponse] = []
     for task in [_SIMPLE_TASK, _LONG_TASK]:
         created_task = client.create_task(task)
@@ -373,6 +416,8 @@ def test_set_state_transition_error(client: BlueapiClient):
 
 
 def test_get_task_by_status(client: BlueapiClient):
+    for task in client.get_all_tasks().tasks:
+        client.clear_task(task.task_id)
     task_1 = client.create_task(_SIMPLE_TASK)
     task_2 = client.create_task(_SIMPLE_TASK)
     task_by_pending = client.get_all_tasks()

@@ -1,0 +1,28 @@
+{
+    "protocolMappers": [
+        {
+            "name": "fedid",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-claim-mapper",
+            "config": {
+                "introspection.token.claim": "true",
+                "claim.value": "__CLAIM_VALUE__",
+                "userinfo.token.claim": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "fedid",
+                "jsonType.label": "String"
+            }
+        },
+        {
+            "name": "audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "config": {
+                "introspection.token.claim": "true",
+                "access.token.claim": "true",
+                "included.custom.audience": "__AUDIENCE__"
+            }
+        }
+    ]
+}

@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from enum import StrEnum
+from typing import Any
 
 from bluesky.run_engine import RunEngineStateMachine
 from pydantic import Field
@@ -109,6 +110,7 @@ class TaskStatus(BlueapiBaseModel):
     task_id: str
     task_complete: bool
     task_failed: bool
+    result: Any = None
 
 
 class WorkerEvent(BlueapiBaseModel):

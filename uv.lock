@@ -510,7 +510,7 @@ requires-dist = [
     { name = "scanspec", specifier = ">=0.9.0" },
     { name = "stomp-py" },
     { name = "super-state-machine" },
-    { name = "tiled", extras = ["client"], git = "https://github.com/bluesky/tiled.git?rev=add-auth-for-client" },
+    { name = "tiled", extras = ["client"], git = "https://github.com/bluesky/tiled.git?rev=main" },
     { name = "tomlkit" },
     { name = "uvicorn" },
 ]
@@ -539,7 +539,7 @@ dev = [
     { name = "sphinx-copybutton" },
     { name = "sphinx-design" },
     { name = "sphinxcontrib-openapi" },
-    { name = "tiled", extras = ["minimal-server"], git = "https://github.com/bluesky/tiled.git?rev=add-auth-for-client" },
+    { name = "tiled", extras = ["minimal-server"], git = "https://github.com/bluesky/tiled.git?rev=main" },
     { name = "tox-uv" },
     { name = "types-mock" },
     { name = "types-pyyaml" },
@@ -5325,8 +5325,8 @@ wheels = [
 
 [[package]]
 name = "tiled"
-version = "0.2.4.dev2+g306833209"
-source = { git = "https://github.com/bluesky/tiled.git?rev=add-auth-for-client#3068332094c0c1f5588683d2bab9e0282d51ad44" }
+version = "0.2.4.dev19+gea5fabac4"
+source = { git = "https://github.com/bluesky/tiled.git?rev=main#ea5fabac43d736d2a96b374c59b091dfd9980115" }
 dependencies = [
     { name = "httpx" },
     { name = "json-merge-patch" },

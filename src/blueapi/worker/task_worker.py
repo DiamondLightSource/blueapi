@@ -69,6 +69,7 @@ class TrackableTask(BlueapiBaseModel):
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
+    result: Any | None = None
 
 
 class TaskWorker:
@@ -423,11 +424,12 @@ class TaskWorker:
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
 
-                def process_task():
+                def process_task() -> Any:
                     LOGGER.info(f"Got new task: {next_task}")
                     self._current = next_task
                     self._current.is_pending = False
-                    self._current.task.do_task(self._ctx)
+                    result = self._current.task.do_task(self._ctx)
+                    self._current.result = result
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:
@@ -528,6 +530,7 @@ class TaskWorker:
                 task_id=self._current.task_id,
                 task_complete=self._current.is_complete,
                 task_failed=bool(self._current.errors),
+                result=self._current.result,
             )
             correlation_id = self._current.task_id
             add_span_attributes(

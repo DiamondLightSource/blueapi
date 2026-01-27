@@ -12,12 +12,12 @@ from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
 from scanspec.specs import Line
 
-from blueapi.client.client import (
-    BlueapiClient,
-    BlueskyRemoteControlError,
-)
+from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError
-from blueapi.client.rest import BlueskyRequestError
+from blueapi.client.rest import (
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+)
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,

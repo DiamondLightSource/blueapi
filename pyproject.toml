@@ -138,7 +138,7 @@ commands = [
     [
         "pyright",
         "--pythonpath",
-        ".venv/bin/python",
+        "{env:VIRTUAL_ENV}/bin/python",
         "src",
         "tests",
         { replace = "posargs", default = [
@@ -151,6 +151,7 @@ description = "Run unit tests with coverage"
 commands = [
     [
         "pytest",
+<<<<<<< before updating
         "tests/unit_tests",
         "--cov=blueapi",
         "--cov-report",
@@ -168,6 +169,8 @@ commands = [
     [
         "pytest",
         "tests/system_tests",
+=======
+>>>>>>> after updating
         "--cov=blueapi",
         "--cov-report",
         "term",

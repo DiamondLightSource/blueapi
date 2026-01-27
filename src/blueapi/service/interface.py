@@ -13,7 +13,7 @@ from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import TiledAuth
-from blueapi.service.constants import AUTHORIZAITON_HEADER
+from blueapi.service.constants import AUTHORIZATION_HEADER
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,
@@ -190,9 +190,9 @@ def begin_task(
         if pass_through_headers is None:
             raise ValueError(
                 "Tiled config is enabled but no "
-                f"{AUTHORIZAITON_HEADER} header in request"
+                f"{AUTHORIZATION_HEADER} header in request"
             )
-        authorization_header_value = pass_through_headers.get(AUTHORIZAITON_HEADER)
+        authorization_header_value = pass_through_headers.get(AUTHORIZATION_HEADER)
         from fastapi.security.utils import get_authorization_scheme_param
 
         _, blueapi_jwt_token = get_authorization_scheme_param(

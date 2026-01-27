@@ -294,16 +294,17 @@ class TiledAuth(httpx.Auth):
         self._refresh_token: Token | None = None
 
     def exchange_access_token(self):
+        client_secret = self._tiled_config.token_exchange_secret.get_secret_value()
         request_data = {
             "client_id": self._tiled_config.token_exchange_client_id,
-            "client_secret": self._tiled_config.token_exchange_secret,
+            "client_secret": client_secret,
             "subject_token": self._blueapi_jwt_token,
             "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
             "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
             "requested_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
         }
         with self._sync_lock:
-            response = httpx.post(
+            response = requests.post(
                 self._tiled_config.token_url,
                 data=request_data,
             )
@@ -314,13 +315,14 @@ class TiledAuth(httpx.Auth):
         if self._refresh_token is None:
             raise Exception("Cannot refresh session as no refresh token available")
         with self._sync_lock:
-            response = httpx.post(
+            client_secret = self._tiled_config.token_exchange_secret.get_secret_value()
+            response = requests.post(
                 self._tiled_config.token_url,
                 data={
                     "client_id": self._tiled_config.token_exchange_client_id,
-                    "client_secret": self._tiled_config.token_exchange_secret,
+                    "client_secret": client_secret,
                     "grant_type": "refresh_token",
-                    "refresh_token": self._refresh_token,
+                    "refresh_token": str(self._refresh_token),
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )

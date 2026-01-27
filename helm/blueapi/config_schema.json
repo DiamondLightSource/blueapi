@@ -489,8 +489,10 @@
                 "token_exchange_secret": {
                     "default": "",
                     "description": "Token exchange client secret",
+                    "format": "password",
                     "title": "Token Exchange Secret",
-                    "type": "string"
+                    "type": "string",
+                    "writeOnly": true
                 },
                 "token_url": {
                     "default": "",

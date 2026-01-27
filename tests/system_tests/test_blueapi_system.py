@@ -153,8 +153,7 @@ def device_flow_login():
         assert proc.stdout
 
         for line in proc.stdout:
-            match = re.search(r"(https?://\S+)", line)
-            if match:
+            if match := re.search(r"(https?://\S+)", line):
                 url = match.group(1)
                 break
 

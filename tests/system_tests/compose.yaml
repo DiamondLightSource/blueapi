@@ -70,9 +70,11 @@ services:
     image: "quay.io/oauth2-proxy/oauth2-proxy:v7.13.0"
     volumes:
       - ./services/blueapi-oauth2-proxy/:/opt/config
-    command: ["--alpha-config=/opt/config/oauth2-alpha.yaml","--config=/opt/config/oauth2-proxy.cfg"]
-    # ports:
-    #   - 4180:4180
+    command:
+      [
+        "--alpha-config=/opt/config/oauth2-alpha.yaml",
+        "--config=/opt/config/oauth2-proxy.cfg",
+      ]
     depends_on:
       keycloak:
         condition: service_healthy
@@ -82,9 +84,11 @@ services:
     image: "quay.io/oauth2-proxy/oauth2-proxy:v7.13.0"
     volumes:
       - ./services/tiled-oauth2-proxy/:/opt/config
-    command: ["--alpha-config=/opt/config/oauth2-alpha.yaml","--config=/opt/config/oauth2-proxy.cfg"]
-    # ports:
-    #   - 4181:4181
+    command:
+      [
+        "--alpha-config=/opt/config/oauth2-alpha.yaml",
+        "--config=/opt/config/oauth2-proxy.cfg",
+      ]
     depends_on:
       keycloak:
         condition: service_healthy

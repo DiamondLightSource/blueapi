@@ -908,8 +908,10 @@
                 "token_exchange_secret": {
                     "title": "Token Exchange Secret",
                     "description": "Token exchange client secret",
+                    "writeOnly": true,
                     "default": "",
-                    "type": "string"
+                    "type": "string",
+                    "format": "password"
                 },
                 "token_url": {
                     "title": "Token Url",

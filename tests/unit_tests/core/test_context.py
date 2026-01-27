@@ -28,7 +28,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics.adaravis import AravisDetector
 from ophyd_async.epics.motor import Motor
-from pydantic import TypeAdapter, ValidationError
+from pydantic import SecretStr, TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
 
@@ -862,7 +862,7 @@ def test_setup_default_not_makes_tiled_inserter():
 def test_setup_with_tiled_makes_tiled_inserter(
     oidc_config: OIDCConfig, mock_authn_server
 ):
-    config = TiledConfig(enabled=True, token_exchange_secret="secret")
+    config = TiledConfig(enabled=True, token_exchange_secret=SecretStr("secret"))
     context = BlueskyContext(
         ApplicationConfig(
             tiled=config,

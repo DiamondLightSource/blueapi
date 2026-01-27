@@ -31,7 +31,7 @@ from blueapi.config import (
 )
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
-from blueapi.service.constants import AUTHORIZAITON_HEADER
+from blueapi.service.constants import AUTHORIZATION_HEADER
 from blueapi.service.model import (
     DeviceModel,
     PackageInfo,
@@ -379,7 +379,7 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
     worker().worker_events.subscribe.return_value = 42
 
     interface.begin_task(
-        task, pass_through_headers={AUTHORIZAITON_HEADER: "Bearer blueapi_token"}
+        task, pass_through_headers={AUTHORIZATION_HEADER: "Bearer blueapi_token"}
     )
 
     writer.assert_called_once_with(from_uri(), batch_size=1)
@@ -694,5 +694,5 @@ def test_tiled_raises_if_bearer_token_missing(worker, context):
         KeyError, match="Tiled config is enabled but no Bearer Token in request"
     ):
         interface.begin_task(
-            task, pass_through_headers={AUTHORIZAITON_HEADER: "Bearer"}
+            task, pass_through_headers={AUTHORIZATION_HEADER: "Bearer"}
         )

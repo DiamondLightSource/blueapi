@@ -289,7 +289,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "tiled": {
                 "enabled": False,
-                "token_exchange_client_id": "",
+                "requester_client_id": "",
                 "token_exchange_secret": "",
                 "token_url": "",
                 "url": "http://localhost:8407/",
@@ -349,7 +349,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             "tiled": {
                 "enabled": False,
                 "url": "http://localhost:8407/",
-                "token_exchange_client_id": "",
+                "requester_client_id": "",
                 "token_exchange_secret": "",
                 "token_url": "",
             },

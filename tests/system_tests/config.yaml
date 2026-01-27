@@ -18,7 +18,7 @@ numtracker:
 tiled:
   enabled: true
   url: http://localhost:8407/api/v1
-  token_exchange_client_id: "ixx-blueapi"
+  requester_client_id: "ixx-blueapi"
   token_exchange_secret: "blueapi-secret"
 oidc:
   well_known_url: "http://localhost:8081/realms/master/.well-known/openid-configuration"

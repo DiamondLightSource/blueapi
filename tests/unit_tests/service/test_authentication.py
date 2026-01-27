@@ -214,7 +214,7 @@ def mock_token_exchange(
     blueapi_jwt,
 ):
     token_exchange_data = {
-        "client_id": tiled_config.token_exchange_client_id,
+        "client_id": tiled_config.requester_client_id,
         "client_secret": tiled_config.token_exchange_secret.get_secret_value(),
         "subject_token": blueapi_jwt,
         "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
@@ -222,22 +222,20 @@ def mock_token_exchange(
         "requested_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
     }
     token_exchange_refresh_data = {
-        "client_id": tiled_config.token_exchange_client_id,
+        "client_id": tiled_config.requester_client_id,
         "client_secret": tiled_config.token_exchange_secret.get_secret_value(),
         "grant_type": "refresh_token",
         "refresh_token": token_exchange_response["refresh_token"],
     }
     with responses.RequestsMock(assert_all_requests_are_fired=False) as requests_mock:
-        requests_mock.post(
+        exchange_tokens = requests_mock.post(
             oidc_config.token_endpoint,
-            # name="exchange_tokens",
             match=[responses.matchers.urlencoded_params_matcher(token_exchange_data)],
             json=token_exchange_response,
         )
         # Refresh token
-        requests_mock.post(
+        refresh_tokens = requests_mock.post(
             oidc_config.token_endpoint,
-            # name="refresh_tokens",
             match=[
                 responses.matchers.urlencoded_params_matcher(
                     token_exchange_refresh_data
@@ -246,22 +244,20 @@ def mock_token_exchange(
             json=refresh_token_response,
         )
 
-        yield requests_mock
+        yield {"exchange_tokens": exchange_tokens, "refresh_tokens": refresh_tokens}
 
 
-@respx.mock
 def test_blueapi_token_exchange(
     tiled_auth: TiledAuth, tiled_url: str, mock_token_exchange
 ):
     respx.get(tiled_url).mock(side_effect=[httpx.Response(200), httpx.Response(200)])
     with httpx.Client(auth=tiled_auth) as tiled_client:
         tiled_client.get(tiled_url)
-        # assert mock_token_exchange["exchange_tokens"].called
-        # assert not mock_token_exchange["refresh_tokens"].called
+        assert mock_token_exchange["exchange_tokens"].call_count == 1
+        assert mock_token_exchange["refresh_tokens"].call_count == 0
         tiled_client.get(tiled_url)
 
 
-@respx.mock
 def test_blueapi_token_exchange_refresh_token(
     tiled_auth: TiledAuth, tiled_url: str, mock_token_exchange
 ):
@@ -270,16 +266,15 @@ def test_blueapi_token_exchange_refresh_token(
     )
     with httpx.Client(auth=tiled_auth) as tiled_client:
         tiled_client.get(tiled_url)
-        # assert mock_token_exchange["exchange_tokens"].called
-        # assert not mock_token_exchange["refresh_tokens"].called
+        assert mock_token_exchange["exchange_tokens"].call_count == 1
+        assert mock_token_exchange["refresh_tokens"].call_count == 0
         # Make access token expired
         tiled_auth._access_token = MagicMock()
         tiled_auth._access_token.expired = True
         tiled_client.get(tiled_url)
-        # assert mock_token_exchange["refresh_tokens"].called
+        assert mock_token_exchange["refresh_tokens"].call_count == 1
 
 
-# @respx.mock
 def test_blueapi_token_exchange_refresh_token_exception(
     tiled_auth: TiledAuth, tiled_url: str, mock_token_exchange
 ):
@@ -288,8 +283,8 @@ def test_blueapi_token_exchange_refresh_token_exception(
     )
     with httpx.Client(auth=tiled_auth) as tiled_client:
         tiled_client.get(tiled_url)
-        # assert mock_token_exchange["exchange_tokens"].called
-        # assert not mock_token_exchange["refresh_tokens"].called
+        assert mock_token_exchange["exchange_tokens"].call_count == 1
+        assert mock_token_exchange["refresh_tokens"].call_count == 0
         # Make access token expired
         tiled_auth._access_token = MagicMock()
         tiled_auth._access_token.expired = True
@@ -299,7 +294,7 @@ def test_blueapi_token_exchange_refresh_token_exception(
             Exception, match="Cannot refresh session as no refresh token available"
         ):
             tiled_client.get(tiled_url)
-        # assert not mock_token_exchange["refresh_tokens"].called
+        assert mock_token_exchange["refresh_tokens"].call_count == 0
 
 
 def test_token_is_assumed_valid_if_information_not_available():

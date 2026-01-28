@@ -1,9 +1,10 @@
+import logging
 from collections.abc import Mapping
 from enum import StrEnum
 from typing import Any
 
 from bluesky.run_engine import RunEngineStateMachine
-from pydantic import Field
+from pydantic import Field, TypeAdapter, field_validator
 from super_state_machine.extras import PropertyMachine, ProxyString
 
 from blueapi.utils import BlueapiBaseModel
@@ -11,6 +12,8 @@ from blueapi.utils import BlueapiBaseModel
 # The RunEngine can return any of these three types as its state
 # RawRunEngineState = type[PropertyMachine | ProxyString | str]
 RawRunEngineState = PropertyMachine | ProxyString | str
+
+log = logging.getLogger(__name__)
 
 
 # NOTE this is interim until refactor
@@ -111,6 +114,17 @@ class TaskStatus(BlueapiBaseModel):
     task_complete: bool
     task_failed: bool
     result: Any = None
+
+    @field_validator("result")
+    @classmethod
+    def _serialize_result(cls, result):
+        try:
+            return TypeAdapter(type(result)).dump_python(result)
+        except Exception:
+            log.warning(
+                "Plan result type (%s) not serializable: %s", type(result), result
+            )
+            pass
 
 
 class WorkerEvent(BlueapiBaseModel):

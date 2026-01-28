@@ -17,8 +17,9 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.concurrency import iterate_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
@@ -154,6 +155,7 @@ def get_app(config: ApplicationConfig):
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
+    app.middleware("http")(log_response_details)
     app.middleware("http")(log_request_details)
     if config.api.cors:
         app.add_middleware(
@@ -604,6 +606,23 @@ async def log_request_details(
     else:
         LOGGER.info(msg)
     response = await call_next(request)
+    return response
+
+
+async def log_response_details(
+    request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
+) -> Response:
+    response = await call_next(request)
+
+    response_body = [section async for section in response.body_iterator]
+    response.body_iterator = iterate_in_threadpool(iter(response_body))
+
+    msg = f"Response body: {response_body}"
+    if request.url.path == "/healthz":
+        LOGGER.debug(msg)
+    else:
+        LOGGER.info(msg)
+
     return response
 
 

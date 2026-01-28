@@ -155,7 +155,6 @@ def get_app(config: ApplicationConfig):
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
-    app.middleware("http")(log_response_details)
     app.middleware("http")(log_request_details)
     if config.api.cors:
         app.add_middleware(
@@ -598,19 +597,6 @@ async def add_api_version_header(
 
 
 async def log_request_details(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    msg = f"Request method: {request.method} url: {request.url} \
-          body: {await request.body()}"
-    if request.url.path == "/healthz":
-        LOGGER.debug(msg)
-    else:
-        LOGGER.info(msg)
-    response = await call_next(request)
-    return response
-
-
-async def log_response_details(
     request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
 ) -> Response:
     response = await call_next(request)
@@ -619,11 +605,19 @@ async def log_response_details(
     response_body = [section async for section in response.body_iterator]
     response.body_iterator = iterate_in_threadpool(iter(response_body))
 
-    msg = f"Response body: {response_body}"
+    msg = (
+        f"{getattr(request.client, 'host', 'NO_ADDRESS')} {request.method}"
+        f" {request.url.path} {response.status_code}"
+    )
+
+    extra = {
+        "request_body": request.body,
+        "response_body": response_body,
+    }
     if request.url.path == "/healthz":
-        LOGGER.debug(msg)
+        LOGGER.debug(msg, extra=extra)
     else:
-        LOGGER.info(msg)
+        LOGGER.info(msg, extra=extra)
 
     return response
 

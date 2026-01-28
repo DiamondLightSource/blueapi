@@ -599,6 +599,8 @@ async def add_api_version_header(
 async def log_request_details(
     request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
 ) -> Response:
+    """Middleware to log all request's host, method, path, status and request and
+    response bodies"""
     request_body = await request.body()
 
     response = await call_next(request)

@@ -599,25 +599,27 @@ async def add_api_version_header(
 async def log_request_details(
     request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
 ) -> Response:
+    request_body = await request.body()
+
     response = await call_next(request)
 
     # https://github.com/Kludex/starlette/issues/874#issuecomment-1027743996
     response_body = [section async for section in response.body_iterator]
     response.body_iterator = iterate_in_threadpool(iter(response_body))
 
-    msg = (
+    log_message = (
         f"{getattr(request.client, 'host', 'NO_ADDRESS')} {request.method}"
         f" {request.url.path} {response.status_code}"
     )
 
     extra = {
-        "request_body": request.body,
+        "request_body": request_body,
         "response_body": response_body,
     }
     if request.url.path == "/healthz":
-        LOGGER.debug(msg, extra=extra)
+        LOGGER.debug(log_message, extra=extra)
     else:
-        LOGGER.info(msg, extra=extra)
+        LOGGER.info(log_message, extra=extra)
 
     return response
 

@@ -22,7 +22,11 @@ async def test_log_request_details():
 
         assert response.status_code == 200
         logger.info.assert_called_once_with(
-            "method: GET url: http://testserver/ body: b''"
+            "testclient GET / 200",
+            extra={
+                "request_body": b"",
+                "response_body": [b'{"message":"Hello World"}'],
+            },
         )
 
 

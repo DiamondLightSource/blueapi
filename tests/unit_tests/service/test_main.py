@@ -13,18 +13,18 @@ async def test_log_request_details():
         app = FastAPI()
         app.middleware("http")(log_request_details)
 
-        @app.get("/")
+        @app.post("/")
         async def root():
             return {"message": "Hello World"}
 
         client = TestClient(app)
-        response = client.get("/")
+        response = client.post("/", content="foo")
 
         assert response.status_code == 200
         logger.info.assert_called_once_with(
-            "testclient GET / 200",
+            "testclient POST / 200",
             extra={
-                "request_body": b"",
+                "request_body": b"foo",
                 "response_body": [b'{"message":"Hello World"}'],
             },
         )

@@ -213,10 +213,18 @@ class BlueskyContext:
                     self.with_plan_module(mod)
                 case DeviceSource():
                     LOGGER.info("Including devices from %s", source.module)
+                    LOGGER.warning(
+                        "'devices' environment kind is deprecated - please convert "
+                        "configuration to use deviceManager"
+                    )
                     self.with_device_module(mod)
                 case DodalSource(mock=mock):
                     LOGGER.info(
                         "Including devices from 'dodal' source %s", source.module
+                    )
+                    LOGGER.warning(
+                        "'dodal' environment kind is deprecated - please convert "
+                        "configuration to use deviceManager"
                     )
                     self.with_dodal_module(mod, mock=mock)
                 case DeviceManagerSource(mock=mock, name=name):

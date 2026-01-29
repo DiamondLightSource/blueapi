@@ -938,9 +938,12 @@ def test_event_formatting():
         OutputFormat.JSON,
         worker,
         (
-            """{"state": "RUNNING", "task_status": """
-            """{"task_id": "count", "task_complete": false, "task_failed": false}, """
-            """"errors": [], "warnings": []}\n"""
+            '{"state": "RUNNING", "task_status": {'
+            '"task_id": "count", '
+            '"task_complete": false, '
+            '"task_failed": false, '
+            '"result": null'
+            '}, "errors": [], "warnings": []}\n'
         ),
     )
     _assert_matching_formatting(OutputFormat.COMPACT, worker, "Worker Event: RUNNING\n")

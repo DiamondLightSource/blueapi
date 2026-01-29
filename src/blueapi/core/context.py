@@ -446,15 +446,11 @@ class BlueskyContext:
                     def valid(value):
                         val = self.find_device(value)
                         if not val:
-                            device_names = list(self.devices.keys())
-                            raise ValueError(
-                                f"Device {value} cannot be found, "
-                                f"available devices are: {device_names}"
-                            )
+                            raise ValueError(f"Device {value} cannot be found")
                         elif not is_compatible(val, cls.origin or target, cls.args):
-                            required = qualified_generic_name(target)
+                            req = qualified_generic_name(target)
                             raise ValueError(
-                                f"Device {value} is not of type {required}"
+                                f"Device {value} ({type(val)}) is not of type {req}"
                             )
                         return val
 

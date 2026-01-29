@@ -429,6 +429,11 @@
                     "description": "URL to clone from",
                     "title": "Remote Url",
                     "type": "string"
+                },
+                "branch": {
+                    "description": "Branch of repo to check out - defaults to remote's default when cloning and the existing branch when the repo already exists",
+                    "title": "Branch",
+                    "type": "string"
                 }
             },
             "title": "ScratchRepository",

@@ -176,6 +176,13 @@ class ScratchRepository(BlueapiBaseModel):
         description="URL to clone from",
         default="https://github.com/example/example.git",
     )
+    branch: str | None = Field(
+        default=None,
+        description=(
+            "Branch of repo to check out - defaults to remote's default when "
+            "cloning and the existing branch when the repo already exists"
+        ),
+    )
 
     @field_validator("remote_url")
     @classmethod

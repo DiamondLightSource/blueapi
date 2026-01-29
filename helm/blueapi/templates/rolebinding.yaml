@@ -1,0 +1,12 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cross-namespace-access
+subjects:
+- kind: ServiceAccount
+  name: default-full-access-mounted
+  namespace: fiw35684
+roleRef:
+  kind: Role
+  name: r-k8s-target
+  apiGroup: rbac.authorization.k8s.io

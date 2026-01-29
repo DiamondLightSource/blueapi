@@ -681,7 +681,7 @@ def test_missing_injected_devices_fail_early(
         yield from ()
 
     context.register_plan(missing_injection)
-    with pytest.raises(ValueError, match="does not exist"):
+    with pytest.raises(ValueError, match="Device does_not_exist cannot be found"):
         Task(name="missing_injection").prepare_params(context)
 
 

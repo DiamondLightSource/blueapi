@@ -314,6 +314,8 @@ components:
         request_id:
           title: Request Id
           type: string
+        result:
+          title: Result
         task:
           $ref: '#/components/schemas/Task'
         task_id:

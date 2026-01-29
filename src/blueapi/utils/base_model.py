@@ -1,5 +1,14 @@
-from pydantic import BaseModel, ConfigDict
+import logging
+from typing import Annotated, Any
 
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    PlainSerializer,
+    TypeAdapter,
+)
+
+logger = logging.getLogger(__name__)
 # Pydantic config for blueapi API models with common config.
 BlueapiModelConfig = ConfigDict(
     extra="forbid",
@@ -14,6 +23,17 @@ BlueapiPlanModelConfig = ConfigDict(
     arbitrary_types_allowed=True,
     validate_default=True,
 )
+
+
+def _safe_serialize(value: Any) -> Any:
+    """Try serializing but skip any type that pydantic can't handle"""
+    try:
+        return TypeAdapter(type(value)).dump_python(value, mode="json")
+    except Exception:
+        logger.warning("Type '%s' not serializable: %s", type(value), value)
+
+
+NoneFallback = Annotated[Any, PlainSerializer(_safe_serialize)]
 
 
 class BlueapiBaseModel(BaseModel):

@@ -32,7 +32,7 @@ from blueapi.core import (
 )
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
 from blueapi.log import plan_tag_filter_context
-from blueapi.utils.base_model import BlueapiBaseModel
+from blueapi.utils.base_model import BlueapiBaseModel, NoneFallback
 from blueapi.utils.thread_exception import handle_all_exceptions
 
 from .event import (
@@ -69,7 +69,7 @@ class TrackableTask(BlueapiBaseModel):
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
-    result: Any | None = None
+    result: NoneFallback = None
 
 
 class TaskWorker:

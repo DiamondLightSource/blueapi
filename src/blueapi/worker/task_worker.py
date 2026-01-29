@@ -424,7 +424,7 @@ class TaskWorker:
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
 
-                def process_task() -> Any:
+                def process_task():
                     LOGGER.info(f"Got new task: {next_task}")
                     self._current = next_task
                     self._current.is_pending = False

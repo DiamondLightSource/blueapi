@@ -8,5 +8,5 @@ subjects:
   namespace: fiw35684
 roleRef:
   kind: Role
-  name: r-k8s-target
+  name: r-k8s-p49-beamline
   apiGroup: rbac.authorization.k8s.io

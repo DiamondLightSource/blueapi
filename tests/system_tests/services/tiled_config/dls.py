@@ -8,7 +8,6 @@ from tiled.access_control.access_policies import (
     ExternalPolicyDecisionPoint,
     ResultHolder,
 )
-from tiled.access_control.scopes import NO_SCOPES
 from tiled.adapters.protocols import BaseAdapter
 from tiled.queries import AccessBlobFilter
 from tiled.server.schemas import Principal, PrincipalType
@@ -104,12 +103,16 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         ):
             _input["token"] = principal.access_token.get_secret_value()
 
-        if access_blob is not None and "tags" in access_blob:
-            if isinstance(access_blob["tags"][0], str):
-                blob = self._type_adapter.validate_json(access_blob["tags"][0])
+        if (
+            access_blob is not None
+            and "tags" in access_blob
+            and len(access_blob["tags"]) > 0
+        ):
+            if isinstance(tags := access_blob["tags"][0], str):
+                blob = self._type_adapter.validate_json(tags)
                 _input.update(blob.model_dump())
-            elif isinstance(access_blob["tags"][0], int):
-                _input["session"] = access_blob["tags"]
+            elif isinstance(tags, int):
+                _input["session"] = tags
 
         return json.dumps({"input": _input})
 
@@ -132,24 +135,3 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             return [AccessBlobFilter(tags=tags.result, user_id=None)]  # type: ignore
         else:
             return NO_ACCESS  # type: ignore
-
-    async def allowed_scopes(
-        self,
-        node: BaseAdapter,
-        principal: Principal,
-        authn_access_tags: AccessTags | None,
-        authn_scopes: Scopes,
-    ) -> Scopes:
-        scopes = await self._get_external_decision(
-            self._node_scopes,
-            self.build_input(
-                principal,
-                authn_access_tags,
-                authn_scopes,
-                getattr(node, "access_blob", None),
-            ),
-            ResultHolder[set[str]],
-        )
-        if scopes:
-            return scopes.result
-        return NO_SCOPES

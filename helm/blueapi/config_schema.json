@@ -486,17 +486,24 @@
                     "title": "Url",
                     "type": "string"
                 },
-                "api_key": {
-                    "anyOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "Api Key"
+                "token_exchange_secret": {
+                    "default": "",
+                    "description": "Token exchange client secret",
+                    "format": "password",
+                    "title": "Token Exchange Secret",
+                    "type": "string",
+                    "writeOnly": true
+                },
+                "token_url": {
+                    "default": "",
+                    "title": "Token Url",
+                    "type": "string"
+                },
+                "requester_client_id": {
+                    "default": "",
+                    "description": "Token exchange Client ID",
+                    "title": "Requester Client Id",
+                    "type": "string"
                 }
             },
             "title": "TiledConfig",

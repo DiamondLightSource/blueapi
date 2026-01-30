@@ -28,7 +28,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics.adaravis import AravisDetector
 from ophyd_async.epics.motor import Motor
-from pydantic import TypeAdapter, ValidationError
+from pydantic import SecretStr, TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
 
@@ -39,6 +39,7 @@ from blueapi.config import (
     DodalSource,
     EnvironmentConfig,
     MetadataConfig,
+    OIDCConfig,
     PlanSource,
     TiledConfig,
 )
@@ -858,22 +859,56 @@ def test_setup_default_not_makes_tiled_inserter():
     assert context.tiled_conf is None
 
 
-@pytest.mark.parametrize("api_key", [None, "foo"])
-def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
-    config = TiledConfig(enabled=True, api_key=api_key)
+def test_setup_with_tiled_makes_tiled_inserter(
+    oidc_config: OIDCConfig, mock_authn_server
+):
+    config = TiledConfig(enabled=True, token_exchange_secret=SecretStr("secret"))
     context = BlueskyContext(
         ApplicationConfig(
             tiled=config,
             env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+            oidc=oidc_config,
         )
     )
     assert context.tiled_conf == config
 
 
-@pytest.mark.parametrize("api_key", [None, "foo"])
-def test_must_have_instrument_set_for_tiled(api_key: str | None):
-    config = TiledConfig(enabled=True, api_key=api_key)
-    with pytest.raises(InvalidConfigError):
+def test_must_have_instrument_set_for_tiled():
+    config = TiledConfig(enabled=True)
+    with pytest.raises(
+        InvalidConfigError,
+        match="Tiled has been configured but `instrument` metadata is not set",
+    ):
         BlueskyContext(
             ApplicationConfig(tiled=config, env=EnvironmentConfig(metadata=None))
+        )
+
+
+def test_must_have_oidc_config_for_tiled():
+    config = TiledConfig(enabled=True)
+    with pytest.raises(
+        InvalidConfigError,
+        match="Tiled has been configured but oidc configuration is missing",
+    ):
+        BlueskyContext(
+            ApplicationConfig(
+                tiled=config,
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+                oidc=None,
+            )
+        )
+
+
+def test_token_exchange_secret_is_set_for_tiled(oidc_config: OIDCConfig):
+    config = TiledConfig(enabled=True)
+    with pytest.raises(
+        InvalidConfigError,
+        match="Tiled has been enabled but Token exchange secret has not been",
+    ):
+        BlueskyContext(
+            ApplicationConfig(
+                tiled=config,
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+                oidc=oidc_config,
+            )
         )

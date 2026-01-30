@@ -288,8 +288,10 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "auth": {"username": "guest", "password": "guest"},
             },
             "tiled": {
-                "api_key": None,
                 "enabled": False,
+                "requester_client_id": "",
+                "token_exchange_secret": "",
+                "token_url": "",
                 "url": "http://localhost:8407/",
             },
             "auth_token_path": None,
@@ -345,9 +347,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "auth": {"username": "guest", "password": "guest"},
             },
             "tiled": {
-                "api_key": None,
                 "enabled": False,
                 "url": "http://localhost:8407/",
+                "requester_client_id": "",
+                "token_exchange_secret": "",
+                "token_url": "",
             },
             "auth_token_path": None,
             "env": {

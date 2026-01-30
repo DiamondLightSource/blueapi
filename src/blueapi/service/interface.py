@@ -12,6 +12,8 @@ from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
+from blueapi.service.authentication import TiledAuth
+from blueapi.service.constants import AUTHORIZATION_HEADER
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,
@@ -184,10 +186,27 @@ def begin_task(
 
     if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
+        blueapi_jwt_token = ""
+        if pass_through_headers is None:
+            raise ValueError(
+                "Tiled config is enabled but no "
+                f"{AUTHORIZATION_HEADER} header in request"
+            )
+        authorization_header_value = pass_through_headers.get(AUTHORIZATION_HEADER)
+        from fastapi.security.utils import get_authorization_scheme_param
+
+        _, blueapi_jwt_token = get_authorization_scheme_param(
+            authorization_header_value
+        )
+
+        if blueapi_jwt_token == "":
+            raise KeyError("Tiled config is enabled but no Bearer Token in request")
         tiled_client = from_uri(
             str(tiled_config.url),
-            api_key=tiled_config.api_key,
-            headers=pass_through_headers,
+            auth=TiledAuth(
+                tiled_config,
+                blueapi_jwt_token=blueapi_jwt_token,
+            ),
         )
         tiled_writer_token = active_context.run_engine.subscribe(
             TiledWriter(tiled_client, batch_size=1)

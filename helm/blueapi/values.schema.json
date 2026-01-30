@@ -893,22 +893,30 @@
             "title": "TiledConfig",
             "type": "object",
             "properties": {
-                "api_key": {
-                    "title": "Api Key",
-                    "anyOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ]
-                },
                 "enabled": {
                     "title": "Enabled",
                     "description": "True if blueapi should forward data to a Tiled instance",
                     "default": false,
                     "type": "boolean"
+                },
+                "requester_client_id": {
+                    "title": "Requester Client Id",
+                    "description": "Token exchange Client ID",
+                    "default": "",
+                    "type": "string"
+                },
+                "token_exchange_secret": {
+                    "title": "Token Exchange Secret",
+                    "description": "Token exchange client secret",
+                    "writeOnly": true,
+                    "default": "",
+                    "type": "string",
+                    "format": "password"
+                },
+                "token_url": {
+                    "title": "Token Url",
+                    "default": "",
+                    "type": "string"
                 },
                 "url": {
                     "title": "Url",

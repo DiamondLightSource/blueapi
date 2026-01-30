@@ -30,6 +30,7 @@ from blueapi.config import (
 )
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
+from blueapi.service.constants import AUTHORIZATION_HEADER
 from blueapi.service.model import (
     DeviceModel,
     PackageInfo,
@@ -377,7 +378,9 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
     context().run_engine.subscribe.return_value = 17
     worker().worker_events.subscribe.return_value = 42
 
-    interface.begin_task(task)
+    interface.begin_task(
+        task, pass_through_headers={AUTHORIZATION_HEADER: "Bearer blueapi_token"}
+    )
 
     writer.assert_called_once_with(from_uri(), batch_size=1)
     context().run_engine.subscribe.assert_called_once_with(writer())
@@ -664,3 +667,32 @@ def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
     ctx.run_engine.scan_id_source(ctx.run_engine.md)
 
     assert ctx.run_engine.md["scan_file"] == "p46-11"
+
+
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_tiled_raises_if_authorization_header_missing(worker, context):
+    task = WorkerTask(task_id="foo_bar")
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+
+    with pytest.raises(
+        ValueError,
+        match="Tiled config is enabled but no authorization header in request",
+    ):
+        interface.begin_task(task, pass_through_headers=None)
+
+
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_tiled_raises_if_bearer_token_missing(worker, context):
+    task = WorkerTask(task_id="foo_bar")
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+
+    with pytest.raises(
+        KeyError, match="Tiled config is enabled but no Bearer Token in request"
+    ):
+        interface.begin_task(
+            task, pass_through_headers={AUTHORIZATION_HEADER: "Bearer"}
+        )

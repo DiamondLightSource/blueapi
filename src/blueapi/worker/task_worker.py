@@ -213,7 +213,7 @@ class TaskWorker:
         """
         Retrieve a list of tasks based on their status.
         Args:
-           TaskStatusEnum: The status to filter tasks by.
+           status TaskStatusEnum: The status to filter tasks by.
         Returns:
           list[TrackableTask]: A list of tasks that match the given status.
         """

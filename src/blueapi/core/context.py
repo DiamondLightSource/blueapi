@@ -103,7 +103,7 @@ def qualified_generic_name(target: type) -> str:
     return f"{qualified_name(target)}{subscript}"
 
 
-def is_bluesky_type(typ: type) -> bool:
+def is_bluesky_type(typ: Any) -> bool:
     return (
         typ in BLUESKY_PROTOCOLS
         or isinstance(typ, BLUESKY_PROTOCOLS)

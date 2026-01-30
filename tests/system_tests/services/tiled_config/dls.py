@@ -73,12 +73,12 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         authn_scopes: Scopes,
         access_blob: AccessBlob | None,
     ) -> tuple[bool, AccessBlob | None]:
-        if access_blob == node.access_blob:
+        if access_blob == node.access_blob:  # type: ignore
             logger.info(
                 "Node access_blob not modified;"
                 f" access_blob is identical: {access_blob}"
             )
-            return (False, node.access_blob)
+            return (False, node.access_blob)  # type: ignore
         decision = await self._get_external_decision(
             self._modify_node,
             self.build_input(principal, authn_access_tags, authn_scopes, access_blob),
@@ -130,7 +130,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
                 return []
             return [AccessBlobFilter(tags=tags.result, user_id=None)]
         else:
-            return NO_ACCESS
+            return NO_ACCESS  # type: ignore
 
     async def allowed_scopes(
         self,

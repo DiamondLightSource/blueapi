@@ -3,6 +3,7 @@ import logging
 
 from pydantic import BaseModel, HttpUrl, TypeAdapter
 from tiled.access_control.access_policies import (
+    ALL_ACCESS,
     NO_ACCESS,
     ExternalPolicyDecisionPoint,
     ResultHolder,
@@ -30,7 +31,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         create_node_endpoint: str = "tiled/user_session",
         allowed_tags_endpoint: str = "tiled/user_sessions",
         scopes_endpoint: str = "tiled/scopes",
-        modify_node_endpoint: str | None = "tiled/modify_session",
+        modify_node_endpoint: str = "tiled/modify_session",
         empty_access_blob_public: bool = True,
         provider: str | None = None,
     ):
@@ -62,7 +63,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             ResultHolder[int],
         )
         if decision and decision.result is not None:
-            return (True, {"tags": decision.result})
+            return (True, {"tags": [decision.result]})
         raise ValueError("Permission denied not able to add the node")
 
     async def modify_node(
@@ -104,10 +105,10 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             _input["token"] = principal.access_token.get_secret_value()
 
         if access_blob is not None and "tags" in access_blob:
-            if isinstance(access_blob["tags"], list):
+            if isinstance(access_blob["tags"][0], str):
                 blob = self._type_adapter.validate_json(access_blob["tags"][0])
                 _input.update(blob.model_dump())
-            elif isinstance(access_blob["tags"], int):
+            elif isinstance(access_blob["tags"][0], int):
                 _input["session"] = access_blob["tags"]
 
         return json.dumps({"input": _input})
@@ -123,12 +124,12 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         tags = await self._get_external_decision(
             self._user_tags,
             self.build_input(principal, authn_access_tags, authn_scopes),
-            ResultHolder[list[str]],
+            ResultHolder[list[int | str]],
         )
         if tags is not None:
             if tags.result == ["*"]:
-                return []
-            return [AccessBlobFilter(tags=tags.result, user_id=None)]
+                return ALL_ACCESS  # type: ignore
+            return [AccessBlobFilter(tags=tags.result, user_id=None)]  # type: ignore
         else:
             return NO_ACCESS  # type: ignore
 

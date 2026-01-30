@@ -44,6 +44,7 @@ from blueapi.utils.path_provider import StartDocumentPathProvider
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
+    AsyncDevice,
     Device,
     Plan,
     PlanGenerator,
@@ -103,7 +104,11 @@ def qualified_generic_name(target: type) -> str:
 
 
 def is_bluesky_type(typ: type) -> bool:
-    return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
+    return (
+        typ in BLUESKY_PROTOCOLS
+        or isinstance(typ, BLUESKY_PROTOCOLS)
+        or issubclass(typ, AsyncDevice)
+    )
 
 
 C = TypeVar("C", covariant=True)

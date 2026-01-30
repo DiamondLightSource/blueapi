@@ -107,7 +107,7 @@ def is_bluesky_type(typ: type) -> bool:
     return (
         typ in BLUESKY_PROTOCOLS
         or isinstance(typ, BLUESKY_PROTOCOLS)
-        or issubclass(typ, AsyncDevice)
+        or (isinstance(typ, type) and issubclass(typ, AsyncDevice))
     )
 
 
@@ -536,7 +536,7 @@ class BlueskyContext:
         if typ is NoneType and not no_default:
             return SkipJsonSchema[NoneType]
         root = get_origin(typ)
-        if is_bluesky_type(typ) or (root is not None and is_bluesky_type(root)):
+        if is_bluesky_type(root or typ):
             return self._reference(typ)
         args = get_args(typ)
         if args:

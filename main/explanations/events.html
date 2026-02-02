@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Events Emitted by the Worker &#8212; blueapi 1.11.5.dev11+g7b10cc332 documentation</title>
+    <title>Events Emitted by the Worker &#8212; blueapi 1.11.6.dev1+ge2fd3f02d documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=dafa4ac5"></script>
+    <script src="../_static/documentation_options.js?v=fac0d9b6"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -486,14 +486,14 @@ are meant to be handled by other subscribing code (e.g. databroker) and are deco
 a plan has started, finished, paused, errored etc. See the example below:</p>
 <p><img alt="sequence of event emission compared to plan start/finish, in a complicated case" src="../_images/bluesky-events.png" /></p>
 <p>Note the gap between the start of the plan and the issue of the first <a class="reference external" href="https://blueskyproject.io/event-model/main/user/explanations/data-model.html#run-start-document"><code class="docutils literal notranslate"><span class="pre">run</span> <span class="pre">start</span> <span class="pre">document</span></code></a>, and the similar gap
-for the stop document vs end of the plan, thsse are typically used for setup and cleanup.
+for the stop document vs end of the plan, these are typically used for setup and cleanup.
 Also note that a plan can produce an arbitrary number of runs. This decoupling is fine in an IPython terminal
 because a human user can see when a plan has started, can see when it’s finished and can see which runs are
 associated with which plans.</p>
 </section>
 <section id="new-events">
 <h2>New Events<a class="headerlink" href="#new-events" title="Link to this heading">#</a></h2>
-<p>For the case of automation, we introduce a new set of events outside of the event model, specifically
+<p>For the case of automation, we introduce a new set of events outside the event model, specifically
 pertaining to the running of the plan and state of the <code class="docutils literal notranslate"><span class="pre">RunEngine</span></code>. At a minimum, an event is emitted
 every time the engine:</p>
 <ul class="simple">

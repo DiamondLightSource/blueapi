@@ -186,7 +186,6 @@ def begin_task(
 
     if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
-        blueapi_jwt_token = ""
         if pass_through_headers is None:
             raise ValueError(
                 "Tiled config is enabled but no "

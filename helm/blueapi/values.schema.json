@@ -724,7 +724,7 @@
             "title": "OIDCConfig",
             "type": "object",
             "required": [
-                "well_known_url",
+                "issuer",
                 "client_id"
             ],
             "properties": {
@@ -739,15 +739,15 @@
                     "description": "Client ID",
                     "type": "string"
                 },
+                "issuer": {
+                    "title": "Issuer",
+                    "description": "URL of OIDC provider",
+                    "type": "string"
+                },
                 "logout_redirect_endpoint": {
                     "title": "Logout Redirect Endpoint",
                     "description": "The oidc endpoint required to logout",
                     "default": "",
-                    "type": "string"
-                },
-                "well_known_url": {
-                    "title": "Well Known Url",
-                    "description": "URL to fetch OIDC config from the provider",
                     "type": "string"
                 }
             },

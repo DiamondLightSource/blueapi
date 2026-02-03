@@ -81,8 +81,8 @@ _DATA_PATH = Path(__file__).parent
 # This client will give tokens for alice
 CLIENT_ID = "system-test-blueapi"
 CLIENT_SECRET = "secret"
-KEYCLOAK_BASE_URL = "http://localhost:8081/"
-OIDC_TOKEN_ENDPOINT = KEYCLOAK_BASE_URL + "realms/master/protocol/openid-connect/token"
+KEYCLOAK_BASE_URL = "http://localhost:8081/realms/master"
+OIDC_TOKEN_ENDPOINT = KEYCLOAK_BASE_URL + "/protocol/openid-connect/token"
 
 
 @pytest.fixture
@@ -226,8 +226,7 @@ def test_cannot_access_endpoints(
 
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
     assert client_without_auth.get_oidc_config() == OIDCConfig(
-        well_known_url=KEYCLOAK_BASE_URL
-        + "realms/master/.well-known/openid-configuration",
+        issuer=KEYCLOAK_BASE_URL,
         client_id="ixx-cli-blueapi",
     )
 

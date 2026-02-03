@@ -366,7 +366,6 @@ def get_tasks(
     Retrieve tasks based on their status.
     The status of a newly created task is 'unstarted'.
     """
-    tasks = []
     if task_status:
         add_span_attributes({"status": task_status})
         try:

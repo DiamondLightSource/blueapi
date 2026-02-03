@@ -90,6 +90,7 @@ def set_up_stream_handler(
     Args:
         logger: Logger to attach handler to
         logging_config: LoggingConfig
+        filters: list of filters
     """
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging_config.level)
@@ -137,7 +138,7 @@ class IBMColorBlindSafeColors(enum.Enum):
 
 
 class ColorFormatter(logging.Formatter):
-    """Colors level_name of log using IBM color blind safe palette."""
+    """Colors level_name of log using IBM color-blind safe palette."""
 
     def _level_colour(self, level_no: int) -> tuple[int, int, int] | None:
         match level_no:

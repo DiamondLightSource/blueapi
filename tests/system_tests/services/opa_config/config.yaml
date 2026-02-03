@@ -5,7 +5,7 @@ services:
 bundles:
   diamond-policies:
     service: ghcr
-    resource: ghcr.io/zohebshaikh/authz-policy:0.1.19
+    resource: ghcr.io/zohebshaikh/authz-policy:0.1.20
     polling:
       min_delay_seconds: 30
       max_delay_seconds: 120

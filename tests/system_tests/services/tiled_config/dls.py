@@ -3,6 +3,7 @@ import logging
 
 from pydantic import BaseModel, HttpUrl, TypeAdapter
 from tiled.access_control.access_policies import (
+    ALL_ACCESS,
     NO_ACCESS,
     ExternalPolicyDecisionPoint,
     ResultHolder,
@@ -111,7 +112,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
                 blob = self._type_adapter.validate_json(tags)
                 _input.update(blob.model_dump())
             elif isinstance(tags, int):
-                _input["session"] = tags
+                _input["session"] = str(tags)
 
         return json.dumps({"input": _input})
 
@@ -130,7 +131,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         )
         if tags is not None:
             if tags.result == ["*"]:
-                return []  # ALL_ACCESS
+                return ALL_ACCESS
             return [AccessBlobFilter(tags=tags.result, user_id=None)]  # type: ignore
         else:
             return NO_ACCESS  # type: ignore

@@ -2,7 +2,7 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated
 
 import jwt
@@ -74,7 +74,7 @@ PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADE
 DOCS_ENDPOINT = "/docs"
 
 
-class Tag(str, Enum):
+class Tag(StrEnum):
     TASK = "Task"
     PLAN = "Plan"
     DEVICE = "Device"

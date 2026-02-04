@@ -1,8 +1,8 @@
 import builtins
-import enum
 import json
 import sys
 import textwrap
+from enum import StrEnum
 from functools import partial
 from pprint import pprint
 from textwrap import dedent, indent
@@ -33,7 +33,7 @@ def fmt_dict(t: dict[str, Any] | Any, ind: int = 1) -> str:
     return NL + NL.join(f"{pre}{k}:{fmt_dict(v, ind + 1)}" for k, v in t.items() if v)
 
 
-class OutputFormat(str, enum.Enum):
+class OutputFormat(StrEnum):
     JSON = "json"
     FULL = "full"
     COMPACT = "compact"

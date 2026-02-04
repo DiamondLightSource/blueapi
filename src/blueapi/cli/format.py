@@ -68,9 +68,7 @@ def display_full(obj: Any, stream: Stream):
         case DataEvent(name=name, doc=doc):
             print(f"{name.title()}:{fmt_dict(doc)}")
         case WorkerEvent(state=st, task_status=task):
-            print(
-                f"WorkerEvent: {st.name}{fmt_dict(task.model_dump() if task else {})}"
-            )
+            print(f"WorkerEvent: {st}{fmt_dict(task.model_dump() if task else {})}")
         case ProgressEvent():
             print(f"Progress:{fmt_dict(obj.model_dump())}")
         case PythonEnvironmentResponse(
@@ -137,7 +135,7 @@ def display_compact(obj: Any, stream: Stream):
         case DataEvent(name=name):
             print(f"Data Event: {name}")
         case WorkerEvent(state=state):
-            print(f"Worker Event: {state.name}")
+            print(f"Worker Event: {state}")
         case ProgressEvent(statuses=stats):
             prog = (
                 max(100 * (s.percentage or 0) for s in stats.values())

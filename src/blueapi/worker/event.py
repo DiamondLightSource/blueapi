@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from enum import Enum
+from enum import StrEnum
 
 from bluesky.run_engine import RunEngineStateMachine
 from pydantic import Field
@@ -13,14 +13,14 @@ RawRunEngineState = PropertyMachine | ProxyString | str
 
 
 # NOTE this is interim until refactor
-class TaskStatusEnum(str, Enum):
+class TaskStatusEnum(StrEnum):
     PENDING = "PENDING"
     COMPLETE = "COMPLETE"
     ERROR = "ERROR"
     RUNNING = "RUNNING"
 
 
-class WorkerState(str, Enum):
+class WorkerState(StrEnum):
     """
     The state of the Worker.
     """

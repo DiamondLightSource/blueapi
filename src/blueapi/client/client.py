@@ -24,17 +24,22 @@ from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionManager
 from blueapi.service.model import (
     DeviceModel,
+    DeviceResponse,
     EnvironmentResponse,
     OIDCConfig,
     PlanModel,
+    PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
     TaskRequest,
     TaskResponse,
+    TasksListResponse,
     WorkerTask,
 )
+from blueapi.utils import deprecated
 from blueapi.worker import WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
+from blueapi.worker.task_worker import TrackableTask
 
 from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
 from .rest import BlueapiRestClient, BlueskyRemoteControlError
@@ -211,16 +216,6 @@ class BlueapiClient:
         self._callbacks = {}
         self._callback_id = itertools.count()
 
-    @cached_property
-    @start_as_current_span(TRACER)
-    def plans(self) -> PlanCache:
-        return PlanCache(self, self._rest.get_plans().plans)
-
-    @cached_property
-    @start_as_current_span(TRACER)
-    def devices(self) -> DeviceCache:
-        return DeviceCache(self._rest)
-
     @classmethod
     def from_config_file(cls, config_file: str) -> Self:
         conf = ConfigLoader(ApplicationConfig)
@@ -228,10 +223,7 @@ class BlueapiClient:
         return cls.from_config(conf.load())
 
     @classmethod
-    def from_config(
-        cls,
-        config: ApplicationConfig,
-    ) -> Self:
+    def from_config(cls, config: ApplicationConfig) -> Self:
         session_manager: SessionManager | None = None
         try:
             session_manager = SessionManager.from_cache(config.auth_token_path)
@@ -253,6 +245,16 @@ class BlueapiClient:
         else:
             return cls(rest)
 
+    @cached_property
+    @start_as_current_span(TRACER)
+    def plans(self) -> PlanCache:
+        return PlanCache(self, self._rest.get_plans().plans)
+
+    @cached_property
+    @start_as_current_span(TRACER)
+    def devices(self) -> DeviceCache:
+        return DeviceCache(self._rest)
+
     @property
     def instrument_session(self) -> str:
         if self._instrument_session is None:
@@ -268,6 +270,43 @@ class BlueapiClient:
         self.instrument_session = session
         return self
 
+    @start_as_current_span(TRACER)
+    @deprecated("plans property")
+    def get_plans(self) -> PlanResponse:
+        """
+        List plans available
+
+        Returns:
+            PlanResponse: Plans that can be run
+        """
+        return self._rest.get_plans()
+
+    @start_as_current_span(TRACER, "name")
+    @deprecated("plans[name]")
+    def get_plan(self, name: str) -> PlanModel:
+        """
+        Get details of a single plan
+
+        Args:
+            name: Plan name
+
+        Returns:
+            PlanModel: Details of the plan if found
+        """
+        return self._rest.get_plan(name)
+
+    @start_as_current_span(TRACER)
+    @deprecated("devices property")
+    def get_devices(self) -> DeviceResponse:
+        """
+        List devices available
+
+        Returns:
+            DeviceResponse: Devices that can be used in plans
+        """
+
+        return self._rest.get_devices()
+
     def add_callback(self, callback: OnAnyEvent) -> int:
         cb_id = next(self._callback_id)
         self._callbacks[cb_id] = callback
@@ -280,6 +319,21 @@ class BlueapiClient:
     def callbacks(self) -> Iterable[OnAnyEvent]:
         return self._callbacks.values()
 
+    @start_as_current_span(TRACER, "name")
+    @deprecated("devices[name]")
+    def get_device(self, name: str) -> DeviceModel:
+        """
+        Get details of a single device
+
+        Args:
+            name: Device name
+
+        Returns:
+            DeviceModel: Details of the device if found
+        """
+
+        return self._rest.get_device(name)
+
     @property
     @start_as_current_span(TRACER)
     def state(self) -> WorkerState:
@@ -291,6 +345,18 @@ class BlueapiClient:
         """
 
         return self._rest.get_state()
+
+    @start_as_current_span(TRACER)
+    @deprecated("state property")
+    def get_state(self) -> WorkerState:
+        """
+        Get current state of the blueapi worker
+
+        Returns:
+            WorkerState: Current state
+        """
+
+        return self.state
 
     @start_as_current_span(TRACER, "defer")
     def pause(self, defer: bool = False) -> WorkerState:
@@ -320,6 +386,33 @@ class BlueapiClient:
 
         return self._rest.set_state(WorkerState.RUNNING, defer=False)
 
+    @start_as_current_span(TRACER, "task_id")
+    @deprecated("rest client")
+    def get_task(self, task_id: str) -> TrackableTask:
+        """
+        Get a task stored by the worker
+
+        Args:
+            task_id: Unique ID for the task
+
+        Returns:
+            TrackableTask: Task details
+        """
+        assert task_id, "Task ID not provided!"
+        return self._rest.get_task(task_id)
+
+    @start_as_current_span(TRACER)
+    @deprecated("rest client")
+    def get_all_tasks(self) -> TasksListResponse:
+        """
+        Get a list of all task stored by the worker
+
+        Returns:
+            TasksListResponse: List of all Trackable Task
+        """
+
+        return self._rest.get_all_tasks()
+
     @property
     @start_as_current_span(TRACER)
     def active_task(self) -> WorkerTask:
@@ -332,6 +425,19 @@ class BlueapiClient:
         """
 
         return self._rest.get_active_task()
+
+    @start_as_current_span(TRACER)
+    @deprecated("active_task property")
+    def get_active_task(self) -> WorkerTask:
+        """
+        Get the currently active task, if any
+
+        Returns:
+            WorkerTask: The currently active task, the task the worker
+            is executing right now.
+        """
+
+        return self.active_task
 
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
@@ -428,6 +534,51 @@ class BlueapiClient:
                 f"but {worker_response.task_id} was started instead"
             )
 
+    @start_as_current_span(TRACER, "task")
+    @deprecated("rest client")
+    def create_task(self, task: TaskRequest) -> TaskResponse:
+        """
+        Create a new task, does not start execution
+
+        Args:
+            task: Request object for task to create on the worker
+
+        Returns:
+            TaskResponse: Acknowledgement of request
+        """
+
+        return self._rest.create_task(task)
+
+    @start_as_current_span(TRACER)
+    @deprecated("rest client")
+    def clear_task(self, task_id: str) -> TaskResponse:
+        """
+        Delete a stored task on the worker
+
+        Args:
+            task_id: ID for the task
+
+        Returns:
+            TaskResponse: Acknowledgement of request
+        """
+
+        return self._rest.clear_task(task_id)
+
+    @start_as_current_span(TRACER, "task")
+    @deprecated("rest client")
+    def start_task(self, task: WorkerTask) -> WorkerTask:
+        """
+        Instruct the worker to start a stored task immediately
+
+        Args:
+            task: WorkerTask to start
+
+        Returns:
+            WorkerTask: Acknowledgement of request
+        """
+
+        return self._rest.update_worker_task(task)
+
     @start_as_current_span(TRACER, "reason")
     def abort(self, reason: str | None = None) -> WorkerState:
         """
@@ -469,6 +620,19 @@ class BlueapiClient:
         """Details of the worker environment"""
 
         return self._rest.get_environment()
+
+    @start_as_current_span(TRACER)
+    @deprecated("environment property")
+    def get_environment(self) -> EnvironmentResponse:
+        """
+        Get details of the worker environment
+
+        Returns:
+            EnvironmentResponse: Details of the worker
+            environment.
+        """
+
+        return self.environment
 
     @start_as_current_span(TRACER, "timeout", "polling_interval")
     def reload_environment(
@@ -539,6 +703,18 @@ class BlueapiClient:
         """OIDC config from the server"""
 
         return self._rest.get_oidc_config()
+
+    @start_as_current_span(TRACER)
+    @deprecated("oidc_config property")
+    def get_oidc_config(self) -> OIDCConfig | None:
+        """
+        Get oidc config from the server
+
+        Returns:
+            OIDCConfig: Details of the oidc Config
+        """
+
+        return self.oidc_config
 
     @start_as_current_span(TRACER)
     def get_python_env(

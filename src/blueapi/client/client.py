@@ -21,7 +21,7 @@ from blueapi.config import (
     MissingStompConfigurationError,
 )
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.authentication import SessionManager
+from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -729,3 +729,18 @@ class BlueapiClient:
         """
 
         return self._rest.get_python_environment(name=name, source=source)
+
+    def login(self, token_path: Path | None = None):
+        try:
+            auth: SessionManager = SessionManager.from_cache(token_path)
+            access_token = auth.get_valid_access_token()
+            assert access_token
+            print("Logged in")
+        except Exception:
+            if oidc := self.oidc_config:
+                auth = SessionManager(
+                    oidc, cache_manager=SessionCacheManager(token_path)
+                )
+                auth.start_device_flow()
+            else:
+                print("Server is not configured to use authentication!")

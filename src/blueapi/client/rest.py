@@ -136,6 +136,7 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
 
 class BlueapiRestClient:
     _config: RestConfig
+    _session_manager: SessionManager | None
     _pool: requests.Session
 
     def __init__(

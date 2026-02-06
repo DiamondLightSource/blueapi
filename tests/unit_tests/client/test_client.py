@@ -177,12 +177,20 @@ def test_get_child_device(mock_rest: Mock, client: BlueapiClient):
     assert x == "foo.x"
 
 
-def test_get_state(client: BlueapiClient):
+def test_state_property(client: BlueapiClient):
     assert client.state == WorkerState.IDLE
 
 
-def test_get_active_task(client: BlueapiClient):
+def test_get_state(client: BlueapiClient):
+    assert client.get_state() == WorkerState.IDLE
+
+
+def test_active_task_property(client: BlueapiClient):
     assert client.active_task == ACTIVE_TASK
+
+
+def test_get_active_task(client: BlueapiClient):
+    assert client.get_active_task() == ACTIVE_TASK
 
 
 def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
@@ -235,8 +243,12 @@ def test_create_and_start_task_fails_if_task_start_fails(
         )
 
 
-def test_get_environment(client: BlueapiClient):
+def test_environment_property(client: BlueapiClient):
     assert client.environment == ENV
+
+
+def test_get_environment(client: BlueapiClient):
+    assert client.get_environment() == ENV
 
 
 def test_reload_environment(
@@ -491,8 +503,12 @@ def test_run_task_ignores_non_matching_events(
     mock_on_event.assert_called_once_with(COMPLETE_EVENT)
 
 
-def test_get_oidc_config(client, mock_rest):
+def test_oidc_config_property(client, mock_rest):
     assert client.oidc_config == mock_rest.get_oidc_config()
+
+
+def test_get_oidc_config(client, mock_rest):
+    assert client.get_oidc_config() == mock_rest.get_oidc_config()
 
 
 def test_get_plans_span_ok(exporter: JsonObjectSpanExporter, client: BlueapiClient):
@@ -849,3 +865,38 @@ def test_client_callback_failures(
 
     assert failing_callback.mock_calls == [call(evt), call(COMPLETE_EVENT)]
     assert callback.mock_calls == [call(evt), call(COMPLETE_EVENT)]
+
+
+@patch("blueapi.client.client.SessionManager")
+def test_client_login_existing_login(mock_session_manager: Mock, client: BlueapiClient):
+    client.login()
+
+    mock_session_manager.from_cache.assert_called_once()
+    mock_session_manager.from_cache().get_valid_access_token.assert_called_once()
+
+
+@patch("blueapi.client.client.SessionManager")
+def test_client_new_login(mock_session_manager: Mock, client: BlueapiClient):
+    manager = Mock()
+    manager.get_valid_access_token.side_effect = ValueError("No existing token")
+
+    mock_session_manager.from_cache.return_value = manager
+
+    client.login()
+
+    mock_session_manager.assert_called_once()
+    mock_session_manager.return_value.start_device_flow.assert_called_once()
+
+
+@patch("blueapi.client.client.SessionManager")
+def test_client_login_no_oidc(
+    mock_session_manager: Mock, mock_rest: Mock, client: BlueapiClient
+):
+    mock_rest.get_oidc_config.return_value = None
+    mock_session_manager.from_cache.return_value.get_valid_access_token.side_effect = (
+        ValueError("No existing token")
+    )
+
+    client.login()
+
+    mock_session_manager.assert_not_called()

@@ -213,7 +213,7 @@ class TaskWorker:
         """
         Retrieve a list of tasks based on their status.
         Args:
-           TaskStatusEnum: The status to filter tasks by.
+           status TaskStatusEnum: The status to filter tasks by.
         Returns:
           list[TrackableTask]: A list of tasks that match the given status.
         """
@@ -273,7 +273,7 @@ class TaskWorker:
         request_id = get_baggage("correlation_id")
         # If request id is not a string, we do not pass it into a TrackableTask
         if not isinstance(request_id, str):
-            logging.warning(f"Invalid correlation id detected: {request_id}")
+            LOGGER.warning(f"Invalid correlation id detected: {request_id}")
             request_id = None
         trackable_task = TrackableTask(
             task_id=task_id,

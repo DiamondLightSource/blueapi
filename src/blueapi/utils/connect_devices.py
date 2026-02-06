@@ -15,7 +15,7 @@ from ophyd_async.plan_stubs import ensure_connected
 LOGGER = logging.getLogger(__name__)
 
 
-def _report_successful_devices(
+def report_successful_devices(
     devices: Mapping[str, AnyDevice],
     sim_backend: bool,
 ) -> None:
@@ -86,7 +86,7 @@ def connect_devices(
         real_devices, exceptions = _establish_device_connections(
             run_engine, real_devices, False
         )
-        _report_successful_devices(real_devices, False)
+        report_successful_devices(real_devices, False)
         exception_map |= exceptions
     if len(sim_devices) > 0:
         sim_devices, exceptions = _establish_device_connections(
@@ -94,6 +94,6 @@ def connect_devices(
             sim_devices,  # type: ignore
             True,
         )
-        _report_successful_devices(sim_devices, True)
+        report_successful_devices(sim_devices, True)
         exception_map |= exceptions
     return exception_map

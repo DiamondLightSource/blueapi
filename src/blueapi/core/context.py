@@ -23,7 +23,6 @@ from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import CoreSchema, core_schema
 
 from blueapi import utils
-from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import (
     ApplicationConfig,
     DeviceManagerSource,
@@ -36,6 +35,7 @@ from blueapi.config import (
 from blueapi.core.protocols import DeviceManager
 from blueapi.utils import (
     BlueapiPlanModelConfig,
+    NumtrackerClient,
     is_function_sourced_from_module,
     load_module_all,
 )
@@ -209,14 +209,32 @@ class BlueskyContext:
 
             match source:
                 case PlanSource():
+                    LOGGER.info("Including plans from %s", source.module)
                     self.with_plan_module(mod)
                 case DeviceSource():
+                    LOGGER.info("Including devices from %s", source.module)
+                    LOGGER.warning(
+                        "'devices' environment kind is deprecated - please convert "
+                        "configuration to use deviceManager"
+                    )
                     self.with_device_module(mod)
                 case DodalSource(mock=mock):
+                    LOGGER.info(
+                        "Including devices from 'dodal' source %s", source.module
+                    )
+                    LOGGER.warning(
+                        "'dodal' environment kind is deprecated - please convert "
+                        "configuration to use deviceManager"
+                    )
                     self.with_dodal_module(mod, mock=mock)
                 case DeviceManagerSource(
                     mock=mock, name=name, check_connected=check_connected
                 ):
+                    LOGGER.info(
+                        "Including devices from 'deviceManager' source %s:%s",
+                        source.module,
+                        name,
+                    )
                     manager = getattr(mod, name)
                     if not isinstance(manager, DeviceManager):
                         raise ValueError(
@@ -228,6 +246,13 @@ class BlueskyContext:
                             "Errors occurred while building/connecting the following "
                             f"devices: {', '.join(error_map)}",
                         )
+        if not self.devices:
+            LOGGER.warning(
+                "Context had no devices after loading environment - are all modules "
+                "included and marked with the correct 'kind'?"
+            )
+        if not self.plans:
+            LOGGER.warning("Context had no plans registered after loading environment")
 
     def with_plan_module(self, module: ModuleType) -> None:
         """
@@ -280,6 +305,15 @@ class BlueskyContext:
                 f"{len(errs)} errors while connecting devices",
                 exc_info=NotConnectedError(errs),
             )
+        if not (
+            build_result.devices
+            or build_result.build_errors
+            or build_result.connection_errors
+        ):
+            LOGGER.warning("Device manager did not build any devices")
+
+        utils.report_successful_devices(build_result.devices, mock)
+
         return build_result.devices, {
             **build_result.build_errors,
             **build_result.connection_errors,
@@ -318,6 +352,8 @@ class BlueskyContext:
                 f"{len(exceptions)} exceptions occurred while instantiating devices"
             )
             LOGGER.exception(NotConnectedError(exceptions))
+        elif not devices:
+            LOGGER.warning("No devices were loaded from dodal module %s", module)
         return devices, exceptions
 
     def register_plan(self, plan: PlanGenerator) -> PlanGenerator:
@@ -423,11 +459,13 @@ class BlueskyContext:
                     json_schema = handler(core_schema)
                     json_schema = handler.resolve_ref_schema(json_schema)
                     json_schema["type"] = qualified_name(target)
-                    json_schema["enum"] = [
-                        name
-                        for name, device in self.devices.items()
-                        if isinstance(device, cls.origin or target)
-                    ]
+                    json_schema["enum"] = sorted(
+                        [
+                            name
+                            for name, device in self.devices.items()
+                            if isinstance(device, cls.origin or target)
+                        ]
+                    )
                     if cls.args:
                         json_schema["types"] = [qualified_name(arg) for arg in cls.args]
                     return json_schema

@@ -2,7 +2,7 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated
 
 import jwt
@@ -71,9 +71,10 @@ CONTEXT_HEADER = "traceparent"
 VENDOR_CONTEXT_HEADER = "tracestate"
 AUTHORIZAITON_HEADER = "authorization"
 PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
+DOCS_ENDPOINT = "/docs"
 
 
-class Tag(str, Enum):
+class Tag(StrEnum):
     TASK = "Task"
     PLAN = "Plan"
     DEVICE = "Device"
@@ -132,7 +133,7 @@ open_router = APIRouter()
 
 def get_app(config: ApplicationConfig):
     app = FastAPI(
-        docs_url="/docs",
+        docs_url=DOCS_ENDPOINT,
         title="BlueAPI Control",
         summary="BlueAPI wraps bluesky plans and devices and "
         "exposes endpoints to send commands/receive data",
@@ -202,6 +203,14 @@ async def on_token_error_401(_: Request, __: Exception):
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Not authenticated"},
         headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+@secure_router.get("/", include_in_schema=False)
+def root_redirect() -> RedirectResponse:
+    """Redirect to docs url"""
+    return RedirectResponse(
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT, url=DOCS_ENDPOINT
     )
 
 
@@ -355,7 +364,6 @@ def get_tasks(
     Retrieve tasks based on their status.
     The status of a newly created task is 'unstarted'.
     """
-    tasks = []
     if task_status:
         add_span_attributes({"status": task_status})
         try:

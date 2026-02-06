@@ -4,7 +4,7 @@ env:
   metadata:
     instrument: adsim
   sources:
-    - kind: dodal
+    - kind: deviceManager
       module: dodal.beamlines.adsim
     - kind: planFunctions
       module: dodal.plans

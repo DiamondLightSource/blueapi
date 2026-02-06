@@ -21,7 +21,7 @@ from requests.exceptions import ConnectionError
 
 from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
-from blueapi.client.client import BlueapiClient
+from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
@@ -41,6 +41,8 @@ from blueapi.worker import ProgressEvent, WorkerEvent
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
+
+LOGGER = logging.getLogger(__name__)
 
 
 @click.group(
@@ -493,7 +495,7 @@ def logout(obj: dict) -> None:
     except FileNotFoundError:
         print("Logged out")
     except ValueError as e:
-        logging.debug("Invalid login token: %s", e)
+        LOGGER.debug("Invalid login token: %s", e)
         raise ClickException(
             "Login token is not valid - remove before trying again"
         ) from e

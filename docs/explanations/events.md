@@ -16,14 +16,14 @@ a plan has started, finished, paused, errored etc. See the example below:
 ![sequence of event emission compared to plan start/finish, in a complicated case](../images/bluesky-events.png)
 
 Note the gap between the start of the plan and the issue of the first [`run start document`](https://blueskyproject.io/event-model/main/user/explanations/data-model.html#run-start-document), and the similar gap
-for the stop document vs end of the plan, thsse are typically used for setup and cleanup.
+for the stop document vs end of the plan, these are typically used for setup and cleanup.
 Also note that a plan can produce an arbitrary number of runs. This decoupling is fine in an IPython terminal
 because a human user can see when a plan has started, can see when it's finished and can see which runs are
 associated with which plans.
 
 ## New Events
 
-For the case of automation, we introduce a new set of events outside of the event model, specifically
+For the case of automation, we introduce a new set of events outside the event model, specifically
 pertaining to the running of the plan and state of the `RunEngine`. At a minimum, an event is emitted
 every time the engine:
 

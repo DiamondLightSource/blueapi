@@ -90,11 +90,12 @@ def set_up_stream_handler(
     Args:
         logger: Logger to attach handler to
         logging_config: LoggingConfig
+        filters: list of filters
     """
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging_config.level)
 
-    formatter = ColorFormatter("%(asctime)s %(levelname)s %(message)s")
+    formatter = ColorFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
     stream_handler.setFormatter(formatter)
 
     for filter in filters:
@@ -137,7 +138,7 @@ class IBMColorBlindSafeColors(enum.Enum):
 
 
 class ColorFormatter(logging.Formatter):
-    """Colors level_name of log using IBM color blind safe palette."""
+    """Colors level_name of log using IBM color-blind safe palette."""
 
     def _level_colour(self, level_no: int) -> tuple[int, int, int] | None:
         match level_no:
@@ -160,4 +161,5 @@ class ColorFormatter(logging.Formatter):
         recordcopy.levelname = click.style(
             f"{recordcopy.levelname:>8}", fg=self._level_colour(recordcopy.levelno)
         )
+        recordcopy.name = click.style(recordcopy.name, fg="green")
         return super().formatMessage(recordcopy)

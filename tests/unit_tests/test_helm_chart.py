@@ -110,7 +110,7 @@ def test_helm_chart_creates_config_map(worker_config: ApplicationConfig):
             "worker": {
                 "scratch": {
                     "repositories": [],
-                    "root": "/blueapi-plugins/scratch",
+                    "root": "/workspace",
                 }
             },
         },
@@ -151,7 +151,7 @@ def test_init_container_spec_generated():
             "worker": {
                 "scratch": {
                     "repositories": [],
-                    "root": "/blueapi-plugins/scratch",
+                    "root": "/workspace",
                 },
             },
             "initContainer": {
@@ -432,7 +432,7 @@ def render_persistent_volume_chart(
 def scratch_volume_mount():
     return {
         "name": "scratch",
-        "mountPath": "/blueapi-plugins/scratch",
+        "mountPath": "/workspace",
     }
 
 
@@ -440,7 +440,7 @@ def scratch_volume_mount():
 def scratch_host_volume_mount():
     return {
         "name": "scratch-host",
-        "mountPath": "/blueapi-plugins/scratch",
+        "mountPath": "/workspace",
         "mountPropagation": "HostToContainer",
     }
 
@@ -600,7 +600,10 @@ def test_persistent_volume_claim_exists(
             "kind": "PersistentVolumeClaim",
             "metadata": {
                 "name": "blueapi-scratch-0.1.0",
-                "annotations": {"helm.sh/resource-policy": "keep"},
+                "annotations": {
+                    "argocd.argoproj.io/sync-options": "Prune=false,Delete=false",
+                    "argocd.argoproj.io/compare-options": "IgnoreExtraneous",
+                },
             },
             "spec": {
                 "accessModes": ["ReadWriteMany"],

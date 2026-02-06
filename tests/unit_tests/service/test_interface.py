@@ -17,7 +17,6 @@ from ophyd_async.epics.motor import Motor
 from pydantic import HttpUrl
 from stomp.connect import StompConnection11 as Connection
 
-from blueapi.client.numtracker import NumtrackerClient
 from blueapi.config import (
     ApplicationConfig,
     EnvironmentConfig,
@@ -27,6 +26,7 @@ from blueapi.config import (
     PlanSource,
     ScratchConfig,
     StompConfig,
+    TiledConfig,
 )
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
@@ -41,8 +41,9 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
+from blueapi.utils.numtracker import NumtrackerClient
 from blueapi.utils.path_provider import StartDocumentPathProvider
-from blueapi.worker.event import TaskStatusEnum, WorkerState
+from blueapi.worker.event import TaskStatus, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -365,6 +366,54 @@ def test_get_task_by_id(
     )
 
 
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_remove_tiled_subscriber(worker, context, from_uri, writer):
+    task = WorkerTask(task_id="foo_bar")
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.subscribe.return_value = 17
+    worker().worker_events.subscribe.return_value = 42
+
+    interface.begin_task(task)
+
+    writer.assert_called_once_with(from_uri(), batch_size=1)
+    context().run_engine.subscribe.assert_called_once_with(writer())
+    worker().worker_events.subscribe.assert_called_once()
+
+    inner_callback = worker().worker_events.subscribe.call_args.args[0]
+
+    inner_callback(
+        WorkerEvent(
+            state=WorkerState.RUNNING,
+            task_status=TaskStatus(
+                task_id="foo_bar",
+                task_complete=False,
+                task_failed=False,
+            ),
+        ),
+        "c_id",
+    )
+    context().run_engine.unsubscribe.assert_not_called()
+    worker().worker_events.unsubscribe.assert_not_called()
+
+    inner_callback(
+        WorkerEvent(
+            state=WorkerState.IDLE,
+            task_status=TaskStatus(
+                task_id="foo_bar",
+                task_complete=True,
+                task_failed=False,
+            ),
+        ),
+        "c_id",
+    )
+    context().run_engine.unsubscribe.assert_called_once_with(17)
+    worker().worker_events.unsubscribe.assert_called_once_with(42)
+
+
 def test_get_oidc_config(oidc_config: OIDCConfig):
     interface.set_config(ApplicationConfig(oidc=oidc_config))
     assert interface.get_oidc_config() == oidc_config
@@ -434,7 +483,7 @@ def test_configure_numtracker():
     assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
 
-@patch("blueapi.client.numtracker.requests.post")
+@patch("blueapi.utils.numtracker.requests.post")
 def test_headers_are_cleared(mock_post):
     mock_response = Mock()
     mock_post.return_value = mock_response
@@ -552,7 +601,7 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
     clear_path_provider()
 
 
-@patch("blueapi.client.numtracker.NumtrackerClient.create_scan")
+@patch("blueapi.utils.numtracker.NumtrackerClient.create_scan")
 def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_scan):
     conf = ApplicationConfig(
         numtracker=NumtrackerConfig(

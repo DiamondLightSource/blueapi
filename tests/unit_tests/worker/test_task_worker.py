@@ -10,7 +10,7 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pydantic
 import pytest
-from bluesky.protocols import Movable, Status
+from bluesky.protocols import Movable, Readable, Status
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.common.types import UpdatingPathProvider
@@ -754,6 +754,23 @@ def test_missing_injected_devices_fail_early(
     context.register_plan(missing_injection)
     with pytest.raises(ValueError, match="Device does_not_exist cannot be found"):
         Task(name="missing_injection").prepare_params(context)
+
+
+def test_invalid_injected_devices_fail_early(
+    context: BlueskyContext,
+):
+    def invalid_injection(dev: Readable = inject("fake_device")) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(invalid_injection)
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"Device fake_device \(test_task_worker.FakeDevice\) "
+            "is not of type bluesky.protocols.Readable"
+        ),
+    ):
+        Task(name="invalid_injection").prepare_params(context)
 
 
 @patch("blueapi.worker.task_worker.plan_tag_filter_context")

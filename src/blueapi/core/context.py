@@ -448,9 +448,10 @@ class BlueskyContext:
                         if not val:
                             raise ValueError(f"Device {value} cannot be found")
                         elif not is_compatible(val, cls.origin or target, cls.args):
-                            req = qualified_generic_name(target)
+                            actual = qualified_name(type(val))
+                            required = qualified_generic_name(target)
                             raise ValueError(
-                                f"Device {value} ({type(val)}) is not of type {req}"
+                                f"Device {value} ({actual}) is not of type {required}"
                             )
                         return val
 

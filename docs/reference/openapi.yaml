@@ -1,5 +1,22 @@
 components:
   schemas:
+    BasicAuthentication:
+      additionalProperties: false
+      description: User credentials for basic authentication
+      properties:
+        password:
+          description: Password to verify user's identity
+          title: Password
+          type: string
+        username:
+          description: Unique identifier for user
+          title: Username
+          type: string
+      required:
+      - username
+      - password
+      title: BasicAuthentication
+      type: object
     DeviceModel:
       additionalProperties: false
       description: Representation of a device
@@ -224,6 +241,29 @@ components:
       - new_state
       title: StateChangeRequest
       type: object
+    StompConfig:
+      additionalProperties: false
+      description: Config for connecting to stomp broker
+      properties:
+        auth:
+          anyOf:
+          - $ref: '#/components/schemas/BasicAuthentication'
+          - type: 'null'
+          description: Auth information for communicating with STOMP broker, if required
+        enabled:
+          default: false
+          description: True if blueapi should connect to stomp for asynchronous event
+            publishing
+          title: Enabled
+          type: boolean
+        url:
+          default: tcp://localhost:61613
+          format: uri
+          minLength: 1
+          title: Url
+          type: string
+      title: StompConfig
+      type: object
     Task:
       additionalProperties: false
       description: Task that will run a plan
@@ -377,7 +417,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.1.2
+  version: 1.2.0
 openapi: 3.1.0
 paths:
   /config/oidc:
@@ -394,6 +434,22 @@ paths:
         '204':
           description: No Authentication configured
       summary: Get Oidc Config
+      tags:
+      - Meta
+  /config/stomp:
+    get:
+      description: Retrieve the stomp configuration for the server.
+      operationId: get_stomp_config_config_stomp_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StompConfig'
+          description: Successful Response
+        '204':
+          description: No Stomp configured
+      summary: Get Stomp Config
       tags:
       - Meta
   /devices:

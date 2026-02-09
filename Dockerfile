@@ -47,7 +47,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-ins
     && apt-get dist-clean
 
 # Install uv to allow setup-scratch to run
-COPY --from=ghcr.io/astral-sh/uv:0.9 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10 /uv /uvx /bin/
 
 # For this pod to understand finding user information from LDAP
 RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf

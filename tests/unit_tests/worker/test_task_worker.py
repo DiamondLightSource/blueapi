@@ -79,6 +79,11 @@ def failing_plan() -> MsgGenerator:
     raise KeyError("I failed")
 
 
+def returning_plan() -> MsgGenerator[int]:
+    yield from []
+    return 42
+
+
 @pytest.fixture
 def fake_device() -> FakeDevice:
     return FakeDevice()
@@ -95,6 +100,7 @@ def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyC
     ctx_config = EnvironmentConfig()
     ctx_config.sources.append(DeviceSource(module="devices"))
     ctx.register_plan(failing_plan)
+    ctx.register_plan(returning_plan)
     ctx.register_device(fake_device)
     ctx.register_device(second_fake_device)
     ctx.with_config(ctx_config)
@@ -267,6 +273,18 @@ def test_begin_task_uses_plan_name_filter(
     task_id = inert_worker.submit_task(_SIMPLE_TASK)
     inert_worker.begin_task(task_id)
     filter_mock.assert_called_once()
+
+
+def test_return_value_recorded(worker: TaskWorker):
+    task_id = worker.submit_task(Task(name="returning_plan", params={}))
+    events_future = take_events(
+        worker.worker_events,
+        lambda evt: evt.task_status is not None and evt.task_status.task_complete,
+    )
+    worker.begin_task(task_id)
+    events = events_future.result(timeout=2.0)
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.result == 42
 
 
 def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:

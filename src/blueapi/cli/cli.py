@@ -24,6 +24,7 @@ from blueapi.cli.format import OutputFormat
 from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import (
+    BlueapiRestClient,
     BlueskyRemoteControlError,
     InvalidParametersError,
     UnauthorisedAccessError,
@@ -32,6 +33,7 @@ from blueapi.client.rest import (
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
+    RestConfig,
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
@@ -66,17 +68,6 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
                 raise e
 
     return wrapper
-
-
-def _default_config(ctx: click.Context) -> None:
-    ctx.ensure_object(dict)
-    config_loader = ConfigLoader(ApplicationConfig)
-
-    loaded_config: ApplicationConfig = config_loader.load()
-
-    set_up_logging(loaded_config.logging)
-
-    ctx.obj["config"] = loaded_config
 
 
 def _load_config(
@@ -314,7 +305,6 @@ def controller(
 
     ctx.ensure_object(dict)
     ctx.obj["fmt"] = OutputFormat(output)
-
     config: ApplicationConfig = ctx.obj["config"]
 
     if url is not None:
@@ -324,11 +314,18 @@ def controller(
                 "over a provided url"
             )
         else:
-            config.api.url = HttpUrl(url)
-
-            tmp_client = BlueapiClient.from_config(config)
-            config.stomp = tmp_client.get_stomp_config()
-            ctx.obj["config"] = config
+            tmp_client = BlueapiRestClient(RestConfig(url=HttpUrl(url)))
+            stomp_config = None
+            try:
+                stomp_config = tmp_client.get_stomp_config()
+                config.stomp = stomp_config
+                config.api.url = url
+                ctx.obj["config"] = config
+            except Exception:
+                LOGGER.error(
+                    "Server does not support --url access for "
+                    "this command. Please use a config file.",
+                )
 
     set_up_logging(config.logging)
     ctx.obj["client"] = BlueapiClient.from_config(config)

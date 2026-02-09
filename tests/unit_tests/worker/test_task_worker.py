@@ -319,7 +319,7 @@ def test_plan_result_serialized(worker: TaskWorker, result: Any, serial: Any):
     events = begin_task_and_wait_until_complete(worker, task_id)
     ts = events[-1].task_status
     assert ts is not None
-    assert ts.result == result
+    assert ts.result == serial
 
     assert ts.model_dump()["result"] == serial
 

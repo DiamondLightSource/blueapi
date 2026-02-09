@@ -1,13 +1,13 @@
 import logging
 from collections.abc import Mapping
 from enum import StrEnum
+from typing import Any
 
 from bluesky.run_engine import RunEngineStateMachine
 from pydantic import Field
 from super_state_machine.extras import PropertyMachine, ProxyString
 
 from blueapi.utils import BlueapiBaseModel
-from blueapi.utils.base_model import NoneFallback
 
 # The RunEngine can return any of these three types as its state
 # RawRunEngineState = type[PropertyMachine | ProxyString | str]
@@ -113,7 +113,7 @@ class TaskStatus(BlueapiBaseModel):
     task_id: str
     task_complete: bool
     task_failed: bool
-    result: NoneFallback = None
+    result: Any = None
 
 
 class WorkerEvent(BlueapiBaseModel):

@@ -18,7 +18,7 @@ from observability_utils.tracing import (
 from opentelemetry.baggage import get_baggage
 from opentelemetry.context import Context, get_current
 from opentelemetry.trace import SpanKind
-from pydantic import Field
+from pydantic import Field, TypeAdapter
 from pydantic.json_schema import SkipJsonSchema
 from super_state_machine.errors import TransitionError
 
@@ -32,7 +32,7 @@ from blueapi.core import (
 )
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
 from blueapi.log import plan_tag_filter_context
-from blueapi.utils.base_model import BlueapiBaseModel, NoneFallback
+from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
 
 from .event import (
@@ -69,7 +69,16 @@ class TrackableTask(BlueapiBaseModel):
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
-    result: NoneFallback = None
+    result: Any = None
+
+    def set_result(self, result):
+        try:
+            self.result = TypeAdapter(type(result)).dump_python(result, mode="json")
+        except Exception:
+            LOGGER.warning(
+                "Plan result (%s) is not serializable so will not be available", result
+            )
+            pass
 
 
 class TaskWorker:
@@ -429,7 +438,7 @@ class TaskWorker:
                     self._current = next_task
                     self._current.is_pending = False
                     result = self._current.task.do_task(self._ctx)
-                    self._current.result = result
+                    self._current.set_result(result)
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:

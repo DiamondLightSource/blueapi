@@ -84,6 +84,23 @@ def returning_plan() -> MsgGenerator[int]:
     return 42
 
 
+@dataclasses.dataclass
+class ComplexReturn:
+    foo: int
+    bar: list[str]
+
+
+class ModelReturn(pydantic.BaseModel):
+    foo: int
+    bar: list[str]
+
+
+class Unreturnable:
+    def __init__(self, foo: int, bar: list[str]):
+        self.foo = foo
+        self.bar = bar
+
+
 @pytest.fixture
 def fake_device() -> FakeDevice:
     return FakeDevice()
@@ -276,15 +293,35 @@ def test_begin_task_uses_plan_name_filter(
 
 
 def test_return_value_recorded(worker: TaskWorker):
-    task_id = worker.submit_task(Task(name="returning_plan", params={}))
-    events_future = take_events(
-        worker.worker_events,
-        lambda evt: evt.task_status is not None and evt.task_status.task_complete,
-    )
-    worker.begin_task(task_id)
-    events = events_future.result(timeout=2.0)
+    task_id = worker.submit_task(Task(name="returning_plan"))
+    events = begin_task_and_wait_until_complete(worker, task_id)
     assert events[-1].task_status is not None
     assert events[-1].task_status.result == 42
+
+
+@pytest.mark.parametrize(
+    "result,serial",
+    [
+        (42, 42),
+        ("helloWorld", "helloWorld"),
+        (ComplexReturn(34, ["foo"]), {"foo": 34, "bar": ["foo"]}),
+        (ModelReturn(foo=42, bar=["helloWorld"]), {"foo": 42, "bar": ["helloWorld"]}),
+        (Unreturnable(17, ["fizzbuzz"]), None),
+    ],
+)
+def test_plan_result_serialized(worker: TaskWorker, result: Any, serial: Any):
+    def result_plan() -> MsgGenerator:
+        yield from []
+        return result
+
+    worker._ctx.register_plan(result_plan)
+    task_id = worker.submit_task(Task(name="result_plan"))
+    events = begin_task_and_wait_until_complete(worker, task_id)
+    ts = events[-1].task_status
+    assert ts is not None
+    assert ts.result == result
+
+    assert ts.model_dump()["result"] == serial
 
 
 def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:

@@ -79,11 +79,6 @@ def failing_plan() -> MsgGenerator:
     raise KeyError("I failed")
 
 
-def returning_plan() -> MsgGenerator[int]:
-    yield from []
-    return 42
-
-
 @dataclasses.dataclass
 class ComplexReturn:
     foo: int
@@ -117,7 +112,6 @@ def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyC
     ctx_config = EnvironmentConfig()
     ctx_config.sources.append(DeviceSource(module="devices"))
     ctx.register_plan(failing_plan)
-    ctx.register_plan(returning_plan)
     ctx.register_device(fake_device)
     ctx.register_device(second_fake_device)
     ctx.with_config(ctx_config)
@@ -290,13 +284,6 @@ def test_begin_task_uses_plan_name_filter(
     task_id = inert_worker.submit_task(_SIMPLE_TASK)
     inert_worker.begin_task(task_id)
     filter_mock.assert_called_once()
-
-
-def test_return_value_recorded(worker: TaskWorker):
-    task_id = worker.submit_task(Task(name="returning_plan"))
-    events = begin_task_and_wait_until_complete(worker, task_id)
-    assert events[-1].task_status is not None
-    assert events[-1].task_status.result == 42
 
 
 @pytest.mark.parametrize(

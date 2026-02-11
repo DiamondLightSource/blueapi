@@ -39,7 +39,8 @@ class Task(BlueapiBaseModel):
         prepared_params = self.prepare_params(ctx)
         ctx.run_engine.md.update(self.metadata)
         result = ctx.run_engine(func(**prepared_params))
-        if isinstance(result, tuple):
+        if isinstance(result, tuple):  # pragma: no cover
+            # this is never true if the run_engine is configured correctly
             return None
         return result.plan_result
 

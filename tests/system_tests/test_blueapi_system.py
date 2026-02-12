@@ -10,7 +10,6 @@ import requests
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
-from scanspec.specs import Line
 
 from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError
@@ -473,11 +472,25 @@ def test_delete_current_environment(client: BlueapiClient):
             TaskRequest(
                 name="spec_scan",
                 params={
-                    "detectors": [
-                        "det",
-                    ],
-                    "spec": Line("stage.x", 0.0, 10.0, 2)
-                    * Line("stage.theta", 5.0, 15.0, 3),
+                    "detectors": ["det"],
+                    "spec": {
+                        "outer": {
+                            "axis": "stage.x",
+                            "start": 0.0,
+                            "stop": 10.0,
+                            "num": 2,
+                            "type": "Line",
+                        },
+                        "inner": {
+                            "axis": "stage.theta",
+                            "start": 5.0,
+                            "stop": 15.0,
+                            "num": 3,
+                            "type": "Line",
+                        },
+                        "gap": True,
+                        "type": "Product",
+                    },
                 },
                 instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
             ),

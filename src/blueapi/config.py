@@ -2,7 +2,7 @@ import os
 import re
 import textwrap
 from collections.abc import Mapping
-from enum import Enum
+from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
@@ -43,7 +43,7 @@ yaml.Loader.add_implicit_resolver("!expand", re.compile(r".*\$.*"), None)
 yaml.Loader.add_constructor("!expand", _expand_env)
 
 
-class SourceKind(str, Enum):
+class SourceKind(StrEnum):
     PLAN_FUNCTIONS = "planFunctions"
     DEVICE_FUNCTIONS = "deviceFunctions"
     DODAL = "dodal"

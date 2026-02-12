@@ -246,6 +246,26 @@ components:
       - name
       title: Task
       type: object
+    TaskError:
+      additionalProperties: false
+      description: Wrapper around an exception raised by a plan
+      properties:
+        message:
+          title: Message
+          type: string
+        outcome:
+          const: error
+          default: error
+          title: Outcome
+          type: string
+        type:
+          title: Type
+          type: string
+      required:
+      - type
+      - message
+      title: TaskError
+      type: object
     TaskRequest:
       additionalProperties: false
       description: Request to run a task with related info
@@ -280,6 +300,31 @@ components:
       - task_id
       title: TaskResponse
       type: object
+    TaskResult:
+      additionalProperties: false
+      description: 'Serializable wrapper around the result of a plan
+
+
+        If the result is not serializable, the result will be None but the type
+
+        will be the name of the type. If the result is actually None, the type will
+
+        be ''NoneType''.'
+      properties:
+        outcome:
+          const: success
+          default: success
+          title: Outcome
+          type: string
+        result:
+          title: Result
+        type:
+          title: Type
+          type: string
+      required:
+      - type
+      title: TaskResult
+      type: object
     TasksListResponse:
       additionalProperties: false
       description: Diagnostic information on the tasks
@@ -311,11 +356,15 @@ components:
           default: true
           title: Is Pending
           type: boolean
+        outcome:
+          anyOf:
+          - $ref: '#/components/schemas/TaskResult'
+          - $ref: '#/components/schemas/TaskError'
+          - type: 'null'
+          title: Outcome
         request_id:
           title: Request Id
           type: string
-        result:
-          title: Result
         task:
           $ref: '#/components/schemas/Task'
         task_id:

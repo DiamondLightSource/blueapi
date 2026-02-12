@@ -359,7 +359,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                     "params": {"time": 0.0},
                     "metadata": {},
                 },
-                "result": None,
+                "outcome": None,
                 "task_id": "0",
             },
             {
@@ -372,7 +372,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                     "params": {},
                     "metadata": {},
                 },
-                "result": None,
+                "outcome": None,
                 "task_id": "1",
             },
         ]
@@ -404,7 +404,7 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
                     "params": {},
                     "metadata": {},
                 },
-                "result": None,
+                "outcome": None,
                 "task_id": "3",
             }
         ]
@@ -498,7 +498,7 @@ def test_get_task(mock_runner: Mock, client: TestClient):
                 "foo": "bar",
             },
         },
-        "result": None,
+        "outcome": None,
         "task_id": f"{task_id}",
     }
 
@@ -527,7 +527,7 @@ def test_get_all_tasks(mock_runner: Mock, client: TestClient):
                 "is_complete": False,
                 "is_pending": True,
                 "request_id": None,
-                "result": None,
+                "outcome": None,
                 "errors": [],
             }
         ]

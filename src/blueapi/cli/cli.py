@@ -8,7 +8,7 @@ from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar, cast
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -38,6 +38,7 @@ from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
 from blueapi.worker import ProgressEvent, WorkerEvent
+from blueapi.worker.event import TaskError, TaskResult
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
@@ -290,7 +291,7 @@ def run_plan(
     instrument_session: str,
 ) -> None:
     """Run a plan with parameters"""
-    client: BlueapiClient = obj["client"]
+    client: BlueapiClient = cast(BlueapiClient, obj["client"])
 
     parameters = parameters or "{}"
     try:
@@ -320,9 +321,15 @@ def run_plan(
                     callback(event.name, event.doc)
 
             resp = client.run_task(task, on_event=on_event)
-
-            if resp.task_status is not None and not resp.task_status.task_failed:
-                print("Plan Succeeded")
+            match resp.result:
+                case TaskResult(result=None, type="NoneType"):
+                    print("Plan succeeded")
+                case TaskResult(result=None, type=t):
+                    print(f"Plan returned unserializable result of type '{t}'")
+                case TaskResult(result=r):
+                    print(f"Plan succeeded: {r}")
+                case TaskError(type=exc, message=m):
+                    print(f"Plan failed: {exc}: {m}")
         else:
             server_task = client.create_and_start_task(task)
             click.echo(server_task.task_id)

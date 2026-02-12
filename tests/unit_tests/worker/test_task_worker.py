@@ -35,7 +35,7 @@ from blueapi.worker import (
     WorkerEvent,
     WorkerState,
 )
-from blueapi.worker.event import TaskStatusEnum
+from blueapi.worker.event import TaskResult, TaskStatusEnum
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
@@ -287,16 +287,23 @@ def test_begin_task_uses_plan_name_filter(
 
 
 @pytest.mark.parametrize(
-    "result,serial",
+    "result,serial,type_name",
     [
-        (42, 42),
-        ("helloWorld", "helloWorld"),
-        (ComplexReturn(34, ["foo"]), {"foo": 34, "bar": ["foo"]}),
-        (ModelReturn(foo=42, bar=["helloWorld"]), {"foo": 42, "bar": ["helloWorld"]}),
-        (Unreturnable(17, ["fizzbuzz"]), None),
+        (None, None, "NoneType"),
+        (42, 42, "int"),
+        ("helloWorld", "helloWorld", "str"),
+        (ComplexReturn(34, ["foo"]), {"foo": 34, "bar": ["foo"]}, "ComplexReturn"),
+        (
+            ModelReturn(foo=42, bar=["helloWorld"]),
+            {"foo": 42, "bar": ["helloWorld"]},
+            "ModelReturn",
+        ),
+        (Unreturnable(17, ["fizzbuzz"]), None, "Unreturnable"),
     ],
 )
-def test_plan_result_serialized(worker: TaskWorker, result: Any, serial: Any):
+def test_plan_result_serialized(
+    worker: TaskWorker, result: Any, serial: Any, type_name: str
+):
     def result_plan() -> MsgGenerator:
         yield from []
         return result
@@ -306,9 +313,13 @@ def test_plan_result_serialized(worker: TaskWorker, result: Any, serial: Any):
     events = begin_task_and_wait_until_complete(worker, task_id)
     ts = events[-1].task_status
     assert ts is not None
-    assert ts.result == serial
+    assert ts.result == TaskResult(result=serial, type=type_name)
 
-    assert ts.model_dump()["result"] == serial
+    assert ts.model_dump()["result"] == {
+        "outcome": "success",
+        "result": serial,
+        "type": type_name,
+    }
 
 
 def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
@@ -355,7 +366,10 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
         WorkerEvent(
             state=WorkerState.RUNNING,
             task_status=TaskStatus(
-                task_id=task_id, task_complete=False, task_failed=False
+                task_id=task_id,
+                task_complete=False,
+                task_failed=False,
+                result=None,
             ),
             errors=[],
             warnings=[],
@@ -363,7 +377,10 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
         WorkerEvent(
             state=WorkerState.IDLE,
             task_status=TaskStatus(
-                task_id=task_id, task_complete=False, task_failed=False
+                task_id=task_id,
+                task_complete=False,
+                task_failed=False,
+                result=None,
             ),
             errors=[],
             warnings=[],
@@ -371,7 +388,10 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
         WorkerEvent(
             state=WorkerState.IDLE,
             task_status=TaskStatus(
-                task_id=task_id, task_complete=True, task_failed=False
+                task_id=task_id,
+                task_complete=True,
+                task_failed=False,
+                result=TaskResult.from_result(None),
             ),
             errors=[],
             warnings=[],
@@ -447,7 +467,10 @@ def test_worker_and_data_events_produce_in_order(
             WorkerEvent(
                 state=WorkerState.RUNNING,
                 task_status=TaskStatus(
-                    task_id="count", task_complete=False, task_failed=False
+                    task_id="count",
+                    task_complete=False,
+                    task_failed=False,
+                    result=None,
                 ),
                 errors=[],
                 warnings=[],
@@ -459,7 +482,10 @@ def test_worker_and_data_events_produce_in_order(
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id="count", task_complete=False, task_failed=False
+                    task_id="count",
+                    task_complete=False,
+                    task_failed=False,
+                    result=None,
                 ),
                 errors=[],
                 warnings=[],
@@ -467,7 +493,10 @@ def test_worker_and_data_events_produce_in_order(
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id="count", task_complete=True, task_failed=False
+                    task_id="count",
+                    task_complete=True,
+                    task_failed=False,
+                    result=TaskResult.from_result(None),
                 ),
                 errors=[],
                 warnings=[],
@@ -744,13 +773,16 @@ def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker)
     task = TrackableTask(task_id="0", task=_SIMPLE_TASK)
     inert_worker._task_channel.put_nowait(task)
     inert_worker._pending_tasks["0"] = task
+
+    # task changes during cycle so need to cache log message first
+    expected = f"Got new task: {task}"
     inert_worker._cycle()
     assert inert_worker._current_task_otel_context is None
     # Bad way to tell that this branch ahs been run, but I can't think of a better way
     # Have to set these values to match output
     task.is_complete = False
     task.is_pending = True
-    mock_logger.info.assert_called_with(f"Got new task: {task}")
+    mock_logger.info.assert_called_with(expected)
 
 
 class MyComposite(BlueapiBaseModel):

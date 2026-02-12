@@ -52,7 +52,13 @@ from blueapi.service.model import (
     TaskRequest,
     TaskResponse,
 )
-from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
+from blueapi.worker.event import (
+    ProgressEvent,
+    TaskResult,
+    TaskStatus,
+    WorkerEvent,
+    WorkerState,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -302,7 +308,10 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             WorkerEvent(
                 state=WorkerState.RUNNING,
                 task_status=TaskStatus(
-                    task_id=task_id, task_complete=False, task_failed=False
+                    task_id=task_id,
+                    task_complete=False,
+                    task_failed=False,
+                    result=None,
                 ),
             ),
             ctx,
@@ -313,7 +322,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id=task_id, task_complete=False, task_failed=False
+                    task_id=task_id, task_complete=False, task_failed=False, result=None
                 ),
             ),
             ctx,
@@ -322,7 +331,10 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id=task_id, task_complete=True, task_failed=False
+                    task_id=task_id,
+                    task_complete=True,
+                    task_failed=False,
+                    result=TaskResult(result=None, type="NoneType"),
                 ),
             ),
             ctx,
@@ -906,7 +918,9 @@ def test_event_formatting():
     )
     worker = WorkerEvent(
         state=WorkerState.RUNNING,
-        task_status=TaskStatus(task_id="count", task_complete=False, task_failed=False),
+        task_status=TaskStatus(
+            task_id="count", task_complete=False, task_failed=False, result=None
+        ),
         errors=[],
         warnings=[],
     )
@@ -940,9 +954,9 @@ def test_event_formatting():
         (
             '{"state": "RUNNING", "task_status": {'
             '"task_id": "count", '
+            '"result": null, '
             '"task_complete": false, '
-            '"task_failed": false, '
-            '"result": null'
+            '"task_failed": false'
             '}, "errors": [], "warnings": []}\n'
         ),
     )

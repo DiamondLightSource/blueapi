@@ -64,7 +64,10 @@ def client(mock_runner: Mock) -> Iterator[TestClient]:
 
 @pytest.fixture
 def client_with_auth(
-    mock_runner: Mock, oidc_config: OIDCConfig, valid_token_with_jwt: dict[str, Any]
+    mock_runner: Mock,
+    oidc_config: OIDCConfig,
+    valid_token_with_jwt: dict[str, Any],
+    mock_authn_server,
 ) -> Iterator[TestClient]:
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(runner=mock_runner)
@@ -255,7 +258,6 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
 def test_create_task_inserts_auth_metadata(
     mock_runner: Mock,
     client_with_auth: TestClient,
-    mock_authn_server,
 ) -> None:
     task = TaskRequest(
         name="count",
@@ -270,7 +272,7 @@ def test_create_task_inserts_auth_metadata(
 
     client_with_auth.post("/tasks", json=task.model_dump())
 
-    mock_runner.run.assert_called_with(submit_task, task, {"user": "Alice"})
+    mock_runner.run.assert_called_with(submit_task, task, {"user": "jd1"})
 
 
 def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> None:

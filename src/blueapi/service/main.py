@@ -155,7 +155,7 @@ def get_app(config: ApplicationConfig):
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
-    app.middleware("http")(log_request_details)
+    app.middleware("http")(log_request_details(config.logging.truncate_bodies))
     if config.api.cors:
         app.add_middleware(
             CORSMiddleware,
@@ -595,34 +595,50 @@ async def add_api_version_header(
     return response
 
 
-async def log_request_details(
-    request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
-) -> Response:
-    """Middleware to log all request's host, method, path, status and request and
-    response bodies"""
-    request_body = await request.body()
+def log_request_details(truncate_bodies: bool):
+    async def inner(
+        request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
+    ) -> Response:
+        """Middleware to log all request's host, method, path, status and request and
+        response bodies"""
+        request_body = await request.body()
 
-    response = await call_next(request)
+        response = await call_next(request)
 
-    # https://github.com/Kludex/starlette/issues/874#issuecomment-1027743996
-    response_body = [section async for section in response.body_iterator]
-    response.body_iterator = iterate_in_threadpool(iter(response_body))
+        # https://github.com/Kludex/starlette/issues/874#issuecomment-1027743996
+        response_body_list = [section async for section in response.body_iterator]
+        response.body_iterator = iterate_in_threadpool(iter(response_body_list))
 
-    log_message = (
-        f"{getattr(request.client, 'host', 'NO_ADDRESS')} {request.method}"
-        f" {request.url.path} {response.status_code}"
-    )
+        response_body = b""
+        for r in response_body_list:
+            if type(r) is bytes:
+                response_body += r
+            elif type(r) is str:
+                response_body += r.encode("utf-8")
+            elif type(r) is memoryview[int]:
+                response_body += bytes(r)
 
-    extra = {
-        "request_body": request_body,
-        "response_body": response_body,
-    }
-    if request.url.path == "/healthz":
-        LOGGER.debug(log_message, extra=extra)
-    else:
-        LOGGER.info(log_message, extra=extra)
+        log_message = (
+            f"{getattr(request.client, 'host', 'NO_ADDRESS')} {request.method}"
+            f" {request.url.path} {response.status_code}"
+        )
 
-    return response
+        if truncate_bodies:
+            request_body = request_body[:1024]
+            response_body = response_body[:1024]
+
+        extra = {
+            "request_body": request_body,
+            "response_body": response_body,
+        }
+        if request.url.path == "/healthz":
+            LOGGER.debug(log_message, extra=extra)
+        else:
+            LOGGER.info(log_message, extra=extra)
+
+        return response
+
+    return inner
 
 
 async def inject_propagated_observability_context(

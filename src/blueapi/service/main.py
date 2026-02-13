@@ -314,9 +314,11 @@ def submit_task(
     """Submit a task to the worker."""
     try:
         # Extract user from jwt if using OIDC (if jwt exists)
-        jwt: dict[str, Any] | None = getattr(request.state, "decoded_jwt", None)
-        if jwt:
-            user: str = getattr(jwt, "fedid", "Unknown")
+        access_token: dict[str, Any] | None = getattr(
+            request.state, "decoded_jwt", None
+        )
+        if access_token:
+            user: str = access_token.get("fedid", "Unknown")
         else:
             user = "Unknown"
 

@@ -8,6 +8,7 @@ from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, TypeVar
+from unittest import mock
 from unittest.mock import Mock, patch
 
 import pytest
@@ -54,6 +55,7 @@ from blueapi.service.model import (
 )
 from blueapi.worker.event import (
     ProgressEvent,
+    TaskError,
     TaskResult,
     TaskStatus,
     WorkerEvent,
@@ -361,6 +363,50 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
     assert result.exit_code == 0
     assert submit_response.call_count == 1
     assert run_response.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "result,failed,message",
+    [
+        (TaskResult(result=None, type="NoneType"), False, "Plan succeeded\n"),
+        (TaskResult(result=32, type="int"), False, "Plan succeeded: 32\n"),
+        (
+            TaskResult(result=None, type="CustomType"),
+            False,
+            "Plan returned unserializable result of type 'CustomType'\n",
+        ),
+        (
+            TaskError(type="ValueError", message="Error with value"),
+            True,
+            "Plan failed: ValueError: Error with value\n",
+        ),
+    ],
+)
+@patch("blueapi.cli.cli.BlueapiClient")
+def test_run_plan_feedback(
+    mock_client: Mock,
+    runner: CliRunner,
+    result: TaskResult | TaskError | None,
+    failed: bool,
+    message: str,
+):
+    bc = mock_client.from_config()
+    bc.run_task.return_value = TaskStatus(
+        task_id="foo_bar",
+        task_complete=True,
+        task_failed=failed,
+        result=result,
+    )
+    res = runner.invoke(
+        main,
+        ["controller", "run", "-i", "cm12345-1", "name"],
+    )
+    bc.run_task.assert_called_once_with(
+        TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
+        on_event=mock.ANY,
+    )
+    assert res.exit_code == 0
+    assert res.stdout == message
 
 
 @responses.activate

@@ -248,8 +248,29 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
 
     response = client.post("/tasks", json=task.model_dump())
 
-    mock_runner.run.assert_called_with(submit_task, task)
+    mock_runner.run.assert_called_with(submit_task, task, {"user": "Unknown"})
     assert response.json() == {"task_id": task_id}
+
+
+def test_create_task_inserts_auth_metadata(
+    mock_runner: Mock,
+    client_with_auth: TestClient,
+    mock_authn_server,
+) -> None:
+    task = TaskRequest(
+        name="count",
+        params={"detectors": ["x"]},
+        instrument_session=FAKE_INSTRUMENT_SESSION,
+    )
+    client_with_auth.follow_redirects = False
+    task_id = str(uuid.uuid4())
+
+    # mock_runner.run.side_effect = [task_id]
+    mock_runner.run.return_value = [task_id]
+
+    client_with_auth.post("/tasks", json=task.model_dump())
+
+    mock_runner.run.assert_called_with(submit_task, task, {"user": "Alice"})
 
 
 def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> None:

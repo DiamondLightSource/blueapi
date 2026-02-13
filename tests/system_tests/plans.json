@@ -2,8 +2,8 @@
     "plans": [
         {
             "name": "count",
-            "description": "Reads from a number of devices.\n    Wraps bluesky.plans.count(det, num, delay, md=metadata) exposing only serializable\n    parameters and metadata.",
-            "parameter_schema": {
+            "description": "Reads from a number of devices.\n    Wraps bluesky.plans.count(det, num, delay, md=metadata) exposing only serializable\n    parameters and metadata.\n    ",
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "detectors": {
@@ -52,86 +52,11 @@
         {
             "name": "spec_scan",
             "description": "Generic plan for reading `detectors` at every point of a ScanSpec `Spec`.\n    A `Spec` is an N-dimensional path.\n    ",
-            "parameter_schema": {
+            "schema": {
                 "$defs": {
-                    "Circle_Reference_": {
-                        "additionalProperties": false,
-                        "description": "Mask contains points of axis within an xy circle of given radius.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 1, 3, 10) * ~Line(\"x\", 0, 2, 10)\n    spec = grid & Circle(\"x\", \"y\", 1, 2, 0.9)",
-                        "properties": {
-                            "x_axis": {
-                                "description": "The name matching the x axis of the spec",
-                                "enum": [],
-                                "title": "X Axis",
-                                "type": "bluesky.protocols.Movable"
-                            },
-                            "y_axis": {
-                                "description": "The name matching the y axis of the spec",
-                                "enum": [],
-                                "title": "Y Axis",
-                                "type": "bluesky.protocols.Movable"
-                            },
-                            "x_middle": {
-                                "description": "The central x point of the circle",
-                                "title": "X Middle",
-                                "type": "number"
-                            },
-                            "y_middle": {
-                                "description": "The central y point of the circle",
-                                "title": "Y Middle",
-                                "type": "number"
-                            },
-                            "radius": {
-                                "description": "Radius of the circle",
-                                "exclusiveMinimum": 0.0,
-                                "title": "Radius",
-                                "type": "number"
-                            },
-                            "type": {
-                                "const": "Circle",
-                                "default": "Circle",
-                                "title": "Type",
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "x_axis",
-                            "y_axis",
-                            "x_middle",
-                            "y_middle",
-                            "radius"
-                        ],
-                        "title": "Circle",
-                        "type": "object"
-                    },
-                    "CombinationOf_Reference_": {
-                        "additionalProperties": false,
-                        "description": "Abstract baseclass for a combination of two regions, left and right.",
-                        "properties": {
-                            "left": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The left-hand Region to combine"
-                            },
-                            "right": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The right-hand Region to combine"
-                            },
-                            "type": {
-                                "const": "CombinationOf",
-                                "default": "CombinationOf",
-                                "title": "Type",
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "left",
-                            "right"
-                        ],
-                        "title": "CombinationOf",
-                        "type": "object"
-                    },
                     "Concat_Reference_": {
                         "additionalProperties": false,
-                        "description": "Concatenate two Specs together, running one after the other.\n\nEach Dimension of left and right must contain the same axes. Typically\nformed using `Spec.concat`.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line\n\n    spec = Fly(Line(\"x\", 1, 3, 3).concat(Line(\"x\", 4, 5, 5)))",
+                        "description": "Concatenate two Specs together, running one after the other.\n\nEach Dimension of left and right must contain the same axes. Typically\nformed using `Spec.concat`.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace\n\n    spec = Fly(Linspace(\"x\", 1, 3, 3).concat(Linspace(\"x\", 4, 5, 5)))",
                         "properties": {
                             "left": {
                                 "$ref": "#/$defs/Spec",
@@ -169,7 +94,7 @@
                     },
                     "ConstantDuration_Reference_": {
                         "additionalProperties": false,
-                        "description": "Apply a constant duration to every point in a Spec.\n\nTypically applied with the ``@`` modifier.\n\n.. example_spec::\n\n    from scanspec.specs import Line\n\n    spec = 0.1 @ Line(\"x\", 1, 2, 3)",
+                        "description": "Apply a constant duration to every point in a Spec.\n\nTypically applied with the ``@`` modifier.\n\n.. example_spec::\n\n    from scanspec.specs import Linspace\n\n    spec = 0.1 @ Linspace(\"x\", 1, 2, 3)",
                         "properties": {
                             "constant_duration": {
                                 "description": "The value at each point",
@@ -201,75 +126,65 @@
                         "title": "ConstantDuration",
                         "type": "object"
                     },
-                    "DifferenceOf_Reference_": {
-                        "additionalProperties": false,
-                        "description": "A point is in DifferenceOf(a, b) if in a and not in b.\n\nTypically created with the ``-`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) - Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False, False, False])",
-                        "properties": {
-                            "left": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The left-hand Region to combine"
-                            },
-                            "right": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The right-hand Region to combine"
-                            },
-                            "type": {
-                                "const": "DifferenceOf",
-                                "default": "DifferenceOf",
-                                "title": "Type",
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "left",
-                            "right"
-                        ],
-                        "title": "DifferenceOf",
-                        "type": "object"
-                    },
                     "Ellipse_Reference_": {
                         "additionalProperties": false,
-                        "description": "Mask contains points of axis within an xy ellipse of given radius.\n\n.. example_spec::\n\n    from scanspec.regions import Ellipse\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 3, 8, 10) * ~Line(\"x\", 1 ,8, 10)\n    spec = grid & Ellipse(\"x\", \"y\", 5, 5, 2, 3, 75)",
+                        "description": "Grid of points masked to an elliptical footprint.\n\nConstructs a 2-D scan over an axis-aligned ellipse defined by\n``(x_axis, y_axis)``, centred at (``x_centre``, ``y_centre``), with\ndiameters ``x_diameter`` and ``y_diameter``. Grid spacing along each axis is\ncontrolled by ``x_step`` and ``y_step``. If ``snake`` is True, the fast\naxis will zigzag like a snake. If ``vertical`` is True, the y axis will be\nthe fast axis.\n\nStarts from one of the four extremes of the ellipse identified by the signs of\n``x_step`` and ``y_step``.\n\n.. example_spec::\n\n    from scanspec.specs import Ellipse, Fly\n\n    # An elliptical region centred at (0, 0) on axes \"x\" and \"y\",\n    # with 10x6 diameters and steps of 0.5 in both directions.\n    spec = Fly(\n        Ellipse(\n            \"x\", 0, 10, 0.5,\n            \"y\", 0, 6,\n            snake=True,\n            vertical=False,\n        )\n    )",
                         "properties": {
                             "x_axis": {
-                                "description": "The name matching the x axis of the spec",
+                                "description": "An identifier for what to move for x",
                                 "enum": [],
                                 "title": "X Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
+                            "x_centre": {
+                                "description": "x centre of the spiral",
+                                "title": "X Centre",
+                                "type": "number"
+                            },
+                            "x_diameter": {
+                                "description": "x width of the spiral",
+                                "title": "X Diameter",
+                                "type": "number"
+                            },
+                            "x_step": {
+                                "description": "Spacing along x",
+                                "exclusiveMinimum": 0,
+                                "title": "X Step",
+                                "type": "number"
+                            },
                             "y_axis": {
-                                "description": "The name matching the y axis of the spec",
+                                "description": "An identifier for what to move for y",
                                 "enum": [],
                                 "title": "Y Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
-                            "x_middle": {
-                                "description": "The central x point of the ellipse",
-                                "title": "X Middle",
+                            "y_centre": {
+                                "description": "y centre of the spiral",
+                                "title": "Y Centre",
                                 "type": "number"
                             },
-                            "y_middle": {
-                                "description": "The central y point of the ellipse",
-                                "title": "Y Middle",
+                            "y_diameter": {
+                                "description": "y width of the spiral (defaults to x_diameter)",
+                                "title": "Y Diameter",
                                 "type": "number"
                             },
-                            "x_radius": {
-                                "description": "The radius along the x axis of the ellipse",
-                                "exclusiveMinimum": 0.0,
-                                "title": "X Radius",
+                            "y_step": {
+                                "description": "Spacing along y (defaults to x_step)",
+                                "exclusiveMinimum": 0,
+                                "title": "Y Step",
                                 "type": "number"
                             },
-                            "y_radius": {
-                                "description": "The radius along the y axis of the ellipse",
-                                "exclusiveMinimum": 0.0,
-                                "title": "Y Radius",
-                                "type": "number"
+                            "snake": {
+                                "default": false,
+                                "description": "If True, path zigzag like a snake (defaults to False)",
+                                "title": "Snake",
+                                "type": "boolean"
                             },
-                            "angle": {
-                                "default": 0.0,
-                                "description": "The angle of the ellipse (degrees)",
-                                "title": "Angle",
-                                "type": "number"
+                            "vertical": {
+                                "default": false,
+                                "description": "If True, y axis is the fast axis (defaults to False)",
+                                "title": "Vertical",
+                                "type": "boolean"
                             },
                             "type": {
                                 "const": "Ellipse",
@@ -280,18 +195,18 @@
                         },
                         "required": [
                             "x_axis",
+                            "x_centre",
+                            "x_diameter",
+                            "x_step",
                             "y_axis",
-                            "x_middle",
-                            "y_middle",
-                            "x_radius",
-                            "y_radius"
+                            "y_centre"
                         ],
                         "title": "Ellipse",
                         "type": "object"
                     },
                     "Fly_Reference_": {
                         "additionalProperties": false,
-                        "description": "Move through lower to upper bounds of the Spec rather than stopping.\n\nThis is commonly termed a \"fly scan\" rather than a \"step scan\"\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line\n\n    spec = Fly(Line(\"x\", 1, 2, 3))",
+                        "description": "Move through lower to upper bounds of the Spec rather than stopping.\n\nThis is commonly termed a \"fly scan\" rather than a \"step scan\"\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace\n\n    spec = Fly(Linspace(\"x\", 1, 2, 3))",
                         "properties": {
                             "spec": {
                                 "$ref": "#/$defs/Spec",
@@ -310,35 +225,9 @@
                         "title": "Fly",
                         "type": "object"
                     },
-                    "IntersectionOf_Reference_": {
+                    "Linspace_Reference_": {
                         "additionalProperties": false,
-                        "description": "A point is in IntersectionOf(a, b) if in both a and b.\n\nTypically created with the ``&`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) & Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False, False,  True, False, False])",
-                        "properties": {
-                            "left": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The left-hand Region to combine"
-                            },
-                            "right": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The right-hand Region to combine"
-                            },
-                            "type": {
-                                "const": "IntersectionOf",
-                                "default": "IntersectionOf",
-                                "title": "Type",
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "left",
-                            "right"
-                        ],
-                        "title": "IntersectionOf",
-                        "type": "object"
-                    },
-                    "Line_Reference_": {
-                        "additionalProperties": false,
-                        "description": "Linearly spaced frames with start and stop as first and last midpoints.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line\n\n    spec = Fly(Line(\"x\", 1, 2, 5))",
+                        "description": "Linearly spaced frames with start and stop as first and last midpoints.\n\nThis class is intended to handle linearly spaced frames defined with a\nspecific number of frames.\n\n.. seealso::\n    `Range`: For linearly spaced frames defined with a step size.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace\n\n    spec = Fly(Linspace(\"x\", 1, 2, 5))",
                         "properties": {
                             "axis": {
                                 "description": "An identifier for what to move",
@@ -357,14 +246,15 @@
                                 "type": "number"
                             },
                             "num": {
-                                "description": "Number of frames to produce",
+                                "default": 1,
+                                "description": "Number of frames to produce (defaults to 1)",
                                 "minimum": 1,
                                 "title": "Num",
                                 "type": "integer"
                             },
                             "type": {
-                                "const": "Line",
-                                "default": "Line",
+                                "const": "Linspace",
+                                "default": "Linspace",
                                 "title": "Type",
                                 "type": "string"
                             }
@@ -372,77 +262,68 @@
                         "required": [
                             "axis",
                             "start",
-                            "stop",
-                            "num"
+                            "stop"
                         ],
-                        "title": "Line",
-                        "type": "object"
-                    },
-                    "Mask_Reference_": {
-                        "additionalProperties": false,
-                        "description": "Restrict Spec to only midpoints that fall inside the given Region.\n\nTypically created with the ``&`` operator. It also pushes down the\n``& | ^ -`` operators to its `Region` to avoid the need for brackets on\ncombinations of Regions.\n\nIf a Region spans multiple Dimension objects, they will be squashed together.\n\n.. example_spec::\n\n    from scanspec.regions import Circle\n    from scanspec.specs import Fly, Line\n\n    region = Circle(\"x\", \"y\", 4, 2, 1.2)\n    spec = Fly(Line(\"y\", 1, 3, 3) * Line(\"x\", 3, 5, 5) & region)\n\nSee Also: `why-squash-can-change-path`",
-                        "properties": {
-                            "spec": {
-                                "$ref": "#/$defs/Spec",
-                                "description": "The Spec containing the source midpoints"
-                            },
-                            "region": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The Region that midpoints will be inside"
-                            },
-                            "check_path_changes": {
-                                "default": true,
-                                "description": "If True path through scan will not be modified by squash",
-                                "title": "Check Path Changes",
-                                "type": "boolean"
-                            },
-                            "type": {
-                                "const": "Mask",
-                                "default": "Mask",
-                                "title": "Type",
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "spec",
-                            "region"
-                        ],
-                        "title": "Mask",
+                        "title": "Linspace",
                         "type": "object"
                     },
                     "Polygon_Reference_": {
                         "additionalProperties": false,
-                        "description": "Mask contains points of axis within a rotated xy polygon.\n\n.. example_spec::\n\n    from scanspec.regions import Polygon\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 3, 8, 10) * ~Line(\"x\", 1 ,8, 10)\n    spec = grid & Polygon(\"x\", \"y\", [1.0, 6.0, 8.0, 2.0], [4.0, 10.0, 6.0, 1.0])",
+                        "description": "Grid of points masked to a polygonal footprint.\n\nConstructs a 2-D scan over an axis-aligned polygon defined by an ordered\nlist of vertices \"(x, y)\" given in ``vertices``. The polygon may be convex\nor concave, and the interior is determined using an even-odd ray-casting\nrule. Grid spacing along each axis is controlled by ``x_step`` and ``y_step``,\nIf ``snake`` is True, the fast axis will zigzag like a snake. If ``vertical`` is\nTrue, the y axis will be the fast axis.\n\n.. example_spec::\n\n    from scanspec.specs import Polygon, Fly\n\n    # A triangular region on axes \"x\" and \"y\", stepped by 0.2 units\n    # in both directions.\n    spec = Fly(\n        Polygon(\n            x_axis=\"x\",\n            y_axis=\"y\",\n            vertices=[(0, 0), (5, 0), (2.5, 4)],\n            x_step=0.2,\n            y_step=0.2,\n            snake=True,\n            vertical=False,\n        )\n    )",
                         "properties": {
                             "x_axis": {
-                                "description": "The name matching the x axis of the spec",
+                                "description": "An identifier for what to move for x",
                                 "enum": [],
                                 "title": "X Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
-                                "description": "The name matching the y axis of the spec",
+                                "description": "An identifier for what to move for y",
                                 "enum": [],
                                 "title": "Y Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
-                            "x_verts": {
-                                "description": "The Nx1 x coordinates of the polygons vertices",
+                            "vertices": {
+                                "description": "List of (x, y) vertices defining the polygon",
                                 "items": {
-                                    "type": "number"
+                                    "maxItems": 2,
+                                    "minItems": 2,
+                                    "prefixItems": [
+                                        {
+                                            "type": "number"
+                                        },
+                                        {
+                                            "type": "number"
+                                        }
+                                    ],
+                                    "type": "array"
                                 },
-                                "minItems": 3,
-                                "title": "X Verts",
+                                "title": "Vertices",
                                 "type": "array"
                             },
-                            "y_verts": {
-                                "description": "The Nx1 y coordinates of the polygons vertices",
-                                "items": {
-                                    "type": "number"
-                                },
-                                "minItems": 3,
-                                "title": "Y Verts",
-                                "type": "array"
+                            "x_step": {
+                                "description": "Spacing along x",
+                                "exclusiveMinimum": 0,
+                                "title": "X Step",
+                                "type": "number"
+                            },
+                            "y_step": {
+                                "description": "Spacing along y (defaults to x_step)",
+                                "exclusiveMinimum": 0,
+                                "title": "Y Step",
+                                "type": "number"
+                            },
+                            "snake": {
+                                "default": false,
+                                "description": "If True, path zigzag like a snake (defaults to False)",
+                                "title": "Snake",
+                                "type": "boolean"
+                            },
+                            "vertical": {
+                                "default": false,
+                                "description": "If True, y axis is the fast axis (defaults to False)",
+                                "title": "Vertical",
+                                "type": "boolean"
                             },
                             "type": {
                                 "const": "Polygon",
@@ -454,15 +335,15 @@
                         "required": [
                             "x_axis",
                             "y_axis",
-                            "x_verts",
-                            "y_verts"
+                            "vertices",
+                            "x_step"
                         ],
                         "title": "Polygon",
                         "type": "object"
                     },
                     "Product_Reference_": {
                         "additionalProperties": false,
-                        "description": "Outer product of two Specs, nesting inner within outer.\n\nThis means that inner will run in its entirety at each point in outer.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line\n\n    spec = Fly(Line(\"y\", 1, 2, 3) * Line(\"x\", 3, 4, 12))\n\nAn inner integer can be used to repeat the same point many times.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line\n\n    spec = Fly(Line(\"y\", 1, 2, 3) * 2)\n\nAn outer integer can be used to repeat the same scan many times.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line\n\n    spec = Fly(2 * ~Line.bounded(\"x\", 3, 4, 1))\n\nIf you want snaked axes to have no gap between iterations you can do:\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line, Product\n\n    spec = Fly(Product(2, ~Line.bounded(\"x\", 3, 4, 1), gap=False))\n\n.. note:: There is no turnaround arrow at x=4",
+                        "description": "Outer product of two Specs, nesting inner within outer.\n\nThis means that inner will run in its entirety at each point in outer.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace\n\n    spec = Fly(Linspace(\"y\", 1, 2, 3) * Linspace(\"x\", 3, 4, 12))\n\nAn inner integer can be used to repeat the same point many times.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace\n\n    spec = Fly(Linspace(\"y\", 1, 2, 3) * 2)\n\nAn outer integer can be used to repeat the same scan many times.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace\n\n    spec = Fly(2 * ~Linspace.bounded(\"x\", 3, 4, 1))\n\nIf you want snaked axes to have no gap between iterations you can do:\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace, Product\n\n    spec = Fly(Product(2, ~Linspace.bounded(\"x\", 3, 4, 1), gap=False))\n\n.. note:: There is no turnaround arrow at x=4",
                         "properties": {
                             "outer": {
                                 "anyOf": [
@@ -510,22 +391,28 @@
                     },
                     "Range_Reference_": {
                         "additionalProperties": false,
-                        "description": "Mask contains points of axis >= min and <= max.\n\n>>> r = Range(\"x\", 1, 2)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True,  True, False, False])",
+                        "description": "Linearly spaced frames with start and stop as the bounding midpoints.\n\n``step`` defines the distance between midpoints.\n\n.. seealso::\n    `Linspace`: For linearly spaced frames defined with a number of frames.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Range\n\n    spec = Fly(Range(\"x\", 1, 2, 0.25))",
                         "properties": {
                             "axis": {
-                                "description": "The name matching the axis to mask in spec",
+                                "description": "An identifier for what to move",
                                 "enum": [],
                                 "title": "Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
-                            "min": {
-                                "description": "The minimum inclusive value in the region",
-                                "title": "Min",
+                            "start": {
+                                "description": "Midpoint of the first point of the line",
+                                "title": "Start",
                                 "type": "number"
                             },
-                            "max": {
-                                "description": "The minimum inclusive value in the region",
-                                "title": "Max",
+                            "stop": {
+                                "description": "Midpoint of the last point of the line",
+                                "title": "Stop",
+                                "type": "number"
+                            },
+                            "step": {
+                                "description": "Step size (defaults to stop - start)",
+                                "exclusiveMinimum": 0,
+                                "title": "Step",
                                 "type": "number"
                             },
                             "type": {
@@ -537,124 +424,15 @@
                         },
                         "required": [
                             "axis",
-                            "min",
-                            "max"
+                            "start",
+                            "stop"
                         ],
                         "title": "Range",
                         "type": "object"
                     },
-                    "Rectangle_Reference_": {
-                        "additionalProperties": false,
-                        "description": "Mask contains points of axis within a rotated xy rectangle.\n\n.. example_spec::\n\n    from scanspec.regions import Rectangle\n    from scanspec.specs import Line\n\n    grid = Line(\"y\", 1, 3, 10) * ~Line(\"x\", 0, 2, 10)\n    spec = grid & Rectangle(\"x\", \"y\", 0, 1.1, 1.5, 2.1, 30)",
-                        "properties": {
-                            "x_axis": {
-                                "description": "The name matching the x axis of the spec",
-                                "enum": [],
-                                "title": "X Axis",
-                                "type": "bluesky.protocols.Movable"
-                            },
-                            "y_axis": {
-                                "description": "The name matching the y axis of the spec",
-                                "enum": [],
-                                "title": "Y Axis",
-                                "type": "bluesky.protocols.Movable"
-                            },
-                            "x_min": {
-                                "description": "Minimum inclusive x value in the region",
-                                "title": "X Min",
-                                "type": "number"
-                            },
-                            "y_min": {
-                                "description": "Minimum inclusive y value in the region",
-                                "title": "Y Min",
-                                "type": "number"
-                            },
-                            "x_max": {
-                                "description": "Maximum inclusive x value in the region",
-                                "title": "X Max",
-                                "type": "number"
-                            },
-                            "y_max": {
-                                "description": "Maximum inclusive y value in the region",
-                                "title": "Y Max",
-                                "type": "number"
-                            },
-                            "angle": {
-                                "default": 0.0,
-                                "description": "Clockwise rotation angle of the rectangle",
-                                "title": "Angle",
-                                "type": "number"
-                            },
-                            "type": {
-                                "const": "Rectangle",
-                                "default": "Rectangle",
-                                "title": "Type",
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "x_axis",
-                            "y_axis",
-                            "x_min",
-                            "y_min",
-                            "x_max",
-                            "y_max"
-                        ],
-                        "title": "Rectangle",
-                        "type": "object"
-                    },
-                    "Region": {
-                        "discriminator": {
-                            "mapping": {
-                                "Circle": "#/$defs/Circle_Reference_",
-                                "CombinationOf": "#/$defs/CombinationOf_Reference_",
-                                "DifferenceOf": "#/$defs/DifferenceOf_Reference_",
-                                "Ellipse": "#/$defs/Ellipse_Reference_",
-                                "IntersectionOf": "#/$defs/IntersectionOf_Reference_",
-                                "Polygon": "#/$defs/Polygon_Reference_",
-                                "Range": "#/$defs/Range_Reference_",
-                                "Rectangle": "#/$defs/Rectangle_Reference_",
-                                "SymmetricDifferenceOf": "#/$defs/SymmetricDifferenceOf_Reference_",
-                                "UnionOf": "#/$defs/UnionOf_Reference_"
-                            },
-                            "propertyName": "type"
-                        },
-                        "oneOf": [
-                            {
-                                "$ref": "#/$defs/CombinationOf_Reference_"
-                            },
-                            {
-                                "$ref": "#/$defs/UnionOf_Reference_"
-                            },
-                            {
-                                "$ref": "#/$defs/IntersectionOf_Reference_"
-                            },
-                            {
-                                "$ref": "#/$defs/DifferenceOf_Reference_"
-                            },
-                            {
-                                "$ref": "#/$defs/SymmetricDifferenceOf_Reference_"
-                            },
-                            {
-                                "$ref": "#/$defs/Range_Reference_"
-                            },
-                            {
-                                "$ref": "#/$defs/Rectangle_Reference_"
-                            },
-                            {
-                                "$ref": "#/$defs/Polygon_Reference_"
-                            },
-                            {
-                                "$ref": "#/$defs/Circle_Reference_"
-                            },
-                            {
-                                "$ref": "#/$defs/Ellipse_Reference_"
-                            }
-                        ]
-                    },
                     "Snake_Reference_": {
                         "additionalProperties": false,
-                        "description": "Run the Spec in reverse on every other iteration when nested.\n\nTypically created with the ``~`` operator.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line\n\n    spec = Fly(Line(\"y\", 1, 3, 3) * ~Line(\"x\", 3, 5, 5))",
+                        "description": "Run the Spec in reverse on every other iteration when nested.\n\nTypically created with the ``~`` operator.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace\n\n    spec = Fly(Linspace(\"y\", 1, 3, 3) * ~Linspace(\"x\", 3, 5, 5))",
                         "properties": {
                             "spec": {
                                 "$ref": "#/$defs/Spec",
@@ -678,10 +456,12 @@
                             "mapping": {
                                 "Concat": "#/$defs/Concat_Reference_",
                                 "ConstantDuration": "#/$defs/ConstantDuration_Reference_",
+                                "Ellipse": "#/$defs/Ellipse_Reference_",
                                 "Fly": "#/$defs/Fly_Reference_",
-                                "Line": "#/$defs/Line_Reference_",
-                                "Mask": "#/$defs/Mask_Reference_",
+                                "Linspace": "#/$defs/Linspace_Reference_",
+                                "Polygon": "#/$defs/Polygon_Reference_",
                                 "Product": "#/$defs/Product_Reference_",
+                                "Range": "#/$defs/Range_Reference_",
                                 "Snake": "#/$defs/Snake_Reference_",
                                 "Spiral": "#/$defs/Spiral_Reference_",
                                 "Squash": "#/$defs/Squash_Reference_",
@@ -698,9 +478,6 @@
                                 "$ref": "#/$defs/Zip_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Mask_Reference_"
-                            },
-                            {
                                 "$ref": "#/$defs/Snake_Reference_"
                             },
                             {
@@ -710,7 +487,10 @@
                                 "$ref": "#/$defs/Squash_Reference_"
                             },
                             {
-                                "$ref": "#/$defs/Line_Reference_"
+                                "$ref": "#/$defs/Linspace_Reference_"
+                            },
+                            {
+                                "$ref": "#/$defs/Range_Reference_"
                             },
                             {
                                 "$ref": "#/$defs/Fly_Reference_"
@@ -723,12 +503,18 @@
                             },
                             {
                                 "$ref": "#/$defs/Spiral_Reference_"
+                            },
+                            {
+                                "$ref": "#/$defs/Ellipse_Reference_"
+                            },
+                            {
+                                "$ref": "#/$defs/Polygon_Reference_"
                             }
                         ]
                     },
                     "Spiral_Reference_": {
                         "additionalProperties": false,
-                        "description": "Archimedean spiral of \"x_axis\" and \"y_axis\".\n\nStarts at centre point (\"x_start\", \"y_start\") with angle \"rotate\". Produces\n\"num\" points in a spiral spanning width of \"x_range\" and height of \"y_range\"\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Spiral\n\n    spec = Fly(Spiral(\"x\", \"y\", 1, 5, 10, 50, 30))",
+                        "description": "Archimedean spiral of \"x_axis\" and \"y_axis\".\n\nStarts at centre point (\"x_start\", \"y_start\")\". Produces \"num\" points in a\nspiral spanning width of \"x_range\" and height of \"y_range\"\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Spiral\n\n    spec = Fly(Spiral(\"x\", 1, 10, 2.5, \"y\", 5, 50))",
                         "properties": {
                             "x_axis": {
                                 "description": "An identifier for what to move for x",
@@ -736,42 +522,35 @@
                                 "title": "X Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
+                            "x_centre": {
+                                "description": "x centre of the spiral",
+                                "title": "X Centre",
+                                "type": "number"
+                            },
+                            "x_diameter": {
+                                "description": "x width of the spiral",
+                                "title": "X Diameter",
+                                "type": "number"
+                            },
+                            "x_step": {
+                                "description": "Radial spacing along x",
+                                "title": "X Step",
+                                "type": "number"
+                            },
                             "y_axis": {
                                 "description": "An identifier for what to move for y",
                                 "enum": [],
                                 "title": "Y Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
-                            "x_start": {
-                                "description": "x centre of the spiral",
-                                "title": "X Start",
-                                "type": "number"
-                            },
-                            "y_start": {
+                            "y_centre": {
                                 "description": "y centre of the spiral",
-                                "title": "Y Start",
+                                "title": "Y Centre",
                                 "type": "number"
                             },
-                            "x_range": {
-                                "description": "x width of the spiral",
-                                "title": "X Range",
-                                "type": "number"
-                            },
-                            "y_range": {
-                                "description": "y width of the spiral",
-                                "title": "Y Range",
-                                "type": "number"
-                            },
-                            "num": {
-                                "description": "Number of frames to produce",
-                                "minimum": 1,
-                                "title": "Num",
-                                "type": "integer"
-                            },
-                            "rotate": {
-                                "default": 0.0,
-                                "description": "How much to rotate the angle of the spiral",
-                                "title": "Rotate",
+                            "y_diameter": {
+                                "description": "y width of the spiral (defaults to x_diameter)",
+                                "title": "Y Diameter",
                                 "type": "number"
                             },
                             "type": {
@@ -783,19 +562,18 @@
                         },
                         "required": [
                             "x_axis",
+                            "x_centre",
+                            "x_diameter",
+                            "x_step",
                             "y_axis",
-                            "x_start",
-                            "y_start",
-                            "x_range",
-                            "y_range",
-                            "num"
+                            "y_centre"
                         ],
                         "title": "Spiral",
                         "type": "object"
                     },
                     "Squash_Reference_": {
                         "additionalProperties": false,
-                        "description": "Squash a stack of Dimension together into a single expanded Dimension object.\n\nSee Also:\n    `why-squash-can-change-path`\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line, Squash\n\n    spec = Fly(Squash(Line(\"y\", 1, 2, 3) * Line(\"x\", 0, 1, 4)))",
+                        "description": "Squash a stack of Dimension together into a single expanded Dimension object.\n\nSee Also:\n    `why-squash-can-change-path`\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace, Squash\n\n    spec = Fly(Squash(Linspace(\"y\", 1, 2, 3) * Linspace(\"x\", 0, 1, 4)))",
                         "properties": {
                             "spec": {
                                 "$ref": "#/$defs/Spec",
@@ -822,7 +600,7 @@
                     },
                     "Static_Reference_": {
                         "additionalProperties": false,
-                        "description": "A static frame, repeated num times, with axis at value.\n\nCan be used to set axis=value at every point in a scan.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line, Static\n\n    spec = Fly(Line(\"y\", 1, 2, 3).zip(Static(\"x\", 3)))",
+                        "description": "A static frame, repeated num times, with axis at value.\n\nCan be used to set axis=value at every point in a scan.\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace, Static\n\n    spec = Fly(Linspace(\"y\", 1, 2, 3).zip(Static(\"x\", 3)))",
                         "properties": {
                             "axis": {
                                 "description": "An identifier for what to move",
@@ -856,61 +634,9 @@
                         "title": "Static",
                         "type": "object"
                     },
-                    "SymmetricDifferenceOf_Reference_": {
-                        "additionalProperties": false,
-                        "description": "A point is in SymmetricDifferenceOf(a, b) if in either a or b, but not both.\n\nTypically created with the ``^`` operator.\n\n>>> r = Range(\"x\", 0.5, 2.5) ^ Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True, False,  True, False])",
-                        "properties": {
-                            "left": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The left-hand Region to combine"
-                            },
-                            "right": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The right-hand Region to combine"
-                            },
-                            "type": {
-                                "const": "SymmetricDifferenceOf",
-                                "default": "SymmetricDifferenceOf",
-                                "title": "Type",
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "left",
-                            "right"
-                        ],
-                        "title": "SymmetricDifferenceOf",
-                        "type": "object"
-                    },
-                    "UnionOf_Reference_": {
-                        "additionalProperties": false,
-                        "description": "A point is in UnionOf(a, b) if in either a or b.\n\nTypically created with the ``|`` operator\n\n>>> r = Range(\"x\", 0.5, 2.5) | Range(\"x\", 1.5, 3.5)\n>>> r.mask({\"x\": np.array([0, 1, 2, 3, 4])})\narray([False,  True,  True,  True, False])",
-                        "properties": {
-                            "left": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The left-hand Region to combine"
-                            },
-                            "right": {
-                                "$ref": "#/$defs/Region",
-                                "description": "The right-hand Region to combine"
-                            },
-                            "type": {
-                                "const": "UnionOf",
-                                "default": "UnionOf",
-                                "title": "Type",
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "left",
-                            "right"
-                        ],
-                        "title": "UnionOf",
-                        "type": "object"
-                    },
                     "Zip_Reference_": {
                         "additionalProperties": false,
-                        "description": "Run two Specs in parallel, merging their midpoints together.\n\nTypically formed using `Spec.zip`.\n\nStacks of Dimension are merged by:\n\n- If right creates a stack of a single Dimension object of size 1, expand it to\n  the size of the fastest Dimension object created by left\n- Merge individual Dimension objects together from fastest to slowest\n\nThis means that Zipping a Spec producing stack [l2, l1] with a Spec\nproducing stack [r1] will assert len(l1)==len(r1), and produce\nstack [l2, l1.zip(r1)].\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Line\n\n    spec = Fly(Line(\"z\", 1, 2, 3) * Line(\"y\", 3, 4, 5).zip(Line(\"x\", 4, 5, 5)))",
+                        "description": "Run two Specs in parallel, merging their midpoints together.\n\nTypically formed using `Spec.zip`.\n\nStacks of Dimension are merged by:\n\n- If right creates a stack of a single Dimension object of size 1, expand it to\n  the size of the fastest Dimension object created by left\n- Merge individual Dimension objects together from fastest to slowest\n\nThis means that Zipping a Spec producing stack [l2, l1] with a Spec\nproducing stack [r1] will assert len(l1)==len(r1), and produce\nstack [l2, l1.zip(r1)].\n\n.. example_spec::\n\n    from scanspec.specs import Fly, Linspace\n\n    spec = Fly(\n        Linspace(\"z\", 1, 2, 3) * Linspace(\"y\", 3, 4, 5).zip(Linspace(\"x\", 4, 5, 5))\n    )",
                         "properties": {
                             "left": {
                                 "$ref": "#/$defs/Spec",
@@ -968,8 +694,8 @@
         },
         {
             "name": "set_absolute",
-            "description": "\n    Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable[T]): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "description": "Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable[T]): The device to set.\n        value (T): The new value.\n        group (Group | None, optional): The message group to associate with the setting,\n            for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete (e.g.\n            a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -1002,8 +728,8 @@
         },
         {
             "name": "set_relative",
-            "description": "\n    Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set\n        value (T): The new value\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete\n                               (e.g. a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "description": "Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set.\n        value (T): The new value.\n        group (Group | None, optional): The message group to associate with the setting,\n            for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete (e.g.\n            a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
@@ -1036,8 +762,8 @@
         },
         {
             "name": "move",
-            "description": "\n    Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target positions\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "description": "Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target positions.\n        group (Group | None, optional): The message group to associate with the setting,\n            for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
@@ -1059,8 +785,8 @@
         },
         {
             "name": "move_relative",
-            "description": "\n    Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target deltas\n        group (Group | None, optional): The message group to associate with the\n                                           setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "description": "Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target deltas.\n        group (Group | None, optional): The message group to associate with the\n            setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "moves": {
@@ -1082,8 +808,8 @@
         },
         {
             "name": "sleep",
-            "description": "\n    Suspend all action for a given time, wrapper for `bp.sleep`\n\n    Args:\n        time (float): Time to wait in seconds\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "description": "Suspend all action for a given time, wrapper for `bp.sleep`.\n\n    Args:\n        time (float): Time to wait in seconds.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "time": {
@@ -1100,8 +826,8 @@
         },
         {
             "name": "wait",
-            "description": "\n    Wait for a group status to complete, wrapper for `bp.wait`.\n    Does not expose move_on, as when used as a stub will not fail on Timeout.\n\n    Args:\n        group (Group | None, optional): The name of the group to wait for, defaults\n                                           to None, in which case waits for all\n                                           groups that have not yet been awaited.\n        timeout (float | None, default=None): a timeout in seconds\n\n\n    Returns:\n        MsgGenerator: Plan\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages\n    ",
-            "parameter_schema": {
+            "description": "Wait for a group status to complete, wrapper for `bp.wait`.\n    Does not expose move_on, as when used as a stub will not fail on Timeout.\n\n    Args:\n        group (Group | None, optional): The name of the group to wait for, defaults to\n            None, in which case waits for all groups that have not yet been awaited.\n        timeout (float | None, default=None): a timeout in seconds.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "group": {

@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
-from bluesky_stomp.models import BasicAuthentication
 from pydantic import TypeAdapter
 from requests.exceptions import ConnectionError
 
@@ -21,7 +20,6 @@ from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
     OIDCConfig,
-    StompConfig,
 )
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
@@ -84,6 +82,12 @@ KEYCLOAK_BASE_URL = "http://localhost:8081/"
 OIDC_TOKEN_ENDPOINT = KEYCLOAK_BASE_URL + "realms/master/protocol/openid-connect/token"
 
 
+def load_config(path: Path) -> ApplicationConfig:
+    loader = ConfigLoader(ApplicationConfig)
+    loader.use_values_from_yaml(path)
+    return loader.load()
+
+
 @pytest.fixture
 def client_without_auth() -> Generator[BlueapiClient]:
     with patch(
@@ -116,12 +120,7 @@ def client_with_stomp() -> Generator[BlueapiClient]:
         return_value=mock_session_manager,
     ):
         yield BlueapiClient.from_config(
-            config=ApplicationConfig(
-                stomp=StompConfig(
-                    enabled=True,
-                    auth=BasicAuthentication(username="guest", password="guest"),  # type: ignore
-                )
-            )
+            config=load_config(_DATA_PATH / "config-cli.yaml")
         )
 
 
@@ -185,15 +184,9 @@ def clean_existing_tasks(client: BlueapiClient):
     yield
 
 
-@pytest.fixture(scope="module")
-def server_config() -> ApplicationConfig:
-    loader = ConfigLoader(ApplicationConfig)
-    loader.use_values_from_yaml(Path("tests", "system_tests", "config.yaml"))
-    return loader.load()
-
-
 @pytest.fixture(autouse=True, scope="module")
-def reset_numtracker(server_config: ApplicationConfig):
+def reset_numtracker():
+    server_config = load_config(Path(_DATA_PATH, "config.yaml"))
     nt_url = server_config.numtracker.url  # type: ignore - if numtracker is None we should fail
     requests.post(
         str(nt_url),

@@ -147,11 +147,9 @@ def get_device(name: str) -> DeviceModel:
     return DeviceModel.from_device(device)
 
 
-def submit_task(task_request: TaskRequest) -> str:
+def submit_task(task_request: TaskRequest, metadata: dict[str, Any]) -> str:
     """Submit a task to be run on begin_task"""
-    metadata: dict[str, Any] = {
-        "instrument_session": task_request.instrument_session,
-    }
+    metadata["instrument_session"] = task_request.instrument_session
     if context().tiled_conf is not None:
         md = config().env.metadata
         # We raise an InvalidConfigError on setting tiled_conf if this isn't set

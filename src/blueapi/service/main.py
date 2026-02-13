@@ -184,7 +184,7 @@ def decode_access_token(config: OIDCConfig):
             audience=config.client_audience,
             issuer=config.issuer,
         )
-        request.state.decoded_jwt = decoded
+        request.state.decoded_access_token = decoded
 
     return inner
 
@@ -315,7 +315,7 @@ def submit_task(
     try:
         # Extract user from jwt if using OIDC (if jwt exists)
         access_token: dict[str, Any] | None = getattr(
-            request.state, "decoded_jwt", None
+            request.state, "decoded_access_token", None
         )
         if access_token:
             user: str = access_token.get("fedid", "Unknown")

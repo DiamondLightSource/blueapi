@@ -2,7 +2,7 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated
 
 import jwt
@@ -75,7 +75,7 @@ PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADE
 DOCS_ENDPOINT = "/docs"
 
 
-class Tag(str, Enum):
+class Tag(StrEnum):
     TASK = "Task"
     PLAN = "Plan"
     DEVICE = "Device"
@@ -365,7 +365,6 @@ def get_tasks(
     Retrieve tasks based on their status.
     The status of a newly created task is 'unstarted'.
     """
-    tasks = []
     if task_status:
         add_span_attributes({"status": task_status})
         try:

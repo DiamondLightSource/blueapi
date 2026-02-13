@@ -97,7 +97,7 @@ def oidc_well_known() -> dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def json_web_keyset() -> JWK:
-    return JWK.generate(kty="RSA", size=1024, kid="secret", use="sig", alg="RS256")
+    return JWK.generate(kty="RSA", size=2048, kid="secret", use="sig", alg="RS256")
 
 
 @pytest.fixture(scope="session")

@@ -77,10 +77,12 @@ _DATA_PATH = Path(__file__).parent
 
 # This client will give tokens for alice
 
+
 def load_config(path: Path) -> ApplicationConfig:
     loader = ConfigLoader(ApplicationConfig)
     loader.use_values_from_yaml(path)
     return loader.load()
+
 
 def get_access_token() -> str:
     token_url = "http://localhost:8081/realms/master/protocol/openid-connect/token"
@@ -95,6 +97,7 @@ def get_access_token() -> str:
     response.raise_for_status()
     return response.json().get("access_token")
 
+
 @pytest.fixture(scope="module")
 def client_without_auth() -> Generator[BlueapiClient]:
     with patch(
@@ -102,6 +105,7 @@ def client_without_auth() -> Generator[BlueapiClient]:
         return_value=None,
     ):
         yield BlueapiClient.from_config(config=ApplicationConfig())
+
 
 @pytest.fixture
 def client_with_stomp() -> Generator[BlueapiClient]:
@@ -114,6 +118,7 @@ def client_with_stomp() -> Generator[BlueapiClient]:
         yield BlueapiClient.from_config(
             config=load_config(_DATA_PATH / "config-cli.yaml")
         )
+
 
 @pytest.fixture
 def client() -> Generator[BlueapiClient]:

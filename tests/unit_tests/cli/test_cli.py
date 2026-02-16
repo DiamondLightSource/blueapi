@@ -1395,3 +1395,45 @@ def test_log_level_override(flag: str, level: str, runner: CliRunner):
         runner.invoke(main, [flag])
         mock_log.getLogger().setLevel.assert_called_once_with(level)
         mock_log.StreamHandler().setLevel.assert_called_once_with(level)
+
+
+@responses.activate
+def test_host_option(runner: CliRunner):
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        ["--host", "http://override.example.com:5678", "controller", "plans"],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0
+
+
+@responses.activate
+def test_host_overrides_config(runner: CliRunner):
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        [
+            "--host",
+            "http://override.example.com:5678",
+            "--config",
+            config_path,
+            "controller",
+            "plans",
+        ],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0

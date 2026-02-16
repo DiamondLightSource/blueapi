@@ -291,7 +291,7 @@ def run_plan(
     instrument_session: str,
 ) -> None:
     """Run a plan with parameters"""
-    client: BlueapiClient = cast(BlueapiClient, obj["client"])
+    client = cast(BlueapiClient, obj["client"])
 
     parameters = parameters or "{}"
     try:

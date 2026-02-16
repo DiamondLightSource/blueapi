@@ -10,7 +10,7 @@ from observability_utils.tracing import (
 )
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from blueapi.config import RestConfig
+from blueapi.config import RestConfig, StompConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
     DeviceModel,
@@ -232,6 +232,9 @@ class BlueapiRestClient:
         except NoContentError:
             # Server is not using authentication
             return None
+
+    def get_stomp_config(self) -> StompConfig | None:
+        return self._request_and_deserialize("/config/stomp", StompConfig)
 
     def get_python_environment(
         self, name: str | None = None, source: SourceInfo | None = None

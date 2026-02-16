@@ -264,6 +264,10 @@ def get_oidc_config() -> OIDCConfig | None:
     return config().oidc
 
 
+def get_stomp_config() -> StompConfig | None:
+    return config().stomp
+
+
 def get_python_env(
     name: str | None = None, source: SourceInfo | None = None
 ) -> PythonEnvironmentResponse:

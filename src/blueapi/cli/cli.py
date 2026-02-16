@@ -319,7 +319,7 @@ def run_plan(
 ) -> None:
     """Run a plan with parameters"""
 
-    client: BlueapiClient = cast(BlueapiClient, obj["client"])
+    client = cast(BlueapiClient, obj["client"])
     task = TaskRequest(
         name=name, params=parameters, instrument_session=instrument_session
     )

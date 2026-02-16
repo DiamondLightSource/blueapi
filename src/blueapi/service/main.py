@@ -34,7 +34,7 @@ from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, OIDCConfig, Tag
+from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig, Tag
 from blueapi.service import interface
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
@@ -221,6 +221,22 @@ def get_oidc_config(
 ) -> OIDCConfig:
     """Retrieve the OpenID Connect (OIDC) configuration for the server."""
     config = runner.run(interface.get_oidc_config)
+    if config is None:
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+    return config
+
+
+@open_router.get(
+    "/config/stomp",
+    tags=[Tag.META],
+    responses={status.HTTP_204_NO_CONTENT: {"description": "No Stomp configured"}},
+)
+@start_as_current_span(TRACER)
+def get_stomp_config(
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> StompConfig:
+    """Retrieve the stomp configuration for the server."""
+    config = runner.run(interface.get_stomp_config)
     if config is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return config

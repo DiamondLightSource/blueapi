@@ -49,11 +49,12 @@ LOGGER = logging.getLogger(__name__)
     invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
 )
 @click.version_option(version=__version__, prog_name="blueapi")
+@click.option("-H", "--host", type=str)
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
 @click.pass_context
-def main(ctx: click.Context, config: tuple[Path, ...]) -> None:
+def main(ctx: click.Context, config: tuple[Path, ...], host: str | None):
     # if no command is supplied, run with the options passed
 
     # Set umask to DLS standard
@@ -64,6 +65,8 @@ def main(ctx: click.Context, config: tuple[Path, ...]) -> None:
         config_loader.use_values_from_yaml(*config)
     except FileNotFoundError as fnfe:
         raise ClickException(f"Config file not found: {fnfe.filename}") from fnfe
+    if host:
+        config_loader.use_values({"api": {"url": host}})
 
     loaded_config: ApplicationConfig = config_loader.load()
 

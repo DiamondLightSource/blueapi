@@ -45,18 +45,18 @@ create_client() {
 
 # System Test
 create_client "system-test-blueapi" "ixx-blueapi" \
-    -s secret="secret" -s standardFlowEnabled=false -s serviceAccountsEnabled=true -s 'redirectUris=["/*"]'
+    -s secret="secret" -s standardFlowEnabled=false -s serviceAccountsEnabled=true -s 'redirectUris=["/*"]' -s attributes='{"access.token.lifespan":"86400"}'
 
 # ixx CLI
 create_client "ixx-cli-blueapi" "ixx-blueapi" \
     -s standardFlowEnabled=false -s publicClient=true -s 'redirectUris=["/*"]' \
-    -s 'attributes={"frontchannel.logout.session.required":"true","oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true","backchannel.logout.session.required":"true"}'
+    -s 'attributes={"frontchannel.logout.session.required":"true","oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true","backchannel.logout.session.required":"true","access.token.lifespan":"86400"}'
 
 # ixx BlueAPI
 create_client "ixx-blueapi" "ixx-blueapi" \
     -s standardFlowEnabled=true -s secret="blueapi-secret" -s rootUrl="http://localhost:4180" \
     -s 'redirectUris=["http://localhost:4180/*"]' \
-    -s 'attributes={"frontchannel.logout.session.required":"true","use.refresh.tokens":"true","standard.token.exchange.enabled": "true","standard.token.exchange.enableRefreshRequestedTokenType": "SAME_SESSION"}'
+    -s 'attributes={"frontchannel.logout.session.required":"true","use.refresh.tokens":"true","access.token.lifespan":"86400"}'
 
 # Tiled
 create_client "tiled" "tiled" \

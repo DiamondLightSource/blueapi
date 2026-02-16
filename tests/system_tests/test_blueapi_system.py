@@ -76,19 +76,26 @@ _DATA_PATH = Path(__file__).parent
 # docker compose -f tests/system_tests/compose.yaml down
 
 # This client will give tokens for alice
-CLIENT_ID = "system-test-blueapi"
-CLIENT_SECRET = "secret"
-KEYCLOAK_BASE_URL = "http://localhost:8081/"
-OIDC_TOKEN_ENDPOINT = KEYCLOAK_BASE_URL + "realms/master/protocol/openid-connect/token"
-
 
 def load_config(path: Path) -> ApplicationConfig:
     loader = ConfigLoader(ApplicationConfig)
     loader.use_values_from_yaml(path)
     return loader.load()
 
+def get_access_token() -> str:
+    token_url = "http://localhost:8081/realms/master/protocol/openid-connect/token"
+    response = requests.post(
+        token_url,
+        data={
+            "client_id": "system-test-blueapi",
+            "client_secret": "secret",
+            "grant_type": "client_credentials",
+        },
+    )
+    response.raise_for_status()
+    return response.json().get("access_token")
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def client_without_auth() -> Generator[BlueapiClient]:
     with patch(
         "blueapi.service.authentication.SessionManager.from_cache",
@@ -96,24 +103,9 @@ def client_without_auth() -> Generator[BlueapiClient]:
     ):
         yield BlueapiClient.from_config(config=ApplicationConfig())
 
-
-def get_access_token() -> str:
-    response = requests.post(
-        OIDC_TOKEN_ENDPOINT,
-        data={
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "grant_type": "client_credentials",
-        },
-    )
-
-    response.raise_for_status()
-    return response.json().get("access_token")
-
-
 @pytest.fixture
 def client_with_stomp() -> Generator[BlueapiClient]:
-    mock_session_manager = MagicMock
+    mock_session_manager = MagicMock()
     mock_session_manager.get_valid_access_token = get_access_token
     with patch(
         "blueapi.service.authentication.SessionManager.from_cache",
@@ -123,28 +115,27 @@ def client_with_stomp() -> Generator[BlueapiClient]:
             config=load_config(_DATA_PATH / "config-cli.yaml")
         )
 
-
-@pytest.fixture(scope="module", autouse=True)
-def wait_for_server(client: BlueapiClient):
-    for _ in range(20):
-        try:
-            client.get_environment()
-            return
-        except ConnectionError:
-            ...
-        time.sleep(0.5)
-    raise TimeoutError("No connection to the blueapi server")
-
-
-@pytest.fixture(scope="module")
+@pytest.fixture
 def client() -> Generator[BlueapiClient]:
-    mock_session_manager = MagicMock
+    mock_session_manager = MagicMock()
     mock_session_manager.get_valid_access_token = get_access_token
     with patch(
         "blueapi.service.authentication.SessionManager.from_cache",
         return_value=mock_session_manager,
     ):
         yield BlueapiClient.from_config(config=ApplicationConfig())
+
+
+@pytest.fixture(scope="module", autouse=True)
+def wait_for_server(client_without_auth: BlueapiClient):
+    for _ in range(20):
+        try:
+            client_without_auth.get_oidc_config()
+            return
+        except ConnectionError:
+            ...
+        time.sleep(0.5)
+    raise TimeoutError("No connection to the blueapi server")
 
 
 @pytest.fixture
@@ -218,8 +209,7 @@ def test_cannot_access_endpoints(
 
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
     assert client_without_auth.get_oidc_config() == OIDCConfig(
-        well_known_url=KEYCLOAK_BASE_URL
-        + "realms/master/.well-known/openid-configuration",
+        well_known_url="http://localhost:8081/realms/master/.well-known/openid-configuration",
         client_id="ixx-cli-blueapi",
     )
 

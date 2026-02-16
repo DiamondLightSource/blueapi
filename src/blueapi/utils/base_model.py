@@ -1,11 +1,8 @@
-import logging
-
 from pydantic import (
     BaseModel,
     ConfigDict,
 )
 
-logger = logging.getLogger(__name__)
 # Pydantic config for blueapi API models with common config.
 BlueapiModelConfig = ConfigDict(
     extra="forbid",

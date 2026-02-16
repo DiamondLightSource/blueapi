@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Mapping
 from enum import StrEnum
 from typing import Any, Literal, Self
@@ -12,8 +11,6 @@ from blueapi.utils import BlueapiBaseModel
 # The RunEngine can return any of these three types as its state
 # RawRunEngineState = type[PropertyMachine | ProxyString | str]
 RawRunEngineState = PropertyMachine | ProxyString | str
-
-log = logging.getLogger(__name__)
 
 
 # NOTE this is interim until refactor

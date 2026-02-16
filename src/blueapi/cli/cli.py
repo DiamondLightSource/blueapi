@@ -83,26 +83,23 @@ def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
 @click.pass_context
-def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
+def main(ctx: click.Context, config: tuple[Path, ...]) -> None:
     # if no command is supplied, run with the options passed
 
     # Set umask to DLS standard
     os.umask(stat.S_IWOTH)
 
     config_loader = ConfigLoader(ApplicationConfig)
-    if config is not None:
-        configs = (config,) if isinstance(config, Path) else config
-        for path in configs:
-            if path.exists():
-                config_loader.use_values_from_yaml(path)
-            else:
-                raise FileNotFoundError(f"Cannot find file: {path}")
+    try:
+        config_loader.use_values_from_yaml(*config)
+    except FileNotFoundError as fnfe:
+        raise ClickException(f"Config file not found: {fnfe.filename}") from fnfe
 
-    ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
 
     set_up_logging(loaded_config.logging)
 
+    ctx.ensure_object(dict)
     ctx.obj["config"] = loaded_config
 
     if ctx.invoked_subcommand is None:

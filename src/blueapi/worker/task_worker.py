@@ -437,9 +437,14 @@ class TaskWorker:
                     self._current = next_task
                     self._current.is_pending = False
                     try:
+                        meta = {"task_id": self._current.task_id}
                         result = self._current.task.do_task(self._ctx)
+                        LOGGER.info(
+                            "Task ran successfully - returned: %s", result, extra=meta
+                        )
                         self._current.set_result(result)
                     except Exception as e:
+                        LOGGER.error("Task failed", extra=meta)
                         self._current.set_exception(e)
                         self._report_error(e)
 

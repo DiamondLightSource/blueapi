@@ -683,6 +683,11 @@
                         "ERROR",
                         "CRITICAL"
                     ]
+                },
+                "truncate_bodies": {
+                    "title": "Truncate Bodies",
+                    "default": true,
+                    "type": "boolean"
                 }
             },
             "additionalProperties": false

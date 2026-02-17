@@ -684,8 +684,8 @@
                         "CRITICAL"
                     ]
                 },
-                "truncate_bodies": {
-                    "title": "Truncate Bodies",
+                "truncateBodies": {
+                    "title": "Truncatebodies",
                     "default": true,
                     "type": "boolean"
                 }

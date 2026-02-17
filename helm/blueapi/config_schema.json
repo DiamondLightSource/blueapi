@@ -248,9 +248,9 @@
                     "title": "Level",
                     "type": "string"
                 },
-                "truncate_bodies": {
+                "truncateBodies": {
                     "default": true,
-                    "title": "Truncate Bodies",
+                    "title": "Truncatebodies",
                     "type": "boolean"
                 },
                 "graylog": {

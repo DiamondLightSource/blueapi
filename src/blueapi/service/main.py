@@ -2,7 +2,6 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from enum import StrEnum
 from typing import Annotated, Any
 
 import jwt
@@ -34,7 +33,7 @@ from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, OIDCConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
@@ -57,38 +56,9 @@ from .model import (
 )
 from .runner import WorkerDispatcher
 
-#: API version to publish in OpenAPI schema
-REST_API_VERSION = "1.1.2"
-
-LICENSE_INFO: dict[str, str] = {
-    "name": "Apache 2.0",
-    "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
-}
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
-CONTEXT_HEADER = "traceparent"
-VENDOR_CONTEXT_HEADER = "tracestate"
-AUTHORIZAITON_HEADER = "authorization"
-PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
-DOCS_ENDPOINT = "/docs"
-
-
-class Tag(StrEnum):
-    TASK = "Task"
-    PLAN = "Plan"
-    DEVICE = "Device"
-    ENV = "Environment"
-    META = "Meta"
-
-
-TAG_METADATA: list[dict[str, str]] = [
-    {"name": Tag.TASK, "description": "Endpoints related to tasks"},
-    {"name": Tag.PLAN, "description": "Endpoints to get plans"},
-    {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
-    {"name": Tag.ENV, "description": "Endpoints related to server environment"},
-    {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
-]
 
 
 def _runner() -> WorkerDispatcher:
@@ -133,14 +103,14 @@ open_router = APIRouter()
 
 def get_app(config: ApplicationConfig):
     app = FastAPI(
-        docs_url=DOCS_ENDPOINT,
+        docs_url=ApplicationConfig.DOCS_ENDPOINT,
         title="BlueAPI Control",
         summary="BlueAPI wraps bluesky plans and devices and "
         "exposes endpoints to send commands/receive data",
         lifespan=lifespan(config),
-        version=REST_API_VERSION,
-        license_info=LICENSE_INFO,
-        openapi_tags=TAG_METADATA,
+        version=ApplicationConfig.REST_API_VERSION,
+        license_info=ApplicationConfig.LICENSE_INFO,
+        openapi_tags=ApplicationConfig.TAG_METADATA,
     )
     dependencies = []
     if config.oidc:
@@ -211,7 +181,8 @@ async def on_token_error_401(_: Request, __: Exception):
 def root_redirect() -> RedirectResponse:
     """Redirect to docs url"""
     return RedirectResponse(
-        status_code=status.HTTP_307_TEMPORARY_REDIRECT, url=DOCS_ENDPOINT
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+        url=ApplicationConfig.DOCS_ENDPOINT,
     )
 
 
@@ -420,7 +391,7 @@ def get_passthrough_headers(request: Request) -> dict[str, str]:
     return {
         key: value
         for key, value in request.headers.items()
-        if key.casefold() in PROPAGATED_HEADERS
+        if key.casefold() in ApplicationConfig.PROPAGATED_HEADERS
     }
 
 
@@ -600,7 +571,7 @@ async def add_api_version_header(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ):
     response = await call_next(request)
-    response.headers["X-API-Version"] = REST_API_VERSION
+    response.headers["X-API-Version"] = ApplicationConfig.REST_API_VERSION
     return response
 
 
@@ -623,10 +594,14 @@ async def inject_propagated_observability_context(
     HTTP headers and attach it to the local one.
     """
     headers = request.headers
-    if CONTEXT_HEADER in headers:
-        carrier = {CONTEXT_HEADER: headers[CONTEXT_HEADER]}
-        if VENDOR_CONTEXT_HEADER in headers:
-            carrier[VENDOR_CONTEXT_HEADER] = headers[VENDOR_CONTEXT_HEADER]
+    if ApplicationConfig.CONTEXT_HEADER in headers:
+        carrier = {
+            ApplicationConfig.CONTEXT_HEADER: headers[ApplicationConfig.CONTEXT_HEADER]
+        }
+        if ApplicationConfig.VENDOR_CONTEXT_HEADER in headers:
+            carrier[ApplicationConfig.VENDOR_CONTEXT_HEADER] = headers[
+                ApplicationConfig.VENDOR_CONTEXT_HEADER
+            ]
         ctx = get_global_textmap().extract(carrier)
 
         attach(ctx)

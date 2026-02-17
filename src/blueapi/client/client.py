@@ -1,12 +1,8 @@
 import time
 from concurrent.futures import Future
 
-from bluesky_stomp.messaging import MessageContext, StompClient
-from bluesky_stomp.models import Broker
-from observability_utils.tracing import (
-    get_tracer,
-    start_as_current_span,
-)
+from bluesky_stomp.messaging import MessageContext
+from observability_utils.tracing import get_tracer, start_as_current_span
 
 from blueapi.config import ApplicationConfig, MissingStompConfigurationError
 from blueapi.core.bluesky_types import DataEvent
@@ -38,7 +34,7 @@ class BlueapiClient:
     """Unified client for controlling blueapi"""
 
     _rest: BlueapiRestClient
-    _events: EventBusClient | None
+    _event_bus_client: EventBusClient | None
 
     def __init__(
         self,
@@ -46,7 +42,7 @@ class BlueapiClient:
         events: EventBusClient | None = None,
     ):
         self._rest = rest
-        self._events = events
+        self._event_bus_client = events
 
     @classmethod
     def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
@@ -56,21 +52,8 @@ class BlueapiClient:
         except Exception:
             ...  # Swallow exceptions
         rest = BlueapiRestClient(config.api, session_manager=session_manager)
-        stomp_config = config.stomp if config.stomp.enabled else rest.get_stomp_config()
-        if stomp_config and stomp_config.enabled:
-            assert stomp_config.url.host is not None, "Stomp URL missing host"
-            assert stomp_config.url.port is not None, "Stomp URL missing port"
-            client = StompClient.for_broker(
-                broker=Broker(
-                    host=stomp_config.url.host,
-                    port=stomp_config.url.port,
-                    auth=stomp_config.auth,
-                )
-            )
-            events = EventBusClient(client)
-            return cls(rest, events)
-        else:
-            return cls(rest)
+        event_bus = EventBusClient.from_stomp_config(config.stomp)
+        return cls(rest, event_bus)
 
     @start_as_current_span(TRACER)
     def get_plans(self) -> PlanResponse:
@@ -217,7 +200,7 @@ class BlueapiClient:
             of task execution.
         """
 
-        if self._events is None:
+        if (event_bus := self._event_bus()) is None:
             raise MissingStompConfigurationError(
                 "Stomp configuration required to run plans is missing or disabled"
             )
@@ -254,8 +237,8 @@ class BlueapiClient:
                     else:
                         complete.set_result(event)
 
-        with self._events:
-            self._events.subscribe_to_all_events(inner_on_event)
+        with event_bus:
+            event_bus.subscribe_to_all_events(inner_on_event)
             self.start_task(WorkerTask(task_id=task_id))
             return complete.result(timeout=timeout)
 
@@ -458,3 +441,10 @@ class BlueapiClient:
         """
 
         return self._rest.get_python_environment(name=name, source=source)
+
+    def _event_bus(self) -> EventBusClient | None:
+        if not self._event_bus_client:
+            if stomp_config := self._rest.get_stomp_config():
+                self._event_bus_client = EventBusClient.from_stomp_config(stomp_config)
+
+        return self._event_bus_client

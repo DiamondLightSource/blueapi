@@ -1,5 +1,22 @@
 components:
   schemas:
+    BasicAuthentication:
+      additionalProperties: false
+      description: User credentials for basic authentication
+      properties:
+        password:
+          description: Password to verify user's identity
+          title: Password
+          type: string
+        username:
+          description: Unique identifier for user
+          title: Username
+          type: string
+      required:
+      - username
+      - password
+      title: BasicAuthentication
+      type: object
     DeviceModel:
       additionalProperties: false
       description: Representation of a device
@@ -223,6 +240,28 @@ components:
       required:
       - new_state
       title: StateChangeRequest
+      type: object
+    StompConfig:
+      additionalProperties: false
+      description: Config for connecting to stomp broker
+      properties:
+        auth:
+          $ref: '#/components/schemas/BasicAuthentication'
+          description: Auth information for communicating with STOMP broker, if required
+          title: Auth
+        enabled:
+          default: false
+          description: True if blueapi should connect to stomp for asynchronous event
+            publishing
+          title: Enabled
+          type: boolean
+        url:
+          default: tcp://localhost:61613
+          format: uri
+          minLength: 1
+          title: Url
+          type: string
+      title: StompConfig
       type: object
     Task:
       additionalProperties: false
@@ -450,6 +489,22 @@ paths:
         '204':
           description: No Authentication configured
       summary: Get Oidc Config
+      tags:
+      - Meta
+  /config/stomp:
+    get:
+      description: Retrieve the stomp configuration for the server.
+      operationId: get_stomp_config_config_stomp_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StompConfig'
+          description: Successful Response
+        '204':
+          description: No Stomp configured
+      summary: Get Stomp Config
       tags:
       - Meta
   /devices:

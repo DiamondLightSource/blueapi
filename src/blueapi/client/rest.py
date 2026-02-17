@@ -234,7 +234,12 @@ class BlueapiRestClient:
             return None
 
     def get_stomp_config(self) -> StompConfig | None:
-        return self._request_and_deserialize("/config/stomp", StompConfig)
+        try:
+            return self._request_and_deserialize("/config/stomp", StompConfig)
+        except (NoContentError, KeyError):
+            # Older versions of the server may not have the endpoint implemented so
+            # treat 404s as no configuration.
+            return None
 
     def get_python_environment(
         self, name: str | None = None, source: SourceInfo | None = None

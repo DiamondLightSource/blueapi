@@ -376,7 +376,8 @@ def test_resume(
     )
 
 
-def test_cannot_run_task_without_message_bus(client: BlueapiClient):
+def test_cannot_run_task_without_message_bus(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.get_stomp_config.return_value = None
     with pytest.raises(
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
@@ -619,8 +620,11 @@ def test_resume_span_ok(
 
 
 def test_cannot_run_task_span_ok(
-    exporter: JsonObjectSpanExporter, client: BlueapiClient
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
 ):
+    mock_rest.get_stomp_config.return_value = None
     with pytest.raises(
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",

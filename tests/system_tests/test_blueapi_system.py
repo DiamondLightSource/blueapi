@@ -162,12 +162,11 @@ def expected_devices() -> DeviceResponse:
     )
 
 
-@pytest.fixture
-def blueapi_client_get_methods() -> list[str]:
-    # Get a list of methods that take only one argument (self)
-    # This will currently return
+def authenticated_get_methods() -> list[str]:
+    # Get a list of methods that take only one argument (self) and require
+    # authentication. This will currently return
     # ['get_plans', 'get_devices', 'get_state', 'get_all_tasks',
-    # 'get_active_task','get_environment','resume', 'stop','get_oidc_config']
+    # 'get_active_task','get_environment','resume', 'stop']
     return [
         method
         for method in BlueapiClient.__dict__
@@ -175,6 +174,9 @@ def blueapi_client_get_methods() -> list[str]:
         and not method.startswith("__")
         and len(inspect.signature(getattr(BlueapiClient, method)).parameters) == 1
         and "self" in inspect.signature(getattr(BlueapiClient, method)).parameters
+        # oidc_config and stomp config can be accessed without auth
+        and method != "get_oidc_config"
+        and method != "_event_bus"
     ]
 
 
@@ -212,15 +214,10 @@ def reset_numtracker(server_config: ApplicationConfig):
     yield
 
 
-def test_cannot_access_endpoints(
-    client_without_auth: BlueapiClient, blueapi_client_get_methods: list[str]
-):
-    blueapi_client_get_methods.remove(
-        "get_oidc_config"
-    )  # get_oidc_config can be accessed without auth
-    for get_method in blueapi_client_get_methods:
-        with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
-            getattr(client_without_auth, get_method)()
+@pytest.mark.parametrize("method_name", authenticated_get_methods())
+def test_cannot_access_endpoints(client_without_auth: BlueapiClient, method_name: str):
+    with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
+        getattr(client_without_auth, method_name)()
 
 
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):

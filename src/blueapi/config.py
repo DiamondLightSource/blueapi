@@ -21,6 +21,7 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -100,7 +101,7 @@ class StompConfig(BlueapiBaseModel):
         default=False,
     )
     url: TcpUrl = TcpUrl("tcp://localhost:61613")
-    auth: BasicAuthentication | None = Field(
+    auth: BasicAuthentication | SkipJsonSchema[None] = Field(
         description="Auth information for communicating with STOMP broker, if required",
         default=None,
     )
@@ -275,7 +276,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.1.3"
+    REST_API_VERSION: ClassVar[str] = "1.2.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",

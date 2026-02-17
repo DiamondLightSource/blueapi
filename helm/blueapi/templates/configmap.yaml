@@ -19,6 +19,8 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ required "OTLP export enabled but server address not set" .Values.tracing.otlp.server.host }}:{{ .Values.tracing.otlp.server.port | default 4318 }}
 {{ end }}
 
+  OTEL_PYTHON_FASTAPI_EXCLUDED_URLS: {{ .Values.tracing.fastapi.excludedURLs | default "" }}
+
 ---
 
 {{- if .Values.initContainer.enabled }}

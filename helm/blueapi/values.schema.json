@@ -296,6 +296,14 @@
             "description": "Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters",
             "type": "object",
             "properties": {
+                "fastapi": {
+                    "type": "object",
+                    "properties": {
+                        "excludedURLs": {
+                            "type": "string"
+                        }
+                    }
+                },
                 "otlp": {
                     "type": "object",
                     "properties": {

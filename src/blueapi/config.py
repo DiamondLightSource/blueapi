@@ -101,7 +101,7 @@ class StompConfig(BlueapiBaseModel):
         default=False,
     )
     url: TcpUrl = TcpUrl("tcp://localhost:61613")
-    auth: BasicAuthentication | None = Field(
+    auth: BasicAuthentication | SkipJsonSchema[None] = Field(
         description="Auth information for communicating with STOMP broker, if required",
         default=None,
     )

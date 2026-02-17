@@ -879,15 +879,9 @@
             "type": "object",
             "properties": {
                 "auth": {
+                    "title": "Auth",
                     "description": "Auth information for communicating with STOMP broker, if required",
-                    "anyOf": [
-                        {
-                            "$ref": "BasicAuthentication"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ]
+                    "$ref": "BasicAuthentication"
                 },
                 "enabled": {
                     "title": "Enabled",

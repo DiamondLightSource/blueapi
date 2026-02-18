@@ -774,15 +774,15 @@ def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker)
     inert_worker._task_channel.put_nowait(task)
     inert_worker._pending_tasks["0"] = task
 
-    # task changes during cycle so need to cache log message first
-    expected = f"Got new task: {task}"
     inert_worker._cycle()
     assert inert_worker._current_task_otel_context is None
-    # Bad way to tell that this branch ahs been run, but I can't think of a better way
+    # Bad way to tell that this branch has been run, but I can't think of a better way
     # Have to set these values to match output
     task.is_complete = False
     task.is_pending = True
-    mock_logger.info.assert_called_with(expected)
+    mock_logger.info.assert_called_with(
+        "Task ran successfully - returned: %s", None, extra={"task_id": "0"}
+    )
 
 
 class MyComposite(BlueapiBaseModel):

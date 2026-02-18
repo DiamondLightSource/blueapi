@@ -195,7 +195,7 @@ def test_submit_task(context_mock: MagicMock):
     mock_uuid_value = "8dfbb9c2-7a15-47b6-bea8-b6b77c31d3d9"
     with patch.object(uuid, "uuid4") as uuid_mock:
         uuid_mock.return_value = uuid.UUID(mock_uuid_value)
-        task_uuid = interface.submit_task(task, {})
+        task_uuid = interface.submit_task(task)
     assert task_uuid == mock_uuid_value
 
 
@@ -211,7 +211,7 @@ def test_clear_task(context_mock: MagicMock):
     mock_uuid_value = "3d858a62-b40a-400f-82af-8d2603a4e59a"
     with patch.object(uuid, "uuid4") as uuid_mock:
         uuid_mock.return_value = uuid.UUID(mock_uuid_value)
-        interface.submit_task(task, {})
+        interface.submit_task(task)
 
     clear_task_return = interface.clear_task(mock_uuid_value)
     assert clear_task_return == mock_uuid_value
@@ -338,7 +338,6 @@ def test_get_task_by_id(
             name="my_plan",
             instrument_session=FAKE_INSTRUMENT_SESSION,
         ),
-        {},
     )
 
     expected_metadata: dict[str, Any] = {

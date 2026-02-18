@@ -909,4 +909,4 @@ def test_token_url_set_for_tiled(
             oidc=oidc_config,
         )
     )
-    assert context.tiled_conf.authentication.token_url == oidc_config.token_endpoint
+    assert context.tiled_conf.authentication.token_url == oidc_config.token_endpoint  # type:ignore

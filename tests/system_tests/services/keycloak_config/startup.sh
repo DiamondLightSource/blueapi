@@ -74,5 +74,5 @@ create_client "tiled-cli" "tiled" \
     -s 'attributes={"frontchannel.logout.session.required":"true","oauth2.device.authorization.grant.enabled":"true","use.refresh.tokens":"true","backchannel.logout.session.required":"true"}'
 
 # Service account tiled-writer
-create_client "system-test-blueapi" "" \
+create_client "tiled-writer" "" \
     -s secret="secret" -s standardFlowEnabled=false -s serviceAccountsEnabled=true -s 'redirectUris=["/*"]'

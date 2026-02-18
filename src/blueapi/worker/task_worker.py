@@ -436,8 +436,8 @@ class TaskWorker:
                     LOGGER.info(f"Got new task: {next_task}")
                     self._current = next_task
                     self._current.is_pending = False
+                    meta = {"task_id": self._current.task_id}
                     try:
-                        meta = {"task_id": self._current.task_id}
                         result = self._current.task.do_task(self._ctx)
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta

@@ -3,18 +3,37 @@
 While the CLI can be used to query devices and run plans, it can be useful to
 combine multiple plans within a better interface than bash/shell scripting.
 
-For this, `blueapi` can be used as a library providing a `BlueapiClient`
-wrapping interactions with the server.
+For this, `blueapi` can be used as a library with the `BlueapiClient` wrapping
+interactions with the server.
+
+To run a standalone script, it should be possible to use [`uv`][_uv] directly.
+
+```sh
+$ uv run --with blueapi path/to/script.py
+```
+
+To include as part of an existing virtual environment, add `blueapi` using
+whichever tool is being used to manage the environment, eg `uv add blueapi`,
+`pip install blueapi` etc.
 
 ## Login to blueapi
 
 The following steps require the user to have logged in blueapi. This can be done
-via the `blueapi login` command.
+via the `blueapi login` command from a terminal before running the script.
+
+```sh
+$ blueapi login
+$ python script.py # or however you are running the script
+```
+
+It is also possible to use the `login()` command on the client with the script
+although be aware this will cause the script to block waiting for the user to
+login which may not be required if being run without monitoring.
 
 ## Create an instance of the client
 
 ```python
-from blueapi.client.client import BlueapiClient
+from blueapi.client import BlueapiClient
 
 # A client can be created from either a config instance or the path to a config
 # file. The minimal configuration required # is:
@@ -24,6 +43,14 @@ from blueapi.client.client import BlueapiClient
 #    enabled: true
 #    url: tcp://address.of.rabbitmq:61613
 bc = BlueapiClient.from_config_file("/path/to/config.yaml")
+```
+
+If you are using the `login()` method in the script, it should be called before
+any further interactions. If the user is already logged in, the script will
+continue without prompting the user.
+
+```python
+bc.login()
 ```
 
 Plans and devices are available via the `plans` and `devices` attributes of the
@@ -174,3 +201,5 @@ hnd = bc.add_callback(callback_function)
 # remove the callback using the returned handle
 bc.remove_callback(hnd)
 ```
+
+[_uv]:https://docs.astral.sh/uv/

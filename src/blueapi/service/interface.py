@@ -147,8 +147,14 @@ def get_device(name: str) -> DeviceModel:
     return DeviceModel.from_device(device)
 
 
-def submit_task(task_request: TaskRequest, metadata: dict[str, Any] = {}) -> str:
+def submit_task(
+    task_request: TaskRequest, metadata: dict[str, Any] | None = None
+) -> str:
     """Submit a task to be run on begin_task"""
+    # Can't default arg to mutable data structure:
+    if metadata is None:
+        metadata = {}
+
     metadata["instrument_session"] = task_request.instrument_session
     if context().tiled_conf is not None:
         md = config().env.metadata

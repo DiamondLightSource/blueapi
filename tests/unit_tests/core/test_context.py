@@ -40,6 +40,7 @@ from blueapi.config import (
     EnvironmentConfig,
     MetadataConfig,
     PlanSource,
+    ServiceAccount,
     TiledConfig,
 )
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
@@ -876,4 +877,19 @@ def test_must_have_instrument_set_for_tiled(api_key: str | None):
     with pytest.raises(InvalidConfigError):
         BlueskyContext(
             ApplicationConfig(tiled=config, env=EnvironmentConfig(metadata=None))
+        )
+
+
+def test_must_have_oidc_config_for_tiled():
+    config = TiledConfig(enabled=True, authentication=ServiceAccount())
+    with pytest.raises(
+        InvalidConfigError,
+        match="Tiled has been configured but oidc configuration is missing",
+    ):
+        BlueskyContext(
+            ApplicationConfig(
+                tiled=config,
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+                oidc=None,
+            )
         )

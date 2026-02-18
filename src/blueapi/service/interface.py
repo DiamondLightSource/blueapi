@@ -147,7 +147,7 @@ def get_device(name: str) -> DeviceModel:
     return DeviceModel.from_device(device)
 
 
-def submit_task(task_request: TaskRequest, metadata: dict[str, Any]) -> str:
+def submit_task(task_request: TaskRequest, metadata: dict[str, Any] = {}) -> str:
     """Submit a task to be run on begin_task"""
     metadata["instrument_session"] = task_request.instrument_session
     if context().tiled_conf is not None:

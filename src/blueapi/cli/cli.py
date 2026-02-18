@@ -39,6 +39,7 @@ from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
 from blueapi.worker import ProgressEvent, WorkerEvent
 
+from . import stubgen
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
@@ -152,6 +153,23 @@ def start_application(obj: dict):
     """
     setup_tracing("BlueAPI", OTLP_EXPORT_ENABLED)
     start(config)
+
+
+@main.command()
+@click.pass_obj
+@click.argument("target", type=click.Path(file_okay=False))
+def generate_stubs(obj: dict, target: Path):
+    """
+    Generate a type-stubs project for blueapi for the currently running server.
+    This enables users using blueapi as a library to benefit from type checking
+    and linting when writing scripts against the BlueapiClient.
+    """
+    click.echo(f"Writing stubs to {target}")
+
+    config: ApplicationConfig = obj["config"]
+    bc = BlueapiClient.from_config(config)
+
+    stubgen.generate_stubs(Path(target), list(bc.plans), list(bc.devices))
 
 
 @main.group()

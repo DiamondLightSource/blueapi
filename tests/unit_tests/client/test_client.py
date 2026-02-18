@@ -11,13 +11,8 @@ from observability_utils.tracing import (
 from pydantic import HttpUrl
 
 from blueapi.client import BlueapiClient
-from blueapi.client.client import (
-    DeviceCache,
-    DeviceRef,
-    MissingInstrumentSessionError,
-    Plan,
-    PlanCache,
-)
+from blueapi.client.cache import DeviceCache, DeviceRef, Plan, PlanCache
+from blueapi.client.client import MissingInstrumentSessionError
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
 from blueapi.config import MissingStompConfigurationError
@@ -166,8 +161,8 @@ def test_get_nonexistent_device(
 
 
 def test_get_child_device(mock_rest: Mock, client: BlueapiClient):
-    mock_rest.get_device.side_effect = (
-        lambda name: DeviceModel(name="foo.x", protocols=[ProtocolInfo(name="One")])
+    mock_rest.get_device.side_effect = lambda name: (
+        DeviceModel(name="foo.x", protocols=[ProtocolInfo(name="One")])
         if name == "foo.x"
         else None
     )
@@ -419,6 +414,15 @@ def test_run_task_fails_on_failing_event(
         )
 
     on_event.assert_called_with(FAILED_EVENT)
+
+
+@patch("blueapi.client.client.BlueapiClient.run_task")
+def test_run_plan(run_task, client, mock_rest):
+    client.instrument_session = "cm12345-2"
+    client.run_plan("foo", {"foo": "bar"})
+    run_task.assert_called_once_with(
+        TaskRequest(name="foo", params={"foo": "bar"}, instrument_session="cm12345-2")
+    )
 
 
 @pytest.mark.parametrize(
@@ -693,40 +697,38 @@ def test_device_ignores_underscores():
     cache.__getitem__.assert_not_called()
 
 
-def test_plan_help_text(client):
-    plan = Plan("foo", PlanModel(name="foo", description="help for foo"), client)
+def test_plan_help_text():
+    plan = Plan(PlanModel(name="foo", description="help for foo"), Mock())
     assert plan.help_text == "help for foo"
 
 
-def test_plan_fallback_help_text(client):
+def test_plan_fallback_help_text():
     plan = Plan(
-        "foo",
         PlanModel(
             name="foo",
             schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
         ),
-        client,
+        Mock(),
     )
     assert plan.help_text == "Plan foo(one, two=None)"
 
 
-def test_plan_properties(client):
+def test_plan_properties():
     plan = Plan(
-        "foo",
         PlanModel(
             name="foo",
             schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
         ),
-        client,
+        Mock(),
     )
 
     assert plan.properties == {"one", "two"}
     assert plan.required == ["one"]
 
 
-def test_plan_empty_fallback_help_text(client):
+def test_plan_empty_fallback_help_text():
     plan = Plan(
-        "foo", PlanModel(name="foo", schema={"properties": {}, "required": []}), client
+        PlanModel(name="foo", schema={"properties": {}, "required": []}), Mock()
     )
     assert plan.help_text == "Plan foo()"
 
@@ -745,18 +747,11 @@ p = pytest.param
     ],
 )
 def test_plan_param_mapping(args, kwargs, params):
-    client = Mock()
-    client.instrument_session = "cm12345-1"
-    plan = Plan(
-        FULL_PLAN.name,
-        FULL_PLAN,
-        client,
-    )
+    runner = Mock()
+    plan = Plan(FULL_PLAN, runner)
 
     plan(*args, **kwargs)
-    client.run_task.assert_called_once_with(
-        TaskRequest(name="foobar", instrument_session="cm12345-1", params=params)
-    )
+    runner.assert_called_once_with("foobar", params)
 
 
 @pytest.mark.parametrize(
@@ -775,17 +770,15 @@ def test_plan_param_mapping(args, kwargs, params):
     ],
 )
 def test_plan_invalid_param_mapping(args, kwargs, msg):
-    client = Mock()
-    client.instrument_session = "cm12345-1"
+    runner = Mock(spec=Callable)
     plan = Plan(
-        FULL_PLAN.name,
         FULL_PLAN,
-        client,
+        runner,
     )
 
     with pytest.raises(TypeError, match=msg):
         plan(*args, **kwargs)
-    client.run_task.assert_not_called()
+    runner.assert_not_called()
 
 
 def test_adding_removing_callback(client):

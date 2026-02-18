@@ -204,7 +204,7 @@ spec:
               value: {{ (.Values.worker.scratch).root }}/.uv-cache
             {{- if .Values.debug.enabled }}
             - name: DEBUG_MODE
-              value: ON           
+              value: "ON"           
             {{- end }}
             {{- if .Values.extraEnvVars }}
               {{- toYaml .Values.extraEnvVars | nindent 12 }}

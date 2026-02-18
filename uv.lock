@@ -495,7 +495,7 @@ requires-dist = [
     { name = "requests" },
     { name = "stomp-py" },
     { name = "super-state-machine" },
-    { name = "tiled", extras = ["client"], git = "https://github.com/bluesky/tiled.git?rev=main" },
+    { name = "tiled", extras = ["client"], specifier = ">=0.2.4" },
     { name = "tomlkit" },
     { name = "uvicorn" },
 ]
@@ -521,7 +521,7 @@ dev = [
     { name = "sphinx-copybutton" },
     { name = "sphinx-design" },
     { name = "sphinxcontrib-openapi" },
-    { name = "tiled", extras = ["minimal-server"], git = "https://github.com/bluesky/tiled.git?rev=main" },
+    { name = "tiled", extras = ["minimal-server"], specifier = ">=0.2.4" },
     { name = "tox-uv" },
     { name = "types-mock" },
     { name = "types-pyyaml" },
@@ -5265,8 +5265,8 @@ wheels = [
 
 [[package]]
 name = "tiled"
-version = "0.2.4.dev25+g7f2d80167"
-source = { git = "https://github.com/bluesky/tiled.git?rev=main#7f2d80167030694e2d74b249772455728be161f1" }
+version = "0.2.4"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "json-merge-patch" },
@@ -5279,6 +5279,10 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyyaml" },
     { name = "typer" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f6/42/31d55c627a912462e11aed1912fe1737f2a3c9ae0f347cb25ab05056e8af/tiled-0.2.4.tar.gz", hash = "sha256:406be3fd9303e3343243714a4a7611138ef8b3e0f00cc2ffdacd8af3f1a3e6c5", size = 2500704, upload-time = "2026-02-18T13:37:50.377Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/2c/e631f7d8f24d774cba4cc392265e6d53df1b99e48ace6390330c653c887e/tiled-0.2.4-py3-none-any.whl", hash = "sha256:4cf3c82e5578d793f31f5471d95fdfb58f74c3db5a1310df0a781cfb8c226db7", size = 1702254, upload-time = "2026-02-18T13:37:47.678Z" },
 ]
 
 [package.optional-dependencies]

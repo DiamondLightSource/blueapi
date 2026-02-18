@@ -40,7 +40,7 @@ services:
       start_period: 30s
 
   tiled:
-    image: ghcr.io/zohebshaikh/tiled:0.10.1
+    image: ghcr.io/bluesky/tiled:0.2.4
     network_mode: host
     environment:
       - PYTHONPATH=/deploy/

@@ -2,7 +2,7 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated
+from typing import Annotated, Any
 
 import jwt
 from fastapi import (
@@ -114,7 +114,7 @@ def get_app(config: ApplicationConfig):
     )
     dependencies = []
     if config.oidc:
-        dependencies.append(Depends(verify_access_token(config.oidc)))
+        dependencies.append(Depends(decode_access_token(config.oidc)))
         app.swagger_ui_init_oauth = {
             "clientId": "NOT_SUPPORTED",
         }
@@ -136,7 +136,7 @@ def get_app(config: ApplicationConfig):
     return app
 
 
-def verify_access_token(config: OIDCConfig):
+def decode_access_token(config: OIDCConfig):
     jwkclient = jwt.PyJWKClient(config.jwks_uri)
     oauth_scheme = OAuth2AuthorizationCodeBearer(
         authorizationUrl=config.authorization_endpoint,
@@ -144,9 +144,9 @@ def verify_access_token(config: OIDCConfig):
         refreshUrl=config.token_endpoint,
     )
 
-    def inner(access_token: str = Depends(oauth_scheme)):
+    def inner(request: Request, access_token: str = Depends(oauth_scheme)):
         signing_key = jwkclient.get_signing_key_from_jwt(access_token)
-        jwt.decode(
+        decoded: dict[str, Any] = jwt.decode(
             access_token,
             signing_key.key,
             algorithms=config.id_token_signing_alg_values_supported,
@@ -154,6 +154,7 @@ def verify_access_token(config: OIDCConfig):
             audience=config.client_audience,
             issuer=config.issuer,
         )
+        request.state.decoded_access_token = decoded
 
     return inner
 
@@ -283,7 +284,16 @@ def submit_task(
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        task_id: str = runner.run(interface.submit_task, task_request)
+        # Extract user from jwt if using OIDC (if jwt exists)
+        access_token: dict[str, Any] | None = getattr(
+            request.state, "decoded_access_token", None
+        )
+        if access_token:
+            user: str = access_token.get("fedid", "Unknown")
+        else:
+            user = "Unknown"
+
+        task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:

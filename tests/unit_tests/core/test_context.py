@@ -7,6 +7,7 @@ from typing import Any, Generic, TypeVar, Union
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
+import responses
 from bluesky.protocols import (
     Descriptor,
     Movable,
@@ -39,6 +40,7 @@ from blueapi.config import (
     DodalSource,
     EnvironmentConfig,
     MetadataConfig,
+    OIDCConfig,
     PlanSource,
     ServiceAccount,
     TiledConfig,
@@ -893,3 +895,18 @@ def test_must_have_oidc_config_for_tiled():
                 oidc=None,
             )
         )
+
+
+def test_token_url_set_for_tiled(
+    mock_authn_server: responses.RequestsMock, oidc_config: OIDCConfig
+):
+    config = TiledConfig(enabled=True, authentication=ServiceAccount())
+
+    context = BlueskyContext(
+        ApplicationConfig(
+            tiled=config,
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+            oidc=oidc_config,
+        )
+    )
+    assert context.tiled_conf.authentication.token_url == oidc_config.token_endpoint

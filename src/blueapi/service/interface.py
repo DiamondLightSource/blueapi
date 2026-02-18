@@ -193,7 +193,6 @@ def begin_task(
             tiled_client = from_uri(
                 str(tiled_config.url),
                 auth=TiledAuth(tiled_auth=tiled_config.authentication),
-                headers=pass_through_headers,
             )
         else:
             tiled_client = from_uri(

@@ -166,8 +166,8 @@ def test_get_nonexistent_device(
 
 
 def test_get_child_device(mock_rest: Mock, client: BlueapiClient):
-    mock_rest.get_device.side_effect = (
-        lambda name: DeviceModel(name="foo.x", protocols=[ProtocolInfo(name="One")])
+    mock_rest.get_device.side_effect = lambda name: (
+        DeviceModel(name="foo.x", protocols=[ProtocolInfo(name="One")])
         if name == "foo.x"
         else None
     )

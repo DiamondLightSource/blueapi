@@ -20,8 +20,6 @@ data:
   OTEL_PYTHON_FASTAPI_EXCLUDED_URLS: {{ .Values.tracing.fastapi.excludedURLs | default "" }}
 {{ end }}
 
-  
-
 ---
 
 {{- if .Values.initContainer.enabled }}

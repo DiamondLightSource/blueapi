@@ -64,6 +64,14 @@ Trying to access a child device that does not exist will raise an
 
 ## Run a plan
 
+Running plans requires an instrument session. As this is unlikely to change from
+one plan to another, this can be set on the client to be used for all subsequent
+plans.
+
+```python
+bc.instrument_session = "cm12345-1"
+```
+
 Plans are accessible via the `plans` attribute of the client instance. They can,
 for the most part, be treated as if they were local functions.
 

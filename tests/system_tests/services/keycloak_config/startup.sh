@@ -35,7 +35,6 @@ create_client() {
     local tmpfile=$(mktemp)
 
     if [[ "$client_id" == "tiled-writer" ]]; then
-        # Just copy your predefined file
         cp /tmp/config/service-account.json "$tmpfile"
     else
         # Use sed to replace placeholders in the JSON template

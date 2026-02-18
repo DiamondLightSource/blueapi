@@ -6,7 +6,7 @@ from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Annotated, Any, Generic, Literal, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Generic, Literal, TypeVar, cast
 
 import requests
 import yaml
@@ -264,11 +264,43 @@ class NumtrackerConfig(BlueapiBaseModel):
     detector_file_template: str = "{instrument}-{scan_id}-{device_name}"
 
 
+class Tag(StrEnum):
+    TASK = "Task"
+    PLAN = "Plan"
+    DEVICE = "Device"
+    ENV = "Environment"
+    META = "Meta"
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
     config tree.
     """
+
+    #: API version to publish in OpenAPI schema
+    REST_API_VERSION: ClassVar[str] = "1.1.3"
+
+    LICENSE_INFO: ClassVar[dict[str, str]] = {
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    }
+    CONTEXT_HEADER: ClassVar[str] = "traceparent"
+    VENDOR_CONTEXT_HEADER: ClassVar[str] = "tracestate"
+    AUTHORIZAITON_HEADER: ClassVar[str] = "authorization"
+    PROPAGATED_HEADERS: ClassVar[set[str]] = {
+        CONTEXT_HEADER,
+        VENDOR_CONTEXT_HEADER,
+        AUTHORIZAITON_HEADER,
+    }
+    DOCS_ENDPOINT: ClassVar[str] = "/docs"
+    TAG_METADATA: ClassVar[list[dict[str, str]]] = [
+        {"name": Tag.TASK, "description": "Endpoints related to tasks"},
+        {"name": Tag.PLAN, "description": "Endpoints to get plans"},
+        {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
+        {"name": Tag.ENV, "description": "Endpoints related to server environment"},
+        {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
+    ]
 
     stomp: StompConfig = Field(default_factory=StompConfig)
     tiled: TiledConfig = Field(default_factory=TiledConfig)

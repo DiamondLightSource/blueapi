@@ -13,7 +13,7 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "tiled[client]>=0.2.3",
+    "tiled[client]@ git+https://github.com/bluesky/tiled.git@main",
     "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd-async>=0.13.5",
     "aioca",
@@ -68,7 +68,7 @@ dev = [
     "mock",
     "jwcrypto",
     "deepdiff",
-    "tiled[minimal-server]>=0.2.3", # For system-test of dls.py
+    "tiled[minimal-server]@ git+https://github.com/bluesky/tiled.git@main", # For system-test of dls.py
 ]
 
 [project.scripts]

@@ -860,7 +860,7 @@ def test_setup_default_not_makes_tiled_inserter():
 
 @pytest.mark.parametrize("api_key", [None, "foo"])
 def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
-    config = TiledConfig(enabled=True, api_key=api_key)
+    config = TiledConfig(enabled=True, authentication=api_key)
     context = BlueskyContext(
         ApplicationConfig(
             tiled=config,
@@ -872,7 +872,7 @@ def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
 
 @pytest.mark.parametrize("api_key", [None, "foo"])
 def test_must_have_instrument_set_for_tiled(api_key: str | None):
-    config = TiledConfig(enabled=True, api_key=api_key)
+    config = TiledConfig(enabled=True, authentication=api_key)
     with pytest.raises(InvalidConfigError):
         BlueskyContext(
             ApplicationConfig(tiled=config, env=EnvironmentConfig(metadata=None))

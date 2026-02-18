@@ -288,7 +288,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "auth": {"username": "guest", "password": "guest"},
             },
             "tiled": {
-                "api_key": None,
+                "authentication": None,
                 "enabled": False,
                 "url": "http://localhost:8407/",
             },
@@ -345,7 +345,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "auth": {"username": "guest", "password": "guest"},
             },
             "tiled": {
-                "api_key": None,
+                "authentication": None,
                 "enabled": False,
                 "url": "http://localhost:8407/",
             },

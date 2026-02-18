@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
+import threading
 import time
 import webbrowser
 from abc import ABC, abstractmethod
@@ -10,12 +11,13 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, cast
 
+import httpx
 import jwt
 import requests
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
 
-from blueapi.config import OIDCConfig
+from blueapi.config import OIDCConfig, ServiceAccount
 from blueapi.service.model import Cache
 
 DEFAULT_CACHE_DIR = "~/.cache/"
@@ -239,3 +241,28 @@ class JWTAuth(AuthBase):
         if self.token:
             request.headers["Authorization"] = f"Bearer {self.token}"
         return request
+
+
+class TiledAuth(httpx.Auth):
+    def __init__(self, tiled_auth: ServiceAccount):
+        if tiled_auth.token_url == "":
+            raise RuntimeError("Token URL is not set please check oidc config")
+        self._tiled_auth: ServiceAccount = tiled_auth
+        self._sync_lock = threading.RLock()
+
+    def get_access_token(self):
+        with self._sync_lock:
+            response = requests.post(
+                self._tiled_auth.token_url,
+                data={
+                    "client_id": self._tiled_auth.client_id,
+                    "client_secret": self._tiled_auth.client_secret.get_secret_value(),
+                    "grant_type": "client_credentials",
+                },
+            )
+            response.raise_for_status()
+            return response.json().get("access_token")
+
+    def sync_auth_flow(self, request):
+        request.headers["Authorization"] = f"Bearer {self.get_access_token()}"
+        yield request

@@ -585,6 +585,6 @@ def test_unauthozied_plan_run(
 
     with pytest.raises(
         BlueskyStreamingError,
-        match="404: No such entry",
+        match="403: Access policy rejects the provided access blob",
     ):
         client_with_stomp.run_task(task, on_event)

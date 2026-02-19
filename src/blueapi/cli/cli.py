@@ -8,15 +8,16 @@ from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeGuard, TypeVar
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from click.core import Context, Parameter
 from click.exceptions import ClickException
+from click.types import ParamType
 from observability_utils.tracing import setup_tracing
-from pydantic import ValidationError
 
 from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
@@ -43,6 +44,35 @@ from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 LOGGER = logging.getLogger(__name__)
+
+TaskParameters = dict[str, Any]
+
+
+class ParametersType(ParamType):
+    """CLI input parameter to accept a JSON object as an argument"""
+
+    name = "TaskParameters"
+
+    def convert(
+        self,
+        value: str | dict[str, Any] | None,
+        param: Parameter | None,
+        ctx: Context | None,
+    ) -> TaskParameters:
+        if isinstance(value, str):
+            try:
+                params = json.loads(value)
+                if is_str_dict(params):
+                    return params
+                self.fail("Parameters must be a JSON object with string keys")
+            except json.JSONDecodeError as jde:
+                self.fail(f"Parameters are not valid JSON: {jde}")
+        else:
+            return super().convert(value, param, ctx)
+
+
+def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
+    return isinstance(val, dict) and all(isinstance(k, str) for k in val)
 
 
 @click.group(
@@ -258,7 +288,7 @@ def listen_to_events(obj: dict) -> None:
 
 @controller.command(name="run")
 @click.argument("name", type=str)
-@click.argument("parameters", type=str, required=False)
+@click.argument("parameters", type=ParametersType(), default={}, required=False)
 @click.option(
     "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
 )
@@ -284,29 +314,16 @@ def listen_to_events(obj: dict) -> None:
 def run_plan(
     obj: dict,
     name: str,
-    parameters: str | None,
     timeout: float | None,
     foreground: bool,
     instrument_session: str,
+    parameters: TaskParameters,
 ) -> None:
     """Run a plan with parameters"""
     client: BlueapiClient = obj["client"]
-
-    parameters = parameters or "{}"
-    try:
-        parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
-    except json.JSONDecodeError as jde:
-        raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
-
-    try:
-        task = TaskRequest(
-            name=name,
-            params=parsed_params,
-            instrument_session=instrument_session,
-        )
-    except ValidationError as ve:
-        ip = InvalidParametersError.from_validation_error(ve)
-        raise ClickException(ip.message()) from ip
+    task = TaskRequest(
+        name=name, params=parameters, instrument_session=instrument_session
+    )
 
     try:
         if foreground:

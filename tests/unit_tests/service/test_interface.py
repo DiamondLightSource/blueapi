@@ -43,7 +43,13 @@ from blueapi.service.model import (
 from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.utils.numtracker import NumtrackerClient
 from blueapi.utils.path_provider import StartDocumentPathProvider
-from blueapi.worker.event import TaskStatus, TaskStatusEnum, WorkerEvent, WorkerState
+from blueapi.worker.event import (
+    TaskResult,
+    TaskStatus,
+    TaskStatusEnum,
+    WorkerEvent,
+    WorkerState,
+)
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -422,6 +428,7 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
                 task_id="foo_bar",
                 task_complete=False,
                 task_failed=False,
+                result=None,
             ),
         ),
         "c_id",
@@ -436,6 +443,7 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
                 task_id="foo_bar",
                 task_complete=True,
                 task_failed=False,
+                result=TaskResult(result=None, type="NoneType"),
             ),
         ),
         "c_id",

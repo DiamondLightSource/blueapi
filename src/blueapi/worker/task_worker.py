@@ -39,6 +39,8 @@ from .event import (
     ProgressEvent,
     RawRunEngineState,
     StatusView,
+    TaskError,
+    TaskResult,
     TaskStatus,
     TaskStatusEnum,
     WorkerEvent,
@@ -69,6 +71,13 @@ class TrackableTask(BlueapiBaseModel):
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
+    outcome: TaskResult | TaskError | None = None
+
+    def set_result(self, result: Any):
+        self.outcome = TaskResult.from_result(result)
+
+    def set_exception(self, err: Exception):
+        self.outcome = TaskError.from_exception(err)
 
 
 class TaskWorker:
@@ -427,7 +436,17 @@ class TaskWorker:
                     LOGGER.info(f"Got new task: {next_task}")
                     self._current = next_task
                     self._current.is_pending = False
-                    self._current.task.do_task(self._ctx)
+                    meta = {"task_id": self._current.task_id}
+                    try:
+                        result = self._current.task.do_task(self._ctx)
+                        LOGGER.info(
+                            "Task ran successfully - returned: %s", result, extra=meta
+                        )
+                        self._current.set_result(result)
+                    except Exception as e:
+                        LOGGER.error("Task failed", extra=meta)
+                        self._current.set_exception(e)
+                        self._report_error(e)
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:
@@ -528,6 +547,7 @@ class TaskWorker:
                 task_id=self._current.task_id,
                 task_complete=self._current.is_complete,
                 task_failed=bool(self._current.errors),
+                result=self._current.outcome,
             )
             correlation_id = self._current.task_id
             add_span_attributes(

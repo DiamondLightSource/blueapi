@@ -18,7 +18,7 @@ from blueapi.client.client import (
     Plan,
     PlanCache,
 )
-from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
+from blueapi.client.event_bus import AnyEvent, EventBusClient
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
 from blueapi.config import MissingStompConfigurationError
 from blueapi.core import DataEvent
@@ -35,7 +35,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.worker import ProgressEvent, Task, TrackableTask, WorkerEvent, WorkerState
-from blueapi.worker.event import TaskStatus
+from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 
 PLANS = PlanResponse(
     plans=[
@@ -77,6 +77,7 @@ COMPLETE_EVENT = WorkerEvent(
         task_id="foo",
         task_complete=True,
         task_failed=False,
+        result=TaskResult(type="NoneType", result=None),
     ),
 )
 FAILED_EVENT = WorkerEvent(
@@ -85,6 +86,7 @@ FAILED_EVENT = WorkerEvent(
         task_id="foo",
         task_complete=True,
         task_failed=True,
+        result=TaskError(type="PlanFailure", message="The plan failed"),
     ),
 )
 
@@ -413,10 +415,15 @@ def test_run_task_fails_on_failing_event(
     mock_events.subscribe_to_all_events = lambda on_event: on_event(FAILED_EVENT, ctx)
 
     on_event = Mock()
-    with pytest.raises(BlueskyStreamingError):
-        client_with_events.run_task(
-            TaskRequest(name="foo", instrument_session="cm12345-1"), on_event=on_event
-        )
+    outcome = client_with_events.run_task(
+        TaskRequest(name="foo", instrument_session="cm12345-1"),
+        on_event=on_event,
+    )
+    assert outcome.task_failed
+    assert outcome.task_complete
+    assert isinstance(outcome.result, TaskError)
+    assert outcome.result.message == "The plan failed"
+    assert outcome.result.type == "PlanFailure"
 
     on_event.assert_called_with(FAILED_EVENT)
 
@@ -430,6 +437,7 @@ def test_run_task_fails_on_failing_event(
                 task_id="foo",
                 task_complete=False,
                 task_failed=False,
+                result=TaskError(type="ValueError", message="Task failed"),
             ),
         ),
         ProgressEvent(task_id="foo"),
@@ -471,6 +479,7 @@ def test_run_task_calls_event_callback(
                 task_id="bar",
                 task_complete=False,
                 task_failed=False,
+                result=None,
             ),
         ),
         ProgressEvent(task_id="bar"),
@@ -807,6 +816,7 @@ def test_adding_removing_callback(client):
                 task_id="foo",
                 task_complete=False,
                 task_failed=False,
+                result=None,
             ),
         ),
         ProgressEvent(task_id="foo"),

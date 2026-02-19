@@ -46,7 +46,7 @@ requires-python = ">=3.11"
 dev = [
     "copier",
     "myst-parser",
-    "pre-commit",
+    "prek",
     "pydata-sphinx-theme>=0.15.4",
     "pytest",
     "pyright!=1.1.407",             # https://github.com/bluesky/scanspec/issues/190
@@ -119,10 +119,12 @@ env_list = ["pre-commit", "type-checking", "tests", "docs"]
 passenv = ["*"]
 
 [tool.tox.env.pre-commit]
-description = "Run pre-commit on all files"
+description = "Run pre-commit (prek) on all files"
 commands = [
     [
-        "pre-commit",
+        "uv",
+        "run",
+        "prek",
         "run",
         "--all-files",
         "--show-diff-on-failure",

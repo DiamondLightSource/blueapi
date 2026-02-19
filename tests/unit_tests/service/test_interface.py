@@ -337,7 +337,7 @@ def test_get_task_by_id(
         TaskRequest(
             name="my_plan",
             instrument_session=FAKE_INSTRUMENT_SESSION,
-        )
+        ),
     )
 
     expected_metadata: dict[str, Any] = {
@@ -359,6 +359,36 @@ def test_get_task_by_id(
             name="my_plan",
             params={},
             metadata=expected_metadata,
+        ),
+        is_complete=False,
+        is_pending=True,
+        errors=[],
+    )
+
+
+@patch("blueapi.service.interface.context")
+def test_submit_task_inserts_metadata(context_mock: MagicMock):
+    context = BlueskyContext()
+    context.register_plan(my_plan)
+    context_mock.return_value = context
+
+    metadata = {"foo": "bar"}
+
+    task_id = interface.submit_task(
+        TaskRequest(
+            name="my_plan",
+            instrument_session=FAKE_INSTRUMENT_SESSION,
+        ),
+        metadata,
+    )
+
+    assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
+        task_id=task_id,
+        request_id=ANY,
+        task=Task(
+            name="my_plan",
+            params={},
+            metadata=metadata,
         ),
         is_complete=False,
         is_pending=True,

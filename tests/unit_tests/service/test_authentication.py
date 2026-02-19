@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import jwt
 import pytest
@@ -117,9 +117,9 @@ def test_poll_for_token_timeout(
 def test_server_raises_exception_for_invalid_token(
     oidc_config: OIDCConfig, mock_authn_server: responses.RequestsMock
 ):
-    inner = main.verify_access_token(oidc_config)
+    inner = main.decode_access_token(oidc_config)
     with pytest.raises(jwt.PyJWTError):
-        inner(access_token="Invalid Token")
+        inner(Mock(), access_token="Invalid Token")
 
 
 def test_processes_valid_token(
@@ -127,8 +127,8 @@ def test_processes_valid_token(
     mock_authn_server: responses.RequestsMock,
     valid_token_with_jwt,
 ):
-    inner = main.verify_access_token(oidc_config)
-    inner(access_token=valid_token_with_jwt["access_token"])
+    inner = main.decode_access_token(oidc_config)
+    inner(Mock(), access_token=valid_token_with_jwt["access_token"])
 
 
 def test_session_cache_manager_returns_writable_file_path(tmp_path):

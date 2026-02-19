@@ -510,6 +510,12 @@
                 "module"
             ],
             "properties": {
+                "check_connected": {
+                    "title": "Check Connected",
+                    "description": "If true, all devices must be successfully connected at startup.",
+                    "default": false,
+                    "type": "boolean"
+                },
                 "kind": {
                     "title": "Kind",
                     "default": "deviceManager",

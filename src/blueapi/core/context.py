@@ -227,7 +227,9 @@ class BlueskyContext:
                         "configuration to use deviceManager"
                     )
                     self.with_dodal_module(mod, mock=mock)
-                case DeviceManagerSource(mock=mock, name=name):
+                case DeviceManagerSource(
+                    mock=mock, name=name, check_connected=check_connected
+                ):
                     LOGGER.info(
                         "Including devices from 'deviceManager' source %s:%s",
                         source.module,
@@ -238,7 +240,12 @@ class BlueskyContext:
                         raise ValueError(
                             f"{name} in module {mod} is not a device manager"
                         )
-                    self.with_device_manager(manager, mock)
+                    _, error_map = self.with_device_manager(manager, mock)
+                    if check_connected and error_map:
+                        raise RuntimeError(
+                            "Errors occurred while building/connecting the following "
+                            f"devices: {', '.join(error_map)}",
+                        )
         if not self.devices:
             LOGGER.warning(
                 "Context had no devices after loading environment - are all modules "

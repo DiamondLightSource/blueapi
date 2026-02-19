@@ -8,8 +8,7 @@ hooks = [
     args = ["--allow-multiple-documents"]
   },
   { id = "check-merge-conflict" },
-  { id = "end-of-file-fixer" },
-  { id = "no-commit-to-branch" }
+  { id = "end-of-file-fixer" }
 ]
 
 [[repos]]

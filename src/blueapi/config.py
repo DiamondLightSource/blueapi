@@ -368,15 +368,9 @@ class ConfigLoader(Generic[C]):
             path (Path): Path to YAML/JSON file
         """
 
-        # Split reading and loading so that a missing file does not leave
-        # config in partially loaded state
-        configs = []
         for path in paths:
             with path.open("r") as stream:
-                configs.append(yaml.load(stream, yaml.Loader))
-
-        for values in configs:
-            self.use_values(values)
+                self.use_values(yaml.load(stream, yaml.Loader))
 
     def load(self) -> C:
         """

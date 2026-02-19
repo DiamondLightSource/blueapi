@@ -816,6 +816,7 @@ def test_adding_removing_callback(client):
                 task_id="foo",
                 task_complete=False,
                 task_failed=False,
+                result=None,
             ),
         ),
         ProgressEvent(task_id="foo"),

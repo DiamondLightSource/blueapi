@@ -21,4 +21,4 @@ tiled:
 oidc:
   issuer: "http://localhost:8081/realms/master"
   client_id: "ixx-cli-blueapi"
-  client_audience: "blueapi"
+  client_audience: "ixx-blueapi"

@@ -110,7 +110,7 @@ def test_runs_with_umask_002(
     mock_umask.assert_called_once_with(0o002)
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_connection_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
@@ -120,7 +120,7 @@ def test_connection_error_caught_by_wrapper_func(
     assert result.output == "Error: Failed to establish connection to blueapi server.\n"
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_authentication_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
@@ -133,7 +133,7 @@ def test_authentication_error_caught_by_wrapper_func(
     )
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
     mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
 
@@ -198,15 +198,15 @@ def test_invalid_config_path_handling(runner: CliRunner):
     assert result.exit_code == 1
 
 
-@patch("blueapi.cli.cli.BlueapiClient.get_plans")
+@patch("blueapi.cli.cli.BlueapiClient.plans")
 @patch("blueapi.cli.cli.OutputFormat.FULL.display")
 def test_options_via_env(mock_display, mock_plans, runner: CliRunner):
     result = runner.invoke(
         main, args=["controller", "plans"], env={"BLUEAPI_CONTROLLER_OUTPUT": "full"}
     )
 
-    mock_plans.assert_called_once_with()
-    mock_display.assert_called_once_with(mock_plans.return_value)
+    mock_plans.__iter__.assert_called_once_with()
+    mock_display.assert_called_once_with(PlanResponse(plans=list(mock_plans)))
     assert result.exit_code == 0
 
 
@@ -493,9 +493,7 @@ def test_valid_stomp_config_for_listener(
 
 
 @responses.activate
-def test_get_env(
-    runner: CliRunner,
-):
+def test_get_env(runner: CliRunner):
     environment_id = uuid.uuid4()
     responses.add(
         responses.GET,
@@ -512,6 +510,17 @@ def test_get_env(
         "initialized=True "
         "error_message=None\n"
     )
+
+
+@responses.activate
+def test_get_state(runner: CliRunner):
+    responses.add(
+        responses.GET, "http://localhost:8000/worker/state", json="IDLE", status=200
+    )
+    state = runner.invoke(main, ["controller", "state"])
+    print(state.stderr)
+    assert state.exit_code == 0
+    assert state.output == "IDLE\n"
 
 
 @responses.activate(assert_all_requests_are_fired=True)

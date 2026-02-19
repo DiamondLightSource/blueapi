@@ -11,7 +11,7 @@ To run the stack:
 
 To log in through the BlueAPI CLI:
 
-1. Run `blueapi -c tests/system_tests/config.yaml login`
+1. Run `blueapi login` (if you want to run a plan with stomp config, add the `-c tests/system_tests/config.yaml` parameter)
 2. Follow the login prompted to Keycloak, then log in with the username `admin` and password `admin`
 3. When promped by Keycloak, grant BlueAPI access to the listed privileges
 4. Run `blueapi controller plans` to check that the log in has succeeded

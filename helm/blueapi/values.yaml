@@ -218,6 +218,8 @@ initContainer:
     enabled: false
     # -- May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release
     existingClaimName: ""
+    # -- Size of persistent volume
+    size: "1Gi"
 
 debug:
   # -- If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance

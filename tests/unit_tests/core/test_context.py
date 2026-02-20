@@ -18,8 +18,8 @@ from bluesky.protocols import (
 from bluesky.run_engine import RunEngine
 from bluesky.utils import MsgGenerator
 from dodal.common import PlanGenerator, inject
-from ophyd import Device
 from ophyd_async.core import (
+    Device,
     PathProvider,
     StandardDetector,
     StaticPathProvider,
@@ -548,6 +548,20 @@ def test_concrete_method_annotation(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(demo)
     assert spec["named"][0] is stoppable_ref
     assert spec["named"][1].default_factory is None
+
+
+class PlainDevice(Device):
+    """Class that extends Device without any additional protocols"""
+
+
+def test_device_without_protocol_annotation(empty_context: BlueskyContext):
+    dev_ref = empty_context._reference(PlainDevice)
+
+    def demo_plan(dev: PlainDevice) -> MsgGenerator:
+        yield from []
+
+    spec = empty_context._type_spec_for_function(demo_plan)
+    assert spec["dev"][0] is dev_ref
 
 
 def test_str_default(empty_context: BlueskyContext, sim_motor: Motor, alt_motor: Motor):

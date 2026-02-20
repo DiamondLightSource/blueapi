@@ -44,6 +44,7 @@ from blueapi.utils.path_provider import StartDocumentPathProvider
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
+    AsyncDevice,
     Device,
     Plan,
     PlanGenerator,
@@ -102,8 +103,12 @@ def qualified_generic_name(target: type) -> str:
     return f"{qualified_name(target)}{subscript}"
 
 
-def is_bluesky_type(typ: type) -> bool:
-    return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
+def is_bluesky_type(typ: Any) -> bool:
+    return (
+        typ in BLUESKY_PROTOCOLS
+        or isinstance(typ, BLUESKY_PROTOCOLS)
+        or (isinstance(typ, type) and issubclass(typ, AsyncDevice))
+    )
 
 
 C = TypeVar("C", covariant=True)
@@ -531,7 +536,7 @@ class BlueskyContext:
         if typ is NoneType and not no_default:
             return SkipJsonSchema[NoneType]
         root = get_origin(typ)
-        if is_bluesky_type(typ) or (root is not None and is_bluesky_type(root)):
+        if is_bluesky_type(root or typ):
             return self._reference(typ)
         args = get_args(typ)
         if args:

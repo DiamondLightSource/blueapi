@@ -299,9 +299,9 @@
         "OIDCConfig": {
             "additionalProperties": false,
             "properties": {
-                "well_known_url": {
-                    "description": "URL to fetch OIDC config from the provider",
-                    "title": "Well Known Url",
+                "issuer": {
+                    "description": "URL of OIDC provider",
+                    "title": "Issuer",
                     "type": "string"
                 },
                 "client_id": {
@@ -323,7 +323,7 @@
                 }
             },
             "required": [
-                "well_known_url",
+                "issuer",
                 "client_id"
             ],
             "title": "OIDCConfig",

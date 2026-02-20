@@ -206,9 +206,7 @@ class ScratchConfig(BlueapiBaseModel):
 
 
 class OIDCConfig(BlueapiBaseModel):
-    well_known_url: str = Field(
-        description="URL to fetch OIDC config from the provider"
-    )
+    issuer: str = Field(description="URL of OIDC provider")
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
     logout_redirect_endpoint: str = Field(
@@ -217,7 +215,9 @@ class OIDCConfig(BlueapiBaseModel):
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
-        response: requests.Response = requests.get(self.well_known_url)
+        response: requests.Response = requests.get(
+            self.issuer + "/.well-known/openid-configuration"
+        )
         response.raise_for_status()
         return response.json()
 
@@ -230,10 +230,6 @@ class OIDCConfig(BlueapiBaseModel):
     @cached_property
     def token_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("token_endpoint"))
-
-    @cached_property
-    def issuer(self) -> str:
-        return cast(str, self._config_from_oidc_url.get("issuer"))
 
     @cached_property
     def authorization_endpoint(self) -> str:
@@ -275,7 +271,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.1.3"
+    REST_API_VERSION: ClassVar[str] = "1.2.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",

@@ -56,18 +56,12 @@ def exporter() -> JsonObjectSpanExporter:
     return exporter
 
 
-@pytest.fixture
-def oidc_url() -> str:
-    return (
-        "https://auth.example.com/realms/master/oidc/.well-known/openid-configuration"
-    )
+ISSUER = "https://auth.example.com/realms/master"
 
 
 @pytest.fixture
-def oidc_config(oidc_url: str) -> OIDCConfig:
-    return OIDCConfig(
-        well_known_url=oidc_url, client_id="blueapi-cli", client_audience="blueapi"
-    )
+def oidc_config() -> OIDCConfig:
+    return OIDCConfig(issuer=ISSUER, client_id="blueapi-cli", client_audience="blueapi")
 
 
 CACHE_FILE = "blueapi_cache"
@@ -88,7 +82,7 @@ def oidc_well_known() -> dict[str, Any]:
         "device_authorization_endpoint": "https://example.com/device_authorization",
         "authorization_endpoint": "https://example.com/authorization",
         "token_endpoint": "https://example.com/token",
-        "issuer": "https://example.com",
+        "issuer": ISSUER,
         "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
         "end_session_endpoint": "https://example.com/end_session",
         "id_token_signing_alg_values_supported": ["RS256"],
@@ -112,6 +106,7 @@ def _make_token(
     rsa_private_key: str,
     jwt_access_token: bool = False,
     valid_audience: bool = True,
+    issuer: str = ISSUER,
 ) -> dict[str, str]:
     now = time.time()
 
@@ -119,7 +114,7 @@ def _make_token(
         "aud": "blueapi" if valid_audience else "invalid_audience",
         "exp": now + expires_in,
         "iat": now + issued_in,
-        "iss": "https://example.com",
+        "iss": issuer,
         "sub": "jd1",
         "name": "Jane Doe",
         "fedid": "jd1",
@@ -244,7 +239,6 @@ def device_code() -> str:
 
 @pytest.fixture
 def mock_authn_server(
-    oidc_url: str,
     oidc_well_known: dict[str, Any],
     oidc_config: OIDCConfig,
     valid_token: dict[str, Any],
@@ -258,7 +252,9 @@ def mock_authn_server(
         json=oidc_config.model_dump(),
     )
     # Fetch well-known OIDC flow URLs from server
-    requests_mock.get(oidc_url, json=oidc_well_known)
+    requests_mock.get(
+        ISSUER + "/.well-known/openid-configuration", json=oidc_well_known
+    )
     # When device flow begins, return a device_code
     requests_mock.post(
         oidc_well_known["device_authorization_endpoint"],

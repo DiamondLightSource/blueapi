@@ -322,7 +322,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "numtracker": None,
             "oidc": {
-                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
                 "logout_redirect_endpoint": "",
@@ -377,7 +377,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "numtracker": None,
             "oidc": {
-                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
                 "logout_redirect_endpoint": "",
@@ -446,7 +446,7 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
             "numtracker": None,
             "oidc": {
-                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
             },
@@ -498,7 +498,6 @@ def test_oauth_config_model_post_init(
         oidc_config.authorization_endpoint == oidc_well_known["authorization_endpoint"]
     )
     assert oidc_config.token_endpoint == oidc_well_known["token_endpoint"]
-    assert oidc_config.issuer == oidc_well_known["issuer"]
     assert oidc_config.jwks_uri == oidc_well_known["jwks_uri"]
     assert oidc_config.end_session_endpoint == oidc_well_known["end_session_endpoint"]
 

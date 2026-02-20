@@ -48,11 +48,13 @@ def setup_scratch(
             )
     for repo in config.repositories:
         local_directory = config.root / repo.name
-        ensure_repo(repo.remote_url, local_directory)
+        ensure_repo(repo.remote_url, local_directory, repo.branch)
         scratch_install(local_directory, timeout=install_timeout)
 
 
-def ensure_repo(remote_url: str, local_directory: Path) -> None:
+def ensure_repo(
+    remote_url: str, local_directory: Path, branch: str | None = None
+) -> None:
     """
     Ensure that a repository is checked out for use in the scratch area.
     Clone it if it isn't.
@@ -67,15 +69,28 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
 
     if not local_directory.exists():
         LOGGER.info(f"Cloning {remote_url}")
-        Repo.clone_from(remote_url, local_directory)
+        repo = Repo.clone_from(remote_url, local_directory)
         LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
     elif local_directory.is_dir():
-        Repo(local_directory)
+        repo = Repo(local_directory)
         LOGGER.info(f"Found {local_directory}")
     else:
         raise KeyError(
             f"Unable to open {local_directory} as a git repository because it is a file"
         )
+
+    if branch:
+        if not (local := getattr(repo.heads, branch, None)):
+            origin = repo.remotes[0]
+            origin.fetch()
+            LOGGER.info(
+                "Creating branch '%s' to track remote '%s'", branch, origin.refs[branch]
+            )
+            local = repo.create_head(branch, origin.refs[branch])
+            local.set_tracking_branch(origin.refs[branch])
+
+        LOGGER.info("Checking out branch '%s'", branch)
+        local.checkout()
 
 
 def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:

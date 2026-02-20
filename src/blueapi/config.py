@@ -21,6 +21,7 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -175,6 +176,16 @@ class ScratchRepository(BlueapiBaseModel):
     remote_url: str = Field(
         description="URL to clone from",
         default="https://github.com/example/example.git",
+    )
+    branch: str | SkipJsonSchema[None] = Field(
+        description=(
+            "Branch of repo to check out - defaults to remote's default when "
+            "cloning and the existing branch when the repo already exists"
+        ),
+        exclude_if=lambda f: f is None,
+        # using default_factory instead of default means the schema doesn't
+        # include an invalid value
+        default_factory=lambda: None,
     )
 
     @field_validator("remote_url")

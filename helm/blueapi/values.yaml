@@ -163,6 +163,7 @@ extraEnvVars: []
 #       key: tiled_api_key
 
 # -- Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters
+# -- Exclude health probe requests from tracing by default to prevent spamming
 tracing:
   otlp:
     enabled: false
@@ -170,6 +171,8 @@ tracing:
     server:
       host: http://opentelemetry-collector.tracing
       port: 4318
+  fastapi:
+    excludedURLs: "/healthz"
 
 # @schema $ref: config_schema.json
 # -- Config for the worker goes here, will be mounted into a config file

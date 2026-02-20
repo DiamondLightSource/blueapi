@@ -582,15 +582,12 @@ async def log_request_details(
     """Middleware to log all request's host, method, path, status and request and
     body"""
     request_body = await request.body()
+    client = request.client or Address("Unknown", -1)
+    log_message = f"{client.host}:{client.port} {request.method}"
+    LOGGER.debug(log_message)
 
     response = await call_next(request)
-
-    client = request.client or Address("Unknown", -1)
-
-    log_message = (
-        f"{client.host}:{client.port} {request.method}"
-        f" {request.url.path} {response.status_code}"
-    )
+    log_message += f" {request.url.path} {response.status_code}"
     extra = {
         "request_body": request_body,
     }

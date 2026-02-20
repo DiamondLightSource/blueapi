@@ -583,14 +583,14 @@ async def log_request_details(
     body"""
     request_body = await request.body()
     client = request.client or Address("Unknown", -1)
-    log_message = f"{client.host}:{client.port} {request.method}"
-    LOGGER.debug(log_message)
-
-    response = await call_next(request)
-    log_message += f" {request.url.path} {response.status_code}"
+    log_message = f"{client.host}:{client.port} {request.method} {request.url.path}"
     extra = {
         "request_body": request_body,
     }
+    LOGGER.debug(log_message, extra=extra)
+
+    response = await call_next(request)
+    log_message += f" {response.status_code}"
     if request.url.path == "/healthz":
         LOGGER.debug(log_message, extra=extra)
     else:

@@ -25,7 +25,6 @@ async def test_log_request_details():
             "testclient POST / 200",
             extra={
                 "request_body": b"foo",
-                "response_body": [b'{"message":"Hello World"}'],
             },
         )
 

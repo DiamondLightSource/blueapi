@@ -152,7 +152,6 @@ class GraylogConfig(BlueapiBaseModel):
 
 class LoggingConfig(BlueapiBaseModel):
     level: LogLevel = "INFO"
-    truncate_bodies: bool = Field(default=True, alias="truncateBodies")
     graylog: GraylogConfig = GraylogConfig()
 
 

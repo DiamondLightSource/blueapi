@@ -125,7 +125,7 @@ def get_app(config: ApplicationConfig):
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_api_version_header)
     app.middleware("http")(inject_propagated_observability_context)
-    app.middleware("http")(log_request_details(config.logging.truncate_bodies))
+    app.middleware("http")(log_request_details())
     if config.api.cors:
         app.add_middleware(
             CORSMiddleware,
@@ -576,7 +576,7 @@ async def add_api_version_header(
     return response
 
 
-def log_request_details(truncate_bodies: bool):
+def log_request_details():
     async def inner(
         request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
     ) -> Response:
@@ -603,11 +603,6 @@ def log_request_details(truncate_bodies: bool):
             f"{getattr(request.client, 'host', 'NO_ADDRESS')} {request.method}"
             f" {request.url.path} {response.status_code}"
         )
-
-        if truncate_bodies:
-            request_body = request_body[:1024]
-            response_body = response_body[:1024]
-
         extra = {
             "request_body": request_body,
             "response_body": response_body,

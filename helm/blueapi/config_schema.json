@@ -248,11 +248,6 @@
                     "title": "Level",
                     "type": "string"
                 },
-                "truncateBodies": {
-                    "default": true,
-                    "title": "Truncatebodies",
-                    "type": "boolean"
-                },
                 "graylog": {
                     "$ref": "GraylogConfig",
                     "default": {

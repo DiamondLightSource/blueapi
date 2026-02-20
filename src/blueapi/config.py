@@ -359,9 +359,9 @@ class ConfigLoader(Generic[C]):
 
         recursively_update_map(self._values, values)
 
-    def use_values_from_yaml(self, path: Path) -> None:
+    def use_values_from_yaml(self, *paths: Path) -> None:
         """
-        Use all values provided in a YAML/JSON file in the
+        Use all values provided in a YAML/JSON files in the
         config, override any defaults and values set by
         previous calls into this class.
 
@@ -369,9 +369,9 @@ class ConfigLoader(Generic[C]):
             path (Path): Path to YAML/JSON file
         """
 
-        with path.open("r") as stream:
-            values = yaml.load(stream, yaml.Loader)
-        self.use_values(values)
+        for path in paths:
+            with path.open("r") as stream:
+                self.use_values(yaml.load(stream, yaml.Loader))
 
     def load(self) -> C:
         """

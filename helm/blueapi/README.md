@@ -21,9 +21,10 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | imagePullSecrets | list | `[]` |  |
 | ingress | object | `{"annotations":{},"className":"nginx","enabled":false,"hosts":[{"host":"example.diamond.ac.uk","paths":[{"path":"/","pathType":"Prefix"}]}],"tls":[]}` | Configuring and enabling an ingress allows blueapi to be served at a nicer address, e.g. ixx-blueapi.diamond.ac.uk |
 | ingress.hosts[0] | object | `{"host":"example.diamond.ac.uk","paths":[{"path":"/","pathType":"Prefix"}]}` | Request a host from https://jira.diamond.ac.uk/servicedesk/customer/portal/2/create/91 of the form ixx-blueapi.diamond.ac.uk. Note: pathType: Prefix is required in Diamond's clusters |
-| initContainer | object | `{"enabled":false,"persistentVolume":{"enabled":false,"existingClaimName":""}}` | Configure the initContainer that checks out the scratch configuration repositories |
+| initContainer | object | `{"enabled":false,"persistentVolume":{"enabled":false,"existingClaimName":"","size":"1Gi"}}` | Configure the initContainer that checks out the scratch configuration repositories |
 | initContainer.persistentVolume.enabled | bool | `false` | Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container |
 | initContainer.persistentVolume.existingClaimName | string | `""` | May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release |
+| initContainer.persistentVolume.size | string | `"1Gi"` | Size of persistent volume |
 | initResources | object | `{}` | Override resources for init container. By default copies resources of main container. |
 | livenessProbe | object | `{"failureThreshold":3,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively. This is automatically disabled when in debug mode. |
 | nameOverride | string | `""` |  |

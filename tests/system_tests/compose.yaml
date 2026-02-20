@@ -27,9 +27,9 @@ services:
       - KC_HOSTNAME=http://localhost:8081
     command: ["start-dev"]
     volumes:
-      - ./services/keycloak_config/startup.sh:/tmp/startup.sh
+      - ./services/keycloak_config/:/tmp/config/
     post_start:
-      - command: bash /tmp/startup.sh
+      - command: bash /tmp/config/startup.sh
     ports:
       - 8081:8080
     healthcheck:
@@ -59,3 +59,31 @@ services:
     environment:
       - ISSUER=http://localhost:8081/realms/master
     entrypoint: "sh /mnt/entrypoint.sh"
+
+  blueapi-oauth2-proxy:
+    network_mode: host
+    image: "quay.io/oauth2-proxy/oauth2-proxy:v7.13.0"
+    volumes:
+      - ./services/blueapi-oauth2-proxy/:/opt/config
+    command:
+      [
+        "--alpha-config=/opt/config/oauth2-alpha.yaml",
+        "--config=/opt/config/oauth2-proxy.cfg",
+      ]
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  tiled-oauth2-proxy:
+    network_mode: host
+    image: "quay.io/oauth2-proxy/oauth2-proxy:v7.13.0"
+    volumes:
+      - ./services/tiled-oauth2-proxy/:/opt/config
+    command:
+      [
+        "--alpha-config=/opt/config/oauth2-alpha.yaml",
+        "--config=/opt/config/oauth2-proxy.cfg",
+      ]
+    depends_on:
+      keycloak:
+        condition: service_healthy

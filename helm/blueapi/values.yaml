@@ -205,7 +205,6 @@ worker:
   # -- Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`
   logging:
     level: "INFO"
-    # -- Whether to truncate request and response bodies, which can be arbitrarily large
     graylog:
       enabled: False
       url: tcp://graylog-log-target.diamond.ac.uk:12231/

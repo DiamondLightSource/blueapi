@@ -458,6 +458,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "responses" },
+    { name = "respx" },
     { name = "ruff" },
     { name = "semver" },
     { name = "sphinx-autobuild" },
@@ -495,7 +496,7 @@ requires-dist = [
     { name = "requests" },
     { name = "stomp-py" },
     { name = "super-state-machine" },
-    { name = "tiled", extras = ["client"], specifier = ">=0.2.3" },
+    { name = "tiled", extras = ["client"], specifier = ">=0.2.4" },
     { name = "tomlkit" },
     { name = "uvicorn" },
 ]
@@ -514,6 +515,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "responses" },
+    { name = "respx" },
     { name = "ruff" },
     { name = "semver" },
     { name = "sphinx-autobuild", specifier = ">=2024.4.16" },
@@ -521,7 +523,7 @@ dev = [
     { name = "sphinx-copybutton" },
     { name = "sphinx-design" },
     { name = "sphinxcontrib-openapi" },
-    { name = "tiled", extras = ["minimal-server"], specifier = ">=0.2.3" },
+    { name = "tiled", extras = ["minimal-server"], specifier = ">=0.2.4" },
     { name = "tox-uv" },
     { name = "types-mock" },
     { name = "types-pyyaml" },
@@ -4460,6 +4462,18 @@ wheels = [
 ]
 
 [[package]]
+name = "respx"
+version = "0.22.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f4/7c/96bd0bc759cf009675ad1ee1f96535edcb11e9666b985717eb8c87192a95/respx-0.22.0.tar.gz", hash = "sha256:3c8924caa2a50bd71aefc07aa812f2466ff489f1848c96e954a5362d17095d91", size = 28439, upload-time = "2024-12-19T22:33:59.374Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/67/afbb0978d5399bc9ea200f1d4489a23c9a1dad4eee6376242b8182389c79/respx-0.22.0-py2.py3-none-any.whl", hash = "sha256:631128d4c9aba15e56903fb5f66fb1eff412ce28dd387ca3a81339e52dbd3ad0", size = 25127, upload-time = "2024-12-19T22:33:57.837Z" },
+]
+
+[[package]]
 name = "rich"
 version = "14.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -5255,7 +5269,7 @@ wheels = [
 
 [[package]]
 name = "tiled"
-version = "0.2.3"
+version = "0.2.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -5270,9 +5284,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7e/1e/cc60843c6f40655718dcf2fc9947e2b360fdfa40d4374db361643c1e5341/tiled-0.2.3.tar.gz", hash = "sha256:ce6a8acc5047e767dcc70520d166b10e0840f3e2b9970a06dcf7f9f9f1fb3f7b", size = 2493279, upload-time = "2025-12-17T20:36:45.781Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/42/31d55c627a912462e11aed1912fe1737f2a3c9ae0f347cb25ab05056e8af/tiled-0.2.4.tar.gz", hash = "sha256:406be3fd9303e3343243714a4a7611138ef8b3e0f00cc2ffdacd8af3f1a3e6c5", size = 2500704, upload-time = "2026-02-18T13:37:50.377Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/3c/5098fb82017078cd7324b78c34f136d389e44251719f6332abbad455815d/tiled-0.2.3-py3-none-any.whl", hash = "sha256:f926cd097a430739ad0baddb45540aaeeb868eba9650100e9ec0200ddb866ba5", size = 1846157, upload-time = "2025-12-17T20:36:42.93Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/2c/e631f7d8f24d774cba4cc392265e6d53df1b99e48ace6390330c653c887e/tiled-0.2.4-py3-none-any.whl", hash = "sha256:4cf3c82e5578d793f31f5471d95fdfb58f74c3db5a1310df0a781cfb8c226db7", size = 1702254, upload-time = "2026-02-18T13:37:47.678Z" },
 ]
 
 [package.optional-dependencies]

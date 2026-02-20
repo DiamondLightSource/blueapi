@@ -16,6 +16,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
@@ -584,8 +585,10 @@ async def log_request_details(
 
     response = await call_next(request)
 
+    client = request.client or Address("Unknown", -1)
+
     log_message = (
-        f"{getattr(request.client, 'host', 'NO_ADDRESS')} {request.method}"
+        f"{client.host}:{client.port} {request.method}"
         f" {request.url.path} {response.status_code}"
     )
     extra = {

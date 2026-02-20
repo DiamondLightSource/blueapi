@@ -206,7 +206,6 @@ worker:
   logging:
     level: "INFO"
     # -- Whether to truncate request and response bodies, which can be arbitrarily large
-    truncateBodies: True
     graylog:
       enabled: False
       url: tcp://graylog-log-target.diamond.ac.uk:12231/

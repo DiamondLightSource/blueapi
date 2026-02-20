@@ -385,6 +385,7 @@
                     "type": "object",
                     "properties": {
                         "graylog": {
+                            "description": "Whether to truncate request and response bodies, which can be arbitrarily large",
                             "type": "object",
                             "properties": {
                                 "enabled": {
@@ -397,10 +398,6 @@
                         },
                         "level": {
                             "type": "string"
-                        },
-                        "truncateBodies": {
-                            "description": "Whether to truncate request and response bodies, which can be arbitrarily large",
-                            "type": "boolean"
                         }
                     }
                 },

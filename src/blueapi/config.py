@@ -22,6 +22,7 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -112,7 +113,7 @@ class ServiceAccount(BlueapiBaseModel):
     client_secret: SecretStr = Field(
         description="Service account client secret", default=SecretStr("")
     )
-    token_url: str = Field(
+    token_url: SkipJsonSchema[str] = Field(
         description="Field overridden by OIDCConfig.token_endpoint", default=""
     )
 

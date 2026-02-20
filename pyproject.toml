@@ -69,6 +69,7 @@ dev = [
     "jwcrypto",
     "deepdiff",
     "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
+    "respx"
 ]
 
 [project.scripts]

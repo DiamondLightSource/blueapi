@@ -252,7 +252,7 @@ class TiledAuth(httpx.Auth):
 
     def get_access_token(self):
         with self._sync_lock:
-            response = requests.post(
+            response = httpx.post(
                 self._tiled_auth.token_url,
                 data={
                     "client_id": self._tiled_auth.client_id,

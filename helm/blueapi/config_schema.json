@@ -451,12 +451,6 @@
                     "title": "Client Secret",
                     "type": "string",
                     "writeOnly": true
-                },
-                "token_url": {
-                    "default": "",
-                    "description": "Field overridden by OIDCConfig.token_endpoint",
-                    "title": "Token Url",
-                    "type": "string"
                 }
             },
             "title": "ServiceAccount",

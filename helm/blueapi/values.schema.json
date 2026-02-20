@@ -873,12 +873,6 @@
                     "default": "",
                     "type": "string",
                     "format": "password"
-                },
-                "token_url": {
-                    "title": "Token Url",
-                    "description": "Field overridden by OIDCConfig.token_endpoint",
-                    "default": "",
-                    "type": "string"
                 }
             },
             "additionalProperties": false

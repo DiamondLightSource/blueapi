@@ -3,11 +3,13 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import Mock, patch
 
+import httpx
 import jwt
 import pytest
 import responses
+import respx
 from pydantic import SecretStr
-from starlette.status import HTTP_403_FORBIDDEN
+from starlette.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
 from blueapi.config import OIDCConfig, ServiceAccount
 from blueapi.service import main
@@ -152,31 +154,31 @@ def test_tiled_auth_raises_exception():
         TiledAuth(tiled_auth=auth)
 
 
+@respx.mock
 def test_tiled_auth_sync_auth_flow():
     client_id = "client"
     client_secret = SecretStr("secret")
     token_url = "http://keycloak.com/token"
     access_token = "access_token"
 
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as requests_mock:
-        requests_mock.post(
-            url=token_url,
-            json={"access_token": access_token},
-            status=200,
+    respx.post(token_url).mock(
+        return_value=httpx.Response(
+            status_code=HTTP_200_OK, json={"access_token": access_token}
         )
+    )
 
-        tiled_auth = TiledAuth(
-            tiled_auth=ServiceAccount(
-                client_id=client_id,
-                client_secret=client_secret,
-                token_url=token_url,
-            )
+    tiled_auth = TiledAuth(
+        tiled_auth=ServiceAccount(
+            client_id=client_id,
+            client_secret=client_secret,
+            token_url=token_url,
         )
+    )
 
-        request = Mock()
-        request.headers = {}
+    request = Mock()
+    request.headers = {}
 
-        flow = tiled_auth.sync_auth_flow(request)
-        result = next(flow)
+    flow = tiled_auth.sync_auth_flow(request)
+    result = next(flow)
 
-        assert result.headers["Authorization"] == f"Bearer {access_token}"
+    assert result.headers["Authorization"] == f"Bearer {access_token}"

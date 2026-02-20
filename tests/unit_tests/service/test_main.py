@@ -21,8 +21,15 @@ async def test_log_request_details():
         response = client.post("/", content="foo")
 
         assert response.status_code == 200
+        logger.debug.assert_called_once_with(
+            "testclient:50000 POST /",
+            extra={
+                "request_body": b"foo",
+            },
+        )
+
         logger.info.assert_called_once_with(
-            "testclient POST / 200",
+            "testclient:50000 POST / 200",
             extra={
                 "request_body": b"foo",
             },

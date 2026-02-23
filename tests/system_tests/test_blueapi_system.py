@@ -10,7 +10,7 @@ import requests
 from pydantic import TypeAdapter
 
 from blueapi.client import BlueapiClient
-from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError
+from blueapi.client.event_bus import AnyEvent
 from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
@@ -30,7 +30,13 @@ from blueapi.service.model import (
     TaskResponse,
     WorkerTask,
 )
-from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
+from blueapi.worker.event import (
+    TaskError,
+    TaskResult,
+    TaskStatus,
+    WorkerEvent,
+    WorkerState,
+)
 from blueapi.worker.task_worker import TrackableTask
 
 AUTHORIZED_INSTRUMENT_SESSION = "cm12345-1"
@@ -423,6 +429,7 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
                 task_id=task_id,
                 task_complete=False,
                 task_failed=False,
+                result=None,
             ),
         ),
         WorkerEvent(
@@ -431,6 +438,7 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
                 task_id=task_id,
                 task_complete=False,
                 task_failed=False,
+                result=None,
             ),
         ),
         WorkerEvent(
@@ -439,6 +447,7 @@ def test_progress_with_stomp(client_with_stomp: BlueapiClient):
                 task_id=task_id,
                 task_complete=True,
                 task_failed=False,
+                result=TaskResult(result=None, type="NoneType"),
             ),
         ),
     ]
@@ -515,8 +524,9 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
                 resource.put_nowait(event.doc)
 
     final_event = client_with_stomp.run_task(task, on_event)
-    assert final_event.is_complete() and not final_event.is_error()
-    assert final_event.state is WorkerState.IDLE
+    assert isinstance(final_event.result, TaskResult)
+    assert final_event.task_complete
+    assert not final_event.task_failed
 
     start_doc = start.get_nowait()
     assert start_doc["scan_id"] == scan_id
@@ -563,8 +573,9 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
 )
 def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
     final_event = client_with_stomp.run_task(task)
-    assert final_event.is_complete() and not final_event.is_error()
-    assert final_event.state is WorkerState.IDLE
+    assert isinstance(final_event.result, TaskResult)
+    assert final_event.task_complete
+    assert not final_event.task_failed
 
 
 @pytest.mark.parametrize(
@@ -585,7 +596,7 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
         ),
     ],
 )
-def test_unauthozied_plan_run(
+def test_unauthorized_plan_run(
     client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int
 ):
     resource = Queue(maxsize=1)
@@ -598,8 +609,9 @@ def test_unauthozied_plan_run(
             if event.name == "stream_resource":
                 resource.put_nowait(event.doc)
 
-    with pytest.raises(
-        BlueskyStreamingError,
-        match="404: No such entry",
-    ):
-        client_with_stomp.run_task(task, on_event)
+    outcome = client_with_stomp.run_task(task, on_event)
+    assert outcome.task_failed
+    assert outcome.task_complete
+    assert isinstance(outcome.result, TaskError)
+    assert outcome.result.type == "ClientError"
+    assert outcome.result.message.startswith("404: No such entry: [")

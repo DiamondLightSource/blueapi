@@ -1,8 +1,9 @@
 from collections.abc import Mapping
 from enum import StrEnum
+from typing import Any, Literal, Self
 
 from bluesky.run_engine import RunEngineStateMachine
-from pydantic import Field
+from pydantic import Field, PydanticSchemaGenerationError, TypeAdapter
 from super_state_machine.extras import PropertyMachine, ProxyString
 
 from blueapi.utils import BlueapiBaseModel
@@ -50,6 +51,47 @@ class WorkerState(StrEnum):
         if isinstance(bluesky_state, RunEngineStateMachine.States):
             return cls.from_bluesky_state(bluesky_state.value)
         return WorkerState(str(bluesky_state).upper())
+
+
+class TaskResult(BlueapiBaseModel):
+    """
+    Serializable wrapper around the result of a plan
+
+    If the result is not serializable, the result will be None but the type
+    will be the name of the type. If the result is actually None, the type will
+    be 'NoneType'.
+    """
+
+    outcome: Literal["success"] = "success"
+    """Discriminant for serialization"""
+    result: Any = Field(None)
+    """The serialized result (or None if it is not serializable)"""
+    type: str
+    """The type of the result"""
+
+    @classmethod
+    def from_result(cls, result: Any) -> Self:
+        type_str = type(result).__name__
+        try:
+            value = TypeAdapter(type(result)).dump_python(result)
+        except PydanticSchemaGenerationError:
+            value = None
+        return cls(result=value, type=type_str)
+
+
+class TaskError(BlueapiBaseModel):
+    """Wrapper around an exception raised by a plan"""
+
+    outcome: Literal["error"] = "error"
+    """Discriminant for serialization"""
+    type: str
+    """The class of exception"""
+    message: str
+    """The message of the raised exception"""
+
+    @classmethod
+    def from_exception(cls, err: Exception) -> Self:
+        return cls(type=type(err).__name__, message=str(err))
 
 
 class StatusView(BlueapiBaseModel):
@@ -107,6 +149,7 @@ class TaskStatus(BlueapiBaseModel):
     """
 
     task_id: str
+    result: TaskResult | TaskError | None = Field(None, discriminator="outcome")
     task_complete: bool
     task_failed: bool
 

@@ -8,6 +8,7 @@ from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, TypeVar
+from unittest import mock
 from unittest.mock import Mock, patch
 
 import pytest
@@ -25,7 +26,7 @@ from responses import matchers
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
-from blueapi.cli.cli import main
+from blueapi.cli.cli import ParametersType, main
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.client.rest import (
@@ -52,7 +53,14 @@ from blueapi.service.model import (
     TaskRequest,
     TaskResponse,
 )
-from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
+from blueapi.worker.event import (
+    ProgressEvent,
+    TaskError,
+    TaskResult,
+    TaskStatus,
+    WorkerEvent,
+    WorkerState,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -110,7 +118,7 @@ def test_runs_with_umask_002(
     mock_umask.assert_called_once_with(0o002)
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_connection_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
@@ -120,7 +128,7 @@ def test_connection_error_caught_by_wrapper_func(
     assert result.output == "Error: Failed to establish connection to blueapi server.\n"
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_authentication_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
@@ -133,7 +141,7 @@ def test_authentication_error_caught_by_wrapper_func(
     )
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
     mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
 
@@ -198,15 +206,15 @@ def test_invalid_config_path_handling(runner: CliRunner):
     assert result.exit_code == 1
 
 
-@patch("blueapi.cli.cli.BlueapiClient.get_plans")
+@patch("blueapi.cli.cli.BlueapiClient.plans")
 @patch("blueapi.cli.cli.OutputFormat.FULL.display")
 def test_options_via_env(mock_display, mock_plans, runner: CliRunner):
     result = runner.invoke(
         main, args=["controller", "plans"], env={"BLUEAPI_CONTROLLER_OUTPUT": "full"}
     )
 
-    mock_plans.assert_called_once_with()
-    mock_display.assert_called_once_with(mock_plans.return_value)
+    mock_plans.__iter__.assert_called_once_with()
+    mock_display.assert_called_once_with(PlanResponse(plans=list(mock_plans)))
     assert result.exit_code == 0
 
 
@@ -302,7 +310,10 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             WorkerEvent(
                 state=WorkerState.RUNNING,
                 task_status=TaskStatus(
-                    task_id=task_id, task_complete=False, task_failed=False
+                    task_id=task_id,
+                    task_complete=False,
+                    task_failed=False,
+                    result=None,
                 ),
             ),
             ctx,
@@ -313,7 +324,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id=task_id, task_complete=False, task_failed=False
+                    task_id=task_id, task_complete=False, task_failed=False, result=None
                 ),
             ),
             ctx,
@@ -322,7 +333,10 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id=task_id, task_complete=True, task_failed=False
+                    task_id=task_id,
+                    task_complete=True,
+                    task_failed=False,
+                    result=TaskResult(result=None, type="NoneType"),
                 ),
             ),
             ctx,
@@ -349,6 +363,50 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
     assert result.exit_code == 0
     assert submit_response.call_count == 1
     assert run_response.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "result,failed,message",
+    [
+        (TaskResult(result=None, type="NoneType"), False, "Plan succeeded\n"),
+        (TaskResult(result=32, type="int"), False, "Plan succeeded: 32\n"),
+        (
+            TaskResult(result=None, type="CustomType"),
+            False,
+            "Plan returned unserializable result of type 'CustomType'\n",
+        ),
+        (
+            TaskError(type="ValueError", message="Error with value"),
+            True,
+            "Plan failed: ValueError: Error with value\n",
+        ),
+    ],
+)
+@patch("blueapi.cli.cli.BlueapiClient")
+def test_run_plan_feedback(
+    mock_client: Mock,
+    runner: CliRunner,
+    result: TaskResult | TaskError | None,
+    failed: bool,
+    message: str,
+):
+    bc = mock_client.from_config()
+    bc.run_task.return_value = TaskStatus(
+        task_id="foo_bar",
+        task_complete=True,
+        task_failed=failed,
+        result=result,
+    )
+    res = runner.invoke(
+        main,
+        ["controller", "run", "-i", "cm12345-1", "name"],
+    )
+    bc.run_task.assert_called_once_with(
+        TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
+        on_event=mock.ANY,
+    )
+    assert res.exit_code == 0
+    assert res.stdout == message
 
 
 @responses.activate
@@ -493,9 +551,7 @@ def test_valid_stomp_config_for_listener(
 
 
 @responses.activate
-def test_get_env(
-    runner: CliRunner,
-):
+def test_get_env(runner: CliRunner):
     environment_id = uuid.uuid4()
     responses.add(
         responses.GET,
@@ -512,6 +568,17 @@ def test_get_env(
         "initialized=True "
         "error_message=None\n"
     )
+
+
+@responses.activate
+def test_get_state(runner: CliRunner):
+    responses.add(
+        responses.GET, "http://localhost:8000/worker/state", json="IDLE", status=200
+    )
+    state = runner.invoke(main, ["controller", "state"])
+    print(state.stderr)
+    assert state.exit_code == 0
+    assert state.output == "IDLE\n"
 
 
 @responses.activate(assert_all_requests_are_fired=True)
@@ -705,7 +772,7 @@ def test_error_handling(exception, error_message, runner: CliRunner):
     "params, error",
     [
         ("{", "Parameters are not valid JSON"),
-        ("[]", ""),
+        ("[]", "Parameters must be a JSON object with string keys"),
     ],
 )
 def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
@@ -722,8 +789,8 @@ def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
             params,
         ],
     )
-    assert result.stderr.startswith("Error: " + error)
-    assert result.exit_code == 1
+    assert error in result.stderr
+    assert result.exit_code == 2
 
 
 def test_device_output_formatting():
@@ -897,7 +964,9 @@ def test_event_formatting():
     )
     worker = WorkerEvent(
         state=WorkerState.RUNNING,
-        task_status=TaskStatus(task_id="count", task_complete=False, task_failed=False),
+        task_status=TaskStatus(
+            task_id="count", task_complete=False, task_failed=False, result=None
+        ),
         errors=[],
         warnings=[],
     )
@@ -929,9 +998,12 @@ def test_event_formatting():
         OutputFormat.JSON,
         worker,
         (
-            """{"state": "RUNNING", "task_status": """
-            """{"task_id": "count", "task_complete": false, "task_failed": false}, """
-            """"errors": [], "warnings": []}\n"""
+            '{"state": "RUNNING", "task_status": {'
+            '"task_id": "count", '
+            '"result": null, '
+            '"task_complete": false, '
+            '"task_failed": false'
+            '}, "errors": [], "warnings": []}\n'
         ),
     )
     _assert_matching_formatting(OutputFormat.COMPACT, worker, "Worker Event: RUNNING\n")
@@ -1320,3 +1392,9 @@ def test_config_schema(
             stream.write.assert_called()
     else:
         assert json.loads(result.output) == expected
+
+
+@pytest.mark.parametrize("value,result", [({}, {}), ("{}", {}), (None, None)])
+def test_task_parameter_type(value, result):
+    t = ParametersType()
+    assert t.convert(value, None, None) == result

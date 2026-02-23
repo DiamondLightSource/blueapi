@@ -122,6 +122,10 @@
                         "existingClaimName": {
                             "description": "May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release",
                             "type": "string"
+                        },
+                        "size": {
+                            "description": "Size of persistent volume",
+                            "type": "string"
                         }
                     }
                 }

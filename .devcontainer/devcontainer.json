@@ -13,7 +13,7 @@
         // Allow X11 apps to run inside the container
         "DISPLAY": "${localEnv:DISPLAY}",
         // Put things that allow it in the persistent cache
-        "PRE_COMMIT_HOME": "/cache/pre-commit",
+        "PREK_HOME": "/cache/prek",
         "UV_CACHE_DIR": "/cache/uv",
         "UV_PYTHON_CACHE_DIR": "/cache/uv-python",
         // Make a venv that is specific for this workspace path as the cache is shared
@@ -64,7 +64,7 @@
             "target": "/user-terminal-config",
             "type": "bind"
         },
-        // Keep a persistent cross container cache for uv, pre-commit, and the venvs
+        // Keep a persistent cross container cache for uv, prek, and the venvs
         {
             "source": "devcontainer-shared-cache",
             "target": "/cache",
@@ -73,6 +73,6 @@
     ],
     // Mount the parent as /workspaces so we can pip install peers as editable
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
-    // After the container is created, recreate the venv then make pre-commit first run faster
-    "postCreateCommand": "uv venv --clear && uv sync && pre-commit install --install-hooks"
+    // After the container is created, recreate the venv then make prek first run faster
+    "postCreateCommand": "uv venv --clear && uv sync && prek install --install-hooks"
 }

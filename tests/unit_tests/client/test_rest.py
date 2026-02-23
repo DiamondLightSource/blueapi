@@ -16,7 +16,7 @@ from blueapi.client.rest import (
     UnknownPlanError,
     _create_task_exceptions,
 )
-from blueapi.config import OIDCConfig
+from blueapi.config import OIDCConfig, TcpUrl
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import EnvironmentResponse
 
@@ -196,3 +196,47 @@ def test_parameter_error_other_string():
         input=34,
     )
     assert str(p1) == "Invalid value 34 for field field_one.0: error_message"
+
+
+@responses.activate
+def test_get_stomp_config(rest: BlueapiRestClient):
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/config/stomp",
+        json={
+            "enabled": True,
+            "url": "tcp://messagebus.example.com",
+            "auth": {"username": "foo", "password": "bar"},
+        },
+        status=200,
+    )
+    stomp = rest.get_stomp_config()
+    assert stomp is not None
+    assert stomp.enabled
+    assert stomp.url == TcpUrl("tcp://messagebus.example.com")
+    assert stomp.auth is not None
+    assert stomp.auth.username == "foo"
+    assert stomp.auth.password.get_secret_value() == "bar"
+
+
+@responses.activate
+def test_get_no_stomp_config(rest: BlueapiRestClient):
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/config/stomp",
+        status=204,
+    )
+    stomp = rest.get_stomp_config()
+    assert stomp is None
+
+
+@responses.activate
+def test_get_stomp_config_from_old_server(rest: BlueapiRestClient):
+    responses.add(
+        responses.GET,
+        "http://localhost:8000/config/stomp",
+        json={},  # Weird default handling for 404 - See #1409
+        status=404,
+    )
+    stomp = rest.get_stomp_config()
+    assert stomp is None

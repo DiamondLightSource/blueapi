@@ -14,7 +14,13 @@ from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, CORSConfig, OIDCConfig, RestConfig
+from blueapi.config import (
+    ApplicationConfig,
+    CORSConfig,
+    OIDCConfig,
+    RestConfig,
+    StompConfig,
+)
 from blueapi.core.bluesky_types import Plan
 from blueapi.service import main
 from blueapi.service.interface import (
@@ -707,6 +713,27 @@ def test_get_without_authentication(mock_runner: Mock, client: TestClient) -> No
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {"detail": "Not authenticated"}
+
+
+def test_stomp_config_not_found_when_stomp_is_disabled(
+    mock_runner: Mock, client: TestClient
+):
+    mock_runner.run.return_value = None
+    response = client.get("/config/stomp")
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.text == ""
+
+
+def test_get_stomp_config(
+    mock_runner: Mock,
+    mock_authn_server,
+    client: TestClient,
+):
+    stomp_config = StompConfig(enabled=False)
+    mock_runner.run.return_value = stomp_config
+    response = client.get("/config/stomp")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == stomp_config.model_dump(mode="json")
 
 
 def test_oidc_config_not_found_when_auth_is_disabled(

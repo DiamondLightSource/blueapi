@@ -614,4 +614,6 @@ def test_unauthorized_plan_run(
     assert outcome.task_complete
     assert isinstance(outcome.result, TaskError)
     assert outcome.result.type == "ClientError"
-    assert outcome.result.message.startswith("403: Access policy rejects the provided access blob")
+    assert outcome.result.message.startswith(
+        "403: Access policy rejects the provided access blob"
+    )

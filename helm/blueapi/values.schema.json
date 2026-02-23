@@ -844,6 +844,11 @@
             "title": "ScratchRepository",
             "type": "object",
             "properties": {
+                "branch": {
+                    "title": "Branch",
+                    "description": "Branch of repo to check out - defaults to remote's default when cloning and the existing branch when the repo already exists",
+                    "type": "string"
+                },
                 "name": {
                     "title": "Name",
                     "description": "Unique name for this repository in the scratch directory",

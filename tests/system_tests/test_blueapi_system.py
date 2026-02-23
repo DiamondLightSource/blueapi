@@ -183,7 +183,7 @@ def authenticated_get_methods() -> list[str]:
         and "self" in inspect.signature(getattr(BlueapiRestClient, method)).parameters
         # oidc_config and stomp config can be accessed without auth
         and method != "get_oidc_config"
-        and method != "_event_bus"
+        and method != "get_stomp_config"
     ]
 
 

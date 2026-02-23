@@ -1,3 +1,4 @@
+import code
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
@@ -104,8 +105,12 @@ def _exception(response: requests.Response) -> Exception | None:
     code = response.status_code
     if code < 400:
         return None
+    elif code == 401:
+        return BlueskyRemoteControlError(code, "Unauthorized: Authentication required.")
+    elif code == 403:
+        return BlueskyRemoteControlError(code, "Forbidden: You do not have permission.")
     elif code == 404:
-        return KeyError(str(response.json()))
+        return BlueskyRemoteControlError(code, "Resource not found.")
     else:
         return BlueskyRemoteControlError(code, str(response))
 

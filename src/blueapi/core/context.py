@@ -125,7 +125,7 @@ class BlueskyContext:
     configuration: InitVar[ApplicationConfig | None] = None
 
     run_engine: RunEngine = field(
-        default_factory=lambda: RunEngine(context_managers=[])
+        default_factory=lambda: RunEngine(context_managers=[], call_returns_result=True)
     )
     tiled_conf: TiledConfig | None = field(default=None, init=False, repr=False)
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)

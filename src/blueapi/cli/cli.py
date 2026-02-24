@@ -362,6 +362,29 @@ def run_plan(
         raise ClickException(f"task could not run: {ve}") from ve
 
 
+@controller.command(name="ws")
+@click.argument("name", type=str)
+@click.argument("parameters", type=ParametersType(), default={}, required=False)
+def run_blocking(
+    name: str,
+    parameters: TaskParameters,
+):
+    instrument_session = "cm33-3"
+
+    from websockets.sync.client import connect
+
+    task_req = TaskRequest(
+        name=name,
+        params=parameters,
+        instrument_session=instrument_session,
+    )
+
+    with connect("ws://localhost:8007/run_plan") as ws:
+        ws.send(task_req.model_dump_json())
+        while message := ws.recv():
+            print(message)
+
+
 @controller.command(name="state")
 @click.pass_obj
 @check_connection

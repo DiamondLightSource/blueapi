@@ -19,6 +19,6 @@ tiled:
   enabled: true
   url: http://localhost:8407/api/v1
 oidc:
-  well_known_url: "http://localhost:8081/realms/master/.well-known/openid-configuration"
+  issuer: "http://localhost:8081/realms/master"
   client_id: "ixx-cli-blueapi"
   client_audience: "ixx-blueapi"

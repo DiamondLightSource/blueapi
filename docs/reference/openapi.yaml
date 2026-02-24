@@ -92,17 +92,17 @@ components:
           description: Client ID
           title: Client Id
           type: string
+        issuer:
+          description: URL of OIDC provider
+          title: Issuer
+          type: string
         logout_redirect_endpoint:
           default: ''
           description: The oidc endpoint required to logout
           title: Logout Redirect Endpoint
           type: string
-        well_known_url:
-          description: URL to fetch OIDC config from the provider
-          title: Well Known Url
-          type: string
       required:
-      - well_known_url
+      - issuer
       - client_id
       title: OIDCConfig
       type: object

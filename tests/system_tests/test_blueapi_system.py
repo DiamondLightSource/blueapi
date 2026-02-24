@@ -222,8 +222,8 @@ def test_cannot_access_endpoints(
 
 
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
-    assert client_without_auth.oidc_config == OIDCConfig(
-        well_known_url="http://localhost:8081/realms/master/.well-known/openid-configuration",
+    assert client_without_auth.get_oidc_config() == OIDCConfig(
+        issuer="http://localhost:8081/realms/master",
         client_id="ixx-cli-blueapi",
         client_audience="ixx-blueapi",
     )

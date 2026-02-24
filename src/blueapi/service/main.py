@@ -41,6 +41,7 @@ from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum, WorkerEvent
+from blueapi.worker.worker_errors import WorkerBusyError
 
 from .model import (
     DeviceModel,
@@ -555,24 +556,36 @@ async def run_plan(
     # accept task request through socket
     rq = await ws.receive_json()
     # submit task to runner
-    task_request: TaskRequest = TaskRequest.model_validate(rq)
-    task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
+    try:
+        task_request: TaskRequest = TaskRequest.model_validate(rq)
+        task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
+    except ValidationError:
+        await ws.close(code=1003, reason="invalid args")
+        return
+
     # add listener to runner
     tx, rx = Pipe()
     h = runner.run(interface.pipe_events, tx=tx)
     # start task
-    task = WorkerTask(task_id=task_id)
-    runner.run(
-        interface.begin_task,
-        task=task,
-    )
+    try:
+        task = WorkerTask(task_id=task_id)
+        runner.run(
+            interface.begin_task,
+            task=task,
+        )
+    except WorkerBusyError:
+        await ws.close(code=1013, reason="Worker busy")
+        return
     # pipe events to ws
-    while True:
-        event: WorkerEvent = await run_in_threadpool(rx.recv)
-        await ws.send_json(event.model_dump(mode="json"))
-        if event.is_complete():
-            break
-    await ws.close()
+    try:
+        while True:
+            event: WorkerEvent = await run_in_threadpool(rx.recv)
+            await ws.send_json(event.model_dump(mode="json"))
+            if event.is_complete():
+                break
+    finally:
+        await ws.close()
+        runner.run(interface.unpipe_events, h=h)
 
 
 @start_as_current_span(TRACER, "config")

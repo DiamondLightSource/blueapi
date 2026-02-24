@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Mapping
 from functools import cache
 from multiprocessing.connection import Connection
@@ -22,6 +23,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.serialization import access_blob
+from blueapi.worker import task_worker
 from blueapi.worker.event import TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -29,7 +31,7 @@ from blueapi.worker.task_worker import TaskWorker, TrackableTask
 """This module provides interface between web application and underlying Bluesky
 context and worker"""
 
-
+LOGGER = logging.getLogger(__name__)
 _CONFIG: ApplicationConfig = ApplicationConfig()
 
 
@@ -279,9 +281,14 @@ def pipe_events(tx: Connection) -> int:
         worker_event: WorkerEvent,
         cor_id: str | None,
     ) -> None:
+        LOGGER.info("Sending event")
         tx.send(worker_event)
 
     task_worker = worker()
     sub_id = task_worker.worker_events.subscribe(handler)
-
     return sub_id
+
+
+def unpipe_events(h: int) -> None:
+    task_worker = worker()
+    task_worker.worker_events.unsubscribe(h)

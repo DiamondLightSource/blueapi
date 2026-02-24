@@ -16,6 +16,7 @@ from pydantic import (
     BaseModel,
     Field,
     HttpUrl,
+    SecretStr,
     TypeAdapter,
     UrlConstraints,
     ValidationError,
@@ -107,13 +108,26 @@ class StompConfig(BlueapiBaseModel):
     )
 
 
+class ServiceAccount(BlueapiBaseModel):
+    client_id: str = Field(description="Service account client ID", default="")
+    client_secret: SecretStr = Field(
+        description="Service account client secret", default=SecretStr("")
+    )
+    token_url: SkipJsonSchema[str] = Field(
+        description="Field overridden by OIDCConfig.token_endpoint", default=""
+    )
+
+
 class TiledConfig(BlueapiBaseModel):
     enabled: bool = Field(
         description="True if blueapi should forward data to a Tiled instance",
         default=False,
     )
     url: HttpUrl = HttpUrl("http://localhost:8407")
-    api_key: str | None = os.environ.get("TILED_SINGLE_USER_API_KEY", None)
+    authentication: str | ServiceAccount | None = Field(
+        description="Tiled Authentication can be API_KEY or OIDC Service account",
+        default=os.environ.get("TILED_SINGLE_USER_API_KEY", None),
+    )
 
 
 class WorkerEventConfig(BlueapiBaseModel):

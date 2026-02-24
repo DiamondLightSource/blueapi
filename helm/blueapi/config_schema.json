@@ -440,6 +440,28 @@
             "type": "object",
             "$id": "ScratchRepository"
         },
+        "ServiceAccount": {
+            "additionalProperties": false,
+            "properties": {
+                "client_id": {
+                    "default": "",
+                    "description": "Service account client ID",
+                    "title": "Client Id",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "default": "",
+                    "description": "Service account client secret",
+                    "format": "password",
+                    "title": "Client Secret",
+                    "type": "string",
+                    "writeOnly": true
+                }
+            },
+            "title": "ServiceAccount",
+            "type": "object",
+            "$id": "ServiceAccount"
+        },
         "StompConfig": {
             "additionalProperties": false,
             "description": "Config for connecting to stomp broker",
@@ -491,17 +513,21 @@
                     "title": "Url",
                     "type": "string"
                 },
-                "api_key": {
+                "authentication": {
                     "anyOf": [
                         {
                             "type": "string"
+                        },
+                        {
+                            "$ref": "ServiceAccount"
                         },
                         {
                             "type": "null"
                         }
                     ],
                     "default": null,
-                    "title": "Api Key"
+                    "description": "Tiled Authentication can be API_KEY or OIDC Service account",
+                    "title": "Authentication"
                 }
             },
             "title": "TiledConfig",

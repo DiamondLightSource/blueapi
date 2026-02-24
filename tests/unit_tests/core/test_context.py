@@ -7,6 +7,7 @@ from typing import Any, Generic, TypeVar, Union
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
+import responses
 from bluesky.protocols import (
     Descriptor,
     Movable,
@@ -39,7 +40,9 @@ from blueapi.config import (
     DodalSource,
     EnvironmentConfig,
     MetadataConfig,
+    OIDCConfig,
     PlanSource,
+    ServiceAccount,
     TiledConfig,
 )
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
@@ -874,7 +877,7 @@ def test_setup_default_not_makes_tiled_inserter():
 
 @pytest.mark.parametrize("api_key", [None, "foo"])
 def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
-    config = TiledConfig(enabled=True, api_key=api_key)
+    config = TiledConfig(enabled=True, authentication=api_key)
     context = BlueskyContext(
         ApplicationConfig(
             tiled=config,
@@ -886,8 +889,38 @@ def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
 
 @pytest.mark.parametrize("api_key", [None, "foo"])
 def test_must_have_instrument_set_for_tiled(api_key: str | None):
-    config = TiledConfig(enabled=True, api_key=api_key)
+    config = TiledConfig(enabled=True, authentication=api_key)
     with pytest.raises(InvalidConfigError):
         BlueskyContext(
             ApplicationConfig(tiled=config, env=EnvironmentConfig(metadata=None))
         )
+
+
+def test_must_have_oidc_config_for_tiled():
+    config = TiledConfig(enabled=True, authentication=ServiceAccount())
+    with pytest.raises(
+        InvalidConfigError,
+        match="Tiled has been configured but oidc configuration is missing",
+    ):
+        BlueskyContext(
+            ApplicationConfig(
+                tiled=config,
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+                oidc=None,
+            )
+        )
+
+
+def test_token_url_set_for_tiled(
+    mock_authn_server: responses.RequestsMock, oidc_config: OIDCConfig
+):
+    config = TiledConfig(enabled=True, authentication=ServiceAccount())
+
+    context = BlueskyContext(
+        ApplicationConfig(
+            tiled=config,
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+            oidc=oidc_config,
+        )
+    )
+    assert context.tiled_conf.authentication.token_url == oidc_config.token_endpoint  # type:ignore

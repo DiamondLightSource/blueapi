@@ -872,6 +872,28 @@
             },
             "additionalProperties": false
         },
+        "ServiceAccount": {
+            "$id": "ServiceAccount",
+            "title": "ServiceAccount",
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "title": "Client Id",
+                    "description": "Service account client ID",
+                    "default": "",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "title": "Client Secret",
+                    "description": "Service account client secret",
+                    "writeOnly": true,
+                    "default": "",
+                    "type": "string",
+                    "format": "password"
+                }
+            },
+            "additionalProperties": false
+        },
         "StompConfig": {
             "$id": "StompConfig",
             "title": "StompConfig",
@@ -910,11 +932,15 @@
             "title": "TiledConfig",
             "type": "object",
             "properties": {
-                "api_key": {
-                    "title": "Api Key",
+                "authentication": {
+                    "title": "Authentication",
+                    "description": "Tiled Authentication can be API_KEY or OIDC Service account",
                     "anyOf": [
                         {
                             "type": "string"
+                        },
+                        {
+                            "$ref": "ServiceAccount"
                         },
                         {
                             "type": "null"

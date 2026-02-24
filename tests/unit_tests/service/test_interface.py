@@ -459,6 +459,12 @@ def test_get_oidc_config(oidc_config: OIDCConfig):
     assert interface.get_oidc_config() == oidc_config
 
 
+def test_get_stomp_config():
+    stomp_config = StompConfig(enabled=False)
+    interface.set_config(ApplicationConfig(stomp=stomp_config))
+    assert interface.get_stomp_config() is stomp_config
+
+
 def test_stomp_config(mock_stomp_client: StompClient):
     with patch(
         "blueapi.service.interface.StompClient.for_broker",

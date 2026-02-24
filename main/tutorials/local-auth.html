@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Enable Persistent Volumes &#8212; blueapi 1.12.1.dev2+gced8f44d4 documentation</title>
+    <title>Run Auth Locally &#8212; blueapi 1.12.1.dev2+gced8f44d4 documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/use-persistent-volumes';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/local-auth';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/blueapi/switcher.json';
@@ -58,8 +58,8 @@
     <link rel="icon" href="../_static/blueapi-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Write Devices for Blueapi" href="write-devices.html" />
-    <link rel="prev" title="Run in a Container" href="run-container.html" />
+    <link rel="next" title="Quickstart guide" href="quickstart.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -146,14 +146,14 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../how-to.html">
     How-to Guides
   </a>
@@ -294,14 +294,14 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../how-to.html">
     How-to Guides
   </a>
@@ -397,18 +397,13 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="add-plans-and-devices.html">Add Plans and Devices to your Blueapi Environment</a></li>
-<li class="toctree-l1"><a class="reference internal" href="authenticate.html">Authenticate to BlueAPI-Cli</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configure-app.html">Configure the Application</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configure-logging.html">Configure Logging</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
-<li class="toctree-l1"><a class="reference internal" href="edit-live.html">Edit Plans and Device Live</a></li>
-<li class="toctree-l1"><a class="reference internal" href="integrate-with-numtracker.html">Integrate With Numtracker</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-cli.html">Control the Worker via the CLI</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a Container</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Enable Persistent Volumes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="write-devices.html">Write Devices for Blueapi</a></li>
-<li class="toctree-l1"><a class="reference internal" href="write-plans.html">Write Bluesky Plans for Blueapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run Auth Locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-bus.html">Run with local message bus</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-plan.html">Run a Plan</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-with-dev.html">Run/Debug in a Developer Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripting-plans.html">Scripting Plans</a></li>
 </ul>
 </div>
 </nav></div>
@@ -450,9 +445,9 @@
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
+    <li class="breadcrumb-item"><a href="../tutorials.html" class="nav-link">Tutorials</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Enable Persistent Volumes</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Run Auth Locally</span></li>
   </ul>
 </nav>
 </div>
@@ -469,38 +464,24 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="enable-persistent-volumes">
-<h1>Enable Persistent Volumes<a class="headerlink" href="#enable-persistent-volumes" title="Link to this heading">#</a></h1>
-<p>BlueAPI can use persistent volumes as a scratch area. This allows the user to retain different environments for different versions of BlueAPI, and to avoid problems related to the shared file system such as permission issues.</p>
-<section id="configuration">
-<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="configure-app.html"><span class="std std-doc">Configure the Application</span></a></p>
-</div>
-<p>The relevant configuration is below:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># -- Configure the initContainer that checks out the scratch configuration repositories</span>
-<span class="nt">initContainer</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">  </span><span class="nt">persistentVolume</span><span class="p">:</span>
-<span class="w">    </span><span class="c1"># -- Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem</span>
-<span class="w">    </span><span class="c1"># If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container</span>
-<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="c1"># -- May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release</span>
-<span class="w">    </span><span class="nt">existingClaimName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
-</pre></div>
-</div>
-<p>With both <code class="docutils literal notranslate"><span class="pre">initContainer.enabled</span></code> and <code class="docutils literal notranslate"><span class="pre">initContainer.persistentVolume.enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>, BlueAPI will create or attempt to bind to an existing Persistent Volume Claim, which when fulfilled will be used as a scratch area.</p>
-</section>
-<section id="reusing-persistent-volume-claims">
-<h2>Reusing Persistent Volume Claims<a class="headerlink" href="#reusing-persistent-volume-claims" title="Link to this heading">#</a></h2>
-<p>BlueAPI can reuse existing PVCs by setting <code class="docutils literal notranslate"><span class="pre">initContainer.persistentVolume.existingClaimName</span></code>. When this is not set it defaults to <code class="docutils literal notranslate"><span class="pre">scratch-&lt;blueapi-version&gt;</span></code>. meaning the same Persistent Volume is reused when installing the same version of BlueAPI in a given namespace.</p>
-<p>This can be set to any value to create and reuse arbitrarily named PVs.</p>
-</section>
-<section id="directly-editing-persistent-volumes">
-<h2>Directly Editing Persistent Volumes<a class="headerlink" href="#directly-editing-persistent-volumes" title="Link to this heading">#</a></h2>
-<p>The easiest way to interact with the created persistent volume is via the Kubernetes plugin for VSCode. <a class="reference external" href="https://diamondlightsource.github.io/python-copier-template/main/how-to/debug-in-cluster.html#debugging-in-the-cluster">This is documented here.</a></p>
-</section>
+  <section id="run-auth-locally">
+<h1>Run Auth Locally<a class="headerlink" href="#run-auth-locally" title="Link to this heading">#</a></h1>
+<p>BlueAPI can be secured using OIDC authenticaiton. For development it can be useful to run a containerised version of the OIDC stack, to serve a local instance of BlueAPI.</p>
+<p>To run the stack:</p>
+<ol class="arabic simple">
+<li><p>In the root directory run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">submodule</span> <span class="pre">update</span> <span class="pre">--init</span> <span class="pre">--recursive</span></code> to initialise the example-services repo</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">-f</span> <span class="pre">tests/system_tests/compose.yaml</span> <span class="pre">up</span> <span class="pre">-d</span></code> to launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs, in detached mode</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">tests/system_tests/.env</span></code> which will set required EPICS environmental variables</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">blueapi</span> <span class="pre">-c</span> <span class="pre">tests/system_tests/config.yaml</span> <span class="pre">serve</span></code> to launch BlueAPI configured to use the launched stack. This may take a while, as BlueAPI will attempt to connect to a number of devices via Channel Access</p></li>
+</ol>
+<p>To log in through the BlueAPI CLI:</p>
+<ol class="arabic simple">
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">blueapi</span> <span class="pre">login</span></code> (if you want to run a plan with stomp config, add the <code class="docutils literal notranslate"><span class="pre">-c</span> <span class="pre">tests/system_tests/config.yaml</span></code> parameter)</p></li>
+<li><p>Follow the login prompted to Keycloak, then log in with the username <code class="docutils literal notranslate"><span class="pre">admin</span></code> and password <code class="docutils literal notranslate"><span class="pre">admin</span></code></p></li>
+<li><p>When prompted by Keycloak, grant BlueAPI access to the listed privileges</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">blueapi</span> <span class="pre">controller</span> <span class="pre">plans</span></code> to check that the log in has succeeded</p></li>
+</ol>
+<p>By default the BlueAPI instance will be available via the OAuth2 proxy at <code class="docutils literal notranslate"><span class="pre">localhost:4180</span></code>, and Tiled through its OAuth2 proxy at <code class="docutils literal notranslate"><span class="pre">localhost:4181</span></code>.</p>
 </section>
 
 
@@ -514,20 +495,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="run-container.html"
+       href="installation.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Run in a Container</p>
+        <p class="prev-next-title">Installation</p>
       </div>
     </a>
     <a class="right-next"
-       href="write-devices.html"
+       href="quickstart.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Write Devices for Blueapi</p>
+        <p class="prev-next-title">Quickstart guide</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -543,24 +524,10 @@
 
 
   <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reusing-persistent-volume-claims">Reusing Persistent Volume Claims</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#directly-editing-persistent-volumes">Directly Editing Persistent Volumes</a></li>
-</ul>
-  </nav></div>
-
-  <div class="sidebar-secondary-item">
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/how-to/use-persistent-volumes.md">
+    <a href="https://github.com/DiamondLightSource/blueapi/edit/main/docs/tutorials/local-auth.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -576,7 +543,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/how-to/use-persistent-volumes.md.txt"
+      <li><a href="../_sources/tutorials/local-auth.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

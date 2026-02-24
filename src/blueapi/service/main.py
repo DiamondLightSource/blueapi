@@ -16,8 +16,9 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
@@ -576,14 +577,25 @@ async def add_api_version_header(
 
 
 async def log_request_details(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
 ) -> Response:
-    msg = f"method: {request.method} url: {request.url} body: {await request.body()}"
-    if request.url.path == "/healthz":
-        LOGGER.debug(msg)
-    else:
-        LOGGER.info(msg)
+    """Middleware to log all request's host, method, path, status and request and
+    body"""
+    request_body = await request.body()
+    client = request.client or Address("Unknown", -1)
+    log_message = f"{client.host}:{client.port} {request.method} {request.url.path}"
+    extra = {
+        "request_body": request_body,
+    }
+    LOGGER.debug(log_message, extra=extra)
+
     response = await call_next(request)
+    log_message += f" {response.status_code}"
+    if request.url.path == "/healthz":
+        LOGGER.debug(log_message, extra=extra)
+    else:
+        LOGGER.info(log_message, extra=extra)
+
     return response
 
 

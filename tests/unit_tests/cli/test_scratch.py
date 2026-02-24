@@ -4,9 +4,10 @@ import uuid
 from collections.abc import Generator
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import Mock, PropertyMock, call, patch
+from unittest.mock import ANY, MagicMock, Mock, PropertyMock, call, patch
 
 import pytest
+from git import Repo
 
 from blueapi.cli.scratch import (
     _fetch_installed_packages_details,
@@ -99,6 +100,11 @@ def test_repo_not_cloned_and_validated_if_found_locally(
     mock_repo: Mock,
     directory_path_with_sgid: Path,
 ):
+    repo = MagicMock(spec=Repo)
+    # No branch is specified so raise error if branches are checked
+    del repo.heads
+    mock_repo.return_value = repo
+
     ensure_repo("http://example.com/foo.git", directory_path_with_sgid)
     mock_repo.assert_called_once_with(directory_path_with_sgid)
     mock_repo.clone_from.assert_not_called()
@@ -109,6 +115,11 @@ def test_repo_cloned_if_not_found_locally(
     mock_repo: Mock,
     nonexistant_path: Path,
 ):
+    repo = MagicMock(spec=Repo)
+    # No branch is specified so raise error if branches are checked
+    del repo.heads
+    mock_repo.clone_from.return_value = repo
+
     ensure_repo("http://example.com/foo.git", nonexistant_path)
     mock_repo.assert_not_called()
     mock_repo.clone_from.assert_called_once_with(
@@ -141,6 +152,46 @@ def test_repo_cloned_with_correct_umask(
 def test_repo_discovery_errors_if_file_found_with_repo_name(file_path: Path):
     with pytest.raises(KeyError):
         ensure_repo("http://example.com/foo.git", file_path)
+
+
+@patch("blueapi.cli.scratch.Repo")
+def test_cloned_repo_changes_to_new_branch(mock_repo, directory_path: Path):
+    repo = MagicMock(name="ClonedRepo", spec=Repo)
+    repo.heads.demo = None
+    mock_repo.clone_from.return_value = repo
+
+    ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
+
+    mock_repo.clone_from.assert_called_once_with("http://example.com/foo.git", ANY)
+    repo.create_head.assert_called_once_with("demo", ANY)
+    repo.create_head().checkout.assert_called_once()
+
+
+@patch("blueapi.cli.scratch.Repo")
+def test_existing_repo_changes_to_existing_branch(mock_repo, directory_path: Path):
+    (directory_path / "demo_branch").mkdir()
+    repo = Mock(spec=Repo)
+    mock_repo.return_value = repo
+
+    ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
+
+    mock_repo.clone_from.assert_not_called()
+    repo.create_head.assert_not_called()
+    repo.heads.demo.checkout.assert_called_once()
+
+
+@patch("blueapi.cli.scratch.Repo")
+def test_existing_repo_changes_to_new_branch(mock_repo, directory_path: Path):
+    (directory_path / "demo_branch").mkdir()
+    repo = MagicMock(name="ExistingRepo", spec=Repo)
+    repo.heads.demo = None
+    mock_repo.return_value = repo
+
+    ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
+
+    mock_repo.clone_from.assert_not_called()
+    repo.create_head.assert_called_once_with("demo", repo.remotes[0].refs["demo"])
+    repo.create_head().checkout.assert_called_once()
 
 
 def test_setup_scratch_fails_on_nonexistant_root(
@@ -248,6 +299,7 @@ def test_setup_scratch_iterates_repos(
             ScratchRepository(
                 name="bar",
                 remote_url="http://example.com/bar.git",
+                branch="demo",
             ),
         ],
     )
@@ -255,8 +307,10 @@ def test_setup_scratch_iterates_repos(
 
     mock_ensure_repo.assert_has_calls(
         [
-            call("http://example.com/foo.git", directory_path_with_sgid / "foo"),
-            call("http://example.com/bar.git", directory_path_with_sgid / "bar"),
+            call("http://example.com/foo.git", directory_path_with_sgid / "foo", None),
+            call(
+                "http://example.com/bar.git", directory_path_with_sgid / "bar", "demo"
+            ),
         ]
     )
 

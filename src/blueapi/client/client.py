@@ -41,7 +41,7 @@ from blueapi.worker import WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
-from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
+from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
 from .rest import BlueapiRestClient, BlueskyRemoteControlError
 
 TRACER = get_tracer("client")
@@ -445,7 +445,7 @@ class BlueapiClient:
         task: TaskRequest,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
-    ) -> WorkerEvent:
+    ) -> TaskStatus:
         """
         Synchronously run a task, requires a message bus connection
 
@@ -468,7 +468,7 @@ class BlueapiClient:
         task_response = self._rest.create_task(task)
         task_id = task_response.task_id
 
-        complete: Future[WorkerEvent] = Future()
+        complete: Future[TaskStatus] = Future()
 
         def inner_on_event(event: AnyEvent, ctx: MessageContext) -> None:
             match event:
@@ -490,19 +490,19 @@ class BlueapiClient:
                         log.error(
                             f"Callback ({cb}) failed for event: {event}", exc_info=e
                         )
-                if isinstance(event, WorkerEvent) and (
-                    (event.is_complete()) and (ctx.correlation_id == task_id)
+                if (
+                    isinstance(event, WorkerEvent)
+                    and (event.is_complete())
+                    and (ctx.correlation_id == task_id)
                 ):
-                    if event.task_status is not None and event.task_status.task_failed:
+                    if event.task_status is None:
                         complete.set_exception(
-                            BlueskyStreamingError(
-                                "\n".join(event.errors)
-                                if len(event.errors) > 0
-                                else "Unknown error"
+                            BlueskyRemoteControlError(
+                                "Server completed without task status"
                             )
                         )
                     else:
-                        complete.set_result(event)
+                        complete.set_result(event.task_status)
 
         with self._events:
             self._events.subscribe_to_all_events(inner_on_event)

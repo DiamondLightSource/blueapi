@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from functools import cache
+from multiprocessing.connection import Connection
 from typing import Any
 
 from bluesky.callbacks.tiled_writer import TiledWriter
@@ -270,3 +271,17 @@ def get_python_env(
     """Retrieve information about the Python environment"""
     scratch = config().scratch
     return get_python_environment(config=scratch, name=name, source=source)
+
+
+def pipe_events(tx: Connection) -> int:
+
+    def handler(
+        worker_event: WorkerEvent,
+        cor_id: str | None,
+    ) -> None:
+        tx.send(worker_event)
+
+    task_worker = worker()
+    sub_id = task_worker.worker_events.subscribe(handler)
+
+    return sub_id

@@ -572,8 +572,7 @@ async def run_plan(
         await ws.send_json(event.model_dump(mode="json"))
         if event.is_complete():
             break
-    # ???
-    # profit
+    await ws.close()
 
 
 @start_as_current_span(TRACER, "config")

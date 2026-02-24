@@ -381,7 +381,7 @@ def run_blocking(
 
     with connect("ws://localhost:8007/run_plan") as ws:
         ws.send(task_req.model_dump_json())
-        while message := ws.recv():
+        for message in ws:
             print(message)
 
 

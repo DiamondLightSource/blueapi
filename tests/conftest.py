@@ -44,7 +44,7 @@ def run_engine(request):
     return run_engine
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def exporter() -> JsonObjectSpanExporter:
     setup_tracing("test", False)
     exporter = JsonObjectSpanExporter()

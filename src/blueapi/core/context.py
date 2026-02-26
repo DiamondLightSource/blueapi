@@ -445,12 +445,13 @@ class BlueskyContext:
                 ) -> CoreSchema:
                     def valid(value):
                         val = self.find_device(value)
-                        if not val or not is_compatible(
-                            val, cls.origin or target, cls.args
-                        ):
+                        if not val:
+                            raise ValueError(f"Device {value} cannot be found")
+                        elif not is_compatible(val, cls.origin or target, cls.args):
+                            actual = qualified_name(type(val))
                             required = qualified_generic_name(target)
                             raise ValueError(
-                                f"Device {value} is not of type {required}"
+                                f"Device {value} ({actual}) is not of type {required}"
                             )
                         return val
 

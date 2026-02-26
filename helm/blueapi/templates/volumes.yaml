@@ -13,3 +13,19 @@ spec:
     requests:
       storage: {{ .Values.initContainer.persistentVolume.size }} 
 {{- end }}
+
+{{- range .Values.unmountedPVCs }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "blueapi.fullname" $ }}-{{ .name }}
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .size }} 
+{{- end }}

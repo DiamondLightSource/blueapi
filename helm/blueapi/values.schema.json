@@ -332,6 +332,9 @@
                 }
             }
         },
+        "unmountedPVCs": {
+            "type": "array"
+        },
         "volumeMounts": {
             "description": "Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name.",
             "type": "array",

@@ -1,0 +1,2 @@
+[console_scripts]
+blueapi = blueapi.cli:main

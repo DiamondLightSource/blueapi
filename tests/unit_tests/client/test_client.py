@@ -20,7 +20,7 @@ from blueapi.client.client import (
 )
 from blueapi.client.event_bus import AnyEvent, EventBusClient
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
-from blueapi.config import MissingStompConfigurationError
+from blueapi.config import MissingStompConfigurationError, StompConfig, TcpUrl
 from blueapi.core import DataEvent
 from blueapi.service.model import (
     DeviceModel,
@@ -376,12 +376,34 @@ def test_resume(
     )
 
 
-def test_cannot_run_task_without_message_bus(client: BlueapiClient):
+def test_cannot_run_task_without_message_bus(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.get_stomp_config.return_value = None
     with pytest.raises(
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
         client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+
+
+@patch("blueapi.client.client.EventBusClient")
+def test_run_task_with_stomp_config_from_server(
+    ebc: Mock, client: BlueapiClient, mock_rest: Mock
+):
+    mock_rest.get_stomp_config.return_value = StompConfig(
+        enabled=True, url=TcpUrl("tcp://localhost:9876"), auth=None
+    )
+    mock_rest.create_task.return_value = TaskResponse(task_id="foo")
+    mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
+    events = MagicMock(spec=EventBusClient, name="EventBusClient")
+    ctx = Mock(correlation_id="foo")
+    events.subscribe_to_all_events.side_effect = lambda on_event: on_event(
+        COMPLETE_EVENT, ctx
+    )
+    ebc.from_stomp_config.return_value = events
+
+    client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+
+    mock_rest.get_stomp_config.assert_called_once()
 
 
 def test_run_task_sets_up_control(
@@ -619,8 +641,11 @@ def test_resume_span_ok(
 
 
 def test_cannot_run_task_span_ok(
-    exporter: JsonObjectSpanExporter, client: BlueapiClient
+    exporter: JsonObjectSpanExporter,
+    client: BlueapiClient,
+    mock_rest: Mock,
 ):
+    mock_rest.get_stomp_config.return_value = None
     with pytest.raises(
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",

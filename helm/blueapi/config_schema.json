@@ -480,16 +480,10 @@
                     "type": "string"
                 },
                 "auth": {
-                    "anyOf": [
-                        {
-                            "$ref": "BasicAuthentication"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
+                    "$ref": "BasicAuthentication",
                     "default": null,
-                    "description": "Auth information for communicating with STOMP broker, if required"
+                    "description": "Auth information for communicating with STOMP broker, if required",
+                    "title": "Auth"
                 }
             },
             "title": "StompConfig",

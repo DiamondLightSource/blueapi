@@ -257,19 +257,22 @@ def test_submit_plan(runner: CliRunner):
 @responses.activate
 def test_submit_plan_without_stomp(runner: CliRunner):
     config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
-    result = runner.invoke(
-        main,
-        [
-            "-c",
-            config_path,
-            "controller",
-            "run",
-            "-i",
-            "cm12345-1",
-            "sleep",
-            '{"time": 5}',
-        ],
-    )
+    with patch(
+        "blueapi.client.rest.BlueapiRestClient.get_stomp_config", return_value=None
+    ):
+        result = runner.invoke(
+            main,
+            [
+                "-c",
+                config_path,
+                "controller",
+                "run",
+                "-i",
+                "cm12345-1",
+                "sleep",
+                '{"time": 5}',
+            ],
+        )
 
     assert (
         result.stderr
@@ -277,7 +280,7 @@ def test_submit_plan_without_stomp(runner: CliRunner):
     )
 
 
-@patch("blueapi.client.client.StompClient")
+@patch("blueapi.client.event_bus.StompClient")
 @responses.activate
 def test_run_plan(stomp_client: StompClient, runner: CliRunner):
     task_id = "abcd-1234"
@@ -460,17 +463,20 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
 
 
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
-    result = runner.invoke(
-        main,
-        [
-            "controller",
-            "run",
-            "-i",
-            "cm12345-1",
-            "sleep",
-            '{"time": 5}',
-        ],
-    )
+    with patch(
+        "blueapi.client.rest.BlueapiRestClient.get_stomp_config", return_value=None
+    ):
+        result = runner.invoke(
+            main,
+            [
+                "controller",
+                "run",
+                "-i",
+                "cm12345-1",
+                "sleep",
+                '{"time": 5}',
+            ],
+        )
     assert result.exit_code == 1
     assert (
         result.stderr
@@ -1398,3 +1404,45 @@ def test_config_schema(
 def test_task_parameter_type(value, result):
     t = ParametersType()
     assert t.convert(value, None, None) == result
+
+
+@responses.activate
+def test_host_option(runner: CliRunner):
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        ["--host", "http://override.example.com:5678", "controller", "plans"],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0
+
+
+@responses.activate
+def test_host_overrides_config(runner: CliRunner):
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        [
+            "--host",
+            "http://override.example.com:5678",
+            "--config",
+            config_path,
+            "controller",
+            "plans",
+        ],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0

@@ -840,14 +840,6 @@
     "url": "https://DiamondLightSource.github.io/blueapi/fix-310/"
   },
   {
-    "version": "fix-persistent-volume-retention-1",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-persistent-volume-retention-1/"
-  },
-  {
-    "version": "fix-persistent-volume-retention-2",
-    "url": "https://DiamondLightSource.github.io/blueapi/fix-persistent-volume-retention-2/"
-  },
-  {
     "version": "fix_flake8_failure",
     "url": "https://DiamondLightSource.github.io/blueapi/fix_flake8_failure/"
   },

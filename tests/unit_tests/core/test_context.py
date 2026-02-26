@@ -23,6 +23,7 @@ from ophyd_async.core import (
     Device,
     PathProvider,
     StandardDetector,
+    StandardReadable,
     StaticPathProvider,
     UUIDFilenameProvider,
     init_devices,
@@ -143,15 +144,35 @@ def sim_detector(tmp_path: Path) -> StandardDetector:
     return sim_det
 
 
+class SimStage(StandardReadable):
+    def __init__(self, name: str = "") -> None:
+        with self.add_children_as_readables():
+            self.x = Motor("BAZ:")
+            self.y = Motor("BLARG:")
+        super().__init__(name)
+
+
+@pytest.fixture
+def sim_stage(RE: RunEngine) -> SimStage:
+    with init_devices(mock=True):
+        sim_stage = SimStage()
+    return sim_stage
+
+
 @pytest.fixture
 def empty_context() -> BlueskyContext:
     return BlueskyContext()
 
 
 @pytest.fixture
-def devicey_context(sim_motor: Motor, sim_detector: StandardDetector) -> BlueskyContext:
+def devicey_context(
+    sim_motor: Motor,
+    sim_stage: SimStage,
+    sim_detector: StandardDetector,
+) -> BlueskyContext:
     ctx = BlueskyContext()
     ctx.register_device(sim_motor)
+    ctx.register_device(sim_stage)
     ctx.register_device(sim_detector)
     return ctx
 
@@ -185,7 +206,11 @@ def test_generated_schema(
     schema = devicey_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
-        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable", "enum": ["sim"]},
+        "mov": {
+            "title": "Mov",
+            "type": "bluesky.protocols.Movable",
+            "enum": ["sim", "sim_stage.x", "sim_stage.y"],
+        },
     }
 
 

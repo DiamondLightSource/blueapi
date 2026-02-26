@@ -15,10 +15,11 @@ spec:
 {{- end }}
 
 {{- range .Values.unmountedPVCs }}
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "blueapi.fullname" $ }}-{{ .name }}
+  name: {{ .name }}
   annotations:
     argocd.argoproj.io/sync-options: Prune=false,Delete=false
     argocd.argoproj.io/compare-options: IgnoreExtraneous

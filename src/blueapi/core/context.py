@@ -161,8 +161,8 @@ class BlueskyContext:
             # local reference so it's available in _update_scan_num
             numtracker = self.numtracker
 
-            def _update_scan_num(md: dict[str, Any]) -> int:
-                scan = numtracker.create_scan(
+            async def _update_scan_num(md: dict[str, Any]) -> int:
+                scan = await numtracker.create_scan(
                     md["instrument_session"], md["instrument"]
                 )
                 md["data_session_directory"] = str(scan.scan.directory.path)

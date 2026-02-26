@@ -1,6 +1,7 @@
 import json
 import uuid
 from dataclasses import dataclass
+from inspect import isawaitable
 from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, patch
 
@@ -15,6 +16,7 @@ from dodal.common.beamlines.beamline_utils import (
 )
 from ophyd_async.epics.motor import Motor
 from pydantic import HttpUrl
+from pytest_httpx import HTTPXMock
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi.config import (
@@ -521,8 +523,8 @@ def test_configure_numtracker():
     assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
 
-@patch("blueapi.utils.numtracker.requests.post")
-def test_headers_are_cleared(mock_post):
+@patch("blueapi.utils.numtracker.httpx.AsyncClient.post")
+async def test_headers_are_cleared(mock_post):
     mock_response = Mock()
     mock_post.return_value = mock_response
     mock_response.raise_for_status.side_effect = None
@@ -552,16 +554,18 @@ def test_headers_are_cleared(mock_post):
     interface.begin_task(task=WorkerTask(task_id=None), pass_through_headers=headers)
     ctx = interface.context()
     assert ctx.run_engine.scan_id_source is not None
-    ctx.run_engine.scan_id_source(
+    scan_id = ctx.run_engine.scan_id_source(
         {"instrument_session": "cm12345-1", "instrument": "p46"}
     )
+    assert isawaitable(scan_id) and await scan_id
     mock_post.assert_called_once()
     assert mock_post.call_args.kwargs["headers"] == headers
 
     interface.begin_task(task=WorkerTask(task_id=None))
-    ctx.run_engine.scan_id_source(
+    scan_id = ctx.run_engine.scan_id_source(
         {"instrument_session": "cm12345-1", "instrument": "p46"}
     )
+    assert isawaitable(scan_id) and await scan_id
     assert mock_post.call_count == 2
     assert mock_post.call_args.kwargs["headers"] == {}
 
@@ -640,7 +644,9 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
 
 
 @patch("blueapi.utils.numtracker.NumtrackerClient.create_scan")
-def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_scan):
+async def test_numtracker_create_scan_called_with_arguments_from_metadata(
+    mock_create_scan,
+):
     conf = ApplicationConfig(
         numtracker=NumtrackerConfig(
             url=HttpUrl("https://numtracker-example.com/graphql")
@@ -657,14 +663,24 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
 
     ctx.numtracker.set_headers(headers)
     ctx.run_engine.md["instrument_session"] = "ab123"
-    ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    scan_id = ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    assert isawaitable(scan_id) and await scan_id
 
     mock_create_scan.assert_called_once_with("ab123", "p46")
 
 
-def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
-    mock_numtracker_server,
+async def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
+    httpx_mock,
+    nt_query,
+    nt_response,
 ):
+    httpx_mock.add_response(
+        method="POST",
+        url="https://numtracker-example.com/graphql",
+        match_json=nt_query,
+        status_code=200,
+        json=nt_response,
+    )
     conf = ApplicationConfig(
         env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
         numtracker=NumtrackerConfig(
@@ -677,21 +693,24 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     assert ctx.run_engine.scan_id_source is not None
 
     ctx.run_engine.md["instrument_session"] = "ab123"
-    ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    scan_id = ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    assert isawaitable(scan_id) and await scan_id
 
     assert (
         ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"
     )
 
 
-def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
-    mock_numtracker_server,
+async def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
+    httpx_mock: HTTPXMock, nt_query, nt_response
 ):
+    nt_url = "https://numtracker-example.com/graphql"
+    httpx_mock.add_response(
+        method="POST", url=nt_url, match_json=nt_query, json=nt_response
+    )
     conf = ApplicationConfig(
         env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
-        numtracker=NumtrackerConfig(
-            url=HttpUrl("https://numtracker-example.com/graphql")
-        ),
+        numtracker=NumtrackerConfig(url=HttpUrl(nt_url)),
     )
     interface.setup(conf)
     ctx = interface.context()
@@ -699,6 +718,7 @@ def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
     assert ctx.run_engine.scan_id_source is not None
 
     ctx.run_engine.md["instrument_session"] = "ab123"
-    ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    scan_id = ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    assert isawaitable(scan_id) and await scan_id
 
     assert ctx.run_engine.md["scan_file"] == "p46-11"

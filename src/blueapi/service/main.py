@@ -2,6 +2,7 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
+from multiprocessing import Pipe
 from typing import Annotated, Any
 
 import jwt
@@ -14,8 +15,10 @@ from fastapi import (
     HTTPException,
     Request,
     Response,
+    WebSocket,
     status,
 )
+from fastapi.concurrency import run_in_threadpool
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
@@ -37,7 +40,8 @@ from super_state_machine.errors import TransitionError
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
 from blueapi.worker import TrackableTask, WorkerState
-from blueapi.worker.event import TaskStatusEnum
+from blueapi.worker.event import TaskStatusEnum, WorkerEvent
+from blueapi.worker.worker_errors import WorkerBusyError
 
 from .model import (
     DeviceModel,
@@ -538,6 +542,50 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
         status_code=status.HTTP_308_PERMANENT_REDIRECT,
         url=config.logout_redirect_endpoint.rstrip("/") + "?rd=" + encoded_url,
     )
+
+
+@secure_router.websocket("/run_plan")
+async def run_plan(
+    ws: WebSocket,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+):
+    user = "alice"
+
+    # ack ws
+    await ws.accept()
+    # accept task request through socket
+    rq = await ws.receive_json()
+    # submit task to runner
+    try:
+        task_request: TaskRequest = TaskRequest.model_validate(rq)
+        task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
+    except ValidationError:
+        await ws.close(code=1003, reason="invalid args")
+        return
+
+    # add listener to runner
+    tx, rx = Pipe()
+    h = runner.run(interface.pipe_events, tx=tx)
+    # start task
+    try:
+        task = WorkerTask(task_id=task_id)
+        runner.run(
+            interface.begin_task,
+            task=task,
+        )
+    except WorkerBusyError:
+        await ws.close(code=1013, reason="Worker busy")
+        return
+    # pipe events to ws
+    try:
+        while True:
+            event: WorkerEvent = await run_in_threadpool(rx.recv)
+            await ws.send_json(event.model_dump(mode="json"))
+            if event.is_complete():
+                break
+    finally:
+        await ws.close()
+        runner.run(interface.unpipe_events, h=h)
 
 
 @start_as_current_span(TRACER, "config")

@@ -526,7 +526,7 @@ class BlueskyContext:
             )
         return new_args
 
-    def _convert_type(self, typ: type | Any, no_default: bool = True) -> type:
+    def _convert_type(self, typ: Any, no_default: bool = True) -> type:
         """
         Recursively convert a type to something that can be deserialised by
         pydantic. Bluesky protocols (and types that extend them) are replaced

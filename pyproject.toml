@@ -45,6 +45,7 @@ requires-python = ">=3.11"
 
 [dependency-groups]
 dev = [
+    "ophyd_async[sim]",
     "copier",
     "myst-parser",
     "prek",

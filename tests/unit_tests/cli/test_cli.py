@@ -1384,3 +1384,8 @@ def test_config_schema(
 def test_task_parameter_type(value, result):
     t = ParametersType()
     assert t.convert(value, None, None) == result
+
+
+def test_run_command(runner: CliRunner):
+    result = runner.invoke(main, ["run-command", "echo", "hello"])
+    assert result.exit_code == 0

@@ -34,6 +34,7 @@ from pydantic import ValidationError
 from starlette.responses import JSONResponse
 
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.service import interface
 from blueapi.service.authentication import Fedid, build_access_token_check
 from blueapi.service.middleware import (
@@ -41,7 +42,7 @@ from blueapi.service.middleware import (
     VersionHeaders,
 )
 from blueapi.worker import TrackableTask, WorkerState
-from blueapi.worker.event import TaskStatusEnum, WorkerEvent
+from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent
 from blueapi.worker.worker_errors import WorkerBusyError
 
 from .authorization import (
@@ -73,6 +74,9 @@ RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
 TRACER = get_tracer("interface")
+
+
+AnyEvent = WorkerEvent | DataEvent | ProgressEvent
 
 
 def _runner() -> WorkerDispatcher:
@@ -643,9 +647,9 @@ async def run_plan(
     # pipe events to ws
     try:
         while True:
-            event: WorkerEvent = await run_in_threadpool(rx.recv)
+            event: AnyEvent = await run_in_threadpool(rx.recv)
             await ws.send_json(event.model_dump(mode="json"))
-            if event.is_complete():
+            if isinstance(event, WorkerEvent) and event.is_complete():
                 break
     finally:
         await ws.close()

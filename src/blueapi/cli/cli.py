@@ -363,26 +363,29 @@ def run_plan(
 
 
 @controller.command(name="ws")
+@click.pass_obj
 @click.argument("name", type=str)
 @click.argument("parameters", type=ParametersType(), default={}, required=False)
+@click.option(
+    "-i",
+    "--instrument-session",
+    type=str,
+    help=textwrap.dedent("""
+        Instrument session associated with running the plan,
+        used to tell blueapi where to store any data and as a security check:
+        the session must be valid and active and you must be a member of it."""),
+    required=True,
+)
 def run_blocking(
-    name: str,
-    parameters: TaskParameters,
+    obj: dict, name: str, parameters: TaskParameters, instrument_session: str
 ):
-    instrument_session = "cm33-3"
-
-    from websockets.sync.client import connect
-
+    client = cast(BlueapiClient, obj["client"])
     task_req = TaskRequest(
         name=name,
         params=parameters,
         instrument_session=instrument_session,
     )
-
-    with connect("ws://localhost:8007/run_plan") as ws:
-        ws.send(task_req.model_dump_json())
-        for message in ws:
-            print(message)
+    client.run_blocking(task_req)
 
 
 @controller.command(name="state")

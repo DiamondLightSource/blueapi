@@ -439,6 +439,10 @@ class BlueapiClient:
 
         return self.active_task
 
+    @start_as_current_span(TRACER, "request")
+    def run_blocking(self, request: TaskRequest):
+        self._rest.run_blocking(request)
+
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,

@@ -11,6 +11,7 @@ from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
@@ -24,8 +25,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.serialization import access_blob
-from blueapi.worker import task_worker
-from blueapi.worker.event import TaskStatusEnum, WorkerEvent, WorkerState
+from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
@@ -286,17 +286,20 @@ def get_python_env(
 def pipe_events(tx: Connection) -> int:
 
     def handler(
-        worker_event: WorkerEvent,
-        cor_id: str | None,
+        worker_event: WorkerEvent | DataEvent | ProgressEvent,
+        _cor_id: str | None,
     ) -> None:
-        LOGGER.info("Sending event")
         tx.send(worker_event)
 
     task_worker = worker()
     sub_id = task_worker.worker_events.subscribe(handler)
+    sub_id = task_worker.data_events.subscribe(handler)
+    sub_id = task_worker.progress_events.subscribe(handler)
     return sub_id
 
 
 def unpipe_events(h: int) -> None:
     task_worker = worker()
     task_worker.worker_events.unsubscribe(h)
+    task_worker.data_events.unsubscribe(h)
+    task_worker.progress_events.unsubscribe(h)

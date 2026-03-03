@@ -10,7 +10,8 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError, WebsocketUrl
+from websockets.sync.client import connect
 
 from blueapi import __version__
 from blueapi.config import RestConfig
@@ -307,6 +308,20 @@ class BlueapiRestClient:
             _response_json(response)
         )
         return deserialized
+
+    def run_blocking(self, req: TaskRequest):
+        url = self._ws_address().unicode_string().removesuffix("/") + "/run_plan"
+        print(url)
+        with connect(url) as ws:
+            ws.send(req.model_dump_json())
+            for message in ws:
+                print(message)
+
+    def _ws_address(self) -> WebsocketUrl:
+        # url = WebsocketUrl.build(
+        #     scheme="ws", host=api.host, port=api.port, path=api.path
+        # )
+        return WebsocketUrl("ws://localhost:8000/")
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

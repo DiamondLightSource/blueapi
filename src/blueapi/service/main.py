@@ -566,6 +566,9 @@ async def run_plan(
     except ValidationError:
         await ws.close(code=1003, reason="invalid args")
         return
+    except KeyError:
+        await ws.close(code=1003, reason="unknown plan")
+        return
 
     # add listener to runner
     tx, rx = Pipe()

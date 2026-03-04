@@ -14,6 +14,7 @@ from pydantic import BaseModel, TypeAdapter, ValidationError, WebsocketUrl
 from websockets.sync.client import connect
 
 from blueapi import __version__
+from blueapi.client.event_bus import AnyEvent
 from blueapi.config import RestConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
@@ -311,11 +312,11 @@ class BlueapiRestClient:
 
     def run_blocking(self, req: TaskRequest):
         url = self._ws_address().unicode_string().removesuffix("/") + "/run_plan"
-        print(url)
         with connect(url) as ws:
             ws.send(req.model_dump_json())
             for message in ws:
-                print(message)
+                event = TypeAdapter(AnyEvent).validate_json(message)
+                yield event
 
     def _ws_address(self) -> WebsocketUrl:
         # url = WebsocketUrl.build(

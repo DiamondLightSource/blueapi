@@ -370,32 +370,6 @@ def run_plan(
         raise ClickException(f"task could not run: {ve}") from ve
 
 
-@controller.command(name="ws")
-@click.pass_obj
-@click.argument("name", type=str)
-@click.argument("parameters", type=ParametersType(), default={}, required=False)
-@click.option(
-    "-i",
-    "--instrument-session",
-    type=str,
-    help=textwrap.dedent("""
-        Instrument session associated with running the plan,
-        used to tell blueapi where to store any data and as a security check:
-        the session must be valid and active and you must be a member of it."""),
-    required=True,
-)
-def run_blocking(
-    obj: dict, name: str, parameters: TaskParameters, instrument_session: str
-):
-    client = cast(BlueapiClient, obj["client"])
-    task_req = TaskRequest(
-        name=name,
-        params=parameters,
-        instrument_session=instrument_session,
-    )
-    client.run_blocking(task_req)
-
-
 @controller.command(name="state")
 @click.pass_obj
 @check_connection

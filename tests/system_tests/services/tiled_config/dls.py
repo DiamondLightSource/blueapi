@@ -55,7 +55,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         provider: str | None = None,
     ):
         self._token_audience = token_audience
-        self._type_adapter = TypeAdapter(DiamondAccessBlob|int)
+        self._type_adapter = TypeAdapter(DiamondAccessBlob | int)
 
         super().__init__(
             authorization_provider=authorization_provider,
@@ -132,9 +132,9 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             and len(access_blob["tags"]) > 0
         ):
             blob = self._type_adapter.validate_json(access_blob["tags"][0])
-            if isinstance(blob,DiamondAccessBlob):
+            if isinstance(blob, DiamondAccessBlob):
                 _input.update(blob.model_dump())
-            if isinstance(blob,int):
+            if isinstance(blob, int):
                 _input["session"] = str(blob)
 
         return json.dumps({"input": _input})

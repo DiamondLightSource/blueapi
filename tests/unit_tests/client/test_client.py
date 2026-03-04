@@ -214,7 +214,7 @@ def test_create_and_start_task_fails_if_task_creation_fails(
     client: BlueapiClient,
     mock_rest: Mock,
 ):
-    mock_rest.create_task.side_effect = BlueskyRemoteControlError("No can do")
+    mock_rest.create_task.side_effect = BlueskyRemoteControlError(message="No can do")
     with pytest.raises(BlueskyRemoteControlError):
         client.create_and_start_task(
             TaskRequest(name="baz", instrument_session="cm12345-1")
@@ -238,7 +238,9 @@ def test_create_and_start_task_fails_if_task_start_fails(
     mock_rest: Mock,
 ):
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
-    mock_rest.update_worker_task.side_effect = BlueskyRemoteControlError("No can do")
+    mock_rest.update_worker_task.side_effect = BlueskyRemoteControlError(
+        message="No can do"
+    )
     with pytest.raises(BlueskyRemoteControlError):
         client.create_and_start_task(
             TaskRequest(name="baz", instrument_session="cm12345-1")

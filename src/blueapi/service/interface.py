@@ -275,7 +275,10 @@ def get_python_env(
     return get_python_environment(config=scratch, name=name, source=source)
 
 
-def pipe_events(tx: Connection) -> int:
+SubHandle = tuple[int, int, int]
+
+
+def pipe_events(tx: Connection) -> SubHandle:
 
     def handler(
         worker_event: WorkerEvent | DataEvent | ProgressEvent,
@@ -284,14 +287,15 @@ def pipe_events(tx: Connection) -> int:
         tx.send(worker_event)
 
     task_worker = worker()
-    sub_id = task_worker.worker_events.subscribe(handler)
-    sub_id = task_worker.data_events.subscribe(handler)
-    sub_id = task_worker.progress_events.subscribe(handler)
-    return sub_id
+    w_id = task_worker.worker_events.subscribe(handler)
+    d_id = task_worker.data_events.subscribe(handler)
+    p_id = task_worker.progress_events.subscribe(handler)
+    return (w_id, d_id, p_id)
 
 
-def unpipe_events(h: int) -> None:
+def unpipe_events(hnd: SubHandle) -> None:
     task_worker = worker()
-    task_worker.worker_events.unsubscribe(h)
-    task_worker.data_events.unsubscribe(h)
-    task_worker.progress_events.unsubscribe(h)
+    w, d, p = hnd
+    task_worker.worker_events.unsubscribe(w)
+    task_worker.data_events.unsubscribe(d)
+    task_worker.progress_events.unsubscribe(p)

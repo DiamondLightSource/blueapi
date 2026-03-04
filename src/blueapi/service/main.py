@@ -589,7 +589,7 @@ async def run_plan(
                 break
     finally:
         await ws.close()
-        runner.run(interface.unpipe_events, h=h)
+        runner.run(interface.unpipe_events, hnd=h)
 
 
 @start_as_current_span(TRACER, "config")

@@ -457,6 +457,7 @@ class BlueapiClient:
                         "Server completed without task status"
                     )
                 return event.task_status
+        raise BlueskyRemoteControlError("Connection closed before plan completed.")
 
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(

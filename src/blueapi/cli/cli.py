@@ -357,7 +357,7 @@ def run_plan(
         raise ClickException(ip.message()) from ip
     except BlueskyRemoteControlError as e:
         message = e.args[1] if len(e.args) > 1 else str(e)
-        raise ClickException(f"server error with this message: {message}") from e
+        raise ClickException(f"remote control error: {message}") from e
     except BlueskyStreamingError as bse:
         raise ClickException(f"streaming error: {bse}") from bse
     except ValueError as ve:

@@ -715,7 +715,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
         ),
         (
             BlueskyRemoteControlError(message="Server error"),
-            "Error: server error with this message: Server error\n",
+            "Error: remote control error: Server error\n",
         ),
         (
             ValueError("Error parsing parameters"),

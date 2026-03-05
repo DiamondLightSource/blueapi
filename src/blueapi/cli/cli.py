@@ -355,13 +355,11 @@ def run_plan(
         raise ClickException("Unauthorised request") from ua
     except InvalidParametersError as ip:
         raise ClickException(ip.message()) from ip
-    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
-        message = (
-            e.args[1]
-            if isinstance(e, BlueskyRemoteControlError) and len(e.args) > 1
-            else str(e)
-        )
+    except BlueskyRemoteControlError as e:
+        message = e.args[1] if len(e.args) > 1 else str(e)
         raise ClickException(f"server error with this message: {message}") from e
+    except BlueskyStreamingError as bse:
+        raise ClickException(f"streaming error: {bse}") from bse
     except ValueError as ve:
         raise ClickException(f"task could not run: {ve}") from ve
 

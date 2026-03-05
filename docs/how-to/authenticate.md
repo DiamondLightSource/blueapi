@@ -21,6 +21,7 @@ Here is an example configuration for authenticating to p46-blueapi:
 - **auth_token_path**: (Optional) Specify where to save the token. If omitted, the default is `~/.cache/blueapi_cache` or `$XDG_CACHE_HOME/blueapi_cache` if `XDG_CACHE_HOME` is set.
 
 ---
+See Log In section for more info on how to create & cache authentication token.
 
 ## Log In
 

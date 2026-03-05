@@ -243,22 +243,19 @@ def test_submit_plan(runner: CliRunner):
 @responses.activate
 def test_submit_plan_without_stomp(runner: CliRunner):
     config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
-    with patch(
-        "blueapi.client.rest.BlueapiRestClient.get_stomp_config", return_value=None
-    ):
-        result = runner.invoke(
-            main,
-            [
-                "-c",
-                config_path,
-                "controller",
-                "run",
-                "-i",
-                "cm12345-1",
-                "sleep",
-                '{"time": 5}',
-            ],
-        )
+    result = runner.invoke(
+        main,
+        [
+            "-c",
+            config_path,
+            "controller",
+            "run",
+            "-i",
+            "cm12345-1",
+            "sleep",
+            '{"time": 5}',
+        ],
+    )
 
     assert (
         result.stderr
@@ -266,7 +263,7 @@ def test_submit_plan_without_stomp(runner: CliRunner):
     )
 
 
-@patch("blueapi.client.event_bus.StompClient")
+@patch("blueapi.client.client.StompClient")
 @responses.activate
 def test_run_plan(stomp_client: StompClient, runner: CliRunner):
     task_id = "abcd-1234"
@@ -449,20 +446,17 @@ def test_invalid_stomp_config_for_listener(runner: CliRunner):
 
 
 def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
-    with patch(
-        "blueapi.client.rest.BlueapiRestClient.get_stomp_config", return_value=None
-    ):
-        result = runner.invoke(
-            main,
-            [
-                "controller",
-                "run",
-                "-i",
-                "cm12345-1",
-                "sleep",
-                '{"time": 5}',
-            ],
-        )
+    result = runner.invoke(
+        main,
+        [
+            "controller",
+            "run",
+            "-i",
+            "cm12345-1",
+            "sleep",
+            '{"time": 5}',
+        ],
+    )
     assert result.exit_code == 1
     assert (
         result.stderr

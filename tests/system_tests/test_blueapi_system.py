@@ -169,21 +169,16 @@ def expected_devices() -> DeviceResponse:
     )
 
 
-def authenticated_get_methods() -> list[str]:
-    # Get a list of methods that take only one argument (self) and require
-    # authentication. This will currently return
-    # ['get_plans', 'get_devices', 'get_state', 'get_all_tasks',
-    # 'get_active_task','get_environment','resume', 'stop']
+@pytest.fixture
+def blueapi_rest_client_get_methods() -> list[str]:
+    # Get a list of methods that take only one argument (self)
     return [
-        method
-        for method in BlueapiRestClient.__dict__
-        if callable(getattr(BlueapiRestClient, method))
-        and not method.startswith("__")
-        and len(inspect.signature(getattr(BlueapiRestClient, method)).parameters) == 1
-        and "self" in inspect.signature(getattr(BlueapiRestClient, method)).parameters
-        # oidc_config and stomp config can be accessed without auth
-        and method != "get_oidc_config"
-        and method != "get_stomp_config"
+        name
+        for name, method in BlueapiRestClient.__dict__.items()
+        if not name.startswith("__")
+        and callable(method)
+        and len(params := inspect.signature(method).parameters) == 1
+        and "self" in params
     ]
 
 
@@ -215,10 +210,15 @@ def reset_numtracker():
     yield
 
 
-@pytest.mark.parametrize("method_name", authenticated_get_methods())
-def test_cannot_access_endpoints(client_without_auth: BlueapiClient, method_name: str):
-    with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
-        getattr(client_without_auth._rest, method_name)()
+def test_cannot_access_endpoints(
+    client_without_auth: BlueapiClient, blueapi_rest_client_get_methods: list[str]
+):
+    blueapi_rest_client_get_methods.remove(
+        "get_oidc_config"
+    )  # get_oidc_config can be accessed without auth
+    for get_method in blueapi_rest_client_get_methods:
+        with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
+            getattr(client_without_auth._rest, get_method)()
 
 
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):

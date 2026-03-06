@@ -2,7 +2,6 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from multiprocessing import Pipe
 from typing import Annotated, Any
 
 import jwt
@@ -16,9 +15,9 @@ from fastapi import (
     Request,
     Response,
     WebSocket,
+    WebSocketDisconnect,
     status,
 )
-from fastapi.concurrency import run_in_threadpool
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
@@ -555,44 +554,45 @@ async def run_plan(
 ):
     user = "alice"
 
-    # ack ws
+    LOGGER.info("Starting WS plan")
     await ws.accept()
-    # accept task request through socket
     rq = await ws.receive_json()
-    # submit task to runner
+    LOGGER.info("Raw request: %s", rq)
     try:
         task_request: TaskRequest = TaskRequest.model_validate(rq)
+        LOGGER.info("Plan request: %s", task_request)
         task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
+        LOGGER.info("Task ID: %s", task_id)
     except ValidationError:
+        LOGGER.error("Args not valid", exc_info=True)
         await ws.close(code=1003, reason="invalid args")
         return
     except KeyError:
+        LOGGER.error("Plan not found", exc_info=True)
         await ws.close(code=1003, reason="unknown plan")
         return
 
-    # add listener to runner
-    tx, rx = Pipe()
-    h = runner.run(interface.pipe_events, tx=tx)
-    # start task
     try:
-        task = WorkerTask(task_id=task_id)
-        runner.run(
-            interface.begin_task,
-            task=task,
-        )
+        with runner.event_pipe() as events:
+            LOGGER.info("Created event pipe")
+            runner.run(interface.begin_task, task=WorkerTask(task_id=task_id))
+            async for evt in events:
+                LOGGER.debug("Event: %s", evt)
+                await ws.send_json(evt.model_dump(mode="json"))
+                if isinstance(evt, WorkerEvent) and evt.is_complete():
+                    LOGGER.info("End of stream")
+                    break
     except WorkerBusyError:
+        LOGGER.error("Worker was busy")
         await ws.close(code=1013, reason="Worker busy")
-        return
-    # pipe events to ws
-    try:
-        while True:
-            event: AnyEvent = await run_in_threadpool(rx.recv)
-            await ws.send_json(event.model_dump(mode="json"))
-            if isinstance(event, WorkerEvent) and event.is_complete():
-                break
-    finally:
+    except WebSocketDisconnect:
+        LOGGER.info("Client disconnected")
+        runner.run(
+            interface.cancel_active_task, failure=True, reason="Client disconnected"
+        )
+    else:
+        LOGGER.info("Plan complete")
         await ws.close()
-        runner.run(interface.unpipe_events, hnd=h)
 
 
 @start_as_current_span(TRACER, "config")

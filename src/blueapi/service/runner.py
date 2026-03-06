@@ -1,10 +1,12 @@
+import asyncio
 import inspect
 import logging
 import signal
 import uuid
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from importlib import import_module
 from multiprocessing import Pool, set_start_method
+from multiprocessing.connection import Connection, Pipe
 from multiprocessing.pool import Pool as PoolClass
 from typing import Any, ParamSpec, TypeVar
 
@@ -15,11 +17,13 @@ from observability_utils.tracing import (
 )
 from opentelemetry.context import attach
 from opentelemetry.propagate import get_global_textmap
-from pydantic import TypeAdapter
 
 from blueapi.config import ApplicationConfig
-from blueapi.service.interface import setup, teardown
+from blueapi.core.bluesky_types import DataEvent
+from blueapi.service import interface
+from blueapi.service.interface import SubHandles, setup, teardown
 from blueapi.service.model import EnvironmentResponse
+from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 # The default multiprocessing start method is fork
 set_start_method("spawn", force=True)
@@ -145,9 +149,55 @@ class WorkerDispatcher:
             kwargs,
         )
 
+    def event_pipe(self):
+        return EventPipe(self)
+
     @property
     def state(self) -> EnvironmentResponse:
         return self._state
+
+
+class EventStream:
+    def __init__(self, rx: Connection):
+        self._rx = rx
+
+    def __aiter__(self) -> AsyncIterator[WorkerEvent | DataEvent | ProgressEvent]:
+        return self
+
+    async def __anext__(self) -> WorkerEvent | DataEvent | ProgressEvent:
+        data_available = asyncio.Event()
+        asyncio.get_event_loop().add_reader(self._rx.fileno(), data_available.set)
+        try:
+            while not self._rx.poll():
+                await data_available.wait()
+                data_available.clear()
+            return self._rx.recv()
+        except BrokenPipeError:
+            raise StopAsyncIteration() from None
+        finally:
+            asyncio.get_event_loop().remove_reader(self._rx.fileno())
+
+
+class EventPipe:
+    runner: WorkerDispatcher
+    handles: list[tuple[SubHandles, Connection]]
+
+    def __init__(self, runner: WorkerDispatcher):
+        self.runner = runner
+        self.handles = []
+
+    def __enter__(self) -> EventStream:
+        tx, rx = Pipe()
+        hnd = self.runner.run(interface.pipe_events, tx)
+        LOGGER.debug("Subscribing new event pipe: %s", hnd)
+        self.handles.append((hnd, tx))
+        return EventStream(rx)
+
+    def __exit__(self, *exc):
+        hnd, conn = self.handles.pop()
+        LOGGER.debug("Unsubscribing event pipe: %s", hnd)
+        conn.close()
+        self.runner.run(interface.unpipe_events, hnd)
 
 
 class InvalidRunnerStateError(Exception):
@@ -173,15 +223,7 @@ def import_and_run_function(
     func: Callable[..., T] = _validate_function(
         mod.__dict__.get(function_name, None), function_name
     )
-    value = func(*args, **kwargs)
-    return _valid_return(value, expected_type)
-
-
-def _valid_return(value: Any, expected_type: type[T] | None = None) -> T:
-    if expected_type is None:
-        return value
-    else:
-        return TypeAdapter(expected_type).validate_python(value)
+    return func(*args, **kwargs)
 
 
 def _validate_function(func: Any, function_name: str) -> Callable:

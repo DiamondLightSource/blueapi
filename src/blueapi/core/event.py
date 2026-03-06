@@ -1,4 +1,5 @@
 import itertools
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Generic, TypeVar
@@ -8,6 +9,8 @@ E = TypeVar("E")
 
 #: Subscription token type
 S = TypeVar("S")
+
+LOGGER = logging.getLogger(__name__)
 
 
 class EventStream(ABC, Generic[E, S]):
@@ -75,6 +78,11 @@ class EventPublisher(EventStream[E, int]):
             correlation_id: An optional ID that may be used to correlate this
                 event with other events
         """
-
+        errs = []
         for callback in list(self._subscriptions.values()):
-            callback(event, correlation_id)
+            try:
+                callback(event, correlation_id)
+            except Exception as e:
+                errs.append(e)
+        if errs:
+            raise ExceptionGroup(f"Error(s) publishing event: {event}", errs)

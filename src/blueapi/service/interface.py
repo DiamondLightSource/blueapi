@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Mapping
+from dataclasses import dataclass
 from functools import cache
 from multiprocessing.connection import Connection
 from typing import Any
@@ -283,27 +284,35 @@ def get_python_env(
     return get_python_environment(config=scratch, name=name, source=source)
 
 
-SubHandle = tuple[int, int, int]
+@dataclass
+class SubHandles:
+    worker: int
+    progress: int
+    data: int
 
 
-def pipe_events(tx: Connection) -> SubHandle:
+def pipe_events(tx: Connection) -> SubHandles:
+    tw = worker()
 
     def handler(
         worker_event: WorkerEvent | DataEvent | ProgressEvent,
         _cor_id: str | None,
     ) -> None:
-        tx.send(worker_event)
 
-    task_worker = worker()
-    w_id = task_worker.worker_events.subscribe(handler)
-    d_id = task_worker.data_events.subscribe(handler)
-    p_id = task_worker.progress_events.subscribe(handler)
-    return (w_id, d_id, p_id)
+        try:
+            tx.send(worker_event)
+        except BrokenPipeError:
+            LOGGER.warning("Sending event to broken pipe")
+            pass
+
+    w = tw.worker_events.subscribe(handler)
+    d = tw.data_events.subscribe(handler)
+    p = tw.progress_events.subscribe(handler)
+    return SubHandles(worker=w, data=d, progress=p)
 
 
-def unpipe_events(hnd: SubHandle) -> None:
-    task_worker = worker()
-    w, d, p = hnd
-    task_worker.worker_events.unsubscribe(w)
-    task_worker.data_events.unsubscribe(d)
-    task_worker.progress_events.unsubscribe(p)
+def unpipe_events(hnd: SubHandles):
+    tw = worker()
+    tw.worker_events.unsubscribe(hnd.worker)
+    tw.data_events.unsubscribe(hnd.data)
+    tw.progress_events.unsubscribe(hnd.progress)

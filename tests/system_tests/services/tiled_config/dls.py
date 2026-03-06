@@ -134,7 +134,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             blob = self._type_adapter.validate_json(access_blob["tags"][0])
             if isinstance(blob, DiamondAccessBlob):
                 _input.update(blob.model_dump())
-            if isinstance(blob, int):
+            elif isinstance(blob, int):
                 _input["session"] = str(blob)
 
         return json.dumps({"input": _input})

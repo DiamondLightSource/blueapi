@@ -113,7 +113,7 @@ class StatusView(BlueapiBaseModel):
         description="Target value operation of progress, if known", default=None
     )
     unit: str = Field(description="Units of progress", default="units")
-    precision: int = Field(
+    precision: int | None = Field(
         description="Sensible precision of progress to display", default=None
     )
     done: bool = Field(

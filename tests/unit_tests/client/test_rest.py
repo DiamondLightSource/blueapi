@@ -13,6 +13,7 @@ from blueapi.client.rest import (
     BlueskyRemoteControlError,
     BlueskyRequestError,
     InvalidParametersError,
+    NotFoundError,
     ParameterError,
     UnauthorisedAccessError,
     UnknownPlanError,
@@ -41,8 +42,8 @@ def rest_with_auth(oidc_config: OIDCConfig, tmp_path) -> BlueapiRestClient:
 @pytest.mark.parametrize(
     "code,expected_exception",
     [
-        (404, KeyError),
-        (401, BlueskyRemoteControlError),
+        (404, NotFoundError),
+        (401, UnauthorisedAccessError),
         (450, BlueskyRemoteControlError),
         (500, BlueskyRemoteControlError),
     ],
@@ -65,9 +66,9 @@ def test_rest_error_code(
     "code,content,expected_exception",
     [
         (200, None, None),
-        (401, None, UnauthorisedAccessError()),
-        (403, None, UnauthorisedAccessError()),
-        (404, None, UnknownPlanError()),
+        (401, "", UnauthorisedAccessError(401, "")),
+        (403, "", UnauthorisedAccessError(403, "")),
+        (404, "", UnknownPlanError(404, "")),
         (
             422,
             """{

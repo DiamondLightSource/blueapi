@@ -1148,7 +1148,7 @@ def test_invalid_json(
         responses.GET,
         "http://localhost:8000/config/oidc",
         body="blah blah",
-        status=404,
+        status=200,
     )
 
     result = runner.invoke(main, ["-c", config_with_auth, "login"])

@@ -37,6 +37,13 @@ TRACER = get_tracer("rest")
 
 LOGGER = logging.getLogger(__name__)
 
+LOGGER = logging.getLogger(__name__)
+
+
+class BlueskyRequestError(Exception):
+    def __init__(self, code: int | None = None, message: str = "") -> None:
+        super().__init__(code, message)
+
 
 class UnauthorisedAccessError(Exception):
     pass
@@ -50,9 +57,12 @@ class NonJsonResponseError(Exception):
     pass
 
 
-class BlueskyRequestError(Exception):
-    def __init__(self, code: int, message: str) -> None:
-        super().__init__(message, code)
+class NotFoundError(BlueskyRequestError):
+    pass
+
+
+class UnknownPlanError(BlueskyRequestError):
+    pass
 
 
 class NoContentError(Exception):
@@ -105,18 +115,16 @@ class InvalidParametersError(Exception):
         )
 
 
-class UnknownPlanError(Exception):
-    pass
-
-
 def _exception(response: requests.Response) -> Exception | None:
     code = response.status_code
     if code < 400:
         return None
+    elif code in (401, 403):
+        return UnauthorisedAccessError(code, response.text)
     elif code == 404:
-        return KeyError(str(_response_json(response)))
+        return NotFoundError(code, response.text)
     else:
-        return BlueskyRemoteControlError(code, str(response))
+        return BlueskyRemoteControlError(code, response.text)
 
 
 def _create_task_exceptions(response: requests.Response) -> Exception | None:
@@ -124,9 +132,9 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
     if code < 400:
         return None
     elif code == 401 or code == 403:
-        return UnauthorisedAccessError()
+        return UnauthorisedAccessError(code, response.text)
     elif code == 404:
-        return UnknownPlanError()
+        return UnknownPlanError(code, response.text)
     elif code == 422:
         try:
             content = _response_json(response)
@@ -250,7 +258,7 @@ class BlueapiRestClient:
     def get_oidc_config(self) -> OIDCConfig | None:
         try:
             return self._request_and_deserialize("/config/oidc", OIDCConfig)
-        except NoContentError:
+        except (NoContentError, NotFoundError):
             # Server is not using authentication
             return None
 

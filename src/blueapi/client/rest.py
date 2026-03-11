@@ -46,11 +46,13 @@ class BlueskyRequestError(Exception):
 
 
 class UnauthorisedAccessError(Exception):
-    pass
+    def __init__(self, code: int | None = None, message: str = "") -> None:
+        super().__init__(code, message)
 
 
 class BlueskyRemoteControlError(Exception):
-    pass
+    def __init__(self, code: int | None = None, message: str = "") -> None:
+        super().__init__(code, message)
 
 
 class NonJsonResponseError(Exception):
@@ -258,7 +260,7 @@ class BlueapiRestClient:
     def get_oidc_config(self) -> OIDCConfig | None:
         try:
             return self._request_and_deserialize("/config/oidc", OIDCConfig)
-        except (NoContentError, NotFoundError):
+        except NoContentError:
             # Server is not using authentication
             return None
 

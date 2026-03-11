@@ -118,9 +118,8 @@ def test_connection_error_caught_by_wrapper_func(
 def test_authentication_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
-    mock_requests.side_effect = BlueskyRemoteControlError("<Response [401]>")
+    mock_requests.side_effect = UnauthorisedAccessError(message="<Response [401]>")
     result = runner.invoke(main, ["controller", "plans"])
-
     assert (
         result.output
         == "Error: Access denied. Please check your login status and try again.\n"
@@ -129,12 +128,11 @@ def test_authentication_error_caught_by_wrapper_func(
 
 @patch("blueapi.client.rest.requests.Session.request")
 def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
-    mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
-
+    mock_requests.side_effect = BlueskyRemoteControlError(message="Response [450]")
     result = runner.invoke(main, ["controller", "plans"])
     assert (
         isinstance(result.exception, BlueskyRemoteControlError)
-        and result.exception.args == ("Response [450]",)
+        and result.exception.args[1] == "Response [450]"
         and result.exit_code == 1
     )
 
@@ -680,7 +678,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
     assert isinstance(result.exception, BlueskyRemoteControlError), (
         "Expected a BlueskyRemoteError from cli runner"
     )
-    assert result.exception.args[0] == "Failed to tear down the environment"
+    assert result.exception.args[1] == "Failed to tear down the environment"
 
     # Check if the endpoints were hit as expected
     assert len(responses.calls) == 1  # +1 for the DELETE call
@@ -716,12 +714,16 @@ def test_env_reload_server_side_error(runner: CliRunner):
             "Error: Incorrect parameters supplied\n    Missing value for 'foo'\n",
         ),
         (
-            BlueskyRemoteControlError("Server error"),
-            "Error: server error with this message: Server error\n",
+            BlueskyRemoteControlError(message="Server error"),
+            "Error: remote control error: Server error\n",
         ),
         (
             ValueError("Error parsing parameters"),
             "Error: task could not run: Error parsing parameters\n",
+        ),
+        (
+            BlueskyStreamingError("streaming failed"),
+            "Error: streaming error: streaming failed\n",
         ),
     ],
     ids=[
@@ -730,6 +732,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
         "invalid_parameters",
         "remote_control",
         "value_error",
+        "streaming_error",
     ],
 )
 def test_error_handling(exception, error_message, runner: CliRunner):

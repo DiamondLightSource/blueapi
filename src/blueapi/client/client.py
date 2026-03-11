@@ -42,7 +42,7 @@ from blueapi.worker.event import ProgressEvent, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError
+from .rest import BlueapiRestClient, BlueskyRemoteControlError, NotFoundError
 
 TRACER = get_tracer("client")
 
@@ -99,7 +99,7 @@ class DeviceCache:
             self._cache[name] = device
             setattr(self, model.name, device)
             return device
-        except KeyError:
+        except NotFoundError:
             pass
         raise AttributeError(f"No device named '{name}' available")
 
@@ -498,7 +498,7 @@ class BlueapiClient:
                     if event.task_status is None:
                         complete.set_exception(
                             BlueskyRemoteControlError(
-                                "Server completed without task status"
+                                message="Server completed without task status"
                             )
                         )
                     else:
@@ -530,7 +530,7 @@ class BlueapiClient:
             return response
         else:
             raise BlueskyRemoteControlError(
-                f"Tried to create and start task {response.task_id} "
+                message=f"Tried to create and start task {response.task_id} "
                 f"but {worker_response.task_id} was started instead"
             )
 
@@ -659,7 +659,7 @@ class BlueapiClient:
             status = self._rest.delete_environment()
         except Exception as e:
             raise BlueskyRemoteControlError(
-                "Failed to tear down the environment"
+                message="Failed to tear down the environment"
             ) from e
         return self._wait_for_reload(
             status,
@@ -684,7 +684,7 @@ class BlueapiClient:
             status = self._rest.get_environment()
             if status.error_message is not None:
                 raise BlueskyRemoteControlError(
-                    f"Error reloading environment: {status.error_message}"
+                    message=f"Error reloading environment: {status.error_message}"
                 )
             elif (
                 status.initialized and status.environment_id != previous_environment_id

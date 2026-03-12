@@ -15,8 +15,15 @@ from typing import Annotated, Any, cast
 import httpx
 import jwt
 import requests
+<<<<<<< HEAD
 from fastapi import Depends, HTTPException, Request
 from fastapi.security.utils import get_authorization_scheme_param
+||||||| parent of 7df1d8fcc (Re-use existing auth dependency for websocket endpoint)
+=======
+from fastapi.requests import HTTPConnection
+from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.security.utils import get_authorization_scheme_param
+>>>>>>> 7df1d8fcc (Re-use existing auth dependency for websocket endpoint)
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
 from starlette.status import HTTP_401_UNAUTHORIZED

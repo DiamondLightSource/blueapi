@@ -14,6 +14,9 @@ from typing import Any, cast
 import httpx
 import jwt
 import requests
+from fastapi.requests import HTTPConnection
+from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.security.utils import get_authorization_scheme_param
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
 
@@ -266,3 +269,17 @@ class TiledAuth(httpx.Auth):
     def sync_auth_flow(self, request):
         request.headers["Authorization"] = f"Bearer {self.get_access_token()}"
         yield request
+
+
+class CommonHttpOAuth(OAuth2AuthorizationCodeBearer):
+    """Extended version of OAuth2 Auth to work with both WebSockets and HTTP Requests"""
+
+    async def __call__(self, request: HTTPConnection) -> str | None:
+        authorization = request.headers.get("Authorization")
+        scheme, param = get_authorization_scheme_param(authorization)
+        if not authorization or scheme.lower() != "bearer":
+            if self.auto_error:
+                raise self.make_not_authenticated_error()
+            else:
+                return None  # pragma: nocover
+        return param

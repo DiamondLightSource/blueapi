@@ -205,11 +205,7 @@ def test_tiled_auth_sync_auth_flow():
 def test_unchecked_bearer_token(
     header: str | None, cookie: str | None, token: str | None
 ):
-    req = Mock()
-    req.headers.get.side_effect = lambda key: header if key == "Authorization" else None
-    req.cookies.get.side_effect = lambda key: cookie if key == "Authorization" else None
-
-    assert unchecked_bearer_token(req) == token
+    assert unchecked_bearer_token(header, cookie) == token
 
 
 def test_access_token():

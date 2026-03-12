@@ -34,6 +34,8 @@ from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
+import blueapi
+import blueapi.cli
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
 from blueapi.worker import TrackableTask, WorkerState
@@ -573,6 +575,7 @@ async def add_api_version_header(
 ):
     response = await call_next(request)
     response.headers["X-API-Version"] = ApplicationConfig.REST_API_VERSION
+    response.headers["X-BlueAPI-Version"] = blueapi.__version__
     return response
 
 

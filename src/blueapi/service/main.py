@@ -9,8 +9,10 @@ from fastapi import (
     APIRouter,
     BackgroundTasks,
     Body,
+    Cookie,
     Depends,
     FastAPI,
+    Header,
     HTTPException,
     Request,
     Response,
@@ -106,6 +108,7 @@ def lifespan(config: ApplicationConfig):
 
 
 secure_router = APIRouter()
+ws_router = APIRouter()
 open_router = APIRouter()
 
 
@@ -121,12 +124,15 @@ def get_app(config: ApplicationConfig):
         openapi_tags=ApplicationConfig.TAG_METADATA,
     )
     dependencies = []
+    ws_dependencies = []
     if config.oidc:
         dependencies.append(Depends(decode_access_token(config.oidc)))
+        ws_dependencies.append(Depends(init_ws_auth(config.oidc)))
         app.swagger_ui_init_oauth = {
             "clientId": "NOT_SUPPORTED",
         }
     app.include_router(open_router)
+    app.include_router(ws_router, dependencies=ws_dependencies)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
@@ -163,6 +169,24 @@ def decode_access_token(config: OIDCConfig):
             issuer=config.issuer,
         )
         request.state.decoded_access_token = decoded
+
+    return inner
+
+
+def init_ws_auth(oidc_config: OIDCConfig):
+    LOGGER.info("Creating ws auth dependency")
+
+    async def inner(
+        ws: WebSocket,
+        auth_header: str | None = Header(alias="authorization", default=None),
+        auth_cookie: str | None = Cookie(default=None, alias="Authorization"),
+    ):
+        print(auth_header)
+        print(auth_cookie)
+        print(ws.headers)
+        print(ws.cookies)
+        await ws.accept()
+        LOGGER.info("Authenticating websocket")
 
     return inner
 
@@ -547,7 +571,7 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     )
 
 
-@secure_router.websocket("/run_plan")
+@ws_router.websocket("/run_plan")
 async def run_plan(
     ws: WebSocket,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -555,7 +579,7 @@ async def run_plan(
     user = "alice"
 
     LOGGER.info("Starting WS plan")
-    await ws.accept()
+    # await ws.accept()
     rq = await ws.receive_json()
     LOGGER.info("Raw request: %s", rq)
     try:

@@ -278,7 +278,13 @@ class BlueapiRestClient:
 
     def run_blocking(self, req: TaskRequest):
         url = self._ws_address().unicode_string().removesuffix("/") + "/run_plan"
-        with connect(url) as ws:
+        with connect(
+            url,
+            additional_headers={
+                "Cookie": "Authorization=Bearer cook",
+                "Authorization": "Bearer head",
+            },
+        ) as ws:
             ws.send(req.model_dump_json())
             for message in ws:
                 event = TypeAdapter(AnyEvent).validate_json(message)

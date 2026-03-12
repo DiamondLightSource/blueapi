@@ -15,15 +15,11 @@ from typing import Annotated, Any, cast
 import httpx
 import jwt
 import requests
-<<<<<<< HEAD
 from fastapi import Depends, HTTPException, Request
 from fastapi.security.utils import get_authorization_scheme_param
-||||||| parent of 7df1d8fcc (Re-use existing auth dependency for websocket endpoint)
-=======
+from fastapi import Cookie, Header
 from fastapi.requests import HTTPConnection
-from fastapi.security import OAuth2AuthorizationCodeBearer
 from fastapi.security.utils import get_authorization_scheme_param
->>>>>>> 7df1d8fcc (Re-use existing auth dependency for websocket endpoint)
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
 from starlette.status import HTTP_401_UNAUTHORIZED
@@ -285,14 +281,17 @@ class TiledAuth(httpx.Auth):
         yield request
 
 
-def unchecked_bearer_token(req: Request) -> str | None:
+def unchecked_bearer_token(
+    req: Request,
+    auth_header: str | None = Header(alias="Authorization", default=None),
+    auth_cookie: str | None = Cookie(alias="Authorization", default=None),
+) -> str | None:
     """Get bearer token value from authorization header"""
     # This is an abridged version of the same feature of
     # OAuth2AuthorizationCodeBearer from fastapi. Replicating here prevents
     # passing unused configuration and means the schema does not include auth
     # details for servers that do not support it.
-    auth = req.headers.get("Authorization")
-    scheme, param = get_authorization_scheme_param(auth)
+    scheme, param = get_authorization_scheme_param(auth_header or auth_cookie)
     if scheme.casefold() != "bearer":
         return None
     return param.strip()

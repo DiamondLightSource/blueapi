@@ -15,7 +15,7 @@ from typing import Annotated, Any, cast
 import httpx
 import jwt
 import requests
-from fastapi import Depends, HTTPException
+from fastapi import Cookie, Depends, Header, HTTPException
 from fastapi.requests import HTTPConnection
 from fastapi.security.utils import get_authorization_scheme_param
 from pydantic import TypeAdapter
@@ -279,15 +279,16 @@ class TiledAuth(httpx.Auth):
         yield request
 
 
-def unchecked_bearer_token(req: HTTPConnection) -> str | None:
+def unchecked_bearer_token(
+    auth_header: str | None = Header(alias="Authorization", default=None),
+    auth_cookie: str | None = Cookie(alias="Authorization", default=None),
+) -> str | None:
     """Get bearer token value from authorization header"""
     # This is an abridged version of the same feature of
     # OAuth2AuthorizationCodeBearer from fastapi. Replicating here prevents
     # passing unused configuration and means the schema does not include auth
     # details for servers that do not support it.
-    auth = req.headers.get("Authorization")
-    auth_cookie = req.cookies.get("Authorization")
-    scheme, param = get_authorization_scheme_param(auth or auth_cookie)
+    scheme, param = get_authorization_scheme_param(auth_header or auth_cookie)
     if scheme.casefold() != "bearer":
         return None
     return param.strip()

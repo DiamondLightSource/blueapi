@@ -282,7 +282,11 @@ class BlueapiRestClient:
         if self._session_manager:
             auth = self._session_manager.get_valid_access_token()
             headers["Authorization"] = f"Bearer {auth}"
-        with connect(url, additional_headers=headers) as ws:
+        with connect(
+            url,
+            additional_headers=headers,
+            user_agent_header="blueapi cli",
+        ) as ws:
             ws.send(req.model_dump_json())
             for message in ws:
                 event = TypeAdapter(AnyEvent).validate_json(message)

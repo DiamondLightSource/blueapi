@@ -15,10 +15,8 @@ from typing import Annotated, Any, cast
 import httpx
 import jwt
 import requests
-from fastapi import Depends, HTTPException, Request
-from fastapi.security.utils import get_authorization_scheme_param
+from fastapi import Depends, HTTPException
 from fastapi.requests import HTTPConnection
-from fastapi.security import OAuth2AuthorizationCodeBearer
 from fastapi.security.utils import get_authorization_scheme_param
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
@@ -288,7 +286,8 @@ def unchecked_bearer_token(req: HTTPConnection) -> str | None:
     # passing unused configuration and means the schema does not include auth
     # details for servers that do not support it.
     auth = req.headers.get("Authorization")
-    scheme, param = get_authorization_scheme_param(auth)
+    auth_cookie = req.cookies.get("Authorization")
+    scheme, param = get_authorization_scheme_param(auth or auth_cookie)
     if scheme.casefold() != "bearer":
         return None
     return param.strip()

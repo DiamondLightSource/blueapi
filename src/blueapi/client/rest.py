@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
@@ -10,6 +11,7 @@ from observability_utils.tracing import (
 )
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
+from blueapi import __version__
 from blueapi.config import RestConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
@@ -271,10 +273,17 @@ class BlueapiRestClient:
             raise exception
         if response.status_code == status.HTTP_204_NO_CONTENT:
             raise NoContentError(target_type)
-        # if response.headers.get("version") != our_version:
+        server_version = response.headers.get("x-blueapi-version")
+        if server_version is None:
+            logging.warning("Cannot get find server version")
+        else:
+            from packaging.version import Version
 
-        # if response.headers.get("version")
-        # do something
+            if Version(server_version).release != Version(__version__).release:
+                logging.warning(
+                    f"Server version is {Version(server_version).release} and "
+                    "client version is {Version(__version__).release}"
+                )
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized
 

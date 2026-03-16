@@ -271,6 +271,10 @@ class BlueapiRestClient:
             raise exception
         if response.status_code == status.HTTP_204_NO_CONTENT:
             raise NoContentError(target_type)
+        # if response.headers.get("version") != our_version:
+
+        # if response.headers.get("version")
+        # do something
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized
 

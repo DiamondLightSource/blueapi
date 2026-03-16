@@ -273,16 +273,13 @@ class BlueapiRestClient:
             raise exception
         if response.status_code == status.HTTP_204_NO_CONTENT:
             raise NoContentError(target_type)
-        server_version = response.headers.get("x-blueapi-version")
-        if server_version is None:
-            logging.warning("Cannot get find server version")
-        else:
+        if (server_version := response.headers.get("x-blueapi-version")) is not None:
             from packaging.version import Version
 
-            if Version(server_version).release != Version(__version__).release:
+            if Version(server_version).release == Version(__version__).release:
                 logging.warning(
                     f"Server version is {Version(server_version).release} and "
-                    "client version is {Version(__version__).release}"
+                    f"client version is {Version(__version__).release}"
                 )
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized

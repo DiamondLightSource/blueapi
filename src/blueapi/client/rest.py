@@ -51,7 +51,7 @@ class UnauthorisedAccessError(BlueskyRequestError):
     pass
 
 
-class BlueskyRemoteControlError(BlueskyRequestError):
+class BlueskyRemoteControlError(Exception):
     pass
 
 
@@ -118,11 +118,11 @@ def _exception(response: requests.Response) -> Exception | None:
     if code < 400:
         return None
     elif code in (401, 403):
-        return UnauthorisedAccessError(code, str(response))
+        return UnauthorisedAccessError(code, response.text)
     elif code == 404:
-        return NotFoundError(code, str(response))
+        return NotFoundError(code, response.text)
     else:
-        return BlueskyRemoteControlError(code, str(response))
+        return BlueskyRemoteControlError(response.text)
 
 
 def _create_task_exceptions(response: requests.Response) -> Exception | None:
@@ -130,9 +130,9 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
     if code < 400:
         return None
     elif code == 401 or code == 403:
-        return UnauthorisedAccessError(code, str(response))
+        return UnauthorisedAccessError(code, response.text)
     elif code == 404:
-        return UnknownPlanError(code, str(response))
+        return UnknownPlanError(code, response.text)
     elif code == 422:
         try:
             content = _response_json(response)
@@ -144,9 +144,9 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
         except Exception:
             # If the error can't be parsed into something sensible, return the
             # raw text in a generic exception so at least it gets reported
-            return BlueskyRequestError(code, str(response))
+            return BlueskyRequestError(code, response.text)
     else:
-        return BlueskyRequestError(code, str(response))
+        return BlueskyRequestError(code, response.text)
 
 
 def _response_json(response: requests.Response) -> Any:

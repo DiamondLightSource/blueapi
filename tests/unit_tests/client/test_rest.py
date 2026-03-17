@@ -65,9 +65,17 @@ def test_rest_error_code(
     "code,content,expected_exception",
     [
         (200, None, None),
-        (401, None, UnauthorisedAccessError(401, "")),
-        (403, None, UnauthorisedAccessError(403, "")),
-        (404, None, UnknownPlanError(404, "")),
+        (
+            401,
+            "unauthorised access",
+            UnauthorisedAccessError(401, "unauthorised access"),
+        ),
+        (403, "Forbidden", UnauthorisedAccessError(403, "Forbidden")),
+        (
+            404,
+            "Plan '{name}' was not recognised",
+            UnknownPlanError(404, "Plan '{name}' was not recognised"),
+        ),
         (
             422,
             """{
@@ -114,6 +122,8 @@ def test_create_task_exceptions(
         assert err.errors == expected_exception.errors
     elif expected_exception is not None:
         assert err.args[0] == code
+        if content is not None:
+            assert err.args[1] == content
 
 
 def test_auth_request_functionality(

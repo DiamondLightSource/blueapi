@@ -219,7 +219,7 @@ def test_cannot_access_endpoints(
         "get_oidc_config"
     )  # get_oidc_config can be accessed without auth
     for get_method in blueapi_rest_client_get_methods:
-        with pytest.raises(UnauthorisedAccessError, match=r"<Response \[401\]>"):
+        with pytest.raises(UnauthorisedAccessError, match=r"Not authenticated"):
             getattr(client_without_auth._rest, get_method)()
 
 
@@ -245,7 +245,7 @@ def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
 
 
 def test_get_non_existent_plan(rest_client: BlueapiRestClient):
-    with pytest.raises(NotFoundError):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.get_plan("Not exists")
 
 
@@ -270,12 +270,12 @@ def test_get_device_by_name(
 
 
 def test_get_non_existent_device(rest_client: BlueapiRestClient):
-    with pytest.raises(NotFoundError):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.get_device("Not exists")
 
 
 def test_client_non_existent_device(client: BlueapiClient):
-    with pytest.raises(AttributeError):
+    with pytest.raises(AttributeError, match="No device named 'missing' available"):
         _ = client.devices.missing
 
 
@@ -297,7 +297,7 @@ def test_instrument_session_propagated(rest_client: BlueapiRestClient):
 
 
 def test_create_task_validation_error(rest_client: BlueapiRestClient):
-    with pytest.raises(BlueskyRequestError):
+    with pytest.raises(BlueskyRequestError, match="Internal Server Error"):
         rest_client.create_task(
             TaskRequest(
                 name="Not-exists",
@@ -338,12 +338,12 @@ def test_get_task_by_id(rest_client: BlueapiRestClient):
 
 
 def test_get_non_existent_task(rest_client: BlueapiRestClient):
-    with pytest.raises(NotFoundError):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.get_task("Not-exists")
 
 
 def test_delete_non_existent_task(rest_client: BlueapiRestClient):
-    with pytest.raises(NotFoundError):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.clear_task("Not-exists")
 
 

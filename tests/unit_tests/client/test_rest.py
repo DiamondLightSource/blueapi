@@ -116,6 +116,8 @@ def test_create_task_exceptions(
         assert err.errors == expected_exception.errors
     elif expected_exception is not None:
         assert err.args[0] == code
+        if content is not None:
+            assert err.args[1] == content
 
 
 def test_auth_request_functionality(

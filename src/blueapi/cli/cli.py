@@ -358,7 +358,7 @@ def run_plan(
     except BlueskyStreamingError as se:
         raise ClickException(f"streaming error: {se}") from se
     except BlueskyRemoteControlError as e:
-        raise ClickException(f"remote control error: {e.args[1]}") from e
+        raise ClickException(f"remote control error: {e.args[0]}") from e
     except ValueError as ve:
         raise ClickException(f"task could not run: {ve}") from ve
 

@@ -128,11 +128,11 @@ def test_authentication_error_caught_by_wrapper_func(
 
 @patch("blueapi.client.rest.requests.Session.request")
 def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
-    mock_requests.side_effect = BlueskyRemoteControlError(message="Response [450]")
+    mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
     result = runner.invoke(main, ["controller", "plans"])
     assert (
         isinstance(result.exception, BlueskyRemoteControlError)
-        and result.exception.args[1] == "Response [450]"
+        and result.exception.args == ("Response [450]",)
         and result.exit_code == 1
     )
 
@@ -678,7 +678,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
     assert isinstance(result.exception, BlueskyRemoteControlError), (
         "Expected a BlueskyRemoteError from cli runner"
     )
-    assert result.exception.args[1] == "Failed to tear down the environment"
+    assert result.exception.args[0] == "Failed to tear down the environment"
 
     # Check if the endpoints were hit as expected
     assert len(responses.calls) == 1  # +1 for the DELETE call
@@ -714,7 +714,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
             "Error: Incorrect parameters supplied\n    Missing value for 'foo'\n",
         ),
         (
-            BlueskyRemoteControlError(message="Server error"),
+            BlueskyRemoteControlError("Server error"),
             "Error: remote control error: Server error\n",
         ),
         (

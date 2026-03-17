@@ -498,7 +498,7 @@ class BlueapiClient:
                     if event.task_status is None:
                         complete.set_exception(
                             BlueskyRemoteControlError(
-                                message="Server completed without task status"
+                                "Server completed without task status"
                             )
                         )
                     else:
@@ -530,7 +530,7 @@ class BlueapiClient:
             return response
         else:
             raise BlueskyRemoteControlError(
-                message=f"Tried to create and start task {response.task_id} "
+                f"Tried to create and start task {response.task_id} "
                 f"but {worker_response.task_id} was started instead"
             )
 
@@ -659,7 +659,7 @@ class BlueapiClient:
             status = self._rest.delete_environment()
         except Exception as e:
             raise BlueskyRemoteControlError(
-                message="Failed to tear down the environment"
+                "Failed to tear down the environment"
             ) from e
         return self._wait_for_reload(
             status,
@@ -684,7 +684,7 @@ class BlueapiClient:
             status = self._rest.get_environment()
             if status.error_message is not None:
                 raise BlueskyRemoteControlError(
-                    message=f"Error reloading environment: {status.error_message}"
+                    f"Error reloading environment: {status.error_message}"
                 )
             elif (
                 status.initialized and status.environment_id != previous_environment_id

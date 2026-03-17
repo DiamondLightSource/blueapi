@@ -34,6 +34,8 @@ T = TypeVar("T")
 
 TRACER = get_tracer("rest")
 
+LOGGER = logging.getLogger(__name__)
+
 
 class UnauthorisedAccessError(Exception):
     pass
@@ -276,8 +278,8 @@ class BlueapiRestClient:
         if (server_version := response.headers.get("x-blueapi-version")) is not None:
             from packaging.version import Version
 
-            if Version(server_version).release == Version(__version__).release:
-                logging.warning(
+            if Version(server_version).release != Version(__version__).release:
+                LOGGER.warning(
                     f"Server version is {Version(server_version).release} and "
                     f"client version is {Version(__version__).release}"
                 )

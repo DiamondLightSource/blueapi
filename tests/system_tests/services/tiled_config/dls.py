@@ -55,7 +55,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         provider: str | None = None,
     ):
         self._token_audience = token_audience
-        self._type_adapter = TypeAdapter(DiamondAccessBlob)
+        self._type_adapter = TypeAdapter(DiamondAccessBlob | int)
 
         super().__init__(
             authorization_provider=authorization_provider,
@@ -80,7 +80,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         decision = await self._get_external_decision(
             self._create_node,
             self.build_input(principal, authn_access_tags, authn_scopes, access_blob),
-            ResultHolder[int],
+            ResultHolder[str],
         )
         if decision and decision.result is not None:
             return (True, {"tags": [decision.result]})
@@ -131,11 +131,11 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             and "tags" in access_blob
             and len(access_blob["tags"]) > 0
         ):
-            if isinstance(tags := access_blob["tags"][0], str):
-                blob = self._type_adapter.validate_json(tags)
+            blob = self._type_adapter.validate_json(access_blob["tags"][0])
+            if isinstance(blob, DiamondAccessBlob):
                 _input.update(blob.model_dump())
-            elif isinstance(tags, int):
-                _input["session"] = str(tags)
+            elif isinstance(blob, int):
+                _input["session"] = str(blob)
 
         return json.dumps({"input": _input})
 
@@ -151,7 +151,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         tags = await self._get_external_decision(
             self._user_tags,
             self.build_input(principal, authn_access_tags, authn_scopes),
-            ResultHolder[list[int | str]],
+            ResultHolder[list[str]],
         )
         if tags is not None:
             if tags.result == ["*"]:

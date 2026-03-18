@@ -224,8 +224,10 @@ def test_server_and_client_versions(
 
     if logging_warning_present:
         mock_logger.warning.assert_called_once_with(
-            f"Server version is {Version(server_version).release} and "
-            f"client version is {Version(__version__).release}"
+            f"Version mismatch: Blueapi server version is"
+            f"{Version(server_version).release}"
+            f"but client version is {Version(__version__).release}."
+            f"Some features may not work as expected."
         )
     else:
         mock_logger.assert_not_called()

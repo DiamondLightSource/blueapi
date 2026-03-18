@@ -5,7 +5,7 @@ import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
-import blueapi
+from blueapi import __version__
 from blueapi.config import ApplicationConfig
 from blueapi.service.main import (
     add_version_headers,
@@ -26,7 +26,7 @@ async def test_add_version_header():
     response = client.get("/")
 
     assert response.headers["X-API-VERSION"] == ApplicationConfig.REST_API_VERSION
-    assert response.headers["X-BlueAPI-VERSION"] == blueapi.__version__
+    assert response.headers["X-BlueAPI-VERSION"] == __version__
 
 
 async def test_log_request_details():

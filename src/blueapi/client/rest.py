@@ -278,10 +278,13 @@ class BlueapiRestClient:
         if (server_version := response.headers.get("x-blueapi-version")) is not None:
             from packaging.version import Version
 
-            if Version(server_version).release != Version(__version__).release:
+            if (server_version := Version(server_version).release) != (
+                client_version := Version(__version__).release
+            ):
                 LOGGER.warning(
-                    f"Server version is {Version(server_version).release} and "
-                    f"client version is {Version(__version__).release}"
+                    f"Version mismatch: Blueapi server version is {server_version}"
+                    f"but client version is {client_version}."
+                    f"Some features may not work as expected."
                 )
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized

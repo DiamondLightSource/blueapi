@@ -656,7 +656,7 @@ class TaskWorker:
             initial=initial,
             target=target,
             unit=unit or "units",
-            precision=precision or 3,
+            precision=precision,
             done=status.done,
             percentage=percentage,
             time_elapsed=time_elapsed,

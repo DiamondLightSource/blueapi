@@ -287,6 +287,7 @@ def listen_to_events(obj: dict) -> None:
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.argument("parameters", type=ParametersType(), default={}, required=False)
+@click.option("--ws", type=bool, is_flag=True, default=False)
 @click.option(
     "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
 )
@@ -314,6 +315,7 @@ def run_plan(
     name: str,
     timeout: float | None,
     foreground: bool,
+    ws: bool,
     instrument_session: str,
     parameters: TaskParameters,
 ) -> None:
@@ -335,7 +337,13 @@ def run_plan(
                 elif isinstance(event, DataEvent):
                     callback(event.name, event.doc)
 
-            resp = client.run_task(task, on_event=on_event)
+            client.add_callback(on_event)
+
+            if ws:
+                resp = client.run_blocking(task)
+            else:
+                resp = client.run_task(task)
+
             match resp.result:
                 case TaskResult(result=None, type="NoneType"):
                     print("Plan succeeded")

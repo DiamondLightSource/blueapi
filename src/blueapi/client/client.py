@@ -439,6 +439,26 @@ class BlueapiClient:
 
         return self.active_task
 
+    @start_as_current_span(TRACER, "request")
+    def run_blocking(
+        self, request: TaskRequest, on_event: OnAnyEvent | None = None
+    ) -> TaskStatus:
+        for event in self._rest.run_blocking(request):
+            if on_event is not None:
+                on_event(event)
+            for cb in self._callbacks.values():
+                try:
+                    cb(event)
+                except Exception as e:
+                    log.error(f"Callback ({cb}) failed for event: {event}", exc_info=e)
+            if isinstance(event, WorkerEvent) and event.is_complete():
+                if event.task_status is None:
+                    raise BlueskyRemoteControlError(
+                        "Server completed without task status"
+                    )
+                return event.task_status
+        raise BlueskyRemoteControlError("Connection closed before plan completed.")
+
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,

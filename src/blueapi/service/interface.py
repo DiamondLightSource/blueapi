@@ -1,5 +1,8 @@
+import logging
 from collections.abc import Mapping
+from dataclasses import dataclass
 from functools import cache
+from multiprocessing.connection import Connection
 from typing import Any
 
 from bluesky.callbacks.tiled_writer import TiledWriter
@@ -9,6 +12,7 @@ from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
@@ -22,14 +26,14 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.serialization import access_blob
-from blueapi.worker.event import TaskStatusEnum, WorkerEvent, WorkerState
+from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
 """This module provides interface between web application and underlying Bluesky
 context and worker"""
 
-
+LOGGER = logging.getLogger(__name__)
 _CONFIG: ApplicationConfig = ApplicationConfig()
 
 
@@ -278,3 +282,37 @@ def get_python_env(
     """Retrieve information about the Python environment"""
     scratch = config().scratch
     return get_python_environment(config=scratch, name=name, source=source)
+
+
+@dataclass
+class SubHandles:
+    worker: int
+    progress: int
+    data: int
+
+
+def pipe_events(tx: Connection) -> SubHandles:
+    tw = worker()
+
+    def handler(
+        worker_event: WorkerEvent | DataEvent | ProgressEvent,
+        _cor_id: str | None,
+    ) -> None:
+
+        try:
+            tx.send(worker_event)
+        except BrokenPipeError:
+            LOGGER.warning("Sending event to broken pipe")
+            pass
+
+    w = tw.worker_events.subscribe(handler)
+    d = tw.data_events.subscribe(handler)
+    p = tw.progress_events.subscribe(handler)
+    return SubHandles(worker=w, data=d, progress=p)
+
+
+def unpipe_events(hnd: SubHandles):
+    tw = worker()
+    tw.worker_events.unsubscribe(hnd.worker)
+    tw.data_events.unsubscribe(hnd.data)
+    tw.progress_events.unsubscribe(hnd.progress)

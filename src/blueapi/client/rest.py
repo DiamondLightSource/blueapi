@@ -8,8 +8,10 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError, WebsocketUrl
+from websockets.sync.client import connect
 
+from blueapi.client.event_bus import AnyEvent
 from blueapi.config import RestConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
@@ -273,6 +275,28 @@ class BlueapiRestClient:
             raise NoContentError(target_type)
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized
+
+    def run_blocking(self, req: TaskRequest):
+        url = self._ws_address().unicode_string().removesuffix("/") + "/run_plan"
+        headers = {}
+        if self._session_manager:
+            auth = self._session_manager.get_valid_access_token()
+            headers["Authorization"] = f"Bearer {auth}"
+        with connect(
+            url,
+            additional_headers=headers,
+            user_agent_header="blueapi cli",
+        ) as ws:
+            ws.send(req.model_dump_json())
+            for message in ws:
+                event = TypeAdapter(AnyEvent).validate_json(message)
+                yield event
+
+    def _ws_address(self) -> WebsocketUrl:
+        # url = WebsocketUrl.build(
+        #     scheme="ws", host=api.host, port=api.port, path=api.path
+        # )
+        return WebsocketUrl("ws://localhost:8000/")
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

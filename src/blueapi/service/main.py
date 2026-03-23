@@ -35,7 +35,6 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 import blueapi
-import blueapi.cli
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
 from blueapi.worker import TrackableTask, WorkerState

@@ -34,6 +34,7 @@ from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
+from blueapi import __version__
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
 from blueapi.worker import TrackableTask, WorkerState
@@ -123,7 +124,7 @@ def get_app(config: ApplicationConfig):
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
-    app.middleware("http")(add_api_version_header)
+    app.middleware("http")(add_version_headers)
     app.middleware("http")(inject_propagated_observability_context)
     app.middleware("http")(log_request_details)
     if config.api.cors:
@@ -568,11 +569,12 @@ def start(config: ApplicationConfig):
     )
 
 
-async def add_api_version_header(
+async def add_version_headers(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ):
     response = await call_next(request)
     response.headers["X-API-Version"] = ApplicationConfig.REST_API_VERSION
+    response.headers["X-BlueAPI-Version"] = __version__
     return response
 
 

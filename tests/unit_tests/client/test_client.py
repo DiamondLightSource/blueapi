@@ -19,7 +19,11 @@ from blueapi.client.client import (
     PlanCache,
 )
 from blueapi.client.event_bus import AnyEvent, EventBusClient
-from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
+from blueapi.client.rest import (
+    BlueapiRestClient,
+    BlueskyRemoteControlError,
+    NotFoundError,
+)
 from blueapi.config import MissingStompConfigurationError
 from blueapi.core import DataEvent
 from blueapi.service.model import (
@@ -98,7 +102,14 @@ def mock_rest() -> BlueapiRestClient:
     mock.get_plans.return_value = PLANS
     mock.get_plan.side_effect = lambda n: {p.name: p for p in PLANS.plans}[n]
     mock.get_devices.return_value = DEVICES
-    mock.get_device.side_effect = lambda n: {d.name: d for d in DEVICES.devices}[n]
+    device_map = {d.name: d for d in DEVICES.devices}
+
+    def get_device(n: str):
+        if n not in device_map:
+            raise NotFoundError(404, "<Response [404]>")
+        return device_map[n]
+
+    mock.get_device.side_effect = get_device
     mock.get_state.return_value = WorkerState.IDLE
     mock.get_task.return_value = TASK
     mock.get_all_tasks.return_value = TASKS

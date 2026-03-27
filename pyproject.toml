@@ -55,6 +55,7 @@ dev = [
     "pytest-cov",
     "pytest-asyncio",
     "pytest-httpx>=0.35.0",
+    "pytest-timeout",
     "responses",
     "ruff",
     "semver",
@@ -72,7 +73,7 @@ dev = [
     "jwcrypto",
     "deepdiff",
     "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
-    "respx"
+    "respx",
 ]
 
 [project.scripts]
@@ -103,6 +104,7 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
+timeout = 3
 
 [tool.coverage.run]
 patch = ["subprocess"]
@@ -178,6 +180,7 @@ commands = [
         "term",
         "--cov-report",
         "xml:cov.xml",
+        "--timeout=60",
         { replace = "posargs", default = [
         ], extend = true },
     ],

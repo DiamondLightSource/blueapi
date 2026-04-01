@@ -725,8 +725,15 @@ def test_plan_multi_parameter_fallback_help_text(client):
         PlanModel(
             name="foo",
             schema={
-                "properties": {"one": {}, "two": {}, "three": {}, "four": {}},
-                "required": ["one"],
+                "properties": {
+                    "one": {},
+                    "two": {
+                        "anyOf": [{"items": {}, "type": "array"}, {"type": "boolean"}],
+                    },
+                    "three": {},
+                    "four": {},
+                },
+                "required": ["one", "two"],
             },
         ),
         client,
@@ -734,7 +741,7 @@ def test_plan_multi_parameter_fallback_help_text(client):
     assert (
         plan.help_text == "Plan foo(\n"
         "    one: Any,\n"
-        "    two: Any | None = None,\n"
+        "    two: list[Any] | bool,\n"
         "    three: Any | None = None,\n"
         "    four: Any | None = None\n"
         ")"

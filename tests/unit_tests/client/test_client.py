@@ -716,7 +716,29 @@ def test_plan_fallback_help_text(client):
         ),
         client,
     )
-    assert plan.help_text == "Plan foo(one, two=None)"
+    assert plan.help_text == "Plan foo(one: Any, two: Any | None = None)"
+
+
+def test_plan_multi_parameter_fallback_help_text(client):
+    plan = Plan(
+        "foo",
+        PlanModel(
+            name="foo",
+            schema={
+                "properties": {"one": {}, "two": {}, "three": {}, "four": {}},
+                "required": ["one"],
+            },
+        ),
+        client,
+    )
+    assert (
+        plan.help_text == "Plan foo(\n"
+        "    one: Any,\n"
+        "    two: Any | None = None,\n"
+        "    three: Any | None = None,\n"
+        "    four: Any | None = None\n"
+        ")"
+    )
 
 
 def test_plan_properties(client):

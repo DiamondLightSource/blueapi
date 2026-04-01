@@ -229,7 +229,7 @@ class Plan:
 
         single_line = f"{self.name}({', '.join(args)})"
         max_length = 100
-        max_args_inline = 4
+        max_args_inline = 3
         if len(single_line) <= max_length and len(args) <= max_args_inline:
             return single_line
 

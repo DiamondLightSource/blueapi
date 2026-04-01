@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Scripting Plans &#8212; blueapi 1.12.3.dev8+g12dfa2838 documentation</title>
+    <title>Scripting Plans &#8212; blueapi 1.12.3.dev9+g0f4cf89c3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=63749f42"></script>
+    <script src="../_static/documentation_options.js?v=57190081"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -596,7 +596,9 @@ is possible to subscribe to events so that updates can be provided.</p>
 <p>A callback should accept a single parameter which will be the event from server.
 This will be one of <code class="docutils literal notranslate"><span class="pre">WorkerEvent</span></code>, <code class="docutils literal notranslate"><span class="pre">ProgressEvent</span></code> or <code class="docutils literal notranslate"><span class="pre">DataEvent</span></code>.</p>
 <p>An example that prints data for each point could be something like</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">feedback</span><span class="p">(</span><span class="n">evt</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">blueapi.core.bluesky_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataEvent</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">feedback</span><span class="p">(</span><span class="n">evt</span><span class="p">):</span>
     <span class="k">match</span> <span class="n">evt</span><span class="p">:</span>
         <span class="k">case</span> <span class="n">DataEvent</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;start&quot;</span><span class="p">):</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Run started&quot;</span><span class="p">)</span>

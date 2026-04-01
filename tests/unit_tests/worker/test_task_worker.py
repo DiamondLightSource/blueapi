@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable
 from concurrent.futures import Future
 from pathlib import Path
 from queue import Full
-from typing import Annotated, Any, Generic, Literal, TypeVar
+from typing import Any, Generic, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pydantic
@@ -19,7 +19,7 @@ from observability_utils.tracing import (
     asserting_span_exporter,
 )
 from ophyd_async.core import AsyncStatus
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from blueapi.config import DeviceSource, EnvironmentConfig
 from blueapi.core import BlueskyContext, EventStream

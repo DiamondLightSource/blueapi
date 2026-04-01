@@ -222,13 +222,21 @@ class Plan:
         args = []
         for name, info in props.items():
             typ = _pretty_type(info)
-            arg = f"{tab}{name}: {typ}"
+            arg = f"{name}: {typ}"
             if name not in self.required:
                 arg = f"{arg} | None = None"
             args.append(arg)
 
-        joined = ",\n".join(args)
-        return f"{self.name}(\n{joined}\n)"
+        single_line = f"{self.name}({', '.join(args)})"
+        max_length = 100
+        max_args_inline = 4
+        if len(single_line) <= max_length and len(args) <= max_args_inline:
+            return single_line
+
+        # Fall back to multiline if too many arguments or too long.
+        multiline_args = ",\n".join(f"{tab}{arg}" for arg in args)
+
+        return f"{self.name}(\n{multiline_args}\n)"
 
 
 class BlueapiClient:

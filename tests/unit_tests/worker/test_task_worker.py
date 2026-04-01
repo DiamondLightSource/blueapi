@@ -905,26 +905,14 @@ class GenericPlanArgs(BaseModel):
 
 
 class SpecialisedPlanArgs(GenericPlanArgs, Generic[T]):
-    _region_type: Literal["vgscienta"] = "vgscienta"
     value2: T
 
 
 class SpecialisedPlanArgs2(GenericPlanArgs):
-    _region_type: Literal["specs"] = "specs"
     value3: float
 
 
 def plan_with_model(val: SpecialisedPlanArgs) -> MsgGenerator[T]:
-    yield from ()
-    assert isinstance(val, SpecialisedPlanArgs)
-
-
-def plan_using_base_model(val: GenericPlanArgs) -> MsgGenerator[T]:
-    yield from ()
-    assert isinstance(val, SpecialisedPlanArgs)
-
-
-def plan_with_generic_model(val: T) -> MsgGenerator[T]:
     yield from ()
     assert isinstance(val, SpecialisedPlanArgs)
 
@@ -936,6 +924,11 @@ def test_plan_args_are_converted_back_to_model(
 
     task = Task(name="plan_with_model", params={"val": {"value1": 1, "value2": "test"}})
     task.do_task(context)
+
+
+def plan_using_base_model(val: GenericPlanArgs) -> MsgGenerator[T]:
+    yield from ()
+    assert isinstance(val, SpecialisedPlanArgs)
 
 
 def test_base_model_plan_args_are_converted_back_to_specialised_model(
@@ -957,14 +950,19 @@ def test_base_model_plan_args_are_converted_back_to_specialised_model(
     task.do_task(context)
 
 
+def plan_with_generic_parameters(val: T) -> MsgGenerator[T]:
+    yield from ()
+    assert isinstance(val, SpecialisedPlanArgs)
+
+
 def test_generic_plan_args_are_converted_back_to_specialised_model(
     context: BlueskyContext,
 ) -> None:
-    context.register_plan(plan_with_generic_model)
+    context.register_plan(plan_with_generic_parameters)
     register_model(SpecialisedPlanArgs)
 
     task = Task(
-        name="plan_with_generic_model",
+        name="plan_with_generic_parameters",
         params={
             "val": {
                 "__type__": SpecialisedPlanArgs.__name__,
@@ -976,7 +974,7 @@ def test_generic_plan_args_are_converted_back_to_specialised_model(
     task.do_task(context)
 
 
-def test_nested_models_restore():
+def test_nested_models_restore_from_types():
     register_model(SpecialisedPlanArgs)
     register_model(SpecialisedPlanArgs2)
 
@@ -993,4 +991,30 @@ def test_nested_models_restore():
     result = restore_models(data)
 
     assert isinstance(result, SpecialisedPlanArgs)
+    assert result.value1 == 1
     assert isinstance(result.value2, SpecialisedPlanArgs2)
+    assert result.value2.value1 == 1
+    assert result.value2.value3 == 1.5
+
+
+def test_nested_models_restore_from_types_and_generic_args():
+    register_model(SpecialisedPlanArgs)
+    register_model(SpecialisedPlanArgs2)
+
+    data = {
+        "__type__": SpecialisedPlanArgs.__name__,
+        "__args__": [SpecialisedPlanArgs2.__name__],
+        "value1": 1,
+        "value2": {
+            "value1": 1,
+            "value3": 1.5,
+        },
+    }
+
+    result = restore_models(data)
+
+    assert isinstance(result, SpecialisedPlanArgs)
+    assert result.value1 == 1
+    assert isinstance(result.value2, SpecialisedPlanArgs2)
+    assert result.value2.value1 == 1
+    assert result.value2.value3 == 1.5

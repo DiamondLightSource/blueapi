@@ -18,7 +18,8 @@ on:
     tags:
       - '*'
   pull_request:
-
+  merge_group:
+    types: [checks_requested]
 
 jobs:
   analyze:

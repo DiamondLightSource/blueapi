@@ -20,4 +20,4 @@ version: 1.12.4
 # This is the version number of the application being deployed. This version number is incremented by the release process.
 # Versions are not expected to follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "1.12.4"
+appVersion: "1.12.2"

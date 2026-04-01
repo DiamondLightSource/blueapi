@@ -6,7 +6,8 @@ from concurrent.futures import Future
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Self
+from textwrap import dedent, indent
+from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -48,6 +49,37 @@ TRACER = get_tracer("client")
 
 
 log = logging.getLogger(__name__)
+
+
+def _pretty_type(schema: dict[str, Any]) -> str:
+    # refs first
+    if "$ref" in schema:
+        return schema["$ref"].split("/")[-1]
+
+    # arrays preserve inner type
+    if schema.get("type") == "array":
+        item_schema = schema.get("items", {})
+        inner = _pretty_type(item_schema)
+        return f"list[{inner}]"
+
+    # unions
+    if "anyOf" in schema:
+        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
+
+    json_type = schema.get("type")
+
+    type_map = {
+        "string": "str",
+        "integer": "int",
+        "boolean": "bool",
+        "number": "float",
+        "object": "dict",
+    }
+
+    if isinstance(json_type, str):
+        return type_map.get(json_type, json_type.split(".")[-1])
+
+    return "Any"
 
 
 class MissingInstrumentSessionError(Exception):
@@ -154,7 +186,7 @@ class Plan:
         return self.model.description or f"Plan {self!r}"
 
     @property
-    def properties(self) -> set[str]:
+    def properties(self) -> dict[str, Any]:
         return self.model.parameter_schema.get("properties", {}).keys()
 
     @property
@@ -192,9 +224,18 @@ class Plan:
         return params
 
     def __repr__(self):
-        opts = [p for p in self.properties if p not in self.required]
-        params = ", ".join(chain(self.required, (f"{opt}=None" for opt in opts)))
-        return f"{self.name}({params})"
+        props = self.model.parameter_schema.get("properties", {})
+        tab = "    "
+        args = []
+        for name, info in props.items():
+            typ = _pretty_type(info)
+            arg = f"{tab}{name}: {typ}"
+            if name not in self.required:
+                arg = f"{arg} | None = None"
+            args.append(arg)
+
+        joined = ",\n".join(args)
+        return f"{self.name}(\n{joined}\n)"
 
 
 class BlueapiClient:
@@ -280,6 +321,29 @@ class BlueapiClient:
             PlanResponse: Plans that can be run
         """
         return self._rest.get_plans()
+
+    @property
+    def ls_plans(self):
+        for plan in self.plans:
+            print(plan)
+            print(plan.help_text)
+            # print("\n")
+        # tab = "    "
+
+        # for plan in self.get_plans().plans:
+        #     self.ls_plan(plan.name)
+
+    # def ls_plan(self, name: str):
+    #     tab = "    "
+    #     plan = self.get_plan(name)
+    #     name_with_signature = schema_to_signature(plan.parameter_schema, plan.name)
+    #     print(name_with_signature)
+    #     # print(schema_to_signature(plan.model_json_schema()))
+    #     if plan.description is not None:
+    #         print(indent(dedent(plan.description).strip(), tab))
+    #         # print(plan.parameter_schema)
+    #     else:
+    #         print(indent("No documentation provided.", tab))
 
     @start_as_current_span(TRACER, "name")
     @deprecated("plans[name]")

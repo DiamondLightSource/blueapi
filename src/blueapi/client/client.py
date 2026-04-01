@@ -50,22 +50,18 @@ log = logging.getLogger(__name__)
 
 
 def _pretty_type(schema: dict[str, Any]) -> str:
-    # refs first
     if "$ref" in schema:
         return schema["$ref"].split("/")[-1]
 
-    # arrays preserve inner type
     if schema.get("type") == "array":
         item_schema = schema.get("items", {})
         inner = _pretty_type(item_schema)
         return f"list[{inner}]"
 
-    # unions
     if "anyOf" in schema:
         return " | ".join(_pretty_type(s) for s in schema["anyOf"])
 
     json_type = schema.get("type")
-
     type_map = {
         "string": "str",
         "integer": "int",
@@ -73,7 +69,6 @@ def _pretty_type(schema: dict[str, Any]) -> str:
         "number": "float",
         "object": "dict",
     }
-
     if isinstance(json_type, str):
         return type_map.get(json_type, json_type.split(".")[-1])
 

@@ -8,15 +8,15 @@ from fastapi.testclient import TestClient
 from blueapi import __version__
 from blueapi.config import ApplicationConfig
 from blueapi.service.main import (
-    add_version_headers,
     get_passthrough_headers,
     log_request_details,
 )
+from blueapi.service.middleware import VersionHeaders
 
 
 async def test_add_version_header():
     app = FastAPI()
-    app.middleware("http")(add_version_headers)
+    app.add_middleware(VersionHeaders)
 
     @app.get("/")
     async def root():

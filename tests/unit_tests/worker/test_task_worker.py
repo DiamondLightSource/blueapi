@@ -914,18 +914,12 @@ class SpecialisedPlanArgs2(GenericPlanArgs):
     value3: float
 
 
-Region = Annotated[
-    SpecialisedPlanArgs | SpecialisedPlanArgs2,
-    Field(discriminator="_region_type"),
-]
-
-
 def plan_with_model(val: SpecialisedPlanArgs) -> MsgGenerator[T]:
     yield from ()
     assert isinstance(val, SpecialisedPlanArgs)
 
 
-def plan_using_base_model(val: Region) -> MsgGenerator[T]:
+def plan_using_base_model(val: GenericPlanArgs) -> MsgGenerator[T]:
     yield from ()
     assert isinstance(val, SpecialisedPlanArgs)
 
@@ -948,9 +942,17 @@ def test_base_model_plan_args_are_converted_back_to_specialised_model(
     context: BlueskyContext,
 ) -> None:
     context.register_plan(plan_using_base_model)
+    register_model(SpecialisedPlanArgs)
 
     task = Task(
-        name="plan_using_base_model", params={"val": {"value1": 1, "value2": "test"}}
+        name="plan_using_base_model",
+        params={
+            "val": {
+                "__type__": SpecialisedPlanArgs.__name__,
+                "value1": 1,
+                "value2": "test",
+            }
+        },
     )
     task.do_task(context)
 

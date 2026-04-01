@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
@@ -10,6 +11,7 @@ from observability_utils.tracing import (
 )
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
+from blueapi import __version__
 from blueapi.config import RestConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
@@ -31,6 +33,8 @@ from blueapi.worker import TrackableTask, WorkerState
 T = TypeVar("T")
 
 TRACER = get_tracer("rest")
+
+LOGGER = logging.getLogger(__name__)
 
 
 class UnauthorisedAccessError(Exception):
@@ -271,6 +275,17 @@ class BlueapiRestClient:
             raise exception
         if response.status_code == status.HTTP_204_NO_CONTENT:
             raise NoContentError(target_type)
+        if (server_version := response.headers.get("x-blueapi-version")) is not None:
+            from packaging.version import Version
+
+            if (server_version := Version(server_version).base_version) != (
+                client_version := Version(__version__).base_version
+            ):
+                LOGGER.warning(
+                    f"Version mismatch: Blueapi server version is {server_version} "
+                    f"but client version is {client_version}. "
+                    f"Some features may not work as expected."
+                )
         deserialized = TypeAdapter(target_type).validate_python(response.json())
         return deserialized
 

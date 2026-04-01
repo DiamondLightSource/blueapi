@@ -1,11 +1,13 @@
 import uuid
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import requests
 import responses
+from packaging.version import Version
 
+from blueapi import __version__
 from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
@@ -196,3 +198,36 @@ def test_parameter_error_other_string():
         input=34,
     )
     assert str(p1) == "Invalid value 34 for field field_one.0: error_message"
+
+
+@pytest.mark.parametrize(
+    "server_version,logging_warning_present",
+    [(__version__, False), ("0.0.1", True), (None, False)],
+)
+@patch("blueapi.client.rest.TypeAdapter")
+@patch("blueapi.client.rest.requests.Session.request")
+@patch("blueapi.client.rest.LOGGER")
+def test_server_and_client_versions(
+    mock_logger: MagicMock,
+    mock_request: Mock,
+    mock_type_adapter: Mock,
+    rest: BlueapiRestClient,
+    server_version: str,
+    logging_warning_present: bool,
+):
+    response = Mock(spec=requests.Response)
+    response.status_code = 200
+    response.headers = {"x-blueapi-version": server_version}
+    mock_request.return_value = response
+
+    rest.get_plans()
+
+    if logging_warning_present:
+        mock_logger.warning.assert_called_once_with(
+            f"Version mismatch: Blueapi server version is "
+            f"{Version(server_version).base_version} "
+            f"but client version is {Version(__version__).base_version}. "
+            f"Some features may not work as expected."
+        )
+    else:
+        mock_logger.assert_not_called()

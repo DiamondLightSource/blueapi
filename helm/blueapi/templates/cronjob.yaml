@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: [""]
+  resources: ["pods", "persistentvolumeclaims"]
+  verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      # amount of attempts of labeling a pvc
+      backoffLimit: 2
+      # job stops after 60 secounds
+      activeDeadlineSeconds: 60
+      template:
+        spec:
+          serviceAccountName: {{ include "blueapi.fullname" . }}-last-used-stamper
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+          - name: last-used-stamper
+            image: bitnami/kubectl:1.31.1
+            imagePullPolicy: IfNotPresent
+            command:
+              - /bin/sh
+              - -c
+              - |
+                # Get PVCs belonging to this blueapi release
+                ALL_PVC=$(kubectl get pvc -l "argocd.argoproj.io/instance={{ .Release.Name }}" \
+                  -o jsonpath='{.items[*].metadata.name}' -n {{ .Release.Namespace }} | tr ' ' '\n')
+                # Get all PVCs currently mounted by running pods
+                MOUNTED_PVCS=$(kubectl get pods -n {{ .Release.Namespace }} \
+                  -o=jsonpath='{.items[*].spec.volumes[*].persistentVolumeClaim.claimName}' | tr ' ' '\n' | sort -u)
+                NOW=$(date +%s)
+                for pvc in $ALL_PVC; do
+                  ANNOTATION=$(kubectl get pvc "$pvc" -n {{ .Release.Namespace }} -o=jsonpath='{.metadata.annotations.last-used}')
+                  if [ -z "$ANNOTATION" ]; then
+                    kubectl annotate --overwrite pvc "$pvc" -n {{ .Release.Namespace }} last-used="$NOW"
+                  elif echo "$MOUNTED_PVCS" | grep -qx "$pvc"; then
+                    kubectl annotate --overwrite pvc "$pvc" -n {{ .Release.Namespace }} last-used="$NOW"
+                  fi
+                done
+          restartPolicy: OnFailure

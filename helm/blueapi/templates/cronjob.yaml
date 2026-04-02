@@ -61,8 +61,9 @@ spec:
               - -c
               - |
                 # Get PVCs belonging to this blueapi release
-                ALL_PVC=$(kubectl get pvc -l "argocd.argoproj.io/instance={{ .Release.Name }}" \
-                  -o jsonpath='{.items[*].metadata.name}' -n {{ .Release.Namespace }} | tr ' ' '\n')
+                ALL_PVC=$(kubectl get pvc -n {{ .Release.Namespace }} \
+                  -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | \
+                  grep "^{{ .Release.Name }}-scratch-")
                 # Get all PVCs currently mounted by running pods
                 MOUNTED_PVCS=$(kubectl get pods -n {{ .Release.Namespace }} \
                   -o=jsonpath='{.items[*].spec.volumes[*].persistentVolumeClaim.claimName}' | tr ' ' '\n' | sort -u)

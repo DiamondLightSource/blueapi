@@ -6,7 +6,7 @@ from concurrent.futures import Future
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -38,7 +38,7 @@ from blueapi.service.model import (
 )
 from blueapi.utils import deprecated
 from blueapi.worker import WorkerEvent, WorkerState
-from blueapi.worker.event import ProgressEvent, TaskStatus
+from blueapi.worker.event import ProgressEvent, TaskError, TaskResult, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
@@ -141,13 +141,17 @@ class Plan:
         self._client = client
         self.__doc__ = model.description
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Any:
         req = TaskRequest(
             name=self.name,
             params=self._build_args(*args, **kwargs),
             instrument_session=self._client.instrument_session,
         )
-        self._client.run_task(req)
+        match self._client.run_task(req):
+            case TaskStatus(result=TaskResult(result=res)):
+                return res
+            case TaskStatus(result=TaskError(type=typ, message=msg)):
+                raise PlanFailedError(typ, msg)
 
     @property
     def help_text(self) -> str:
@@ -744,3 +748,9 @@ class BlueapiClient:
                 auth.start_device_flow()
             else:
                 print("Server is not configured to use authentication!")
+
+
+class PlanFailedError(Exception):
+    def __init__(self, typ: str, message: str):
+        super().__init__(message)
+        self._type = typ

@@ -54,7 +54,7 @@ spec:
           {{- end }}
           containers:
           - name: last-used-stamper
-            image: bitnami/kubectl:1.31.1
+            image: bitnami/kubectl:latest
             imagePullPolicy: IfNotPresent
             command:
               - /bin/sh

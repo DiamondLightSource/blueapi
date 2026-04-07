@@ -39,6 +39,8 @@ TRACER = get_tracer("rest")
 
 LOGGER = logging.getLogger(__name__)
 
+USER_AGENT = f"blueapi cli {__version__}"
+
 
 class UnauthorisedAccessError(Exception):
     pass
@@ -277,14 +279,15 @@ class BlueapiRestClient:
     ) -> T:
         url = self._config.url.unicode_string().removesuffix("/") + suffix
         # Get the trace context to propagate to the REST API
-        carr = get_context_propagator()
+        headers = get_context_propagator()
+        headers["User-Agent"] = USER_AGENT
         try:
             response = self._pool.request(
                 method,
                 url,
                 json=data,
                 params=params,
-                headers=carr,
+                headers=headers,
                 auth=JWTAuth(self._session_manager),
             )
         except requests.exceptions.ConnectionError as ce:
@@ -312,14 +315,14 @@ class BlueapiRestClient:
 
     def run_blocking(self, req: TaskRequest):
         url = self._ws_address().unicode_string().removesuffix("/") + "/run_plan"
-        headers = {}
+        headers = get_context_propagator()
         if self._session_manager:
             auth = self._session_manager.get_valid_access_token()
             headers["Authorization"] = f"Bearer {auth}"
         with connect(
             url,
             additional_headers=headers,
-            user_agent_header="blueapi cli",
+            user_agent_header=USER_AGENT,
         ) as ws:
             ws.send(req.model_dump_json())
             for message in ws:

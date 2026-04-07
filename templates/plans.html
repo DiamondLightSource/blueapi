@@ -1,5 +1,7 @@
 {% for plan in plans %}
-<li>
-  {{plan.name}}: {{plan.description}}
-</li>
+<h3>{{plan.name}}</h3>
+<dl>
+    <dt>Description:</dt>
+    <dd>{{plan.description}}</dd>
+</dl>
 {% endfor %}

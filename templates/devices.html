@@ -1,5 +1,7 @@
 {% for device in devices %}
-<li>
-  {{device.device}}: {{device.protocols}}
-</li>
+<h3> {{device.device}}</h3>
+<dl>
+    <dt>Protocols:</dt>
+    <dd>{{device.protocols}}</dd>
+</dl>
 {% endfor %}

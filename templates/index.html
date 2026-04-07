@@ -8,19 +8,13 @@
     </head>
     <body>
         <h1>{{instrument}}-blueapi</h1>
-        <p> 
-            <div>
-            Devices
-            <ul id="devices", hx-get="/ui/devices" hx-swap="innerHTML" hx-trigger="load"></ul>
-            </div>
-            <div>
-            Plans
-            <ul id="plans", hx-get="/ui/plans" hx-swap="innerHTML" hx-trigger="load"></ul>
-            </div>
-        </p>
         <p>
             api docs available at
             <a href="/docs">/docs</a>.
         </p>
+        <h2>Devices</h2>
+        <ul id="devices", hx-get="/ui/devices" hx-swap="innerHTML" hx-trigger="load"></ul>
+        <h2>Plans</h2>
+        <ul id="plans", hx-get="/ui/plans" hx-swap="innerHTML" hx-trigger="load"></ul>
     </body>
 </html>

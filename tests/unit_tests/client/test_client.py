@@ -17,6 +17,7 @@ from blueapi.client.client import (
     MissingInstrumentSessionError,
     Plan,
     PlanCache,
+    PlanFailedError,
 )
 from blueapi.client.event_bus import AnyEvent, EventBusClient
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
@@ -510,6 +511,39 @@ def test_run_task_ignores_non_matching_events(
     )
 
     mock_on_event.assert_called_once_with(COMPLETE_EVENT)
+
+
+def test_scripting_interface_returns_result():
+    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
+    client.run_task.return_value = TaskStatus(
+        task_id="foobar",
+        task_complete=True,
+        task_failed=False,
+        result=TaskResult(result=42, type="int"),
+    )
+    demo_plan = Plan(
+        "demo",
+        client=client,
+        model=PlanModel(name="demo", description="Demo plan", schema={}),
+    )
+    assert demo_plan() == 42
+
+
+def test_scripting_interface_raises_exceptions():
+    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
+    client.run_task.return_value = TaskStatus(
+        task_id="foobar",
+        task_complete=True,
+        task_failed=True,
+        result=TaskError(type="ValueError", message="Plan failed"),
+    )
+    demo_plan = Plan(
+        "demo",
+        client=client,
+        model=PlanModel(name="demo", description="Demo plan", schema={}),
+    )
+    with pytest.raises(PlanFailedError, match="Plan failed"):
+        demo_plan()
 
 
 def test_oidc_config_property(client, mock_rest):

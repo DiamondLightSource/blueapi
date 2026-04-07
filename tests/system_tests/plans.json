@@ -42,7 +42,7 @@
                         "additionalProperties": true,
                         "title": "Metadata",
                         "type": "object",
-                        "default": "None"
+                        "default": null
                     }
                 },
                 "required": [

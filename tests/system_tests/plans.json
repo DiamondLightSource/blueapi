@@ -684,7 +684,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -714,11 +715,13 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     },
                     "wait": {
                         "title": "Wait",
-                        "type": "boolean"
+                        "type": "boolean",
+                        "default": false
                     }
                 },
                 "required": [
@@ -748,11 +751,13 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     },
                     "wait": {
                         "title": "Wait",
-                        "type": "boolean"
+                        "type": "boolean",
+                        "default": false
                     }
                 },
                 "required": [
@@ -776,7 +781,8 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     }
                 },
                 "required": [
@@ -799,7 +805,8 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     }
                 },
                 "required": [
@@ -835,11 +842,13 @@
                 "properties": {
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     },
                     "timeout": {
                         "title": "Timeout",
-                        "type": "number"
+                        "type": "number",
+                        "default": null
                     }
                 },
                 "title": "wait",

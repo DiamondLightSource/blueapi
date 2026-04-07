@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{instrument}}-blueapi</title>
+        <style>
+            dl {
+            padding-left: 30px;
+            }
+            .container {
+            border: 2px solid rgb(75 70 74);
+            border-radius: 0.5em;
+            padding: 20px 10px;
+            font: sans-serif;
+
+            display: flex;
+            }
+            .container > * {
+            padding: 10px;
+            border: 2px solid rgb(95 97 110);
+            border-radius: 0.5em;
+
+            margin: 0 10px;
+            flex: 1 1 200px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>{{instrument}}-blueapi</h1>
+        <p>
+            api docs available at
+            <a href="/docs">/docs</a>.
+        </p>
+
+        <div class="container">
+
+            <div>
+                <h2>Run Plan</h2>
+                <form action="/run" method="POST" id="run_form">
+                    <div>
+                    <label for="instrument_session">Instrument Session</label>
+                    <input type="text" id="instrument_session" name="instrument_session">
+                    </div>
+
+                    <div>
+                    <label for="name">Select Plan</label>
+                        <select id="name" name="name", form="run_form">
+                        <option value="">--select a plan--</option>
+                        {% for plan in plans %}
+                        <option value="{{plan.name}}">{{plan.name}}</option>
+                        {% endfor %}
+                    </select>
+                    </div>
+
+                    <div>
+                    <label for="params">Plan Parameters</label>
+                    <input type="text" id="params" name="params">
+                    </div>
+
+                    <input type="submit" value="run">
+                </form>
+
+                <h2>Tasks</h2>
+
+                <h3>Current task:</h3>
+                {% for task in tasks if not task.is_pending and not task.is_complete %}
+                <dl>
+                    <dt> {{task.task_id}}
+                        <ul>
+                            <li>{{task.task.name}}</li>
+                            <li>{{task.task.params}}</li>
+                        </ul>
+                    </dt>
+                </dl>
+                {% endfor %}
+
+                <h3>Pending tasks:</h3>
+                {% for task in tasks if task.is_pending %}
+                <dl>
+                    <dt> {{task.task_id}}
+                        <ul>
+                            <li>{{task.task.name}}</li>
+                            <li>{{task.task.params}}</li>
+                        </ul>
+                    </dt>
+                </dl>
+                {% endfor %}
+
+                <h3>Completed tasks:</h3>
+                {% for task in tasks if task.is_complete%}
+                <dl>
+                    <dt> {{task.task_id}}
+                        <ul>
+                            <li>{{task.task.name}}</li>
+                            <li>{{task.task.params}}</li>
+                            <li>outcome: {{task.outcome.outcome}} </li>
+                            <li>result: {{task.outcome.result}}</li>
+                        </ul>
+                    </dt>
+                </dl>
+                {% endfor %}
+
+            </div>
+
+            <div>
+                <h2>Plans</h2>
+                {% for plan in plans %}
+                <h3>{{plan.name}}</h3>
+                <dl>
+                    <dt>Description:</dt>
+                    <dd>{{plan.description}}</dd>
+                    <dt> Plan Parameters:</dt>
+                    {% for p in plan.parameter_schema.properties %}
+                    <dd>{{ p }}</dd>
+                    {% endfor %}
+                </dl>
+                {% endfor %}
+            </div>
+
+            <div>
+                <h2>Devices</h2>
+                {% for device in devices %}
+                <h3> {{device.device}}</h3>
+                <dl>
+                    <dt>Protocols:</dt>
+                    <dd>{{device.protocols}}</dd>
+                </dl>
+                {% endfor %}
+            </div>
+
+        </div>
+
+    </body>
+</html>

@@ -1,3 +1,4 @@
+import json
 import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
@@ -11,6 +12,7 @@ from fastapi import (
     Body,
     Depends,
     FastAPI,
+    Form,
     HTTPException,
     Request,
     Response,
@@ -18,7 +20,8 @@ from fastapi import (
 )
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.templating import Jinja2Templates
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -160,15 +163,6 @@ async def on_token_error_401(_: Request, __: Exception):
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Not authenticated"},
         headers={"WWW-Authenticate": "Bearer"},
-    )
-
-
-@secure_router.get("/", include_in_schema=False)
-def root_redirect() -> RedirectResponse:
-    """Redirect to docs url"""
-    return RedirectResponse(
-        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-        url=ApplicationConfig.DOCS_ENDPOINT,
     )
 
 
@@ -610,3 +604,67 @@ async def log_request_details(
     log(log_message, extra=extra)
 
     return response
+
+
+templates = Jinja2Templates(directory="templates")
+
+
+@secure_router.get("/", include_in_schema=False, response_class=HTMLResponse)
+def root_landing(
+    request: Request,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> HTMLResponse:
+
+    if runner._config.env.metadata:
+        instrument = runner._config.env.metadata.instrument
+    else:
+        instrument = "<ixx>"
+
+    devices = runner.run(interface.get_devices)
+    devices = [
+        {"device": device.name, "protocols": [p.name for p in device.protocols]}
+        for device in devices
+    ]
+
+    plans = runner.run(interface.get_plans)
+    task_list = get_tasks(runner)
+
+    context = {
+        "instrument": instrument,
+        "devices": devices,
+        "plans": plans,
+        "tasks": task_list.tasks,
+    }
+
+    return templates.TemplateResponse(
+        request=request, name="index.html", context=context
+    )
+
+
+@secure_router_v1.post("/run", include_in_schema=True, tags=[Tag.TASK])
+@start_as_current_span(TRACER)
+def run(
+    name: Annotated[str, Form()],
+    params: Annotated[str, Form()],
+    instrument_session: Annotated[str, Form()],
+    request: Request,
+    response: Response,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> RedirectResponse:
+
+    task_request = TaskRequest(
+        name=name,
+        params=json.loads(params),  # do this validator in the model?
+        instrument_session=instrument_session,
+    )
+    res = submit_task(request, response, task_request, runner)
+
+    tid = res.task_id
+    req_task = WorkerTask(task_id=tid)
+
+    try:
+        set_active_task(request, req_task, runner)
+    except HTTPException:
+        delete_submitted_task(tid, runner)
+
+    return RedirectResponse(status_code=status.HTTP_204_NO_CONTENT, url="/")

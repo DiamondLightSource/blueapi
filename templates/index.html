@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>blueapi</title>
+        <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.js" integrity="sha384-ezjq8118wdwdRMj+nX4bevEi+cDLTbhLAeFF688VK8tPDGeLUe0WoY2MZtSla72F" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        <h1>blueapi</h1>
+        <p> 
+            Devices
+            <ul id="devices", hx-get="/ui/devices" hx-swap="innerHTML" hx-trigger="load"></ul>
+            Plans
+             <ul id="plans", hx-get="/ui/plans" hx-swap="innerHTML" hx-trigger="load"></ul>
+        </p>
+        <p>
+            api docs available at
+            <a href="/docs">/docs</a>.
+        </p>
+    </body>
+</html>

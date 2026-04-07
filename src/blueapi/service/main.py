@@ -1,5 +1,6 @@
 import logging
 import urllib.parse
+from asyncio import protocols
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
@@ -18,8 +19,9 @@ from fastapi import (
 )
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.templating import Jinja2Templates
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -179,13 +181,13 @@ async def on_token_error_401(_: Request, __: Exception):
     )
 
 
-@secure_router.get("/", include_in_schema=False)
-def root_redirect() -> RedirectResponse:
-    """Redirect to docs url"""
-    return RedirectResponse(
-        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-        url=ApplicationConfig.DOCS_ENDPOINT,
-    )
+# @secure_router.get("/", include_in_schema=False)
+# def root_redirect() -> RedirectResponse:
+#     """Redirect to docs url"""
+#     return RedirectResponse(
+#         status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+#         url=ApplicationConfig.DOCS_ENDPOINT,
+#     )
 
 
 @secure_router.get("/environment", tags=[Tag.ENV])
@@ -621,3 +623,46 @@ async def inject_propagated_observability_context(
         attach(ctx)
     response = await call_next(request)
     return response
+
+
+templates = Jinja2Templates(directory="templates")
+
+
+@secure_router.get("/", include_in_schema=False, response_class=HTMLResponse)
+def root_landing(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="index.html")
+
+
+@secure_router.get("/ui/devices", include_in_schema=False, tags=[Tag.DEVICE])
+@start_as_current_span(TRACER)
+def get_devices_html(
+    request: Request,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> HTMLResponse:
+    """Retrieve information about all available devices."""
+    devices = runner.run(interface.get_devices)
+    return templates.TemplateResponse(
+        request=request,
+        name="devices.html",
+        context={
+            "devices": [
+                {"device": device.name, "protocols": [p.name for p in device.protocols]}
+                for device in devices
+            ]
+        },
+    )
+
+
+@secure_router.get("/ui/plans", include_in_schema=False, tags=[Tag.PLAN])
+@start_as_current_span(TRACER)
+def get_plans_html(
+    request: Request,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> HTMLResponse:
+    """Retrieve information about all available devices."""
+    plans = runner.run(interface.get_plans)
+    return templates.TemplateResponse(
+        request=request,
+        name="plans.html",
+        context={"plans": plans},
+    )

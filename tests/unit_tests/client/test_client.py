@@ -748,6 +748,42 @@ def test_plan_multi_parameter_fallback_help_text(client):
     )
 
 
+def test_plan_help_text_with_ref(client):
+    schema = {
+        "$defs": {
+            "Spec": {
+                "properties": {
+                    "foo": {"type": "integer"},
+                    "bar": {"$ref": "#/$defs/InnerSpec"},
+                },
+                "required": ["foo", "bar"],
+            },
+            "InnerSpec": {
+                "properties": {
+                    "x": {"type": "number"},
+                    "y": {"default": 10, "type": "number"},
+                },
+                "required": ["x"],
+            },
+        },
+        "properties": {
+            "spec": {"$ref": "#/$defs/Spec"},
+            "meta": {"type": "string", "default": "abc"},
+        },
+        "required": ["spec"],
+    }
+
+    plan = Plan(
+        "ref_plan",
+        PlanModel(name="ref_plan", schema=schema),
+        client,
+    )
+
+    expected = "Plan ref_plan(spec: Spec, meta: str = 'abc')"
+
+    assert plan.help_text == expected
+
+
 def test_plan_properties(client):
     plan = Plan(
         "foo",

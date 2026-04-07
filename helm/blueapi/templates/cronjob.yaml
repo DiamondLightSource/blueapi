@@ -43,7 +43,7 @@ spec:
   jobTemplate:
     spec:
       # amount of attempts of labeling a pvc
-      backoffLimit: 2
+      backoffLimit: 0
       # job stops after 60 secounds
       activeDeadlineSeconds: 60
       template:
@@ -58,7 +58,7 @@ spec:
             - name : {{include "blueapi.fullname" . }}-pvc-stamper-script
               configMap:
                 name: {{include "blueapi.fullname" . }}-pvc-stamper-script
-                defaultMode: 0500
+                defaultMode: 0555
 
 
           containers:

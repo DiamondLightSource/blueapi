@@ -6,6 +6,8 @@ services:
     image: ghcr.io/diamondlightsource/numtracker:1.0.2
     ports:
       - "8406:8000"
+    security_opt:
+      - label=disable
     
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management
@@ -18,6 +20,8 @@ services:
       - type: bind
         source: ./services/rabbitmq_plugins
         target: /etc/rabbitmq/enabled_plugins
+    security_opt:
+      - label=disable
 
   keycloak:
     image: keycloak/keycloak:26.4
@@ -38,6 +42,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    security_opt:
+      - label=disable
 
   tiled:
     image: ghcr.io/bluesky/tiled:0.2.4
@@ -50,6 +56,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+    security_opt:
+      - label=disable
 
   opa:
     image: openpolicyagent/opa:edge-static-debug
@@ -59,6 +67,8 @@ services:
     environment:
       - ISSUER=http://localhost:8081/realms/master
     entrypoint: "sh /mnt/entrypoint.sh"
+    security_opt:
+      - label=disable
 
   blueapi-oauth2-proxy:
     network_mode: host
@@ -73,6 +83,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+    security_opt:
+      - label=disable
 
   tiled-oauth2-proxy:
     network_mode: host
@@ -87,3 +99,5 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+    security_opt:
+      - label=disable

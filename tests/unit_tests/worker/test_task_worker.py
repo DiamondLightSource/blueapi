@@ -893,3 +893,22 @@ def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
     params = Task(name="injected_device_plan").prepare_params(context_without_devices)
     assert params["composite"].fake_device == fake_device
     assert params["composite"].second_fake_device == second_fake_device
+
+
+class NotSerializable:
+    pass
+
+
+@pytest.mark.parametrize(
+    "plan_result,task_result,type_name",
+    (
+        (NotSerializable(), None, "NotSerializable"),
+        ((NotSerializable(), NotSerializable()), None, "tuple"),
+        (42, 42, "int"),
+        ((1, 2), [1, 2], "tuple"),
+    ),
+)
+def test_task_result_serialization(plan_result, task_result, type_name):
+    res = TaskResult.from_result(plan_result)
+    assert res.result == task_result
+    assert res.type == type_name

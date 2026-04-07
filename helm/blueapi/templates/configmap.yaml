@@ -31,6 +31,31 @@ data:
   init_config.yaml: |-
     scratch:
       {{- toYaml .Values.worker.scratch | nindent 6 }}
+
+---    
 {{- end }}
 
----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name : {{include "blueapi.fullname" . }}-pvc-stamper-script
+data:
+  time-stamper.sh: |
+    #!/bin/sh
+    # Get PVCs belonging to this blueapi release
+    ALL_PVC=$(kubectl get pvc -n {{ .Release.Namespace }} \
+      -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | \
+      grep "^{{ .Release.Name }}-scratch-")
+    # Get all PVCs currently mounted by running pods
+    MOUNTED_PVCS=$(kubectl get pods -n {{ .Release.Namespace }} \
+      -o=jsonpath='{.items[*].spec.volumes[*].persistentVolumeClaim.claimName}' | tr ' ' '\n' | sort -u)
+    NOW=$(date +%s)
+    #loop through all the pvcs annotating ones thare are mounted or lack a last-used stamp
+    for pvc in $ALL_PVC; do
+      ANNOTATION=$(kubectl get pvc "$pvc" -n {{ .Release.Namespace }} -o=jsonpath='{.metadata.annotations.last-used}')
+      if [ -z "$ANNOTATION" ]; then
+        kubectl annotate --overwrite pvc "$pvc" -n {{ .Release.Namespace }} last-used="$NOW"
+      elif echo "$MOUNTED_PVCS" | grep -qx "$pvc"; then
+        kubectl annotate --overwrite pvc "$pvc" -n {{ .Release.Namespace }} last-used="$NOW"
+      fi
+    done

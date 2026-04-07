@@ -5,7 +5,7 @@ from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
-from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
@@ -516,14 +516,16 @@ class BlueskyContext:
             ):
                 default_factory = self._composite_factory(arg_type)
                 _type = SkipJsonSchema[self._convert_type(arg_type, no_default)]
+                field_info = FieldInfo(default_factory=default_factory)
             else:
-                default_factory = DefaultFactory(para.default)
                 _type = self._convert_type(arg_type, no_default)
-            factory = None if no_default else default_factory
-            new_args[name] = (
-                _type,
-                FieldInfo(default_factory=factory),
-            )
+                if no_default:
+                    field_info = FieldInfo()
+                else:
+                    field_info = FieldInfo(default=para.default)
+
+            new_args[name] = (_type, field_info)
+
         return new_args
 
     def _convert_type(self, typ: Any, no_default: bool = True) -> type:
@@ -574,19 +576,3 @@ class BlueskyContext:
             return composite_class(**devices)
 
         return _inject_composite
-
-
-D = TypeVar("D")
-
-
-class DefaultFactory(Generic[D]):
-    _value: D
-
-    def __init__(self, value: D):
-        self._value = value
-
-    def __call__(self) -> D:
-        return self._value
-
-    def __eq__(self, other) -> bool:
-        return other.__class__ == self.__class__ and self._value == other._value

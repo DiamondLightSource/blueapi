@@ -730,8 +730,8 @@ def test_plan_multi_parameter_fallback_help_text(client):
                     "two": {
                         "anyOf": [{"items": {}, "type": "array"}, {"type": "boolean"}],
                     },
-                    "three": {},
-                    "four": {},
+                    "three": {"default": 3},
+                    "four": {"default": None},
                 },
                 "required": ["one", "two"],
             },
@@ -742,8 +742,8 @@ def test_plan_multi_parameter_fallback_help_text(client):
         plan.help_text == "Plan foo(\n"
         "    one: Any,\n"
         "    two: list[Any] | bool,\n"
-        "    three: Any | None = None,\n"
-        "    four: Any | None = None\n"
+        "    three: Any = 3,\n"
+        "    four: Any = None\n"
         ")"
     )
 

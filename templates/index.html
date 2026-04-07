@@ -3,16 +3,20 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>blueapi</title>
+        <title>{{instrument}}-blueapi</title>
         <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.js" integrity="sha384-ezjq8118wdwdRMj+nX4bevEi+cDLTbhLAeFF688VK8tPDGeLUe0WoY2MZtSla72F" crossorigin="anonymous"></script>
     </head>
     <body>
-        <h1>blueapi</h1>
+        <h1>{{instrument}}-blueapi</h1>
         <p> 
+            <div>
             Devices
             <ul id="devices", hx-get="/ui/devices" hx-swap="innerHTML" hx-trigger="load"></ul>
+            </div>
+            <div>
             Plans
-             <ul id="plans", hx-get="/ui/plans" hx-swap="innerHTML" hx-trigger="load"></ul>
+            <ul id="plans", hx-get="/ui/plans" hx-swap="innerHTML" hx-trigger="load"></ul>
+            </div>
         </p>
         <p>
             api docs available at

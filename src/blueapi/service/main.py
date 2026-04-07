@@ -1,6 +1,5 @@
 import logging
 import urllib.parse
-from asyncio import protocols
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
@@ -179,15 +178,6 @@ async def on_token_error_401(_: Request, __: Exception):
         content={"detail": "Not authenticated"},
         headers={"WWW-Authenticate": "Bearer"},
     )
-
-
-# @secure_router.get("/", include_in_schema=False)
-# def root_redirect() -> RedirectResponse:
-#     """Redirect to docs url"""
-#     return RedirectResponse(
-#         status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-#         url=ApplicationConfig.DOCS_ENDPOINT,
-#     )
 
 
 @secure_router.get("/environment", tags=[Tag.ENV])
@@ -629,8 +619,18 @@ templates = Jinja2Templates(directory="templates")
 
 
 @secure_router.get("/", include_in_schema=False, response_class=HTMLResponse)
-def root_landing(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request=request, name="index.html")
+def root_landing(
+    request: Request,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> HTMLResponse:
+    if runner._config.env.metadata:
+        instrument = runner._config.env.metadata.instrument
+    else:
+        instrument = "<ixx>"
+
+    return templates.TemplateResponse(
+        request=request, name="index.html", context={"instrument": instrument}
+    )
 
 
 @secure_router.get("/ui/devices", include_in_schema=False, tags=[Tag.DEVICE])

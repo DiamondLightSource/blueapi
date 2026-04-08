@@ -80,6 +80,7 @@ def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
     invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
 )
 @click.version_option(version=__version__, prog_name="blueapi")
+@click.option("-H", "--host", type=str)
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
@@ -99,7 +100,10 @@ def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
 )
 @click.pass_context
 def main(
-    ctx: click.Context, config: tuple[Path, ...], log_level: str | None = None
+    ctx: click.Context,
+    config: tuple[Path, ...],
+    host: str | None = None,
+    log_level: str | None = None,
 ) -> None:
     # if no command is supplied, run with the options passed
 
@@ -111,7 +115,8 @@ def main(
         config_loader.use_values_from_yaml(*config)
     except FileNotFoundError as fnfe:
         raise ClickException(f"Config file not found: {fnfe.filename}") from fnfe
-
+    if host:
+        config_loader.use_values({"api": {"url": host}})
     if log_level:
         config_loader.use_values({"logging": {"level": log_level}})
 

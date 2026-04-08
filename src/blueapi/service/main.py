@@ -25,18 +25,19 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from opentelemetry.context import attach
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.propagate import get_global_textmap
 from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi import __version__
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
+from blueapi.service.middleware import (
+    ObservabilityContextPropagator,
+    VersionHeaders,
+)
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -124,8 +125,9 @@ def get_app(config: ApplicationConfig):
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
-    app.middleware("http")(add_version_headers)
-    app.middleware("http")(inject_propagated_observability_context)
+
+    app.add_middleware(ObservabilityContextPropagator)
+    app.add_middleware(VersionHeaders)
     app.middleware("http")(log_request_details)
     if config.api.cors:
         app.add_middleware(
@@ -569,15 +571,6 @@ def start(config: ApplicationConfig):
     )
 
 
-async def add_version_headers(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-):
-    response = await call_next(request)
-    response.headers["X-API-Version"] = ApplicationConfig.REST_API_VERSION
-    response.headers["X-BlueAPI-Version"] = __version__
-    return response
-
-
 async def log_request_details(
     request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
 ) -> Response:
@@ -598,26 +591,4 @@ async def log_request_details(
     else:
         LOGGER.info(log_message, extra=extra)
 
-    return response
-
-
-async def inject_propagated_observability_context(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    """Middleware to extract any propagated observability context from the
-    HTTP headers and attach it to the local one.
-    """
-    headers = request.headers
-    if ApplicationConfig.CONTEXT_HEADER in headers:
-        carrier = {
-            ApplicationConfig.CONTEXT_HEADER: headers[ApplicationConfig.CONTEXT_HEADER]
-        }
-        if ApplicationConfig.VENDOR_CONTEXT_HEADER in headers:
-            carrier[ApplicationConfig.VENDOR_CONTEXT_HEADER] = headers[
-                ApplicationConfig.VENDOR_CONTEXT_HEADER
-            ]
-        ctx = get_global_textmap().extract(carrier)
-
-        attach(ctx)
-    response = await call_next(request)
     return response

@@ -4,6 +4,7 @@ from typing import Any, Literal, Self
 
 from bluesky.run_engine import RunEngineStateMachine
 from pydantic import Field, PydanticSchemaGenerationError, TypeAdapter
+from pydantic_core import PydanticSerializationError
 from super_state_machine.extras import PropertyMachine, ProxyString
 
 from blueapi.utils import BlueapiBaseModel
@@ -73,8 +74,8 @@ class TaskResult(BlueapiBaseModel):
     def from_result(cls, result: Any) -> Self:
         type_str = type(result).__name__
         try:
-            value = TypeAdapter(type(result)).dump_python(result)
-        except PydanticSchemaGenerationError:
+            value = TypeAdapter(type(result)).dump_python(result, mode="json")
+        except (PydanticSchemaGenerationError, PydanticSerializationError):
             value = None
         return cls(result=value, type=type_str)
 

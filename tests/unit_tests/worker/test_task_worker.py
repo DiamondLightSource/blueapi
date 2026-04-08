@@ -895,15 +895,15 @@ def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
     assert params["composite"].second_fake_device == second_fake_device
 
 
-class NotSerializable:
-    pass
-
-
 @pytest.mark.parametrize(
     "plan_result,task_result,type_name",
     (
-        (NotSerializable(), None, "NotSerializable"),
-        ((NotSerializable(), NotSerializable()), None, "tuple"),
+        (Unreturnable(foo=1, bar=[]), None, "Unreturnable"),
+        ((Unreturnable(foo=2, bar=[]),), None, "tuple"),
+        (ComplexReturn(foo=3, bar=["a"]), {"foo": 3, "bar": ["a"]}, "ComplexReturn"),
+        ((ComplexReturn(foo=4, bar=["b"]),), [{"foo": 4, "bar": ["b"]}], "tuple"),
+        (ModelReturn(foo=5, bar=["c"]), {"foo": 5, "bar": ["c"]}, "ModelReturn"),
+        ((ModelReturn(foo=6, bar=["d"]),), [{"foo": 6, "bar": ["d"]}], "tuple"),
         (42, 42, "int"),
         ((1, 2), [1, 2], "tuple"),
     ),

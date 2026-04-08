@@ -20,7 +20,8 @@
                     },
                     "num": {
                         "title": "Num",
-                        "type": "integer"
+                        "type": "integer",
+                        "default": 1
                     },
                     "delay": {
                         "anyOf": [
@@ -34,12 +35,14 @@
                                 "type": "array"
                             }
                         ],
+                        "default": 0.0,
                         "title": "Delay"
                     },
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -681,7 +684,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -711,11 +715,13 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     },
                     "wait": {
                         "title": "Wait",
-                        "type": "boolean"
+                        "type": "boolean",
+                        "default": false
                     }
                 },
                 "required": [
@@ -745,11 +751,13 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     },
                     "wait": {
                         "title": "Wait",
-                        "type": "boolean"
+                        "type": "boolean",
+                        "default": false
                     }
                 },
                 "required": [
@@ -773,7 +781,8 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     }
                 },
                 "required": [
@@ -796,7 +805,8 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     }
                 },
                 "required": [
@@ -832,11 +842,13 @@
                 "properties": {
                     "group": {
                         "title": "Group",
-                        "type": "string"
+                        "type": "string",
+                        "default": null
                     },
                     "timeout": {
                         "title": "Timeout",
-                        "type": "number"
+                        "type": "number",
+                        "default": null
                     }
                 },
                 "title": "wait",

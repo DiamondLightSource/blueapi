@@ -716,7 +716,72 @@ def test_plan_fallback_help_text(client):
         ),
         client,
     )
-    assert plan.help_text == "Plan foo(one, two=None)"
+    assert plan.help_text == "Plan foo(one: Any, two: Any | None = None)"
+
+
+def test_plan_multi_parameter_fallback_help_text(client):
+    plan = Plan(
+        "foo",
+        PlanModel(
+            name="foo",
+            schema={
+                "properties": {
+                    "one": {},
+                    "two": {
+                        "anyOf": [{"items": {}, "type": "array"}, {"type": "boolean"}],
+                    },
+                    "three": {"default": 3},
+                    "four": {"default": None},
+                },
+                "required": ["one", "two"],
+            },
+        ),
+        client,
+    )
+    assert (
+        plan.help_text == "Plan foo(\n"
+        "    one: Any,\n"
+        "    two: list[Any] | bool,\n"
+        "    three: Any = 3,\n"
+        "    four: Any = None\n"
+        ")"
+    )
+
+
+def test_plan_help_text_with_ref(client):
+    schema = {
+        "$defs": {
+            "Spec": {
+                "properties": {
+                    "foo": {"type": "integer"},
+                    "bar": {"$ref": "#/$defs/InnerSpec"},
+                },
+                "required": ["foo", "bar"],
+            },
+            "InnerSpec": {
+                "properties": {
+                    "x": {"type": "number"},
+                    "y": {"default": 10, "type": "number"},
+                },
+                "required": ["x"],
+            },
+        },
+        "properties": {
+            "spec": {"$ref": "#/$defs/Spec"},
+            "meta": {"type": "string", "default": "abc"},
+        },
+        "required": ["spec"],
+    }
+
+    plan = Plan(
+        "ref_plan",
+        PlanModel(name="ref_plan", schema=schema),
+        client,
+    )
+
+    expected = "Plan ref_plan(spec: Spec, meta: str = 'abc')"
+
+    assert plan.help_text == expected
 
 
 def test_plan_properties(client):

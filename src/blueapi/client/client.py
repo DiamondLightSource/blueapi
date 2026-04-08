@@ -4,9 +4,8 @@ import time
 from collections.abc import Iterable
 from concurrent.futures import Future
 from functools import cached_property
-from itertools import chain
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -48,6 +47,32 @@ TRACER = get_tracer("client")
 
 
 log = logging.getLogger(__name__)
+
+
+def _pretty_type(schema: dict[str, Any]) -> str:
+    if "$ref" in schema:
+        return schema["$ref"].split("/")[-1]
+
+    if schema.get("type") == "array":
+        item_schema = schema.get("items", {})
+        inner = _pretty_type(item_schema)
+        return f"list[{inner}]"
+
+    if "anyOf" in schema:
+        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
+
+    json_type = schema.get("type")
+    type_map = {
+        "string": "str",
+        "integer": "int",
+        "boolean": "bool",
+        "number": "float",
+        "object": "dict",
+    }
+    if isinstance(json_type, str):
+        return type_map.get(json_type, json_type.split(".")[-1])
+
+    return "Any"
 
 
 class MissingInstrumentSessionError(Exception):
@@ -154,7 +179,7 @@ class Plan:
         return self.model.description or f"Plan {self!r}"
 
     @property
-    def properties(self) -> set[str]:
+    def properties(self) -> dict[str, Any]:
         return self.model.parameter_schema.get("properties", {}).keys()
 
     @property
@@ -192,9 +217,35 @@ class Plan:
         return params
 
     def __repr__(self):
-        opts = [p for p in self.properties if p not in self.required]
-        params = ", ".join(chain(self.required, (f"{opt}=None" for opt in opts)))
-        return f"{self.name}({params})"
+        props = self.model.parameter_schema.get("properties", {})
+        required = set(self.required)
+
+        tab = "    "
+        args = []
+
+        for name, info in props.items():
+            typ = _pretty_type(info)
+            arg = f"{name}: {typ}"
+
+            if name not in required:
+                if "default" in info:
+                    default = repr(info["default"])
+                    arg = f"{arg} = {default}"
+                else:
+                    arg = f"{arg} | None = None"
+
+            args.append(arg)
+
+        single_line = f"{self.name}({', '.join(args)})"
+        max_length = 100
+        max_args_inline = 3
+
+        if len(single_line) <= max_length and len(args) <= max_args_inline:
+            return single_line
+
+        # Fall back to multiline if too many arguments or too long.
+        multiline_args = ",\n".join(f"{tab}{arg}" for arg in args)
+        return f"{self.name}(\n{multiline_args}\n)"
 
 
 class BlueapiClient:

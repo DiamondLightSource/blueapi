@@ -1,3 +1,4 @@
+{{- if .Values.timeStampCron.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -75,3 +76,4 @@ spec:
             imagePullPolicy: IfNotPresent
             command: ["/scripts/time-stamper.sh"]
           restartPolicy: OnFailure
+{{- end }}

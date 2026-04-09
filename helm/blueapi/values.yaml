@@ -224,6 +224,9 @@ initContainer:
     # -- Size of persistent volume
     size: "1Gi"
 
+timeStampCron:
+  enabled: true
+
 debug:
   # -- If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance
   enabled: false

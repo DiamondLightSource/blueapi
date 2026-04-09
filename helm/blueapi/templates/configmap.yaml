@@ -31,6 +31,18 @@ data:
   init_config.yaml: |-
     scratch:
       {{- toYaml .Values.worker.scratch | nindent 6 }}
+
+---    
 {{- end }}
 
 ---
+{{- if .Values.timeStampCron.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name : {{include "blueapi.fullname" . }}-pvc-stamper-script
+data:
+  {{- $files := .Files }}
+  time-stamper.sh: |-
+{{ $files.Get "files/scripts/time-stamper.sh" | indent 4 }}
+{{- end }}

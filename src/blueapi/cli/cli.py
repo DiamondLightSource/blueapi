@@ -513,16 +513,13 @@ def login(obj: dict) -> None:
         print("Logged in")
     except Exception:
         client = BlueapiClient.from_config(config)
-        try:
-            if oidc := client.oidc_config:
-                auth = SessionManager(
-                    oidc, cache_manager=SessionCacheManager(config.auth_token_path)
-                )
-                auth.start_device_flow()
-            else:
-                print("Server is not configured to use authentication!")
-        except BlueskyRemoteControlError:
-            print("Error thrown whilst checking authentication")
+        if oidc := client.oidc_config:
+            auth = SessionManager(
+                oidc, cache_manager=SessionCacheManager(config.auth_token_path)
+            )
+            auth.start_device_flow()
+        else:
+            print("Server is not configured to use authentication!")
 
 
 @main.command(name="logout")

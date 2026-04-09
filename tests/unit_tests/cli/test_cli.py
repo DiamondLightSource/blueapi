@@ -1134,7 +1134,7 @@ def test_login_with_unauthenticated_server(
     mock_unauthenticated_server: responses.RequestsMock,
 ):
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
-    assert "Error thrown whilst checking authentication\n" == result.output
+    assert "Server is not configured to use authentication!\n" == result.output
     assert result.exit_code == 0
 
 

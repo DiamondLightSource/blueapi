@@ -48,12 +48,15 @@ def setup_scratch(
             )
     for repo in config.repositories:
         local_directory = config.root / repo.name
-        ensure_repo(repo.remote_url, local_directory, repo.branch)
+        ensure_repo(repo.remote_url, local_directory, repo.branch, repo.tag)
         scratch_install(local_directory, timeout=install_timeout)
 
 
 def ensure_repo(
-    remote_url: str, local_directory: Path, branch: str | None = None
+    remote_url: str,
+    local_directory: Path,
+    branch: str | None = None,
+    tag: str | None = None,
 ) -> None:
     """
     Ensure that a repository is checked out for use in the scratch area.
@@ -64,6 +67,9 @@ def ensure_repo(
         local_directory: Output path for cloning
     """
 
+    if tag and branch:
+        raise ValueError(f"Can't use both branch ({branch!r}) and tag ({tag!r})")
+
     # Set umask to DLS standard
     os.umask(stat.S_IWOTH)
 
@@ -71,26 +77,32 @@ def ensure_repo(
         LOGGER.info(f"Cloning {remote_url}")
         repo = Repo.clone_from(remote_url, local_directory)
         LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
+        if branch:
+            if not (local := getattr(repo.heads, branch, None)):
+                origin = repo.remotes[0]
+                origin.fetch()
+                LOGGER.info(
+                    "Creating branch '%s' to track remote '%s'",
+                    branch,
+                    origin.refs[branch],
+                )
+                local = repo.create_head(branch, origin.refs[branch])
+                local.set_tracking_branch(origin.refs[branch])
+
+            LOGGER.info("Checking out branch %r", branch)
+            local.checkout()
+        elif tag:
+            if tag_obj := getattr(repo.tags, tag, None):
+                LOGGER.info("Checking out tag %r", tag)
+                tag_obj.checkout()
+            else:
+                raise ValueError("Could not find tag: " + repr(tag))
     elif local_directory.is_dir():
-        repo = Repo(local_directory)
         LOGGER.info(f"Found {local_directory}")
     else:
         raise KeyError(
             f"Unable to open {local_directory} as a git repository because it is a file"
         )
-
-    if branch:
-        if not (local := getattr(repo.heads, branch, None)):
-            origin = repo.remotes[0]
-            origin.fetch()
-            LOGGER.info(
-                "Creating branch '%s' to track remote '%s'", branch, origin.refs[branch]
-            )
-            local = repo.create_head(branch, origin.refs[branch])
-            local.set_tracking_branch(origin.refs[branch])
-
-        LOGGER.info("Checking out branch '%s'", branch)
-        local.checkout()
 
 
 def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:

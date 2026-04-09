@@ -6,7 +6,7 @@ from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Annotated, Any, ClassVar, Generic, Literal, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Generic, Literal, Self, TypeVar, cast
 
 import requests
 import yaml
@@ -21,6 +21,7 @@ from pydantic import (
     UrlConstraints,
     ValidationError,
     field_validator,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -192,10 +193,14 @@ class ScratchRepository(BlueapiBaseModel):
         default="https://github.com/example/example.git",
     )
     branch: str | SkipJsonSchema[None] = Field(
-        description=(
-            "Branch of repo to check out - defaults to remote's default when "
-            "cloning and the existing branch when the repo already exists"
-        ),
+        description="Branch of repo to check out - defaults to remote's default",
+        exclude_if=lambda f: f is None,
+        # using default_factory instead of default means the schema doesn't
+        # include an invalid value
+        default_factory=lambda: None,
+    )
+    tag: str | SkipJsonSchema[None] = Field(
+        description="Tag of repo to check out.",
         exclude_if=lambda f: f is None,
         # using default_factory instead of default means the schema doesn't
         # include an invalid value
@@ -208,6 +213,14 @@ class ScratchRepository(BlueapiBaseModel):
         if value == FORBIDDEN_OWN_REMOTE_URL:
             raise ValueError(f"remote_url '{value}' is not allowed.")
         return value
+
+    @model_validator(mode="after")
+    def check_clone_options(self) -> Self:
+        if self.branch is not None and self.tag is not None:
+            raise ValueError(
+                f"Cannot set both branch ({self.branch}) and tag ({self.tag})"
+            )
+        return self
 
 
 class ScratchConfig(BlueapiBaseModel):

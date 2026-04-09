@@ -105,6 +105,10 @@ class UnknownPlanError(Exception):
 
 
 def _exception(response: requests.Response) -> Exception | None:
+    try:
+        response.json()
+    except:
+        return BlueskyRemoteControlError("Response does not contain a valid JSON object")
     code = response.status_code
     if code < 400:
         return None

@@ -1,8 +1,8 @@
+import json
 import logging
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
-import json
 import requests
 from fastapi import status
 from observability_utils.tracing import (
@@ -108,9 +108,10 @@ class UnknownPlanError(Exception):
 def _exception(response: requests.Response) -> Exception | None:
     try:
         response.json()
-    except json.decoder.JSONDecodeError as je:
+    except json.decoder.JSONDecodeError:
         return BlueskyRemoteControlError(
-            "Response does not contain a valid JSON object")
+            "Response does not contain a valid JSON object"
+        )
     code = response.status_code
     if code < 400:
         return None

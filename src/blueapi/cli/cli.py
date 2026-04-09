@@ -522,7 +522,7 @@ def login(obj: dict) -> None:
             else:
                 print("Server is not configured to use authentication!")
         except BlueskyRemoteControlError:
-            print ("Error thrown whilst checking authentication")
+            print("Error thrown whilst checking authentication")
 
 
 @main.command(name="logout")

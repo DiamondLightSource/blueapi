@@ -31,6 +31,6 @@ data:
   init_config.yaml: |-
     scratch:
       {{- toYaml .Values.worker.scratch | nindent 6 }}
-{{- end }}
 
----
+---    
+{{- end }}

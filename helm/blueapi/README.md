@@ -44,6 +44,7 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | serviceAccount.create | bool | `false` |  |
 | serviceAccount.name | string | `""` |  |
 | startupProbe | object | `{"failureThreshold":5,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | A more lenient livenessProbe to allow the service to start fully. This is automatically disabled when in debug mode. |
+| timeStampCron.enabled | bool | `true` |  |
 | tolerations | list | `[]` | May be required to run on specific nodes (e.g. the control machine) |
 | tracing | object | `{"fastapi":{"excludedURLs":"/healthz"},"otlp":{"enabled":false,"protocol":"http/protobuf","server":{"host":"http://opentelemetry-collector.tracing","port":4318}}}` | Exclude health probe requests from tracing by default to prevent spamming |
 | volumeMounts | list | `[{"mountPath":"/config","name":"worker-config","readOnly":true}]` | Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name. |

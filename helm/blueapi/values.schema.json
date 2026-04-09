@@ -292,6 +292,14 @@
                 }
             }
         },
+        "timeStampCron": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
         "tolerations": {
             "description": "May be required to run on specific nodes (e.g. the control machine)",
             "type": "array"

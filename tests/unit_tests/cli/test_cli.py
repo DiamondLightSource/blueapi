@@ -1134,7 +1134,6 @@ def test_login_with_unauthenticated_server(
     mock_unauthenticated_server: responses.RequestsMock,
 ):
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
-    print (f"result.output={result.output}")
     assert "Error thrown whilst checking authentication\n" == result.output
     assert result.exit_code == 0
 

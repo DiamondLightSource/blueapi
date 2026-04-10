@@ -236,13 +236,12 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
             raise ClickException(
                 "Failed to establish connection to blueapi server."
             ) from ce
+        except UnauthorisedAccessError as e:
+            raise ClickException(
+                "Access denied. Please check your login status and try again."
+            ) from e
         except BlueskyRemoteControlError as e:
-            if str(e) == "<Response [401]>":
-                raise ClickException(
-                    "Access denied. Please check your login status and try again."
-                ) from e
-            else:
-                raise e
+            raise e
 
     return wrapper
 
@@ -375,8 +374,10 @@ def run_plan(
         raise ClickException("Unauthorised request") from ua
     except InvalidParametersError as ip:
         raise ClickException(ip.message()) from ip
-    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
-        raise ClickException(f"server error with this message: {e}") from e
+    except BlueskyStreamingError as se:
+        raise ClickException(f"Streaming error: {se}") from se
+    except BlueskyRemoteControlError as e:
+        raise ClickException(f"Remote control error: {e.args[0]}") from e
     except ValueError as ve:
         raise ClickException(f"task could not run: {ve}") from ve
 

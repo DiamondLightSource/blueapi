@@ -42,7 +42,7 @@ from blueapi.worker.event import ProgressEvent, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError
+from .rest import BlueapiRestClient, BlueskyRemoteControlError, NotFoundError
 
 TRACER = get_tracer("client")
 
@@ -99,7 +99,7 @@ class DeviceCache:
             self._cache[name] = device
             setattr(self, model.name, device)
             return device
-        except KeyError:
+        except NotFoundError:
             pass
         raise AttributeError(f"No device named '{name}' available")
 

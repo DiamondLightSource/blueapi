@@ -13,6 +13,7 @@ from blueapi.client.rest import (
     BlueskyRemoteControlError,
     BlueskyRequestError,
     InvalidParametersError,
+    NotFoundError,
     ParameterError,
     UnauthorisedAccessError,
     UnknownPlanError,
@@ -41,8 +42,9 @@ def rest_with_auth(oidc_config: OIDCConfig, tmp_path) -> BlueapiRestClient:
 @pytest.mark.parametrize(
     "code,expected_exception",
     [
-        (404, KeyError),
-        (401, BlueskyRemoteControlError),
+        (404, NotFoundError),
+        (401, UnauthorisedAccessError),
+        (403, UnauthorisedAccessError),
         (450, BlueskyRemoteControlError),
         (500, BlueskyRemoteControlError),
     ],
@@ -65,9 +67,17 @@ def test_rest_error_code(
     "code,content,expected_exception",
     [
         (200, None, None),
-        (401, None, UnauthorisedAccessError()),
-        (403, None, UnauthorisedAccessError()),
-        (404, None, UnknownPlanError()),
+        (
+            401,
+            "unauthorised access",
+            UnauthorisedAccessError(401, "unauthorised access"),
+        ),
+        (403, "Forbidden", UnauthorisedAccessError(403, "Forbidden")),
+        (
+            404,
+            "Plan '{name}' was not recognised",
+            UnknownPlanError(404, "Plan '{name}' was not recognised"),
+        ),
         (
             422,
             """{
@@ -89,6 +99,11 @@ def test_rest_error_code(
                 ]
             ),
         ),
+        (
+            422,
+            '{"detail": "not a list"}',
+            BlueskyRequestError(422, ""),
+        ),
         (450, "non-standard", BlueskyRequestError(450, "non-standard")),
         (500, "internal_error", BlueskyRequestError(500, "internal_error")),
     ],
@@ -104,8 +119,13 @@ def test_create_task_exceptions(
     response.json.side_effect = lambda: json.loads(content) if content else None
     err = _create_task_exceptions(response)
     assert isinstance(err, type(expected_exception))
-    if expected_exception is not None:
-        assert err.args == expected_exception.args
+    if isinstance(expected_exception, InvalidParametersError):
+        assert isinstance(err, InvalidParametersError)
+        assert err.errors == expected_exception.errors
+    elif expected_exception is not None:
+        assert err.args[0] == code
+        if content is not None:
+            assert err.args[1] == content
 
 
 def test_auth_request_functionality(

@@ -699,7 +699,10 @@ def test_env_reload_server_side_error(runner: CliRunner):
     "exception, error_message",
     [
         (UnknownPlanError(), "Error: Plan 'sleep' was not recognised\n"),
-        (UnauthorisedAccessError(), "Error: Unauthorised request\n"),
+        (
+            UnauthorisedAccessError(),
+            "Error: Access denied. Please check your login status and try again.\n",
+        ),
         (
             InvalidParametersError(
                 errors=[
@@ -715,7 +718,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
         ),
         (
             BlueskyRemoteControlError("Server error"),
-            "Error: remote control error: Server error\n",
+            "Error: Remote control error: Server error\n",
         ),
         (
             ValueError("Error parsing parameters"),
@@ -723,7 +726,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
         ),
         (
             BlueskyStreamingError("streaming failed"),
-            "Error: streaming error: streaming failed\n",
+            "Error: Streaming error: streaming failed\n",
         ),
     ],
     ids=[

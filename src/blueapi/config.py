@@ -193,8 +193,8 @@ class ScratchRepository(BlueapiBaseModel):
     )
     branch: str | SkipJsonSchema[None] = Field(
         description=(
-            "Branch of repo to check out - defaults to remote's default when "
-            "cloning and the existing branch when the repo already exists"
+            "Branch (or tag) to check out when cloning - defaults to remote's HEAD. "
+            "If a tag is used, the repo will be left in a 'detached head' state."
         ),
         exclude_if=lambda f: f is None,
         # using default_factory instead of default means the schema doesn't

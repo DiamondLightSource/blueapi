@@ -107,17 +107,10 @@ class UnknownPlanError(Exception):
 
 def _exception(response: requests.Response) -> Exception | None:
     code = response.status_code
-    if response.content:
-        try:
-            response.json()
-        except json.decoder.JSONDecodeError:
-            return BlueskyRemoteControlError(
-                "Response does not contain a valid JSON object"
-            )
     if code < 400:
         return None
     elif code == 404:
-        return KeyError(str(response.json()))
+        return KeyError(str(_response_json(response)))
     else:
         return BlueskyRemoteControlError(code, str(response))
 
@@ -132,7 +125,7 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
         return UnknownPlanError()
     elif code == 422:
         try:
-            content = response.json()
+            content = _response_json(response)
             return InvalidParametersError(
                 TypeAdapter(list[ParameterError]).validate_python(
                     content.get("detail", [])
@@ -144,6 +137,15 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
             return BlueskyRequestError(code, response.text)
     else:
         return BlueskyRequestError(code, response.text)
+
+
+def _response_json(response) -> Any:
+    try:
+        return response.json()
+    except json.decoder.JSONDecodeError:
+        return BlueskyRemoteControlError(
+            "Response does not contain a valid JSON object"
+        )
 
 
 class BlueapiRestClient:
@@ -294,7 +296,9 @@ class BlueapiRestClient:
                     f"but client version is {client_version}. "
                     f"Some features may not work as expected."
                 )
-        deserialized = TypeAdapter(target_type).validate_python(response.json())
+        deserialized = TypeAdapter(target_type).validate_python(
+            _response_json(response)
+        )
         return deserialized
 
 

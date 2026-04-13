@@ -371,8 +371,6 @@ def run_plan(
         raise ClickException(*mse.args) from mse
     except UnknownPlanError as up:
         raise ClickException(f"Plan '{name}' was not recognised") from up
-    except UnauthorisedAccessError as ua:
-        raise ClickException("Unauthorised request") from ua
     except InvalidParametersError as ip:
         raise ClickException(ip.message()) from ip
     except BlueskyStreamingError as se:

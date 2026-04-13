@@ -142,10 +142,10 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
 def _response_json(response) -> Any:
     try:
         return response.json()
-    except json.decoder.JSONDecodeError:
-        return BlueskyRemoteControlError(
+    except json.decoder.JSONDecodeError as exc:
+        raise BlueskyRemoteControlError(
             "Response does not contain a valid JSON object"
-        )
+        ) from exc
 
 
 class BlueapiRestClient:

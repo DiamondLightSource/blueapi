@@ -221,7 +221,12 @@ def begin_task(
         )
 
     if task.task_id is not None:
-        active_worker.begin_task(task.task_id)
+        try:
+            active_worker.begin_task(task.task_id)
+        except KeyError:
+            active_worker.worker_events.unsubscribe(remove_callback)
+            active_context.run_engine.unsubscribe(tiled_writer_token)
+            raise
     return task
 
 

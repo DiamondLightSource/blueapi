@@ -46,6 +46,10 @@ class BlueskyRemoteControlError(Exception):
     pass
 
 
+class NonJsonResponseError(Exception):
+    pass
+
+
 class BlueskyRequestError(Exception):
     def __init__(self, code: int, message: str) -> None:
         super().__init__(message, code)
@@ -139,11 +143,14 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
         return BlueskyRequestError(code, response.text)
 
 
-def _response_json(response) -> Any:
+def _response_json(response: requests.Response) -> Any:
     try:
         return response.json()
     except json.decoder.JSONDecodeError as exc:
-        raise BlueskyRemoteControlError(
+        LOGGER.debug(
+            f"Invalid json response from <{response.request.url}>: <{response.content}>"
+        )
+        raise NonJsonResponseError(
             "Response does not contain a valid JSON object"
         ) from exc
 

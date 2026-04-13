@@ -26,6 +26,7 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
     InvalidParametersError,
+    NonJsonResponseError,
     ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
@@ -521,7 +522,7 @@ def login(obj: dict) -> None:
                 auth.start_device_flow()
             else:
                 print("Server is not configured to use authentication!")
-        except BlueskyRemoteControlError as e:
+        except NonJsonResponseError as e:
             print(str(e))
 
 

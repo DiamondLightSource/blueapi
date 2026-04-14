@@ -384,6 +384,7 @@ class BlueskyContext:
             __config__=BlueapiPlanModelConfig,
             **self._type_spec_for_function(plan),  # type: ignore
         )
+        LOGGER.debug("Registering plan %s from %s", plan.__name__, plan.__module__)
         self.plans[plan.__name__] = Plan(
             name=plan.__name__, model=model, description=plan.__doc__
         )

@@ -378,10 +378,10 @@ def test_get_worker_state(client: BlueapiClient):
 def test_set_state_transition_error(client: BlueapiClient):
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.resume()
-    assert exception.value.args[0]
+    assert "Cannot transition from IDLE to RUNNING" in exception.value.args[0]
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.pause()
-    assert exception.value.args[0]
+    assert "Cannot transition from IDLE to PAUSED" in exception.value.args[0]
 
 
 def test_get_task_by_status(rest_client: BlueapiRestClient):

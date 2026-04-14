@@ -635,7 +635,7 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.STOPPING
 
-    mock_runner.run.side_effect = [current_state, TransitionError(), final_state]
+    mock_runner.run.side_effect = [current_state, TransitionError()]
 
     response = client.put(
         "/worker/state",
@@ -643,7 +643,9 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == final_state
+    assert response.json() == {
+        "detail": f"Cannot transition from {current_state} to {final_state}"
+    }
 
 
 def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
@@ -659,7 +661,9 @@ def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == final_state
+    assert response.json() == {
+        "detail": f"Cannot transition from {current_state} to {requested_state}"
+    }
 
 
 def test_get_environment_idle(mock_runner: Mock, client: TestClient) -> None:

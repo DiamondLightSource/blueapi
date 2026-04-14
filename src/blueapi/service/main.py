@@ -498,11 +498,16 @@ def set_state(
                     state_change_request.new_state is WorkerState.ABORTING,
                     state_change_request.reason,
                 )
-            except TransitionError:
-                response.status_code = status.HTTP_400_BAD_REQUEST
+            except TransitionError as e:
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    detail=(f"Cannot transition from {current_state} to {new_state}"),
+                ) from e
     else:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(f"Cannot transition from {current_state} to {new_state}"),
+        )
     return runner.run(interface.get_worker_state)
 
 

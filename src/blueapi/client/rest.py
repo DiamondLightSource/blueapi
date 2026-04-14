@@ -51,8 +51,7 @@ class UnauthorisedAccessError(Exception):
 
 
 class BlueskyRemoteControlError(Exception):
-    def __init__(self, code: int | None = None, message: str = "") -> None:
-        super().__init__(code, message)
+    pass
 
 
 class NonJsonResponseError(Exception):
@@ -126,7 +125,14 @@ def _exception(response: requests.Response) -> Exception | None:
     elif code == 404:
         return NotFoundError(code, response.text)
     else:
-        return BlueskyRemoteControlError(code, response.text)
+        try:
+            body = _response_json(response)
+            message = (body.get("detail") if isinstance(body, dict) else None) or (
+                response.text
+            )
+        except NonJsonResponseError:
+            message = response.text
+        return BlueskyRemoteControlError(code, message)
 
 
 def _create_task_exceptions(response: requests.Response) -> Exception | None:

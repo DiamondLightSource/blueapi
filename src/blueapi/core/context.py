@@ -217,25 +217,23 @@ class BlueskyContext:
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
             self.run_engine.md |= config.metadata.model_dump()
+
         package_map = metadata.packages_distributions()
+        packages = {src.module.split(".")[0] for src in config.sources}
+        for pkg in packages:
+            if root_pkg := package_map.get(pkg):
+                version = metadata.version(root_pkg[0])
+                LOGGER.info("Using package %s[%s]", root_pkg[0], version)
+
         for source in config.sources:
             mod = import_module(source.module)
 
-            if root_pkg := package_map.get(source.module.split(".")[0]):
-                version = metadata.version(root_pkg[0])
-                loc = mod.__spec__ and mod.__spec__.origin
-                summary = f"{root_pkg[0]}[version: {version}, location: {loc}]"
-            else:
-                summary = ""
-
             match source:
                 case PlanSource():
-                    LOGGER.info("Including plans from %s (%s)", source.module, summary)
+                    LOGGER.info("Including plans from %s", source.module)
                     self.with_plan_module(mod)
                 case DeviceSource():
-                    LOGGER.info(
-                        "Including devices from %s (%s)", source.module, summary
-                    )
+                    LOGGER.info("Including devices from %s", source.module)
                     LOGGER.warning(
                         "'devices' environment kind is deprecated - please convert "
                         "configuration to use deviceManager"
@@ -243,9 +241,7 @@ class BlueskyContext:
                     self.with_device_module(mod)
                 case DodalSource(mock=mock):
                     LOGGER.info(
-                        "Including devices from 'dodal' source %s (%s)",
-                        source.module,
-                        summary,
+                        "Including devices from 'dodal' source %s", source.module
                     )
                     LOGGER.warning(
                         "'dodal' environment kind is deprecated - please convert "
@@ -254,10 +250,9 @@ class BlueskyContext:
                     self.with_dodal_module(mod, mock=mock)
                 case DeviceManagerSource(mock=mock, name=name):
                     LOGGER.info(
-                        "Including devices from 'deviceManager' source %s:%s (%s)",
+                        "Including devices from 'deviceManager' source %s:%s",
                         source.module,
                         name,
-                        summary,
                     )
                     manager = getattr(mod, name)
                     if not isinstance(manager, DeviceManager):

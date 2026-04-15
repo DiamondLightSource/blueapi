@@ -30,7 +30,7 @@ class VersionHeaders:
                 message["headers"].append(API_VERSION)
             await send(message)
 
-        await self.app(scope, receive, local_send)
+        return await self.app(scope, receive, local_send)
 
 
 class ObservabilityContextPropagator:
@@ -38,7 +38,7 @@ class ObservabilityContextPropagator:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
-        if scope["type"] not in ("http", "websocket"):
+        if scope.get("type") not in ("http", "websocket"):
             return await self.app(scope, receive, send)
 
         ctx = None
@@ -55,4 +55,4 @@ class ObservabilityContextPropagator:
                 carrier[ApplicationConfig.VENDOR_CONTEXT_HEADER] = v_ctx
             attach(get_global_textmap().extract(carrier))
 
-        await self.app(scope, receive, send)
+        return await self.app(scope, receive, send)

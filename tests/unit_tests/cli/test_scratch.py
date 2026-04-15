@@ -292,7 +292,7 @@ def test_setup_scratch_iterates_repos(
             ScratchRepository(
                 name="bar",
                 remote_url="http://example.com/bar.git",
-                branch="demo",
+                target_revision="demo",
             ),
         ],
     )

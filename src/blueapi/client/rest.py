@@ -37,8 +37,6 @@ TRACER = get_tracer("rest")
 
 LOGGER = logging.getLogger(__name__)
 
-LOGGER = logging.getLogger(__name__)
-
 
 class BlueskyRequestError(Exception):
     def __init__(self, code: int | None = None, message: str = "") -> None:

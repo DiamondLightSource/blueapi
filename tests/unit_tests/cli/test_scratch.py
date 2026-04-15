@@ -190,6 +190,42 @@ def test_existing_repo_not_changed_to_new_branch(mock_repo, directory_path: Path
     repo.create_head.assert_not_called()
 
 
+@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.cli.scratch.LOGGER")
+def test_existing_repo_state_checked(
+    mock_logger: MagicMock, mock_repo: MagicMock, directory_path: Path
+):
+    repo = mock_repo.return_value
+    repo.head.commit.name_rev = "current"
+    repo.refs = {"demo": Mock()}
+
+    ensure_repo("http://example.com/foo.git", directory_path, "demo")
+
+    mock_logger.warning.assert_called_once_with(
+        "Repository %s not at target revision: %r instead of %r",
+        directory_path.name,
+        repo.head.commit.name_rev,
+        "demo",
+    )
+
+
+@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.cli.scratch.LOGGER")
+def test_existing_repo_unknown_revision(
+    mock_logger: MagicMock, mock_repo: MagicMock, directory_path: Path
+):
+    repo = mock_repo.return_value
+    repo.head.commit.name_rev = "current"
+    repo.refs = {}
+
+    ensure_repo("http://example.com/foo.git", directory_path, "demo")
+
+    mock_logger.warning.assert_called_once_with(
+        "Target revision %r not found",
+        "demo",
+    )
+
+
 def test_setup_scratch_fails_on_nonexistant_root(
     nonexistant_path: Path,
 ):

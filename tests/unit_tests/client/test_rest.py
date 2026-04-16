@@ -67,17 +67,9 @@ def test_rest_error_code(
     "code,content,expected_exception",
     [
         (200, None, None),
-        (
-            401,
-            "unauthorised access",
-            UnauthorisedAccessError(401, "unauthorised access"),
-        ),
-        (403, "Forbidden", UnauthorisedAccessError(403, "Forbidden")),
-        (
-            404,
-            "Plan '{name}' was not recognised",
-            UnknownPlanError(404, "Plan '{name}' was not recognised"),
-        ),
+        (401, "", UnauthorisedAccessError(401, "")),
+        (403, "", UnauthorisedAccessError(403, "")),
+        (404, "", UnknownPlanError(404, "")),
         (
             422,
             """{

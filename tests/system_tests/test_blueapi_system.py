@@ -365,7 +365,7 @@ def test_put_worker_task_fails_if_not_idle(rest_client: BlueapiRestClient):
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
         rest_client.update_worker_task(WorkerTask(task_id=small_task.task_id))
-    assert "Worker already active" in exception.value.args[0]
+    assert exception.value.args[0] == 409
     rest_client.cancel_current_task(WorkerState.ABORTING)
     rest_client.clear_task(small_task.task_id)
     rest_client.clear_task(long_task.task_id)
@@ -378,10 +378,10 @@ def test_get_worker_state(client: BlueapiClient):
 def test_set_state_transition_error(client: BlueapiClient):
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.resume()
-    assert "Cannot transition from IDLE to RUNNING" in exception.value.args[0]
+    assert "Cannot transition from IDLE to RUNNING" in exception.value.args[1]
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.pause()
-    assert "Cannot transition from IDLE to PAUSED" in exception.value.args[0]
+    assert "Cannot transition from IDLE to PAUSED" in exception.value.args[1]
 
 
 def test_get_task_by_status(rest_client: BlueapiRestClient):

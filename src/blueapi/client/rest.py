@@ -38,28 +38,41 @@ TRACER = get_tracer("rest")
 LOGGER = logging.getLogger(__name__)
 
 
-class NonJsonResponseError(Exception):
-    pass
-
-
 class BlueskyRequestError(Exception):
+    """Error response from the blueapi server.(422,450,500)"""
+
     def __init__(self, code: int | None = None, message: str = "") -> None:
         super().__init__(code, message)
 
 
-class UnauthorisedAccessError(BlueskyRequestError):
-    pass
+class UnauthorisedAccessError(Exception):
+    """Request was rejected due to missing or invalid credentials (401/403)."""
+
+    def __init__(self, code: int | None = None, message: str = "") -> None:
+        super().__init__(code, message)
 
 
 class BlueskyRemoteControlError(Exception):
+    """Failure communicating with the blueapi server (e.g. connection refused)."""
+
+    pass
+
+
+class NonJsonResponseError(Exception):
+    """Server returned a response that could not be parsed as JSON."""
+
     pass
 
 
 class NotFoundError(BlueskyRequestError):
+    """Requested something that couldn't be found (404)."""
+
     pass
 
 
 class UnknownPlanError(BlueskyRequestError):
+    """ "Plan '{name}' was not recognised" """
+
     pass
 
 
@@ -122,7 +135,14 @@ def _exception(response: requests.Response) -> Exception | None:
     elif code == 404:
         return NotFoundError(code, response.text)
     else:
-        return BlueskyRemoteControlError(response.text)
+        try:
+            body = _response_json(response)
+            message = (body.get("detail") if isinstance(body, dict) else None) or (
+                response.text
+            )
+        except NonJsonResponseError:
+            message = response.text
+        return BlueskyRemoteControlError(code, message)
 
 
 def _create_task_exceptions(response: requests.Response) -> Exception | None:

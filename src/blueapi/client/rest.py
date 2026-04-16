@@ -50,7 +50,7 @@ class UnauthorisedAccessError(Exception):
 
     def __init__(self, code: int | None = None, message: str = "") -> None:
         super().__init__(code, message)
-
+  
 
 class BlueskyRemoteControlError(Exception):
     """Failure communicating with the blueapi server (e.g. connection refused)."""

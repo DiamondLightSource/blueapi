@@ -390,10 +390,13 @@ class BlueapiRestClient:
             return
 
     def _ws_address(self) -> WebsocketUrl:
-        # url = WebsocketUrl.build(
-        #     scheme="ws", host=api.host, port=api.port, path=api.path
-        # )
-        return WebsocketUrl("ws://localhost:8000/")
+        api = self._config.url
+        if api.host is None:
+            raise ValueError("No host configured")
+        scheme = "ws" if api.scheme == "http" else "wss"
+        return WebsocketUrl.build(
+            scheme=scheme, host=api.host, port=api.port, path=api.path
+        )
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

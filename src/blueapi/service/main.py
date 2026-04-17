@@ -180,6 +180,11 @@ def decode_access_token(config: OIDCConfig):
     return inner
 
 
+def _user(request: HTTPConnection) -> str | None:
+    user = getattr(request.state, "decoded_access_token", {})
+    return user.get("fedid", None)
+
+
 TRACER = get_tracer("interface")
 
 
@@ -309,19 +314,13 @@ def submit_task(
     response: Response,
     task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    user: Annotated[str, Depends(_user)],
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        # Extract user from jwt if using OIDC (if jwt exists)
-        access_token: dict[str, Any] | None = getattr(
-            request.state, "decoded_access_token", None
+        task_id: str = runner.run(
+            interface.submit_task, task_request, {"user": user or "UNKNOWN"}
         )
-        if access_token:
-            user: str = access_token.get("fedid", "Unknown")
-        else:
-            user = "Unknown"
-
-        task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
@@ -599,10 +598,9 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
 @secure_router.websocket("/run_plan")
 async def run_plan(
     ws: WebSocket,
+    user: Annotated[str, Depends(_user)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ):
-    user = ws.state.decoded_access_token["fedid"]
-
     LOGGER.info("Starting WS plan as %s", user)
     await ws.accept()
     rq = await ws.receive_text()

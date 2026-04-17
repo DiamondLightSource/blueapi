@@ -26,6 +26,7 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
     InvalidParametersError,
+    NonJsonResponseError,
     ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
@@ -513,13 +514,16 @@ def login(obj: dict) -> None:
         print("Logged in")
     except Exception:
         client = BlueapiClient.from_config(config)
-        if oidc := client.oidc_config:
-            auth = SessionManager(
-                oidc, cache_manager=SessionCacheManager(config.auth_token_path)
-            )
-            auth.start_device_flow()
-        else:
-            print("Server is not configured to use authentication!")
+        try:
+            if oidc := client.oidc_config:
+                auth = SessionManager(
+                    oidc, cache_manager=SessionCacheManager(config.auth_token_path)
+                )
+                auth.start_device_flow()
+            else:
+                print("Server is not configured to use authentication!")
+        except NonJsonResponseError as e:
+            print(str(e))
 
 
 @main.command(name="logout")

@@ -353,7 +353,7 @@ class BlueapiRestClient:
         return deserialized
 
     def run_blocking(self, req: TaskRequest):
-        url = self._ws_address().unicode_string().removesuffix("/") + "/run_plan"
+        url = self._ws_address().unicode_string().rstrip("/") + "/run_plan"
         headers = get_context_propagator()
         if self._session_manager:
             auth = self._session_manager.get_valid_access_token()
@@ -390,10 +390,13 @@ class BlueapiRestClient:
             return
 
     def _ws_address(self) -> WebsocketUrl:
-        # url = WebsocketUrl.build(
-        #     scheme="ws", host=api.host, port=api.port, path=api.path
-        # )
-        return WebsocketUrl("ws://localhost:8000/")
+        api = self._config.url
+        if api.host is None:
+            raise ValueError("No host configured")
+        scheme = "ws" if api.scheme == "http" else "wss"
+        return WebsocketUrl.build(
+            scheme=scheme, host=api.host, port=api.port, path=api.path
+        )
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

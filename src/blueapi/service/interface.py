@@ -215,8 +215,8 @@ def begin_task(
                 and event.task_status.task_id == task.task_id
                 and event.task_status.task_complete
             ):
-                for ch, token in subscribers:
-                    ch.unsubscribe(token)
+                for channel, token in subscribers:
+                    channel.unsubscribe(token)
 
         remove_callback = active_worker.worker_events.subscribe(
             remove_callback_when_task_finished
@@ -227,8 +227,8 @@ def begin_task(
         try:
             active_worker.begin_task(task.task_id)
         except KeyError:
-            for ch, token in subscribers:
-                ch.unsubscribe(token)
+            for channel, token in subscribers:
+                channel.unsubscribe(token)
             raise
     return task
 

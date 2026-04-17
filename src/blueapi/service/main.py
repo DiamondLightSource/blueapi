@@ -2,7 +2,7 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated, Any
+from typing import Annotated
 
 import jwt
 from fastapi import (
@@ -36,7 +36,7 @@ from super_state_machine.errors import TransitionError
 from blueapi import __version__
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
-from blueapi.service.authentication import build_access_token_check
+from blueapi.service.authentication import Fedid, build_access_token_check
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -267,18 +267,11 @@ def submit_task(
     response: Response,
     task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    user: Fedid,
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        # Extract user from jwt if using OIDC (if jwt exists)
-        access_token: dict[str, Any] | None = getattr(
-            request.state, "decoded_access_token", None
-        )
-        if access_token:
-            user: str = access_token.get("fedid", "Unknown")
-        else:
-            user = "Unknown"
-
+        user = user or "Unknown"
         task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)

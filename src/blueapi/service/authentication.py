@@ -325,3 +325,12 @@ def build_access_token_check(config: OIDCConfig):
 def access_token(request: Request) -> Mapping[str, Any] | None:
     """Get the decoded and verified access token of the user making the request"""
     return getattr(request.state, "decoded_access_token", None)
+
+
+def fedid(
+    access_token: Annotated[Mapping[str, Any] | None, Depends(access_token)],
+) -> str | None:
+    return access_token.get("fedid") if access_token else None
+
+
+Fedid = Annotated[str | None, Depends(fedid)]

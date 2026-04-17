@@ -42,6 +42,13 @@ from blueapi.service.middleware import (
     ObservabilityContextPropagator,
     VersionHeaders,
 )
+from blueapi.service.protocol import (
+    ControlRequest,
+    InvalidArgs,
+    PlanNotFound,
+    ServerBusy,
+    Update,
+)
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent
 from blueapi.worker.worker_errors import WorkerBusyError
@@ -581,20 +588,30 @@ async def run_plan(
 
     LOGGER.info("Starting WS plan as %s", user)
     await ws.accept()
-    rq = await ws.receive_json()
+    rq = await ws.receive_text()
     LOGGER.info("Raw request: %s", rq)
     try:
-        task_request: TaskRequest = TaskRequest.model_validate(rq)
-        LOGGER.info("Plan request: %s", task_request)
-        task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
-        LOGGER.info("Task ID: %s", task_id)
+        task_request = ControlRequest.validate_json(rq)
     except ValidationError:
-        LOGGER.error("Args not valid", exc_info=True)
-        await ws.close(code=1003, reason="invalid args")
+        LOGGER.error("Failed to deserialize request", exc_info=True)
+        await ws.close(code=1007, reason="Invalid Request")
         return
-    except KeyError:
-        LOGGER.error("Plan not found", exc_info=True)
-        await ws.close(code=1003, reason="unknown plan")
+    LOGGER.info("Plan request: %s", task_request)
+
+    try:
+        task_id: str = runner.run(
+            interface.submit_task, task_request.task, {"user": user}
+        )
+        LOGGER.info("Task ID: %s", task_id)
+    except ValidationError as ve:
+        LOGGER.error("Args not valid", exc_info=True)
+        await ws.send_text(InvalidArgs.from_validation_error(ve).model_dump_json())
+        await ws.close(code=4002, reason="Invalid Args")
+        return
+    except KeyError as ke:
+        LOGGER.error("Plan %r not found", ke.args[0])
+        await ws.send_text(PlanNotFound(plan_name=ke.args[0]).model_dump_json())
+        await ws.close(code=4001, reason="unknown plan")
         return
 
     try:
@@ -603,12 +620,13 @@ async def run_plan(
             runner.run(interface.begin_task, task=WorkerTask(task_id=task_id))
             async for evt in events:
                 LOGGER.debug("Event: %s", evt)
-                await ws.send_json(evt.model_dump(mode="json"))
+                await ws.send_json(Update(data=evt).model_dump(mode="json"))
                 if isinstance(evt, WorkerEvent) and evt.is_complete():
                     LOGGER.info("End of stream")
                     break
     except WorkerBusyError:
         LOGGER.error("Worker was busy")
+        await ws.send_json(ServerBusy())
         await ws.close(code=1013, reason="Worker busy")
     except WebSocketDisconnect:
         LOGGER.info("Client disconnected")

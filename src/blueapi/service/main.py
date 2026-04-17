@@ -582,10 +582,9 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
 @secure_router.websocket("/run_plan")
 async def run_plan(
     ws: WebSocket,
+    user: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ):
-    user = ws.state.decoded_access_token["fedid"]
-
     LOGGER.info("Starting WS plan as %s", user)
     await ws.accept()
     rq = await ws.receive_text()

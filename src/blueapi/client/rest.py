@@ -12,11 +12,11 @@ from observability_utils.tracing import (
 )
 from pydantic import BaseModel, TypeAdapter, ValidationError, WebsocketUrl
 from pydantic_core import PydanticSerializationError
+from websockets.exceptions import InvalidStatus
 from websockets.sync.client import connect
 
 from blueapi import __version__
 from blueapi.client import client
-from blueapi.client.event_bus import AnyEvent
 from blueapi.config import RestConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
@@ -32,6 +32,13 @@ from blueapi.service.model import (
     TaskResponse,
     TasksListResponse,
     WorkerTask,
+)
+from blueapi.service.protocol import (
+    ControlResponse,
+    InvalidArgs,
+    PlanNotFound,
+    Submit,
+    Update,
 )
 from blueapi.worker import TrackableTask, WorkerState
 
@@ -90,8 +97,8 @@ class NoContentError(Exception):
 
 class ParameterError(BaseModel):
     loc: list[str | int]
-    msg: str
-    type: str
+    msg: str | None
+    type: str | None
     input: Any
 
     def field(self):
@@ -351,15 +358,36 @@ class BlueapiRestClient:
         if self._session_manager:
             auth = self._session_manager.get_valid_access_token()
             headers["Authorization"] = f"Bearer {auth}"
-        with connect(
-            url,
-            additional_headers=headers,
-            user_agent_header=USER_AGENT,
-        ) as ws:
-            ws.send(req.model_dump_json())
-            for message in ws:
-                event = TypeAdapter(AnyEvent).validate_json(message)
-                yield event
+        try:
+            with connect(
+                url,
+                additional_headers=headers,
+                user_agent_header=USER_AGENT,
+            ) as ws:
+                ws.send(Submit(task=req).model_dump_json())
+                for message in ws:
+                    event = ControlResponse.validate_json(message)
+                    match event:
+                        case Update(data=data):
+                            yield data
+                        case InvalidArgs(errors=errors):
+                            raise InvalidParametersError(
+                                [
+                                    ParameterError(
+                                        loc=e.loc, msg=e.msg, type=e.type, input=e.input
+                                    )
+                                    for e in errors
+                                ]
+                            )
+                        case PlanNotFound(plan_name=name):
+                            raise UnknownPlanError(name)
+                    yield event
+        except InvalidStatus as istat:
+            match istat.response.status_code:
+                case 401 | 403:
+                    raise UnauthorisedAccessError() from None
+            print(vars(istat))
+            return
 
     def _ws_address(self) -> WebsocketUrl:
         # url = WebsocketUrl.build(

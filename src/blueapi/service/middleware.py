@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from opentelemetry.context import attach
 from opentelemetry.propagate import get_global_textmap
@@ -69,30 +70,42 @@ class WebsocketTracing:
         if scope.get("type") != "websocket" or not active:
             return await self.app(scope, receive, send)
 
+        conn_id = uuid.uuid4()
+        client: tuple[str, int] = scope.get("client", ("unknown", 0))
+        extra = {"conn": conn_id, "client": client}
+
+        WS_LOGGER.debug("%r", scope, extra=extra)
+
         async def local_send(msg: Message):
             match msg.get("type"):
                 case "websocket.send":
-                    WS_LOGGER.debug("Sending: %r", msg.get("text"))
+                    WS_LOGGER.debug("Sending: %r", msg.get("text"), extra=extra)
                 case "websocket.accept":
                     WS_LOGGER.debug(
-                        "Accepting websocket - sending headers: %r", msg.get("headers")
+                        "Accepting websocket - sending headers: %r",
+                        msg.get("headers"),
+                        extra=extra,
                     )
                 case "websocket.close":
                     WS_LOGGER.debug(
                         "Closing with code: %r, reason: %r",
                         msg.get("code"),
                         msg.get("reason"),
+                        extra=extra,
                     )
                 case "websocket.http.response.start":
                     WS_LOGGER.debug(
                         "HTTP Response: status=%r, headers=%r",
                         msg.get("status"),
                         msg.get("headers"),
+                        extra=extra,
                     )
                 case "websocket.http.response.body":
-                    WS_LOGGER.debug("HTTP Response Content: %r", msg.get("body"))
+                    WS_LOGGER.debug(
+                        "HTTP Response Content: %r", msg.get("body"), extra=extra
+                    )
                 case _:
-                    WS_LOGGER.debug("Sending other: %r", msg)
+                    WS_LOGGER.debug("Sending other: %r", msg, extra=extra)
 
             await send(msg)
 

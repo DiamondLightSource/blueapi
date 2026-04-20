@@ -42,6 +42,7 @@ from blueapi.service.authentication import (
 from blueapi.service.middleware import (
     ObservabilityContextPropagator,
     VersionHeaders,
+    WebsocketTracing,
 )
 from blueapi.service.protocol import (
     ControlRequest,
@@ -160,6 +161,7 @@ def get_app(config: ApplicationConfig):
 
     app.add_middleware(ObservabilityContextPropagator)
     app.add_middleware(VersionHeaders)
+    app.add_middleware(WebsocketTracing)
     app.middleware("http")(log_request_details)
     if config.api.cors:
         app.add_middleware(
@@ -630,7 +632,6 @@ async def run_plan(
     LOGGER.info("Starting WS plan as %s", user)
     await ws.accept()
     rq = await ws.receive_text()
-    LOGGER.info("Raw request: %s", rq)
     try:
         task_request = ControlRequest.validate_json(rq)
     except ValidationError:

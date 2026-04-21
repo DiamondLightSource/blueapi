@@ -1,7 +1,7 @@
 set dotenv-filename := "tests/system_tests/.env"
 
 compose +ARGS="up -d":
-    podman compose -f tests/system_tests/compose.yaml {{ARGS}}
+    docker compose -f tests/system_tests/compose.yaml {{ARGS}}
 
 configure-adsim: (compose "exec" "numtracker" "/app/numtracker" "client" "configure" "adsim"
         "--directory" '/tmp/'

@@ -1,4 +1,4 @@
-set dotenv-filename := "tests/system_tests/.env"
+SESSION := "cm12345-1"
 
 compose +ARGS="up -d":
     docker compose -f tests/system_tests/compose.yaml {{ARGS}}
@@ -11,8 +11,12 @@ configure-adsim: (compose "exec" "numtracker" "/app/numtracker" "client" "config
 
 services: compose configure-adsim
 
-blueapi *ARGS="serve":
-    uv run blueapi -c tests/system_tests/config.yaml {{ARGS}}
+serve *OPTS: services
+    source tests/system_tests/.env
+    uv run blueapi -c tests/system_tests/config.yaml {{OPTS}} serve
+
+run PLAN PARAMS:
+    uv run blueapi -c tests/system_tests/config.yaml controller run -i {{ SESSION }} {{ PLAN }} '{{ PARAMS }}'
 
 lint:
     uv run ruff check

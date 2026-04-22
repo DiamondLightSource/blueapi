@@ -26,6 +26,7 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
     InvalidParametersError,
+    NonJsonResponseError,
     ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
@@ -83,8 +84,24 @@ def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
+@click.option(
+    "-v",
+    "--verbose",
+    "log_level",
+    flag_value="DEBUG",
+    help="Include DEBUG level logging output",
+)
+@click.option(
+    "-q",
+    "--quiet",
+    "log_level",
+    flag_value="ERROR",
+    help="Reduce logging noise to only show errors",
+)
 @click.pass_context
-def main(ctx: click.Context, config: tuple[Path, ...]) -> None:
+def main(
+    ctx: click.Context, config: tuple[Path, ...], log_level: str | None = None
+) -> None:
     # if no command is supplied, run with the options passed
 
     # Set umask to DLS standard
@@ -95,6 +112,9 @@ def main(ctx: click.Context, config: tuple[Path, ...]) -> None:
         config_loader.use_values_from_yaml(*config)
     except FileNotFoundError as fnfe:
         raise ClickException(f"Config file not found: {fnfe.filename}") from fnfe
+
+    if log_level:
+        config_loader.use_values({"logging": {"level": log_level}})
 
     loaded_config: ApplicationConfig = config_loader.load()
 
@@ -494,13 +514,16 @@ def login(obj: dict) -> None:
         print("Logged in")
     except Exception:
         client = BlueapiClient.from_config(config)
-        if oidc := client.oidc_config:
-            auth = SessionManager(
-                oidc, cache_manager=SessionCacheManager(config.auth_token_path)
-            )
-            auth.start_device_flow()
-        else:
-            print("Server is not configured to use authentication!")
+        try:
+            if oidc := client.oidc_config:
+                auth = SessionManager(
+                    oidc, cache_manager=SessionCacheManager(config.auth_token_path)
+                )
+                auth.start_device_flow()
+            else:
+                print("Server is not configured to use authentication!")
+        except NonJsonResponseError as e:
+            print(str(e))
 
 
 @main.command(name="logout")

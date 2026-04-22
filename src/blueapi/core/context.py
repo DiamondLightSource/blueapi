@@ -2,7 +2,7 @@ import logging
 import sys
 from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field, fields, is_dataclass
-from importlib import import_module
+from importlib import import_module, metadata
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
 from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
@@ -217,6 +217,14 @@ class BlueskyContext:
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
             self.run_engine.md |= config.metadata.model_dump()
+
+        package_map = metadata.packages_distributions()
+        packages = {src.module.split(".")[0] for src in config.sources}
+        for pkg in packages:
+            if root_pkg := package_map.get(pkg):
+                version = metadata.version(root_pkg[0])
+                LOGGER.info("Using package %s[%s]", root_pkg[0], version)
+
         for source in config.sources:
             mod = import_module(source.module)
 
@@ -384,6 +392,7 @@ class BlueskyContext:
             __config__=BlueapiPlanModelConfig,
             **self._type_spec_for_function(plan),  # type: ignore
         )
+        LOGGER.debug("Registering plan %s from %s", plan.__name__, plan.__module__)
         self.plans[plan.__name__] = Plan(
             name=plan.__name__, model=model, description=plan.__doc__
         )

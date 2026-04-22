@@ -1055,7 +1055,22 @@ def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliR
             ScratchRepository(
                 name="dodal",
                 remote_url="https://github.com/DiamondLightSource/dodal.git",
-            )
+            ),
+            ScratchRepository(
+                name="with_target",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo",
+            ),
+            ScratchRepository(
+                name="with_branch",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo_branch",
+            ),
+            ScratchRepository(
+                name="with_tag",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo_tag",
+            ),
         ],
     )
 
@@ -1135,6 +1150,26 @@ def test_login_with_unauthenticated_server(
 ):
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
     assert "Server is not configured to use authentication!\n" == result.output
+    assert result.exit_code == 0
+
+
+@responses.activate
+def test_invalid_json(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+):
+    response = responses.add(
+        responses.GET,
+        "http://localhost:8000/config/oidc",
+        body="blah blah",
+        status=404,
+    )
+
+    result = runner.invoke(main, ["-c", config_with_auth, "login"])
+
+    assert response.call_count == 1
+    assert "Response does not contain a valid JSON object\n" == result.output
     assert result.exit_code == 0
 
 
@@ -1384,3 +1419,14 @@ def test_config_schema(
 def test_task_parameter_type(value, result):
     t = ParametersType()
     assert t.convert(value, None, None) == result
+
+
+@pytest.mark.parametrize(
+    "flag,level",
+    [("--verbose", "DEBUG"), ("--quiet", "ERROR"), ("-v", "DEBUG"), ("-q", "ERROR")],
+)
+def test_log_level_override(flag: str, level: str, runner: CliRunner):
+    with patch("blueapi.log.logging") as mock_log:
+        runner.invoke(main, [flag])
+        mock_log.getLogger().setLevel.assert_called_once_with(level)
+        mock_log.StreamHandler().setLevel.assert_called_once_with(level)

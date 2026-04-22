@@ -41,22 +41,21 @@
                 <form action="/run" method="POST" id="run_form">
                     <div>
                     <label for="instrument_session">Instrument Session</label>
-                    <input type="text" id="instrument_session" name="instrument_session">
+                    <input type="text" id="instrument_session" name="instrument_session" placeholder="cm1234-5" required/>
                     </div>
 
                     <div>
                     <label for="name">Select Plan</label>
-                        <select id="name" name="name", form="run_form">
-                        <option value="">--select a plan--</option>
-                        {% for plan in plans %}
-                        <option value="{{plan.name}}">{{plan.name}}</option>
-                        {% endfor %}
-                    </select>
+                        <select id="name" name="name", form="run_form" required>
+                            <option value="">--select a plan--</option>
+                            {% for plan in plans %}
+                            <option value="{{plan.name}}">{{plan.name}}</option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <div>
-                    <label for="params">Plan Parameters</label>
-                    <input type="text" id="params" name="params">
+                    <textarea id="params" name="params" placeholder="Plan parameters" rows='10' cols='60'></textarea>
                     </div>
 
                     <input type="submit" value="run">

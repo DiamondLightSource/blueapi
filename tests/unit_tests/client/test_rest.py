@@ -18,6 +18,7 @@ from blueapi.client.rest import (
     UnauthorisedAccessError,
     UnknownPlanError,
     _create_task_exceptions,
+    _exception,
 )
 from blueapi.config import OIDCConfig
 from blueapi.service.authentication import SessionCacheManager, SessionManager
@@ -118,6 +119,21 @@ def test_create_task_exceptions(
         assert err.args[0] == code
         if content is not None:
             assert err.args[1] == content
+
+
+def test_exception_non_json_body_falls_back_to_text():
+    import json
+
+    response = Mock(spec=requests.Response)
+    response.status_code = 500
+    response.text = "Internal Server Error"
+    response.json.side_effect = json.JSONDecodeError("Expecting value", "", 0)
+    response.request = Mock()
+    response.request.url = "http://localhost:8000/test"
+    response.content = b"Internal Server Error"
+    err = _exception(response)
+    assert isinstance(err, BlueskyRemoteControlError)
+    assert err.args[1] == "Internal Server Error"
 
 
 def test_auth_request_functionality(

@@ -136,7 +136,11 @@ def _exception(response: requests.Response) -> Exception | None:
     else:
         try:
             body = _response_json(response)
-            message = body.get("detail", response.text) if isinstance(body, dict) else response.text
+            message = (
+                body.get("detail", response.text)
+                if isinstance(body, dict)
+                else response.text
+            )
         except NonJsonResponseError:
             message = response.text
         return BlueskyRemoteControlError(code, message)

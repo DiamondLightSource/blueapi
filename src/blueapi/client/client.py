@@ -295,6 +295,11 @@ class BlueapiClient:
         """
         return self._rest.get_plan(name)
 
+    def show_plans(self) -> None:
+        """Command to print all avaliable plans."""
+        for name in self.plans:
+            print(name)
+
     @start_as_current_span(TRACER)
     @deprecated("devices property")
     def get_devices(self) -> DeviceResponse:
@@ -333,6 +338,11 @@ class BlueapiClient:
         """
 
         return self._rest.get_device(name)
+
+    def show_devices(self) -> None:
+        """Command to print all avaliable devices."""
+        for name in self.devices:
+            print(name)
 
     @property
     @start_as_current_span(TRACER)

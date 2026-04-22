@@ -145,6 +145,13 @@ def test_get_plan(client: BlueapiClient):
     assert client.plans["foo"].model == PLAN
 
 
+def test_show_plans(client: BlueapiClient, capsys: pytest.CaptureFixture):
+    client.show_plans()
+    captured = capsys.readouterr()
+    for dev in PLANS.plans:
+        assert dev.name in captured.out
+
+
 def test_get_nonexistant_plan(
     client: BlueapiClient,
 ):
@@ -158,6 +165,13 @@ def test_get_devices(client: BlueapiClient):
 
 def test_get_device(client: BlueapiClient):
     assert client.devices.foo.model == DEVICE
+
+
+def test_show_devices(client: BlueapiClient, capsys: pytest.CaptureFixture):
+    client.show_devices()
+    captured = capsys.readouterr()
+    for dev in DEVICES.devices:
+        assert dev.name in captured.out
 
 
 def test_get_nonexistent_device(

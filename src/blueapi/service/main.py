@@ -20,7 +20,12 @@ from fastapi import (
 )
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    RedirectResponse,
+    StreamingResponse,
+)
 from fastapi.templating import Jinja2Templates
 from observability_utils.tracing import (
     add_span_attributes,
@@ -639,6 +644,11 @@ def root_landing(
     return templates.TemplateResponse(
         request=request, name="index.html", context=context
     )
+
+
+@open_router.get("/favicon", include_in_schema=False)
+async def favicon():
+    return FileResponse("templates/blueapi-logo.svg")
 
 
 @secure_router_v1.post("/run", include_in_schema=True, tags=[Tag.TASK])

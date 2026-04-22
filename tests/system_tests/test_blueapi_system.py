@@ -623,7 +623,7 @@ def test_unauthorized_plan_run(
 
 # Regression test for #1480
 def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
-    with pytest.raises(KeyError):
+    with pytest.raises(NotFoundError):
         # This task hasn't been submitted so should return an error...
         client_with_stomp._rest.update_worker_task(WorkerTask(task_id="missing"))
 

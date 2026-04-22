@@ -63,7 +63,7 @@ def test_scratch_install_installs_path(
     mock_process.returncode = 0
     mock_popen.return_value = mock_process
 
-    scratch_install(directory_path_with_sgid, timeout=1.0)
+    scratch_install([directory_path_with_sgid], timeout=1.0)
 
     mock_popen.assert_called_once_with(
         ["uv", "pip", "install", "--no-deps", "-e", str(directory_path_with_sgid)]
@@ -72,12 +72,12 @@ def test_scratch_install_installs_path(
 
 def test_scratch_install_fails_on_file(file_path: Path):
     with pytest.raises(KeyError):
-        scratch_install(file_path, timeout=1.0)
+        scratch_install([file_path], timeout=1.0)
 
 
 def test_scratch_install_fails_on_nonexistant_path(nonexistant_path: Path):
     with pytest.raises(KeyError):
-        scratch_install(nonexistant_path, timeout=1.0)
+        scratch_install([nonexistant_path], timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Popen")
@@ -92,7 +92,7 @@ def test_scratch_install_fails_on_non_zero_exit_code(
     mock_popen.return_value = mock_process
 
     with pytest.raises(RuntimeError):
-        scratch_install(directory_path_with_sgid, timeout=1.0)
+        scratch_install([directory_path_with_sgid], timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Repo")
@@ -123,7 +123,9 @@ def test_repo_cloned_if_not_found_locally(
     ensure_repo("http://example.com/foo.git", nonexistant_path)
     mock_repo.assert_not_called()
     mock_repo.clone_from.assert_called_once_with(
-        "http://example.com/foo.git", nonexistant_path
+        "http://example.com/foo.git",
+        nonexistant_path,
+        multi_options=["--filter=blob:none"],
     )
 
 
@@ -140,7 +142,9 @@ def test_repo_cloned_with_correct_umask(
         with file_path.open("w") as stream:
             stream.write("foo")
 
-    mock_repo.clone_from.side_effect = lambda url, path: write_repo_files()
+    mock_repo.clone_from.side_effect = lambda url, path, multi_options: (
+        write_repo_files()
+    )
 
     ensure_repo("http://example.com/foo.git", repo_root)
     assert file_path.exists()
@@ -162,7 +166,9 @@ def test_cloned_repo_changes_to_new_branch(mock_repo, directory_path: Path):
 
     ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
 
-    mock_repo.clone_from.assert_called_once_with("http://example.com/foo.git", ANY)
+    mock_repo.clone_from.assert_called_once_with(
+        "http://example.com/foo.git", ANY, multi_options=["--filter=blob:none"]
+    )
     repo.create_head.assert_called_once_with("demo", ANY)
     repo.create_head().checkout.assert_called_once()
 
@@ -316,8 +322,10 @@ def test_setup_scratch_iterates_repos(
 
     mock_scratch_install.assert_has_calls(
         [
-            call(directory_path_with_sgid / "foo", timeout=120.0),
-            call(directory_path_with_sgid / "bar", timeout=120.0),
+            call(
+                [directory_path_with_sgid / "foo", directory_path_with_sgid / "bar"],
+                timeout=120.0,
+            ),
         ]
     )
 

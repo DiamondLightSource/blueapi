@@ -3,6 +3,7 @@ import logging
 import os
 import stat
 import textwrap
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from subprocess import Popen
 
@@ -46,10 +47,23 @@ def setup_scratch(
         That is to prevent namespace clashing with the blueapi application.
         """)
             )
-    for repo in config.repositories:
-        local_directory = config.root / repo.name
-        ensure_repo(repo.remote_url, local_directory, repo.branch)
-        scratch_install(local_directory, timeout=install_timeout)
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(
+                ensure_repo, repo.remote_url, config.root / repo.name, repo.branch
+            )
+            for repo in config.repositories
+        ]
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                raise RuntimeError(f"Failed to clone repo \n{e}")
+
+    scratch_install(
+        [config.root / repo.name for repo in config.repositories],
+        timeout=install_timeout,
+    )
 
 
 def ensure_repo(
@@ -69,7 +83,9 @@ def ensure_repo(
 
     if not local_directory.exists():
         LOGGER.info(f"Cloning {remote_url}")
-        repo = Repo.clone_from(remote_url, local_directory)
+        repo = Repo.clone_from(
+            remote_url, local_directory, multi_options=["--filter=blob:none"]
+        )
         LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
     elif local_directory.is_dir():
         repo = Repo(local_directory)
@@ -93,34 +109,37 @@ def ensure_repo(
         local.checkout()
 
 
-def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
+def scratch_install(
+    paths: list[Path], timeout: float = _DEFAULT_INSTALL_TIMEOUT
+) -> None:
     """
-    Install a scratch package. Make blueapi aware of a repository checked out in
+    Install all scratch package. Make blueapi aware of a repository checked out in
     the scratch area. Make it automatically follow code changes to that repository
     (pending a restart). Do not install any of the package's dependencies as they
     may conflict with each other.
 
     Args:
-        path: Path to the checked out repository
+        paths: List of Path to the checked out repositories
         timeout: Time to wait for installation subprocess
     """
-
-    _validate_directory(path)
-
-    LOGGER.info(f"Installing {path}")
-    process = Popen(
-        [
+    if paths:
+        args = [
             "uv",
             "pip",
             "install",
             "--no-deps",
-            "-e",
-            str(path),
         ]
-    )
-    process.wait(timeout=timeout)
-    if process.returncode != 0:
-        raise RuntimeError(f"Failed to install {path}: Exit Code: {process.returncode}")
+        for path in paths:
+            _validate_directory(path)
+            args.extend(["-e", str(path)])
+
+        LOGGER.info("Installing packages")
+        process = Popen(args)
+        process.wait(timeout=timeout)
+        if process.returncode != 0:
+            raise RuntimeError(
+                f"Failed to install packages: Exit Code: {process.returncode}"
+            )
 
 
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:

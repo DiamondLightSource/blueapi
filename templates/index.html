@@ -109,7 +109,7 @@
                 <h3>{{plan.name}}</h3>
                 <dl>
                     <dt>Description:</dt>
-                    <dd>{{plan.description}}</dd>
+                    <dd>{{plan.description | replace("\n", "<br>") | safe }}</dd>
                     <dt> Plan Parameters:</dt>
                     {% for p in plan.parameter_schema.properties %}
                     <dd>{{ p }}</dd>

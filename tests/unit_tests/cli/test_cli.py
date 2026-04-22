@@ -1055,7 +1055,22 @@ def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliR
             ScratchRepository(
                 name="dodal",
                 remote_url="https://github.com/DiamondLightSource/dodal.git",
-            )
+            ),
+            ScratchRepository(
+                name="with_target",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo",
+            ),
+            ScratchRepository(
+                name="with_branch",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo_branch",
+            ),
+            ScratchRepository(
+                name="with_tag",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo_tag",
+            ),
         ],
     )
 

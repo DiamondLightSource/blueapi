@@ -84,7 +84,7 @@ LOW_RESOURCES = {
                     ScratchRepository(
                         name="bar",
                         remote_url="https://example.git",
-                        branch="bar_branch",
+                        target_revision="bar_branch",
                     ),
                 ],
             ),

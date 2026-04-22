@@ -123,9 +123,7 @@ def test_repo_cloned_if_not_found_locally(
     ensure_repo("http://example.com/foo.git", nonexistant_path)
     mock_repo.assert_not_called()
     mock_repo.clone_from.assert_called_once_with(
-        "http://example.com/foo.git",
-        nonexistant_path,
-        multi_options=["--filter=blob:none"],
+        "http://example.com/foo.git", nonexistant_path, branch=None,multi_options=["--filter=blob:none"]
     )
 
 
@@ -142,9 +140,7 @@ def test_repo_cloned_with_correct_umask(
         with file_path.open("w") as stream:
             stream.write("foo")
 
-    mock_repo.clone_from.side_effect = lambda url, path, multi_options: (
-        write_repo_files()
-    )
+    mock_repo.clone_from.side_effect = lambda url, path, branch=None, multi_options: write_repo_files()
 
     ensure_repo("http://example.com/foo.git", repo_root)
     assert file_path.exists()
@@ -167,27 +163,24 @@ def test_cloned_repo_changes_to_new_branch(mock_repo, directory_path: Path):
     ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
 
     mock_repo.clone_from.assert_called_once_with(
-        "http://example.com/foo.git", ANY, multi_options=["--filter=blob:none"]
+        "http://example.com/foo.git", ANY,branch="demo", multi_options=["--filter=blob:none"]
     )
     repo.create_head.assert_called_once_with("demo", ANY)
     repo.create_head().checkout.assert_called_once()
 
 
 @patch("blueapi.cli.scratch.Repo")
-def test_existing_repo_changes_to_existing_branch(mock_repo, directory_path: Path):
+def test_existing_repo_not_changed_to_existing_branch(mock_repo, directory_path: Path):
     (directory_path / "demo_branch").mkdir()
-    repo = Mock(spec=Repo)
-    mock_repo.return_value = repo
 
     ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
 
+    mock_repo.assert_called_once_with(directory_path / "demo_branch")
     mock_repo.clone_from.assert_not_called()
-    repo.create_head.assert_not_called()
-    repo.heads.demo.checkout.assert_called_once()
 
 
 @patch("blueapi.cli.scratch.Repo")
-def test_existing_repo_changes_to_new_branch(mock_repo, directory_path: Path):
+def test_existing_repo_not_changed_to_new_branch(mock_repo, directory_path: Path):
     (directory_path / "demo_branch").mkdir()
     repo = MagicMock(name="ExistingRepo", spec=Repo)
     repo.heads.demo = None
@@ -196,8 +189,43 @@ def test_existing_repo_changes_to_new_branch(mock_repo, directory_path: Path):
     ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
 
     mock_repo.clone_from.assert_not_called()
-    repo.create_head.assert_called_once_with("demo", repo.remotes[0].refs["demo"])
-    repo.create_head().checkout.assert_called_once()
+    repo.create_head.assert_not_called()
+
+
+@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.cli.scratch.LOGGER")
+def test_existing_repo_state_checked(
+    mock_logger: MagicMock, mock_repo: MagicMock, directory_path: Path
+):
+    repo = mock_repo.return_value
+    repo.head.commit.name_rev = "current"
+    repo.refs = {"demo": Mock()}
+
+    ensure_repo("http://example.com/foo.git", directory_path, "demo")
+
+    mock_logger.warning.assert_called_once_with(
+        "Repository %s not at target revision: %r instead of %r",
+        directory_path.name,
+        repo.head.commit.name_rev,
+        "demo",
+    )
+
+
+@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.cli.scratch.LOGGER")
+def test_existing_repo_unknown_revision(
+    mock_logger: MagicMock, mock_repo: MagicMock, directory_path: Path
+):
+    repo = mock_repo.return_value
+    repo.head.commit.name_rev = "current"
+    repo.refs = {}
+
+    ensure_repo("http://example.com/foo.git", directory_path, "demo")
+
+    mock_logger.warning.assert_called_once_with(
+        "Target revision %r not found",
+        "demo",
+    )
 
 
 def test_setup_scratch_fails_on_nonexistant_root(
@@ -298,14 +326,11 @@ def test_setup_scratch_iterates_repos(
     config = ScratchConfig(
         root=directory_path_with_sgid,
         repositories=[
-            ScratchRepository(
-                name="foo",
-                remote_url="http://example.com/foo.git",
-            ),
+            ScratchRepository(name="foo", remote_url="http://example.com/foo.git"),
             ScratchRepository(
                 name="bar",
                 remote_url="http://example.com/bar.git",
-                branch="demo",
+                target_revision="demo",
             ),
         ],
     )

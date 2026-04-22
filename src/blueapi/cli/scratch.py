@@ -47,10 +47,11 @@ def setup_scratch(
         That is to prevent namespace clashing with the blueapi application.
         """)
             )
+
     with ThreadPoolExecutor() as executor:
         futures = [
             executor.submit(
-                ensure_repo, repo.remote_url, config.root / repo.name, repo.branch
+                ensure_repo, repo.remote_url, config.root / repo.name, repo.target_revision
             )
             for repo in config.repositories
         ]
@@ -66,8 +67,9 @@ def setup_scratch(
     )
 
 
+
 def ensure_repo(
-    remote_url: str, local_directory: Path, branch: str | None = None
+    remote_url: str, local_directory: Path, target_revision: str | None = None
 ) -> None:
     """
     Ensure that a repository is checked out for use in the scratch area.
@@ -84,29 +86,29 @@ def ensure_repo(
     if not local_directory.exists():
         LOGGER.info(f"Cloning {remote_url}")
         repo = Repo.clone_from(
-            remote_url, local_directory, multi_options=["--filter=blob:none"]
+            remote_url, local_directory, branch=target_revision ,multi_options=["--filter=blob:none"]
         )
         LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
     elif local_directory.is_dir():
         repo = Repo(local_directory)
-        LOGGER.info(f"Found {local_directory}")
+        head = repo.head.commit
+        LOGGER.info("Found %s @ %s", local_directory, head.name_rev)
+        if target_revision:
+            if target_revision in repo.refs:
+                if repo.refs[target_revision].commit != head:
+                    LOGGER.warning(
+                        "Repository %s not at target revision: %r instead of %r",
+                        local_directory.name,
+                        head.name_rev,
+                        target_revision,
+                    )
+            else:
+                LOGGER.warning("Target revision %r not found", target_revision)
     else:
         raise KeyError(
-            f"Unable to open {local_directory} as a git repository because it is a file"
+            f"Unable to open {local_directory} as a git repository because it is not a "
+            "directory"
         )
-
-    if branch:
-        if not (local := getattr(repo.heads, branch, None)):
-            origin = repo.remotes[0]
-            origin.fetch()
-            LOGGER.info(
-                "Creating branch '%s' to track remote '%s'", branch, origin.refs[branch]
-            )
-            local = repo.create_head(branch, origin.refs[branch])
-            local.set_tracking_branch(origin.refs[branch])
-
-        LOGGER.info("Checking out branch '%s'", branch)
-        local.checkout()
 
 
 def scratch_install(

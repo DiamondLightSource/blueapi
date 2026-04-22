@@ -68,7 +68,7 @@ async def test_obs_context_ignores_non_http_or_websockets(app: Mock):
         await ocp(scope, Mock(), Mock())
 
     att.assert_not_called()
-    scope.get.assert_not_called()
+    scope.get.assert_called_once_with("type")
 
 
 @pytest.mark.parametrize("protocol", ["http", "websocket"])

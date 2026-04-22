@@ -39,27 +39,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BlueskyRequestError(Exception):
-    """Error response from the blueapi server.(422,450,500)"""
+    """An error response from the blueapi server."""
 
     def __init__(self, code: int | None = None, message: str = "") -> None:
         super().__init__(code, message)
 
 
-class UnauthorisedAccessError(Exception):
+class UnauthorisedAccessError(BlueskyRequestError):
     """Request was rejected due to missing or invalid credentials (401/403)."""
-
-    def __init__(self, code: int | None = None, message: str = "") -> None:
-        super().__init__(code, message)
-
-
-class BlueskyRemoteControlError(Exception):
-    """Failure communicating with the blueapi server (e.g. connection refused)."""
-
-    pass
-
-
-class NonJsonResponseError(Exception):
-    """Server returned a response that could not be parsed as JSON."""
 
     pass
 
@@ -71,7 +58,19 @@ class NotFoundError(BlueskyRequestError):
 
 
 class UnknownPlanError(BlueskyRequestError):
-    """ "Plan '{name}' was not recognised" """
+    """Plan '{name}' was not recognised"""
+
+    pass
+
+
+class BlueskyRemoteControlError(Exception):
+    """Unexpected or failed response from the blueapi server."""
+
+    pass
+
+
+class NonJsonResponseError(Exception):
+    """Server returned a response that could not be parsed as JSON."""
 
     pass
 

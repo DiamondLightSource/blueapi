@@ -51,21 +51,23 @@ def setup_scratch(
     with ThreadPoolExecutor() as executor:
         futures = [
             executor.submit(
-                ensure_repo, repo.remote_url, config.root / repo.name, repo.target_revision
+                ensure_repo,
+                repo.remote_url,
+                config.root / repo.name,
+                repo.target_revision,
             )
             for repo in config.repositories
         ]
         for future in as_completed(futures):
             try:
                 future.result()
-            except Exception as e:
-                raise RuntimeError(f"Failed to clone repo \n{e}")
+            except Exception as exc:
+                raise RuntimeError("Failed to clone repositories") from exc
 
     scratch_install(
         [config.root / repo.name for repo in config.repositories],
         timeout=install_timeout,
     )
-
 
 
 def ensure_repo(
@@ -86,7 +88,10 @@ def ensure_repo(
     if not local_directory.exists():
         LOGGER.info(f"Cloning {remote_url}")
         repo = Repo.clone_from(
-            remote_url, local_directory, branch=target_revision ,multi_options=["--filter=blob:none"]
+            remote_url,
+            local_directory,
+            branch=target_revision,
+            multi_options=["--filter=blob:none"],
         )
         LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
     elif local_directory.is_dir():

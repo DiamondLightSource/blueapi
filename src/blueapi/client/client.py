@@ -300,7 +300,7 @@ class BlueapiClient:
         return self._rest.get_plan(name)
 
     def print_plans(self) -> None:
-        """Print all avaliable plans."""
+        """Print all available plans."""
         for name in self.plans:
             print(name)
 
@@ -344,7 +344,7 @@ class BlueapiClient:
         return self._rest.get_device(name)
 
     def print_devices(self) -> None:
-        """Print all avaliable devices."""
+        """Print all available devices."""
         for name in self.devices:
             print(name)
 

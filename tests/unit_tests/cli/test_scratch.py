@@ -63,7 +63,7 @@ def test_scratch_install_installs_path(
     mock_process.returncode = 0
     mock_popen.return_value = mock_process
 
-    scratch_install([directory_path_with_sgid], timeout=1.0)
+    scratch_install(directory_path_with_sgid, timeout=1.0)
 
     mock_popen.assert_called_once_with(
         ["uv", "pip", "install", "--no-deps", "-e", str(directory_path_with_sgid)]
@@ -72,12 +72,12 @@ def test_scratch_install_installs_path(
 
 def test_scratch_install_fails_on_file(file_path: Path):
     with pytest.raises(KeyError):
-        scratch_install([file_path], timeout=1.0)
+        scratch_install(file_path, timeout=1.0)
 
 
 def test_scratch_install_fails_on_nonexistant_path(nonexistant_path: Path):
     with pytest.raises(KeyError):
-        scratch_install([nonexistant_path], timeout=1.0)
+        scratch_install(nonexistant_path, timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Popen")
@@ -92,7 +92,7 @@ def test_scratch_install_fails_on_non_zero_exit_code(
     mock_popen.return_value = mock_process
 
     with pytest.raises(RuntimeError):
-        scratch_install([directory_path_with_sgid], timeout=1.0)
+        scratch_install(directory_path_with_sgid, timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Repo")
@@ -126,7 +126,7 @@ def test_repo_cloned_if_not_found_locally(
         "http://example.com/foo.git",
         nonexistant_path,
         branch=None,
-        multi_options=["--filter=blob:none"],
+        filter="blob:none",
     )
 
 
@@ -143,7 +143,7 @@ def test_repo_cloned_with_correct_umask(
         with file_path.open("w") as stream:
             stream.write("foo")
 
-    mock_repo.clone_from.side_effect = lambda url, path, branch, multi_options: (
+    mock_repo.clone_from.side_effect = lambda url, path, branch, filter: (
         write_repo_files()
     )
 
@@ -171,7 +171,7 @@ def test_cloned_repo_changes_to_new_branch(mock_repo, directory_path: Path):
         "http://example.com/foo.git",
         ANY,
         branch="demo",
-        multi_options=["--filter=blob:none"],
+        filter="blob:none",
     )
 
 
@@ -354,7 +354,8 @@ def test_setup_scratch_iterates_repos(
     mock_scratch_install.assert_has_calls(
         [
             call(
-                [directory_path_with_sgid / "foo", directory_path_with_sgid / "bar"],
+                directory_path_with_sgid / "foo",
+                directory_path_with_sgid / "bar",
                 timeout=120.0,
             ),
         ]

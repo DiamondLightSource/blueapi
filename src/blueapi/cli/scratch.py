@@ -65,7 +65,7 @@ def setup_scratch(
                 raise RuntimeError("Failed to clone repositories") from exc
 
     scratch_install(
-        [config.root / repo.name for repo in config.repositories],
+        *(config.root / repo.name for repo in config.repositories),
         timeout=install_timeout,
     )
 
@@ -91,7 +91,7 @@ def ensure_repo(
             remote_url,
             local_directory,
             branch=target_revision,
-            multi_options=["--filter=blob:none"],
+            filter="blob:none",
         )
         LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
     elif local_directory.is_dir():
@@ -116,37 +116,36 @@ def ensure_repo(
         )
 
 
-def scratch_install(
-    paths: list[Path], timeout: float = _DEFAULT_INSTALL_TIMEOUT
-) -> None:
+def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
     """
-    Install all scratch package. Make blueapi aware of a repository checked out in
-    the scratch area. Make it automatically follow code changes to that repository
+    Install all scratch packages. Make blueapi aware of repositories checked out in
+    the scratch area. Make it automatically follow code changes to that repositories
     (pending a restart). Do not install any of the package's dependencies as they
     may conflict with each other.
 
     Args:
-        paths: List of Path to the checked out repositories
+        paths: List of Paths to the checked out repositories
         timeout: Time to wait for installation subprocess
     """
-    if paths:
-        args = [
-            "uv",
-            "pip",
-            "install",
-            "--no-deps",
-        ]
-        for path in paths:
-            _validate_directory(path)
-            args.extend(["-e", str(path)])
+    if not paths:
+        return
+    args = [
+        "uv",
+        "pip",
+        "install",
+        "--no-deps",
+    ]
+    for path in paths:
+        _validate_directory(path)
+        args.extend(["-e", str(path)])
 
-        LOGGER.info("Installing packages")
-        process = Popen(args)
-        process.wait(timeout=timeout)
-        if process.returncode != 0:
-            raise RuntimeError(
-                f"Failed to install packages: Exit Code: {process.returncode}"
-            )
+    LOGGER.info("Installing packages")
+    process = Popen(args)
+    process.wait(timeout=timeout)
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"Failed to install packages: Exit Code: {process.returncode}"
+        )
 
 
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:

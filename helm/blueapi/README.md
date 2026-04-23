@@ -33,7 +33,10 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | podLabels | object | `{}` |  |
 | podSecurityContext | object | `{}` |  |
 | readinessProbe | object | `{"failureThreshold":2,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | Readiness probe, if configured kubernetes will not route traffic to this pod if failed consecutively. This could allow the service time to recover if it is being overwhelmed by traffic, but without the to ability to load balance or scale up/outwards, upstream services will need to know to back off. This is automatically disabled when in debug mode. |
-| resources | object | `{"limits":{"cpu":"2000m","memory":"4000Mi"},"requests":{"cpu":"200m","memory":"400Mi"}}` | Sets the compute resources available to the pod. These defaults are appropriate when using debug mode or an internal PVC and therefore running VS Code server in the pod. In the Diamond cluster, requests must be >= 0.1*limits When not using either of the above, the limits may be lowered. When idle but connected, blueapi consumes ~400MB of memory and 1% cpu and may struggle when allocated less. |
+| resources.limits.cpu | string | `"2000m"` |  |
+| resources.limits.memory | string | `"4000Mi"` |  |
+| resources.requests.cpu | string | `"200m"` |  |
+| resources.requests.memory | string | `"400Mi"` |  |
 | restartOnConfigChange | bool | `true` | If enabled the blueapi pod will restart on changes to `worker` |
 | securityContext.runAsNonRoot | bool | `true` |  |
 | securityContext.runAsUser | int | `1000` |  |
@@ -46,11 +49,10 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | startupProbe | object | `{"failureThreshold":5,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | A more lenient livenessProbe to allow the service to start fully. This is automatically disabled when in debug mode. |
 | tolerations | list | `[]` | May be required to run on specific nodes (e.g. the control machine) |
 | tracing | object | `{"fastapi":{"excludedURLs":"/healthz"},"otlp":{"enabled":false,"protocol":"http/protobuf","server":{"host":"http://opentelemetry-collector.tracing","port":4318}}}` | Exclude health probe requests from tracing by default to prevent spamming |
-| volumeMounts | list | `[{"mountPath":"/config","name":"worker-config","readOnly":true}]` | Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name. |
+| volumeMounts | string | `nil` | Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name. |
 | volumes | list | `[]` | Additional volumes on the output StatefulSet definition. Define volumes from e.g. Secrets, ConfigMaps or the Filesystem |
 | worker | object | `{"api":{"url":"http://0.0.0.0:8000/"},"env":{"sources":[{"kind":"planFunctions","module":"dodal.plans"},{"kind":"planFunctions","module":"dodal.plan_stubs.wrapped"}]},"logging":{"graylog":{"enabled":false,"url":"tcp://graylog-log-target.diamond.ac.uk:12231/"},"level":"INFO"},"scratch":{"repositories":[],"root":"/workspace"},"stomp":{"auth":{"password":"guest","username":"guest"},"enabled":false,"url":"tcp://rabbitmq:61613/"}}` | Config for the worker goes here, will be mounted into a config file |
 | worker.api.url | string | `"http://0.0.0.0:8000/"` | 0.0.0.0 required to allow non-loopback traffic If using hostNetwork, the port must be free on the host |
 | worker.env.sources | list | `[{"kind":"planFunctions","module":"dodal.plans"},{"kind":"planFunctions","module":"dodal.plan_stubs.wrapped"}]` | modules (must be installed in the venv) to fetch devices/plans from |
-| worker.logging | object | `{"graylog":{"enabled":false,"url":"tcp://graylog-log-target.diamond.ac.uk:12231/"},"level":"INFO"}` | Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi` |
 | worker.scratch | object | `{"repositories":[],"root":"/workspace"}` | If initContainer is enabled the default branch of python projects in this section are installed into the venv *without their dependencies* |
 | worker.stomp | object | `{"auth":{"password":"guest","username":"guest"},"enabled":false,"url":"tcp://rabbitmq:61613/"}` | Message bus configuration for returning status to GDA/forwarding documents downstream Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret |

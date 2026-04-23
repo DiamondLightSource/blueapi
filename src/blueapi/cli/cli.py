@@ -258,8 +258,6 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
             raise ClickException(
                 "Access denied. Please check your login status and try again."
             ) from e
-        except BlueskyRemoteControlError as e:
-            raise e
 
     return wrapper
 

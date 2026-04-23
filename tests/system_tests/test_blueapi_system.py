@@ -18,6 +18,7 @@ from blueapi.client.rest import (
     NotFoundError,
     ServiceUnavailableError,
     UnauthorisedAccessError,
+    UnknownPlanError,
 )
 from blueapi.config import (
     ApplicationConfig,
@@ -245,7 +246,7 @@ def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
 
 
 def test_get_non_existent_plan(rest_client: BlueapiRestClient):
-    with pytest.raises(NotFoundError, match=r"Item not found"):
+    with pytest.raises(UnknownPlanError, match=r"Plan 'Not exists' not found"):
         rest_client.get_plan("Not exists")
 
 

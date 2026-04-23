@@ -535,9 +535,13 @@ def set_state(
                     state_change_request.reason,
                 )
             except TransitionError as e:
+                suffix = f" - {e}" if str(e) else ""
                 raise HTTPException(
                     status.HTTP_400_BAD_REQUEST,
-                    detail=(f"Cannot transition from {current_state} to {new_state}"),
+                    detail=(
+                        f"Error while transitioning from {current_state} "
+                        f"to {new_state}{suffix}"
+                    ),
                 ) from e
     else:
         raise HTTPException(

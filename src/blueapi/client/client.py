@@ -105,9 +105,8 @@ class DeviceCache:
             self._cache[name] = device
             setattr(self, model.name, device)
             return device
-        except NotFoundError:
-            pass
-        raise AttributeError(f"No device named '{name}' available")
+        except NotFoundError as e:
+            raise AttributeError(f"No device named '{name}' available") from e
 
     def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):
@@ -676,7 +675,11 @@ class BlueapiClient:
         """
         try:
             status = self._rest.delete_environment()
-        except (BlueskyRequestError, ServiceUnavailableError):
+        except (
+            BlueskyRequestError,
+            BlueskyRemoteControlError,
+            ServiceUnavailableError,
+        ):
             raise
         except Exception as e:
             raise BlueskyRemoteControlError(

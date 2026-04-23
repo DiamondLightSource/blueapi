@@ -200,7 +200,10 @@ class BlueapiRestClient:
         return self._request_and_deserialize("/plans", PlanResponse)
 
     def get_plan(self, name: str) -> PlanModel:
-        return self._request_and_deserialize(f"/plans/{name}", PlanModel)
+        try:
+            return self._request_and_deserialize(f"/plans/{name}", PlanModel)
+        except NotFoundError as e:
+            raise UnknownPlanError(404, f"Plan '{name}' not found") from e
 
     def get_devices(self) -> DeviceResponse:
         return self._request_and_deserialize("/devices", DeviceResponse)

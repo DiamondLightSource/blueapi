@@ -644,7 +644,7 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json() == {
-        "detail": f"Cannot transition from {current_state} to {final_state}"
+        "detail": f"Error while transitioning from {current_state} to {final_state}"
     }
 
 

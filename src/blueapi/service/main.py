@@ -648,7 +648,7 @@ def root_landing(
 
 @open_router.get("/favicon", include_in_schema=False)
 async def favicon():
-    return FileResponse("templates/blueapi-logo.svg")
+    return FileResponse("docs/images/blueapi-logo.svg")
 
 
 @secure_router_v1.post("/run", include_in_schema=True, tags=[Tag.TASK])

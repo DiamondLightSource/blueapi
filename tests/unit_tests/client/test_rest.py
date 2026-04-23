@@ -1,3 +1,4 @@
+import json
 import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -107,7 +108,6 @@ def test_create_task_exceptions(
     response = Mock(spec=requests.Response)
     response.status_code = code
     response.text = content
-    import json
 
     response.json.side_effect = lambda: json.loads(content) if content else None
     err = _create_task_exceptions(response)

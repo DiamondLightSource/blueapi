@@ -118,7 +118,7 @@ def ensure_repo(
 
 def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
     """
-    Install all scratch packages. Make blueapi aware of repositories checked out in
+    Install scratch packages. Make blueapi aware of repositories checked out in
     the scratch area. Make it automatically follow code changes to that repositories
     (pending a restart). Do not install any of the package's dependencies as they
     may conflict with each other.

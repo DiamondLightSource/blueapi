@@ -87,7 +87,7 @@ def ensure_repo(
 
     if not local_directory.exists():
         LOGGER.info(f"Cloning {remote_url}")
-        repo = Repo.clone_from(
+        Repo.clone_from(
             remote_url,
             local_directory,
             branch=target_revision,
@@ -119,8 +119,8 @@ def ensure_repo(
 def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
     """
     Install scratch packages. Make blueapi aware of repositories checked out in
-    the scratch area. Make it automatically follow code changes to that repositories
-    (pending a restart). Do not install any of the package's dependencies as they
+    the scratch area. Make it automatically follow code changes to those repositories
+    (pending a restart). Do not install any of the packages' dependencies as they
     may conflict with each other.
 
     Args:

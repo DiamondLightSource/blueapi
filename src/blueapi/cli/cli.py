@@ -81,7 +81,19 @@ def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
     invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
 )
 @click.version_option(version=__version__, prog_name="blueapi")
-@click.option("-H", "--host", type=str)
+@click.option(
+    "-h",
+    "--host",
+    type=str,
+    help=textwrap.dedent(
+        """
+        Hostname for the blueapi instance to use
+
+        Value should be the full URL including scheme (and port if non-default),
+        eg `--host http://localhost:8000`
+        """
+    ),
+)
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )

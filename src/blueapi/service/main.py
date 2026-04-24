@@ -583,20 +583,18 @@ async def log_request_details(
 ) -> Response:
     """Middleware to log all request's host, method, path, status and request and
     body"""
+    log = LOGGER.debug if request.url.path == "/healthz" else LOGGER.info
     request_body = await request.body()
     client = request.client or Address("Unknown", -1)
     log_message = f"{client.host}:{client.port} {request.method} {request.url.path}"
     extra = {
         "request_body": request_body,
     }
-    LOGGER.debug(log_message, extra=extra)
+    log(log_message, extra=extra)
 
     response = await call_next(request)
     log_message += f" {response.status_code}"
-    if request.url.path == "/healthz":
-        LOGGER.debug(log_message, extra=extra)
-    else:
-        LOGGER.info(log_message, extra=extra)
+    log(log_message, extra=extra)
 
     return response
 

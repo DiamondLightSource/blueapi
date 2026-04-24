@@ -340,7 +340,7 @@ def run_plan(
     """Run a plan with parameters
 
     To run in the foreground and to block until it is complete, stomp
-    configuration is required. Without stomp configuration, `--bg` can be used
+    configuration is required. Without stomp configuration, '--bg' can be used
     to start a plan in the background.
     """
 

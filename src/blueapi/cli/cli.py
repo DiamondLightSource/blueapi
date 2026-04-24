@@ -337,7 +337,12 @@ def run_plan(
     instrument_session: str,
     parameters: TaskParameters,
 ) -> None:
-    """Run a plan with parameters"""
+    """Run a plan with parameters
+
+    To run in the foreground and to block until it is complete, stomp
+    configuration is required. Without stomp configuration, `--bg` can be used
+    to start a plan in the background.
+    """
 
     client = cast(BlueapiClient, obj["client"])
     task = TaskRequest(

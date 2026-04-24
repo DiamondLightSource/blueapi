@@ -122,8 +122,8 @@ def get_app(config: ApplicationConfig):
             "clientId": "NOT_SUPPORTED",
         }
     app.include_router(open_router)
-    app.include_router(secure_router, dependencies=dependencies)
     app.include_router(secure_router_v1, dependencies=dependencies)
+    app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_version_headers)

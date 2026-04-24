@@ -99,8 +99,9 @@ def lifespan(config: ApplicationConfig):
     return inner
 
 
-secure_router = APIRouter()
 open_router = APIRouter()
+secure_router = APIRouter(deprecated=True)
+secure_router_v1 = APIRouter(prefix="/api/v1")
 
 
 def get_app(config: ApplicationConfig):
@@ -122,6 +123,7 @@ def get_app(config: ApplicationConfig):
         }
     app.include_router(open_router)
     app.include_router(secure_router, dependencies=dependencies)
+    app.include_router(secure_router_v1, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
     app.middleware("http")(add_version_headers)
@@ -188,6 +190,7 @@ def root_redirect() -> RedirectResponse:
     )
 
 
+@secure_router_v1.get("/environment", tags=[Tag.ENV])
 @secure_router.get("/environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER, "runner")
 def get_environment(
@@ -197,6 +200,7 @@ def get_environment(
     return runner.state
 
 
+@secure_router_v1.delete("/environment", tags=[Tag.ENV])
 @secure_router.delete("/environment", tags=[Tag.ENV])
 async def delete_environment(
     background_tasks: BackgroundTasks,
@@ -227,6 +231,7 @@ def get_oidc_config(
     return config
 
 
+@secure_router_v1.get("/plans", tags=[Tag.PLAN])
 @secure_router.get("/plans", tags=[Tag.PLAN])
 @start_as_current_span(TRACER)
 def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResponse:
@@ -235,6 +240,7 @@ def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResp
     return PlanResponse(plans=plans)
 
 
+@secure_router_v1.get("/plans/{name}", tags=[Tag.PLAN])
 @secure_router.get("/plans/{name}", tags=[Tag.PLAN])
 @start_as_current_span(TRACER, "name")
 def get_plan_by_name(
@@ -244,6 +250,7 @@ def get_plan_by_name(
     return runner.run(interface.get_plan, name)
 
 
+@secure_router_v1.get("/devices", tags=[Tag.DEVICE])
 @secure_router.get("/devices", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER)
 def get_devices(
@@ -254,6 +261,7 @@ def get_devices(
     return DeviceResponse(devices=devices)
 
 
+@secure_router_v1.get("/devices/{name}", tags=[Tag.DEVICE])
 @secure_router.get("/devices/{name}", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER, "name")
 def get_device_by_name(
@@ -270,6 +278,7 @@ example_task_request = TaskRequest(
 )
 
 
+@secure_router_v1.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @secure_router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @start_as_current_span(
     TRACER,
@@ -318,6 +327,9 @@ def submit_task(
         ) from e
 
 
+@secure_router_v1.delete(
+    "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
+)
 @secure_router.delete(
     "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
 )
@@ -337,6 +349,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
     return TaskStatusEnum(v_upper)
 
 
+@secure_router_v1.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
 def get_tasks(
@@ -363,6 +376,11 @@ def get_tasks(
     return TasksListResponse(tasks=tasks)
 
 
+@secure_router_v1.put(
+    "/worker/task",
+    responses={status.HTTP_409_CONFLICT: {}},
+    tags=[Tag.TASK],
+)
 @secure_router.put(
     "/worker/task",
     responses={status.HTTP_409_CONFLICT: {}},
@@ -397,6 +415,7 @@ def get_passthrough_headers(request: Request) -> dict[str, str]:
     }
 
 
+@secure_router_v1.get("/tasks/{task_id}", tags=[Tag.TASK])
 @secure_router.get("/tasks/{task_id}", tags=[Tag.TASK])
 @start_as_current_span(TRACER, "task_id")
 def get_task(
@@ -410,6 +429,10 @@ def get_task(
     return task
 
 
+@secure_router_v1.get(
+    "/worker/task",
+    tags=[Tag.TASK],
+)
 @secure_router.get(
     "/worker/task",
     tags=[Tag.TASK],
@@ -423,6 +446,10 @@ def get_active_task(
     return WorkerTask(task_id=task_id)
 
 
+@secure_router_v1.get(
+    "/worker/state",
+    tags=[Tag.TASK],
+)
 @secure_router.get(
     "/worker/state",
     tags=[Tag.TASK],
@@ -448,6 +475,15 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 }
 
 
+@secure_router_v1.put(
+    "/worker/state",
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {},
+        status.HTTP_202_ACCEPTED: {},
+    },
+    tags=[Tag.TASK],
+)
 @secure_router.put(
     "/worker/state",
     status_code=status.HTTP_202_ACCEPTED,
@@ -506,6 +542,7 @@ def set_state(
     return runner.run(interface.get_worker_state)
 
 
+@secure_router_v1.get("/python_environment", tags=[Tag.ENV])
 @secure_router.get("/python_environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER)
 def get_python_environment(
@@ -527,6 +564,7 @@ def health_probe() -> HealthProbeResponse:
     return HealthProbeResponse(status=Health.OK)
 
 
+@secure_router_v1.get("/logout", include_in_schema=False)
 @secure_router.get("/logout", include_in_schema=False)
 def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     """Redirect to logout url"""

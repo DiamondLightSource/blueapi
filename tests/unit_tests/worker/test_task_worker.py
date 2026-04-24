@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable
 from concurrent.futures import Future
 from pathlib import Path
 from queue import Full
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pydantic
@@ -19,6 +19,7 @@ from observability_utils.tracing import (
     asserting_span_exporter,
 )
 from ophyd_async.core import AsyncStatus
+from pydantic import BaseModel
 
 from blueapi.config import DeviceSource, EnvironmentConfig
 from blueapi.core import BlueskyContext, EventStream
@@ -36,6 +37,7 @@ from blueapi.worker import (
     WorkerState,
 )
 from blueapi.worker.event import TaskResult, TaskStatusEnum
+from blueapi.worker.task import register_model, restore_models
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
@@ -893,3 +895,126 @@ def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
     params = Task(name="injected_device_plan").prepare_params(context_without_devices)
     assert params["composite"].fake_device == fake_device
     assert params["composite"].second_fake_device == second_fake_device
+
+
+T = TypeVar("T")
+
+
+class GenericPlanArgs(BaseModel):
+    value1: int
+
+
+class SpecialisedPlanArgs(GenericPlanArgs, Generic[T]):
+    value2: T
+
+
+class SpecialisedPlanArgs2(GenericPlanArgs):
+    value3: float
+
+
+def plan_with_model(val: SpecialisedPlanArgs) -> MsgGenerator[T]:
+    yield from ()
+    assert isinstance(val, SpecialisedPlanArgs)
+
+
+def test_plan_args_are_converted_back_to_model(
+    context: BlueskyContext,
+) -> None:
+    context.register_plan(plan_with_model)
+
+    task = Task(name="plan_with_model", params={"val": {"value1": 1, "value2": "test"}})
+    task.do_task(context)
+
+
+def plan_using_base_model(val: GenericPlanArgs) -> MsgGenerator[T]:
+    yield from ()
+    assert isinstance(val, SpecialisedPlanArgs)
+
+
+def test_base_model_plan_args_are_converted_back_to_specialised_model(
+    context: BlueskyContext,
+) -> None:
+    context.register_plan(plan_using_base_model)
+    register_model(SpecialisedPlanArgs)
+
+    task = Task(
+        name="plan_using_base_model",
+        params={
+            "val": {
+                "__type__": SpecialisedPlanArgs.__name__,
+                "value1": 1,
+                "value2": "test",
+            }
+        },
+    )
+    task.do_task(context)
+
+
+def plan_with_generic_parameters(val: T) -> MsgGenerator[T]:
+    yield from ()
+    assert isinstance(val, SpecialisedPlanArgs)
+
+
+def test_generic_plan_args_are_converted_back_to_specialised_model(
+    context: BlueskyContext,
+) -> None:
+    context.register_plan(plan_with_generic_parameters)
+    register_model(SpecialisedPlanArgs)
+
+    task = Task(
+        name="plan_with_generic_parameters",
+        params={
+            "val": {
+                "__type__": SpecialisedPlanArgs.__name__,
+                "value1": 1,
+                "value2": "test",
+            }
+        },
+    )
+    task.do_task(context)
+
+
+def test_nested_models_restore_from_types():
+    register_model(SpecialisedPlanArgs)
+    register_model(SpecialisedPlanArgs2)
+
+    data = {
+        "__type__": SpecialisedPlanArgs.__name__,
+        "value1": 1,
+        "value2": {
+            "__type__": SpecialisedPlanArgs2.__name__,
+            "value1": 1,
+            "value3": 1.5,
+        },
+    }
+
+    result = restore_models(data)
+
+    assert isinstance(result, SpecialisedPlanArgs)
+    assert result.value1 == 1
+    assert isinstance(result.value2, SpecialisedPlanArgs2)
+    assert result.value2.value1 == 1
+    assert result.value2.value3 == 1.5
+
+
+def test_nested_models_restore_from_types_and_generic_args():
+    register_model(SpecialisedPlanArgs)
+    register_model(SpecialisedPlanArgs2)
+
+    data = {
+        "__type__": SpecialisedPlanArgs.__name__,
+        "__args__": [SpecialisedPlanArgs2.__name__],
+        "value1": 1,
+        "value2": {
+            "value1": 1,
+            "value3": 1.5,
+        },
+    }
+
+    result = restore_models(data)
+
+    assert isinstance(result, SpecialisedPlanArgs)
+    assert result.value1 == 1
+    assert isinstance(result.value2, SpecialisedPlanArgs2)
+    assert result.value2.value1 == 1
+    assert result.value2.value3 == 1.5

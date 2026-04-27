@@ -52,6 +52,8 @@ class SessionCacheManager(CacheManager):
         os.chmod(self._file_path, 0o600)
 
     def load_cache(self) -> Cache:
+        Path(self._file_path).mkdir(parents=True, exist_ok=True)
+        os.chmod(self._file_path, 0o600)
         with open(self._file_path, "rb") as cache_file:
             return TypeAdapter(Cache).validate_json(
                 base64.b64decode(cache_file.read()).decode("utf-8")

@@ -234,6 +234,10 @@ class ScratchConfig(BlueapiBaseModel):
 
 
 class OIDCConfig(BlueapiBaseModel):
+    well_known_url: str = Field(
+        description="URL to fetch OIDC config from the provider",
+        deprecated="Deprecated in favour of issuer"
+    )
     issuer: str = Field(description="URL of OIDC provider")
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
@@ -243,8 +247,16 @@ class OIDCConfig(BlueapiBaseModel):
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
+        if self.issuer and self.well_known_url:
+            import warnings
+            warnings.warn(
+            DeprecationWarning(
+                "well_known_url and issuer both are set. Defaulting to issuer URL "
+            ),
+        )
+        _well_know_url = self.issuer + "/.well-known/openid-configuration" if self.issuer else self.well_known_url
         response: requests.Response = requests.get(
-            self.issuer + "/.well-known/openid-configuration"
+            _well_know_url
         )
         response.raise_for_status()
         return response.json()
@@ -299,7 +311,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.3.0"
+    REST_API_VERSION: ClassVar[str] = "1.4.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",

@@ -12,15 +12,18 @@ import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
+    AliasChoices,
     AnyUrl,
     BaseModel,
     Field,
     HttpUrl,
+    SecretStr,
     TypeAdapter,
     UrlConstraints,
     ValidationError,
     field_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
@@ -106,13 +109,26 @@ class StompConfig(BlueapiBaseModel):
     )
 
 
+class ServiceAccount(BlueapiBaseModel):
+    client_id: str = Field(description="Service account client ID", default="")
+    client_secret: SecretStr = Field(
+        description="Service account client secret", default=SecretStr("")
+    )
+    token_url: SkipJsonSchema[str] = Field(
+        description="Field overridden by OIDCConfig.token_endpoint", default=""
+    )
+
+
 class TiledConfig(BlueapiBaseModel):
     enabled: bool = Field(
         description="True if blueapi should forward data to a Tiled instance",
         default=False,
     )
     url: HttpUrl = HttpUrl("http://localhost:8407")
-    api_key: str | None = os.environ.get("TILED_SINGLE_USER_API_KEY", None)
+    authentication: str | ServiceAccount | None = Field(
+        description="Tiled Authentication can be API_KEY or OIDC Service account",
+        default=os.environ.get("TILED_SINGLE_USER_API_KEY", None),
+    )
 
 
 class WorkerEventConfig(BlueapiBaseModel):
@@ -175,6 +191,18 @@ class ScratchRepository(BlueapiBaseModel):
     remote_url: str = Field(
         description="URL to clone from",
         default="https://github.com/example/example.git",
+    )
+    target_revision: str | SkipJsonSchema[None] = Field(
+        description=(
+            "Revision (branch or tag) to check out when cloning - defaults to "
+            "remote's HEAD. If a tag is used, the repo will be left in a "
+            "'detached head' state."
+        ),
+        validation_alias=AliasChoices("branch", "tag", "target_revision"),
+        exclude_if=lambda f: f is None,
+        # using default_factory instead of default means the schema doesn't
+        # include an invalid value
+        default_factory=lambda: None,
     )
 
     @field_validator("remote_url")
@@ -271,7 +299,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.2.0"
+    REST_API_VERSION: ClassVar[str] = "1.3.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",
@@ -354,9 +382,9 @@ class ConfigLoader(Generic[C]):
 
         recursively_update_map(self._values, values)
 
-    def use_values_from_yaml(self, path: Path) -> None:
+    def use_values_from_yaml(self, *paths: Path) -> None:
         """
-        Use all values provided in a YAML/JSON file in the
+        Use all values provided in a YAML/JSON files in the
         config, override any defaults and values set by
         previous calls into this class.
 
@@ -364,9 +392,9 @@ class ConfigLoader(Generic[C]):
             path (Path): Path to YAML/JSON file
         """
 
-        with path.open("r") as stream:
-            values = yaml.load(stream, yaml.Loader)
-        self.use_values(values)
+        for path in paths:
+            with path.open("r") as stream:
+                self.use_values(yaml.load(stream, yaml.Loader))
 
     def load(self) -> C:
         """
@@ -426,5 +454,5 @@ def generate_config_schema() -> dict[str, Any]:
             return json_schema
 
     return ApplicationConfig.model_json_schema(
-        schema_generator=_GenerateJsonSchema, ref_template="{model}"
+        by_alias=False, schema_generator=_GenerateJsonSchema, ref_template="{model}"
     )

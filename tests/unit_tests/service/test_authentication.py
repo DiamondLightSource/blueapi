@@ -3,14 +3,21 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import Mock, patch
 
+import httpx
 import jwt
 import pytest
 import responses
-from starlette.status import HTTP_403_FORBIDDEN
+import respx
+from pydantic import SecretStr
+from starlette.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
-from blueapi.config import OIDCConfig
+from blueapi.config import OIDCConfig, ServiceAccount
 from blueapi.service import main
-from blueapi.service.authentication import SessionCacheManager, SessionManager
+from blueapi.service.authentication import (
+    SessionCacheManager,
+    SessionManager,
+    TiledAuth,
+)
 
 
 @pytest.fixture
@@ -137,3 +144,41 @@ def test_session_cache_manager_returns_writable_file_path(tmp_path):
     Path(cache._file_path).touch()
     assert os.path.isfile(cache._file_path)
     assert cache._file_path == f"{tmp_path}/blueapi_cache"
+
+
+def test_tiled_auth_raises_exception():
+    with pytest.raises(
+        RuntimeError, match="Token URL is not set please check oidc config"
+    ):
+        auth = ServiceAccount()
+        TiledAuth(tiled_auth=auth)
+
+
+@respx.mock
+def test_tiled_auth_sync_auth_flow():
+    client_id = "client"
+    client_secret = SecretStr("secret")
+    token_url = "http://keycloak.com/token"
+    access_token = "access_token"
+
+    respx.post(token_url).mock(
+        return_value=httpx.Response(
+            status_code=HTTP_200_OK, json={"access_token": access_token}
+        )
+    )
+
+    tiled_auth = TiledAuth(
+        tiled_auth=ServiceAccount(
+            client_id=client_id,
+            client_secret=client_secret,
+            token_url=token_url,
+        )
+    )
+
+    request = Mock()
+    request.headers = {}
+
+    flow = tiled_auth.sync_auth_flow(request)
+    result = next(flow)
+
+    assert result.headers["Authorization"] == f"Bearer {access_token}"

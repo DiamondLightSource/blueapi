@@ -6,7 +6,7 @@ from concurrent.futures import Future
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -38,10 +38,10 @@ from blueapi.service.model import (
 )
 from blueapi.utils import deprecated
 from blueapi.worker import WorkerEvent, WorkerState
-from blueapi.worker.event import ProgressEvent, TaskStatus
+from blueapi.worker.event import ProgressEvent, TaskError, TaskResult, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
-from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
+from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
 from .rest import BlueapiRestClient, BlueskyRemoteControlError
 
 TRACER = get_tracer("client")
@@ -141,13 +141,17 @@ class Plan:
         self._client = client
         self.__doc__ = model.description
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Any:
         req = TaskRequest(
             name=self.name,
             params=self._build_args(*args, **kwargs),
             instrument_session=self._client.instrument_session,
         )
-        self._client.run_task(req)
+        match self._client.run_task(req):
+            case TaskStatus(result=TaskResult(result=res)):
+                return res
+            case TaskStatus(result=TaskError(type=typ, message=msg)):
+                raise PlanFailedError(typ, msg)
 
     @property
     def help_text(self) -> str:
@@ -295,6 +299,11 @@ class BlueapiClient:
         """
         return self._rest.get_plan(name)
 
+    def print_plans(self) -> None:
+        """Print all available plans."""
+        for name in self.plans:
+            print(name)
+
     @start_as_current_span(TRACER)
     @deprecated("devices property")
     def get_devices(self) -> DeviceResponse:
@@ -333,6 +342,11 @@ class BlueapiClient:
         """
 
         return self._rest.get_device(name)
+
+    def print_devices(self) -> None:
+        """Print all available devices."""
+        for name in self.devices:
+            print(name)
 
     @property
     @start_as_current_span(TRACER)
@@ -445,7 +459,7 @@ class BlueapiClient:
         task: TaskRequest,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
-    ) -> WorkerEvent:
+    ) -> TaskStatus:
         """
         Synchronously run a task, requires a message bus connection
 
@@ -468,7 +482,7 @@ class BlueapiClient:
         task_response = self._rest.create_task(task)
         task_id = task_response.task_id
 
-        complete: Future[WorkerEvent] = Future()
+        complete: Future[TaskStatus] = Future()
 
         def inner_on_event(event: AnyEvent, ctx: MessageContext) -> None:
             match event:
@@ -490,19 +504,19 @@ class BlueapiClient:
                         log.error(
                             f"Callback ({cb}) failed for event: {event}", exc_info=e
                         )
-                if isinstance(event, WorkerEvent) and (
-                    (event.is_complete()) and (ctx.correlation_id == task_id)
+                if (
+                    isinstance(event, WorkerEvent)
+                    and (event.is_complete())
+                    and (ctx.correlation_id == task_id)
                 ):
-                    if event.task_status is not None and event.task_status.task_failed:
+                    if event.task_status is None:
                         complete.set_exception(
-                            BlueskyStreamingError(
-                                "\n".join(event.errors)
-                                if len(event.errors) > 0
-                                else "Unknown error"
+                            BlueskyRemoteControlError(
+                                "Server completed without task status"
                             )
                         )
                     else:
-                        complete.set_result(event)
+                        complete.set_result(event.task_status)
 
         with self._events:
             self._events.subscribe_to_all_events(inner_on_event)
@@ -744,3 +758,9 @@ class BlueapiClient:
                 auth.start_device_flow()
             else:
                 print("Server is not configured to use authentication!")
+
+
+class PlanFailedError(Exception):
+    def __init__(self, typ: str, message: str):
+        super().__init__(message)
+        self._type = typ

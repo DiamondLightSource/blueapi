@@ -1,6 +1,7 @@
 import json
 import uuid
 from dataclasses import dataclass
+from inspect import isawaitable
 from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, patch
 
@@ -15,6 +16,7 @@ from dodal.common.beamlines.beamline_utils import (
 )
 from ophyd_async.epics.motor import Motor
 from pydantic import HttpUrl
+from pytest_httpx import HTTPXMock
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi.config import (
@@ -43,7 +45,13 @@ from blueapi.service.model import (
 from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.utils.numtracker import NumtrackerClient
 from blueapi.utils.path_provider import StartDocumentPathProvider
-from blueapi.worker.event import TaskStatus, TaskStatusEnum, WorkerEvent, WorkerState
+from blueapi.worker.event import (
+    TaskResult,
+    TaskStatus,
+    TaskStatusEnum,
+    WorkerEvent,
+    WorkerState,
+)
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -234,6 +242,33 @@ def test_begin_task_no_task_id(worker_mock: MagicMock):
     worker_mock.assert_not_called()
 
 
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.config")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_subscribers_removed_when_task_not_found(
+    worker_mock: MagicMock,
+    context_mock: MagicMock,
+    config_mock: MagicMock,
+    from_uri_mock: MagicMock,
+):
+    # regression test for #1480
+    worker = worker_mock()
+    ctx = context_mock()
+    worker.begin_task.side_effect = KeyError()
+
+    with pytest.raises(KeyError):
+        interface.begin_task(WorkerTask(task_id="missing"))
+
+    ctx.run_engine.subscribe.assert_called_once()
+    tiled_token = ctx.run_engine.subscribe()
+    ctx.run_engine.unsubscribe.assert_called_once_with(tiled_token)
+
+    worker.worker_events.subscribe.assert_called_once()
+    remove_token = worker.worker_events.subscribe()
+    worker.worker_events.unsubscribe.assert_called_once_with(remove_token)
+
+
 @patch("blueapi.service.interface.TaskWorker.get_tasks_by_status")
 def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
     pending_task1 = TrackableTask(task_id="0", task=Task(name="pending_task1"))
@@ -422,6 +457,7 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
                 task_id="foo_bar",
                 task_complete=False,
                 task_failed=False,
+                result=None,
             ),
         ),
         "c_id",
@@ -436,6 +472,7 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
                 task_id="foo_bar",
                 task_complete=True,
                 task_failed=False,
+                result=TaskResult(result=None, type="NoneType"),
             ),
         ),
         "c_id",
@@ -513,8 +550,8 @@ def test_configure_numtracker():
     assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
 
-@patch("blueapi.utils.numtracker.requests.post")
-def test_headers_are_cleared(mock_post):
+@patch("blueapi.utils.numtracker.httpx.AsyncClient.post")
+async def test_headers_are_cleared(mock_post):
     mock_response = Mock()
     mock_post.return_value = mock_response
     mock_response.raise_for_status.side_effect = None
@@ -544,16 +581,18 @@ def test_headers_are_cleared(mock_post):
     interface.begin_task(task=WorkerTask(task_id=None), pass_through_headers=headers)
     ctx = interface.context()
     assert ctx.run_engine.scan_id_source is not None
-    ctx.run_engine.scan_id_source(
+    scan_id = ctx.run_engine.scan_id_source(
         {"instrument_session": "cm12345-1", "instrument": "p46"}
     )
+    assert isawaitable(scan_id) and await scan_id
     mock_post.assert_called_once()
     assert mock_post.call_args.kwargs["headers"] == headers
 
     interface.begin_task(task=WorkerTask(task_id=None))
-    ctx.run_engine.scan_id_source(
+    scan_id = ctx.run_engine.scan_id_source(
         {"instrument_session": "cm12345-1", "instrument": "p46"}
     )
+    assert isawaitable(scan_id) and await scan_id
     assert mock_post.call_count == 2
     assert mock_post.call_args.kwargs["headers"] == {}
 
@@ -632,7 +671,9 @@ def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
 
 
 @patch("blueapi.utils.numtracker.NumtrackerClient.create_scan")
-def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_scan):
+async def test_numtracker_create_scan_called_with_arguments_from_metadata(
+    mock_create_scan,
+):
     conf = ApplicationConfig(
         numtracker=NumtrackerConfig(
             url=HttpUrl("https://numtracker-example.com/graphql")
@@ -649,14 +690,24 @@ def test_numtracker_create_scan_called_with_arguments_from_metadata(mock_create_
 
     ctx.numtracker.set_headers(headers)
     ctx.run_engine.md["instrument_session"] = "ab123"
-    ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    scan_id = ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    assert isawaitable(scan_id) and await scan_id
 
     mock_create_scan.assert_called_once_with("ab123", "p46")
 
 
-def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
-    mock_numtracker_server,
+async def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
+    httpx_mock,
+    nt_query,
+    nt_response,
 ):
+    httpx_mock.add_response(
+        method="POST",
+        url="https://numtracker-example.com/graphql",
+        match_json=nt_query,
+        status_code=200,
+        json=nt_response,
+    )
     conf = ApplicationConfig(
         env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
         numtracker=NumtrackerConfig(
@@ -669,21 +720,24 @@ def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(
     assert ctx.run_engine.scan_id_source is not None
 
     ctx.run_engine.md["instrument_session"] = "ab123"
-    ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    scan_id = ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    assert isawaitable(scan_id) and await scan_id
 
     assert (
         ctx.run_engine.md["data_session_directory"] == "/exports/mybeamline/data/2025"
     )
 
 
-def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
-    mock_numtracker_server,
+async def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
+    httpx_mock: HTTPXMock, nt_query, nt_response
 ):
+    nt_url = "https://numtracker-example.com/graphql"
+    httpx_mock.add_response(
+        method="POST", url=nt_url, match_json=nt_query, json=nt_response
+    )
     conf = ApplicationConfig(
         env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
-        numtracker=NumtrackerConfig(
-            url=HttpUrl("https://numtracker-example.com/graphql")
-        ),
+        numtracker=NumtrackerConfig(url=HttpUrl(nt_url)),
     )
     interface.setup(conf)
     ctx = interface.context()
@@ -691,6 +745,7 @@ def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
     assert ctx.run_engine.scan_id_source is not None
 
     ctx.run_engine.md["instrument_session"] = "ab123"
-    ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    scan_id = ctx.run_engine.scan_id_source(ctx.run_engine.md)
+    assert isawaitable(scan_id) and await scan_id
 
     assert ctx.run_engine.md["scan_file"] == "p46-11"

@@ -5,7 +5,28 @@ import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
-from blueapi.service.main import get_passthrough_headers, log_request_details
+from blueapi import __version__
+from blueapi.config import ApplicationConfig
+from blueapi.service.main import (
+    add_version_headers,
+    get_passthrough_headers,
+    log_request_details,
+)
+
+
+async def test_add_version_header():
+    app = FastAPI()
+    app.middleware("http")(add_version_headers)
+
+    @app.get("/")
+    async def root():
+        return {"message": "Hello World"}
+
+    client = TestClient(app)
+    response = client.get("/")
+
+    assert response.headers["X-API-VERSION"] == ApplicationConfig.REST_API_VERSION
+    assert response.headers["X-BlueAPI-VERSION"] == __version__
 
 
 async def test_log_request_details():
@@ -13,16 +34,26 @@ async def test_log_request_details():
         app = FastAPI()
         app.middleware("http")(log_request_details)
 
-        @app.get("/")
+        @app.post("/")
         async def root():
             return {"message": "Hello World"}
 
         client = TestClient(app)
-        response = client.get("/")
+        response = client.post("/", content="foo")
 
         assert response.status_code == 200
+        logger.debug.assert_called_once_with(
+            "testclient:50000 POST /",
+            extra={
+                "request_body": b"foo",
+            },
+        )
+
         logger.info.assert_called_once_with(
-            "method: GET url: http://testserver/ body: b''"
+            "testclient:50000 POST / 200",
+            extra={
+                "request_body": b"foo",
+            },
         )
 
 

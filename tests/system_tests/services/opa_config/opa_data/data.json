@@ -4,7 +4,7 @@
             "beamlines": {
                 "adsim": {
                     "sessions": [
-                        "1"
+                        1
                     ]
                 }
             },

@@ -1,9 +1,4 @@
-database:
-  uri: sqlite:////storage/auth.db
-  init_if_not_exists: true
 authentication:
-  # Any HTTP client that can connect can read, an API key is still required to write.
-  allow_anonymous_access: true
   providers:
     - provider: keycloak_oidc
       authenticator: tiled.authenticators:ProxiedOIDCAuthenticator

@@ -160,6 +160,8 @@ This will be one of `WorkerEvent`, `ProgressEvent` or `DataEvent`.
 An example that prints data for each point could be something like
 
 ```python
+from blueapi.core.bluesky_types import DataEvent
+
 def feedback(evt):
     match evt:
         case DataEvent(name="start"):

@@ -17,8 +17,9 @@ from blueapi.client.client import (
     MissingInstrumentSessionError,
     Plan,
     PlanCache,
+    PlanFailedError,
 )
-from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
+from blueapi.client.event_bus import AnyEvent, EventBusClient
 from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
 from blueapi.config import MissingStompConfigurationError
 from blueapi.core import DataEvent
@@ -35,7 +36,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.worker import ProgressEvent, Task, TrackableTask, WorkerEvent, WorkerState
-from blueapi.worker.event import TaskStatus
+from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 
 PLANS = PlanResponse(
     plans=[
@@ -77,6 +78,7 @@ COMPLETE_EVENT = WorkerEvent(
         task_id="foo",
         task_complete=True,
         task_failed=False,
+        result=TaskResult(type="NoneType", result=None),
     ),
 )
 FAILED_EVENT = WorkerEvent(
@@ -85,6 +87,7 @@ FAILED_EVENT = WorkerEvent(
         task_id="foo",
         task_complete=True,
         task_failed=True,
+        result=TaskError(type="PlanFailure", message="The plan failed"),
     ),
 )
 
@@ -143,6 +146,13 @@ def test_get_plan(client: BlueapiClient):
     assert client.plans["foo"].model == PLAN
 
 
+def test_print_plans(client: BlueapiClient, capsys: pytest.CaptureFixture):
+    client.print_plans()
+    captured = capsys.readouterr()
+    for dev in PLANS.plans:
+        assert dev.name in captured.out
+
+
 def test_get_nonexistant_plan(
     client: BlueapiClient,
 ):
@@ -156,6 +166,13 @@ def test_get_devices(client: BlueapiClient):
 
 def test_get_device(client: BlueapiClient):
     assert client.devices.foo.model == DEVICE
+
+
+def test_print_devices(client: BlueapiClient, capsys: pytest.CaptureFixture):
+    client.print_devices()
+    captured = capsys.readouterr()
+    for dev in DEVICES.devices:
+        assert dev.name in captured.out
 
 
 def test_get_nonexistent_device(
@@ -413,10 +430,15 @@ def test_run_task_fails_on_failing_event(
     mock_events.subscribe_to_all_events = lambda on_event: on_event(FAILED_EVENT, ctx)
 
     on_event = Mock()
-    with pytest.raises(BlueskyStreamingError):
-        client_with_events.run_task(
-            TaskRequest(name="foo", instrument_session="cm12345-1"), on_event=on_event
-        )
+    outcome = client_with_events.run_task(
+        TaskRequest(name="foo", instrument_session="cm12345-1"),
+        on_event=on_event,
+    )
+    assert outcome.task_failed
+    assert outcome.task_complete
+    assert isinstance(outcome.result, TaskError)
+    assert outcome.result.message == "The plan failed"
+    assert outcome.result.type == "PlanFailure"
 
     on_event.assert_called_with(FAILED_EVENT)
 
@@ -430,6 +452,7 @@ def test_run_task_fails_on_failing_event(
                 task_id="foo",
                 task_complete=False,
                 task_failed=False,
+                result=TaskError(type="ValueError", message="Task failed"),
             ),
         ),
         ProgressEvent(task_id="foo"),
@@ -471,6 +494,7 @@ def test_run_task_calls_event_callback(
                 task_id="bar",
                 task_complete=False,
                 task_failed=False,
+                result=None,
             ),
         ),
         ProgressEvent(task_id="bar"),
@@ -501,6 +525,39 @@ def test_run_task_ignores_non_matching_events(
     )
 
     mock_on_event.assert_called_once_with(COMPLETE_EVENT)
+
+
+def test_scripting_interface_returns_result():
+    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
+    client.run_task.return_value = TaskStatus(
+        task_id="foobar",
+        task_complete=True,
+        task_failed=False,
+        result=TaskResult(result=42, type="int"),
+    )
+    demo_plan = Plan(
+        "demo",
+        client=client,
+        model=PlanModel(name="demo", description="Demo plan", schema={}),
+    )
+    assert demo_plan() == 42
+
+
+def test_scripting_interface_raises_exceptions():
+    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
+    client.run_task.return_value = TaskStatus(
+        task_id="foobar",
+        task_complete=True,
+        task_failed=True,
+        result=TaskError(type="ValueError", message="Plan failed"),
+    )
+    demo_plan = Plan(
+        "demo",
+        client=client,
+        model=PlanModel(name="demo", description="Demo plan", schema={}),
+    )
+    with pytest.raises(PlanFailedError, match="Plan failed"):
+        demo_plan()
 
 
 def test_oidc_config_property(client, mock_rest):
@@ -807,6 +864,7 @@ def test_adding_removing_callback(client):
                 task_id="foo",
                 task_complete=False,
                 task_failed=False,
+                result=None,
             ),
         ),
         ProgressEvent(task_id="foo"),

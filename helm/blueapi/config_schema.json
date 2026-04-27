@@ -429,11 +429,38 @@
                     "description": "URL to clone from",
                     "title": "Remote Url",
                     "type": "string"
+                },
+                "target_revision": {
+                    "description": "Revision (branch or tag) to check out when cloning - defaults to remote's HEAD. If a tag is used, the repo will be left in a 'detached head' state.",
+                    "title": "Target Revision",
+                    "type": "string"
                 }
             },
             "title": "ScratchRepository",
             "type": "object",
             "$id": "ScratchRepository"
+        },
+        "ServiceAccount": {
+            "additionalProperties": false,
+            "properties": {
+                "client_id": {
+                    "default": "",
+                    "description": "Service account client ID",
+                    "title": "Client Id",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "default": "",
+                    "description": "Service account client secret",
+                    "format": "password",
+                    "title": "Client Secret",
+                    "type": "string",
+                    "writeOnly": true
+                }
+            },
+            "title": "ServiceAccount",
+            "type": "object",
+            "$id": "ServiceAccount"
         },
         "StompConfig": {
             "additionalProperties": false,
@@ -486,17 +513,21 @@
                     "title": "Url",
                     "type": "string"
                 },
-                "api_key": {
+                "authentication": {
                     "anyOf": [
                         {
                             "type": "string"
+                        },
+                        {
+                            "$ref": "ServiceAccount"
                         },
                         {
                             "type": "null"
                         }
                     ],
                     "default": null,
-                    "title": "Api Key"
+                    "description": "Tiled Authentication can be API_KEY or OIDC Service account",
+                    "title": "Authentication"
                 }
             },
             "title": "TiledConfig",

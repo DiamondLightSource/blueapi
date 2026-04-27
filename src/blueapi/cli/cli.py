@@ -8,15 +8,16 @@ from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeGuard, TypeVar, cast
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from click.core import Context, Parameter
 from click.exceptions import ClickException
+from click.types import ParamType
 from observability_utils.tracing import setup_tracing
-from pydantic import ValidationError
 
 from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
@@ -25,6 +26,7 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
     InvalidParametersError,
+    NonJsonResponseError,
     ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
@@ -38,11 +40,41 @@ from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
 from blueapi.worker import ProgressEvent, WorkerEvent
+from blueapi.worker.event import TaskError, TaskResult
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 LOGGER = logging.getLogger(__name__)
+
+TaskParameters = dict[str, Any]
+
+
+class ParametersType(ParamType):
+    """CLI input parameter to accept a JSON object as an argument"""
+
+    name = "TaskParameters"
+
+    def convert(
+        self,
+        value: str | dict[str, Any] | None,
+        param: Parameter | None,
+        ctx: Context | None,
+    ) -> TaskParameters:
+        if isinstance(value, str):
+            try:
+                params = json.loads(value)
+                if is_str_dict(params):
+                    return params
+                self.fail("Parameters must be a JSON object with string keys")
+            except json.JSONDecodeError as jde:
+                self.fail(f"Parameters are not valid JSON: {jde}")
+        else:
+            return super().convert(value, param, ctx)
+
+
+def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
+    return isinstance(val, dict) and all(isinstance(k, str) for k in val)
 
 
 @click.group(
@@ -52,27 +84,43 @@ LOGGER = logging.getLogger(__name__)
 @click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
+@click.option(
+    "-v",
+    "--verbose",
+    "log_level",
+    flag_value="DEBUG",
+    help="Include DEBUG level logging output",
+)
+@click.option(
+    "-q",
+    "--quiet",
+    "log_level",
+    flag_value="ERROR",
+    help="Reduce logging noise to only show errors",
+)
 @click.pass_context
-def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
+def main(
+    ctx: click.Context, config: tuple[Path, ...], log_level: str | None = None
+) -> None:
     # if no command is supplied, run with the options passed
 
     # Set umask to DLS standard
     os.umask(stat.S_IWOTH)
 
     config_loader = ConfigLoader(ApplicationConfig)
-    if config is not None:
-        configs = (config,) if isinstance(config, Path) else config
-        for path in configs:
-            if path.exists():
-                config_loader.use_values_from_yaml(path)
-            else:
-                raise FileNotFoundError(f"Cannot find file: {path}")
+    try:
+        config_loader.use_values_from_yaml(*config)
+    except FileNotFoundError as fnfe:
+        raise ClickException(f"Config file not found: {fnfe.filename}") from fnfe
 
-    ctx.ensure_object(dict)
+    if log_level:
+        config_loader.use_values({"logging": {"level": log_level}})
+
     loaded_config: ApplicationConfig = config_loader.load()
 
     set_up_logging(loaded_config.logging)
 
+    ctx.ensure_object(dict)
     ctx.obj["config"] = loaded_config
 
     if ctx.invoked_subcommand is None:
@@ -258,7 +306,7 @@ def listen_to_events(obj: dict) -> None:
 
 @controller.command(name="run")
 @click.argument("name", type=str)
-@click.argument("parameters", type=str, required=False)
+@click.argument("parameters", type=ParametersType(), default={}, required=False)
 @click.option(
     "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
 )
@@ -284,29 +332,17 @@ def listen_to_events(obj: dict) -> None:
 def run_plan(
     obj: dict,
     name: str,
-    parameters: str | None,
     timeout: float | None,
     foreground: bool,
     instrument_session: str,
+    parameters: TaskParameters,
 ) -> None:
     """Run a plan with parameters"""
-    client: BlueapiClient = obj["client"]
 
-    parameters = parameters or "{}"
-    try:
-        parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
-    except json.JSONDecodeError as jde:
-        raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
-
-    try:
-        task = TaskRequest(
-            name=name,
-            params=parsed_params,
-            instrument_session=instrument_session,
-        )
-    except ValidationError as ve:
-        ip = InvalidParametersError.from_validation_error(ve)
-        raise ClickException(ip.message()) from ip
+    client = cast(BlueapiClient, obj["client"])
+    task = TaskRequest(
+        name=name, params=parameters, instrument_session=instrument_session
+    )
 
     try:
         if foreground:
@@ -320,9 +356,15 @@ def run_plan(
                     callback(event.name, event.doc)
 
             resp = client.run_task(task, on_event=on_event)
-
-            if resp.task_status is not None and not resp.task_status.task_failed:
-                print("Plan Succeeded")
+            match resp.result:
+                case TaskResult(result=None, type="NoneType"):
+                    print("Plan succeeded")
+                case TaskResult(result=None, type=t):
+                    print(f"Plan returned unserializable result of type '{t}'")
+                case TaskResult(result=r):
+                    print(f"Plan succeeded: {r}")
+                case TaskError(type=exc, message=m):
+                    print(f"Plan failed: {exc}: {m}")
         else:
             server_task = client.create_and_start_task(task)
             click.echo(server_task.task_id)
@@ -472,13 +514,16 @@ def login(obj: dict) -> None:
         print("Logged in")
     except Exception:
         client = BlueapiClient.from_config(config)
-        if oidc := client.oidc_config:
-            auth = SessionManager(
-                oidc, cache_manager=SessionCacheManager(config.auth_token_path)
-            )
-            auth.start_device_flow()
-        else:
-            print("Server is not configured to use authentication!")
+        try:
+            if oidc := client.oidc_config:
+                auth = SessionManager(
+                    oidc, cache_manager=SessionCacheManager(config.auth_token_path)
+                )
+                auth.start_device_flow()
+            else:
+                print("Server is not configured to use authentication!")
+        except NonJsonResponseError as e:
+            print(str(e))
 
 
 @main.command(name="logout")

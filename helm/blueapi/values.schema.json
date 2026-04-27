@@ -122,6 +122,10 @@
                         "existingClaimName": {
                             "description": "May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release",
                             "type": "string"
+                        },
+                        "size": {
+                            "description": "Size of persistent volume",
+                            "type": "string"
                         }
                     }
                 }
@@ -296,6 +300,14 @@
             "description": "Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters",
             "type": "object",
             "properties": {
+                "fastapi": {
+                    "type": "object",
+                    "properties": {
+                        "excludedURLs": {
+                            "type": "string"
+                        }
+                    }
+                },
                 "otlp": {
                     "type": "object",
                     "properties": {
@@ -851,6 +863,33 @@
                     "description": "URL to clone from",
                     "default": "https://github.com/example/example.git",
                     "type": "string"
+                },
+                "target_revision": {
+                    "title": "Target Revision",
+                    "description": "Revision (branch or tag) to check out when cloning - defaults to remote's HEAD. If a tag is used, the repo will be left in a 'detached head' state.",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "ServiceAccount": {
+            "$id": "ServiceAccount",
+            "title": "ServiceAccount",
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "title": "Client Id",
+                    "description": "Service account client ID",
+                    "default": "",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "title": "Client Secret",
+                    "description": "Service account client secret",
+                    "writeOnly": true,
+                    "default": "",
+                    "type": "string",
+                    "format": "password"
                 }
             },
             "additionalProperties": false
@@ -893,11 +932,15 @@
             "title": "TiledConfig",
             "type": "object",
             "properties": {
-                "api_key": {
-                    "title": "Api Key",
+                "authentication": {
+                    "title": "Authentication",
+                    "description": "Tiled Authentication can be API_KEY or OIDC Service account",
                     "anyOf": [
                         {
                             "type": "string"
+                        },
+                        {
+                            "$ref": "ServiceAccount"
                         },
                         {
                             "type": "null"

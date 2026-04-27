@@ -2,7 +2,7 @@ import logging
 import sys
 from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field, fields, is_dataclass
-from importlib import import_module
+from importlib import import_module, metadata
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
@@ -30,6 +30,7 @@ from blueapi.config import (
     DodalSource,
     EnvironmentConfig,
     PlanSource,
+    ServiceAccount,
     TiledConfig,
 )
 from blueapi.core.protocols import DeviceManager
@@ -44,6 +45,7 @@ from blueapi.utils.path_provider import StartDocumentPathProvider
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
+    AsyncDevice,
     Device,
     Plan,
     PlanGenerator,
@@ -102,8 +104,12 @@ def qualified_generic_name(target: type) -> str:
     return f"{qualified_name(target)}{subscript}"
 
 
-def is_bluesky_type(typ: type) -> bool:
-    return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
+def is_bluesky_type(typ: Any) -> bool:
+    return (
+        typ in BLUESKY_PROTOCOLS
+        or isinstance(typ, BLUESKY_PROTOCOLS)
+        or (isinstance(typ, type) and issubclass(typ, AsyncDevice))
+    )
 
 
 C = TypeVar("C", covariant=True)
@@ -120,7 +126,7 @@ class BlueskyContext:
     configuration: InitVar[ApplicationConfig | None] = None
 
     run_engine: RunEngine = field(
-        default_factory=lambda: RunEngine(context_managers=[])
+        default_factory=lambda: RunEngine(context_managers=[], call_returns_result=True)
     )
     tiled_conf: TiledConfig | None = field(default=None, init=False, repr=False)
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
@@ -155,8 +161,8 @@ class BlueskyContext:
             # local reference so it's available in _update_scan_num
             numtracker = self.numtracker
 
-            def _update_scan_num(md: dict[str, Any]) -> int:
-                scan = numtracker.create_scan(
+            async def _update_scan_num(md: dict[str, Any]) -> int:
+                scan = await numtracker.create_scan(
                     md["instrument_session"], md["instrument"]
                 )
                 md["data_session_directory"] = str(scan.scan.directory.path)
@@ -181,6 +187,13 @@ class BlueskyContext:
                     "Tiled has been configured but `instrument` metadata is not set - "
                     "this field is required to make authorization decisions."
                 )
+            if isinstance(tiled_conf.authentication, ServiceAccount):
+                if configuration.oidc is None:
+                    raise InvalidConfigError(
+                        "Tiled has been configured but oidc configuration is missing "
+                        "this field is required to make authorization decisions."
+                    )
+                tiled_conf.authentication.token_url = configuration.oidc.token_endpoint
             self.tiled_conf = tiled_conf
 
     def find_device(self, addr: str | list[str]) -> Device | None:
@@ -204,6 +217,14 @@ class BlueskyContext:
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
             self.run_engine.md |= config.metadata.model_dump()
+
+        package_map = metadata.packages_distributions()
+        packages = {src.module.split(".")[0] for src in config.sources}
+        for pkg in packages:
+            if root_pkg := package_map.get(pkg):
+                version = metadata.version(root_pkg[0])
+                LOGGER.info("Using package %s[%s]", root_pkg[0], version)
+
         for source in config.sources:
             mod = import_module(source.module)
 
@@ -371,6 +392,7 @@ class BlueskyContext:
             __config__=BlueapiPlanModelConfig,
             **self._type_spec_for_function(plan),  # type: ignore
         )
+        LOGGER.debug("Registering plan %s from %s", plan.__name__, plan.__module__)
         self.plans[plan.__name__] = Plan(
             name=plan.__name__, model=model, description=plan.__doc__
         )
@@ -432,12 +454,13 @@ class BlueskyContext:
                 ) -> CoreSchema:
                     def valid(value):
                         val = self.find_device(value)
-                        if not val or not is_compatible(
-                            val, cls.origin or target, cls.args
-                        ):
+                        if not val:
+                            raise ValueError(f"Device {value} cannot be found")
+                        elif not is_compatible(val, cls.origin or target, cls.args):
+                            actual = qualified_name(type(val))
                             required = qualified_generic_name(target)
                             raise ValueError(
-                                f"Device {value} is not of type {required}"
+                                f"Device {value} ({actual}) is not of type {required}"
                             )
                         return val
 
@@ -512,7 +535,7 @@ class BlueskyContext:
             )
         return new_args
 
-    def _convert_type(self, typ: type | Any, no_default: bool = True) -> type:
+    def _convert_type(self, typ: Any, no_default: bool = True) -> type:
         """
         Recursively convert a type to something that can be deserialised by
         pydantic. Bluesky protocols (and types that extend them) are replaced
@@ -531,7 +554,7 @@ class BlueskyContext:
         if typ is NoneType and not no_default:
             return SkipJsonSchema[NoneType]
         root = get_origin(typ)
-        if is_bluesky_type(typ) or (root is not None and is_bluesky_type(root)):
+        if is_bluesky_type(root or typ):
             return self._reference(typ)
         args = get_args(typ)
         if args:

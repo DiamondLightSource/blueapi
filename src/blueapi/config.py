@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import textwrap
@@ -6,7 +7,7 @@ from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Annotated, Any, ClassVar, Generic, Literal, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Generic, Literal, Self, TypeVar, cast
 
 import requests
 import yaml
@@ -22,10 +23,13 @@ from pydantic import (
     UrlConstraints,
     ValidationError,
     field_validator,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+
+LOGGER = logging.getLogger(__name__)
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -234,30 +238,47 @@ class ScratchConfig(BlueapiBaseModel):
 
 
 class OIDCConfig(BlueapiBaseModel):
-    well_known_url: str = Field(
+    well_known_url: str | None = Field(
         description="URL to fetch OIDC config from the provider",
-        deprecated="Deprecated in favour of issuer"
+        deprecated=True,
+        default=None,
     )
-    issuer: str = Field(description="URL of OIDC provider")
+    issuer: str | None = Field(description="URL of OIDC provider", default=None)
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
     logout_redirect_endpoint: str = Field(
         description="The oidc endpoint required to logout", default=""
     )
 
+    @model_validator(mode="after")
+    def check_well_know_urls(self) -> Self:
+        if self.issuer is None and self.well_known_url is None:
+            raise ValueError("Please provide 'OIDCConfig.issuer'")
+        if self.well_known_url:
+            LOGGER.warning(
+                DeprecationWarning(
+                    "OIDCConfig.well_known_url is deprecated, "
+                    "Please use OIDCConfig.issuer"
+                ),
+            )
+        return self
+
+    @cached_property
+    def _well_known_url(self) -> str:
+        if self.issuer:
+            if self.well_known_url:
+                LOGGER.warning(
+                    DeprecationWarning(
+                        "well_known_url and issuer both are set. "
+                        "Defaulting to issuer URL"
+                    ),
+                )
+            return self.issuer + "/.well-known/openid-configuration"
+        return cast(str, self.well_known_url)
+
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
-        if self.issuer and self.well_known_url:
-            import warnings
-            warnings.warn(
-            DeprecationWarning(
-                "well_known_url and issuer both are set. Defaulting to issuer URL "
-            ),
-        )
-        _well_know_url = self.issuer + "/.well-known/openid-configuration" if self.issuer else self.well_known_url
-        response: requests.Response = requests.get(
-            _well_know_url
-        )
+        response = requests.get(self._well_known_url)
         response.raise_for_status()
         return response.json()
 

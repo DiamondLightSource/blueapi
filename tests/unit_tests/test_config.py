@@ -322,6 +322,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "numtracker": None,
             "oidc": {
+                "well_known_url": None,
                 "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
@@ -377,6 +378,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "numtracker": None,
             "oidc": {
+                "well_known_url": None,
                 "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
@@ -538,3 +540,19 @@ def test_config_schema_updated() -> None:
         f"ApplicationConfig model is out of date with schema at \
             {CONFIG_SCHEMA_LOCATION}. You may need to run `blueapi config-schema -u`"
     )
+
+
+def test_oidc_config_validation_error():
+    with pytest.raises(ValueError, match="Please provide 'OIDCConfig.issuer'"):
+        ApplicationConfig(
+            oidc=OIDCConfig(well_known_url=None, issuer=None, client_id="blueapi")
+        )
+
+
+def test_oidc_config_urls():
+    # Test well_known_url is still supported
+    oidc = OIDCConfig(well_known_url="url", issuer=None, client_id="blueapi")
+    assert oidc._well_known_url == "url"
+    # Test if both well_known_url and issuer are set it defaults to issuer
+    oidc = OIDCConfig(well_known_url="url", issuer="issuer_url", client_id="blueapi")
+    assert oidc.issuer == "issuer_url"

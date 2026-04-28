@@ -299,10 +299,32 @@
         "OIDCConfig": {
             "additionalProperties": false,
             "properties": {
+                "well_known_url": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "deprecated": true,
+                    "description": "URL to fetch OIDC config from the provider",
+                    "title": "Well Known Url"
+                },
                 "issuer": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
                     "description": "URL of OIDC provider",
-                    "title": "Issuer",
-                    "type": "string"
+                    "title": "Issuer"
                 },
                 "client_id": {
                     "description": "Client ID",
@@ -323,7 +345,6 @@
                 }
             },
             "required": [
-                "issuer",
                 "client_id"
             ],
             "title": "OIDCConfig",

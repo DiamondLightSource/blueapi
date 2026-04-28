@@ -43,7 +43,7 @@ Then in your plan module:
 ```
 
 > [!NOTE]
-> In order for this to work, the `MyDeviceComposite` needs to be mae available to blueapi by importing it into the `planFunctions` module.
+> In order for this to work, the `MyDeviceComposite` needs to be mae available to blueapi by importing it into the `planFunctions` module where it's needed.
 
 
 ## Injecting Metadata

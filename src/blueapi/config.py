@@ -294,6 +294,7 @@ class Tag(StrEnum):
     DEVICE = "Device"
     ENV = "Environment"
     META = "Meta"
+    DEPRECATED = "Deprecated"
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -324,6 +325,7 @@ class ApplicationConfig(BlueapiBaseModel):
         {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
         {"name": Tag.ENV, "description": "Endpoints related to server environment"},
         {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
+        {"name": Tag.DEPRECATED, "description": "Deprecated endpoints"},
     ]
 
     stomp: StompConfig = Field(default_factory=StompConfig)

@@ -43,7 +43,7 @@ Then in your plan module:
 ```
 
 > [!NOTE]
-> In order for this to work, the `MyDeviceComposite` needs to be made available to blueapi by importing it into the `planFunctions` module where it's needed.
+> In order for this to work, the `MyDeviceComposite` needs to be made available to blueapi by importing it into the `planFunctions` module where it's needed. Factories for the individual devices within the composite also need to be available in the relevant beamline device module.
 
 
 ## Injecting Metadata

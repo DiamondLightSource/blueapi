@@ -42,6 +42,9 @@ Then in your plan module:
 :language: python
 ```
 
+> [!NOTE]
+> In order for this to work, the `MyDeviceComposite` needs to be mae available to blueapi by importing it into the `planFunctions` module.
+
 
 ## Injecting Metadata
 

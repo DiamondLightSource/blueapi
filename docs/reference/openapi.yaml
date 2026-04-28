@@ -433,7 +433,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.3.0
+  version: 1.3.1
 openapi: 3.1.0
 paths:
   /api/v1/devices:
@@ -826,7 +826,7 @@ paths:
           description: Successful Response
       summary: Get Devices
       tags:
-      - Device
+      - Deprecated
   /devices/{name}:
     get:
       deprecated: true
@@ -854,7 +854,7 @@ paths:
           description: Validation Error
       summary: Get Device By Name
       tags:
-      - Device
+      - Deprecated
   /environment:
     delete:
       deprecated: true
@@ -870,7 +870,7 @@ paths:
           description: Successful Response
       summary: Delete Environment
       tags:
-      - Environment
+      - Deprecated
     get:
       deprecated: true
       description: Get the current state of the environment, i.e. initialization state.
@@ -884,7 +884,7 @@ paths:
           description: Successful Response
       summary: Get Environment
       tags:
-      - Environment
+      - Deprecated
   /healthz:
     get:
       description: If able to serve this, server is live and ready for requests.
@@ -913,7 +913,7 @@ paths:
           description: Successful Response
       summary: Get Plans
       tags:
-      - Plan
+      - Deprecated
   /plans/{name}:
     get:
       deprecated: true
@@ -941,7 +941,7 @@ paths:
           description: Validation Error
       summary: Get Plan By Name
       tags:
-      - Plan
+      - Deprecated
   /python_environment:
     get:
       deprecated: true
@@ -983,7 +983,7 @@ paths:
           description: Validation Error
       summary: Get Python Environment
       tags:
-      - Environment
+      - Deprecated
   /tasks:
     get:
       deprecated: true
@@ -1013,7 +1013,7 @@ paths:
           description: Validation Error
       summary: Get Tasks
       tags:
-      - Task
+      - Deprecated
     post:
       deprecated: true
       description: Submit a task to the worker.
@@ -1045,7 +1045,7 @@ paths:
           description: Validation Error
       summary: Submit Task
       tags:
-      - Task
+      - Deprecated
   /tasks/{task_id}:
     delete:
       deprecated: true
@@ -1072,7 +1072,7 @@ paths:
           description: Validation Error
       summary: Delete Submitted Task
       tags:
-      - Task
+      - Deprecated
     get:
       deprecated: true
       description: Retrieve a task
@@ -1099,7 +1099,7 @@ paths:
           description: Validation Error
       summary: Get Task
       tags:
-      - Task
+      - Deprecated
   /worker/state:
     get:
       deprecated: true
@@ -1114,7 +1114,7 @@ paths:
           description: Successful Response
       summary: Get State
       tags:
-      - Task
+      - Deprecated
     put:
       deprecated: true
       description: "Request that the worker is put into a particular state.\nReturns\
@@ -1155,7 +1155,7 @@ paths:
           description: Validation Error
       summary: Set State
       tags:
-      - Task
+      - Deprecated
   /worker/task:
     get:
       deprecated: true
@@ -1169,7 +1169,7 @@ paths:
           description: Successful Response
       summary: Get Active Task
       tags:
-      - Task
+      - Deprecated
     put:
       deprecated: true
       description: 'Set a task to active status, the worker should begin it as soon
@@ -1200,4 +1200,4 @@ paths:
           description: Validation Error
       summary: Set Active Task
       tags:
-      - Task
+      - Deprecated

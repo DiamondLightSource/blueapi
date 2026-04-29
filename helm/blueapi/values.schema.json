@@ -333,7 +333,7 @@
         },
         "volumeMounts": {
             "description": "Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name.",
-            "type": "null"
+            "type": "array"
         },
         "volumes": {
             "description": "Additional volumes on the output StatefulSet definition. Define volumes from e.g. Secrets, ConfigMaps or the Filesystem",

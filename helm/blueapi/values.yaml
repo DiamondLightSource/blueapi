@@ -133,7 +133,7 @@ volumes: []
 
 # -- Additional volumeMounts on the output StatefulSet definition.
 # Define how volumes are mounted to the container referenced by using the same name.
-volumeMounts:
+volumeMounts: []
 
 # -- May be required to run on specific nodes (e.g. the control machine)
 nodeSelector: {}

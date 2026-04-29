@@ -119,6 +119,7 @@ def lifespan(config: ApplicationConfig):
 open_router = APIRouter()
 secure_router = APIRouter(deprecated=True)
 secure_router_v1 = APIRouter(prefix="/api/v1")
+secure_router_v2 = APIRouter(prefix="/api/v2")
 
 
 def get_app(config: ApplicationConfig):
@@ -140,6 +141,7 @@ def get_app(config: ApplicationConfig):
         }
     app.include_router(open_router)
     app.include_router(secure_router_v1, dependencies=dependencies)
+    app.include_router(secure_router_v2, dependencies=dependencies)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
@@ -597,7 +599,7 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     )
 
 
-@secure_router.websocket("/run_plan")
+@secure_router_v2.websocket("/run_plan")
 async def run_plan(
     ws: WebSocket,
     user: Annotated[str, Depends(_user)],

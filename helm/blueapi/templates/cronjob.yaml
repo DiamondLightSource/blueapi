@@ -37,7 +37,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Forbid
-  successfulJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   schedule: "*/5 * * * *"
 
@@ -122,13 +122,13 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   concurrencyPolicy: Forbid
-  successfulJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   schedule: "@weekly"
 
   jobTemplate:
     spec:
-      # amount of attempts of labeling a pvc
+      # amount of attempts for pvc deletion 
       backoffLimit: 3
       # job stops after 300 seconds
       activeDeadlineSeconds: 300

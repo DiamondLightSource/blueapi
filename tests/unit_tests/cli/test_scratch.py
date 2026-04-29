@@ -123,7 +123,10 @@ def test_repo_cloned_if_not_found_locally(
     ensure_repo("http://example.com/foo.git", nonexistant_path)
     mock_repo.assert_not_called()
     mock_repo.clone_from.assert_called_once_with(
-        "http://example.com/foo.git", nonexistant_path, branch=None
+        "http://example.com/foo.git",
+        nonexistant_path,
+        branch=None,
+        filter="blob:none",
     )
 
 
@@ -140,7 +143,9 @@ def test_repo_cloned_with_correct_umask(
         with file_path.open("w") as stream:
             stream.write("foo")
 
-    mock_repo.clone_from.side_effect = lambda url, path, branch=None: write_repo_files()
+    mock_repo.clone_from.side_effect = lambda url, path, branch, filter: (
+        write_repo_files()
+    )
 
     ensure_repo("http://example.com/foo.git", repo_root)
     assert file_path.exists()
@@ -163,7 +168,10 @@ def test_cloned_repo_changes_to_new_branch(mock_repo, directory_path: Path):
     ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
 
     mock_repo.clone_from.assert_called_once_with(
-        "http://example.com/foo.git", ANY, branch="demo"
+        "http://example.com/foo.git",
+        ANY,
+        branch="demo",
+        filter="blob:none",
     )
 
 
@@ -345,8 +353,11 @@ def test_setup_scratch_iterates_repos(
 
     mock_scratch_install.assert_has_calls(
         [
-            call(directory_path_with_sgid / "foo", timeout=120.0),
-            call(directory_path_with_sgid / "bar", timeout=120.0),
+            call(
+                directory_path_with_sgid / "foo",
+                directory_path_with_sgid / "bar",
+                timeout=120.0,
+            ),
         ]
     )
 
@@ -376,7 +387,9 @@ def test_setup_scratch_continues_after_failure(
         ],
     )
     mock_ensure_repo.side_effect = [None, RuntimeError("bar"), None]
-    with pytest.raises(RuntimeError, match="bar"):
+    with pytest.raises(
+        RuntimeError, match="Failed to clone", check=lambda e: str(e.__cause__) == "bar"
+    ):
         setup_scratch(config)
 
 

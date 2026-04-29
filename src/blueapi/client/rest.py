@@ -1,6 +1,6 @@
 import json
 import logging
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any, Literal, TypeVar
 
 import requests
@@ -18,6 +18,7 @@ from websockets.sync.client import connect
 from blueapi import __version__
 from blueapi.client import client
 from blueapi.config import RestConfig
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
     DeviceModel,
@@ -41,6 +42,7 @@ from blueapi.service.protocol import (
     Update,
 )
 from blueapi.worker import TrackableTask, WorkerState
+from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 T = TypeVar("T")
 
@@ -352,7 +354,9 @@ class BlueapiRestClient:
         )
         return deserialized
 
-    def run_blocking(self, req: TaskRequest):
+    def run_blocking(
+        self, req: TaskRequest
+    ) -> Iterable[DataEvent | WorkerEvent | ProgressEvent]:
         url = self._ws_address().unicode_string().removesuffix("/") + "/api/v2/run_plan"
         headers = get_context_propagator()
         if self._session_manager:
@@ -381,7 +385,6 @@ class BlueapiRestClient:
                             )
                         case PlanNotFound(plan_name=name):
                             raise UnknownPlanError(name)
-                    yield event
         except InvalidStatus as istat:
             match istat.response.status_code:
                 case 401 | 403:

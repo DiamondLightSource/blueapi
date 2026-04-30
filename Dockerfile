@@ -31,10 +31,10 @@ RUN uv add debugpy
 
 # Sync the project without its dev dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-editable --no-dev
+    uv sync --locked --no-editable --no-dev --managed-python
 
 # The runtime stage copies the built venv into a runtime container
-FROM ubuntu:noble AS runtime
+FROM ubuntu:resolute AS runtime
 
 # Add apt-get system dependecies for runtime here if needed
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \

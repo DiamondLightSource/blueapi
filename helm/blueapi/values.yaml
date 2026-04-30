@@ -47,7 +47,7 @@ securityContext:
   #   drop:
   #   - ALL
 
-  # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   # -- To make blueapi available on an IP outside of the cluster prior to an Ingress being created, change this to LoadBalancer
@@ -75,13 +75,13 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-  # -- Sets the compute resources available to the pod.
-  # These defaults are appropriate when using debug mode or an internal PVC and therefore
-  # running VS Code server in the pod.
-  # In the Diamond cluster, requests must be >= 0.1*limits
-  # When not using either of the above, the limits may be lowered.
-  # When idle but connected, blueapi consumes ~400MB of memory and 1% cpu
-  # and may struggle when allocated less.
+# -- Sets the compute resources available to the pod.
+# These defaults are appropriate when using debug mode or an internal PVC and therefore
+# running VS Code server in the pod.
+# In the Diamond cluster, requests must be >= 0.1*limits
+# When not using either of the above, the limits may be lowered.
+# When idle but connected, blueapi consumes ~400MB of memory and 1% cpu
+# and may struggle when allocated less.
 resources:
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -201,7 +201,7 @@ worker:
     repositories: []
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
-    # -- Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`
+# -- Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`
   logging:
     level: "INFO"
     graylog:

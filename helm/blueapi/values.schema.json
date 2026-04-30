@@ -375,6 +375,7 @@
                     }
                 },
                 "logging": {
+                    "description": "Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`",
                     "type": "object",
                     "properties": {
                         "graylog": {

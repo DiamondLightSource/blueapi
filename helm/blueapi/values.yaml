@@ -209,7 +209,7 @@ worker:
     repositories: []
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
-# -- Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`
+  # -- Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`
   logging:
     level: "INFO"
     graylog:

@@ -47,13 +47,13 @@ class SessionCacheManager(CacheManager):
 
     def save_cache(self, cache: Cache) -> None:
         self.delete_cache()
+        self._create_parent_folder_if_necessary()
         with open(self._file_path, "xb") as token_file:
             token_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
         os.chmod(self._file_path, 0o600)
 
     def load_cache(self) -> Cache:
-        Path(self._file_path).mkdir(parents=True, exist_ok=True)
-        os.chmod(self._file_path, 0o600)
+        self._create_parent_folder_if_necessary()
         with open(self._file_path, "rb") as cache_file:
             return TypeAdapter(Cache).validate_json(
                 base64.b64decode(cache_file.read()).decode("utf-8")
@@ -73,6 +73,7 @@ class SessionCacheManager(CacheManager):
     def can_access_cache(self) -> bool:
         assert self._token_path
         try:
+            self._create_parent_folder_if_necessary()
             self._token_path.write_text("")
         except IsADirectoryError:
             print("Invalid path: a directory path was provided instead of a file path")
@@ -81,6 +82,9 @@ class SessionCacheManager(CacheManager):
             print(f"Permission denied: Cannot write to {self._token_path.absolute()}")
             return False
         return True
+
+    def _create_parent_folder_if_necessary(self):
+        Path(self._token_path.parent).mkdir(mode=0o777, parents=True, exist_ok=True)
 
 
 class SessionManager:

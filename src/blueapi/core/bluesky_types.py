@@ -24,12 +24,12 @@ from bluesky.protocols import (
     WritesExternalAssets,
 )
 from bluesky.utils import Msg, MsgGenerator
-from dodal.common import PlanGenerator
 from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel, Field
 
 from blueapi.utils import BlueapiBaseModel
 
+PlanGenerator = Callable[..., MsgGenerator]
 PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
 
 #: An object that encapsulates the device to do useful things to produce

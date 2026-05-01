@@ -533,54 +533,6 @@
             },
             "additionalProperties": false
         },
-        "DeviceSource": {
-            "$id": "DeviceSource",
-            "title": "DeviceSource",
-            "type": "object",
-            "required": [
-                "module"
-            ],
-            "properties": {
-                "kind": {
-                    "title": "Kind",
-                    "default": "deviceFunctions",
-                    "const": "deviceFunctions"
-                },
-                "module": {
-                    "title": "Module",
-                    "description": "Module to be imported",
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
-        },
-        "DodalSource": {
-            "$id": "DodalSource",
-            "title": "DodalSource",
-            "type": "object",
-            "required": [
-                "module"
-            ],
-            "properties": {
-                "kind": {
-                    "title": "Kind",
-                    "default": "dodal",
-                    "const": "dodal"
-                },
-                "mock": {
-                    "title": "Mock",
-                    "description": "If true, ophyd_async device connections are mocked",
-                    "default": false,
-                    "type": "boolean"
-                },
-                "module": {
-                    "title": "Module",
-                    "description": "Module to be imported",
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
-        },
         "EnvironmentConfig": {
             "$id": "EnvironmentConfig",
             "title": "EnvironmentConfig",
@@ -617,12 +569,6 @@
                         "oneOf": [
                             {
                                 "$ref": "PlanSource"
-                            },
-                            {
-                                "$ref": "DeviceSource"
-                            },
-                            {
-                                "$ref": "DodalSource"
                             },
                             {
                                 "$ref": "DeviceManagerSource"

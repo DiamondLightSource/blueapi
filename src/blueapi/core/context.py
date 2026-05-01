@@ -9,8 +9,6 @@ from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
-from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
-from dodal.utils import AnyDevice, make_all_devices
 from ophyd_async.core import NotConnectedError, PathProvider
 from pydantic import (
     BaseModel,
@@ -26,8 +24,6 @@ from blueapi import utils
 from blueapi.config import (
     ApplicationConfig,
     DeviceManagerSource,
-    DeviceSource,
-    DodalSource,
     EnvironmentConfig,
     PlanSource,
     ServiceAccount,
@@ -151,8 +147,6 @@ class BlueskyContext:
                 )
 
             path_provider = StartDocumentPathProvider()
-            # TODO: Remove this when device manager is rolled out
-            set_path_provider(path_provider)
 
             self.run_engine.subscribe(path_provider.run_start, "start")
             self.run_engine.subscribe(path_provider.run_stop, "stop")
@@ -173,13 +167,6 @@ class BlueskyContext:
             self.run_engine.scan_id_source = _update_scan_num
 
         self.with_config(configuration.env)
-        if configuration.numtracker and not isinstance(
-            get_path_provider(), StartDocumentPathProvider
-        ):
-            raise InvalidConfigError(
-                "Numtracker has been configured but a path provider was imported with "
-                "the devices. Remove this path provider to use numtracker."
-            )
 
         if (tiled_conf := configuration.tiled) is not None and tiled_conf.enabled:
             if configuration.env.metadata is None:
@@ -232,22 +219,6 @@ class BlueskyContext:
                 case PlanSource():
                     LOGGER.info("Including plans from %s", source.module)
                     self.with_plan_module(mod)
-                case DeviceSource():
-                    LOGGER.info("Including devices from %s", source.module)
-                    LOGGER.warning(
-                        "'devices' environment kind is deprecated - please convert "
-                        "configuration to use deviceManager"
-                    )
-                    self.with_device_module(mod)
-                case DodalSource(mock=mock):
-                    LOGGER.info(
-                        "Including devices from 'dodal' source %s", source.module
-                    )
-                    LOGGER.warning(
-                        "'dodal' environment kind is deprecated - please convert "
-                        "configuration to use deviceManager"
-                    )
-                    self.with_dodal_module(mod, mock=mock)
                 case DeviceManagerSource(mock=mock, name=name):
                     LOGGER.info(
                         "Including devices from 'deviceManager' source %s:%s",
@@ -332,43 +303,6 @@ class BlueskyContext:
             **build_result.build_errors,
             **build_result.connection_errors,
         }
-
-    def with_device_module(self, module: ModuleType) -> None:
-        self.with_dodal_module(module)
-
-    def with_dodal_module(
-        self, module: ModuleType, **kwargs
-    ) -> tuple[dict[str, AnyDevice], dict[str, Exception]]:
-        """
-        Discover all device factories in the specified module,
-        construct devices by invoking them and register them with the device context,
-        Then attempt to connect to all the devices.
-
-        Args:
-            module: The python module to inspect for factories
-            kwargs: keyword arguments that will be passed to make_all_devices() and
-                to connect_devices() for construction and connection respectively
-        Returns:
-            A tuple containing a map of device name to devices, and a map of
-            device name to any exceptions encountered.
-        """
-        devices, exceptions = make_all_devices(module, **kwargs)
-
-        exceptions |= utils.connect_devices(self.run_engine, module, devices, **kwargs)
-
-        for device in devices.values():
-            self.register_device(device)
-
-        # If exceptions have occurred, we log them but we do not make blueapi
-        # fall over
-        if len(exceptions) > 0:
-            LOGGER.warning(
-                f"{len(exceptions)} exceptions occurred while instantiating devices"
-            )
-            LOGGER.exception(NotConnectedError(exceptions))
-        elif not devices:
-            LOGGER.warning("No devices were loaded from dodal module %s", module)
-        return devices, exceptions
 
     def register_plan(self, plan: PlanGenerator) -> PlanGenerator:
         """

@@ -3,7 +3,7 @@ from functools import wraps
 from typing import ParamSpec, TypeVar
 
 from .base_model import BlueapiBaseModel, BlueapiModelConfig, BlueapiPlanModelConfig
-from .connect_devices import connect_devices, report_successful_devices
+from .connect_devices import report_successful_devices
 from .file_permissions import get_owner_gid, is_sgid_set
 from .invalid_config_error import InvalidConfigError
 from .modules import is_function_sourced_from_module, load_module_all
@@ -20,10 +20,9 @@ __all__ = [
     "BlueapiPlanModelConfig",
     "InvalidConfigError",
     "NumtrackerClient",
-    "connect_devices",
-    "report_successful_devices",
     "is_sgid_set",
     "get_owner_gid",
+    "report_successful_devices",
     "is_function_sourced_from_module",
     "deprecated",
 ]

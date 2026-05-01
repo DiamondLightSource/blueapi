@@ -31,7 +31,7 @@ def test_example_device_module_is_detectable():
 
     context = BlueskyContext()
     module = importlib.import_module(module_name)
-    context.with_dodal_module(module)
+    # context.with_dodal_module(module)
 
     assert device_name in context.devices
 

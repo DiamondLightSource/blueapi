@@ -63,19 +63,6 @@ class PlanSource(Source):
     )
 
 
-class DeviceSource(Source):
-    kind: Literal[SourceKind.DEVICE_FUNCTIONS] = Field(
-        SourceKind.DEVICE_FUNCTIONS, init=False
-    )
-
-
-class DodalSource(Source):
-    kind: Literal[SourceKind.DODAL] = Field(SourceKind.DODAL, init=False)
-    mock: bool = Field(
-        description="If true, ophyd_async device connections are mocked", default=False
-    )
-
-
 class DeviceManagerSource(Source):
     kind: Literal[SourceKind.DEVICE_MANAGER] = Field(
         SourceKind.DEVICE_MANAGER, init=False
@@ -150,7 +137,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
     sources: list[
         Annotated[
-            PlanSource | DeviceSource | DodalSource | DeviceManagerSource,
+            PlanSource | DeviceManagerSource,
             Field(discriminator="kind"),
         ]
     ] = [

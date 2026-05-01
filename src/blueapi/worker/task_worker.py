@@ -8,6 +8,7 @@ from queue import Full, Queue
 from threading import Event, RLock
 from typing import Any, TypeVar
 
+from bluesky import RunEngineInterrupted
 from bluesky.protocols import Status
 from observability_utils.tracing import (
     add_span_attributes,
@@ -442,10 +443,23 @@ class TaskWorker:
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
                         self._current.set_result(result)
-                    except Exception as e:
-                        LOGGER.error("Task failed", extra=meta)
-                        self._current.set_exception(e)
-                        self._report_error(e)
+                    except RunEngineInterrupted as e:
+                        state = self._ctx.run_engine.state
+                        """paused waitng for the next command:
+                            RE.resume()    Resume the plan.
+                            RE.abort()
+                                Perform cleanup,then kill plan.Mark exit_stats='aborted'
+                            RE.stop()
+                                Perform cleanup,then kill plan.Mark exit_status='success
+                            RE.halt()
+                                Emergency Stop: Do not perform cleanup --- just stop
+                        """
+                        if state in ["panicked", "abort"]:
+                            LOGGER.error("Task failed", extra=meta)
+                            self._current.set_exception(e)
+                            self._report_error(e)
+                        else:
+                            pass
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:
@@ -474,14 +488,19 @@ class TaskWorker:
         except Exception as err:
             self._report_error(err)
         finally:
-            if self._current_task_otel_context is not None:
+            if (
+                self._current_task_otel_context is not None
+                and self._ctx.run_engine.state not in ["panicked", "paused"]
+            ):
                 self._current_task_otel_context = None
 
         if self._current is not None:
-            self._current.is_complete = True
-            self._pending_tasks.pop(self._current.task_id)
-            self._completed_tasks[self._current.task_id] = self._current
-        self._report_status()
+            if self._ctx.run_engine.state != "paused":
+                self._current.is_complete = True
+                self._pending_tasks.pop(self._current.task_id)
+                self._completed_tasks[self._current.task_id] = self._current
+        if self._ctx.run_engine.state != "paused":
+            self._report_status()
         self._errors.clear()
         self._warnings.clear()
         self._completed_statuses.clear()
@@ -603,7 +622,7 @@ class TaskWorker:
                 )
 
         else:
-            raise KeyError(
+            raise RuntimeError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"
             )
 

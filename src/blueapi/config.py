@@ -48,8 +48,6 @@ yaml.Loader.add_constructor("!expand", _expand_env)
 
 class SourceKind(StrEnum):
     PLAN_FUNCTIONS = "planFunctions"
-    DEVICE_FUNCTIONS = "deviceFunctions"
-    DODAL = "dodal"
     DEVICE_MANAGER = "deviceManager"
 
 

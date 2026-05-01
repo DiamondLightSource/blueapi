@@ -2,9 +2,9 @@ env:
   sources:
     - kind: planFunctions
       module: my_plan_library.tomography.plans
-    - kind: device_manager
+    - kind: deviceManager
       module: dodal.beamlines.i04
       mock: true
-    - kind: device_manager
+    - kind: deviceManager
       module: dodal.beamlines.ixx
       mock: True

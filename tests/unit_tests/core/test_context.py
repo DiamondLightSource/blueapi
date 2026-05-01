@@ -295,7 +295,7 @@ def test_add_devices_and_plans_from_modules_with_config(
     empty_context.with_config(
         EnvironmentConfig(
             sources=[
-                DeviceSource(
+                DeviceManagerSource(
                     module="tests.unit_tests.core.fake_device_module",
                 ),
                 PlanSource(
@@ -305,13 +305,11 @@ def test_add_devices_and_plans_from_modules_with_config(
         )
     )
     assert {
-        "motor_x",
-        "motor_y",
-        "motor_bundle_a",
-        "motor_bundle_b",
+        "fake_motor_x",
+        "fake_motor_y",
+        "fake_motor_bundle_a",
+        "fake_motor_bundle_b",
         "device_a",
-        "ophyd_device",
-        "ophyd_async_device",
     } == empty_context.devices.keys()
     assert EXPECTED_PLANS == empty_context.plans.keys()
 

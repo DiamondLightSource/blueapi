@@ -71,7 +71,9 @@ class DeviceManagerSource(Source):
         description="If true, ophyd_async device connections are mocked", default=False
     )
     name: str = Field(
-        default="devices", description="Name of the device manager in the module"
+        default="devices",
+        description="Name of the device manager in the module",
+        exclude_if=lambda v: v == "devices",
     )
 
 

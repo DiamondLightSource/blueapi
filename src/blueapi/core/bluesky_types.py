@@ -30,7 +30,6 @@ from pydantic import BaseModel, Field
 from blueapi.utils import BlueapiBaseModel
 
 PlanGenerator = Callable[..., MsgGenerator]
-PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
 
 #: An object that encapsulates the device to do useful things to produce
 # data (e.g. move and read)

@@ -31,6 +31,7 @@ from ophyd_async.epics.adaravis import AravisDetector
 from ophyd_async.epics.motor import Motor
 from pydantic import TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
+from pytest import LogCaptureFixture
 
 from blueapi.config import (
     ApplicationConfig,
@@ -256,6 +257,32 @@ def test_add_nameless_device_without_override(
 def test_override_device_name(empty_context: BlueskyContext, sim_motor: Motor):
     empty_context.register_device(sim_motor, "foo")
     assert empty_context.devices["foo"] is sim_motor
+
+
+def test_add_devices_from_module(empty_context: BlueskyContext):
+    import tests.unit_tests.core.fake_device_module as device_module
+
+    empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
+    assert {
+        "fake_motor_x",
+        "fake_motor_y",
+        "fake_motor_bundle_a",
+        "fake_motor_bundle_b",
+        "device_a",
+    } == empty_context.devices.keys()
+
+
+def test_add_failing_devices_from_module(
+    caplog: LogCaptureFixture, empty_context: BlueskyContext
+):
+    import tests.unit_tests.core.fake_device_module_failing as device_module
+
+    caplog.set_level(10)
+    empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
+    logs = caplog.get_records("call")
+
+    assert any("TimeoutError('FooBar')" in log.message for log in logs)
+    assert len(empty_context.devices.keys()) == 0
 
 
 @pytest.mark.parametrize(

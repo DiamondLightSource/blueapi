@@ -423,7 +423,6 @@ dependencies = [
     { name = "bluesky", extra = ["plotting"] },
     { name = "bluesky-stomp" },
     { name = "click" },
-    { name = "dls-dodal" },
     { name = "event-model" },
     { name = "fastapi" },
     { name = "gitpython" },
@@ -449,6 +448,7 @@ dependencies = [
 dev = [
     { name = "copier" },
     { name = "deepdiff" },
+    { name = "dls-dodal" },
     { name = "jwcrypto" },
     { name = "mock" },
     { name = "myst-parser" },
@@ -484,7 +484,6 @@ requires-dist = [
     { name = "bluesky", extras = ["plotting"], specifier = ">=1.14.0" },
     { name = "bluesky-stomp", specifier = ">=0.1.6" },
     { name = "click", specifier = ">=8.2.0" },
-    { name = "dls-dodal", specifier = ">=1.69.0" },
     { name = "event-model", specifier = "==1.23.1" },
     { name = "fastapi", specifier = ">=0.112.0" },
     { name = "gitpython" },
@@ -510,6 +509,7 @@ requires-dist = [
 dev = [
     { name = "copier" },
     { name = "deepdiff" },
+    { name = "dls-dodal", specifier = ">=1.69.0" },
     { name = "jwcrypto" },
     { name = "mock" },
     { name = "myst-parser" },

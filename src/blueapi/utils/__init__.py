@@ -20,9 +20,9 @@ __all__ = [
     "BlueapiPlanModelConfig",
     "InvalidConfigError",
     "NumtrackerClient",
+    "report_successful_devices",
     "is_sgid_set",
     "get_owner_gid",
-    "report_successful_devices",
     "is_function_sourced_from_module",
     "deprecated",
 ]

@@ -675,6 +675,10 @@ class BlueapiClient:
             raise BlueskyRemoteControlError(
                 "Failed to tear down the environment"
             ) from e
+        # Invalidate cached plans/devices so subsequent access reflects the
+        # newly reloaded environment rather than the previous one.
+        self.__dict__.pop("plans", None)
+        self.__dict__.pop("devices", None)
         return self._wait_for_reload(
             status,
             timeout,

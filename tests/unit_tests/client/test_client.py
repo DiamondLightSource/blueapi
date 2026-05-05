@@ -350,6 +350,28 @@ def test_reload_environment_failure(
         client.reload_environment()
 
 
+def test_reload_environment_refreshes_cached_plans_and_devices(
+    client: BlueapiClient,
+    mock_rest: Mock,
+):
+    # Prime caches with the original plans and devices.
+    initial_plans = list(client.plans)
+    initial_devices = list(client.devices)
+    assert {p.name for p in initial_plans} == {"foo", "bar"}
+    assert set(initial_devices) == {"foo", "bar"}
+
+    new_plans = PlanResponse(plans=[PlanModel(name="missing")])
+    new_devices = DeviceResponse(devices=[DeviceModel(name="baz", protocols=[])])
+    mock_rest.get_plans.return_value = new_plans
+    mock_rest.get_devices.return_value = new_devices
+    mock_rest.get_environment.return_value = NEW_ENV
+
+    client.reload_environment()
+
+    assert {p.name for p in client.plans} == {"missing"}
+    assert set(client.devices) == {"baz"}
+
+
 def test_abort(
     client: BlueapiClient,
     mock_rest: Mock,

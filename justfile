@@ -22,8 +22,8 @@ lint:
     uv run prek run --all-files
     uv run pyright src tests
 
-unit:
-    uv run pytest tests/unit_tests
+unit *OPTS:
+    uv run pytest tests/unit_tests {{ OPTS }}
 
-system:
-    uv run pytest tests/system_tests
+system *OPTS:
+    uv run pytest tests/system_tests {{ OPTS }}

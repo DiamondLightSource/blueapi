@@ -1,9 +1,9 @@
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from functools import wraps
-from typing import ParamSpec, TypeVar
+from logging import Logger
+from typing import Any, ParamSpec, TypeVar
 
 from .base_model import BlueapiBaseModel, BlueapiModelConfig, BlueapiPlanModelConfig
-from .connect_devices import report_successful_devices
 from .file_permissions import get_owner_gid, is_sgid_set
 from .invalid_config_error import InvalidConfigError
 from .modules import is_function_sourced_from_module, load_module_all
@@ -29,6 +29,18 @@ __all__ = [
 
 Args = ParamSpec("Args")
 Return = TypeVar("Return")
+
+
+def report_successful_devices(
+    devices: Mapping[str, Any], sim_backend: bool, logger: Logger
+) -> None:
+    sim_statement = " (sim mode)" if sim_backend else ""
+    connected_devices = "\n".join(
+        sorted([f"\t{device_name}" for device_name in devices.keys()])
+    )
+
+    logger.info(f"{len(devices)} devices connected{sim_statement}:")
+    logger.info(connected_devices)
 
 
 def deprecated(alternative):

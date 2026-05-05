@@ -159,7 +159,7 @@ def test_rest_config_with_cors_gets_plan(
     plan = PlanModel(name="my-plan", schema=MyModel.model_json_schema())
     mock_runner.run.return_value = [plan]
 
-    response_get = client_with_cors.get("/plans")
+    response_get = client_with_cors.get("/api/v1/plans")
     assert response_get.status_code == status.HTTP_200_OK
 
 
@@ -177,7 +177,7 @@ def test_rest_config_with_cors(
 
     # Allowed method
     response_post = client_with_cors.post(
-        "/tasks",
+        "/api/v1/tasks",
         json=task.model_dump(),
         headers={"Accept": "application/json", "Content-Type": "application/json"},
     )
@@ -192,7 +192,7 @@ def test_get_plans(mock_runner: Mock, client: TestClient) -> None:
     plan = PlanModel(name="my-plan", schema=MyModel.model_json_schema())
     mock_runner.run.return_value = [plan]
 
-    response = client.get("/plans")
+    response = client.get("/api/v1/plans")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
@@ -218,7 +218,7 @@ def test_get_plan_by_name(mock_runner: Mock, client: TestClient) -> None:
     plan = PlanModel(name="my-plan", schema=MyModel.model_json_schema())
     mock_runner.run.return_value = plan
 
-    response = client.get("/plans/my-plan")
+    response = client.get("/api/v1/plans/my-plan")
 
     mock_runner.run.assert_called_once_with(get_plan, "my-plan")
     assert response.status_code == status.HTTP_200_OK
@@ -236,7 +236,7 @@ def test_get_plan_by_name(mock_runner: Mock, client: TestClient) -> None:
 
 def test_get_non_existent_plan_by_name(mock_runner: Mock, client: TestClient) -> None:
     mock_runner.run.side_effect = KeyError("my-plan")
-    response = client.get("/plans/my-plan")
+    response = client.get("/api/v1/plans/my-plan")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "Item not found"}
@@ -246,7 +246,7 @@ def test_get_devices(mock_runner: Mock, client: TestClient) -> None:
     device = MinimalDevice("my-device")
     mock_runner.run.return_value = [DeviceModel.from_device(device)]
 
-    response = client.get("/devices")
+    response = client.get("/api/v1/devices")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
@@ -263,7 +263,7 @@ def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
     device = MinimalDevice("my-device")
 
     mock_runner.run.return_value = DeviceModel.from_device(device)
-    response = client.get("/devices/my-device")
+    response = client.get("/api/v1/devices/my-device")
 
     mock_runner.run.assert_called_once_with(get_device, "my-device")
     assert response.status_code == status.HTTP_200_OK
@@ -275,7 +275,7 @@ def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
 
 def test_get_non_existent_device_by_name(mock_runner: Mock, client: TestClient) -> None:
     mock_runner.run.side_effect = KeyError("my-device")
-    response = client.get("/devices/my-device")
+    response = client.get("/api/v1/devices/my-device")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "Item not found"}
@@ -291,7 +291,7 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
 
     mock_runner.run.side_effect = [task_id]
 
-    response = client.post("/tasks", json=task.model_dump())
+    response = client.post("/api/v1/tasks", json=task.model_dump())
 
     mock_runner.run.assert_called_with(submit_task, task, {"user": None})
     assert response.json() == {"task_id": task_id}
@@ -329,7 +329,7 @@ def test_create_task_inserts_auth_metadata(
     # mock_runner.run.side_effect = [task_id]
     mock_runner.run.return_value = task_id
 
-    client_with_auth.post("/tasks", json=task.model_dump())
+    client_with_auth.post("/api/v1/tasks", json=task.model_dump())
 
     mock_runner.run.assert_called_with(submit_task, task, {"user": "jd1"})
 
@@ -350,7 +350,7 @@ def test_create_task_parameter_error(mock_runner: Mock, client: TestClient) -> N
     ]
 
     response = client.post(
-        "/tasks",
+        "/api/v1/tasks",
         json={
             "name": "my-plan",
             "instrument_session": FAKE_INSTRUMENT_SESSION,
@@ -397,7 +397,7 @@ def test_create_task_parameter_type_error(
 def test_put_plan_begins_task(client: TestClient) -> None:
     task_id = "04cd9aa6-b902-414b-ae4b-49ea4200e957"
 
-    resp = client.put("/worker/task", json={"task_id": task_id})
+    resp = client.put("/api/v1/worker/task", json={"task_id": task_id})
 
     assert resp.status_code == status.HTTP_200_OK
     assert resp.json() == {"task_id": task_id}
@@ -412,7 +412,7 @@ def test_put_plan_fails_if_not_idle(mock_runner: Mock, client: TestClient) -> No
         task=Task(name="none"), task_id=task_id_current, is_complete=False
     )
 
-    resp = client.put("/worker/task", json={"task_id": task_id_new})
+    resp = client.put("/api/v1/worker/task", json={"task_id": task_id_new})
 
     assert resp.status_code == status.HTTP_409_CONFLICT
     assert resp.json() == {"detail": "Worker already active"}
@@ -431,7 +431,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
 
     mock_runner.run.return_value = tasks
 
-    response = client.get("/tasks")
+    response = client.get("/api/v1/tasks")
     assert response.status_code == status.HTTP_200_OK
 
     assert response.json() == {
@@ -478,7 +478,7 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
 
     mock_runner.run.return_value = tasks
 
-    response = client.get("/tasks", params={"task_status": "PENDING"})
+    response = client.get("/api/v1/tasks", params={"task_status": "PENDING"})
     assert response.json() == {
         "tasks": [
             {
@@ -499,7 +499,7 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
 
 
 def test_get_tasks_by_invalid_status(client: TestClient) -> None:
-    response = client.get("/tasks", params={"task_status": "AN_INVALID_STATUS"})
+    response = client.get("/api/v1/tasks", params={"task_status": "AN_INVALID_STATUS"})
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
@@ -527,7 +527,7 @@ def test_get_tasks_filters_by_user(
 def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:
     task_id = str(uuid.uuid4())
     mock_runner.run.return_value = task_id
-    response = client.delete(f"/tasks/{task_id}")
+    response = client.delete(f"/api/v1/tasks/{task_id}")
     assert response.json() == {"task_id": f"{task_id}"}
 
 
@@ -557,7 +557,7 @@ def test_set_active_task(client: TestClient) -> None:
     task_id = str(uuid.uuid4())
     task = WorkerTask(task_id=task_id)
 
-    response = client.put("/worker/task", json=task.model_dump())
+    response = client.put("/api/v1/worker/task", json=task.model_dump())
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"task_id": f"{task_id}"}
@@ -576,7 +576,7 @@ def test_set_active_task_active_task_complete(
         is_pending=False,
     )
 
-    response = client.put("/worker/task", json=task.model_dump())
+    response = client.put("/api/v1/worker/task", json=task.model_dump())
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"task_id": f"{task_id}"}
@@ -595,7 +595,7 @@ def test_set_active_task_worker_already_running(
         is_pending=False,
     )
 
-    response = client.put("/worker/task", json=task.model_dump())
+    response = client.put("/api/v1/worker/task", json=task.model_dump())
 
     assert response.status_code == status.HTTP_409_CONFLICT
     assert response.json() == {"detail": "Worker already active"}
@@ -644,7 +644,7 @@ def test_get_task(mock_runner: Mock, client: TestClient):
 
     mock_runner.run.return_value = task
 
-    response = client.get(f"/tasks/{task_id}")
+    response = client.get(f"/api/v1/tasks/{task_id}")
     assert response.json() == {
         "errors": [],
         "is_complete": False,
@@ -691,7 +691,7 @@ def test_get_all_tasks(mock_runner: Mock, client: TestClient):
     ]
 
     mock_runner.run.return_value = tasks
-    response = client.get("/tasks")
+    response = client.get("/api/v1/tasks")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "tasks": [
@@ -716,7 +716,7 @@ def test_get_task_error(mock_runner: Mock, client: TestClient):
     task_id = 567
     mock_runner.run.return_value = None
 
-    response = client.get(f"/tasks/{task_id}")
+    response = client.get(f"/api/v1/tasks/{task_id}")
     assert response.json() == {"detail": "Item not found"}
 
 
@@ -728,7 +728,7 @@ def test_get_active_task(mock_runner: Mock, client: TestClient):
     )
     mock_runner.run.return_value = task
 
-    response = client.get("/worker/task")
+    response = client.get("/api/v1/worker/task")
 
     assert response.json() == {"task_id": f"{task_id}"}
 
@@ -736,7 +736,7 @@ def test_get_active_task(mock_runner: Mock, client: TestClient):
 def test_get_active_task_none(mock_runner: Mock, client: TestClient):
     mock_runner.run.return_value = None
 
-    response = client.get("/worker/task")
+    response = client.get("/api/v1/worker/task")
 
     assert response.json() == {"task_id": None}
 
@@ -745,7 +745,7 @@ def test_get_state(mock_runner: Mock, client: TestClient):
     state = WorkerState.SUSPENDING
     mock_runner.run.return_value = state
 
-    response = client.get("/worker/state")
+    response = client.get("/api/v1/worker/state")
     assert response.json() == state
 
 
@@ -760,7 +760,8 @@ def test_set_state_running_to_paused(mock_runner: Mock, client: TestClient):
     ]
 
     response = client.put(
-        "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
+        "/api/v1/worker/state",
+        json=StateChangeRequest(new_state=final_state).model_dump(),
     )
 
     mock_runner.run.assert_any_call(pause_worker, False)
@@ -779,7 +780,8 @@ def test_set_state_paused_to_running(mock_runner: Mock, client: TestClient):
     ]
 
     response = client.put(
-        "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
+        "/api/v1/worker/state",
+        json=StateChangeRequest(new_state=final_state).model_dump(),
     )
 
     mock_runner.run.assert_any_call(resume_worker)
@@ -798,7 +800,8 @@ def test_set_state_running_to_aborting(mock_runner: Mock, client: TestClient):
     ]
 
     response = client.put(
-        "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
+        "/api/v1/worker/state",
+        json=StateChangeRequest(new_state=final_state).model_dump(),
     )
 
     mock_runner.run.assert_any_call(cancel_active_task, True, None)
@@ -820,7 +823,7 @@ def test_set_state_running_to_stopping_including_reason(
     ]
 
     response = client.put(
-        "/worker/state",
+        "/api/v1/worker/state",
         json=StateChangeRequest(new_state=final_state, reason=reason).model_dump(),
     )
 
@@ -840,7 +843,7 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
     ]
 
     response = client.put(
-        "/worker/state",
+        "/api/v1/worker/state",
         json=StateChangeRequest(new_state=final_state).model_dump(),
     )
 
@@ -858,7 +861,7 @@ def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
     mock_runner.run.side_effect = [current_state, final_state]
 
     response = client.put(
-        "/worker/state",
+        "/api/v1/worker/state",
         json=StateChangeRequest(new_state=requested_state).model_dump(),
     )
 
@@ -905,7 +908,7 @@ def test_get_environment_idle(mock_runner: Mock, client: TestClient) -> None:
         error_message=None,
     )
 
-    assert client.get("/environment").json() == {
+    assert client.get("/api/v1/environment").json() == {
         "environment_id": str(environment_id),
         "initialized": True,
         "error_message": None,
@@ -919,7 +922,7 @@ def test_delete_environment(mock_runner: Mock, client: TestClient) -> None:
         initialized=True,
         error_message=None,
     )
-    response = client.delete("/environment")
+    response = client.delete("/api/v1/environment")
     assert response.status_code is status.HTTP_200_OK
     assert response.json() == {
         "environment_id": str(environment_id),
@@ -938,7 +941,7 @@ def test_subprocess_enabled_by_default(mp_pool_mock: MagicMock):
 
 def test_get_without_authentication(mock_runner: Mock, client: TestClient) -> None:
     mock_runner.run.side_effect = jwt.PyJWTError
-    response = client.get("/devices/my-device")
+    response = client.get("/api/v1/devices/my-device")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {"detail": "Not authenticated"}
@@ -978,7 +981,7 @@ def test_get_python_environment(mock_runner: Mock, client: TestClient):
         ]
     )
     mock_runner.run.return_value = packages
-    response = client.get("/python_environment")
+    response = client.get("/api/v1/python_environment")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == packages.model_dump()
 
@@ -999,7 +1002,7 @@ def test_logout(
     oidc_config.logout_redirect_endpoint = "/oauth2/sign_out/"
     mock_runner.run.return_value = oidc_config
     client_with_auth.follow_redirects = False
-    response = client_with_auth.get("/logout")
+    response = client_with_auth.get("/api/v1/logout")
     assert response.status_code == status.HTTP_308_PERMANENT_REDIRECT
     assert (
         response.headers.get("location")
@@ -1031,7 +1034,7 @@ def test_logout_when_oidc_config_invalid(
     else:
         mock_runner.run.return_value = None
 
-    response = client_with_auth.get("/logout")
+    response = client_with_auth.get("/api/v1/logout")
     assert response.status_code == status.HTTP_205_RESET_CONTENT
 
 

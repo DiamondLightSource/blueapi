@@ -18,6 +18,7 @@ from blueapi.service.model import (
     PlanModel,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskParamsValidationRequest,
     TaskRequest,
     WorkerTask,
 )
@@ -170,6 +171,30 @@ def submit_task(
         metadata=metadata,
     )
     return worker().submit_task(task)
+
+
+def validate_task_params(
+    task_request: TaskParamsValidationRequest, metadata: dict[str, Any] | None = None
+) -> bool:
+    """Validate the params for a task"""
+    # Can't default arg to mutable data structure:
+    if metadata is None:
+        metadata = {}
+
+    # metadata["instrument_session"] = task_request.instrument_session
+    # if context().tiled_conf is not None:
+    #     md = config().env.metadata
+    #     # We raise an InvalidConfigError on setting tiled_conf if this isn't set
+    #     assert md
+    #     metadata["tiled_access_tags"] = [
+    #         access_blob(task_request.instrument_session, md.instrument)
+    #     ]
+    task = Task(
+        name=task_request.name,
+        params=task_request.params,
+        metadata=metadata,
+    )
+    return worker().validate_task_params(task)
 
 
 def clear_task(task_id: str) -> str:

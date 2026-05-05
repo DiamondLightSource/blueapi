@@ -51,9 +51,11 @@ from .model import (
     PythonEnvironmentResponse,
     SourceInfo,
     StateChangeRequest,
+    TaskParamsValidationRequest,
     TaskRequest,
     TaskResponse,
     TasksListResponse,
+    TasksParamValidationResponse,
     WorkerTask,
 )
 from .runner import WorkerDispatcher
@@ -307,6 +309,64 @@ def submit_task(
         task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
+    except ValidationError as e:
+        # Add body/params context to location and ensure that all required
+        # fields defined in the generated schema are present
+        errors = [
+            {
+                "loc": ["body", "params", *err.get("loc", [])],
+                "msg": err.get("msg", None),
+                "type": err.get("type", None),
+                # Input is not listed as required but is useful to have if available
+                "input": err.get("input", None),
+            }
+            for err in e.errors()
+        ]
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=errors,
+        ) from e
+
+
+example_task_validate_params_request = TaskParamsValidationRequest(
+    name="count",
+    params={"detectors": ["x"]},
+)
+
+
+@secure_router_v1.post(
+    "/validateTaskParams", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
+)
+@start_as_current_span(
+    TRACER,
+    "request",
+    "task_request.name",
+    "task_request.params",
+)
+def validate_task_params(
+    request: Request,
+    response: Response,
+    task_request: Annotated[
+        TaskParamsValidationRequest, Body(..., examples=[example_task_request])
+    ],
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> TasksParamValidationResponse:
+    """Validate the tasks parameters."""
+    try:
+        # Extract user from jwt if using OIDC (if jwt exists)
+        access_token: dict[str, Any] | None = getattr(
+            request.state, "decoded_access_token", None
+        )
+        if access_token:
+            user: str = access_token.get("fedid", "Unknown")
+        else:
+            user = "Unknown"
+
+        validated: bool = runner.run(
+            interface.validate_task_params, task_request, {"user": user}
+        )
+        return TasksParamValidationResponse(validated=validated)
     except ValidationError as e:
         # Add body/params context to location and ensure that all required
         # fields defined in the generated schema are present

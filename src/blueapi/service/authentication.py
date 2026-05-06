@@ -84,7 +84,7 @@ class SessionCacheManager(CacheManager):
         return True
 
     def _create_parent_folder_if_necessary(self):
-        Path(self._token_path.parent).mkdir(parents=True, exist_ok=True)
+        self._token_path.parent.mkdir(parents=True, exist_ok=True)
 
 
 class SessionManager:

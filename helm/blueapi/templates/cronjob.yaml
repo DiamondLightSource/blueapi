@@ -162,7 +162,7 @@ spec:
             volumeMounts:
               - name: {{include "blueapi.fullname" . }}-pvc-auto-deletion-script
                 mountPath: /scripts
-            image: bitnami/kubectl:latest
+            image: rancher/kubectl@sha256:05d2b313e2f397e0ade252136aed47abd72d56ead11d1b027ac70f66362c8495 # v1.36.0
             imagePullPolicy: IfNotPresent
             command: ["/scripts/pvc-deletion.sh"]
           restartPolicy: OnFailure

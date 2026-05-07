@@ -181,14 +181,6 @@ def validate_task_params(
     if metadata is None:
         metadata = {}
 
-    # metadata["instrument_session"] = task_request.instrument_session
-    # if context().tiled_conf is not None:
-    #     md = config().env.metadata
-    #     # We raise an InvalidConfigError on setting tiled_conf if this isn't set
-    #     assert md
-    #     metadata["tiled_access_tags"] = [
-    #         access_blob(task_request.instrument_session, md.instrument)
-    #     ]
     task = Task(
         name=task_request.name,
         params=task_request.params,

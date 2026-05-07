@@ -32,3 +32,5 @@ data:
     scratch:
       {{- toYaml .Values.worker.scratch | nindent 6 }}
 {{- end }}
+
+---

@@ -31,10 +31,10 @@ RUN uv add debugpy
 
 # Sync the project without its dev dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-editable --no-dev
+    uv sync --locked --no-editable --no-dev --managed-python
 
 # The runtime stage copies the built venv into a runtime container
-FROM ubuntu:noble AS runtime
+FROM ubuntu:resolute AS runtime
 
 # Add apt-get system dependecies for runtime here if needed
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
@@ -47,7 +47,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-ins
     && apt-get dist-clean
 
 # Install uv to allow setup-scratch to run
-COPY --from=ghcr.io/astral-sh/uv:0.10 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /uvx /bin/
 
 # For this pod to understand finding user information from LDAP
 RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
@@ -64,7 +64,7 @@ COPY --from=build /python /python
 
 # Copy the environment, but not the source code
 COPY --chown=1000:1000 --from=build /app/.venv /app/.venv
-RUN chmod o+wrX /app/.venv
+RUN chmod -R 777 /app
 ENV PATH=/app/.venv/bin:$PATH
 
 # Add copy of blueapi source to container for debugging

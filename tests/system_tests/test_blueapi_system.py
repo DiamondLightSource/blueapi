@@ -617,3 +617,24 @@ def test_unauthorized_plan_run(
     assert outcome.result.message.startswith(
         "403: Access policy rejects the provided access blob"
     )
+
+
+# Regression test for #1480
+def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
+    with pytest.raises(KeyError):
+        # This task hasn't been submitted so should return an error...
+        client_with_stomp._rest.update_worker_task(WorkerTask(task_id="missing"))
+
+    # ...but should leave the serve in a state where it can still run tasks
+    res = client_with_stomp.run_task(
+        TaskRequest(
+            name="count",
+            params={
+                "detectors": [
+                    "det",
+                ],
+            },
+            instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
+        )
+    )
+    assert isinstance(res.result, TaskResult)

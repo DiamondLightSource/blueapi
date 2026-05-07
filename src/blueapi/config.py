@@ -12,6 +12,7 @@ import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
+    AliasChoices,
     AnyUrl,
     BaseModel,
     Field,
@@ -191,11 +192,13 @@ class ScratchRepository(BlueapiBaseModel):
         description="URL to clone from",
         default="https://github.com/example/example.git",
     )
-    branch: str | SkipJsonSchema[None] = Field(
+    target_revision: str | SkipJsonSchema[None] = Field(
         description=(
-            "Branch of repo to check out - defaults to remote's default when "
-            "cloning and the existing branch when the repo already exists"
+            "Revision (branch or tag) to check out when cloning - defaults to "
+            "remote's HEAD. If a tag is used, the repo will be left in a "
+            "'detached head' state."
         ),
+        validation_alias=AliasChoices("branch", "tag", "target_revision"),
         exclude_if=lambda f: f is None,
         # using default_factory instead of default means the schema doesn't
         # include an invalid value
@@ -300,7 +303,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.2.0"
+    REST_API_VERSION: ClassVar[str] = "1.3.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",
@@ -455,5 +458,5 @@ def generate_config_schema() -> dict[str, Any]:
             return json_schema
 
     return ApplicationConfig.model_json_schema(
-        schema_generator=_GenerateJsonSchema, ref_template="{model}"
+        by_alias=False, schema_generator=_GenerateJsonSchema, ref_template="{model}"
     )

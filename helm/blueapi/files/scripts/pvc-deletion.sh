@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/bin/bash
+set -eou pipefail
 # Get all PVCs by running pods
 ALL_PVCS=$(kubectl get pvc -n  $RELEASE_NAMESPACE  -o=jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | sort -u)
-BLUEAPI_PVCS=$( echo $ALL_PVCS | tr ' ' '\n' | grep blueapi-scratch)
+BLUEAPI_PVCS=$( echo $ALL_PVCS | tr ' ' '\n' | grep "^$RELEASE_FULLNAME-scratch-" || true)
 NOW=$(date +%s)
 #loop through all pvcs.
 for pvc in $BLUEAPI_PVCS; do
@@ -18,7 +19,7 @@ for pvc in $BLUEAPI_PVCS; do
                     continue
                 fi
                 #PVC has not been used for more than three months, delete it
-                kubectl delete pvc "$pvc" -n  $RELEASE_NAMESPACE
+                kubectl delete pvc "$pvc" -n  $RELEASE_NAMESPACE 
             fi
         else
             echo " $pvc has no last-used annotation"

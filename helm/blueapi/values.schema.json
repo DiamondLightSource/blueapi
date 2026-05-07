@@ -206,6 +206,7 @@
             }
         },
         "resources": {
+            "description": "Sets the compute resources available to the pod. These defaults are appropriate when using debug mode or an internal PVC and therefore running VS Code server in the pod. In the Diamond cluster, requests must be \u003e= 0.1*limits When not using either of the above, the limits may be lowered. When idle but connected, blueapi consumes ~400MB of memory and 1% cpu and may struggle when allocated less.",
             "type": "object",
             "properties": {
                 "limits": {
@@ -404,6 +405,7 @@
                     }
                 },
                 "logging": {
+                    "description": "Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`",
                     "type": "object",
                     "properties": {
                         "graylog": {

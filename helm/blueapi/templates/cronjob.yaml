@@ -39,7 +39,7 @@ spec:
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
-  schedule: "*/5 * * * *"
+  schedule: "@daily"
 
   jobTemplate:
     spec:
@@ -74,10 +74,12 @@ spec:
                 value: {{ .Release.Name }}
               - name: RELEASE_NAMESPACE
                 value: {{ .Release.Namespace }}
+              - name: RELEASE_FULLNAME
+                value: {{include "blueapi.fullname" . }}
             volumeMounts:
               - name: {{include "blueapi.fullname" . }}-pvc-stamper-script
                 mountPath: /scripts
-            image: bitnami/kubectl:latest
+            image: rancher/kubectl@sha256:05d2b313e2f397e0ade252136aed47abd72d56ead11d1b027ac70f66362c8495 # v1.36.0
             imagePullPolicy: IfNotPresent
             command: ["/scripts/time-stamper.sh"]
           restartPolicy: OnFailure
@@ -98,7 +100,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 rules:
 - apiGroups: [""]
-  resources: ["pods", "persistentvolumeclaims"]
+  resources: ["persistentvolumeclaims"]
   verbs: ["get", "list", "patch","delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -159,6 +161,8 @@ spec:
                 value: {{ .Release.Name }}
               - name: RELEASE_NAMESPACE
                 value: {{ .Release.Namespace }}
+              - name: RELEASE_FULLNAME
+                value: {{include "blueapi.fullname" . }}
             volumeMounts:
               - name: {{include "blueapi.fullname" . }}-pvc-auto-deletion-script
                 mountPath: /scripts

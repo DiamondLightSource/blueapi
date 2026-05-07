@@ -19,7 +19,7 @@ for pvc in $BLUEAPI_PVCS; do
                     continue
                 fi
                 #PVC has not been used for more than three months, delete it
-                kubectl delete pvc "$pvc" -n  $RELEASE_NAMESPACE 
+                kubectl delete pvc "$pvc" -n  $RELEASE_NAMESPACE --wait=true
             fi
         else
             echo " $pvc has no last-used annotation"

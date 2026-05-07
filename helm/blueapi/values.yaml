@@ -224,9 +224,12 @@ initContainer:
     # -- Size of persistent volume
     size: "1Gi"
 
+# -- If enabled, runs a daily CronJob that stamps blueapi scratch PVCs with a last-used annotation when mounted by a running pod
 timeStampCron:
   enabled: true
 
+# -- If enabled, runs a weekly CronJob that deletes blueapi scratch PVCs unused for more than 3 months.
+# To protect a PVC from deletion, set the annotation ""protected" to "true" on it.
 pvcAutoDeletion:
   enabled: true
 

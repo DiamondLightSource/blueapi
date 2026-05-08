@@ -106,7 +106,7 @@ class NumtrackerClient:
 
         if json.get("errors") is not None:
             for error in json["errors"]:
-                code = error.get("extensions").get("code")
+                code = (error.get("extensions") or {}).get("code")
 
                 if code == "AUTH_FAILED":
                     raise RuntimeError(

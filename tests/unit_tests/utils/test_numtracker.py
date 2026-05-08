@@ -33,6 +33,18 @@ ERRORS = {
     ],
 }
 
+AUTH_ERROR = {
+    "data": None,
+    "errors": [
+        {
+            "message": "No configuration available for instrument p46",
+            "locations": [{"line": 3, "column": 5}],
+            "path": ["scan"],
+            "extensions": {"code": "AUTH_FAILED"},
+        }
+    ],
+}
+
 
 async def test_create_scan(
     numtracker: NumtrackerClient, httpx_mock: HTTPXMock, nt_query, nt_response
@@ -108,4 +120,20 @@ async def test_create_scan_raises_runtime_error_on_graphql_error(
         json=ERRORS,
     )
     with pytest.raises(RuntimeError, match="Numtracker error:"):
+        await numtracker.create_scan("ab123", "p46")
+
+
+async def test_create_scan_raises_runtime_auth_error_on_graphql_error(
+    numtracker: NumtrackerClient, httpx_mock: HTTPXMock, nt_query
+):
+    httpx_mock.add_response(
+        method="POST",
+        url=URL,
+        match_json=nt_query,
+        status_code=200,
+        json=AUTH_ERROR,
+    )
+    with pytest.raises(
+        RuntimeError, match="Not authorised to create a scan number for p46 and ab123"
+    ):
         await numtracker.create_scan("ab123", "p46")

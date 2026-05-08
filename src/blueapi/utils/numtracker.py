@@ -105,6 +105,14 @@ class NumtrackerClient:
         json = response.json()
 
         if json.get("errors") is not None:
+            for error in json["errors"]:
+                code = error.get("extensions").get("code")
+
+                if code == "AUTH_FAILED":
+                    raise RuntimeError(
+                        f"Not authorised to create a scan number for "
+                        f"{instrument} and {instrument_session}."
+                    )
             raise RuntimeError(f"Numtracker error: {json['errors']}")
 
         new_collection = NumtrackerScanMutationResponse.model_validate(json["data"])

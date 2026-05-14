@@ -2,10 +2,10 @@
 
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 import yaml
 from fastapi.openapi.utils import get_openapi
-from pyparsing import Any
 
 from blueapi.config import ApplicationConfig
 from blueapi.service.main import get_app

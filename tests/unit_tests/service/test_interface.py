@@ -242,6 +242,33 @@ def test_begin_task_no_task_id(worker_mock: MagicMock):
     worker_mock.assert_not_called()
 
 
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.config")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_subscribers_removed_when_task_not_found(
+    worker_mock: MagicMock,
+    context_mock: MagicMock,
+    config_mock: MagicMock,
+    from_uri_mock: MagicMock,
+):
+    # regression test for #1480
+    worker = worker_mock()
+    ctx = context_mock()
+    worker.begin_task.side_effect = KeyError()
+
+    with pytest.raises(KeyError):
+        interface.begin_task(WorkerTask(task_id="missing"))
+
+    ctx.run_engine.subscribe.assert_called_once()
+    tiled_token = ctx.run_engine.subscribe()
+    ctx.run_engine.unsubscribe.assert_called_once_with(tiled_token)
+
+    worker.worker_events.subscribe.assert_called_once()
+    remove_token = worker.worker_events.subscribe()
+    worker.worker_events.unsubscribe.assert_called_once_with(remove_token)
+
+
 @patch("blueapi.service.interface.TaskWorker.get_tasks_by_status")
 def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
     pending_task1 = TrackableTask(task_id="0", task=Task(name="pending_task1"))

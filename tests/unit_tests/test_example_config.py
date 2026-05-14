@@ -21,6 +21,7 @@ def test_example_config_is_valid(file_name: str):
     loader.load()
 
 
+@pytest.mark.timeout(30)
 @pytest.mark.parametrize("file_name", os.listdir(example_helm))
 def test_example_helm_is_valid(file_name: str):
     path = example_helm / file_name

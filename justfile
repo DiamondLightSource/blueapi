@@ -11,7 +11,8 @@ configure-adsim: (compose "exec" "numtracker" "/app/numtracker" "client" "config
 
 services: compose configure-adsim
 
-serve *OPTS: services
+serve *OPTS:
+    #!/usr/bin/env bash
     source tests/system_tests/.env
     uv run blueapi -c tests/system_tests/config.yaml {{OPTS}} serve
 

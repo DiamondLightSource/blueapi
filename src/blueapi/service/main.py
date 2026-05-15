@@ -40,7 +40,7 @@ from blueapi.service.authentication import Fedid, build_access_token_check
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
-from .authorization import OpaClient, validate_tiled_config
+from .authorization import OpaClient, OpaUserClient, opa, validate_tiled_config
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -258,6 +258,13 @@ example_task_request = TaskRequest(
 )
 
 
+async def submission_check(
+    opa: Annotated[OpaUserClient, Depends(opa)],
+    task_request: TaskRequest,
+):
+    await opa.can_submit_task(task_request)
+
+
 @secure_router_v1.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @secure_router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @start_as_current_span(
@@ -271,6 +278,7 @@ def submit_task(
     request: Request,
     response: Response,
     task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
+    authz_check: Annotated[None, Depends(submission_check)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
     user: Fedid,
 ) -> TaskResponse:

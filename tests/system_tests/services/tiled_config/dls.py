@@ -1,11 +1,7 @@
 import json
 import logging
 
-from fastapi import HTTPException
 from pydantic import BaseModel, HttpUrl, TypeAdapter
-from starlette.status import (
-    HTTP_401_UNAUTHORIZED,
-)
 from tiled.access_control.access_policies import (
     ALL_ACCESS,
     NO_ACCESS,
@@ -14,7 +10,7 @@ from tiled.access_control.access_policies import (
 )
 from tiled.adapters.protocols import BaseAdapter
 from tiled.queries import AccessBlobFilter
-from tiled.server.schemas import Principal, PrincipalType
+from tiled.server.schemas import Principal
 from tiled.type_aliases import AccessBlob, AccessTags, Filters, Scopes
 
 logger = logging.getLogger(__name__)
@@ -24,22 +20,6 @@ class DiamondAccessBlob(BaseModel):
     proposal: int
     visit: int
     beamline: str
-
-
-def _check_principal(principal: Principal | None):
-    if not isinstance(principal, Principal):
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
-            detail="Principal is None",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if principal.type != PrincipalType.external:
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
-            detail=f"Principal of type {PrincipalType.external}"
-            f" required but given {principal.type}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 
 class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
@@ -74,7 +54,6 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         authn_scopes: Scopes,
         access_blob: AccessBlob | None = None,
     ) -> tuple[bool, AccessBlob | None]:
-        _check_principal(principal)
         if access_blob is None and self._empty_access_blob_public is not None:
             return self._empty_access_blob_public, access_blob
         decision = await self._get_external_decision(
@@ -94,7 +73,6 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         authn_scopes: Scopes,
         access_blob: AccessBlob | None,
     ) -> tuple[bool, AccessBlob | None]:
-        _check_principal(principal)
         if access_blob == node.access_blob:  # type: ignore
             logger.info(
                 "Node access_blob not modified;"
@@ -119,11 +97,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
     ) -> str:
         _input: dict[str, str | int] = {"audience": self._token_audience}
 
-        if (
-            isinstance(principal, Principal)
-            and principal.type is PrincipalType.external
-            and principal.access_token is not None
-        ):
+        if isinstance(principal, Principal) and principal.access_token is not None:
             _input["token"] = principal.access_token.get_secret_value()
 
         if (
@@ -147,7 +121,6 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         authn_scopes: Scopes,
         scopes: Scopes,
     ) -> Filters:
-        _check_principal(principal)
         tags = await self._get_external_decision(
             self._user_tags,
             self.build_input(principal, authn_access_tags, authn_scopes),

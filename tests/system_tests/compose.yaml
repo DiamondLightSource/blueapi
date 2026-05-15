@@ -46,7 +46,7 @@ services:
       - label=disable
 
   tiled:
-    image: ghcr.io/bluesky/tiled:0.2.7
+    image: ghcr.io/zohebshaikh/test-tiled-proxided:10.0.1
     network_mode: host
     environment:
       - PYTHONPATH=/deploy/

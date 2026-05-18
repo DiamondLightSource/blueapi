@@ -2,7 +2,7 @@ import logging
 import re
 from collections.abc import Mapping
 from contextlib import AbstractAsyncContextManager, aclosing, nullcontext
-from typing import Any, Self, cast
+from typing import Annotated, Any, Self, cast
 
 from aiohttp import ClientSession
 from fastapi import Depends, HTTPException, Request
@@ -115,3 +115,9 @@ async def opa(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         return OpaUserClient(opa, token)
     return None
+
+async def submit_permission(
+    opa: Annotated[OpaUserClient, Depends(opa)],
+    task_request: TaskRequest,
+):
+    await opa.can_submit_task(task_request)

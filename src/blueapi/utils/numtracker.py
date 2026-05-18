@@ -117,8 +117,7 @@ class NumtrackerClient:
                         raise RuntimeError("Numtracker authentication missing")
                     case "AUTH_SERVER_ERROR":
                         raise RuntimeError("Numtracker server authentication error")
-                    case _:
-                        raise RuntimeError(f"Numtracker error: {json['errors']}")
+            raise RuntimeError(f"Numtracker error: {json['errors']}")
 
         new_collection = NumtrackerScanMutationResponse.model_validate(json["data"])
         LOGGER.debug("New NumtrackerNewScan: %s", new_collection)

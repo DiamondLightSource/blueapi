@@ -116,7 +116,7 @@ async def test_create_scan_raises_runtime_error_on_graphql_error(
     [
         ("AUTH_FAILED", "Not authorised to create a scan number for p46 and ab123"),
         ("AUTH_MISSING", "Numtracker authentication missing"),
-        ("AUTH_SERVER_ERROR", "Server authentication error"),
+        ("AUTH_SERVER_ERROR", "Numtracker server authentication error"),
         ("UNKNOWN_ERROR", "Numtracker error:"),
     ],
 )

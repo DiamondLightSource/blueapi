@@ -41,7 +41,7 @@ from blueapi.service.middleware import (
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
-from .authorization import OpaClient, OpaUserClient, opa, validate_tiled_config
+from .authorization import OpaClient, submit_permission, validate_tiled_config
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -260,13 +260,6 @@ example_task_request = TaskRequest(
 )
 
 
-async def submission_check(
-    opa: Annotated[OpaUserClient, Depends(opa)],
-    task_request: TaskRequest,
-):
-    await opa.can_submit_task(task_request)
-
-
 @secure_router_v1.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @secure_router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @start_as_current_span(
@@ -280,7 +273,7 @@ def submit_task(
     request: Request,
     response: Response,
     task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
-    authz_check: Annotated[None, Depends(submission_check)],
+    _: Annotated[None, Depends(submit_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
     user: Fedid,
 ) -> TaskResponse:
@@ -319,6 +312,7 @@ def submit_task(
 @start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
+    _: Annotated[None, Depends(submit_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
@@ -337,6 +331,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 @start_as_current_span(TRACER)
 def get_tasks(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    _: Annotated[None, Depends(submit_permission)],
     task_status: str | SkipJsonSchema[None] = None,
 ) -> TasksListResponse:
     """
@@ -373,6 +368,7 @@ def get_tasks(
 def set_active_task(
     request: Request,
     task: WorkerTask,
+    _: Annotated[None, Depends(submit_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
@@ -403,6 +399,7 @@ def get_passthrough_headers(request: Request) -> dict[str, str]:
 @start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
+    _: Annotated[None, Depends(submit_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TrackableTask:
     """Retrieve a task"""
@@ -480,6 +477,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
+    _: Annotated[None, Depends(submit_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:
     """

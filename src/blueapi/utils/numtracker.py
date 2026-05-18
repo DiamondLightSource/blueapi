@@ -116,7 +116,7 @@ class NumtrackerClient:
                     case "AUTH_MISSING":
                         raise RuntimeError("Numtracker authentication missing")
                     case "AUTH_SERVER_ERROR":
-                        raise RuntimeError("Server authentication error")
+                        raise RuntimeError("Numtracker server authentication error")
                     case _:
                         raise RuntimeError(f"Numtracker error: {json['errors']}")
 

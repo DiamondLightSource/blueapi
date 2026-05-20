@@ -146,6 +146,41 @@ def get_app(config: ApplicationConfig):
     return app
 
 
+def access_task_permission(
+    request: Request,
+    task_id: str,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+):
+    access_token: dict[str, Any] | None = getattr(
+        request.state, "decoded_access_token", None
+    )
+    try:
+        task = runner.run(interface.get_task_by_id, task_id)
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED) from None
+
+    if (
+        access_token
+        and task
+        and access_token.get("fedid") != task.task.metadata.get("user")
+    ):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+
+# start_task_permission is used when there is WorkerTask
+def start_task_permission(
+    request: Request,
+    task: WorkerTask,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+):
+    if not task.task_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="No task id provided",
+        )
+    access_task_permission(request, task.task_id, runner)
+
+
 async def on_key_error_404(_: Request, __: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
@@ -310,7 +345,7 @@ def submit_task(
 @start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
-    _: Annotated[None, Depends(submit_permission)],
+    _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
@@ -328,8 +363,8 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
 def get_tasks(
+    request: Request,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    _: Annotated[None, Depends(submit_permission)],
     task_status: str | SkipJsonSchema[None] = None,
 ) -> TasksListResponse:
     """
@@ -349,6 +384,15 @@ def get_tasks(
         tasks = runner.run(interface.get_tasks_by_status, desired_status)
     else:
         tasks = runner.run(interface.get_tasks)
+
+    access_token: dict[str, Any] | None = getattr(
+        request.state, "decoded_access_token", None
+    )
+    user = access_token.get("fedid") if access_token else None
+
+    if user:
+        tasks = [t for t in tasks if t.task.metadata.get("user") == user]
+
     return TasksListResponse(tasks=tasks)
 
 
@@ -366,7 +410,7 @@ def get_tasks(
 def set_active_task(
     request: Request,
     task: WorkerTask,
-    _: Annotated[None, Depends(submit_permission)],
+    _: Annotated[None, Depends(start_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
@@ -397,7 +441,7 @@ def get_passthrough_headers(request: Request) -> dict[str, str]:
 @start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
-    _: Annotated[None, Depends(submit_permission)],
+    _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TrackableTask:
     """Retrieve a task"""
@@ -475,7 +519,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    _: Annotated[None, Depends(submit_permission)],
+    _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:
     """
@@ -507,6 +551,9 @@ def set_state(
         elif new_state == WorkerState.RUNNING:
             runner.run(interface.resume_worker)
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
+            # active = runner.run(interface.get_active_task)
+            # if active.task.metadata.get("user"):
+
             try:
                 runner.run(
                     interface.cancel_active_task,

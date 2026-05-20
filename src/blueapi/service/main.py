@@ -149,6 +149,7 @@ def get_app(config: ApplicationConfig):
 
 
 def access_task_permission(
+    opa: Annotated[OPAClient, Depends(get_opa_client)],
     request: Request,
     task_id: str,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -156,21 +157,19 @@ def access_task_permission(
     access_token: dict[str, Any] | None = getattr(
         request.state, "decoded_access_token", None
     )
-    try:
-        task = runner.run(interface.get_task_by_id, task_id)
-    except KeyError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED) from None
+    task = runner.run(interface.get_task_by_id, task_id)
 
-    if (
+    if not opa.admin() and (
         access_token
         and task
         and access_token.get("fedid") != task.task.metadata.get("user")
     ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
 # start_task_permission is used when there is WorkerTask
 def start_task_permission(
+    opa: Annotated[OPAClient, Depends(get_opa_client)],
     request: Request,
     task: WorkerTask,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -180,7 +179,7 @@ def start_task_permission(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="No task id provided",
         )
-    access_task_permission(request, task.task_id, runner)
+    access_task_permission(opa, request, task.task_id, runner)
 
 
 async def on_key_error_404(_: Request, __: Exception):
@@ -392,8 +391,7 @@ def get_tasks(
     )
     user = access_token.get("fedid") if access_token else None
 
-    if user:
-        tasks = [t for t in tasks if t.task.metadata.get("user") == user]
+    tasks = [t for t in tasks if t.task.metadata.get("user") == user]
 
     return TasksListResponse(tasks=tasks)
 
@@ -519,8 +517,10 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 )
 @start_as_current_span(TRACER, "state_change_request.new_state")
 def set_state(
+    request: Request,
     state_change_request: StateChangeRequest,
     response: Response,
+    opa: Annotated[OPAClient, Depends(get_opa_client)],
     # _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:
@@ -548,14 +548,20 @@ def set_state(
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
+        active = runner.run(interface.get_active_task)
+        access_token: dict[str, Any] | None = getattr(
+            request.state, "decoded_access_token", None
+        )
+        user = access_token.get("fedid") if access_token else None
+
+        if not opa.admin() and active and active.task.metadata.get("user") != user:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
         if new_state == WorkerState.PAUSED:
             runner.run(interface.pause_worker, state_change_request.defer)
         elif new_state == WorkerState.RUNNING:
             runner.run(interface.resume_worker)
         elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
-            # active = runner.run(interface.get_active_task)
-            # if active.task.metadata.get("user"):
-
             try:
                 runner.run(
                     interface.cancel_active_task,

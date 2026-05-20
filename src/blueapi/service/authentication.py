@@ -286,6 +286,9 @@ def unchecked_bearer_token(req: Request) -> str | None:
         return None
     return param.strip()
 
+    def admin(self):
+        return False
+
 
 UncheckedBearerToken = Annotated[str | None, Depends(unchecked_bearer_token)]
 

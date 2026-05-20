@@ -251,7 +251,7 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
 
     response = client.post("/tasks", json=task.model_dump())
 
-    mock_runner.run.assert_called_with(submit_task, task, {"user": "Unknown"})
+    mock_runner.run.assert_called_with(submit_task, task, {"user": None})
     assert response.json() == {"task_id": task_id}
 
 

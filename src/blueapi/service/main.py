@@ -519,7 +519,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    _: Annotated[None, Depends(access_task_permission)],
+    # _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:
     """

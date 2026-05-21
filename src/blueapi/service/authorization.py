@@ -51,7 +51,6 @@ class OpaClient:
         return nullcontext()
 
 
-
 class OpaUserClient:
     client: OpaClient
     token: str

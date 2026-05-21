@@ -40,7 +40,7 @@ from blueapi.service.authentication import Fedid, build_access_token_check
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
-from .authorization import OpaClient
+from .authorization import OpaClient, validate_tiled_config
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -98,6 +98,7 @@ def lifespan(config: ApplicationConfig):
         setup_runner(config)
         async with OpaClient.for_config(meta and meta.instrument, config.opa) as opa:
             app.state.authz = opa
+            await validate_tiled_config(config.tiled.authentication, config.oidc, opa)
             yield
         teardown_runner()
 

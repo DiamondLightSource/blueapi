@@ -756,6 +756,11 @@
             "title": "OpaConfig",
             "type": "object",
             "properties": {
+                "audience": {
+                    "title": "Audience",
+                    "default": "account",
+                    "type": "string"
+                },
                 "root": {
                     "title": "Root",
                     "default": "http://localhost:8181/",

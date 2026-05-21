@@ -19,7 +19,6 @@ from fastapi import (
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -37,6 +36,7 @@ from super_state_machine.errors import TransitionError
 from blueapi import __version__
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
+from blueapi.service.authentication import build_access_token_check
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -61,6 +61,7 @@ from .runner import WorkerDispatcher
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
+TRACER = get_tracer("interface")
 
 
 def _runner() -> WorkerDispatcher:
@@ -117,7 +118,7 @@ def get_app(config: ApplicationConfig):
     )
     dependencies = []
     if config.oidc:
-        dependencies.append(Depends(decode_access_token(config.oidc)))
+        dependencies.append(Depends(build_access_token_check(config.oidc)))
         app.swagger_ui_init_oauth = {
             "clientId": "NOT_SUPPORTED",
         }
@@ -138,32 +139,6 @@ def get_app(config: ApplicationConfig):
             allow_headers=config.api.cors.allow_headers,
         )
     return app
-
-
-def decode_access_token(config: OIDCConfig):
-    jwkclient = jwt.PyJWKClient(config.jwks_uri)
-    oauth_scheme = OAuth2AuthorizationCodeBearer(
-        authorizationUrl=config.authorization_endpoint,
-        tokenUrl=config.token_endpoint,
-        refreshUrl=config.token_endpoint,
-    )
-
-    def inner(request: Request, access_token: str = Depends(oauth_scheme)):
-        signing_key = jwkclient.get_signing_key_from_jwt(access_token)
-        decoded: dict[str, Any] = jwt.decode(
-            access_token,
-            signing_key.key,
-            algorithms=config.id_token_signing_alg_values_supported,
-            verify=True,
-            audience=config.client_audience,
-            issuer=config.issuer,
-        )
-        request.state.decoded_access_token = decoded
-
-    return inner
-
-
-TRACER = get_tracer("interface")
 
 
 async def on_key_error_404(_: Request, __: Exception):

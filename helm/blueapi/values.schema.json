@@ -755,6 +755,9 @@
             "$id": "OpaConfig",
             "title": "OpaConfig",
             "type": "object",
+            "required": [
+                "tiled_service_account_check"
+            ],
             "properties": {
                 "audience": {
                     "title": "Audience",
@@ -768,6 +771,10 @@
                     "format": "uri",
                     "maxLength": 2083,
                     "minLength": 1
+                },
+                "tiled_service_account_check": {
+                    "title": "Tiled Service Account Check",
+                    "type": "string"
                 }
             },
             "additionalProperties": false

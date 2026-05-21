@@ -340,6 +340,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             "opa": {
                 "root": "http://opa.example.com/",
                 "audience": "account",
+                "tiled_service_account_check": "v1/tiled_service_account",
             },
         },
         {

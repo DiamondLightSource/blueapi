@@ -345,8 +345,15 @@
                     "default": "account",
                     "title": "Audience",
                     "type": "string"
+                },
+                "tiled_service_account_check": {
+                    "title": "Tiled Service Account Check",
+                    "type": "string"
                 }
             },
+            "required": [
+                "tiled_service_account_check"
+            ],
             "title": "OpaConfig",
             "type": "object",
             "$id": "OpaConfig"

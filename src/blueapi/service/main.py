@@ -40,6 +40,7 @@ from blueapi.service.authentication import Fedid, build_access_token_check
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
+from .authorization import OpaClient
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -93,8 +94,13 @@ def teardown_runner():
 def lifespan(config: ApplicationConfig):
     @asynccontextmanager
     async def inner(app: FastAPI):
+        if not (meta := config.env.metadata):
+            raise ValueError("Instrument name is required in metadata")
+
         setup_runner(config)
-        yield
+        async with OpaClient.for_config(meta.instrument, config.opa) as opa:
+            app.state.authz = opa
+            yield
         teardown_runner()
 
     return inner

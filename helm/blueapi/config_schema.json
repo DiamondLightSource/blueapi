@@ -340,6 +340,11 @@
                     "minLength": 1,
                     "title": "Root",
                     "type": "string"
+                },
+                "audience": {
+                    "default": "account",
+                    "title": "Audience",
+                    "type": "string"
                 }
             },
             "title": "OpaConfig",

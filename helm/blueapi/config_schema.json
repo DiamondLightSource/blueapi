@@ -330,6 +330,22 @@
             "type": "object",
             "$id": "OIDCConfig"
         },
+        "OpaConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "root": {
+                    "default": "http://localhost:8181/",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1,
+                    "title": "Root",
+                    "type": "string"
+                }
+            },
+            "title": "OpaConfig",
+            "type": "object",
+            "$id": "OpaConfig"
+        },
         "PlanSource": {
             "additionalProperties": false,
             "properties": {
@@ -606,6 +622,17 @@
             "anyOf": [
                 {
                     "$ref": "NumtrackerConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null
+        },
+        "opa": {
+            "anyOf": [
+                {
+                    "$ref": "OpaConfig"
                 },
                 {
                     "type": "null"

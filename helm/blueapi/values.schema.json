@@ -712,9 +712,14 @@
             "type": "object",
             "required": [
                 "tiled_service_account_check",
-                "submit_task_check"
+                "submit_task_check",
+                "admin_check"
             ],
             "properties": {
+                "admin_check": {
+                    "title": "Admin Check",
+                    "type": "string"
+                },
                 "audience": {
                     "title": "Audience",
                     "default": "account",

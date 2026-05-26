@@ -40,7 +40,13 @@ from blueapi.service.authentication import Fedid, build_access_token_check
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
-from .authorization import OpaClient, submit_permission, validate_tiled_config
+from .authorization import (
+    OpaClient,
+    OpaUserClient,
+    opa,
+    submit_permission,
+    validate_tiled_config,
+)
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -147,7 +153,7 @@ def get_app(config: ApplicationConfig):
 
 
 def access_task_permission(
-    opa: Annotated[OPAClient, Depends(get_opa_client)],
+    opa: Annotated[OpaUserClient, Depends(opa)],
     request: Request,
     task_id: str,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -167,7 +173,7 @@ def access_task_permission(
 
 # start_task_permission is used when there is WorkerTask
 def start_task_permission(
-    opa: Annotated[OPAClient, Depends(get_opa_client)],
+    opa: Annotated[OpaUserClient, Depends(opa)],
     request: Request,
     task: WorkerTask,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -518,7 +524,7 @@ def set_state(
     request: Request,
     state_change_request: StateChangeRequest,
     response: Response,
-    opa: Annotated[OPAClient, Depends(get_opa_client)],
+    opa: Annotated[OpaUserClient, Depends(opa)],
     # _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:

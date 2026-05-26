@@ -6,6 +6,16 @@ To run the stack:
 
 1. In the root directory run `git submodule update --init --recursive` to initialise the example-services repo
 2. Run `docker compose -f tests/system_tests/compose.yaml up -d` to launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs, in detached mode
+>[!NOTE]
+> On DLS workstations, perform these setup steps since docker compose is not available by default:
+> Run `systemctl enable --user podman.socket --now` to set up a podman user service and socket
+> Add the following lines to your `$HOME/.profile` file:
+> ```
+> module load docker-compose/5.1.1
+> export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
+> alias docker=podman
+> ```
+
 3. Run `source tests/system_tests/.env` which will set required EPICS environmental variables
 4. Run `blueapi -c tests/system_tests/config.yaml serve` to launch BlueAPI configured to use the launched stack. This may take a while, as BlueAPI will attempt to connect to a number of devices via Channel Access
 

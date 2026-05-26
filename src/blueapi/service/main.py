@@ -155,11 +155,14 @@ def get_app(config: ApplicationConfig):
 
 
 def access_task_permission(
-    opa: Annotated[OpaUserClient, Depends(opa)],
+    opa: Annotated[OpaUserClient | None, Depends(opa)],
     request: Request,
     task_id: str,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ):
+    if not opa:
+        return
+
     access_token: dict[str, Any] | None = getattr(
         request.state, "decoded_access_token", None
     )
@@ -560,7 +563,12 @@ def set_state(
         )
         user = access_token.get("fedid") if access_token else None
 
-        if not opa.admin() and active and active.task.metadata.get("user") != user:
+        if (
+            opa
+            and not opa.admin()
+            and active
+            and active.task.metadata.get("user") != user
+        ):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
         if new_state == WorkerState.PAUSED:

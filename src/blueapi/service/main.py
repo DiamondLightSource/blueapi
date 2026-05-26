@@ -154,31 +154,21 @@ def get_app(config: ApplicationConfig):
 
 def access_task_permission(
     opa: Annotated[OpaUserClient | None, Depends(opa)],
-    request: Request,
     task_id: str,
+    fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ):
-    if not opa:
-        return
-
-    access_token: dict[str, Any] | None = getattr(
-        request.state, "decoded_access_token", None
-    )
     task = runner.run(interface.get_task_by_id, task_id)
 
-    if not opa.admin() and (
-        access_token
-        and task
-        and access_token.get("fedid") != task.task.metadata.get("user")
-    ):
+    if opa and not opa.admin() and (task and fedid != task.task.metadata.get("user")):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
 # start_task_permission is used when there is WorkerTask
 def start_task_permission(
-    opa: Annotated[OpaUserClient, Depends(opa)],
-    request: Request,
     task: WorkerTask,
+    opa: Annotated[OpaUserClient, Depends(opa)],
+    fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ):
     if not task.task_id:
@@ -186,7 +176,7 @@ def start_task_permission(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="No task id provided",
         )
-    access_task_permission(opa, request, task.task_id, runner)
+    access_task_permission(opa, task.task_id, fedid, runner)
 
 
 async def on_key_error_404(_: Request, __: Exception):
@@ -316,12 +306,11 @@ def submit_task(
     task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
     _: Annotated[None, Depends(submit_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    user: Fedid,
+    fedid: Fedid,
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        user = user or "Unknown"
-        task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
+        task_id: str = runner.run(interface.submit_task, task_request, {"user": fedid})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
@@ -371,7 +360,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
 def get_tasks(
-    request: Request,
+    fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
     task_status: str | SkipJsonSchema[None] = None,
 ) -> TasksListResponse:
@@ -393,12 +382,7 @@ def get_tasks(
     else:
         tasks = runner.run(interface.get_tasks)
 
-    access_token: dict[str, Any] | None = getattr(
-        request.state, "decoded_access_token", None
-    )
-    user = access_token.get("fedid") if access_token else None
-
-    tasks = [t for t in tasks if t.task.metadata.get("user") == user]
+    tasks = [t for t in tasks if t.task.metadata.get("user") == fedid]
 
     return TasksListResponse(tasks=tasks)
 
@@ -524,9 +508,9 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 )
 @start_as_current_span(TRACER, "state_change_request.new_state")
 def set_state(
-    request: Request,
     state_change_request: StateChangeRequest,
     response: Response,
+    fedid: Fedid,
     opa: Annotated[OpaUserClient, Depends(opa)],
     # _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
@@ -556,16 +540,12 @@ def set_state(
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
         active = runner.run(interface.get_active_task)
-        access_token: dict[str, Any] | None = getattr(
-            request.state, "decoded_access_token", None
-        )
-        user = access_token.get("fedid") if access_token else None
 
         if (
             opa
             and not opa.admin()
             and active
-            and active.task.metadata.get("user") != user
+            and active.task.metadata.get("user") != fedid
         ):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 

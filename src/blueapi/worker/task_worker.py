@@ -445,15 +445,6 @@ class TaskWorker:
                         self._current.set_result(result)
                     except RunEngineInterrupted as e:
                         state = self._ctx.run_engine.state
-                        """paused waitng for the next command:
-                            RE.resume()    Resume the plan.
-                            RE.abort()
-                                Perform cleanup,then kill plan.Mark exit_stats='aborted'
-                            RE.stop()
-                                Perform cleanup,then kill plan.Mark exit_status='success
-                            RE.halt()
-                                Emergency Stop: Do not perform cleanup --- just stop
-                        """
                         if state in ["panicked", "aborted"]:
                             LOGGER.error("Task failed", extra=meta)
                             self._current.set_exception(e)

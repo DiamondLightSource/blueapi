@@ -127,4 +127,5 @@ async def submit_permission(
     opa: Annotated[OpaUserClient, Depends(opa)],
     task_request: TaskRequest,
 ):
-    await opa.can_submit_task(task_request)
+    if opa:
+        await opa.can_submit_task(task_request)

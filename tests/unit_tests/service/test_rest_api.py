@@ -574,7 +574,12 @@ def test_get_state(mock_runner: Mock, client: TestClient):
 def test_set_state_running_to_paused(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.PAUSED
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
@@ -588,7 +593,12 @@ def test_set_state_running_to_paused(mock_runner: Mock, client: TestClient):
 def test_set_state_paused_to_running(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.PAUSED
     final_state = WorkerState.RUNNING
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
@@ -602,7 +612,12 @@ def test_set_state_paused_to_running(mock_runner: Mock, client: TestClient):
 def test_set_state_running_to_aborting(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.ABORTING
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
@@ -619,7 +634,12 @@ def test_set_state_running_to_stopping_including_reason(
     current_state = WorkerState.RUNNING
     final_state = WorkerState.STOPPING
     reason = "blueapi is being stopped"
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state",
@@ -635,7 +655,11 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.STOPPING
 
-    mock_runner.run.side_effect = [current_state, TransitionError()]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        TransitionError(),
+    ]
 
     response = client.put(
         "/worker/state",

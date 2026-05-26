@@ -314,6 +314,7 @@ class OpaConfig(BlueapiBaseModel):
     audience: str = "account"
     tiled_service_account_check: str
     submit_task_check: str
+    admin_check: str
 
 
 class ApplicationConfig(BlueapiBaseModel):

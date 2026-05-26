@@ -75,6 +75,9 @@ class OpaClient:
         ):
             raise HTTPException(status_code=status.HTTP_403_UNORTHORIZED)
 
+    async def is_admin(self, token: str) -> bool:
+        return await self._call_opa(self._conf.admin_check, {"token": token})
+
 
 class OpaUserClient:
     client: OpaClient
@@ -87,6 +90,9 @@ class OpaUserClient:
     async def can_submit_task(self, task: TaskRequest):
         LOGGER.info("Checking permissions to run task")
         await self.client.require_submit_task(task.instrument_session, self.token)
+
+    async def admin(self) -> bool:
+        return await self.client.is_admin(self.token)
 
 
 async def validate_tiled_config(
@@ -115,6 +121,7 @@ async def opa(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         return OpaUserClient(opa, token)
     return None
+
 
 async def submit_permission(
     opa: Annotated[OpaUserClient, Depends(opa)],

@@ -24,6 +24,7 @@ patch_client_session = patch(
 def opa_config() -> OpaConfig:
     return OpaConfig(
         root=HttpUrl("http://auth.example.com"),
+        submit_task_check="/auth/submit",
         tiled_service_account_check="/auth/tiled",
     )
 

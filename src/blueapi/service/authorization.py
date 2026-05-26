@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import Mapping
 from contextlib import AbstractAsyncContextManager, aclosing, nullcontext
 from typing import Any, Self, cast
@@ -9,8 +10,10 @@ from starlette import status
 
 from blueapi.config import OIDCConfig, OpaConfig, ServiceAccount
 from blueapi.service.authentication import TiledAuth, unchecked_bearer_token
+from blueapi.service.model import TaskRequest
 
 LOGGER = logging.getLogger(__name__)
+INSTRUMENT_SESSION_RE = re.compile(r"^[a-z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$")
 
 
 class OpaClient:
@@ -57,6 +60,33 @@ class OpaClient:
             raise ValueError(
                 f"Tiled service account is not valid for '{self._instrument}'"
             )
+
+    async def require_submit_task(self, instrument_session: str, token: str):
+        if not (match := INSTRUMENT_SESSION_RE.match(instrument_session)):
+            raise ValueError("Invalid instrument session")
+
+        if not await self._call_opa(
+            self._conf.submit_task_check,
+            {
+                "token": token,
+                "proposal": int(match["proposal"]),
+                "visit": int(match["visit"]),
+            },
+        ):
+            raise HTTPException(status_code=status.HTTP_403_UNORTHORIZED)
+
+
+class OpaUserClient:
+    client: OpaClient
+    token: str
+
+    def __init__(self, client: OpaClient, token: str):
+        self.client = client
+        self.token = token
+
+    async def can_submit_task(self, task: TaskRequest):
+        LOGGER.info("Checking permissions to run task")
+        await self.client.require_submit_task(task.instrument_session, self.token)
 
 
 async def validate_tiled_config(

@@ -454,7 +454,7 @@ class TaskWorker:
                             RE.halt()
                                 Emergency Stop: Do not perform cleanup --- just stop
                         """
-                        if state in ["panicked", "abort"]:
+                        if state in ["panicked", "aborted"]:
                             LOGGER.error("Task failed", extra=meta)
                             self._current.set_exception(e)
                             self._report_error(e)

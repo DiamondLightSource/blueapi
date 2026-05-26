@@ -1,12 +1,14 @@
 import logging
 from collections.abc import Mapping
 from contextlib import AbstractAsyncContextManager, aclosing, nullcontext
-from typing import Any, Self
+from typing import Any, Self, cast
 
 from aiohttp import ClientSession
+from fastapi import Depends, HTTPException, Request
+from starlette import status
 
 from blueapi.config import OIDCConfig, OpaConfig, ServiceAccount
-from blueapi.service.authentication import TiledAuth
+from blueapi.service.authentication import TiledAuth, unchecked_bearer_token
 
 LOGGER = logging.getLogger(__name__)
 
@@ -72,3 +74,14 @@ async def validate_tiled_config(
     tiled.token_url = oidc.token_endpoint
     auth = TiledAuth(tiled)
     await opa.require_tiled_service_account(auth.get_access_token())
+
+
+async def opa(
+    request: Request, token: str | None = Depends(unchecked_bearer_token)
+) -> OpaUserClient | None:
+
+    if opa := cast(OpaClient | None, getattr(request.app.state, "authz", None)):
+        if not token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        return opa.for_token(token)
+    return None

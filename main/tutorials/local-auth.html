@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run Auth Locally &#8212; blueapi 1.14.1.dev18+g7d8ff5708 documentation</title>
+    <title>Run Auth Locally &#8212; blueapi 1.14.1.dev19+g2eccc483a documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=599a1c4f"></script>
+    <script src="../_static/documentation_options.js?v=b11dfc73"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -485,6 +485,19 @@
 <ol class="arabic simple">
 <li><p>In the root directory run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">submodule</span> <span class="pre">update</span> <span class="pre">--init</span> <span class="pre">--recursive</span></code> to initialise the example-services repo</p></li>
 <li><p>Run <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">-f</span> <span class="pre">tests/system_tests/compose.yaml</span> <span class="pre">up</span> <span class="pre">-d</span></code> to launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs, in detached mode</p></li>
+</ol>
+<blockquote>
+<div><p>[!NOTE]
+On DLS workstations, perform these setup steps since docker compose is not available by default:</p>
+<p>Run <code class="docutils literal notranslate"><span class="pre">systemctl</span> <span class="pre">enable</span> <span class="pre">--user</span> <span class="pre">podman.socket</span> <span class="pre">--now</span></code> to set up a podman user service and socket</p>
+<p>Add the following lines to your <code class="docutils literal notranslate"><span class="pre">$HOME/.profile</span></code> file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>module load docker-compose/5.1.1
+export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
+alias docker=podman
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic simple" start="3">
 <li><p>Run <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">tests/system_tests/.env</span></code> which will set required EPICS environmental variables</p></li>
 <li><p>Run <code class="docutils literal notranslate"><span class="pre">blueapi</span> <span class="pre">-c</span> <span class="pre">tests/system_tests/config.yaml</span> <span class="pre">serve</span></code> to launch BlueAPI configured to use the launched stack. This may take a while, as BlueAPI will attempt to connect to a number of devices via Channel Access</p></li>
 </ol>

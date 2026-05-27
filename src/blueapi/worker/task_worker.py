@@ -119,6 +119,8 @@ class TaskWorker:
     _started: Event
     _stopping: Event
     _stopped: Event
+    _resuming: Event
+    _resumed: Event
     _current_task_otel_context: Context | None
 
     def __init__(

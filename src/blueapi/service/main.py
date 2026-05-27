@@ -94,11 +94,9 @@ def teardown_runner():
 def lifespan(config: ApplicationConfig):
     @asynccontextmanager
     async def inner(app: FastAPI):
-        if not (meta := config.env.metadata):
-            raise ValueError("Instrument name is required in metadata")
-
+        meta = config.env.metadata
         setup_runner(config)
-        async with OpaClient.for_config(meta.instrument, config.opa) as opa:
+        async with OpaClient.for_config(meta and meta.instrument, config.opa) as opa:
             app.state.authz = opa
             yield
         teardown_runner()

@@ -37,9 +37,11 @@ class OpaClient:
 
     @classmethod
     def for_config(
-        cls, instrument: str, config: OpaConfig | None
+        cls, instrument: str | None, config: OpaConfig | None
     ) -> AbstractAsyncContextManager[Self | None]:
         if config:
+            if not instrument:
+                raise ValueError("Instrument name is required for OPA client")
             return aclosing(cls(instrument, config))
         LOGGER.info("No OPA config provided - not creating OpaClient")
         return nullcontext()

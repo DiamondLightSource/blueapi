@@ -128,7 +128,7 @@ def test_auth_request_functionality(
     environment_id = uuid.uuid4()
     mock_authn_server.stop()  # Cannot use multiple RequestsMock context manager
     mock_get_env = mock_authn_server.get(
-        "http://localhost:8000/environment",
+        "http://localhost:8000/api/v1/environment",
         json=EnvironmentResponse(
             environment_id=environment_id, initialized=True
         ).model_dump(mode="json"),
@@ -155,7 +155,7 @@ def test_refresh_if_signature_expired(
     environment_id = uuid.uuid4()
     mock_authn_server.stop()  # Cannot use multiple RequestsMock context manager
     mock_get_env = mock_authn_server.get(
-        "http://localhost:8000/environment",
+        "http://localhost:8000/api/v1/environment",
         json=EnvironmentResponse(
             environment_id=environment_id, initialized=True
         ).model_dump(mode="json"),

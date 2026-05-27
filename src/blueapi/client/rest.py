@@ -170,26 +170,26 @@ class BlueapiRestClient:
         self._pool = requests.Session()
 
     def get_plans(self) -> PlanResponse:
-        return self._request_and_deserialize("/plans", PlanResponse)
+        return self._request_v1("/plans", PlanResponse)
 
     def get_plan(self, name: str) -> PlanModel:
-        return self._request_and_deserialize(f"/plans/{name}", PlanModel)
+        return self._request_v1(f"/plans/{name}", PlanModel)
 
     def get_devices(self) -> DeviceResponse:
-        return self._request_and_deserialize("/devices", DeviceResponse)
+        return self._request_v1("/devices", DeviceResponse)
 
     def get_device(self, name: str) -> DeviceModel:
-        return self._request_and_deserialize(f"/devices/{name}", DeviceModel)
+        return self._request_v1(f"/devices/{name}", DeviceModel)
 
     def get_state(self) -> WorkerState:
-        return self._request_and_deserialize("/worker/state", WorkerState)
+        return self._request_v1("/worker/state", WorkerState)
 
     def set_state(
         self,
         state: Literal[WorkerState.RUNNING, WorkerState.PAUSED],
         defer: bool | None = False,
     ):
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/worker/state",
             target_type=WorkerState,
             method="PUT",
@@ -197,16 +197,16 @@ class BlueapiRestClient:
         )
 
     def get_task(self, task_id: str) -> TrackableTask:
-        return self._request_and_deserialize(f"/tasks/{task_id}", TrackableTask)
+        return self._request_v1(f"/tasks/{task_id}", TrackableTask)
 
     def get_all_tasks(self) -> TasksListResponse:
-        return self._request_and_deserialize("/tasks", TasksListResponse)
+        return self._request_v1("/tasks", TasksListResponse)
 
     def get_active_task(self) -> WorkerTask:
-        return self._request_and_deserialize("/worker/task", WorkerTask)
+        return self._request_v1("/worker/task", WorkerTask)
 
     def create_task(self, task: TaskRequest) -> TaskResponse:
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/tasks",
             TaskResponse,
             method="POST",
@@ -215,12 +215,10 @@ class BlueapiRestClient:
         )
 
     def clear_task(self, task_id: str) -> TaskResponse:
-        return self._request_and_deserialize(
-            f"/tasks/{task_id}", TaskResponse, method="DELETE"
-        )
+        return self._request_v1(f"/tasks/{task_id}", TaskResponse, method="DELETE")
 
     def update_worker_task(self, task: WorkerTask) -> WorkerTask:
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/worker/task",
             WorkerTask,
             method="PUT",
@@ -232,7 +230,7 @@ class BlueapiRestClient:
         state: Literal[WorkerState.ABORTING, WorkerState.STOPPING],
         reason: str | None = None,
     ):
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/worker/state",
             target_type=WorkerState,
             method="PUT",
@@ -240,12 +238,10 @@ class BlueapiRestClient:
         )
 
     def get_environment(self) -> EnvironmentResponse:
-        return self._request_and_deserialize("/environment", EnvironmentResponse)
+        return self._request_v1("/environment", EnvironmentResponse)
 
     def delete_environment(self) -> EnvironmentResponse:
-        return self._request_and_deserialize(
-            "/environment", EnvironmentResponse, method="DELETE"
-        )
+        return self._request_v1("/environment", EnvironmentResponse, method="DELETE")
 
     def get_oidc_config(self) -> OIDCConfig | None:
         try:
@@ -257,10 +253,23 @@ class BlueapiRestClient:
     def get_python_environment(
         self, name: str | None = None, source: SourceInfo | None = None
     ) -> PythonEnvironmentResponse:
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/python_environment",
             PythonEnvironmentResponse,
             params={"name": name, "source": source},
+        )
+
+    def _request_v1(
+        self,
+        suffix: str,
+        target_type: type[T],
+        data: Mapping[str, Any] | None = None,
+        method="GET",
+        get_exception: Callable[[requests.Response], Exception | None] = _exception,
+        params: Mapping[str, Any] | None = None,
+    ) -> T:
+        return self._request_and_deserialize(
+            "/api/v1" + suffix, target_type, data, method, get_exception, params
         )
 
     @start_as_current_span(TRACER, "method", "data", "suffix")

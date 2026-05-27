@@ -160,7 +160,7 @@ def test_get_plans(runner: CliRunner):
 
     response = responses.add(
         responses.GET,
-        "http://localhost:8000/plans",
+        "http://localhost:8000/api/v1/plans",
         json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
         status=200,
     )
@@ -176,7 +176,7 @@ def test_get_devices(runner: CliRunner):
 
     response = responses.add(
         responses.GET,
-        "http://localhost:8000/devices",
+        "http://localhost:8000/api/v1/devices",
         json=DeviceResponse(devices=[DeviceModel.from_device(device)]).model_dump(),
         status=200,
     )
@@ -218,7 +218,7 @@ def test_submit_plan(runner: CliRunner):
     }
 
     response = responses.post(
-        url="http://a.fake.host:12345/tasks",
+        url="http://a.fake.host:12345/api/v1/tasks",
         match=[matchers.json_params_matcher(body_data)],
     )
 
@@ -268,7 +268,7 @@ def test_submit_plan_without_stomp(runner: CliRunner):
 def test_run_plan(stomp_client: StompClient, runner: CliRunner):
     task_id = "abcd-1234"
     submit_response = responses.post(
-        url="http://a.fake.host:12345/tasks",
+        url="http://a.fake.host:12345/api/v1/tasks",
         match=[
             matchers.json_params_matcher(
                 {
@@ -282,7 +282,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
         status=201,
     )
     run_response = responses.put(
-        url="http://a.fake.host:12345/worker/task",
+        url="http://a.fake.host:12345/api/v1/worker/task",
         match=[matchers.json_params_matcher({"task_id": task_id})],
         json={"task_id": task_id},
     )
@@ -398,7 +398,7 @@ def test_run_plan_feedback(
 @responses.activate
 def test_run_plan_background_without_stomp(runner: CliRunner):
     submit_response = responses.post(
-        url="http://a.fake.host:12345/tasks",
+        url="http://a.fake.host:12345/api/v1/tasks",
         match=[
             matchers.json_params_matcher(
                 {
@@ -412,7 +412,7 @@ def test_run_plan_background_without_stomp(runner: CliRunner):
         status=201,
     )
     run_response = responses.put(
-        url="http://a.fake.host:12345/worker/task",
+        url="http://a.fake.host:12345/api/v1/worker/task",
         match=[matchers.json_params_matcher({"task_id": "abcd-1234"})],
         json={"task_id": "abcd-1234"},
     )
@@ -541,7 +541,7 @@ def test_get_env(runner: CliRunner):
     environment_id = uuid.uuid4()
     responses.add(
         responses.GET,
-        "http://localhost:8000/environment",
+        "http://localhost:8000/api/v1/environment",
         json=EnvironmentResponse(
             environment_id=environment_id, initialized=True
         ).model_dump(mode="json"),
@@ -559,7 +559,10 @@ def test_get_env(runner: CliRunner):
 @responses.activate
 def test_get_state(runner: CliRunner):
     responses.add(
-        responses.GET, "http://localhost:8000/worker/state", json="IDLE", status=200
+        responses.GET,
+        "http://localhost:8000/api/v1/worker/state",
+        json="IDLE",
+        status=200,
     )
     state = runner.invoke(main, ["controller", "state"])
     print(state.stderr)
@@ -576,7 +579,7 @@ def test_reset_env_client_behavior(
     environment_id = uuid.uuid4()
     responses.add(
         responses.DELETE,
-        "http://localhost:8000/environment",
+        "http://localhost:8000/api/v1/environment",
         json=EnvironmentResponse(
             environment_id=environment_id, initialized=False
         ).model_dump(mode="json"),
@@ -588,7 +591,7 @@ def test_reset_env_client_behavior(
     for state in env_state:
         responses.add(
             responses.GET,
-            "http://localhost:8000/environment",
+            "http://localhost:8000/api/v1/environment",
             json=EnvironmentResponse(
                 environment_id=environment_id, initialized=state
             ).model_dump(mode="json"),
@@ -604,10 +607,10 @@ def test_reset_env_client_behavior(
     for index, call in enumerate(responses.calls):
         if index == 0:
             assert call.request.method == "DELETE"
-            assert call.request.url == "http://localhost:8000/environment"
+            assert call.request.url == "http://localhost:8000/api/v1/environment"
         else:
             assert call.request.method == "GET"
-            assert call.request.url == "http://localhost:8000/environment"
+            assert call.request.url == "http://localhost:8000/api/v1/environment"
 
     # Check if the final environment status is printed correctly
     # assert "Environment is initialized." in result.output
@@ -625,7 +628,7 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     environment_id = uuid.uuid4()
     responses.add(
         responses.DELETE,
-        "http://localhost:8000/environment",
+        "http://localhost:8000/api/v1/environment",
         status=200,
         json=EnvironmentResponse(
             environment_id=environment_id, initialized=False
@@ -634,7 +637,7 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
     # Add responses for each polling attempt, all indicating not initialized
     responses.add(
         responses.GET,
-        "http://localhost:8000/environment",
+        "http://localhost:8000/api/v1/environment",
         json=EnvironmentResponse(
             environment_id=environment_id, initialized=False
         ).model_dump(mode="json"),
@@ -655,12 +658,12 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
 
     # First call should be DELETE
     assert responses.calls[0].request.method == "DELETE"
-    assert responses.calls[0].request.url == "http://localhost:8000/environment"
+    assert responses.calls[0].request.url == "http://localhost:8000/api/v1/environment"
 
     # Remaining calls should all be GET
     for call in responses.calls[1:]:  # Skip the first DELETE request # type: ignore
         assert call.request.method == "GET"
-        assert call.request.url == "http://localhost:8000/environment"
+        assert call.request.url == "http://localhost:8000/api/v1/environment"
 
     # Check the output for the timeout message
     assert result.output == "Reloading environment\n"
@@ -673,7 +676,10 @@ def test_env_timeout(mock_sleep: Mock, runner: CliRunner):
 def test_env_reload_server_side_error(runner: CliRunner):
     # Setup mocked error response from the server
     responses.add(
-        responses.DELETE, "http://localhost:8000/environment", status=500, json={}
+        responses.DELETE,
+        "http://localhost:8000/api/v1/environment",
+        status=500,
+        json={},
     )
 
     result = runner.invoke(main, ["controller", "env", "-r"])
@@ -687,7 +693,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
 
     # Only call should be DELETE
     assert responses.calls[0].request.method == "DELETE"
-    assert responses.calls[0].request.url == "http://localhost:8000/environment"
+    assert responses.calls[0].request.url == "http://localhost:8000/api/v1/environment"
 
     # Check the output for the timeout message
     # TODO this seems wrong but this is the current behaviour
@@ -1279,7 +1285,7 @@ def test_get_python_environment(runner: CliRunner):
     }
     response = responses.add(
         responses.GET,
-        "http://localhost:8000/python_environment",
+        "http://localhost:8000/api/v1/python_environment",
         json=scratch_config,
         status=200,
     )
@@ -1302,7 +1308,7 @@ def test_get_python_env_with_empty_response(runner: CliRunner):
     }
     response = responses.add(
         responses.GET,
-        "http://localhost:8000/python_environment",
+        "http://localhost:8000/api/v1/python_environment",
         json=scratch_config,
         status=200,
     )
@@ -1436,7 +1442,7 @@ def test_log_level_override(flag: str, level: str, runner: CliRunner):
 def test_host_option(runner: CliRunner):
     response = responses.add(
         responses.GET,
-        "http://override.example.com:5678/plans",
+        "http://override.example.com:5678/api/v1/plans",
         json={"plans": []},
         status=200,
     )
@@ -1454,7 +1460,7 @@ def test_host_overrides_config(runner: CliRunner):
     config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
     response = responses.add(
         responses.GET,
-        "http://override.example.com:5678/plans",
+        "http://override.example.com:5678/api/v1/plans",
         json={"plans": []},
         status=200,
     )

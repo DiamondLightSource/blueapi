@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Write Bluesky Plans for Blueapi &#8212; blueapi 1.14.1.dev22+g4c5f188d6 documentation</title>
+    <title>Write Bluesky Plans for Blueapi &#8212; blueapi 1.14.1.dev23+g79e891450 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=ed7daf82"></script>
+    <script src="../_static/documentation_options.js?v=0d9e86c2"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -552,6 +552,10 @@
     <span class="o">...</span>
 </pre></div>
 </div>
+<blockquote>
+<div><p>[!NOTE]
+In order for this to work, the <code class="docutils literal notranslate"><span class="pre">MyDeviceComposite</span></code> needs to be made available to blueapi by importing it into the <code class="docutils literal notranslate"><span class="pre">planFunctions</span></code> module where it’s needed. Factories for the individual devices within the composite also need to be available in the relevant beamline device module.</p>
+</div></blockquote>
 </section>
 <section id="injecting-metadata">
 <h2>Injecting Metadata<a class="headerlink" href="#injecting-metadata" title="Link to this heading">#</a></h2>

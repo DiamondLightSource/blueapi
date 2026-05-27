@@ -10,6 +10,7 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pydantic
 import pytest
+from bluesky import plan_stubs
 from bluesky.protocols import Movable, Readable, Status
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -44,6 +45,7 @@ _INDEFINITE_TASK = Task(
     params={"movable": "fake_device", "value": 4.0},
 )
 _FAILING_TASK = Task(name="failing_plan", params={})
+_PAUSING_TASK = Task(name="pausing_plan", params={})
 _TASK_WITH_METADATA = Task(
     name="sleep",
     params={"time": 0.0},
@@ -77,6 +79,10 @@ class FakeDevice(Movable[float]):
 
 def failing_plan() -> MsgGenerator:
     raise KeyError("I failed")
+
+
+def pausing_plan() -> MsgGenerator:
+    yield from plan_stubs.pause()
 
 
 @dataclasses.dataclass

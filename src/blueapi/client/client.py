@@ -677,7 +677,6 @@ class BlueapiClient:
             status = self._rest.delete_environment()
         except (
             BlueskyRequestError,
-            BlueskyRemoteControlError,
             ServiceUnavailableError,
         ):
             raise

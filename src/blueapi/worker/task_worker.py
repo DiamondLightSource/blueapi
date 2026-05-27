@@ -468,6 +468,13 @@ class TaskWorker:
                     else:
                         process_task()
 
+            elif isinstance(next_task, ResumeSignal):
+                """
+                If we receive a resume signal, we simply call resume on the RunEngine,
+                which will cause it to continue if it is paused.
+                """
+                self._ctx.run_engine.resume()
+
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't
@@ -693,6 +700,15 @@ class TaskWorker:
 class KillSignal:
     """
     Object put in the worker's task queue to tell it to shut down.
+    """
+
+    ...
+
+
+@dataclass
+class ResumeSignal:
+    """
+    Object put in the worker's task queue to tell it to resume if paused.
     """
 
     ...

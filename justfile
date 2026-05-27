@@ -19,6 +19,8 @@ run PLAN PARAMS:
     uv run blueapi -c tests/system_tests/config.yaml controller run -i {{ SESSION }} {{ PLAN }} '{{ PARAMS }}'
 
 lint:
+    uv run blueapi config-schema -u
+    uv run blueapi schema -u
     uv run prek run --all-files
     uv run pyright src tests
 

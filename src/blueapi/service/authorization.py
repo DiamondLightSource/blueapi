@@ -6,7 +6,7 @@ from typing import Annotated, Any, Self, cast
 
 from aiohttp import ClientSession
 from fastapi import Depends, HTTPException, Request
-from starlette import status
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 from blueapi.config import OIDCConfig, OpaConfig, ServiceAccount
 from blueapi.service.authentication import TiledAuth, unchecked_bearer_token
@@ -73,7 +73,7 @@ class OpaClient:
                 "visit": int(match["visit"]),
             },
         ):
-            raise HTTPException(status_code=status.HTTP_403_UNORTHORIZED)
+            raise HTTPException(status_code=HTTP_403_FORBIDDEN)
 
     async def is_admin(self, token: str) -> bool:
         return await self._call_opa(self._conf.admin_check, {"token": token})
@@ -118,13 +118,13 @@ async def opa(
 
     if opa := cast(OpaClient | None, getattr(request.app.state, "authz", None)):
         if not token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+            raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
         return OpaUserClient(opa, token)
     return None
 
 
 async def submit_permission(
-    opa: Annotated[OpaUserClient, Depends(opa)],
+    opa: Annotated[OpaUserClient | None, Depends(opa)],
     task_request: TaskRequest,
 ):
     if opa:

@@ -62,6 +62,7 @@ class OpaClient:
                 f"Tiled service account is not valid for '{self._instrument}'"
             )
 
+
 class OpaUserClient:
     client: OpaClient
     token: str

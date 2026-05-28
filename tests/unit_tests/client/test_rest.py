@@ -134,8 +134,6 @@ def test_create_task_exceptions(
 
 
 def test_exception_non_json_body_falls_back_to_text():
-    import json
-
     response = Mock(spec=requests.Response)
     response.status_code = 500
     response.text = "Internal Server Error"

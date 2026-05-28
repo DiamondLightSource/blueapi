@@ -83,5 +83,5 @@ async def opa(
     if opa := cast(OpaClient | None, getattr(request.app.state, "authz", None)):
         if not token:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-        return opa.for_token(token)
+        return OpaUserClient(opa, token)
     return None

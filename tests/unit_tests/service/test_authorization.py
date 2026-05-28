@@ -2,11 +2,13 @@ from contextlib import AbstractContextManager, nullcontext
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from fastapi import HTTPException
 from pydantic import HttpUrl
 
 from blueapi.config import OIDCConfig, OpaConfig, ServiceAccount
 from blueapi.service.authorization import (
     OpaClient,
+    opa,
     validate_tiled_config,
 )
 
@@ -149,3 +151,28 @@ async def test_validate_tiled_config_with_missing_config(
     assert await validate_tiled_config(tiled_auth, oidc, opa_client) is None
     if opa_client is not None:
         opa_client.require_tiled_service_account.assert_not_called()
+
+
+async def test_opa_dependency_method():
+    request = MagicMock()
+
+    user_client = await opa(request, "foo_bar")
+
+    assert user_client is not None
+    assert user_client.client == request.app.state.authz
+    assert user_client.token == "foo_bar"
+
+
+async def test_opa_dependency_without_token():
+    request = MagicMock()
+
+    with pytest.raises(HTTPException, match="401"):
+        await opa(request, None)
+
+
+@pytest.mark.parametrize("token", ["foo_bar", None])
+async def test_opa_dependency_without_authz(token):
+    request = MagicMock()
+    del request.app.state.authz
+    user_client = await opa(request, token)
+    assert user_client is None

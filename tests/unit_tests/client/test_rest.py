@@ -382,3 +382,10 @@ def test_set_state(
     method = getattr(rest, method_name)
     res = method(*args)
     assert res == result
+
+
+@responses.activate
+def test_get_missing_plan(rest: BlueapiRestClient):
+    responses.add(GET, "http://localhost:8000/plans/foo", status=404)
+    with pytest.raises(UnknownPlanError):
+        rest.get_plan("foo")

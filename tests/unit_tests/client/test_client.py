@@ -23,7 +23,9 @@ from blueapi.client.event_bus import AnyEvent, EventBusClient
 from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
+    BlueskyRequestError,
     NotFoundError,
+    ServiceUnavailableError,
 )
 from blueapi.config import MissingStompConfigurationError
 from blueapi.core import DataEvent
@@ -358,6 +360,16 @@ def test_reload_environment_failure(
         environment_id=ENVIRONMENT_ID, initialized=False, error_message="foo"
     )
     with pytest.raises(BlueskyRemoteControlError, match="foo"):
+        client.reload_environment()
+
+
+@pytest.mark.parametrize("err", [ServiceUnavailableError(), BlueskyRequestError()])
+def test_reload_propagates_known_errors(
+    err: Exception, client: BlueapiClient, mock_rest: Mock
+):
+    mock_rest.delete_environment.side_effect = err
+
+    with pytest.raises(type(err)):
         client.reload_environment()
 
 

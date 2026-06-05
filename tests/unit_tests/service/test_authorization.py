@@ -155,7 +155,7 @@ async def test_opa_require_submit_task_invalid_session(
 ):
     client = OpaClient(instrument="p45", config=opa_config)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid instrument session"):
         await client.require_submit_task(
             instrument_session="not a session", token="foo_bar"
         )

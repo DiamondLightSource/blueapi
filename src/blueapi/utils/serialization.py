@@ -1,8 +1,9 @@
 import json
-import re
 from typing import Any
 
 from pydantic import BaseModel
+
+from blueapi import utils
 
 
 def serialize(obj: Any) -> Any:
@@ -28,13 +29,8 @@ def serialize(obj: Any) -> Any:
         return obj
 
 
-_INSTRUMENT_SESSION_AUTHZ_REGEX: re.Pattern = re.compile(
-    r"^[a-zA-Z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$"
-)
-
-
 def access_blob(instrument_session: str, beamline: str) -> str:
-    m = _INSTRUMENT_SESSION_AUTHZ_REGEX.match(instrument_session)
+    m = utils.INSTRUMENT_SESSION_RE.match(instrument_session)
     if m is None:
         raise ValueError(
             "Unable to extract proposal and visit from "

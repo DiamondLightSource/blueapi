@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable
 from functools import wraps
 from typing import ParamSpec, TypeVar
@@ -30,6 +31,8 @@ __all__ = [
 
 Args = ParamSpec("Args")
 Return = TypeVar("Return")
+
+INSTRUMENT_SESSION_RE = re.compile(r"^[a-z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$")
 
 
 def deprecated(alternative):

@@ -187,6 +187,7 @@ def begin_task(
     if nt := active_context.numtracker:
         nt.set_headers(pass_through_headers or {})
 
+    subscribers = []
     if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
         if isinstance(tiled_config.authentication, ServiceAccount):
@@ -204,6 +205,7 @@ def begin_task(
         tiled_writer_token = active_context.run_engine.subscribe(
             TiledWriter(tiled_client, batch_size=1)
         )
+        subscribers.append((active_context.run_engine, tiled_writer_token))
 
         def remove_callback_when_task_finished(
             event: WorkerEvent, correlation_id: str | None
@@ -213,15 +215,21 @@ def begin_task(
                 and event.task_status.task_id == task.task_id
                 and event.task_status.task_complete
             ):
-                active_context.run_engine.unsubscribe(tiled_writer_token)
-                active_worker.worker_events.unsubscribe(remove_callback)
+                for channel, token in subscribers:
+                    channel.unsubscribe(token)
 
         remove_callback = active_worker.worker_events.subscribe(
             remove_callback_when_task_finished
         )
+        subscribers.append((active_worker.worker_events, remove_callback))
 
     if task.task_id is not None:
-        active_worker.begin_task(task.task_id)
+        try:
+            active_worker.begin_task(task.task_id)
+        except KeyError:
+            for channel, token in subscribers:
+                channel.unsubscribe(token)
+            raise
     return task
 
 

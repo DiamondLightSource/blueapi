@@ -334,21 +334,7 @@
         },
         "volumeMounts": {
             "description": "Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name.",
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "mountPath": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "readOnly": {
-                        "type": "boolean"
-                    }
-                }
-            }
+            "type": "array"
         },
         "volumes": {
             "description": "Additional volumes on the output StatefulSet definition. Define volumes from e.g. Secrets, ConfigMaps or the Filesystem",
@@ -852,11 +838,6 @@
             "title": "ScratchRepository",
             "type": "object",
             "properties": {
-                "branch": {
-                    "title": "Branch",
-                    "description": "Branch of repo to check out - defaults to remote's default when cloning and the existing branch when the repo already exists",
-                    "type": "string"
-                },
                 "name": {
                     "title": "Name",
                     "description": "Unique name for this repository in the scratch directory",
@@ -867,6 +848,11 @@
                     "title": "Remote Url",
                     "description": "URL to clone from",
                     "default": "https://github.com/example/example.git",
+                    "type": "string"
+                },
+                "target_revision": {
+                    "title": "Target Revision",
+                    "description": "Revision (branch or tag) to check out when cloning - defaults to remote's HEAD. If a tag is used, the repo will be left in a 'detached head' state.",
                     "type": "string"
                 }
             },

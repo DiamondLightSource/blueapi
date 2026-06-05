@@ -362,6 +362,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 def get_tasks(
     fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    opa: Annotated[OpaUserClient, Depends(opa)],
     task_status: str | SkipJsonSchema[None] = None,
 ) -> TasksListResponse:
     """
@@ -382,7 +383,8 @@ def get_tasks(
     else:
         tasks = runner.run(interface.get_tasks)
 
-    tasks = [t for t in tasks if t.task.metadata.get("user") == fedid]
+    if opa and not opa.admin():
+        tasks = [t for t in tasks if t.task.metadata.get("user") == fedid]
 
     return TasksListResponse(tasks=tasks)
 

@@ -1,5 +1,4 @@
 import logging
-import re
 from collections.abc import Mapping
 from contextlib import AbstractAsyncContextManager, aclosing, nullcontext
 from typing import Annotated, Any, Self, cast
@@ -11,9 +10,9 @@ from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 from blueapi.config import OIDCConfig, OpaConfig, ServiceAccount
 from blueapi.service.authentication import TiledAuth, unchecked_bearer_token
 from blueapi.service.model import TaskRequest
+from blueapi.utils import INSTRUMENT_SESSION_RE
 
 LOGGER = logging.getLogger(__name__)
-INSTRUMENT_SESSION_RE = re.compile(r"^[a-z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$")
 
 
 class OpaClient:

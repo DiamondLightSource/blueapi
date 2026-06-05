@@ -72,7 +72,9 @@ class OpaClient:
                 "visit": int(match["visit"]),
             },
         ):
-            raise HTTPException(status_code=HTTP_403_FORBIDDEN)
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN, detail="Not authorized to submit task"
+            )
 
     async def is_admin(self, token: str) -> bool:
         return await self._call_opa(self._config.admin_check, {"token": token})
@@ -117,7 +119,9 @@ async def opa(
 
     if opa := cast(OpaClient | None, getattr(request.app.state, "authz", None)):
         if not token:
-            raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
+            raise HTTPException(
+                status_code=HTTP_401_UNAUTHORIZED, detail="Authentication missing"
+            )
         return OpaUserClient(opa, token)
     return None
 

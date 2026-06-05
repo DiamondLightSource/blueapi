@@ -512,7 +512,6 @@ def set_state(
     response: Response,
     fedid: Fedid,
     opa: Annotated[OpaUserClient, Depends(opa)],
-    # _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:
     """

@@ -14,9 +14,15 @@ from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, CORSConfig, OIDCConfig, RestConfig
+from blueapi.config import (
+    ApplicationConfig,
+    CORSConfig,
+    OIDCConfig,
+    RestConfig,
+)
 from blueapi.core.bluesky_types import Plan
 from blueapi.service import main
+from blueapi.service.authorization import OpaUserClient, opa
 from blueapi.service.interface import (
     cancel_active_task,
     get_device,
@@ -55,6 +61,11 @@ def mock_runner() -> Mock:
 
 
 @pytest.fixture
+def mock_opa_client() -> Mock:
+    return Mock(spec=OpaUserClient)
+
+
+@pytest.fixture
 def client(mock_runner: Mock) -> Iterator[TestClient]:
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(runner=mock_runner)
@@ -75,6 +86,27 @@ def client_with_auth(
         assert access_token is not None
         client = TestClient(main.get_app(ApplicationConfig(oidc=oidc_config)))
         client.headers = Headers(headers={"Authorization": f"Bearer {access_token}"})
+        yield client
+        main.teardown_runner()
+
+
+@pytest.fixture
+def access_token(valid_token_with_jwt: dict[str, Any]) -> str:
+    return valid_token_with_jwt["access_token"]
+
+
+@pytest.fixture
+def client_with_opa(
+    mock_runner: Mock,
+    oidc_config: OIDCConfig,
+    mock_opa_client: Mock,
+    mock_authn_server,
+):
+    with patch("blueapi.service.interface.worker"):
+        main.setup_runner(runner=mock_runner)
+        app = main.get_app(ApplicationConfig(oidc=oidc_config))
+        app.dependency_overrides[opa] = lambda: mock_opa_client
+        client = TestClient(app)
         yield client
         main.teardown_runner()
 
@@ -414,6 +446,28 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
 def test_get_tasks_by_status_invalid(client: TestClient) -> None:
     response = client.get("/tasks", params={"task_status": "AN_INVALID_STATUS"})
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_get_tasks_filters_by_user(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    access_token: str,
+    mock_opa_client: Mock,
+):
+
+    print("Start of test")
+    mock_runner.run.return_value = [
+        TrackableTask(task_id="foo", task=Task(name="f1", metadata={"user": "jd1"})),
+        TrackableTask(task_id="bar", task=Task(name="f2", metadata={"user": "jd2"})),
+    ]
+    print(f"in test: {mock_opa_client=}")
+    mock_opa_client.admin.return_value = False
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    tasks = client_with_opa.get("/tasks").json().get("tasks")
+    print(tasks)
+
+    assert len(tasks) == 1
+    assert tasks[0]["task_id"] == "foo"
 
 
 def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:

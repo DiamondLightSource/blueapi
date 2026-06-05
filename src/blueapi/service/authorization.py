@@ -66,7 +66,7 @@ class OpaClient:
             raise ValueError("Invalid instrument session")
 
         if not await self._call_opa(
-            self._conf.submit_task_check,
+            self._config.submit_task_check,
             {
                 "token": token,
                 "proposal": int(match["proposal"]),
@@ -76,7 +76,7 @@ class OpaClient:
             raise HTTPException(status_code=HTTP_403_FORBIDDEN)
 
     async def is_admin(self, token: str) -> bool:
-        return await self._call_opa(self._conf.admin_check, {"token": token})
+        return await self._call_opa(self._config.admin_check, {"token": token})
 
 
 class OpaUserClient:

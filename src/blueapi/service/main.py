@@ -548,7 +548,10 @@ def set_state(
             and active
             and active.task.metadata.get("user") != fedid
         ):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to set worker state",
+            )
 
         if new_state == WorkerState.PAUSED:
             runner.run(interface.pause_worker, state_change_request.defer)

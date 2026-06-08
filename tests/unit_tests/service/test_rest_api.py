@@ -21,7 +21,7 @@ from blueapi.config import (
     RestConfig,
 )
 from blueapi.core.bluesky_types import Plan
-from blueapi.service import main
+from blueapi.service import interface, main
 from blueapi.service.authorization import OpaUserClient, opa
 from blueapi.service.interface import (
     cancel_active_task,
@@ -477,6 +477,28 @@ def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:
     mock_runner.run.return_value = task_id
     response = client.delete(f"/tasks/{task_id}")
     assert response.json() == {"task_id": f"{task_id}"}
+
+
+def test_cant_delete_other_users_task(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    access_token: str,
+    mock_opa_client: Mock,
+):
+    mock_opa_client.admin.return_value = False
+    mock_runner.run.side_effect = lambda mth, *args: {
+        interface.get_task_by_id: TrackableTask(
+            task_id="bar", task=Task(name="t2", metadata={"user": "jd2"})
+        ),
+    }[mth]
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    resp = client_with_opa.delete("/tasks/bar")
+
+    # 404 to obfuscate whether task exists when inaccessible
+    assert resp.status_code == 404
+
+    mock_runner.run.assert_called_once()
 
 
 def test_set_active_task(client: TestClient) -> None:

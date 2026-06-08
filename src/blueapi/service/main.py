@@ -359,7 +359,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 @secure_router_v1.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
-def get_tasks(
+async def get_tasks(
     fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
     opa: Annotated[OpaUserClient, Depends(opa)],
@@ -383,7 +383,7 @@ def get_tasks(
     else:
         tasks = runner.run(interface.get_tasks)
 
-    if opa and not opa.admin():
+    if opa and not await opa.admin():
         tasks = [t for t in tasks if t.task.metadata.get("user") == fedid]
 
     return TasksListResponse(tasks=tasks)

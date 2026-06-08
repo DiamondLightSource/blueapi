@@ -152,7 +152,7 @@ def get_app(config: ApplicationConfig):
     return app
 
 
-def access_task_permission(
+async def access_task_permission(
     opa: Annotated[OpaUserClient | None, Depends(opa)],
     task_id: str,
     fedid: Fedid,
@@ -160,12 +160,16 @@ def access_task_permission(
 ):
     task = runner.run(interface.get_task_by_id, task_id)
 
-    if opa and not opa.admin() and (task and fedid != task.task.metadata.get("user")):
+    if (
+        opa
+        and not await opa.admin()
+        and (task and fedid != task.task.metadata.get("user"))
+    ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
 # start_task_permission is used when there is WorkerTask
-def start_task_permission(
+async def start_task_permission(
     task: WorkerTask,
     opa: Annotated[OpaUserClient, Depends(opa)],
     fedid: Fedid,
@@ -176,7 +180,7 @@ def start_task_permission(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="No task id provided",
         )
-    access_task_permission(opa, task.task_id, fedid, runner)
+    await access_task_permission(opa, task.task_id, fedid, runner)
 
 
 async def on_key_error_404(_: Request, __: Exception):

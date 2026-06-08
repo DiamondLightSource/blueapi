@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, Mock, patch
 import jwt
 import pytest
 from bluesky.protocols import Stoppable
-from fastapi import status
+from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 from httpx import Headers
 from pydantic import BaseModel, ValidationError
@@ -285,6 +285,23 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
 
     mock_runner.run.assert_called_with(submit_task, task, {"user": None})
     assert response.json() == {"task_id": task_id}
+
+
+def test_submit_task_requires_permission(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+):
+    task = TaskRequest(name="sleep", params={"time": 2}, instrument_session="cm12345-2")
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    mock_opa_client.can_submit_task.side_effect = HTTPException(status_code=403)
+    mock_runner.run.side_effect = RuntimeError("Task should not be submitted")
+
+    resp = client_with_opa.post("/tasks", json=task.model_dump())
+
+    assert resp.status_code == 403
+    mock_runner.run.assert_not_called()
 
 
 def test_create_task_inserts_auth_metadata(

@@ -448,11 +448,14 @@ def test_get_tasks_by_status_invalid(client: TestClient) -> None:
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+@pytest.mark.parametrize("admin,task_ids", [(True, ["foo", "bar"]), (False, ["foo"])])
 def test_get_tasks_filters_by_user(
     mock_runner: Mock,
     client_with_opa: TestClient,
     access_token: str,
     mock_opa_client: Mock,
+    admin: bool,
+    task_ids: list[str],
 ):
 
     print("Start of test")
@@ -461,13 +464,12 @@ def test_get_tasks_filters_by_user(
         TrackableTask(task_id="bar", task=Task(name="f2", metadata={"user": "jd2"})),
     ]
     print(f"in test: {mock_opa_client=}")
-    mock_opa_client.admin.return_value = False
+    mock_opa_client.admin.return_value = admin
     client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
     tasks = client_with_opa.get("/tasks").json().get("tasks")
     print(tasks)
 
-    assert len(tasks) == 1
-    assert tasks[0]["task_id"] == "foo"
+    assert [t["task_id"] for t in tasks] == task_ids
 
 
 def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:

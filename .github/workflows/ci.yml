@@ -1,9 +1,5 @@
 name: CI
 
-permissions:
-  pages: write
-  id-token: write
-
 on:
   push:
     branches:
@@ -48,6 +44,8 @@ jobs:
     uses: ./.github/workflows/_docs.yml
     permissions:
       contents: write
+      pages: write
+      id-token: write
 
   dist:
     uses: ./.github/workflows/_dist.yml

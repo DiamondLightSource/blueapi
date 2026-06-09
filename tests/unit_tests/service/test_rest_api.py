@@ -627,6 +627,25 @@ def test_get_task(mock_runner: Mock, client: TestClient):
     }
 
 
+@pytest.mark.parametrize("admin,status", [(True, 200), (False, 404)])
+def test_get_other_users_task(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+    admin: bool,
+    status: int,
+):
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    mock_runner.run.return_value = TrackableTask(
+        task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
+    )
+    mock_opa_client.admin.return_value = admin
+
+    resp = client_with_opa.get("/tasks/foo")
+    assert resp.status_code == status
+
+
 def test_get_all_tasks(mock_runner: Mock, client: TestClient):
     task_id = str(uuid.uuid4())
     tasks = [

@@ -566,6 +566,35 @@ def test_set_active_task_worker_already_running(
     assert response.json() == {"detail": "Worker already active"}
 
 
+@pytest.mark.parametrize("admin,status", [(True, 200), (False, 404)])
+def test_set_other_users_task_active(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+    admin: bool,
+    status: int,
+):
+
+    task_id = "foo"
+    task = WorkerTask(task_id=task_id)
+    mock_opa_client.admin.return_value = admin
+
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    mock_runner.run.side_effect = lambda mth, *a, **kw: {
+        interface.get_task_by_id: TrackableTask(
+            task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
+        ),
+        interface.get_active_task: None,
+        interface.begin_task: None,
+    }[mth]
+
+    resp = client_with_opa.put("/worker/task", json=task.model_dump())
+
+    assert resp.status_code == status
+
+
 def test_get_task(mock_runner: Mock, client: TestClient):
     task_id = str(uuid.uuid4())
     task = TrackableTask(

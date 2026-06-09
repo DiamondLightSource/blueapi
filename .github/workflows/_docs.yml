@@ -44,7 +44,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: '.github/pages'
+          path: .github/pages/
 
   deploy:
     if: github.ref_type == 'tag'

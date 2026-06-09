@@ -830,6 +830,35 @@ def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
     assert response.json() == final_state
 
 
+@pytest.mark.parametrize("admin,status", [(True, 202), (False, 403)])
+def test_set_state_of_other_users_task(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+    admin: bool,
+    status: int,
+):
+
+    mock_opa_client.admin.return_value = admin
+    mock_runner.run.side_effect = lambda mth, *a, **kw: {
+        interface.get_active_task: TrackableTask(
+            task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
+        ),
+        interface.get_worker_state: WorkerState.RUNNING,
+        interface.cancel_active_task: WorkerState.ABORTING,
+    }[mth]
+
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    resp = client_with_opa.put(
+        "/worker/state",
+        json=StateChangeRequest(new_state=WorkerState.ABORTING).model_dump(),
+    )
+
+    assert resp.status_code == status
+
+
 def test_get_environment_idle(mock_runner: Mock, client: TestClient) -> None:
     environment_id = uuid.uuid4()
     mock_runner.state = EnvironmentResponse(

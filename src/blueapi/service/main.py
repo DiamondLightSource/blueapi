@@ -513,7 +513,7 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
     tags=[Tag.TASK],
 )
 @start_as_current_span(TRACER, "state_change_request.new_state")
-def set_state(
+async def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
     fedid: Fedid,
@@ -548,7 +548,7 @@ def set_state(
 
         if (
             opa
-            and not opa.admin()
+            and not await opa.admin()
             and active
             and active.task.metadata.get("user") != fedid
         ):

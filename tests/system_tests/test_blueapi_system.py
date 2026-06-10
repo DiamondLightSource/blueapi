@@ -15,7 +15,10 @@ from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
+    NotFoundError,
     ServiceUnavailableError,
+    UnauthorisedAccessError,
+    UnknownPlanError,
 )
 from blueapi.config import (
     ApplicationConfig,
@@ -217,7 +220,7 @@ def test_cannot_access_endpoints(
         "get_oidc_config"
     )  # get_oidc_config can be accessed without auth
     for get_method in blueapi_rest_client_get_methods:
-        with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
+        with pytest.raises(UnauthorisedAccessError, match=r"Not authenticated"):
             getattr(client_without_auth._rest, get_method)()
 
 
@@ -243,7 +246,7 @@ def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
 
 
 def test_get_non_existent_plan(rest_client: BlueapiRestClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+    with pytest.raises(UnknownPlanError, match=r"Plan 'Not exists' not found"):
         rest_client.get_plan("Not exists")
 
 
@@ -268,7 +271,7 @@ def test_get_device_by_name(
 
 
 def test_get_non_existent_device(rest_client: BlueapiRestClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.get_device("Not exists")
 
 
@@ -336,12 +339,12 @@ def test_get_task_by_id(rest_client: BlueapiRestClient):
 
 
 def test_get_non_existent_task(rest_client: BlueapiRestClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.get_task("Not-exists")
 
 
 def test_delete_non_existent_task(rest_client: BlueapiRestClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.clear_task("Not-exists")
 
 
@@ -363,7 +366,7 @@ def test_put_worker_task_fails_if_not_idle(rest_client: BlueapiRestClient):
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
         rest_client.update_worker_task(WorkerTask(task_id=small_task.task_id))
-    assert "<Response [409]>" in str(exception)
+    assert exception.value.args[0] == 409
     rest_client.cancel_current_task(WorkerState.ABORTING)
     rest_client.clear_task(small_task.task_id)
     rest_client.clear_task(long_task.task_id)
@@ -376,10 +379,10 @@ def test_get_worker_state(client: BlueapiClient):
 def test_set_state_transition_error(client: BlueapiClient):
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.resume()
-    assert "<Response [400]>" in str(exception)
+    assert "Cannot transition from IDLE to RUNNING" in exception.value.args[1]
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.pause()
-    assert "<Response [400]>" in str(exception)
+    assert "Cannot transition from IDLE to PAUSED" in exception.value.args[1]
 
 
 def test_get_task_by_status(rest_client: BlueapiRestClient):
@@ -621,7 +624,7 @@ def test_unauthorized_plan_run(
 
 # Regression test for #1480
 def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
-    with pytest.raises(KeyError):
+    with pytest.raises(NotFoundError):
         # This task hasn't been submitted so should return an error...
         client_with_stomp._rest.update_worker_task(WorkerTask(task_id="missing"))
 

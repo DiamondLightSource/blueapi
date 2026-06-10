@@ -38,21 +38,41 @@ TRACER = get_tracer("rest")
 LOGGER = logging.getLogger(__name__)
 
 
-class UnauthorisedAccessError(Exception):
+class BlueskyRequestError(Exception):
+    """An error response from the blueapi server."""
+
+    def __init__(self, code: int | None = None, message: str = "") -> None:
+        super().__init__(code, message)
+
+
+class UnauthorisedAccessError(BlueskyRequestError):
+    """Request was rejected due to missing or invalid credentials (401/403)."""
+
+    pass
+
+
+class NotFoundError(BlueskyRequestError):
+    """Requested something that couldn't be found (404)."""
+
+    pass
+
+
+class UnknownPlanError(BlueskyRequestError):
+    """Plan '{name}' was not recognised"""
+
     pass
 
 
 class BlueskyRemoteControlError(Exception):
+    """Unexpected or failed response from the blueapi server."""
+
     pass
 
 
 class NonJsonResponseError(Exception):
+    """Server returned a response that could not be parsed as JSON."""
+
     pass
-
-
-class BlueskyRequestError(Exception):
-    def __init__(self, code: int, message: str) -> None:
-        super().__init__(message, code)
 
 
 class NoContentError(Exception):
@@ -105,18 +125,25 @@ class InvalidParametersError(Exception):
         )
 
 
-class UnknownPlanError(Exception):
-    pass
-
-
 def _exception(response: requests.Response) -> Exception | None:
     code = response.status_code
     if code < 400:
         return None
+    elif code in (401, 403):
+        return UnauthorisedAccessError(code, response.text)
     elif code == 404:
-        return KeyError(str(_response_json(response)))
+        return NotFoundError(code, response.text)
     else:
-        return BlueskyRemoteControlError(code, str(response))
+        try:
+            body = _response_json(response)
+            message = (
+                body.get("detail", response.text)
+                if isinstance(body, dict)
+                else response.text
+            )
+        except NonJsonResponseError:
+            message = response.text
+        return BlueskyRemoteControlError(code, message)
 
 
 def _create_task_exceptions(response: requests.Response) -> Exception | None:
@@ -124,9 +151,9 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
     if code < 400:
         return None
     elif code == 401 or code == 403:
-        return UnauthorisedAccessError()
+        return UnauthorisedAccessError(code, response.text)
     elif code == 404:
-        return UnknownPlanError()
+        return UnknownPlanError(code, response.text)
     elif code == 422:
         try:
             content = _response_json(response)
@@ -173,7 +200,10 @@ class BlueapiRestClient:
         return self._request_and_deserialize("/plans", PlanResponse)
 
     def get_plan(self, name: str) -> PlanModel:
-        return self._request_and_deserialize(f"/plans/{name}", PlanModel)
+        try:
+            return self._request_and_deserialize(f"/plans/{name}", PlanModel)
+        except NotFoundError as e:
+            raise UnknownPlanError(404, f"Plan '{name}' not found") from e
 
     def get_devices(self) -> DeviceResponse:
         return self._request_and_deserialize("/devices", DeviceResponse)

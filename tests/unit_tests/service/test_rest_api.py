@@ -475,16 +475,13 @@ def test_get_tasks_filters_by_user(
     task_ids: list[str],
 ):
 
-    print("Start of test")
     mock_runner.run.return_value = [
         TrackableTask(task_id="foo", task=Task(name="f1", metadata={"user": "jd1"})),
         TrackableTask(task_id="bar", task=Task(name="f2", metadata={"user": "jd2"})),
     ]
-    print(f"in test: {mock_opa_client=}")
     mock_opa_client.admin.return_value = admin
     client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
     tasks = client_with_opa.get("/tasks").json().get("tasks")
-    print(tasks)
 
     assert [t["task_id"] for t in tasks] == task_ids
 

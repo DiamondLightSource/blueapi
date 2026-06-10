@@ -233,7 +233,7 @@ class BlueapiClient:
             session_manager = SessionManager.from_cache(config.auth_token_path)
         except Exception:
             ...  # Swallow exceptions
-        rest = BlueapiRestClient(config.api, session_manager=session_manager)
+        rest = BlueapiRestClient(config.api, token_retreiver=session_manager)
         if config.stomp.enabled:
             assert config.stomp.url.host is not None, "Stomp URL missing host"
             assert config.stomp.url.port is not None, "Stomp URL missing port"

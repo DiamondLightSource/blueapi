@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 import httpx
 import jwt
@@ -22,6 +22,10 @@ from blueapi.service.model import Cache
 
 DEFAULT_CACHE_DIR = "~/.cache/"
 SCOPES = "openid offline_access"
+
+
+class TokenRetriever(Protocol):
+    def get_valid_access_token(self) -> str: ...
 
 
 class CacheManager(ABC):
@@ -238,7 +242,7 @@ class SessionManager:
 
 
 class JWTAuth(AuthBase):
-    def __init__(self, session_manager: SessionManager | None):
+    def __init__(self, session_manager: TokenRetriever | None):
         self.token: str = (
             session_manager.get_valid_access_token() if session_manager else ""
         )

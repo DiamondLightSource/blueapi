@@ -14,7 +14,7 @@ from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from blueapi import __version__
 from blueapi.config import RestConfig
-from blueapi.service.authentication import JWTAuth, SessionManager
+from blueapi.service.authentication import JWTAuth, TokenRetriever
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -157,16 +157,16 @@ def _response_json(response: requests.Response) -> Any:
 
 class BlueapiRestClient:
     _config: RestConfig
-    _session_manager: SessionManager | None
+    _token_retreiver: TokenRetriever | None
     _pool: requests.Session
 
     def __init__(
         self,
         config: RestConfig | None = None,
-        session_manager: SessionManager | None = None,
+        token_retreiver: TokenRetriever | None = None,
     ) -> None:
         self._config = config or RestConfig()
-        self._session_manager = session_manager
+        self._token_retreiver = token_retreiver
         self._pool = requests.Session()
 
     def get_plans(self) -> PlanResponse:
@@ -283,7 +283,7 @@ class BlueapiRestClient:
                 json=data,
                 params=params,
                 headers=carr,
-                auth=JWTAuth(self._session_manager),
+                auth=JWTAuth(self._token_retreiver),
             )
         except requests.exceptions.ConnectionError as ce:
             raise ServiceUnavailableError() from ce

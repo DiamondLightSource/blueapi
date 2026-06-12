@@ -13,6 +13,7 @@ from observability_utils.tracing import (
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from blueapi import __version__
+from blueapi.client import client
 from blueapi.config import RestConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
@@ -241,7 +242,7 @@ class BlueapiRestClient:
             TaskResponse,
             method="POST",
             get_exception=_create_task_exceptions,
-            data=task.model_dump(),
+            data=task.model_dump(fallback=_task_model_fallback),
         )
 
     def clear_task(self, task_id: str) -> TaskResponse:
@@ -363,3 +364,10 @@ def __getattr__(name: str):
 
 class ServiceUnavailableError(Exception):
     pass
+
+
+def _task_model_fallback(obj: Any) -> Any:
+    """Fallback method for serializing TaskRequests"""
+    if isinstance(obj, client.DeviceRef):
+        return obj.name
+    raise ValueError()

@@ -120,23 +120,23 @@ class DeviceCache:
         return f"DeviceCache({len(self._cache)} devices)"
 
 
-class DeviceRef(str):
+class DeviceRef:
+    name: str
     model: DeviceModel
     _cache: DeviceCache
 
-    def __new__(cls, name: str, cache: DeviceCache, model: DeviceModel):
-        instance = super().__new__(cls, name)
-        instance.model = model
-        instance._cache = cache
-        return instance
+    def __init__(self, name: str, cache: DeviceCache, model: DeviceModel):
+        self.name = name
+        self.model = model
+        self._cache = cache
 
     def __getattr__(self, name) -> "DeviceRef":
         if name.startswith("_"):
             raise AttributeError(f"No child device named {name}")
-        return self._cache[f"{self}.{name}"]
+        return self._cache[f"{self.name}.{name}"]
 
     def __repr__(self):
-        return f"Device({self})"
+        return f"Device({self.name})"
 
 
 class Plan:

@@ -418,7 +418,7 @@ class TaskWorker:
         Command the worker to resume
         """
         LOGGER.info("Requesting to resume the worker")
-        self._ctx.run_engine.resume()
+        self._task_channel.put(ResumeSignal())
 
     @start_as_current_span(TRACER)
     def _cycle_with_error_handling(self) -> None:

@@ -63,3 +63,12 @@ jobs:
     uses: ./.github/workflows/_release.yml
     permissions:
       contents: write
+
+  pages:
+    needs: [docs] #might need needs: [releases]
+    if: github.ref_type == 'tag' || github.ref_type == 'main'
+    uses: ./.github/workflows/_pages.yml
+    permissions:
+      pages: write
+      id-token: write
+      contents: read

@@ -35,26 +35,24 @@ jobs:
       - name: Sanitize ref name for docs version
         run: echo "DOCS_VERSION=${GITHUB_REF_NAME//[^A-Za-z0-9._-]/_}" >> $GITHUB_ENV
 
-      - name: Move to versioned directory
-        run: mv build/html .github/pages/$DOCS_VERSION
-
-      - name: Write switcher.json
-        run: python .github/pages/make_switcher.py --add $DOCS_VERSION ${{ github.repository }} .github/pages/switcher.json
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
           path: .github/pages/
 
-  deploy:
-    if: github.ref_type == 'tag'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
+      - name: Zip main docs
+        if: github.ref_name == 'main'
+        run: |
+          mv build/html main
+          zip -r docs.zip main
 
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+      - name: Upload main docs.zip to main pre-release
+        if: github.ref_name == 'main'
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          tag_name: main-docs
+          prerelease: true
+          files: docs.zip
+          name: "Lastest main branch docs"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}

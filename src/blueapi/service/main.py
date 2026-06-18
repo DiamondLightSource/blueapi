@@ -14,12 +14,14 @@ from fastapi import (
     HTTPException,
     Request,
     Response,
+    WebSocket,
+    WebSocketDisconnect,
     status,
 )
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.requests import HTTPConnection
 from fastapi.responses import RedirectResponse, StreamingResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -34,11 +36,17 @@ from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi import __version__
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.service import interface
+from blueapi.service.authentication import CommonHttpOAuth
+from blueapi.service.middleware import (
+    ObservabilityContextPropagator,
+    VersionHeaders,
+)
 from blueapi.worker import TrackableTask, WorkerState
-from blueapi.worker.event import TaskStatusEnum
+from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent
+from blueapi.worker.worker_errors import WorkerBusyError
 
 from .model import (
     DeviceModel,
@@ -61,6 +69,9 @@ from .runner import WorkerDispatcher
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
+
+
+AnyEvent = WorkerEvent | DataEvent | ProgressEvent
 
 
 def _runner() -> WorkerDispatcher:
@@ -126,8 +137,9 @@ def get_app(config: ApplicationConfig):
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
-    app.middleware("http")(add_version_headers)
-    app.middleware("http")(inject_propagated_observability_context)
+
+    app.add_middleware(ObservabilityContextPropagator)
+    app.add_middleware(VersionHeaders)
     app.middleware("http")(log_request_details)
     if config.api.cors:
         app.add_middleware(
@@ -142,13 +154,13 @@ def get_app(config: ApplicationConfig):
 
 def decode_access_token(config: OIDCConfig):
     jwkclient = jwt.PyJWKClient(config.jwks_uri)
-    oauth_scheme = OAuth2AuthorizationCodeBearer(
+    oauth_scheme = CommonHttpOAuth(
         authorizationUrl=config.authorization_endpoint,
         tokenUrl=config.token_endpoint,
         refreshUrl=config.token_endpoint,
     )
 
-    def inner(request: Request, access_token: str = Depends(oauth_scheme)):
+    def inner(request: HTTPConnection, access_token: str = Depends(oauth_scheme)):
         signing_key = jwkclient.get_signing_key_from_jwt(access_token)
         decoded: dict[str, Any] = jwt.decode(
             access_token,
@@ -588,6 +600,54 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     )
 
 
+@secure_router.websocket("/run_plan")
+async def run_plan(
+    ws: WebSocket,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+):
+    user = ws.state.decoded_access_token["fedid"]
+
+    LOGGER.info("Starting WS plan as %s", user)
+    await ws.accept()
+    rq = await ws.receive_json()
+    LOGGER.info("Raw request: %s", rq)
+    try:
+        task_request: TaskRequest = TaskRequest.model_validate(rq)
+        LOGGER.info("Plan request: %s", task_request)
+        task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
+        LOGGER.info("Task ID: %s", task_id)
+    except ValidationError:
+        LOGGER.error("Args not valid", exc_info=True)
+        await ws.close(code=1003, reason="invalid args")
+        return
+    except KeyError:
+        LOGGER.error("Plan not found", exc_info=True)
+        await ws.close(code=1003, reason="unknown plan")
+        return
+
+    try:
+        with runner.event_pipe() as events:
+            LOGGER.info("Created event pipe")
+            runner.run(interface.begin_task, task=WorkerTask(task_id=task_id))
+            async for evt in events:
+                LOGGER.debug("Event: %s", evt)
+                await ws.send_json(evt.model_dump(mode="json"))
+                if isinstance(evt, WorkerEvent) and evt.is_complete():
+                    LOGGER.info("End of stream")
+                    break
+    except WorkerBusyError:
+        LOGGER.error("Worker was busy")
+        await ws.close(code=1013, reason="Worker busy")
+    except WebSocketDisconnect:
+        LOGGER.info("Client disconnected")
+        runner.run(
+            interface.cancel_active_task, failure=True, reason="Client disconnected"
+        )
+    else:
+        LOGGER.info("Plan complete")
+        await ws.close()
+
+
 @start_as_current_span(TRACER, "config")
 def start(config: ApplicationConfig):
     import uvicorn
@@ -614,15 +674,6 @@ def start(config: ApplicationConfig):
     uvicorn.run(
         app, host=config.api.url.host, port=config.api.url.port, access_log=False
     )
-
-
-async def add_version_headers(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-):
-    response = await call_next(request)
-    response.headers["X-API-Version"] = ApplicationConfig.REST_API_VERSION
-    response.headers["X-BlueAPI-Version"] = __version__
-    return response
 
 
 async def log_request_details(

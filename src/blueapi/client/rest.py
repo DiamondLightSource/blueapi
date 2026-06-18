@@ -10,9 +10,11 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError, WebsocketUrl
+from websockets.sync.client import connect
 
 from blueapi import __version__
+from blueapi.client.event_bus import AnyEvent
 from blueapi.config import RestConfig
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
@@ -36,6 +38,8 @@ T = TypeVar("T")
 TRACER = get_tracer("rest")
 
 LOGGER = logging.getLogger(__name__)
+
+USER_AGENT = f"blueapi cli {__version__}"
 
 
 class BlueskyRequestError(Exception):
@@ -305,14 +309,15 @@ class BlueapiRestClient:
     ) -> T:
         url = self._config.url.unicode_string().removesuffix("/") + suffix
         # Get the trace context to propagate to the REST API
-        carr = get_context_propagator()
+        headers = get_context_propagator()
+        headers["User-Agent"] = USER_AGENT
         try:
             response = self._pool.request(
                 method,
                 url,
                 json=data,
                 params=params,
-                headers=carr,
+                headers=headers,
                 auth=JWTAuth(self._session_manager),
             )
         except requests.exceptions.ConnectionError as ce:
@@ -337,6 +342,28 @@ class BlueapiRestClient:
             _response_json(response)
         )
         return deserialized
+
+    def run_blocking(self, req: TaskRequest):
+        url = self._ws_address().unicode_string().removesuffix("/") + "/run_plan"
+        headers = get_context_propagator()
+        if self._session_manager:
+            auth = self._session_manager.get_valid_access_token()
+            headers["Authorization"] = f"Bearer {auth}"
+        with connect(
+            url,
+            additional_headers=headers,
+            user_agent_header=USER_AGENT,
+        ) as ws:
+            ws.send(req.model_dump_json())
+            for message in ws:
+                event = TypeAdapter(AnyEvent).validate_json(message)
+                yield event
+
+    def _ws_address(self) -> WebsocketUrl:
+        # url = WebsocketUrl.build(
+        #     scheme="ws", host=api.host, port=api.port, path=api.path
+        # )
+        return WebsocketUrl("ws://localhost:8000/")
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

@@ -41,7 +41,13 @@ from blueapi.worker.event import ProgressEvent, TaskError, TaskResult, TaskStatu
 from blueapi.worker.task_worker import TrackableTask
 
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError
+from .rest import (
+    BlueapiRestClient,
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    NotFoundError,
+    ServiceUnavailableError,
+)
 
 TRACER = get_tracer("client")
 
@@ -124,9 +130,8 @@ class DeviceCache:
             self._cache[name] = device
             setattr(self, model.name, device)
             return device
-        except KeyError:
-            pass
-        raise AttributeError(f"No device named '{name}' available")
+        except NotFoundError as e:
+            raise AttributeError(f"No device named '{name}' available") from e
 
     def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):
@@ -350,6 +355,11 @@ class BlueapiClient:
         """
         return self._rest.get_plan(name)
 
+    def print_plans(self) -> None:
+        """Print all available plans."""
+        for name in self.plans:
+            print(name)
+
     @start_as_current_span(TRACER)
     @deprecated("devices property")
     def get_devices(self) -> DeviceResponse:
@@ -388,6 +398,11 @@ class BlueapiClient:
         """
 
         return self._rest.get_device(name)
+
+    def print_devices(self) -> None:
+        """Print all available devices."""
+        for name in self.devices:
+            print(name)
 
     @property
     @start_as_current_span(TRACER)
@@ -709,9 +724,13 @@ class BlueapiClient:
             EnvironmentResponse: Details of the new worker
             environment.
         """
-
         try:
             status = self._rest.delete_environment()
+        except (
+            BlueskyRequestError,
+            ServiceUnavailableError,
+        ):
+            raise
         except Exception as e:
             raise BlueskyRemoteControlError(
                 "Failed to tear down the environment"

@@ -1,0 +1,30 @@
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download and unpack docs.zip from every release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -veuo pipefail
+          mkdir -p site 
+
+          # Iterate overall every release 
+          for tag in $(gh api --paginate "repos/${{ github.repository }}/releases" --jq '.[].tag_name'); do
+            echo "::group::$tag"
+            if gh release download "$tag" -R "${{ github.repository}}" -p docs.zip -D "/tmp/$tag"; then
+              unzip "/tmp/$tag/docs.zip" -d site
+            else
+              echo "No docs.zip on release $tag"
+            fi
+            echo "::endgroup::"
+          done
+
+      - name: Generate switcher.json 
+        run: python .github/pages/make_switcher.py site/switcher.json 

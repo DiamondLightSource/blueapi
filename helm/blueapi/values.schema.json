@@ -751,6 +751,27 @@
             },
             "additionalProperties": false
         },
+        "OpaConfig": {
+            "$id": "OpaConfig",
+            "title": "OpaConfig",
+            "type": "object",
+            "properties": {
+                "audience": {
+                    "title": "Audience",
+                    "default": "account",
+                    "type": "string"
+                },
+                "root": {
+                    "title": "Root",
+                    "default": "http://localhost:8181/",
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1
+                }
+            },
+            "additionalProperties": false
+        },
         "PlanSource": {
             "$id": "PlanSource",
             "title": "PlanSource",
@@ -1005,6 +1026,16 @@
                     "anyOf": [
                         {
                             "$ref": "OIDCConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "opa": {
+                    "anyOf": [
+                        {
+                            "$ref": "OpaConfig"
                         },
                         {
                             "type": "null"

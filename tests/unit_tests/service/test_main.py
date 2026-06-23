@@ -1,5 +1,5 @@
 from unittest import mock
-from unittest.mock import Mock, call
+from unittest.mock import Mock, call, patch
 
 import pytest
 from fastapi import FastAPI, Request
@@ -10,6 +10,7 @@ from blueapi.config import ApplicationConfig
 from blueapi.service.main import (
     add_version_headers,
     get_passthrough_headers,
+    lifespan,
     log_request_details,
 )
 
@@ -79,3 +80,18 @@ def test_get_passthrough_headers(
     request = Mock(spec=Request)
     request.headers = headers
     assert get_passthrough_headers(request) == expected_headers
+
+
+@patch("blueapi.service.main.teardown_runner")
+@patch("blueapi.service.main.setup_runner")
+async def test_lifespan(setup: Mock, teardown: Mock):
+    conf = ApplicationConfig()
+    lifespan_fn = lifespan(conf)
+
+    app = Mock()
+
+    async with lifespan_fn(app):
+        setup.assert_called_once_with(conf)
+        teardown.assert_not_called()
+
+    teardown.assert_called_once()

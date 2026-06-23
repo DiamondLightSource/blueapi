@@ -901,6 +901,122 @@ def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
     assert params["composite"].second_fake_device == second_fake_device
 
 
+# Pause / resume tests
+
+
+def begin_task_and_wait_until_paused(
+    worker: TaskWorker,
+    task_id: str,
+    timeout: float = 5.0,
+) -> None:
+    paused_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.PAUSED,
+    )
+    worker.begin_task(task_id)
+    paused_future.result(timeout=timeout)
+
+
+def test_pause_does_not_publish_error_event(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    events_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.PAUSED,
+    )
+    worker.begin_task(task_id)
+    events = events_future.result(timeout=5.0)
+
+    assert not any(e.errors for e in events)
+
+
+def test_paused_task_remains_in_pending(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    assert task_id in worker._pending_tasks
+    assert task_id not in worker._completed_tasks
+
+
+def test_worker_state_is_paused(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    assert worker.state == WorkerState.PAUSED
+
+
+def test_resume_after_pause_completes_task(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    complete_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.resume()
+    events = complete_future.result(timeout=5.0)
+
+    assert events[-1].errors == []
+    assert events[-1].is_complete()
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_cancel_active_task_abort(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    cancel_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: (
+            e.state == WorkerState.IDLE
+            and e.task_status is not None
+            and e.task_status.task_complete
+        ),
+    )
+    worker.cancel_active_task(failure=True)
+    events = cancel_future.result(timeout=5.0)
+
+    assert events[-1].errors == ["Task failed for unknown reason"]
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_failed
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_cancel_active_task_graceful(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    cancel_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: (
+            e.state == WorkerState.IDLE
+            and e.task_status is not None
+            and e.task_status.task_complete
+        ),
+    )
+    worker.cancel_active_task(failure=False)
+    events = cancel_future.result(timeout=5.0)
+
+    assert events[-1].errors == []
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_complete
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
 @pytest.mark.parametrize(
     "plan_result,task_result,type_name",
     (

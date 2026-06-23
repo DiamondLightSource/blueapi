@@ -714,6 +714,15 @@ class ResumeSignal:
     ...
 
 
+@dataclass
+class PauseSignal:
+    """
+    Object put in the worker's task queue to tell it to pause.
+    """
+
+    ...
+
+
 def run_worker_in_own_thread(
     worker: TaskWorker, executor: ThreadPoolExecutor | None = None
 ) -> Future:

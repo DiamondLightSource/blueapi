@@ -349,10 +349,20 @@
                 "tiled_service_account_check": {
                     "title": "Tiled Service Account Check",
                     "type": "string"
+                },
+                "submit_task_check": {
+                    "title": "Submit Task Check",
+                    "type": "string"
+                },
+                "admin_check": {
+                    "title": "Admin Check",
+                    "type": "string"
                 }
             },
             "required": [
-                "tiled_service_account_check"
+                "tiled_service_account_check",
+                "submit_task_check",
+                "admin_check"
             ],
             "title": "OpaConfig",
             "type": "object",

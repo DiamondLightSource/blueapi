@@ -2,7 +2,7 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated, Any
+from typing import Annotated
 
 import jwt
 from fastapi import (
@@ -19,7 +19,6 @@ from fastapi import (
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -37,9 +36,11 @@ from super_state_machine.errors import TransitionError
 from blueapi import __version__
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
+from blueapi.service.authentication import Fedid, build_access_token_check
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
+from .authorization import OpaClient
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -61,6 +62,7 @@ from .runner import WorkerDispatcher
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
+TRACER = get_tracer("interface")
 
 
 def _runner() -> WorkerDispatcher:
@@ -92,8 +94,11 @@ def teardown_runner():
 def lifespan(config: ApplicationConfig):
     @asynccontextmanager
     async def inner(app: FastAPI):
+        meta = config.env.metadata
         setup_runner(config)
-        yield
+        async with OpaClient.for_config(meta and meta.instrument, config.opa) as opa:
+            app.state.authz = opa
+            yield
         teardown_runner()
 
     return inner
@@ -117,7 +122,7 @@ def get_app(config: ApplicationConfig):
     )
     dependencies = []
     if config.oidc:
-        dependencies.append(Depends(decode_access_token(config.oidc)))
+        dependencies.append(Depends(build_access_token_check(config.oidc)))
         app.swagger_ui_init_oauth = {
             "clientId": "NOT_SUPPORTED",
         }
@@ -138,32 +143,6 @@ def get_app(config: ApplicationConfig):
             allow_headers=config.api.cors.allow_headers,
         )
     return app
-
-
-def decode_access_token(config: OIDCConfig):
-    jwkclient = jwt.PyJWKClient(config.jwks_uri)
-    oauth_scheme = OAuth2AuthorizationCodeBearer(
-        authorizationUrl=config.authorization_endpoint,
-        tokenUrl=config.token_endpoint,
-        refreshUrl=config.token_endpoint,
-    )
-
-    def inner(request: Request, access_token: str = Depends(oauth_scheme)):
-        signing_key = jwkclient.get_signing_key_from_jwt(access_token)
-        decoded: dict[str, Any] = jwt.decode(
-            access_token,
-            signing_key.key,
-            algorithms=config.id_token_signing_alg_values_supported,
-            verify=True,
-            audience=config.client_audience,
-            issuer=config.issuer,
-        )
-        request.state.decoded_access_token = decoded
-
-    return inner
-
-
-TRACER = get_tracer("interface")
 
 
 async def on_key_error_404(_: Request, __: Exception):
@@ -292,18 +271,11 @@ def submit_task(
     response: Response,
     task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    user: Fedid,
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        # Extract user from jwt if using OIDC (if jwt exists)
-        access_token: dict[str, Any] | None = getattr(
-            request.state, "decoded_access_token", None
-        )
-        if access_token:
-            user: str = access_token.get("fedid", "Unknown")
-        else:
-            user = "Unknown"
-
+        user = user or "Unknown"
         task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
@@ -534,11 +506,20 @@ def set_state(
                     state_change_request.new_state is WorkerState.ABORTING,
                     state_change_request.reason,
                 )
-            except TransitionError:
-                response.status_code = status.HTTP_400_BAD_REQUEST
+            except TransitionError as e:
+                suffix = f" - {e}" if str(e) else ""
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Error while transitioning from {current_state} "
+                        f"to {new_state}{suffix}"
+                    ),
+                ) from e
     else:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(f"Cannot transition from {current_state} to {new_state}"),
+        )
     return runner.run(interface.get_worker_state)
 
 
@@ -621,20 +602,18 @@ async def log_request_details(
 ) -> Response:
     """Middleware to log all request's host, method, path, status and request and
     body"""
+    log = LOGGER.debug if request.url.path == "/healthz" else LOGGER.info
     request_body = await request.body()
     client = request.client or Address("Unknown", -1)
     log_message = f"{client.host}:{client.port} {request.method} {request.url.path}"
     extra = {
         "request_body": request_body,
     }
-    LOGGER.debug(log_message, extra=extra)
+    log(log_message, extra=extra)
 
     response = await call_next(request)
     log_message += f" {response.status_code}"
-    if request.url.path == "/healthz":
-        LOGGER.debug(log_message, extra=extra)
-    else:
-        LOGGER.info(log_message, extra=extra)
+    log(log_message, extra=extra)
 
     return response
 

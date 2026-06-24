@@ -334,21 +334,7 @@
         },
         "volumeMounts": {
             "description": "Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name.",
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "mountPath": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "readOnly": {
-                        "type": "boolean"
-                    }
-                }
-            }
+            "type": "array"
         },
         "volumes": {
             "description": "Additional volumes on the output StatefulSet definition. Define volumes from e.g. Secrets, ConfigMaps or the Filesystem",
@@ -783,6 +769,27 @@
             },
             "additionalProperties": false
         },
+        "OpaConfig": {
+            "$id": "OpaConfig",
+            "title": "OpaConfig",
+            "type": "object",
+            "properties": {
+                "audience": {
+                    "title": "Audience",
+                    "default": "account",
+                    "type": "string"
+                },
+                "root": {
+                    "title": "Root",
+                    "default": "http://localhost:8181/",
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1
+                }
+            },
+            "additionalProperties": false
+        },
         "PlanSource": {
             "$id": "PlanSource",
             "title": "PlanSource",
@@ -1037,6 +1044,16 @@
                     "anyOf": [
                         {
                             "$ref": "OIDCConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "opa": {
+                    "anyOf": [
+                        {
+                            "$ref": "OpaConfig"
                         },
                         {
                             "type": "null"

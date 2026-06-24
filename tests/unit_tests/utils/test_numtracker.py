@@ -109,3 +109,41 @@ async def test_create_scan_raises_runtime_error_on_graphql_error(
     )
     with pytest.raises(RuntimeError, match="Numtracker error:"):
         await numtracker.create_scan("ab123", "p46")
+
+
+@pytest.mark.parametrize(
+    ("auth_error_code", "expected_message"),
+    [
+        ("AUTH_FAILED", "Not authorised to create a scan number for p46 and ab123"),
+        ("AUTH_MISSING", "Numtracker authentication missing"),
+        ("AUTH_SERVER_ERROR", "Numtracker server authentication error"),
+        ("UNKNOWN_ERROR", "Numtracker error:"),
+    ],
+)
+async def test_numtracker_auth_error_types(
+    numtracker: NumtrackerClient,
+    httpx_mock: HTTPXMock,
+    nt_query,
+    auth_error_code,
+    expected_message,
+):
+    error_response = {
+        "data": None,
+        "errors": [
+            {
+                "message": "xyz",
+                "locations": [{"line": 3, "column": 5}],
+                "path": ["scan"],
+                "extensions": {"code": auth_error_code},
+            }
+        ],
+    }
+    httpx_mock.add_response(
+        method="POST",
+        url=URL,
+        match_json=nt_query,
+        status_code=200,
+        json=error_response,
+    )
+    with pytest.raises(RuntimeError, match=expected_message):
+        await numtracker.create_scan("ab123", "p46")

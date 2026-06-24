@@ -292,6 +292,25 @@ def test_reload_environment(
     assert environment == NEW_ENV
 
 
+def test_reload_environment_removes_caches(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.get_environment.return_value = NEW_ENV
+
+    _ = client.plans, client.devices
+    _ = client.plans, client.devices
+
+    # rest calls only made once as plans/devices are cached
+    mock_rest.get_plans.assert_called_once()
+    mock_rest.get_devices.assert_called_once()
+    mock_rest.reset_mock()
+
+    client.reload_environment()
+    _ = client.plans, client.devices
+
+    # When environment is reloaded, caches are cleared so another call is required
+    mock_rest.get_plans.assert_called_once()
+    mock_rest.get_devices.assert_called_once()
+
+
 @patch("blueapi.client.client.time.time")
 @patch("blueapi.client.client.time.sleep")
 def test_reload_environment_no_timeout(

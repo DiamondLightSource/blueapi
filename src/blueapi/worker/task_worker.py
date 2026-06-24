@@ -723,6 +723,16 @@ class PauseSignal:
     ...
 
 
+@dataclass
+class CancelSignal:
+    """
+    Object put in the worker's task queue to tell it to cancel the current task.
+    """
+
+    failure: bool
+    reason: str | None
+
+
 def run_worker_in_own_thread(
     worker: TaskWorker, executor: ThreadPoolExecutor | None = None
 ) -> Future:

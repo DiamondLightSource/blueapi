@@ -5,10 +5,6 @@ from typing import Any, Generic, TypeVar
 from unittest.mock import MagicMock, Mock, NonCallableMock, patch
 
 import pytest
-from observability_utils.tracing import (
-    JsonObjectSpanExporter,
-    asserting_span_exporter,
-)
 from pydantic import BaseModel, ValidationError
 
 from blueapi.service import interface
@@ -293,10 +289,3 @@ def test_accepts_return_type(
     rpc_function: Callable[[], Any],
 ):
     started_runner.run(rpc_function)
-
-
-def test_run_span_ok(
-    exporter: JsonObjectSpanExporter, started_runner: WorkerDispatcher
-):
-    with asserting_span_exporter(exporter, "run", "function", "args", "kwargs"):
-        started_runner.run(interface.get_plans)

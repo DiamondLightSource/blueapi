@@ -5,7 +5,8 @@ from typing import Any, Self
 
 from aiohttp import ClientSession
 
-from blueapi.config import OpaConfig
+from blueapi.config import OIDCConfig, OpaConfig, ServiceAccount
+from blueapi.service.authentication import TiledAuth
 
 LOGGER = logging.getLogger(__name__)
 
@@ -45,3 +46,29 @@ class OpaClient:
             return aclosing(cls(instrument, config))
         LOGGER.info("No OPA config provided - not creating OpaClient")
         return nullcontext()
+
+    async def require_tiled_service_account(self, token: str):
+        if not await self._call_opa(
+            self._config.tiled_service_account_check,
+            {"token": token, "beamline": self._instrument},
+        ):
+            raise ValueError(
+                f"Tiled service account is not valid for '{self._instrument}'"
+            )
+
+
+async def validate_tiled_config(
+    tiled: ServiceAccount | str | None, oidc: OIDCConfig | None, opa: OpaClient | None
+):
+    if not isinstance(tiled, ServiceAccount):
+        # can't validate an API key
+        return
+
+    if not opa or not oidc:
+        LOGGER.info("Missing OPA or OIDC configuration required to validate tiled auth")
+        return
+
+    LOGGER.info("Validating tiled configuration")
+    tiled.token_url = oidc.token_endpoint
+    auth = TiledAuth(tiled)
+    await opa.require_tiled_service_account(auth.get_access_token())

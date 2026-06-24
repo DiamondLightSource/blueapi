@@ -202,9 +202,9 @@ def test_get_child_device(mock_rest: Mock, client: BlueapiClient):
         else None
     )
     foo = client.devices.foo
-    assert foo == "foo"
+    assert foo.name == "foo"
     x = client.devices.foo.x
-    assert x == "foo.x"
+    assert x.name == "foo.x"
 
 
 def test_state_property(client: BlueapiClient):

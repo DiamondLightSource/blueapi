@@ -6,22 +6,50 @@
         <link rel="icon" type="image/svg" href="/favicon">
         <title>{{instrument}}-blueapi</title>
         <style>
+            * {
+            font-family: sans-serif, Arial, Helvetica,monospace;
+            }
+            body {
+            margin:0;
+            }
+            h1 {
+            width: 100%;
+            background-color: #202740;
+            color: white;
+            text-align: center;
+            font-weight: lighter;
+            margin: 0;
+            }
+            nav {
+            background-color: #4C5266;
+            color: white;
+            margin: 0;
+            padding: 0;
+            }
+            h2 {
+            color: #4C5266;
+            font-weight: lighter;
+            }
+            h3 {
+            color: #3c404e;
+            font-weight: lighter;
+            }
             dl {
             padding-left: 30px;
             }
+            dt {
+            color: #333744;
+            }
+            dd {
+            color: #333744;
+            }
             .container {
-            border: 2px solid rgb(75 70 74);
-            border-radius: 0.5em;
             padding: 20px 10px;
-            font: sans-serif;
-
             display: flex;
             }
             .container > * {
             padding: 10px;
-            border: 2px solid rgb(95 97 110);
-            border-radius: 0.5em;
-
+            box-shadow: 0 0 10px 5px #eee;
             margin: 0 10px;
             flex: 1 1 200px;
             }
@@ -29,16 +57,16 @@
     </head>
     <body>
         <h1>{{instrument}}-blueapi</h1>
-        <p>
+        <nav>
             api docs available at
             <a href="/docs">/docs</a>.
-        </p>
+        </nav>
 
         <div class="container">
 
             <div>
                 <h2>Run Plan</h2>
-                <form action="/run" method="POST" id="run_form">
+                <form action="/api/v1/run" method="POST" id="run_form">
                     <div>
                     <label for="instrument_session">Instrument Session</label>
                     <input type="text" id="instrument_session" name="instrument_session" placeholder="cm1234-5" required/>
@@ -55,7 +83,7 @@
                     </div>
 
                     <div>
-                    <textarea id="params" name="params" placeholder="Plan parameters" rows='10' cols='60'></textarea>
+                    <textarea id="params" name="params" placeholder="Plan parameters" rows='10' cols='40'></textarea>
                     </div>
 
                     <input type="submit" value="run">
@@ -110,14 +138,15 @@
                 <dl>
                     <dt>Description:</dt>
                     <dd>{{plan.description | replace("\n", "<br>") | safe }}</dd>
-                    <dt> Plan Parameters:</dt>
-                    {% for p in plan.parameter_schema.properties %}
-                    <dd>{{ p }}</dd>
-                    {% endfor %}
+                    <dt>Plan Parameters:</dt>
+                    <dd>
+                        {% for k,v in plan.parameter_schema.items() %}
+                        {{k}}: {{v}} <br>
+                        {% endfor %}
+                    </dd>        
                 </dl>
                 {% endfor %}
             </div>
-
             <div>
                 <h2>Devices</h2>
                 {% for device in devices %}

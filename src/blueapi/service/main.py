@@ -3,7 +3,8 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated
+from dataclasses import dataclass
+from typing import Annotated, Any
 
 import jwt
 from fastapi import (
@@ -34,7 +35,7 @@ from observability_utils.tracing import (
 )
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.trace import get_tracer_provider
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -46,6 +47,7 @@ from blueapi.service.middleware import (
     ObservabilityContextPropagator,
     VersionHeaders,
 )
+from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -620,11 +622,6 @@ def root_landing(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> HTMLResponse:
 
-    if runner._config.env.metadata:
-        instrument = runner._config.env.metadata.instrument
-    else:
-        instrument = "<ixx>"
-
     devices = runner.run(interface.get_devices)
     devices = [
         {"device": device.name, "protocols": [p.name for p in device.protocols]}
@@ -632,12 +629,50 @@ def root_landing(
     ]
 
     plans = runner.run(interface.get_plans)
+
+    @dataclass()
+    class TmpModel:
+        name: str
+        description: str | None
+        parameter_schema: dict[str, Any]
+
+    format_plans: list[TmpModel] = []
+    for plan in plans:
+        sch: dict[str, Any] = plan.parameter_schema
+        plan_args: dict[str, Any] | None = sch.get("properties")
+
+        args = {}
+        if plan_args:
+            for k, v in plan_args.items():
+                if any_of_type := v.get("anyOf"):
+                    tp_list = []
+                    for typ in any_of_type:
+                        if list_type := typ.get("items"):
+                            tp_list.append(f"list[{list_type.get('type')}]")
+                        elif simple_type := typ.get("type"):
+                            tp_list.append(simple_type)
+                    tp = " | ".join(tp_list)
+
+                elif list_type := v.get("items"):
+                    tp = f"list[{list_type.get('type')}]"
+                else:
+                    tp = v.get("type")
+
+                args[f"{k}"] = tp
+
+        p = TmpModel(
+            name=plan.name,
+            description=plan.description,
+            parameter_schema=args,
+        )
+        format_plans.append(p)
+
     task_list = get_tasks(runner)
 
     context = {
-        "instrument": instrument,
+        "instrument": runner.instrument(),
         "devices": devices,
-        "plans": plans,
+        "plans": format_plans,
         "tasks": task_list.tasks,
     }
 

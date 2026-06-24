@@ -185,12 +185,9 @@ class TaskWorker:
             # Persuades type checker that self._current is not None
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
-        if failure:
-            default_reason = "Task failed for unknown reason"
-            self._ctx.run_engine.abort(reason or default_reason)
-            add_span_attributes({"Task aborted": reason or default_reason})
+
         else:
-            self._ctx.run_engine.stop()
+            self._task_channel.put(CancelSignal(failure=failure, reason=reason))
             default_reason = "Cancellation successful: Task stopped without error"
             add_span_attributes({"Task stopped": reason or default_reason})
         return self._current.task_id

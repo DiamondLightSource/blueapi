@@ -1,11 +1,13 @@
 from unittest.mock import MagicMock, NonCallableMock
 
-from dodal.common.beamlines.beamline_utils import device_factory
-from dodal.utils import OphydV1Device, OphydV2Device
+from dodal.device_manager import DeviceManager, OphydV1Device, OphydV2Device
 from ophyd_async.core import DEFAULT_TIMEOUT, LazyMock, StandardReadable
 from ophyd_async.sim import SimMotor
 
+devices = DeviceManager()
 
+
+@devices.factory(mock=True)
 def fake_motor_bundle_b(
     fake_motor_x: SimMotor,
     fake_motor_y: SimMotor,
@@ -13,6 +15,7 @@ def fake_motor_bundle_b(
     return SimMotor("motor_bundle_b")
 
 
+@devices.factory(mock=True)
 def fake_motor_x() -> SimMotor:
     return SimMotor("motor_x")
 
@@ -24,7 +27,7 @@ class DeviceA(StandardReadable):
         super().__init__(name)
 
 
-@device_factory(mock=True)
+@devices.factory(mock=True)
 def device_a() -> DeviceA:
     return DeviceA()
 
@@ -38,8 +41,9 @@ class UnconnectableOphydDevice(OphydV1Device):
         raise RuntimeError(f"{self.name}: fake connection error for tests")
 
 
-def ophyd_device() -> UnconnectableOphydDevice:
-    return UnconnectableOphydDevice(name="ophyd_device")
+@devices.v1_init(UnconnectableOphydDevice, prefix="NOT:A:REAL:DEVICE")
+def ophyd_device(dev: UnconnectableOphydDevice) -> UnconnectableOphydDevice:
+    return dev
 
 
 class UnconnectableOphydAsyncDevice(OphydV2Device):
@@ -52,14 +56,17 @@ class UnconnectableOphydAsyncDevice(OphydV2Device):
         raise RuntimeError(f"{self.name}: fake connection error for tests")
 
 
+@devices.factory
 def ophyd_async_device() -> UnconnectableOphydAsyncDevice:
     return UnconnectableOphydAsyncDevice(name="ophyd_async_device")
 
 
+@devices.factory
 def fake_motor_y() -> SimMotor:
     return SimMotor("motor_y")
 
 
+@devices.factory
 def fake_motor_bundle_a(
     fake_motor_x: SimMotor,
     fake_motor_y: SimMotor,

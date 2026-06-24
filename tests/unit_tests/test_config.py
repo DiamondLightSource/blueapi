@@ -230,7 +230,8 @@ def temp_yaml_config_file(
         {
             "env": {
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.ixx", "name": "manager"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
                     {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
@@ -241,7 +242,7 @@ def temp_yaml_config_file(
             "stomp": {"enabled": True},
             "env": {
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.adsim"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
                     {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
@@ -301,7 +302,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     "instrument": "p01",
                 },
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim", "mock": True},
+                    {"kind": "deviceManager", "module": "dodal.adsim", "mock": True},
                     {"kind": "planFunctions", "module": "dodal.plans"},
                     {
                         "kind": "planFunctions",
@@ -357,7 +358,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             "auth_token_path": None,
             "env": {
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim", "mock": False},
+                    {"kind": "deviceManager", "module": "dodal.adsim", "mock": False},
                     {"kind": "planFunctions", "module": "dodal.plans"},
                     {
                         "kind": "planFunctions",
@@ -439,7 +440,7 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
             "auth_token_path": None,
             "env": {
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.adsim"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
                     {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],

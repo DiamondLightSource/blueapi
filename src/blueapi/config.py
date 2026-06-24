@@ -48,8 +48,6 @@ yaml.Loader.add_constructor("!expand", _expand_env)
 
 class SourceKind(StrEnum):
     PLAN_FUNCTIONS = "planFunctions"
-    DEVICE_FUNCTIONS = "deviceFunctions"
-    DODAL = "dodal"
     DEVICE_MANAGER = "deviceManager"
 
 
@@ -63,19 +61,6 @@ class PlanSource(Source):
     )
 
 
-class DeviceSource(Source):
-    kind: Literal[SourceKind.DEVICE_FUNCTIONS] = Field(
-        SourceKind.DEVICE_FUNCTIONS, init=False
-    )
-
-
-class DodalSource(Source):
-    kind: Literal[SourceKind.DODAL] = Field(SourceKind.DODAL, init=False)
-    mock: bool = Field(
-        description="If true, ophyd_async device connections are mocked", default=False
-    )
-
-
 class DeviceManagerSource(Source):
     kind: Literal[SourceKind.DEVICE_MANAGER] = Field(
         SourceKind.DEVICE_MANAGER, init=False
@@ -84,7 +69,9 @@ class DeviceManagerSource(Source):
         description="If true, ophyd_async device connections are mocked", default=False
     )
     name: str = Field(
-        default="devices", description="Name of the device manager in the module"
+        default="devices",
+        description="Name of the device manager in the module",
+        exclude_if=lambda v: v == "devices",
     )
 
 
@@ -150,7 +137,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
     sources: list[
         Annotated[
-            PlanSource | DeviceSource | DodalSource | DeviceManagerSource,
+            PlanSource | DeviceManagerSource,
             Field(discriminator="kind"),
         ]
     ] = [

@@ -25,7 +25,6 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal>=1.69.0",
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
@@ -48,6 +47,7 @@ requires-python = ">=3.11"
 dev = [
     "ophyd_async[sim]",
     "copier",
+    "dls-dodal>=1.69.0",
     "myst-parser",
     "prek",
     "pydata-sphinx-theme>=0.15.4",

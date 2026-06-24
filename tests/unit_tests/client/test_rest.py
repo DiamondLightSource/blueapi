@@ -8,6 +8,7 @@ import pytest
 import requests
 import responses
 from packaging.version import Version
+from pydantic_core import PydanticSerializationError
 from responses import DELETE, GET, PUT, matchers
 
 from blueapi import __version__
@@ -100,6 +101,22 @@ def test_create_task_serialization():
             "params": {"devices": ["foo"]},
         },
     )
+
+
+def test_create_task_serialization_error():
+    class CustomType:
+        pass
+
+    rest = Mock(spec=BlueapiRestClient)
+    request = TaskRequest(
+        name="demo",
+        instrument_session="cm12345-1",
+        params={"devices": [CustomType()]},
+    )
+
+    with pytest.raises(PydanticSerializationError, match="not serializable"):
+        BlueapiRestClient.create_task(rest, request)
+    rest._request_and_deserialize.assert_not_called()
 
 
 @pytest.mark.parametrize(

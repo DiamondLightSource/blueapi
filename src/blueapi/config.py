@@ -299,6 +299,7 @@ class Tag(StrEnum):
 class OpaConfig(BlueapiBaseModel):
     root: HttpUrl = HttpUrl("http://localhost:8181")
     audience: str = "account"
+    tiled_service_account_check: str
 
 
 class ApplicationConfig(BlueapiBaseModel):

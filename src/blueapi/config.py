@@ -296,6 +296,11 @@ class Tag(StrEnum):
     META = "Meta"
 
 
+class OpaConfig(BlueapiBaseModel):
+    root: HttpUrl = HttpUrl("http://localhost:8181")
+    audience: str = "account"
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -335,6 +340,7 @@ class ApplicationConfig(BlueapiBaseModel):
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
     numtracker: NumtrackerConfig | None = None
+    opa: OpaConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):
@@ -343,6 +349,7 @@ class ApplicationConfig(BlueapiBaseModel):
                 & (self.env == other.env)
                 & (self.logging == other.logging)
                 & (self.api == other.api)
+                & (self.opa == other.opa)
             )
         return False
 

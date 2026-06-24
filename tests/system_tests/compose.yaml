@@ -8,14 +8,14 @@ services:
       - "8406:8000"
     security_opt:
       - label=disable
-    
+
   rabbitmq:
     image: docker.io/rabbitmq:4.0-management
     ports:
-      - "1883:1883"
-      - "5672:5672"
-      - "15672:15672"
-      - "61613:61613"
+      - "1883:1883" # mqtt
+      - "5672:5672" # amqp
+      - "15672:15672" # dashboard
+      - "61613:61613" # stomp
     volumes:
       - type: bind
         source: ./services/rabbitmq_plugins
@@ -46,8 +46,8 @@ services:
       - label=disable
 
   tiled:
-    image: ghcr.io/zohebshaikh/test-tiled-proxided:10.0.1
-    network_mode: host
+    image: ghcr.io/bluesky/tiled:0.2.12
+    network_mode: host # Port 8407
     environment:
       - PYTHONPATH=/deploy/
     volumes:
@@ -61,7 +61,7 @@ services:
 
   opa:
     image: openpolicyagent/opa:edge-static-debug
-    network_mode: host
+    network_mode: host # Port 8181
     volumes:
       - "./services/opa_config:/mnt"
     environment:
@@ -71,7 +71,7 @@ services:
       - label=disable
 
   blueapi-oauth2-proxy:
-    network_mode: host
+    network_mode: host # Port 4180
     image: "quay.io/oauth2-proxy/oauth2-proxy:v7.13.0"
     volumes:
       - ./services/blueapi-oauth2-proxy/:/opt/config
@@ -87,7 +87,7 @@ services:
       - label=disable
 
   tiled-oauth2-proxy:
-    network_mode: host
+    network_mode: host # Port 4181
     image: "quay.io/oauth2-proxy/oauth2-proxy:v7.13.0"
     volumes:
       - ./services/tiled-oauth2-proxy/:/opt/config

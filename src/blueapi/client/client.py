@@ -42,7 +42,13 @@ from blueapi.worker.event import ProgressEvent, TaskError, TaskResult, TaskStatu
 from blueapi.worker.task_worker import TrackableTask
 
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError
+from .rest import (
+    BlueapiRestClient,
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    NotFoundError,
+    ServiceUnavailableError,
+)
 
 TRACER = get_tracer("client")
 
@@ -99,9 +105,8 @@ class DeviceCache:
             self._cache[name] = device
             setattr(self, model.name, device)
             return device
-        except KeyError:
-            pass
-        raise AttributeError(f"No device named '{name}' available")
+        except NotFoundError as e:
+            raise AttributeError(f"No device named '{name}' available") from e
 
     def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):
@@ -668,9 +673,13 @@ class BlueapiClient:
             EnvironmentResponse: Details of the new worker
             environment.
         """
-
         try:
             status = self._rest.delete_environment()
+        except (
+            BlueskyRequestError,
+            ServiceUnavailableError,
+        ):
+            raise
         except Exception as e:
             raise BlueskyRemoteControlError(
                 "Failed to tear down the environment"

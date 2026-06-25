@@ -229,7 +229,7 @@ class Plan:
         props = self.model.parameter_schema.get("properties", {})
         required = set(self.required)
 
-        tab = "    "
+        indent = "    "
         args = []
 
         for name, info in props.items():
@@ -253,7 +253,7 @@ class Plan:
             return single_line
 
         # Fall back to multiline if too many arguments or too long.
-        multiline_args = ",\n".join(f"{tab}{arg}" for arg in args)
+        multiline_args = ",\n".join(f"{indent}{arg}" for arg in args)
         return f"{self.name}(\n{multiline_args}\n)"
 
 

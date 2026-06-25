@@ -814,7 +814,7 @@ def test_plan_multi_parameter_fallback_help_text(client):
         "    one: Any,\n"
         "    two: list[Any] | bool,\n"
         "    three: Any = 3,\n"
-        "    four: Any = None\n"
+        "    four: Any | None = None\n"
         ")"
     )
 

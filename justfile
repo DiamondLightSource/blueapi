@@ -40,5 +40,6 @@ repl:
     uv run --with ptpython ptpython -i <(cat << EOF
     from blueapi.client import BlueapiClient
     bc = BlueapiClient.from_config_file("tests/system_tests/config.yaml").with_instrument_session("cm12345-1")
+    bc.login()
     EOF
     )

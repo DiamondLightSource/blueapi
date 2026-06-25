@@ -75,6 +75,7 @@ dev = [
     "deepdiff",
     "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
     "respx",
+    "pytest-xdist[psutil]",
 ]
 
 [project.scripts]
@@ -102,7 +103,7 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
-timeout = 3
+timeout = 10
 
 [tool.coverage.run]
 patch = ["subprocess"]
@@ -155,6 +156,8 @@ description = "Run unit tests with coverage"
 commands = [
     [
         "pytest",
+        "-n",
+        "logical",
         "tests/unit_tests",
         "--cov=blueapi",
         "--cov-report",

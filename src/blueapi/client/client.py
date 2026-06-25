@@ -3,6 +3,7 @@ import logging
 import time
 from collections.abc import Iterable
 from concurrent.futures import Future
+from contextlib import suppress
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
@@ -675,6 +676,11 @@ class BlueapiClient:
         """
         try:
             status = self._rest.delete_environment()
+            # clear the cached plans/devices as they may have changed
+            with suppress(AttributeError):
+                del self.plans
+            with suppress(AttributeError):
+                del self.devices
         except (
             BlueskyRequestError,
             ServiceUnavailableError,

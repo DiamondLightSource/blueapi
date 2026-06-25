@@ -26,7 +26,7 @@ lint:
     uv run pyright src tests
 
 unit *OPTS:
-    uv run pytest tests/unit_tests {{ OPTS }}
+    uv run pytest -n logical tests/unit_tests {{ OPTS }}
 
 system *OPTS:
     uv run pytest tests/system_tests {{ OPTS }}

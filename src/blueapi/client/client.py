@@ -228,32 +228,36 @@ class Plan:
             raise TypeError(f"Missing argument(s) for {missing}")
         return params
 
-    def __repr__(self):
-        props = self.model.parameter_schema.get("properties", {})
-        required = set(self.required)
-
-        indent = "    "
-        args = []
-
-        for name, info in props.items():
+    def __repr__(self) -> str:
+        def _format_arg(name: str, info: dict[str, Any], required: set[str]) -> str:
             typ = _pretty_type(info)
-            arg = f"{name}: {typ}"
 
-            if name not in required:
-                if info.get("default") is None:
-                    arg = f"{arg} | None = None"
-                elif "default" in info:
-                    arg = f"{arg} = {repr(info['default'])}"
-                else:
-                    arg = f"{arg} | None = None"
+            is_required = name in required
+            has_default = "default" in info
+            default = info.get("default")
 
-            args.append(arg)
+            if is_required:
+                return f"{name}: {typ}"
 
+            # optional with explicit default
+            if has_default:
+                if default is None:
+                    return f"{name}: {typ} | None = None"
+                return f"{name}: {typ} = {repr(default)}"
+
+            # optional with no default
+            return f"{name}: {typ} | None = None"
+
+        props = self.model.parameter_schema.get("properties", {})
+        args = [
+            _format_arg(name, info, set(self.required)) for name, info in props.items()
+        ]
         single_line = f"{self.name}({', '.join(args)})"
 
         if len(single_line) <= _REPR_MAX_LENGTH and len(args) <= _REPR_MAX_ARGS_INLINE:
             return single_line
 
+        indent = "    "
         # Fall back to multiline if too many arguments or too long.
         multiline_args = ",\n".join(f"{indent}{arg}" for arg in args)
         return f"{self.name}(\n{multiline_args}\n)"

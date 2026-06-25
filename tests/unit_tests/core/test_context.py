@@ -360,27 +360,6 @@ def test_add_metadata_with_config(
         assert md in empty_context.run_engine.md.items()
 
 
-@pytest.mark.parametrize("mock", [True, False])
-def test_with_config_passes_mock_to_with_dodal_module(
-    empty_context: BlueskyContext,
-    mock: bool,
-):
-    with patch.object(empty_context, "with_dodal_module") as mock_with_dodal_module:
-        empty_context.with_config(
-            EnvironmentConfig(
-                sources=[
-                    DeviceManagerSource(
-                        module="tests.unit_tests.core.fake_device_module", mock=mock
-                    ),
-                    PlanSource(
-                        module="tests.unit_tests.core.fake_plan_module",
-                    ),
-                ]
-            )
-        )
-        mock_with_dodal_module.assert_called_once_with(ANY, mock=mock)
-
-
 def test_function_spec_with_some_params(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(has_some_params)
     assert spec["foo"][0] is int

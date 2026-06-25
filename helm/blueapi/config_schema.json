@@ -100,56 +100,6 @@
             "type": "object",
             "$id": "DeviceManagerSource"
         },
-        "DeviceSource": {
-            "additionalProperties": false,
-            "properties": {
-                "module": {
-                    "description": "Module to be imported",
-                    "title": "Module",
-                    "type": "string"
-                },
-                "kind": {
-                    "const": "deviceFunctions",
-                    "default": "deviceFunctions",
-                    "title": "Kind",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "module"
-            ],
-            "title": "DeviceSource",
-            "type": "object",
-            "$id": "DeviceSource"
-        },
-        "DodalSource": {
-            "additionalProperties": false,
-            "properties": {
-                "module": {
-                    "description": "Module to be imported",
-                    "title": "Module",
-                    "type": "string"
-                },
-                "kind": {
-                    "const": "dodal",
-                    "default": "dodal",
-                    "title": "Kind",
-                    "type": "string"
-                },
-                "mock": {
-                    "default": false,
-                    "description": "If true, ophyd_async device connections are mocked",
-                    "title": "Mock",
-                    "type": "boolean"
-                }
-            },
-            "required": [
-                "module"
-            ],
-            "title": "DodalSource",
-            "type": "object",
-            "$id": "DodalSource"
-        },
         "EnvironmentConfig": {
             "additionalProperties": false,
             "description": "Config for the RunEngine environment",
@@ -168,9 +118,7 @@
                     "items": {
                         "discriminator": {
                             "mapping": {
-                                "deviceFunctions": "DeviceSource",
                                 "deviceManager": "DeviceManagerSource",
-                                "dodal": "DodalSource",
                                 "planFunctions": "PlanSource"
                             },
                             "propertyName": "kind"
@@ -178,12 +126,6 @@
                         "oneOf": [
                             {
                                 "$ref": "PlanSource"
-                            },
-                            {
-                                "$ref": "DeviceSource"
-                            },
-                            {
-                                "$ref": "DodalSource"
                             },
                             {
                                 "$ref": "DeviceManagerSource"
@@ -330,6 +272,34 @@
             "type": "object",
             "$id": "OIDCConfig"
         },
+        "OpaConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "root": {
+                    "default": "http://localhost:8181/",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1,
+                    "title": "Root",
+                    "type": "string"
+                },
+                "audience": {
+                    "default": "account",
+                    "title": "Audience",
+                    "type": "string"
+                },
+                "tiled_service_account_check": {
+                    "title": "Tiled Service Account Check",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "tiled_service_account_check"
+            ],
+            "title": "OpaConfig",
+            "type": "object",
+            "$id": "OpaConfig"
+        },
         "PlanSource": {
             "additionalProperties": false,
             "properties": {
@@ -430,9 +400,9 @@
                     "title": "Remote Url",
                     "type": "string"
                 },
-                "branch": {
-                    "description": "Branch of repo to check out - defaults to remote's default when cloning and the existing branch when the repo already exists",
-                    "title": "Branch",
+                "target_revision": {
+                    "description": "Revision (branch or tag) to check out when cloning - defaults to remote's HEAD. If a tag is used, the repo will be left in a 'detached head' state.",
+                    "title": "Target Revision",
                     "type": "string"
                 }
             },
@@ -606,6 +576,17 @@
             "anyOf": [
                 {
                     "$ref": "NumtrackerConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null
+        },
+        "opa": {
+            "anyOf": [
+                {
+                    "$ref": "OpaConfig"
                 },
                 {
                     "type": "null"

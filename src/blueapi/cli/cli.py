@@ -26,6 +26,7 @@ from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusCl
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
     InvalidParametersError,
+    NonJsonResponseError,
     ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
@@ -81,10 +82,42 @@ def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
 )
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option(
+    "-h",
+    "--host",
+    type=str,
+    help=textwrap.dedent(
+        """
+        Hostname for the blueapi instance to use
+
+        Value should be the full URL including scheme (and port if non-default),
+        eg `--host http://localhost:8000`
+        """
+    ),
+)
+@click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
+@click.option(
+    "-v",
+    "--verbose",
+    "log_level",
+    flag_value="DEBUG",
+    help="Include DEBUG level logging output",
+)
+@click.option(
+    "-q",
+    "--quiet",
+    "log_level",
+    flag_value="ERROR",
+    help="Reduce logging noise to only show errors",
+)
 @click.pass_context
-def main(ctx: click.Context, config: tuple[Path, ...]) -> None:
+def main(
+    ctx: click.Context,
+    config: tuple[Path, ...],
+    host: str | None = None,
+    log_level: str | None = None,
+) -> None:
     # if no command is supplied, run with the options passed
 
     # Set umask to DLS standard
@@ -95,6 +128,10 @@ def main(ctx: click.Context, config: tuple[Path, ...]) -> None:
         config_loader.use_values_from_yaml(*config)
     except FileNotFoundError as fnfe:
         raise ClickException(f"Config file not found: {fnfe.filename}") from fnfe
+    if host:
+        config_loader.use_values({"api": {"url": host}})
+    if log_level:
+        config_loader.use_values({"logging": {"level": log_level}})
 
     loaded_config: ApplicationConfig = config_loader.load()
 
@@ -217,13 +254,10 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
             raise ClickException(
                 "Failed to establish connection to blueapi server."
             ) from ce
-        except BlueskyRemoteControlError as e:
-            if str(e) == "<Response [401]>":
-                raise ClickException(
-                    "Access denied. Please check your login status and try again."
-                ) from e
-            else:
-                raise e
+        except UnauthorisedAccessError as e:
+            raise ClickException(
+                "Access denied. Please check your login status and try again."
+            ) from e
 
     return wrapper
 
@@ -317,7 +351,12 @@ def run_plan(
     instrument_session: str,
     parameters: TaskParameters,
 ) -> None:
-    """Run a plan with parameters"""
+    """Run a plan with parameters
+
+    To run in the foreground and block until it is complete, stomp
+    configuration is required. Without stomp configuration, '--bg' can be used
+    to start a plan in the background.
+    """
 
     client = cast(BlueapiClient, obj["client"])
     task = TaskRequest(
@@ -352,12 +391,12 @@ def run_plan(
         raise ClickException(*mse.args) from mse
     except UnknownPlanError as up:
         raise ClickException(f"Plan '{name}' was not recognised") from up
-    except UnauthorisedAccessError as ua:
-        raise ClickException("Unauthorised request") from ua
     except InvalidParametersError as ip:
         raise ClickException(ip.message()) from ip
-    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
-        raise ClickException(f"server error with this message: {e}") from e
+    except BlueskyStreamingError as se:
+        raise ClickException(f"Streaming error: {se}") from se
+    except BlueskyRemoteControlError as e:
+        raise ClickException(f"Remote control error: {e.args[0]}") from e
     except ValueError as ve:
         raise ClickException(f"task could not run: {ve}") from ve
 
@@ -494,13 +533,16 @@ def login(obj: dict) -> None:
         print("Logged in")
     except Exception:
         client = BlueapiClient.from_config(config)
-        if oidc := client.oidc_config:
-            auth = SessionManager(
-                oidc, cache_manager=SessionCacheManager(config.auth_token_path)
-            )
-            auth.start_device_flow()
-        else:
-            print("Server is not configured to use authentication!")
+        try:
+            if oidc := client.oidc_config:
+                auth = SessionManager(
+                    oidc, cache_manager=SessionCacheManager(config.auth_token_path)
+                )
+                auth.start_device_flow()
+            else:
+                print("Server is not configured to use authentication!")
+        except NonJsonResponseError as e:
+            print(str(e))
 
 
 @main.command(name="logout")

@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Callable
 from multiprocessing.pool import Pool as PoolClass
 from typing import Any, Generic, TypeVar
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, NonCallableMock, patch
 
 import pytest
 from observability_utils.tracing import (
@@ -188,19 +188,27 @@ def run_rpc_function(
     )
 
 
+fetchable_non_callable = NonCallableMock(
+    __name__="fetchable_non_callable", __module__=__name__
+)
+
+
+def wrong_return_type() -> str:
+    return ""
+
+
 def test_non_callable_excepts(started_runner: WorkerDispatcher):
     # Not a valid target on main or sub process
-    from tests.unit_tests.core.fake_device_module import fetchable_non_callable
+    # from tests.unit_tests.core.fake_device_module import fetchable_non_callable
 
     with pytest.raises(
         RpcError,
         match="fetchable_non_callable: Object in subprocess is not a function",
     ):
-        run_rpc_function(fetchable_non_callable, Mock)
+        run_rpc_function(fetchable_non_callable, Mock)  # type: ignore - the error is the point
 
 
 def test_clear_message_for_wrong_return(started_runner: WorkerDispatcher):
-    from tests.unit_tests.core.fake_device_module import wrong_return_type
 
     with pytest.raises(
         ValidationError,

@@ -25,7 +25,6 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal>=1.69.0",
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
@@ -37,6 +36,7 @@ dependencies = [
     "tomlkit",
     "graypy>=2.1.0",
     "httpx>=0.28.1",
+    "aiohttp>=3.13.5",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -47,6 +47,7 @@ requires-python = ">=3.11"
 dev = [
     "ophyd_async[sim]",
     "copier",
+    "dls-dodal>=1.69.0",
     "myst-parser",
     "prek",
     "pydata-sphinx-theme>=0.15.4",
@@ -55,6 +56,7 @@ dev = [
     "pytest-cov",
     "pytest-asyncio",
     "pytest-httpx>=0.35.0",
+    "pytest-timeout",
     "responses",
     "ruff",
     "semver",
@@ -72,7 +74,7 @@ dev = [
     "jwcrypto",
     "deepdiff",
     "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
-    "respx"
+    "respx",
 ]
 
 [project.scripts]
@@ -94,20 +96,17 @@ reportMissingImports = false  # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
-addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
-    --ignore=src/blueapi/startup
-    """
+addopts = '--tb=native -vv --doctest-modules --doctest-glob="*.rst"'
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
+timeout = 3
 
 [tool.coverage.run]
 patch = ["subprocess"]
 data_file = "/tmp/blueapi.coverage"
-omit = ["src/blueapi/startup/**/*"]
 
 [tool.coverage.paths]
 # Tests are run from installed location, map back to the src directory
@@ -178,6 +177,7 @@ commands = [
         "term",
         "--cov-report",
         "xml:cov.xml",
+        "--timeout=60",
         { replace = "posargs", default = [
         ], extend = true },
     ],

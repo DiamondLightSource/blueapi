@@ -12,6 +12,7 @@ import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
+    AliasChoices,
     AnyUrl,
     BaseModel,
     Field,
@@ -47,8 +48,6 @@ yaml.Loader.add_constructor("!expand", _expand_env)
 
 class SourceKind(StrEnum):
     PLAN_FUNCTIONS = "planFunctions"
-    DEVICE_FUNCTIONS = "deviceFunctions"
-    DODAL = "dodal"
     DEVICE_MANAGER = "deviceManager"
 
 
@@ -62,19 +61,6 @@ class PlanSource(Source):
     )
 
 
-class DeviceSource(Source):
-    kind: Literal[SourceKind.DEVICE_FUNCTIONS] = Field(
-        SourceKind.DEVICE_FUNCTIONS, init=False
-    )
-
-
-class DodalSource(Source):
-    kind: Literal[SourceKind.DODAL] = Field(SourceKind.DODAL, init=False)
-    mock: bool = Field(
-        description="If true, ophyd_async device connections are mocked", default=False
-    )
-
-
 class DeviceManagerSource(Source):
     kind: Literal[SourceKind.DEVICE_MANAGER] = Field(
         SourceKind.DEVICE_MANAGER, init=False
@@ -83,7 +69,9 @@ class DeviceManagerSource(Source):
         description="If true, ophyd_async device connections are mocked", default=False
     )
     name: str = Field(
-        default="devices", description="Name of the device manager in the module"
+        default="devices",
+        description="Name of the device manager in the module",
+        exclude_if=lambda v: v == "devices",
     )
 
 
@@ -149,7 +137,7 @@ class EnvironmentConfig(BlueapiBaseModel):
 
     sources: list[
         Annotated[
-            PlanSource | DeviceSource | DodalSource | DeviceManagerSource,
+            PlanSource | DeviceManagerSource,
             Field(discriminator="kind"),
         ]
     ] = [
@@ -191,11 +179,13 @@ class ScratchRepository(BlueapiBaseModel):
         description="URL to clone from",
         default="https://github.com/example/example.git",
     )
-    branch: str | SkipJsonSchema[None] = Field(
+    target_revision: str | SkipJsonSchema[None] = Field(
         description=(
-            "Branch of repo to check out - defaults to remote's default when "
-            "cloning and the existing branch when the repo already exists"
+            "Revision (branch or tag) to check out when cloning - defaults to "
+            "remote's HEAD. If a tag is used, the repo will be left in a "
+            "'detached head' state."
         ),
+        validation_alias=AliasChoices("branch", "tag", "target_revision"),
         exclude_if=lambda f: f is None,
         # using default_factory instead of default means the schema doesn't
         # include an invalid value
@@ -293,6 +283,12 @@ class Tag(StrEnum):
     META = "Meta"
 
 
+class OpaConfig(BlueapiBaseModel):
+    root: HttpUrl = HttpUrl("http://localhost:8181")
+    audience: str = "account"
+    tiled_service_account_check: str
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -300,7 +296,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.2.0"
+    REST_API_VERSION: ClassVar[str] = "1.3.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",
@@ -332,6 +328,7 @@ class ApplicationConfig(BlueapiBaseModel):
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
     numtracker: NumtrackerConfig | None = None
+    opa: OpaConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):
@@ -340,6 +337,7 @@ class ApplicationConfig(BlueapiBaseModel):
                 & (self.env == other.env)
                 & (self.logging == other.logging)
                 & (self.api == other.api)
+                & (self.opa == other.opa)
             )
         return False
 
@@ -455,5 +453,5 @@ def generate_config_schema() -> dict[str, Any]:
             return json_schema
 
     return ApplicationConfig.model_json_schema(
-        schema_generator=_GenerateJsonSchema, ref_template="{model}"
+        by_alias=False, schema_generator=_GenerateJsonSchema, ref_template="{model}"
     )

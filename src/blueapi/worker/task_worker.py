@@ -318,7 +318,6 @@ class TaskWorker:
         sub = self.worker_events.subscribe(mark_task_as_started)
         try:
             self._current_task_otel_context = get_current()
-            sub = self.worker_events.subscribe(mark_task_as_started)
             """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
             task_started.wait(timeout=5.0)

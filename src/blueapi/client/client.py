@@ -37,11 +37,17 @@ from blueapi.service.model import (
 )
 from blueapi.utils import deprecated
 from blueapi.worker import WorkerEvent, WorkerState
-from blueapi.worker.event import ProgressEvent, TaskStatus
+from blueapi.worker.event import ProgressEvent, TaskError, TaskResult, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError
+from .rest import (
+    BlueapiRestClient,
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    NotFoundError,
+    ServiceUnavailableError,
+)
 
 TRACER = get_tracer("client")
 
@@ -124,9 +130,8 @@ class DeviceCache:
             self._cache[name] = device
             setattr(self, model.name, device)
             return device
-        except KeyError:
-            pass
-        raise AttributeError(f"No device named '{name}' available")
+        except NotFoundError as e:
+            raise AttributeError(f"No device named '{name}' available") from e
 
     def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):
@@ -140,23 +145,23 @@ class DeviceCache:
         return f"DeviceCache({len(self._cache)} devices)"
 
 
-class DeviceRef(str):
+class DeviceRef:
+    name: str
     model: DeviceModel
     _cache: DeviceCache
 
-    def __new__(cls, name: str, cache: DeviceCache, model: DeviceModel):
-        instance = super().__new__(cls, name)
-        instance.model = model
-        instance._cache = cache
-        return instance
+    def __init__(self, name: str, cache: DeviceCache, model: DeviceModel):
+        self.name = name
+        self.model = model
+        self._cache = cache
 
     def __getattr__(self, name) -> "DeviceRef":
         if name.startswith("_"):
             raise AttributeError(f"No child device named {name}")
-        return self._cache[f"{self}.{name}"]
+        return self._cache[f"{self.name}.{name}"]
 
     def __repr__(self):
-        return f"Device({self})"
+        return f"Device({self.name})"
 
 
 class Plan:
@@ -166,13 +171,17 @@ class Plan:
         self._client = client
         self.__doc__ = model.description
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Any:
         req = TaskRequest(
             name=self.name,
             params=self._build_args(*args, **kwargs),
             instrument_session=self._client.instrument_session,
         )
-        self._client.run_task(req)
+        match self._client.run_task(req):
+            case TaskStatus(result=TaskResult(result=res)):
+                return res
+            case TaskStatus(result=TaskError(type=typ, message=msg)):
+                raise PlanFailedError(typ, msg)
 
     @property
     def help_text(self) -> str:
@@ -346,6 +355,11 @@ class BlueapiClient:
         """
         return self._rest.get_plan(name)
 
+    def print_plans(self) -> None:
+        """Print all available plans."""
+        for name in self.plans:
+            print(name)
+
     @start_as_current_span(TRACER)
     @deprecated("devices property")
     def get_devices(self) -> DeviceResponse:
@@ -384,6 +398,11 @@ class BlueapiClient:
         """
 
         return self._rest.get_device(name)
+
+    def print_devices(self) -> None:
+        """Print all available devices."""
+        for name in self.devices:
+            print(name)
 
     @property
     @start_as_current_span(TRACER)
@@ -705,9 +724,13 @@ class BlueapiClient:
             EnvironmentResponse: Details of the new worker
             environment.
         """
-
         try:
             status = self._rest.delete_environment()
+        except (
+            BlueskyRequestError,
+            ServiceUnavailableError,
+        ):
+            raise
         except Exception as e:
             raise BlueskyRemoteControlError(
                 "Failed to tear down the environment"
@@ -795,3 +818,9 @@ class BlueapiClient:
                 auth.start_device_flow()
             else:
                 print("Server is not configured to use authentication!")
+
+
+class PlanFailedError(Exception):
+    def __init__(self, typ: str, message: str):
+        super().__init__(message)
+        self._type = typ

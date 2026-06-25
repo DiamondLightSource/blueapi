@@ -17,9 +17,16 @@ from blueapi.client.client import (
     MissingInstrumentSessionError,
     Plan,
     PlanCache,
+    PlanFailedError,
 )
 from blueapi.client.event_bus import AnyEvent, EventBusClient
-from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
+from blueapi.client.rest import (
+    BlueapiRestClient,
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    NotFoundError,
+    ServiceUnavailableError,
+)
 from blueapi.config import MissingStompConfigurationError
 from blueapi.core import DataEvent
 from blueapi.service.model import (
@@ -98,7 +105,14 @@ def mock_rest() -> BlueapiRestClient:
     mock.get_plans.return_value = PLANS
     mock.get_plan.side_effect = lambda n: {p.name: p for p in PLANS.plans}[n]
     mock.get_devices.return_value = DEVICES
-    mock.get_device.side_effect = lambda n: {d.name: d for d in DEVICES.devices}[n]
+    device_map = {d.name: d for d in DEVICES.devices}
+
+    def get_device(n: str):
+        if n not in device_map:
+            raise NotFoundError(404, "<Response [404]>")
+        return device_map[n]
+
+    mock.get_device.side_effect = get_device
     mock.get_state.return_value = WorkerState.IDLE
     mock.get_task.return_value = TASK
     mock.get_all_tasks.return_value = TASKS
@@ -145,6 +159,13 @@ def test_get_plan(client: BlueapiClient):
     assert client.plans["foo"].model == PLAN
 
 
+def test_print_plans(client: BlueapiClient, capsys: pytest.CaptureFixture):
+    client.print_plans()
+    captured = capsys.readouterr()
+    for dev in PLANS.plans:
+        assert dev.name in captured.out
+
+
 def test_get_nonexistant_plan(
     client: BlueapiClient,
 ):
@@ -158,6 +179,13 @@ def test_get_devices(client: BlueapiClient):
 
 def test_get_device(client: BlueapiClient):
     assert client.devices.foo.model == DEVICE
+
+
+def test_print_devices(client: BlueapiClient, capsys: pytest.CaptureFixture):
+    client.print_devices()
+    captured = capsys.readouterr()
+    for dev in DEVICES.devices:
+        assert dev.name in captured.out
 
 
 def test_get_nonexistent_device(
@@ -174,9 +202,9 @@ def test_get_child_device(mock_rest: Mock, client: BlueapiClient):
         else None
     )
     foo = client.devices.foo
-    assert foo == "foo"
+    assert foo.name == "foo"
     x = client.devices.foo.x
-    assert x == "foo.x"
+    assert x.name == "foo.x"
 
 
 def test_state_property(client: BlueapiClient):
@@ -332,6 +360,16 @@ def test_reload_environment_failure(
         environment_id=ENVIRONMENT_ID, initialized=False, error_message="foo"
     )
     with pytest.raises(BlueskyRemoteControlError, match="foo"):
+        client.reload_environment()
+
+
+@pytest.mark.parametrize("err", [ServiceUnavailableError(), BlueskyRequestError()])
+def test_reload_propagates_known_errors(
+    err: Exception, client: BlueapiClient, mock_rest: Mock
+):
+    mock_rest.delete_environment.side_effect = err
+
+    with pytest.raises(type(err)):
         client.reload_environment()
 
 
@@ -510,6 +548,39 @@ def test_run_task_ignores_non_matching_events(
     )
 
     mock_on_event.assert_called_once_with(COMPLETE_EVENT)
+
+
+def test_scripting_interface_returns_result():
+    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
+    client.run_task.return_value = TaskStatus(
+        task_id="foobar",
+        task_complete=True,
+        task_failed=False,
+        result=TaskResult(result=42, type="int"),
+    )
+    demo_plan = Plan(
+        "demo",
+        client=client,
+        model=PlanModel(name="demo", description="Demo plan", schema={}),
+    )
+    assert demo_plan() == 42
+
+
+def test_scripting_interface_raises_exceptions():
+    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
+    client.run_task.return_value = TaskStatus(
+        task_id="foobar",
+        task_complete=True,
+        task_failed=True,
+        result=TaskError(type="ValueError", message="Plan failed"),
+    )
+    demo_plan = Plan(
+        "demo",
+        client=client,
+        model=PlanModel(name="demo", description="Demo plan", schema={}),
+    )
+    with pytest.raises(PlanFailedError, match="Plan failed"):
+        demo_plan()
 
 
 def test_oidc_config_property(client, mock_rest):

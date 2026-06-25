@@ -84,7 +84,7 @@ LOW_RESOURCES = {
                     ScratchRepository(
                         name="bar",
                         remote_url="https://example.git",
-                        branch="bar_branch",
+                        target_revision="bar_branch",
                     ),
                 ],
             ),
@@ -1206,7 +1206,7 @@ def test_service_linked_to_api(worker_api_url: str | None, service_port: int):
 
 @pytest.mark.parametrize(
     "added_mounts",
-    [[{"name": "worker-config", "mountPath": "/config", "readOnly": True}], [], None],
+    [[{"name": "foo", "mountPath": "/bar", "readOnly": True}], [], None],
 )
 @pytest.mark.parametrize(
     "added_volumes", [[{"name": "foo", "configMap": {"name": "bar"}}], [], None]
@@ -1218,6 +1218,13 @@ def test_volumes_created(
     manifests = render_chart(
         values={"volumes": added_volumes, "volumeMounts": added_mounts}
     )
+    expected_mounts = [
+        {
+            "name": "worker-config",
+            "mountPath": "/config",
+            "readOnly": True,
+        }
+    ]
 
     expected_volumes = [
         {
@@ -1229,9 +1236,7 @@ def test_volumes_created(
     if added_volumes:
         expected_volumes += added_volumes
     if added_mounts:
-        expected_mounts = added_mounts
-    else:
-        expected_mounts = None
+        expected_mounts += added_mounts
 
     container_mounts = manifests["StatefulSet"]["blueapi"]["spec"]["template"]["spec"][
         "containers"

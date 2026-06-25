@@ -20,7 +20,7 @@ from observability_utils.tracing import (
 )
 from ophyd_async.core import AsyncStatus
 
-from blueapi.config import DeviceSource, EnvironmentConfig
+from blueapi.config import DeviceManagerSource, EnvironmentConfig
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import PlanModel
@@ -110,7 +110,7 @@ def second_fake_device() -> FakeDevice:
 def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyContext:
     ctx = BlueskyContext()
     ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(DeviceSource(module="devices"))
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.register_plan(failing_plan)
     ctx.register_device(fake_device)
     ctx.register_device(second_fake_device)
@@ -122,7 +122,7 @@ def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyC
 def context_without_devices() -> BlueskyContext:
     ctx = BlueskyContext()
     ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(DeviceSource(module="devices"))
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.with_config(ctx_config)
     return ctx
 
@@ -893,3 +893,22 @@ def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
     params = Task(name="injected_device_plan").prepare_params(context_without_devices)
     assert params["composite"].fake_device == fake_device
     assert params["composite"].second_fake_device == second_fake_device
+
+
+@pytest.mark.parametrize(
+    "plan_result,task_result,type_name",
+    (
+        (Unreturnable(foo=1, bar=[]), None, "Unreturnable"),
+        ((Unreturnable(foo=2, bar=[]),), None, "tuple"),
+        (ComplexReturn(foo=3, bar=["a"]), {"foo": 3, "bar": ["a"]}, "ComplexReturn"),
+        ((ComplexReturn(foo=4, bar=["b"]),), [{"foo": 4, "bar": ["b"]}], "tuple"),
+        (ModelReturn(foo=5, bar=["c"]), {"foo": 5, "bar": ["c"]}, "ModelReturn"),
+        ((ModelReturn(foo=6, bar=["d"]),), [{"foo": 6, "bar": ["d"]}], "tuple"),
+        (42, 42, "int"),
+        ((1, 2), [1, 2], "tuple"),
+    ),
+)
+def test_task_result_serialization(plan_result, task_result, type_name):
+    res = TaskResult.from_result(plan_result)
+    assert res.result == task_result
+    assert res.type == type_name

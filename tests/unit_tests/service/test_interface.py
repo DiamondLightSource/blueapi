@@ -9,11 +9,6 @@ import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
-from dodal.common.beamlines.beamline_utils import (
-    clear_path_provider,
-    get_path_provider,
-    set_path_provider,
-)
 from ophyd_async.epics.motor import Motor
 from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
@@ -25,7 +20,6 @@ from blueapi.config import (
     MetadataConfig,
     NumtrackerConfig,
     OIDCConfig,
-    PlanSource,
     ScratchConfig,
     StompConfig,
     TiledConfig,
@@ -44,7 +38,6 @@ from blueapi.service.model import (
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.utils.numtracker import NumtrackerClient
-from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import (
     TaskResult,
     TaskStatus,
@@ -240,6 +233,33 @@ def test_begin_task_no_task_id(worker_mock: MagicMock):
     returned_task = interface.begin_task(task)
     assert task == returned_task
     worker_mock.assert_not_called()
+
+
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.config")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_subscribers_removed_when_task_not_found(
+    worker_mock: MagicMock,
+    context_mock: MagicMock,
+    config_mock: MagicMock,
+    from_uri_mock: MagicMock,
+):
+    # regression test for #1480
+    worker = worker_mock()
+    ctx = context_mock()
+    worker.begin_task.side_effect = KeyError()
+
+    with pytest.raises(KeyError):
+        interface.begin_task(WorkerTask(task_id="missing"))
+
+    ctx.run_engine.subscribe.assert_called_once()
+    tiled_token = ctx.run_engine.subscribe()
+    ctx.run_engine.unsubscribe.assert_called_once_with(tiled_token)
+
+    worker.worker_events.subscribe.assert_called_once()
+    remove_token = worker.worker_events.subscribe()
+    worker.worker_events.unsubscribe.assert_called_once_with(remove_token)
 
 
 @patch("blueapi.service.interface.TaskWorker.get_tasks_by_status")
@@ -584,63 +604,6 @@ def test_numtracker_requires_instrument_metadata():
     # Clearing the config here prevents the same exception as above being
     # raised in the ensure_worker_stopped fixture
     interface.set_config(ApplicationConfig())
-
-
-def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
-    conf = ApplicationConfig()
-    mock_provider = Mock()
-    set_path_provider(mock_provider)
-
-    assert get_path_provider() == mock_provider
-    interface.setup(conf)
-    assert get_path_provider() == mock_provider
-
-    clear_path_provider()
-
-
-def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
-    conf = ApplicationConfig()
-    interface.setup(conf)
-
-    with pytest.raises(NameError):
-        get_path_provider()
-
-
-def test_setup_with_numtracker_makes_start_document_provider():
-    conf = ApplicationConfig(
-        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
-        numtracker=NumtrackerConfig(),
-    )
-    interface.setup(conf)
-
-    path_provider = get_path_provider()
-
-    assert isinstance(path_provider, StartDocumentPathProvider)
-
-    clear_path_provider()
-
-
-def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
-    conf = ApplicationConfig(
-        env=EnvironmentConfig(
-            sources=[
-                PlanSource(
-                    module="tests.unit_tests.service.example_beamline_with_path_provider",
-                ),
-            ],
-            metadata=MetadataConfig(instrument="p46"),
-        ),
-        numtracker=NumtrackerConfig(),
-    )
-
-    with pytest.raises(
-        InvalidConfigError,
-        match="Numtracker has been configured but a path provider was imported"
-        " with the devices. Remove this path provider to use numtracker.",
-    ):
-        interface.setup(conf)
-
-    clear_path_provider()
 
 
 @patch("blueapi.utils.numtracker.NumtrackerClient.create_scan")

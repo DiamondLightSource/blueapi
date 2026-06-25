@@ -118,9 +118,8 @@ def test_connection_error_caught_by_wrapper_func(
 def test_authentication_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
-    mock_requests.side_effect = BlueskyRemoteControlError("<Response [401]>")
+    mock_requests.side_effect = UnauthorisedAccessError(message="<Response [401]>")
     result = runner.invoke(main, ["controller", "plans"])
-
     assert (
         result.output
         == "Error: Access denied. Please check your login status and try again.\n"
@@ -130,7 +129,6 @@ def test_authentication_error_caught_by_wrapper_func(
 @patch("blueapi.client.rest.requests.Session.request")
 def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
     mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
-
     result = runner.invoke(main, ["controller", "plans"])
     assert (
         isinstance(result.exception, BlueskyRemoteControlError)
@@ -701,7 +699,10 @@ def test_env_reload_server_side_error(runner: CliRunner):
     "exception, error_message",
     [
         (UnknownPlanError(), "Error: Plan 'sleep' was not recognised\n"),
-        (UnauthorisedAccessError(), "Error: Unauthorised request\n"),
+        (
+            UnauthorisedAccessError(),
+            "Error: Access denied. Please check your login status and try again.\n",
+        ),
         (
             InvalidParametersError(
                 errors=[
@@ -717,11 +718,15 @@ def test_env_reload_server_side_error(runner: CliRunner):
         ),
         (
             BlueskyRemoteControlError("Server error"),
-            "Error: server error with this message: Server error\n",
+            "Error: Remote control error: Server error\n",
         ),
         (
             ValueError("Error parsing parameters"),
             "Error: task could not run: Error parsing parameters\n",
+        ),
+        (
+            BlueskyStreamingError("streaming failed"),
+            "Error: Streaming error: streaming failed\n",
         ),
     ],
     ids=[
@@ -730,6 +735,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
         "invalid_parameters",
         "remote_control",
         "value_error",
+        "streaming_error",
     ],
 )
 def test_error_handling(exception, error_message, runner: CliRunner):
@@ -1055,7 +1061,22 @@ def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliR
             ScratchRepository(
                 name="dodal",
                 remote_url="https://github.com/DiamondLightSource/dodal.git",
-            )
+            ),
+            ScratchRepository(
+                name="with_target",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo",
+            ),
+            ScratchRepository(
+                name="with_branch",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo_branch",
+            ),
+            ScratchRepository(
+                name="with_tag",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo_tag",
+            ),
         ],
     )
 
@@ -1135,6 +1156,26 @@ def test_login_with_unauthenticated_server(
 ):
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
     assert "Server is not configured to use authentication!\n" == result.output
+    assert result.exit_code == 0
+
+
+@responses.activate
+def test_invalid_json(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+):
+    response = responses.add(
+        responses.GET,
+        "http://localhost:8000/config/oidc",
+        body="blah blah",
+        status=200,
+    )
+
+    result = runner.invoke(main, ["-c", config_with_auth, "login"])
+
+    assert response.call_count == 1
+    assert "Response does not contain a valid JSON object\n" == result.output
     assert result.exit_code == 0
 
 
@@ -1384,3 +1425,56 @@ def test_config_schema(
 def test_task_parameter_type(value, result):
     t = ParametersType()
     assert t.convert(value, None, None) == result
+
+
+@pytest.mark.parametrize(
+    "flag,level",
+    [("--verbose", "DEBUG"), ("--quiet", "ERROR"), ("-v", "DEBUG"), ("-q", "ERROR")],
+)
+def test_log_level_override(flag: str, level: str, runner: CliRunner):
+    with patch("blueapi.log.logging") as mock_log:
+        runner.invoke(main, [flag])
+        mock_log.getLogger().setLevel.assert_called_once_with(level)
+        mock_log.StreamHandler().setLevel.assert_called_once_with(level)
+
+
+@responses.activate
+def test_host_option(runner: CliRunner):
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        ["--host", "http://override.example.com:5678", "controller", "plans"],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0
+
+
+@responses.activate
+def test_host_overrides_config(runner: CliRunner):
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        [
+            "--host",
+            "http://override.example.com:5678",
+            "--config",
+            config_path,
+            "controller",
+            "plans",
+        ],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0

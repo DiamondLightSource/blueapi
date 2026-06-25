@@ -5,7 +5,7 @@ from inspect import Parameter
 from pathlib import Path
 from types import ModuleType, NoneType
 from typing import Any, Generic, TypeVar, Union, get_args, get_type_hints
-from unittest.mock import ANY, MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import responses

@@ -54,6 +54,9 @@ TRACER = get_tracer("client")
 
 log = logging.getLogger(__name__)
 
+_REPR_MAX_LENGTH = 100
+_REPR_MAX_ARGS_INLINE = 3
+
 
 def _pretty_type(schema: dict[str, Any]) -> str:
     if "$ref" in schema:
@@ -246,10 +249,8 @@ class Plan:
             args.append(arg)
 
         single_line = f"{self.name}({', '.join(args)})"
-        max_length = 100
-        max_args_inline = 3
 
-        if len(single_line) <= max_length and len(args) <= max_args_inline:
+        if len(single_line) <= _REPR_MAX_LENGTH and len(args) <= _REPR_MAX_ARGS_INLINE:
             return single_line
 
         # Fall back to multiline if too many arguments or too long.

@@ -103,7 +103,7 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
-timeout = 30
+timeout = 3
 
 [tool.coverage.run]
 patch = ["subprocess"]

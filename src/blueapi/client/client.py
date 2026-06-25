@@ -1,7 +1,7 @@
 import itertools
 import logging
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, KeysView
 from concurrent.futures import Future
 from functools import cached_property
 from pathlib import Path
@@ -188,7 +188,7 @@ class Plan:
         return self.model.description or f"Plan {self!r}"
 
     @property
-    def properties(self) -> dict[str, Any]:
+    def properties(self) -> KeysView[str]:
         return self.model.parameter_schema.get("properties", {}).keys()
 
     @property

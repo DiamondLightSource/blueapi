@@ -472,6 +472,35 @@ class TaskWorker:
                 """
                 self._ctx.run_engine.resume()
 
+            elif isinstance(next_task, CancelSignal):
+                """
+                If we receive a cancel signal, we call abort or stop on the RunEngine
+                depending on whether the cancellation is flagged as a failure or not.
+                """
+                if self._current is None:
+                    raise TransitionError("Attempted to cancel while no active Task")
+                if next_task.failure:
+                    default_reason = "Task failed for unknown reason"
+                    self._ctx.run_engine.abort(next_task.reason or default_reason)
+                    add_span_attributes(
+                        {"Task aborted": next_task.reason or default_reason}
+                    )
+                    e = Exception(next_task.reason or default_reason)
+                    LOGGER.error(
+                        "Task failed", extra={"task_id": self._current.task_id}
+                    )
+                    self._current.set_exception(e)
+                    self._report_error(e)
+
+                else:
+                    self._ctx.run_engine.stop()
+                    default_reason = (
+                        "Cancellation successful: Task stopped without error"
+                    )
+                    add_span_attributes(
+                        {"Task stopped": next_task.reason or default_reason}
+                    )
+
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't
@@ -706,15 +735,6 @@ class KillSignal:
 class ResumeSignal:
     """
     Object put in the worker's task queue to tell it to resume if paused.
-    """
-
-    ...
-
-
-@dataclass
-class PauseSignal:
-    """
-    Object put in the worker's task queue to tell it to pause.
     """
 
     ...

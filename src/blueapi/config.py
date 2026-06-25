@@ -338,6 +338,9 @@ class ApplicationConfig(BlueapiBaseModel):
                 & (self.logging == other.logging)
                 & (self.api == other.api)
                 & (self.opa == other.opa)
+                & (self.tiled == other.tiled)
+                & (self.oidc == other.oidc)
+                & (self.numtracker == other.numtracker)
             )
         return False
 

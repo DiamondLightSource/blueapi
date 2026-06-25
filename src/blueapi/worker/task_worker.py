@@ -186,10 +186,10 @@ class TaskWorker:
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
 
-        else:
-            self._task_channel.put(CancelSignal(failure=failure, reason=reason))
-            default_reason = "Cancellation successful: Task stopped without error"
-            add_span_attributes({"Task stopped": reason or default_reason})
+        self._task_channel.put(CancelSignal(failure=failure, reason=reason))
+        add_span_attributes(
+            {"task aborted" if failure else "task stopped": reason or ""}
+        )
         return self._current.task_id
 
     @start_as_current_span(TRACER)
@@ -466,17 +466,15 @@ class TaskWorker:
                         process_task()
 
             elif isinstance(next_task, ResumeSignal):
-                """
-                If we receive a resume signal, we simply call resume on the RunEngine,
-                which will cause it to continue if it is paused.
-                """
+                # If we receive a resume signal, we simply call resume on the RunEngine,
+                # which will cause it to continue if it is paused.
+
                 self._ctx.run_engine.resume()
 
             elif isinstance(next_task, CancelSignal):
-                """
-                If we receive a cancel signal, we call abort or stop on the RunEngine
-                depending on whether the cancellation is flagged as a failure or not.
-                """
+                # If we receive a cancel signal, we call abort or stop on the RunEngine
+                # depending on whether the cancellation is flagged as a failure or not.
+
                 if self._current is None:
                     raise TransitionError("Attempted to cancel while no active Task")
                 if next_task.failure:

@@ -240,9 +240,10 @@ class Plan:
             arg = f"{name}: {typ}"
 
             if name not in required:
-                if "default" in info:
-                    default = repr(info["default"])
-                    arg = f"{arg} = {default}"
+                if info.get("default") is None:
+                    arg = f"{arg} | None = None"
+                elif "default" in info:
+                    arg = f"{arg} = {repr(info['default'])}"
                 else:
                     arg = f"{arg} | None = None"
 

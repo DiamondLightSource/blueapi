@@ -334,9 +334,14 @@ class ApplicationConfig(BlueapiBaseModel):
         if isinstance(other, ApplicationConfig):
             return (
                 (self.stomp == other.stomp)
+                & (self.tiled == other.tiled)
                 & (self.env == other.env)
                 & (self.logging == other.logging)
                 & (self.api == other.api)
+                & (self.scratch == other.scratch)
+                & (self.oidc == other.oidc)
+                & (self.auth_token_path == other.auth_token_path)
+                & (self.numtracker == other.numtracker)
                 & (self.opa == other.opa)
             )
         return False

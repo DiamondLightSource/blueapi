@@ -22,6 +22,6 @@ tiled:
     client_id: "tiled-writer"
     client_secret: "secret"
 oidc:
-  well_known_url: "http://localhost:8081/realms/master/.well-known/openid-configuration"
+  issuer: "http://localhost:8081/realms/master"
   client_id: "ixx-cli-blueapi"
   client_audience: "ixx-blueapi"

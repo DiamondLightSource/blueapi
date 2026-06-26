@@ -34,3 +34,11 @@ system *OPTS:
 coverage:
     uv run pytest tests/unit_tests --cov --cov-report html
     xdg-open htmlcov/index.html
+
+repl:
+    #!/usr/bin/env bash
+    uv run --with ptpython ptpython -i <(cat << EOF
+    from blueapi.client import BlueapiClient
+    bc = BlueapiClient.from_config_file("tests/system_tests/config.yaml").with_instrument_session("cm12345-1")
+    EOF
+    )

@@ -1,5 +1,6 @@
 import inspect
 import json
+import logging
 import os
 import tempfile
 from collections.abc import Generator, Iterable, Mapping
@@ -323,7 +324,8 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "numtracker": None,
             "oidc": {
-                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "well_known_url": None,
+                "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
                 "logout_redirect_endpoint": "",
@@ -383,7 +385,8 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "numtracker": None,
             "oidc": {
-                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "well_known_url": None,
+                "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
                 "logout_redirect_endpoint": "",
@@ -453,7 +456,7 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
             "numtracker": None,
             "oidc": {
-                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
             },
@@ -505,7 +508,6 @@ def test_oauth_config_model_post_init(
         oidc_config.authorization_endpoint == oidc_well_known["authorization_endpoint"]
     )
     assert oidc_config.token_endpoint == oidc_well_known["token_endpoint"]
-    assert oidc_config.issuer == oidc_well_known["issuer"]
     assert oidc_config.jwks_uri == oidc_well_known["jwks_uri"]
     assert oidc_config.end_session_endpoint == oidc_well_known["end_session_endpoint"]
 
@@ -546,3 +548,24 @@ def test_config_schema_updated() -> None:
         f"ApplicationConfig model is out of date with schema at \
             {CONFIG_SCHEMA_LOCATION}. You may need to run `blueapi config-schema -u`"
     )
+
+
+def test_oidc_config_validation_error():
+    with pytest.raises(ValueError, match="Please provide 'OIDCConfig.issuer'"):
+        ApplicationConfig(
+            oidc=OIDCConfig(well_known_url=None, issuer=None, client_id="blueapi")
+        )
+
+
+def test_oidc_config_support_well_known_url():
+    oidc = OIDCConfig(well_known_url="url", issuer=None, client_id="blueapi")
+    assert oidc._well_known_url == "url"
+
+
+def test_issuer_url_preferred_over_well_known_url(caplog):
+    oidc = OIDCConfig(well_known_url="url", issuer="issuer_url", client_id="blueapi")
+    with caplog.at_level(logging.WARN):
+        assert (
+            oidc._well_known_url == "issuer_url" + "/.well-known/openid-configuration"
+        )
+    assert "well_known_url and issuer are both set" in caplog.text

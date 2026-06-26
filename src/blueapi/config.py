@@ -251,7 +251,7 @@ class OIDCConfig(BlueapiBaseModel):
     )
 
     @model_validator(mode="after")
-    def check_well_know_urls(self) -> Self:
+    def check_urls(self) -> Self:
         if self.issuer is None and self.well_known_url is None:
             raise ValueError("Please provide 'OIDCConfig.issuer'")
         if self.well_known_url:
@@ -269,7 +269,7 @@ class OIDCConfig(BlueapiBaseModel):
             if self.well_known_url:
                 LOGGER.warning(
                     DeprecationWarning(
-                        "well_known_url and issuer both are set. "
+                        "well_known_url and issuer are both set. "
                         "Defaulting to issuer URL"
                     ),
                 )

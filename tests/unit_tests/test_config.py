@@ -555,10 +555,10 @@ def test_oidc_config_validation_error():
         )
 
 
-def test_oidc_config_urls():
-    # Test well_known_url is still supported
+def test_oidc_config_support_well_known_url():
     oidc = OIDCConfig(well_known_url="url", issuer=None, client_id="blueapi")
     assert oidc._well_known_url == "url"
-    # Test if both well_known_url and issuer are set it defaults to issuer
+
+def test_issuer_url_preferred_over_well_known_url():
     oidc = OIDCConfig(well_known_url="url", issuer="issuer_url", client_id="blueapi")
     assert oidc.issuer == "issuer_url"

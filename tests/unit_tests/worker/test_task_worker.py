@@ -969,6 +969,18 @@ def test_resume_after_pause_completes_task(worker: TaskWorker) -> None:
     assert task_id not in worker._pending_tasks
 
 
+def test_resume_when_not_paused_does_nothing(worker: TaskWorker) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    events = begin_task_and_wait_until_complete(worker, task_id)
+
+    worker.resume()
+
+    assert events[-1].errors == []
+    assert events[-1].is_complete()
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
 def test_cancel_active_task_abort(worker: TaskWorker) -> None:
     worker._ctx.register_plan(pausing_plan)
     task_id = worker.submit_task(_PAUSING_TASK)

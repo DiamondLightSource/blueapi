@@ -609,7 +609,8 @@ async def log_request_details(
     extra = {
         "request_body": request_body,
     }
-    log(log_message, extra=extra)
+    if request.method != "GET":
+        log(log_message, extra=extra)
 
     response = await call_next(request)
     log_message += f" {response.status_code}"

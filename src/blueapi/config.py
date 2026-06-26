@@ -140,10 +140,7 @@ class EnvironmentConfig(BlueapiBaseModel):
             PlanSource | DeviceManagerSource,
             Field(discriminator="kind"),
         ]
-    ] = [
-        PlanSource(module="dodal.plans"),
-        PlanSource(module="dodal.plan_stubs.wrapped"),
-    ]
+    ] = Field(default=[])
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
     metadata: MetadataConfig | None = Field(default=None)
 

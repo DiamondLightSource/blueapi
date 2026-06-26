@@ -1104,7 +1104,7 @@ def test_login_success(
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
         assert (
             "Logging in\n"
-            "Please login from this URL:- https://example.com/verify\n"
+            "Please login from this URL:- https://auth.example.com/realms/master/verify\n"
             "Logged in and cached new token\n" == result.output
         )
         assert result.exit_code == 0
@@ -1143,7 +1143,7 @@ def test_login_when_cached_token_decode_fails(
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
         assert (
             "Logging in\n"
-            "Please login from this URL:- https://example.com/verify\n"
+            "Please login from this URL:- https://auth.example.com/realms/master/verify\n"
             "Logged in and cached new token\n" in result.output
         )
         assert result.exit_code == 0

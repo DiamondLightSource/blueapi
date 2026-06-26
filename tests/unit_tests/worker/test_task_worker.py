@@ -20,7 +20,7 @@ from observability_utils.tracing import (
 )
 from ophyd_async.core import AsyncStatus
 
-from blueapi.config import DeviceSource, EnvironmentConfig
+from blueapi.config import DeviceManagerSource, EnvironmentConfig, PlanSource
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import PlanModel
@@ -109,8 +109,13 @@ def second_fake_device() -> FakeDevice:
 @pytest.fixture
 def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(DeviceSource(module="devices"))
+    ctx_config = EnvironmentConfig(
+        sources=[
+            PlanSource(module="dodal.plans"),
+            PlanSource(module="dodal.plan_stubs.wrapped"),
+        ]
+    )
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.register_plan(failing_plan)
     ctx.register_device(fake_device)
     ctx.register_device(second_fake_device)
@@ -121,8 +126,13 @@ def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyC
 @pytest.fixture
 def context_without_devices() -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(DeviceSource(module="devices"))
+    ctx_config = EnvironmentConfig(
+        sources=[
+            PlanSource(module="dodal.plans"),
+            PlanSource(module="dodal.plan_stubs.wrapped"),
+        ]
+    )
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.with_config(ctx_config)
     return ctx
 

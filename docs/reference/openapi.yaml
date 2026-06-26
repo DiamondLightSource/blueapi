@@ -92,17 +92,25 @@ components:
           description: Client ID
           title: Client Id
           type: string
+        issuer:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: URL of OIDC provider
+          title: Issuer
         logout_redirect_endpoint:
           default: ''
           description: The oidc endpoint required to logout
           title: Logout Redirect Endpoint
           type: string
         well_known_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          deprecated: true
           description: URL to fetch OIDC config from the provider
           title: Well Known Url
-          type: string
       required:
-      - well_known_url
       - client_id
       title: OIDCConfig
       type: object
@@ -433,7 +441,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.3.0
+  version: 1.4.0
 openapi: 3.1.0
 paths:
   /api/v1/devices:

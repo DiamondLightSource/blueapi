@@ -100,77 +100,16 @@
             "type": "object",
             "$id": "DeviceManagerSource"
         },
-        "DeviceSource": {
-            "additionalProperties": false,
-            "properties": {
-                "module": {
-                    "description": "Module to be imported",
-                    "title": "Module",
-                    "type": "string"
-                },
-                "kind": {
-                    "const": "deviceFunctions",
-                    "default": "deviceFunctions",
-                    "title": "Kind",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "module"
-            ],
-            "title": "DeviceSource",
-            "type": "object",
-            "$id": "DeviceSource"
-        },
-        "DodalSource": {
-            "additionalProperties": false,
-            "properties": {
-                "module": {
-                    "description": "Module to be imported",
-                    "title": "Module",
-                    "type": "string"
-                },
-                "kind": {
-                    "const": "dodal",
-                    "default": "dodal",
-                    "title": "Kind",
-                    "type": "string"
-                },
-                "mock": {
-                    "default": false,
-                    "description": "If true, ophyd_async device connections are mocked",
-                    "title": "Mock",
-                    "type": "boolean"
-                }
-            },
-            "required": [
-                "module"
-            ],
-            "title": "DodalSource",
-            "type": "object",
-            "$id": "DodalSource"
-        },
         "EnvironmentConfig": {
             "additionalProperties": false,
             "description": "Config for the RunEngine environment",
             "properties": {
                 "sources": {
-                    "default": [
-                        {
-                            "module": "dodal.plans",
-                            "kind": "planFunctions"
-                        },
-                        {
-                            "module": "dodal.plan_stubs.wrapped",
-                            "kind": "planFunctions"
-                        }
-                    ],
+                    "default": [],
                     "items": {
                         "discriminator": {
                             "mapping": {
-                                "deviceFunctions": "DeviceSource",
                                 "deviceManager": "DeviceManagerSource",
-                                "dodal": "DodalSource",
                                 "planFunctions": "PlanSource"
                             },
                             "propertyName": "kind"
@@ -178,12 +117,6 @@
                         "oneOf": [
                             {
                                 "$ref": "PlanSource"
-                            },
-                            {
-                                "$ref": "DeviceSource"
-                            },
-                            {
-                                "$ref": "DodalSource"
                             },
                             {
                                 "$ref": "DeviceManagerSource"
@@ -300,9 +233,31 @@
             "additionalProperties": false,
             "properties": {
                 "well_known_url": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "deprecated": true,
                     "description": "URL to fetch OIDC config from the provider",
-                    "title": "Well Known Url",
-                    "type": "string"
+                    "title": "Well Known Url"
+                },
+                "issuer": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "description": "URL of OIDC provider",
+                    "title": "Issuer"
                 },
                 "client_id": {
                     "description": "Client ID",
@@ -323,7 +278,6 @@
                 }
             },
             "required": [
-                "well_known_url",
                 "client_id"
             ],
             "title": "OIDCConfig",

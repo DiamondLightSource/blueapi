@@ -440,14 +440,8 @@ class TaskWorker:
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
                         self._current.set_result(result)
-                    except RunEngineInterrupted as e:
-                        state = self._ctx.run_engine.state
-                        if state in ["panicked", "aborted"]:
-                            LOGGER.error("Task failed", extra=meta)
-                            self._current.set_exception(e)
-                            self._report_error(e)
-                        else:
-                            pass
+                    except RunEngineInterrupted:
+                        pass
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:
@@ -468,8 +462,12 @@ class TaskWorker:
             elif isinstance(next_task, ResumeSignal):
                 # If we receive a resume signal, we simply call resume on the RunEngine,
                 # which will cause it to continue if it is paused.
-
-                self._ctx.run_engine.resume()
+                if self._ctx.run_engine.state == "paused":
+                    self._ctx.run_engine.resume()
+                else:
+                    LOGGER.warning(
+                        "Received resume signal but RunEngine is not paused, ignoring"
+                    )
 
             elif isinstance(next_task, CancelSignal):
                 # If we receive a cancel signal, we call abort or stop on the RunEngine

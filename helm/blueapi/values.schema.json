@@ -554,16 +554,7 @@
                 },
                 "sources": {
                     "title": "Sources",
-                    "default": [
-                        {
-                            "kind": "planFunctions",
-                            "module": "dodal.plans"
-                        },
-                        {
-                            "kind": "planFunctions",
-                            "module": "dodal.plan_stubs.wrapped"
-                        }
-                    ],
+                    "default": [],
                     "type": "array",
                     "items": {
                         "oneOf": [

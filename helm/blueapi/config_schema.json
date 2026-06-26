@@ -105,16 +105,7 @@
             "description": "Config for the RunEngine environment",
             "properties": {
                 "sources": {
-                    "default": [
-                        {
-                            "module": "dodal.plans",
-                            "kind": "planFunctions"
-                        },
-                        {
-                            "module": "dodal.plan_stubs.wrapped",
-                            "kind": "planFunctions"
-                        }
-                    ],
+                    "default": [],
                     "items": {
                         "discriminator": {
                             "mapping": {

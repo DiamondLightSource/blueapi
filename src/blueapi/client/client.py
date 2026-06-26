@@ -770,11 +770,8 @@ class BlueapiClient:
                 auth = SessionManager(
                     oidc, cache_manager=SessionCacheManager(token_path)
                 )
-                try:
-                    auth.start_device_flow()
-                    self._rest.session_manager = auth
-                except KeyboardInterrupt:
-                    pass
+                auth.start_device_flow()
+                self._rest.session_manager = auth
             else:
                 print("Server is not configured to use authentication!")
 

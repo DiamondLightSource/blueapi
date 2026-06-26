@@ -594,9 +594,15 @@ def start(config: ApplicationConfig):
 async def log_request_details(
     request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
 ) -> Response:
-    """Middleware to log all request's host, method, path, status and request and
-    body"""
-    log = LOGGER.debug if request.url.path == "/healthz" else LOGGER.info
+    """Middleware to log request's host, method, path, status and request and
+    body
+
+    Logs POST and PUT as info, all else as debug."""
+    log = (
+        LOGGER.info
+        if request.method == "POST" or request.method == "PUT"
+        else LOGGER.debug
+    )
     request_body = await request.body()
     client = request.client or Address("Unknown", -1)
     log_message = f"{client.host}:{client.port} {request.method} {request.url.path}"

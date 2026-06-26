@@ -1,5 +1,6 @@
 import inspect
 import json
+import logging
 import os
 import tempfile
 from collections.abc import Generator, Iterable, Mapping
@@ -560,6 +561,11 @@ def test_oidc_config_support_well_known_url():
     oidc = OIDCConfig(well_known_url="url", issuer=None, client_id="blueapi")
     assert oidc._well_known_url == "url"
 
-def test_issuer_url_preferred_over_well_known_url():
+
+def test_issuer_url_preferred_over_well_known_url(caplog):
     oidc = OIDCConfig(well_known_url="url", issuer="issuer_url", client_id="blueapi")
-    assert oidc.issuer == "issuer_url"
+    with caplog.at_level(logging.WARN):
+        assert (
+            oidc._well_known_url == "issuer_url" + "/.well-known/openid-configuration"
+        )
+    assert "well_known_url and issuer are both set" in caplog.text

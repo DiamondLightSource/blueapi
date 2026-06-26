@@ -597,12 +597,8 @@ async def log_request_details(
     """Middleware to log request's host, method, path, status and request and
     body
 
-    Logs POST and PUT as info, all else as debug."""
-    log = (
-        LOGGER.info
-        if request.method == "POST" or request.method == "PUT"
-        else LOGGER.debug
-    )
+    Logs GET as debug, all else as info."""
+    log = LOGGER.debug if request.method == "GET" else LOGGER.info
     request_body = await request.body()
     client = request.client or Address("Unknown", -1)
     log_message = f"{client.host}:{client.port} {request.method} {request.url.path}"

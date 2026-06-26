@@ -451,6 +451,19 @@ def begin_task_and_wait_until_complete(
     return events.result(timeout=timeout)
 
 
+def begin_task_and_wait_until_paused(
+    worker: TaskWorker,
+    task_id: str,
+    timeout: float = 5.0,
+) -> None:
+    paused_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.PAUSED,
+    )
+    worker.begin_task(task_id)
+    paused_future.result(timeout=timeout)
+
+
 #
 # Event stream helpers
 #
@@ -902,19 +915,6 @@ def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
 
 
 # Pause / resume tests
-
-
-def begin_task_and_wait_until_paused(
-    worker: TaskWorker,
-    task_id: str,
-    timeout: float = 5.0,
-) -> None:
-    paused_future: Future[list[WorkerEvent]] = take_events(
-        worker.worker_events,
-        lambda e: e.state == WorkerState.PAUSED,
-    )
-    worker.begin_task(task_id)
-    paused_future.result(timeout=timeout)
 
 
 def test_pause_does_not_publish_error_event(worker: TaskWorker) -> None:

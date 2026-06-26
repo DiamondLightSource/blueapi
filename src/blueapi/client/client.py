@@ -1,11 +1,10 @@
 import itertools
 import logging
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, KeysView
 from concurrent.futures import Future
 from contextlib import suppress
 from functools import cached_property
-from itertools import chain
 from pathlib import Path
 from typing import Any, Self
 
@@ -55,6 +54,35 @@ TRACER = get_tracer("client")
 
 
 log = logging.getLogger(__name__)
+
+_REPR_MAX_LENGTH = 100
+_REPR_MAX_ARGS_INLINE = 3
+
+
+def _pretty_type(schema: dict[str, Any]) -> str:
+    if "$ref" in schema:
+        return schema["$ref"].split("/")[-1]
+
+    if schema.get("type") == "array":
+        item_schema = schema.get("items", {})
+        inner = _pretty_type(item_schema)
+        return f"list[{inner}]"
+
+    if "anyOf" in schema:
+        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
+
+    json_type = schema.get("type")
+    type_map = {
+        "string": "str",
+        "integer": "int",
+        "boolean": "bool",
+        "number": "float",
+        "object": "dict",
+    }
+    if isinstance(json_type, str):
+        return type_map.get(json_type, json_type.split(".")[-1])
+
+    return "Any"
 
 
 class MissingInstrumentSessionError(Exception):
@@ -164,7 +192,7 @@ class Plan:
         return self.model.description or f"Plan {self!r}"
 
     @property
-    def properties(self) -> set[str]:
+    def properties(self) -> KeysView[str]:
         return self.model.parameter_schema.get("properties", {}).keys()
 
     @property
@@ -201,10 +229,39 @@ class Plan:
             raise TypeError(f"Missing argument(s) for {missing}")
         return params
 
-    def __repr__(self):
-        opts = [p for p in self.properties if p not in self.required]
-        params = ", ".join(chain(self.required, (f"{opt}=None" for opt in opts)))
-        return f"{self.name}({params})"
+    def __repr__(self) -> str:
+        def _format_arg(name: str, info: dict[str, Any], required: set[str]) -> str:
+            typ = _pretty_type(info)
+
+            is_required = name in required
+            has_default = "default" in info
+            default = info.get("default")
+
+            if is_required:
+                return f"{name}: {typ}"
+
+            # optional with explicit default
+            if has_default:
+                if default is None:
+                    return f"{name}: {typ} | None = None"
+                return f"{name}: {typ} = {repr(default)}"
+
+            # optional with no default
+            return f"{name}: {typ} | None = None"
+
+        props = self.model.parameter_schema.get("properties", {})
+        args = [
+            _format_arg(name, info, set(self.required)) for name, info in props.items()
+        ]
+        single_line = f"{self.name}({', '.join(args)})"
+
+        if len(single_line) <= _REPR_MAX_LENGTH and len(args) <= _REPR_MAX_ARGS_INLINE:
+            return single_line
+
+        indent = "    "
+        # Fall back to multiline if too many arguments or too long.
+        multiline_args = ",\n".join(f"{indent}{arg}" for arg in args)
+        return f"{self.name}(\n{multiline_args}\n)"
 
 
 class BlueapiClient:

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from inspect import Parameter
 from pathlib import Path
 from types import ModuleType, NoneType
-from typing import Any, Generic, TypeVar, Union
+from typing import Any, Generic, TypeVar, Union, get_args, get_type_hints
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -44,7 +45,7 @@ from blueapi.config import (
     TiledConfig,
 )
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
-from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
+from blueapi.core.context import generic_bounds, qualified_name
 from blueapi.core.protocols import DeviceConnectResult, DeviceManager
 from blueapi.utils.invalid_config_error import InvalidConfigError
 
@@ -82,6 +83,10 @@ def has_one_param(foo: int) -> MsgGenerator:
 
 
 def has_some_params(foo: int = 42, bar: str = "bar") -> MsgGenerator:
+    yield from ()
+
+
+def has_optional_parameter(foo: dict[str, Any] | None = None) -> MsgGenerator:
     yield from ()
 
 
@@ -166,7 +171,9 @@ def some_configurable() -> SomeConfigurable:
     return SomeConfigurable()
 
 
-@pytest.mark.parametrize("plan", [has_no_params, has_one_param, has_some_params])
+@pytest.mark.parametrize(
+    "plan", [has_no_params, has_one_param, has_some_params, has_optional_parameter]
+)
 def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator):
     empty_context.register_plan(plan)
     assert plan.__name__ in empty_context.plans
@@ -353,12 +360,23 @@ def test_add_metadata_with_config(
         assert md in empty_context.run_engine.md.items()
 
 
-def test_function_spec(empty_context: BlueskyContext):
+def test_function_spec_with_some_params(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(has_some_params)
     assert spec["foo"][0] is int
-    assert spec["foo"][1].default_factory == DefaultFactory(42)
+    assert spec["foo"][1].default == 42
     assert spec["bar"][0] is str
-    assert spec["bar"][1].default_factory == DefaultFactory("bar")
+    assert spec["bar"][1].default == "bar"
+
+
+def test_function_spec_with_optional_params(empty_context: BlueskyContext):
+    spec = empty_context._type_spec_for_function(has_optional_parameter)
+    types = get_type_hints(has_optional_parameter)
+    arg_type = types.get("foo", Parameter.empty)
+
+    _type = SkipJsonSchema[empty_context._convert_type(arg_type, False)]
+    inner_type, *annotations = get_args(_type)
+    assert spec["foo"][0] == inner_type
+    assert spec["foo"][1].default is None
 
 
 def test_basic_type_conversion(empty_context: BlueskyContext):
@@ -439,7 +457,7 @@ def test_default_device_reference(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(default_movable)
     movable_ref = empty_context._reference(Movable)
     assert spec["mov"][0] == movable_ref
-    assert spec["mov"][1].default_factory == DefaultFactory("demo")
+    assert spec["mov"][1].default == "demo"
 
 
 def test_generic_default_device_reference(empty_context: BlueskyContext):
@@ -449,7 +467,7 @@ def test_generic_default_device_reference(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(default_movable)
     motor_ref = empty_context._reference(Movable[float])
     assert spec["mov"][0] == motor_ref
-    assert spec["mov"][1].default_factory == DefaultFactory("demo")
+    assert spec["mov"][1].default == "demo"
 
 
 class ConcreteStoppable(Stoppable):
@@ -499,7 +517,7 @@ def test_str_default(empty_context: BlueskyContext, sim_motor: Motor, alt_motor:
 
     spec = empty_context._type_spec_for_function(has_default_reference)
     assert spec["m"][0] is movable_ref
-    assert (df := spec["m"][1].default_factory) and df() == SIM_MOTOR_NAME  # type: ignore
+    assert spec["m"][1].default == SIM_MOTOR_NAME
 
     assert has_default_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_reference.__name__].model
@@ -518,7 +536,7 @@ def test_nested_str_default(
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
     assert spec["m"][0] == list[movable_ref]
-    assert (df := spec["m"][1].default_factory) and df() == [SIM_MOTOR_NAME]  # type: ignore
+    assert spec["m"][1].default == [SIM_MOTOR_NAME]
 
     assert has_default_nested_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_nested_reference.__name__].model
@@ -622,7 +640,7 @@ def test_optional_arg_generated_schema(
     empty_context.register_plan(demo_plan)
     schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
-        "foo": {"title": "Foo", "type": "integer"},
+        "foo": {"title": "Foo", "type": "integer", "default": None},
     }
     assert "foo" not in schema.get("required", [])
 
@@ -650,7 +668,11 @@ def test_optional_overloaded_arg_generated_schema(
     empty_context.register_plan(demo_plan)
     schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
-        "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "string"}]}
+        "foo": {
+            "title": "Foo",
+            "anyOf": [{"type": "integer"}, {"type": "string"}],
+            "default": None,
+        }
     }
     assert "foo" not in schema.get("required", [])
 
@@ -664,7 +686,10 @@ def test_explicit_none_arg_generated_schema(
     empty_context.register_plan(demo_plan)
     schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
-        "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "null"}]}
+        "foo": {
+            "title": "Foo",
+            "anyOf": [{"type": "integer"}, {"type": "null"}],
+        }
     }
     assert "foo" in schema.get("required", [])
 

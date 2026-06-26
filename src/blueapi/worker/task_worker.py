@@ -442,6 +442,10 @@ class TaskWorker:
                         self._current.set_result(result)
                     except RunEngineInterrupted:
                         pass
+                    except Exception as e:
+                        LOGGER.error("Task failed", extra=meta)
+                        self._current.set_exception(e)
+                        raise
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:
@@ -463,7 +467,9 @@ class TaskWorker:
                 # If we receive a resume signal, we simply call resume on the RunEngine,
                 # which will cause it to continue if it is paused.
                 if self._ctx.run_engine.state == "paused":
-                    self._ctx.run_engine.resume()
+                    if self._current is not None:
+                        result = self._ctx.run_engine.resume()
+                        self._current.set_result(result)
                 else:
                     LOGGER.warning(
                         "Received resume signal but RunEngine is not paused, ignoring"
@@ -496,6 +502,7 @@ class TaskWorker:
                     add_span_attributes(
                         {"Task stopped": next_task.reason or default_reason}
                     )
+                    self._current.set_result(None)
 
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
@@ -521,6 +528,7 @@ class TaskWorker:
                 self._completed_tasks[self._current.task_id] = self._current
         if self._ctx.run_engine.state != "paused":
             self._report_status()
+            self._current = None
         self._errors.clear()
         self._warnings.clear()
         self._completed_statuses.clear()

@@ -36,7 +36,7 @@ from blueapi.worker import (
     WorkerEvent,
     WorkerState,
 )
-from blueapi.worker.event import TaskResult, TaskStatusEnum
+from blueapi.worker.event import TaskError, TaskResult, TaskStatusEnum
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
@@ -339,6 +339,7 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     assert events[-1].task_status is not None
     assert events[-1].task_status.task_failed
     assert events[-1].errors == ["'I failed'"]
+    assert isinstance(events[-1].task_status.result, TaskError)
 
     active_task = worker.get_active_task()
     assert active_task is not None
@@ -965,6 +966,8 @@ def test_resume_after_pause_completes_task(worker: TaskWorker) -> None:
 
     assert events[-1].errors == []
     assert events[-1].is_complete()
+    assert events[-1].task_status is not None
+    assert isinstance(events[-1].task_status.result, TaskResult)
     assert task_id in worker._completed_tasks
     assert task_id not in worker._pending_tasks
 
@@ -1025,8 +1028,27 @@ def test_cancel_active_task_graceful(worker: TaskWorker) -> None:
     assert events[-1].errors == []
     assert events[-1].task_status is not None
     assert events[-1].task_status.task_complete
+    assert isinstance(events[-1].task_status.result, TaskResult)
     assert task_id in worker._completed_tasks
     assert task_id not in worker._pending_tasks
+
+
+def test_can_run_task_after_resume(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    complete_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.resume()
+    complete_future.result(timeout=5.0)
+
+    task_id2 = worker.submit_task(_SIMPLE_TASK)
+    events2 = begin_task_and_wait_until_complete(worker, task_id2)
+    assert events2[-1].errors == []
+    assert task_id2 in worker._completed_tasks
 
 
 @pytest.mark.parametrize(

@@ -32,6 +32,7 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | podAnnotations | object | `{}` |  |
 | podLabels | object | `{}` |  |
 | podSecurityContext | object | `{}` |  |
+| pvcAutoDeletion | object | `{"enabled":true}` | If enabled, runs a weekly CronJob that deletes blueapi scratch PVCs unused for more than 3 months. To protect a PVC from deletion, set the annotation ""protected" to "true" on it. |
 | readinessProbe | object | `{"failureThreshold":2,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | Readiness probe, if configured kubernetes will not route traffic to this pod if failed consecutively. This could allow the service time to recover if it is being overwhelmed by traffic, but without the to ability to load balance or scale up/outwards, upstream services will need to know to back off. This is automatically disabled when in debug mode. |
 | resources | object | `{"limits":{"cpu":"2000m","memory":"4000Mi"},"requests":{"cpu":"200m","memory":"400Mi"}}` | Sets the compute resources available to the pod. These defaults are appropriate when using debug mode or an internal PVC and therefore running VS Code server in the pod. In the Diamond cluster, requests must be >= 0.1*limits When not using either of the above, the limits may be lowered. When idle but connected, blueapi consumes ~400MB of memory and 1% cpu and may struggle when allocated less. |
 | restartOnConfigChange | bool | `true` | If enabled the blueapi pod will restart on changes to `worker` |
@@ -44,6 +45,7 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | serviceAccount.create | bool | `false` |  |
 | serviceAccount.name | string | `""` |  |
 | startupProbe | object | `{"failureThreshold":5,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | A more lenient livenessProbe to allow the service to start fully. This is automatically disabled when in debug mode. |
+| timeStampCron | object | `{"enabled":true}` | If enabled, runs a daily CronJob that stamps blueapi scratch PVCs with a last-used annotation when mounted by a running pod |
 | tolerations | list | `[]` | May be required to run on specific nodes (e.g. the control machine) |
 | tracing | object | `{"fastapi":{"excludedURLs":"/healthz"},"otlp":{"enabled":false,"protocol":"http/protobuf","server":{"host":"http://opentelemetry-collector.tracing","port":4318}}}` | Exclude health probe requests from tracing by default to prevent spamming |
 | volumeMounts | list | `[]` | Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name. |

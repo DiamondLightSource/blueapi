@@ -46,7 +46,7 @@ services:
       - label=disable
 
   tiled:
-    image: ghcr.io/bluesky/tiled:0.2.4
+    image: ghcr.io/bluesky/tiled:0.2.12
     network_mode: host # Port 8407
     environment:
       - PYTHONPATH=/deploy/

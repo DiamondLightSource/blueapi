@@ -69,7 +69,7 @@ LOW_RESOURCES = {
             ),
             logging=LoggingConfig(level="CRITICAL"),
             oidc=OIDCConfig(
-                well_known_url="foo.bar",
+                issuer="foo.bar",
                 client_id="blueapi2",
                 client_audience="blueapi++",
             ),

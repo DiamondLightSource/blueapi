@@ -1,7 +1,9 @@
-from dodal.common.beamlines.beamline_utils import device_factory
+from dodal.device_manager import DeviceManager
 from ophyd_async.epics.motor import Motor
 
+devices = DeviceManager()
 
-@device_factory(mock=True)
+
+@devices.factory(mock=True)
 def motor() -> Motor:
     return Motor("FOO:")

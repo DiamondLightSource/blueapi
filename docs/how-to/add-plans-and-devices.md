@@ -26,7 +26,7 @@ To add plans, you would add the following into your configuration file:
 ```
 
 
-Devices are added similarly, using `dodal` as the `kind`, like so: 
+Devices are added similarly, using `deviceManager` as the `kind`, like so:
 ```{literalinclude} ../../tests/unit_tests/valid_example_config/plans_and_devices.yaml
 :language: yaml
 ```

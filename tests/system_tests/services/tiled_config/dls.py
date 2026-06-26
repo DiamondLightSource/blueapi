@@ -33,10 +33,10 @@ def _check_principal(principal: Principal | None):
             detail="Principal is None",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if principal.type != PrincipalType.external:
+    if principal.type != PrincipalType.user:
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,
-            detail=f"Principal of type {PrincipalType.external}"
+            detail=f"Principal of type {PrincipalType.user}"
             f" required but given {principal.type}",
             headers={"WWW-Authenticate": "Bearer"},
         )
@@ -121,7 +121,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
 
         if (
             isinstance(principal, Principal)
-            and principal.type is PrincipalType.external
+            and principal.type is PrincipalType.user
             and principal.access_token is not None
         ):
             _input["token"] = principal.access_token.get_secret_value()

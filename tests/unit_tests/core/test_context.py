@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType, NoneType
 from typing import Any, Generic, TypeVar, Union
-from unittest.mock import ANY, MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import responses
@@ -36,8 +36,6 @@ from pytest import LogCaptureFixture
 from blueapi.config import (
     ApplicationConfig,
     DeviceManagerSource,
-    DeviceSource,
-    DodalSource,
     EnvironmentConfig,
     MetadataConfig,
     OIDCConfig,
@@ -48,7 +46,6 @@ from blueapi.config import (
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
 from blueapi.core.protocols import DeviceConnectResult, DeviceManager
-from blueapi.utils.connect_devices import _establish_device_connections
 from blueapi.utils.invalid_config_error import InvalidConfigError
 
 SIM_MOTOR_NAME = "sim"
@@ -265,76 +262,27 @@ def test_override_device_name(empty_context: BlueskyContext, sim_motor: Motor):
 def test_add_devices_from_module(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_device_module as device_module
 
-    empty_context.with_device_module(device_module)
+    empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
     assert {
-        "motor_x",
-        "motor_y",
-        "motor_bundle_a",
-        "motor_bundle_b",
+        "fake_motor_x",
+        "fake_motor_y",
+        "fake_motor_bundle_a",
+        "fake_motor_bundle_b",
         "device_a",
-        "ophyd_device",
-        "ophyd_async_device",
     } == empty_context.devices.keys()
 
 
-def test_add_failing_deivces_from_module(
+def test_add_failing_devices_from_module(
     caplog: LogCaptureFixture, empty_context: BlueskyContext
 ):
     import tests.unit_tests.core.fake_device_module_failing as device_module
 
     caplog.set_level(10)
-    empty_context.with_device_module(device_module)
+    empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
     logs = caplog.get_records("call")
 
-    assert any("TimeoutError: FooBar" in log.message for log in logs)
+    assert any("TimeoutError('FooBar')" in log.message for log in logs)
     assert len(empty_context.devices.keys()) == 0
-
-
-def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
-    empty_context: BlueskyContext,
-):
-    """
-    Note that this functionality is currently used by hyperion.
-    """
-    import tests.unit_tests.core.fake_device_module as device_module
-
-    with patch(
-        "blueapi.core.context.make_all_devices",
-        return_value=({}, {}),
-    ) as mock_make_all_devices:
-        empty_context.with_dodal_module(
-            device_module, some_argument=1, another_argument="two"
-        )
-
-        mock_make_all_devices.assert_called_once_with(
-            device_module, some_argument=1, another_argument="two"
-        )
-
-
-def test_with_dodal_module_returns_connection_exceptions(empty_context: BlueskyContext):
-    import tests.unit_tests.core.fake_device_module as device_module
-
-    def connect_sim_backend(run_engine: RunEngine, devices, sim_backend):
-        return _establish_device_connections(run_engine, devices, True)
-
-    with patch(
-        "blueapi.utils.connect_devices._establish_device_connections",
-        side_effect=connect_sim_backend,
-    ):
-        names_to_devices, exceptions = empty_context.with_dodal_module(device_module)
-
-    assert set(names_to_devices.keys()) == {
-        "motor_y",
-        "ophyd_async_device",
-        "ophyd_device",
-        "device_a",
-        "motor_x",
-        "motor_bundle_a",
-        "motor_bundle_b",
-    }
-    assert len(exceptions) == 2
-    assert isinstance(exceptions["ophyd_device"], RuntimeError)
-    assert isinstance(exceptions["ophyd_async_device"], RuntimeError)
 
 
 @pytest.mark.parametrize(
@@ -374,7 +322,7 @@ def test_add_devices_and_plans_from_modules_with_config(
     empty_context.with_config(
         EnvironmentConfig(
             sources=[
-                DeviceSource(
+                DeviceManagerSource(
                     module="tests.unit_tests.core.fake_device_module",
                 ),
                 PlanSource(
@@ -384,13 +332,11 @@ def test_add_devices_and_plans_from_modules_with_config(
         )
     )
     assert {
-        "motor_x",
-        "motor_y",
-        "motor_bundle_a",
-        "motor_bundle_b",
+        "fake_motor_x",
+        "fake_motor_y",
+        "fake_motor_bundle_a",
+        "fake_motor_bundle_b",
         "device_a",
-        "ophyd_device",
-        "ophyd_async_device",
     } == empty_context.devices.keys()
     assert EXPECTED_PLANS == empty_context.plans.keys()
 
@@ -405,27 +351,6 @@ def test_add_metadata_with_config(
 
     for md in metadata:
         assert md in empty_context.run_engine.md.items()
-
-
-@pytest.mark.parametrize("mock", [True, False])
-def test_with_config_passes_mock_to_with_dodal_module(
-    empty_context: BlueskyContext,
-    mock: bool,
-):
-    with patch.object(empty_context, "with_dodal_module") as mock_with_dodal_module:
-        empty_context.with_config(
-            EnvironmentConfig(
-                sources=[
-                    DodalSource(
-                        module="tests.unit_tests.core.fake_device_module", mock=mock
-                    ),
-                    PlanSource(
-                        module="tests.unit_tests.core.fake_plan_module",
-                    ),
-                ]
-            )
-        )
-        mock_with_dodal_module.assert_called_once_with(ANY, mock=mock)
 
 
 def test_function_spec(empty_context: BlueskyContext):

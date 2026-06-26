@@ -100,56 +100,6 @@
             "type": "object",
             "$id": "DeviceManagerSource"
         },
-        "DeviceSource": {
-            "additionalProperties": false,
-            "properties": {
-                "module": {
-                    "description": "Module to be imported",
-                    "title": "Module",
-                    "type": "string"
-                },
-                "kind": {
-                    "const": "deviceFunctions",
-                    "default": "deviceFunctions",
-                    "title": "Kind",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "module"
-            ],
-            "title": "DeviceSource",
-            "type": "object",
-            "$id": "DeviceSource"
-        },
-        "DodalSource": {
-            "additionalProperties": false,
-            "properties": {
-                "module": {
-                    "description": "Module to be imported",
-                    "title": "Module",
-                    "type": "string"
-                },
-                "kind": {
-                    "const": "dodal",
-                    "default": "dodal",
-                    "title": "Kind",
-                    "type": "string"
-                },
-                "mock": {
-                    "default": false,
-                    "description": "If true, ophyd_async device connections are mocked",
-                    "title": "Mock",
-                    "type": "boolean"
-                }
-            },
-            "required": [
-                "module"
-            ],
-            "title": "DodalSource",
-            "type": "object",
-            "$id": "DodalSource"
-        },
         "EnvironmentConfig": {
             "additionalProperties": false,
             "description": "Config for the RunEngine environment",
@@ -168,9 +118,7 @@
                     "items": {
                         "discriminator": {
                             "mapping": {
-                                "deviceFunctions": "DeviceSource",
                                 "deviceManager": "DeviceManagerSource",
-                                "dodal": "DodalSource",
                                 "planFunctions": "PlanSource"
                             },
                             "propertyName": "kind"
@@ -178,12 +126,6 @@
                         "oneOf": [
                             {
                                 "$ref": "PlanSource"
-                            },
-                            {
-                                "$ref": "DeviceSource"
-                            },
-                            {
-                                "$ref": "DodalSource"
                             },
                             {
                                 "$ref": "DeviceManagerSource"

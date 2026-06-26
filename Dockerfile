@@ -1,13 +1,13 @@
 # The devcontainer should use the developer target and run as root with podman
 # or docker with user namespaces.
-FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:noble AS developer
+FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:resolute AS developer
 
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     graphviz \
     && apt-get dist-clean
 
-# Install helm for the dev container. This is the recommended 
+# Install helm for the dev container. This is the recommended
 # approach per the docs: https://helm.sh/docs/intro/install
 RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3; \
     chmod 700 get_helm.sh; \
@@ -27,11 +27,11 @@ RUN chmod o+wrX .
 # Tell uv sync to install python in a known location so we can copy it out later
 ENV UV_PYTHON_INSTALL_DIR=/python
 
-RUN uv add debugpy
-
 # Sync the project without its dev dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --no-dev --managed-python
+
+RUN uv pip install debugpy
 
 # The runtime stage copies the built venv into a runtime container
 FROM ubuntu:resolute AS runtime

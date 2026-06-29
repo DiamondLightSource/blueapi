@@ -17,6 +17,7 @@ from observability_utils.tracing import (
 )
 from opentelemetry.context import attach
 from opentelemetry.propagate import get_global_textmap
+from pydantic import TypeAdapter
 
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
@@ -223,7 +224,15 @@ def import_and_run_function(
     func: Callable[..., T] = _validate_function(
         mod.__dict__.get(function_name, None), function_name
     )
-    return func(*args, **kwargs)
+    value = func(*args, **kwargs)
+    return _valid_return(value, expected_type)
+
+
+def _valid_return(value: Any, expected_type: type[T] | None = None) -> T:
+    if expected_type is None:
+        return value
+    else:
+        return TypeAdapter(expected_type).validate_python(value)
 
 
 def _validate_function(func: Any, function_name: str) -> Callable:

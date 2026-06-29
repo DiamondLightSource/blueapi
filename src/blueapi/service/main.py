@@ -574,7 +574,7 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     )
 
 
-@secure_router.websocket("/run_plan")
+@secure_router_v1.websocket("/run_plan")
 async def run_plan(
     ws: WebSocket, runner: Annotated[WorkerDispatcher, Depends(_runner)], user: Fedid
 ):

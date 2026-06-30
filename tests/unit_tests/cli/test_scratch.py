@@ -66,7 +66,7 @@ def test_scratch_install_installs_path(
     scratch_install(directory_path_with_sgid, timeout=1.0)
 
     mock_popen.assert_called_once_with(
-        ["uv", "pip", "install", "--no-deps", "-e", str(directory_path_with_sgid)]
+        ["uv", "pip", "install", "-e", str(directory_path_with_sgid)]
     )
 
 

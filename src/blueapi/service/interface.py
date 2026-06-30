@@ -314,7 +314,7 @@ def pipe_events(tx: Connection) -> SubHandles:
     return SubHandles(worker=w, data=d, progress=p)
 
 
-def unpipe_events(hnd: SubHandles):
+def unpipe_events(hnd: SubHandles) -> None:
     tw = worker()
     tw.worker_events.unsubscribe(hnd.worker)
     tw.data_events.unsubscribe(hnd.data)

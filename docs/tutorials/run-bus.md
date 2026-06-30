@@ -10,6 +10,11 @@ The worker requires a running instance of RabbitMQ. The easiest way to start it 
 ```sh
 docker compose -f tests/system_tests/compose.yaml run rabbitmq --detach
 ```
+For those who use `pip install blueapi`, run:
+
+```sh
+echo "[rabbitmq_stomp].">enabled_plugins && podman run -it --rm --name rabbitmq-docs -v $(readlink -f enabled_plugins):/etc/rabbitmq/enabled_plugins:z -p 5672:5672 -p 61613:61613 rabbitmq:latest
+```
 
 ## Config File
 

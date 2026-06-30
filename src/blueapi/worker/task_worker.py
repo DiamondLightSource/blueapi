@@ -8,6 +8,7 @@ from queue import Full, Queue
 from threading import Event, RLock
 from typing import Any, TypeVar
 
+from bluesky import RunEngineInterrupted
 from bluesky.protocols import Status
 from observability_utils.tracing import (
     add_span_attributes,
@@ -109,6 +110,7 @@ class TaskWorker:
 
     _task_channel: Queue  # type: ignore
     _current: TrackableTask | None
+    _pending_cancel: "CancelSignal | None"
     _status_lock: RLock
     _status_snapshot: dict[str, StatusView]
     _completed_statuses: set[str]
@@ -139,6 +141,7 @@ class TaskWorker:
         self._warnings = []
         self._task_channel = Queue(maxsize=1)
         self._current = None
+        self._pending_cancel = None
         self._worker_events = EventPublisher()
         self._progress_events = EventPublisher()
         self._data_events = EventPublisher()
@@ -180,19 +183,39 @@ class TaskWorker:
         Returns:
             The task_id of the active task
         """
-        if self._current is None:
+        current = self._current
+        if current is None:
             # Persuades type checker that self._current is not None
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
+
+        if self._ctx.run_engine.state == "paused":
+            # abort()/stop() block here until cleanup finishes - defer to the
+            # worker thread, like ResumeSignal does for resume(). Recorded
+            # separately so a queued ResumeSignal can't race ahead of this
+            # and finish the task before the cancel is even looked at.
+            signal = CancelSignal(failure=failure, reason=reason)
+            self._pending_cancel = signal
+            try:
+                self._task_channel.put_nowait(signal)
+            except Full:
+                pass  # a signal already queued will check _pending_cancel
+            return current.task_id
+
+        # RE.abort()/stop() are thread-safe and must be called immediately —
+        # putting only a CancelSignal would no-op if the worker is blocked in do_task()
+        default_reason = "Task failed for unknown reason"
         if failure:
-            default_reason = "Task failed for unknown reason"
             self._ctx.run_engine.abort(reason or default_reason)
-            add_span_attributes({"Task aborted": reason or default_reason})
+            current.set_exception(Exception(reason or default_reason))
         else:
             self._ctx.run_engine.stop()
-            default_reason = "Cancellation successful: Task stopped without error"
-            add_span_attributes({"Task stopped": reason or default_reason})
-        return self._current.task_id
+            current.set_result(None)
+        self._task_channel.put(CancelSignal(failure=failure, reason=reason))
+        add_span_attributes(
+            {"Task aborted" if failure else "Task stopped": reason or ""}
+        )
+        return current.task_id
 
     @start_as_current_span(TRACER, "task_id")
     def get_task_by_id(self, task_id: str) -> TrackableTask | None:
@@ -410,7 +433,7 @@ class TaskWorker:
         Command the worker to resume
         """
         LOGGER.info("Requesting to resume the worker")
-        self._ctx.run_engine.resume()
+        self._task_channel.put(ResumeSignal())
 
     @start_as_current_span(TRACER)
     def _cycle_with_error_handling(self) -> None:
@@ -436,11 +459,15 @@ class TaskWorker:
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
-                        self._current.set_result(result)
+                        if self._current.outcome is None:
+                            self._current.set_result(result)
+                    except RunEngineInterrupted:
+                        if isinstance(self._current.outcome, TaskError):
+                            self._report_error(Exception(self._current.outcome.message))
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
                         self._current.set_exception(e)
-                        self._report_error(e)
+                        raise
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:
@@ -458,10 +485,33 @@ class TaskWorker:
                     else:
                         process_task()
 
+            elif isinstance(next_task, ResumeSignal):
+                pending_cancel = self._pending_cancel
+                if pending_cancel is not None:
+                    # A cancel was requested after this resume was already
+                    # queued - it takes priority, so this resume never runs.
+                    self._apply_cancel(pending_cancel)
+                elif self._ctx.run_engine.state == "paused":
+                    if self._current is not None:
+                        try:
+                            result = self._ctx.run_engine.resume()
+                            self._current.set_result(result)
+                        except RunEngineInterrupted:
+                            pass
+                    else:
+                        LOGGER.warning(
+                            "Received resume signal but no active task, ignoring"
+                        )
+                else:
+                    LOGGER.warning(
+                        "Received resume signal but RunEngine is not paused, ignoring"
+                    )
+
+            elif isinstance(next_task, CancelSignal):
+                self._apply_cancel(next_task)
+
             elif isinstance(next_task, KillSignal):
-                # If we receive a kill signal we begin to shut the worker down.
-                # Note that the kill signal is explicitly not a type of task as we don't
-                # want it to be part of the worker's public API
+                self._pending_cancel = None
                 self._stopping.set()
                 add_span_attributes({"server shutting down": "true"})
             else:
@@ -469,17 +519,23 @@ class TaskWorker:
         except Exception as err:
             self._report_error(err)
         finally:
-            if self._current_task_otel_context is not None:
+            if (
+                self._current_task_otel_context is not None
+                and self._ctx.run_engine.state not in ["panicked", "paused"]
+            ):
                 self._current_task_otel_context = None
 
         if self._current is not None:
-            self._current.is_complete = True
-            self._pending_tasks.pop(self._current.task_id)
-            self._completed_tasks[self._current.task_id] = self._current
-        self._report_status()
-        self._errors.clear()
-        self._warnings.clear()
-        self._completed_statuses.clear()
+            if self._ctx.run_engine.state != "paused":
+                self._current.is_complete = True
+                self._pending_tasks.pop(self._current.task_id)
+                self._completed_tasks[self._current.task_id] = self._current
+        if self._ctx.run_engine.state != "paused":
+            self._report_status()
+            self._current = None
+            self._errors.clear()
+            self._warnings.clear()
+            self._completed_statuses.clear()
 
     @property
     def worker_events(self) -> EventStream[WorkerEvent, int]:
@@ -529,6 +585,32 @@ class TaskWorker:
             self._current.errors.append(str(err))
         self._errors.append(str(err))
 
+    def _apply_cancel(self, signal: "CancelSignal") -> None:
+        self._pending_cancel = None
+        default_reason = "Task failed for unknown reason"
+        if self._current is not None:
+            if signal.failure:
+                reason = signal.reason or default_reason
+                self._ctx.run_engine.abort(reason)
+                self._current.set_exception(Exception(reason))
+            else:
+                self._ctx.run_engine.stop()
+                self._current.set_result(None)
+
+        if signal.failure:
+            error_message = signal.reason or default_reason
+            add_span_attributes({"Task aborted": error_message})
+            LOGGER.error("Task failed: %s", error_message)
+            if self._current is not None:
+                self._report_error(Exception(error_message))
+        else:
+            add_span_attributes(
+                {
+                    "Task stopped": signal.reason
+                    or "Cancellation successful: Task stopped without error"
+                }
+            )
+
     @start_as_current_span(TRACER)
     def _report_status(
         self,
@@ -540,7 +622,8 @@ class TaskWorker:
             task_status = TaskStatus(
                 task_id=self._current.task_id,
                 task_complete=self._current.is_complete,
-                task_failed=bool(self._current.errors),
+                task_failed=bool(self._current.errors)
+                or isinstance(self._current.outcome, TaskError),
                 result=self._current.outcome,
             )
             correlation_id = self._current.task_id
@@ -598,7 +681,7 @@ class TaskWorker:
                 )
 
         else:
-            raise KeyError(
+            raise RuntimeError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"
             )
 
@@ -681,6 +764,25 @@ class KillSignal:
     """
 
     ...
+
+
+@dataclass
+class ResumeSignal:
+    """
+    Object put in the worker's task queue to tell it to resume if paused.
+    """
+
+    ...
+
+
+@dataclass
+class CancelSignal:
+    """
+    Object put in the worker's task queue to tell it to cancel the current task.
+    """
+
+    failure: bool
+    reason: str | None
 
 
 def run_worker_in_own_thread(

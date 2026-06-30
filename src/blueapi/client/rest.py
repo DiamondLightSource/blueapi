@@ -346,7 +346,7 @@ class BlueapiRestClient:
         return deserialized
 
     def run_blocking(self, req: TaskRequest):
-        url = self._ws_address().unicode_string().removesuffix("/") + "/run_plan"
+        url = self._ws_address().unicode_string().removesuffix("/") + "/api/v2/run_plan"
         headers = get_context_propagator()
         if self._session_manager:
             auth = self._session_manager.get_valid_access_token()

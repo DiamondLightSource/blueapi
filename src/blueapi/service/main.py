@@ -329,7 +329,7 @@ def validate_task_status(v: str) -> TaskStatusEnum:
 @start_as_current_span(TRACER)
 def get_tasks(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    task_status: str | SkipJsonSchema[None] = None,
+    task_status: TaskStatusEnum | SkipJsonSchema[None] = None,
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.

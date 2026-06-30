@@ -449,9 +449,11 @@ class TaskWorker:
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
-                        self._current.set_result(result)
+                        if self._current.outcome is None:
+                            self._current.set_result(result)
                     except RunEngineInterrupted:
-                        pass
+                        if isinstance(self._current.outcome, TaskError):
+                            self._report_error(Exception(self._current.outcome.message))
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
                         self._current.set_exception(e)

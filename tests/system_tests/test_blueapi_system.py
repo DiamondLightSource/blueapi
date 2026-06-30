@@ -568,7 +568,7 @@ def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id:
             name="set_absolute",
             params={
                 "movable": "stage.x",
-                "value": "4.0",
+                "value": 4.0,
             },
             instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
         ),

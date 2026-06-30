@@ -344,9 +344,9 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     assert events[-1].task_status.task_failed
     assert events[-1].errors == ["'I failed'"]
 
-    active_task = worker.get_active_task()
-    assert active_task is not None
-    assert active_task.errors == ["'I failed'"]
+    completed_task = worker._completed_tasks.get(task_id)
+    assert completed_task is not None
+    assert completed_task.errors == ["'I failed'"]
 
 
 def test_task_not_run_twice(worker: TaskWorker) -> None:

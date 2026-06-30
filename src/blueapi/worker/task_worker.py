@@ -8,6 +8,7 @@ from queue import Full, Queue
 from threading import Event, RLock
 from typing import Any, TypeVar
 
+from bluesky import RunEngineInterrupted
 from bluesky.protocols import Status
 from observability_utils.tracing import (
     add_span_attributes,
@@ -188,10 +189,13 @@ class TaskWorker:
 
         # RE.abort()/stop() are thread-safe and must be called immediately —
         # putting only a CancelSignal would no-op if the worker is blocked in do_task()
+        default_reason = "Task failed for unknown reason"
         if failure:
-            self._ctx.run_engine.abort(reason or "Task failed for unknown reason")
+            self._ctx.run_engine.abort(reason or default_reason)
+            current.set_exception(Exception(reason or default_reason))
         else:
             self._ctx.run_engine.stop()
+            current.set_result(None)
         self._task_channel.put(CancelSignal(failure=failure, reason=reason))
         add_span_attributes(
             {"Task aborted" if failure else "Task stopped": reason or ""}
@@ -446,10 +450,12 @@ class TaskWorker:
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
                         self._current.set_result(result)
+                    except RunEngineInterrupted:
+                        pass
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
                         self._current.set_exception(e)
-                        self._report_error(e)
+                        raise
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:
@@ -470,8 +476,11 @@ class TaskWorker:
             elif isinstance(next_task, ResumeSignal):
                 if self._ctx.run_engine.state == "paused":
                     if self._current is not None:
-                        result = self._ctx.run_engine.resume()
-                        self._current.set_result(result)
+                        try:
+                            result = self._ctx.run_engine.resume()
+                            self._current.set_result(result)
+                        except RunEngineInterrupted:
+                            pass
                     else:
                         LOGGER.warning(
                             "Received resume signal but no active task, ignoring"
@@ -482,17 +491,16 @@ class TaskWorker:
                     )
 
             elif isinstance(next_task, CancelSignal):
+                # _report_error only runs for paused tasks; for running tasks _current
+                # is already None, but the span and log still fire.
                 default_reason = "Task failed for unknown reason"
                 if next_task.failure:
                     error_message = next_task.reason or default_reason
                     add_span_attributes({"Task aborted": error_message})
                     LOGGER.error("Task failed: %s", error_message)
                     if self._current is not None:
-                        self._current.set_exception(Exception(error_message))
                         self._report_error(Exception(error_message))
                 else:
-                    if self._current is not None:
-                        self._current.set_result(None)
                     add_span_attributes(
                         {
                             "Task stopped": next_task.reason
@@ -511,17 +519,23 @@ class TaskWorker:
         except Exception as err:
             self._report_error(err)
         finally:
-            if self._current_task_otel_context is not None:
+            if (
+                self._current_task_otel_context is not None
+                and self._ctx.run_engine.state not in ["panicked", "paused"]
+            ):
                 self._current_task_otel_context = None
 
         if self._current is not None:
-            self._current.is_complete = True
-            self._pending_tasks.pop(self._current.task_id)
-            self._completed_tasks[self._current.task_id] = self._current
-        self._report_status()
-        self._errors.clear()
-        self._warnings.clear()
-        self._completed_statuses.clear()
+            if self._ctx.run_engine.state != "paused":
+                self._current.is_complete = True
+                self._pending_tasks.pop(self._current.task_id)
+                self._completed_tasks[self._current.task_id] = self._current
+        if self._ctx.run_engine.state != "paused":
+            self._report_status()
+            self._current = None
+            self._errors.clear()
+            self._warnings.clear()
+            self._completed_statuses.clear()
 
     @property
     def worker_events(self) -> EventStream[WorkerEvent, int]:
@@ -582,7 +596,8 @@ class TaskWorker:
             task_status = TaskStatus(
                 task_id=self._current.task_id,
                 task_complete=self._current.is_complete,
-                task_failed=bool(self._current.errors),
+                task_failed=bool(self._current.errors)
+                or isinstance(self._current.outcome, TaskError),
                 result=self._current.outcome,
             )
             correlation_id = self._current.task_id
@@ -640,7 +655,7 @@ class TaskWorker:
                 )
 
         else:
-            raise KeyError(
+            raise RuntimeError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"
             )
 

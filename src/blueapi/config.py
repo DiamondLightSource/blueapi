@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import textwrap
@@ -6,7 +7,7 @@ from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Annotated, Any, ClassVar, Generic, Literal, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Generic, Literal, Self, TypeVar, cast
 
 import requests
 import yaml
@@ -22,10 +23,13 @@ from pydantic import (
     UrlConstraints,
     ValidationError,
     field_validator,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+
+LOGGER = logging.getLogger(__name__)
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -140,10 +144,7 @@ class EnvironmentConfig(BlueapiBaseModel):
             PlanSource | DeviceManagerSource,
             Field(discriminator="kind"),
         ]
-    ] = [
-        PlanSource(module="dodal.plans"),
-        PlanSource(module="dodal.plan_stubs.wrapped"),
-    ]
+    ] = Field(default=[])
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
     metadata: MetadataConfig | None = Field(default=None)
 
@@ -221,18 +222,47 @@ class ScratchConfig(BlueapiBaseModel):
 
 
 class OIDCConfig(BlueapiBaseModel):
-    well_known_url: str = Field(
-        description="URL to fetch OIDC config from the provider"
+    well_known_url: str | None = Field(
+        description="URL to fetch OIDC config from the provider",
+        deprecated=True,
+        default=None,
     )
+    issuer: str | None = Field(description="URL of OIDC provider", default=None)
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
     logout_redirect_endpoint: str = Field(
         description="The oidc endpoint required to logout", default=""
     )
 
+    @model_validator(mode="after")
+    def check_urls(self) -> Self:
+        if self.issuer is None and self.well_known_url is None:
+            raise ValueError("Please provide 'OIDCConfig.issuer'")
+        if self.well_known_url:
+            LOGGER.warning(
+                DeprecationWarning(
+                    "OIDCConfig.well_known_url is deprecated, "
+                    "Please use OIDCConfig.issuer"
+                ),
+            )
+        return self
+
+    @cached_property
+    def _well_known_url(self) -> str:
+        if self.issuer:
+            if self.well_known_url:
+                LOGGER.warning(
+                    DeprecationWarning(
+                        "well_known_url and issuer are both set. "
+                        "Defaulting to issuer URL"
+                    ),
+                )
+            return self.issuer + "/.well-known/openid-configuration"
+        return cast(str, self.well_known_url)
+
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
-        response: requests.Response = requests.get(self.well_known_url)
+        response = requests.get(self._well_known_url)
         response.raise_for_status()
         return response.json()
 
@@ -245,10 +275,6 @@ class OIDCConfig(BlueapiBaseModel):
     @cached_property
     def token_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("token_endpoint"))
-
-    @cached_property
-    def issuer(self) -> str:
-        return cast(str, self._config_from_oidc_url.get("issuer"))
 
     @cached_property
     def authorization_endpoint(self) -> str:
@@ -296,7 +322,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.3.0"
+    REST_API_VERSION: ClassVar[str] = "1.4.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",
@@ -334,9 +360,14 @@ class ApplicationConfig(BlueapiBaseModel):
         if isinstance(other, ApplicationConfig):
             return (
                 (self.stomp == other.stomp)
+                & (self.tiled == other.tiled)
                 & (self.env == other.env)
                 & (self.logging == other.logging)
                 & (self.api == other.api)
+                & (self.scratch == other.scratch)
+                & (self.oidc == other.oidc)
+                & (self.auth_token_path == other.auth_token_path)
+                & (self.numtracker == other.numtracker)
                 & (self.opa == other.opa)
             )
         return False

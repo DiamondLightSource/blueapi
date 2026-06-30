@@ -105,16 +105,7 @@
             "description": "Config for the RunEngine environment",
             "properties": {
                 "sources": {
-                    "default": [
-                        {
-                            "module": "dodal.plans",
-                            "kind": "planFunctions"
-                        },
-                        {
-                            "module": "dodal.plan_stubs.wrapped",
-                            "kind": "planFunctions"
-                        }
-                    ],
+                    "default": [],
                     "items": {
                         "discriminator": {
                             "mapping": {
@@ -242,9 +233,31 @@
             "additionalProperties": false,
             "properties": {
                 "well_known_url": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "deprecated": true,
                     "description": "URL to fetch OIDC config from the provider",
-                    "title": "Well Known Url",
-                    "type": "string"
+                    "title": "Well Known Url"
+                },
+                "issuer": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "description": "URL of OIDC provider",
+                    "title": "Issuer"
                 },
                 "client_id": {
                     "description": "Client ID",
@@ -265,7 +278,6 @@
                 }
             },
             "required": [
-                "well_known_url",
                 "client_id"
             ],
             "title": "OIDCConfig",

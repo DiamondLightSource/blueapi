@@ -75,8 +75,9 @@ def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
         return (get_origin(return_type) == Generator) and (
             get_args(return_type)[0] == Msg
         )
-    except TypeError:
-        # get_type_hints fails on some objects (such as Union or Optional)
+    except (TypeError, NameError):
+        # get_type_hints fails on some objects (such as Union, Optional or
+        # pydantic.Field)
         return False
 
 

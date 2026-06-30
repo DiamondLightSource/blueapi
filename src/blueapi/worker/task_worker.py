@@ -180,19 +180,23 @@ class TaskWorker:
         Returns:
             The task_id of the active task
         """
-        if self._current is None:
+        current = self._current
+        if current is None:
             # Persuades type checker that self._current is not None
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
+
+        # RE.abort()/stop() are thread-safe and must be called immediately —
+        # putting only a CancelSignal would no-op if the worker is blocked in do_task()
         if failure:
-            default_reason = "Task failed for unknown reason"
-            self._ctx.run_engine.abort(reason or default_reason)
-            add_span_attributes({"Task aborted": reason or default_reason})
+            self._ctx.run_engine.abort(reason or "Task failed for unknown reason")
         else:
             self._ctx.run_engine.stop()
-            default_reason = "Cancellation successful: Task stopped without error"
-            add_span_attributes({"Task stopped": reason or default_reason})
-        return self._current.task_id
+        self._task_channel.put(CancelSignal(failure=failure, reason=reason))
+        add_span_attributes(
+            {"Task aborted" if failure else "Task stopped": reason or ""}
+        )
+        return current.task_id
 
     @start_as_current_span(TRACER)
     def get_tasks(self) -> list[TrackableTask]:
@@ -415,7 +419,7 @@ class TaskWorker:
         Command the worker to resume
         """
         LOGGER.info("Requesting to resume the worker")
-        self._ctx.run_engine.resume()
+        self._task_channel.put(ResumeSignal())
 
     @start_as_current_span(TRACER)
     def _cycle_with_error_handling(self) -> None:
@@ -462,6 +466,39 @@ class TaskWorker:
                             process_task()
                     else:
                         process_task()
+
+            elif isinstance(next_task, ResumeSignal):
+                if self._ctx.run_engine.state == "paused":
+                    if self._current is not None:
+                        result = self._ctx.run_engine.resume()
+                        self._current.set_result(result)
+                    else:
+                        LOGGER.warning(
+                            "Received resume signal but no active task, ignoring"
+                        )
+                else:
+                    LOGGER.warning(
+                        "Received resume signal but RunEngine is not paused, ignoring"
+                    )
+
+            elif isinstance(next_task, CancelSignal):
+                default_reason = "Task failed for unknown reason"
+                if next_task.failure:
+                    error_message = next_task.reason or default_reason
+                    add_span_attributes({"Task aborted": error_message})
+                    LOGGER.error("Task failed: %s", error_message)
+                    if self._current is not None:
+                        self._current.set_exception(Exception(error_message))
+                        self._report_error(Exception(error_message))
+                else:
+                    if self._current is not None:
+                        self._current.set_result(None)
+                    add_span_attributes(
+                        {
+                            "Task stopped": next_task.reason
+                            or "Cancellation successful: Task stopped without error"
+                        }
+                    )
 
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
@@ -686,6 +723,25 @@ class KillSignal:
     """
 
     ...
+
+
+@dataclass
+class ResumeSignal:
+    """
+    Object put in the worker's task queue to tell it to resume if paused.
+    """
+
+    ...
+
+
+@dataclass
+class CancelSignal:
+    """
+    Object put in the worker's task queue to tell it to cancel the current task.
+    """
+
+    failure: bool
+    reason: str | None
 
 
 def run_worker_in_own_thread(

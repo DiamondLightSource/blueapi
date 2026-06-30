@@ -30,34 +30,55 @@ async def test_add_version_header():
     assert response.headers["X-BlueAPI-VERSION"] == __version__
 
 
-@pytest.mark.parametrize("path,level", [("/", "info"), ("/healthz", "debug")])
-async def test_log_request_details(path: str, level: str):
+@pytest.fixture
+def logging_server():
+    app = FastAPI()
+    app.middleware("http")(log_request_details)
+
+    @app.post("/")
+    async def root():
+        return {"message": "Hello World"}
+
+    @app.get("/healthz")
+    async def health():
+        return {"health": "good"}
+
+    return TestClient(app)
+
+
+async def test_post_request_logs_at_info(logging_server: TestClient):
     with mock.patch("blueapi.service.main.LOGGER") as logger:
-        app = FastAPI()
-        app.middleware("http")(log_request_details)
-
-        @app.post(path)
-        async def root():
-            return {"message": "Hello World"}
-
-        client = TestClient(app)
-        response = client.post(path, content="foo")
+        response = logging_server.post("/", content="foo")
 
         assert response.status_code == 200
-        log_level = getattr(logger, level)
-        log_level.assert_has_calls(
+        logger.info.assert_has_calls(
             [
                 call(
-                    f"testclient:50000 POST {path}",
+                    "testclient:50000 POST /",
                     extra={
                         "request_body": b"foo",
                     },
                 ),
                 call(
-                    f"testclient:50000 POST {path} 200",
+                    "testclient:50000 POST / 200",
                     extra={
                         "request_body": b"foo",
                     },
+                ),
+            ]
+        )
+
+
+async def test_get_request_logs_at_debug(logging_server: TestClient):
+    with mock.patch("blueapi.service.main.LOGGER") as logger:
+        response = logging_server.get("/healthz")
+
+        assert response.status_code == 200
+        logger.debug.assert_has_calls(
+            [
+                call(
+                    "testclient:50000 GET /healthz 200",
+                    extra={"request_body": b""},
                 ),
             ]
         )

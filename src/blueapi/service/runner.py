@@ -149,6 +149,11 @@ class WorkerDispatcher:
     def state(self) -> EnvironmentResponse:
         return self._state
 
+    def instrument(self) -> str:
+        return (
+            md.instrument if (md := self._config.env.metadata) is not None else "<ixx>"
+        )
+
 
 class InvalidRunnerStateError(Exception):
     def __init__(self, message):

@@ -1,8 +1,10 @@
+import json
 import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated
+from dataclasses import dataclass
+from typing import Annotated, Any
 
 import jwt
 from fastapi import (
@@ -11,6 +13,7 @@ from fastapi import (
     Body,
     Depends,
     FastAPI,
+    Form,
     HTTPException,
     Request,
     Response,
@@ -18,7 +21,13 @@ from fastapi import (
 )
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    RedirectResponse,
+    StreamingResponse,
+)
+from fastapi.templating import Jinja2Templates
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -26,7 +35,7 @@ from observability_utils.tracing import (
 )
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.trace import get_tracer_provider
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -38,6 +47,7 @@ from blueapi.service.middleware import (
     ObservabilityContextPropagator,
     VersionHeaders,
 )
+from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
@@ -160,15 +170,6 @@ async def on_token_error_401(_: Request, __: Exception):
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Not authenticated"},
         headers={"WWW-Authenticate": "Bearer"},
-    )
-
-
-@secure_router.get("/", include_in_schema=False)
-def root_redirect() -> RedirectResponse:
-    """Redirect to docs url"""
-    return RedirectResponse(
-        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-        url=ApplicationConfig.DOCS_ENDPOINT,
     )
 
 
@@ -613,3 +614,105 @@ async def log_request_details(
     log(log_message, extra=extra)
 
     return response
+
+
+templates = Jinja2Templates(directory="templates")
+
+
+@secure_router.get("/", include_in_schema=False, response_class=HTMLResponse)
+def root_landing(
+    request: Request,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> HTMLResponse:
+
+    devices = runner.run(interface.get_devices)
+    devices = [
+        {"device": device.name, "protocols": [p.name for p in device.protocols]}
+        for device in devices
+    ]
+
+    plans = runner.run(interface.get_plans)
+
+    @dataclass()
+    class TmpModel:
+        name: str
+        description: str | None
+        parameter_schema: dict[str, Any]
+
+    format_plans: list[TmpModel] = []
+    for plan in plans:
+        sch: dict[str, Any] = plan.parameter_schema
+        plan_args: dict[str, Any] | None = sch.get("properties")
+
+        args = {}
+        if plan_args:
+            for k, v in plan_args.items():
+                if any_of_type := v.get("anyOf"):
+                    tp_list = []
+                    for typ in any_of_type:
+                        if list_type := typ.get("items"):
+                            tp_list.append(f"list[{list_type.get('type')}]")
+                        elif simple_type := typ.get("type"):
+                            tp_list.append(simple_type)
+                    tp = " | ".join(tp_list)
+
+                elif list_type := v.get("items"):
+                    tp = f"list[{list_type.get('type')}]"
+                else:
+                    tp = v.get("type")
+
+                args[f"{k}"] = tp
+
+        p = TmpModel(
+            name=plan.name,
+            description=plan.description,
+            parameter_schema=args,
+        )
+        format_plans.append(p)
+
+    task_list = get_tasks(runner)
+
+    context = {
+        "instrument": runner.instrument(),
+        "devices": devices,
+        "plans": format_plans,
+        "tasks": task_list.tasks,
+    }
+
+    return templates.TemplateResponse(
+        request=request, name="index.html", context=context
+    )
+
+
+@open_router.get("/favicon", include_in_schema=False)
+async def favicon():
+    return FileResponse("docs/images/blueapi-logo.svg")
+
+
+@secure_router_v1.post("/run", include_in_schema=True, tags=[Tag.TASK])
+@start_as_current_span(TRACER)
+def run(
+    name: Annotated[str, Form()],
+    params: Annotated[str, Form()],
+    instrument_session: Annotated[str, Form()],
+    request: Request,
+    response: Response,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+) -> RedirectResponse:
+
+    task_request = TaskRequest(
+        name=name,
+        params=json.loads(params),  # do this validator in the model?
+        instrument_session=instrument_session,
+    )
+    res = submit_task(request, response, task_request, runner)
+
+    tid = res.task_id
+    req_task = WorkerTask(task_id=tid)
+
+    try:
+        set_active_task(request, req_task, runner)
+    except HTTPException:
+        delete_submitted_task(tid, runner)
+
+    return RedirectResponse(status_code=status.HTTP_204_NO_CONTENT, url="/")

@@ -7,16 +7,22 @@ from unittest.mock import MagicMock, Mock, patch
 import jwt
 import pytest
 from bluesky.protocols import Stoppable
-from fastapi import status
+from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 from httpx import Headers
 from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, CORSConfig, OIDCConfig, RestConfig
+from blueapi.config import (
+    ApplicationConfig,
+    CORSConfig,
+    OIDCConfig,
+    RestConfig,
+)
 from blueapi.core.bluesky_types import Plan
-from blueapi.service import main
+from blueapi.service import interface, main
+from blueapi.service.authorization import OpaUserClient, opa
 from blueapi.service.interface import (
     cancel_active_task,
     get_device,
@@ -55,6 +61,11 @@ def mock_runner() -> Mock:
 
 
 @pytest.fixture
+def mock_opa_client() -> Mock:
+    return Mock(spec=OpaUserClient)
+
+
+@pytest.fixture
 def client(mock_runner: Mock) -> Iterator[TestClient]:
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(runner=mock_runner)
@@ -75,6 +86,27 @@ def client_with_auth(
         assert access_token is not None
         client = TestClient(main.get_app(ApplicationConfig(oidc=oidc_config)))
         client.headers = Headers(headers={"Authorization": f"Bearer {access_token}"})
+        yield client
+        main.teardown_runner()
+
+
+@pytest.fixture
+def access_token(valid_token_with_jwt: dict[str, Any]) -> str:
+    return valid_token_with_jwt["access_token"]
+
+
+@pytest.fixture
+def client_with_opa(
+    mock_runner: Mock,
+    oidc_config: OIDCConfig,
+    mock_opa_client: Mock,
+    mock_authn_server,
+):
+    with patch("blueapi.service.interface.worker"):
+        main.setup_runner(runner=mock_runner)
+        app = main.get_app(ApplicationConfig(oidc=oidc_config))
+        app.dependency_overrides[opa] = lambda: mock_opa_client
+        client = TestClient(app)
         yield client
         main.teardown_runner()
 
@@ -251,8 +283,25 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
 
     response = client.post("/tasks", json=task.model_dump())
 
-    mock_runner.run.assert_called_with(submit_task, task, {"user": "Unknown"})
+    mock_runner.run.assert_called_with(submit_task, task, {"user": None})
     assert response.json() == {"task_id": task_id}
+
+
+def test_submit_task_requires_permission(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+):
+    task = TaskRequest(name="sleep", params={"time": 2}, instrument_session="cm12345-2")
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    mock_opa_client.can_submit_task.side_effect = HTTPException(status_code=403)
+    mock_runner.run.side_effect = RuntimeError("Task should not be submitted")
+
+    resp = client_with_opa.post("/tasks", json=task.model_dump())
+
+    assert resp.status_code == 403
+    mock_runner.run.assert_not_called()
 
 
 def test_create_task_inserts_auth_metadata(
@@ -416,11 +465,54 @@ def test_get_tasks_by_status_invalid(client: TestClient) -> None:
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+@pytest.mark.parametrize("admin,task_ids", [(True, ["foo", "bar"]), (False, ["foo"])])
+def test_get_tasks_filters_by_user(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    access_token: str,
+    mock_opa_client: Mock,
+    admin: bool,
+    task_ids: list[str],
+):
+
+    mock_runner.run.return_value = [
+        TrackableTask(task_id="foo", task=Task(name="f1", metadata={"user": "jd1"})),
+        TrackableTask(task_id="bar", task=Task(name="f2", metadata={"user": "jd2"})),
+    ]
+    mock_opa_client.admin.return_value = admin
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    tasks = client_with_opa.get("/tasks").json().get("tasks")
+
+    assert [t["task_id"] for t in tasks] == task_ids
+
+
 def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:
     task_id = str(uuid.uuid4())
     mock_runner.run.return_value = task_id
     response = client.delete(f"/tasks/{task_id}")
     assert response.json() == {"task_id": f"{task_id}"}
+
+
+def test_cant_delete_other_users_task(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    access_token: str,
+    mock_opa_client: Mock,
+):
+    mock_opa_client.admin.return_value = False
+    mock_runner.run.side_effect = lambda mth, *args: {
+        interface.get_task_by_id: TrackableTask(
+            task_id="bar", task=Task(name="t2", metadata={"user": "jd2"})
+        ),
+    }[mth]
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    resp = client_with_opa.delete("/tasks/bar")
+
+    # 404 to obfuscate whether task exists when inaccessible
+    assert resp.status_code == 404
+
+    mock_runner.run.assert_called_once()
 
 
 def test_set_active_task(client: TestClient) -> None:
@@ -471,6 +563,35 @@ def test_set_active_task_worker_already_running(
     assert response.json() == {"detail": "Worker already active"}
 
 
+@pytest.mark.parametrize("admin,status", [(True, 200), (False, 404)])
+def test_set_other_users_task_active(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+    admin: bool,
+    status: int,
+):
+
+    task_id = "foo"
+    task = WorkerTask(task_id=task_id)
+    mock_opa_client.admin.return_value = admin
+
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    mock_runner.run.side_effect = lambda mth, *a, **kw: {
+        interface.get_task_by_id: TrackableTask(
+            task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
+        ),
+        interface.get_active_task: None,
+        interface.begin_task: None,
+    }[mth]
+
+    resp = client_with_opa.put("/worker/task", json=task.model_dump())
+
+    assert resp.status_code == status
+
+
 def test_get_task(mock_runner: Mock, client: TestClient):
     task_id = str(uuid.uuid4())
     task = TrackableTask(
@@ -501,6 +622,25 @@ def test_get_task(mock_runner: Mock, client: TestClient):
         "outcome": None,
         "task_id": f"{task_id}",
     }
+
+
+@pytest.mark.parametrize("admin,status", [(True, 200), (False, 404)])
+def test_get_other_users_task(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+    admin: bool,
+    status: int,
+):
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    mock_runner.run.return_value = TrackableTask(
+        task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
+    )
+    mock_opa_client.admin.return_value = admin
+
+    resp = client_with_opa.get("/tasks/foo")
+    assert resp.status_code == status
 
 
 def test_get_all_tasks(mock_runner: Mock, client: TestClient):
@@ -574,7 +714,12 @@ def test_get_state(mock_runner: Mock, client: TestClient):
 def test_set_state_running_to_paused(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.PAUSED
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
@@ -588,7 +733,12 @@ def test_set_state_running_to_paused(mock_runner: Mock, client: TestClient):
 def test_set_state_paused_to_running(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.PAUSED
     final_state = WorkerState.RUNNING
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
@@ -602,7 +752,12 @@ def test_set_state_paused_to_running(mock_runner: Mock, client: TestClient):
 def test_set_state_running_to_aborting(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.ABORTING
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
@@ -619,7 +774,12 @@ def test_set_state_running_to_stopping_including_reason(
     current_state = WorkerState.RUNNING
     final_state = WorkerState.STOPPING
     reason = "blueapi is being stopped"
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state",
@@ -635,7 +795,11 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.STOPPING
 
-    mock_runner.run.side_effect = [current_state, TransitionError()]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        TransitionError(),
+    ]
 
     response = client.put(
         "/worker/state",
@@ -664,6 +828,35 @@ def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
     assert response.json() == {
         "detail": f"Cannot transition from {current_state} to {requested_state}"
     }
+
+
+@pytest.mark.parametrize("admin,status", [(True, 202), (False, 403)])
+def test_set_state_of_other_users_task(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+    admin: bool,
+    status: int,
+):
+
+    mock_opa_client.admin.return_value = admin
+    mock_runner.run.side_effect = lambda mth, *a, **kw: {
+        interface.get_active_task: TrackableTask(
+            task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
+        ),
+        interface.get_worker_state: WorkerState.RUNNING,
+        interface.cancel_active_task: WorkerState.ABORTING,
+    }[mth]
+
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    resp = client_with_opa.put(
+        "/worker/state",
+        json=StateChangeRequest(new_state=WorkerState.ABORTING).model_dump(),
+    )
+
+    assert resp.status_code == status
 
 
 def test_get_environment_idle(mock_runner: Mock, client: TestClient) -> None:

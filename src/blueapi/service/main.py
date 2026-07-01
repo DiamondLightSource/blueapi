@@ -662,13 +662,13 @@ async def run_plan(
             runner.run(interface.begin_task, task=WorkerTask(task_id=task_id))
             async for evt in events:
                 LOGGER.debug("Event: %s", evt)
-                await ws.send_json(Update(data=evt).model_dump(mode="json"))
+                await ws.send_text(Update(data=evt).model_dump_json())
                 if isinstance(evt, WorkerEvent) and evt.is_complete():
                     LOGGER.info("End of stream")
                     break
     except WorkerBusyError:
         LOGGER.error("Worker was busy")
-        await ws.send_json(ServerBusy())
+        await ws.send_text(ServerBusy().model_dump_json())
         await ws.close(code=1013, reason="Worker busy")
     except WebSocketDisconnect:
         LOGGER.info("Client disconnected")

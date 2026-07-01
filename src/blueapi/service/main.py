@@ -14,6 +14,8 @@ from fastapi import (
     HTTPException,
     Request,
     Response,
+    WebSocket,
+    WebSocketDisconnect,
     status,
 )
 from fastapi.datastructures import Address
@@ -32,14 +34,27 @@ from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.service import interface
-from blueapi.service.authentication import Fedid, build_access_token_check
+from blueapi.service.authentication import (
+    Fedid,
+    build_access_token_check,
+)
 from blueapi.service.middleware import (
     ObservabilityContextPropagator,
     VersionHeaders,
+    WebsocketTracing,
+)
+from blueapi.service.protocol import (
+    ControlRequest,
+    InvalidArgs,
+    PlanNotFound,
+    ServerBusy,
+    Update,
 )
 from blueapi.worker import TrackableTask, WorkerState
-from blueapi.worker.event import TaskStatusEnum
+from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent
+from blueapi.worker.worker_errors import WorkerBusyError
 
 from .authorization import OpaClient, validate_tiled_config
 from .model import (
@@ -64,6 +79,9 @@ RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
 TRACER = get_tracer("interface")
+
+
+AnyEvent = WorkerEvent | DataEvent | ProgressEvent
 
 
 def _runner() -> WorkerDispatcher:
@@ -109,6 +127,7 @@ def lifespan(config: ApplicationConfig):
 open_router = APIRouter()
 secure_router = APIRouter(deprecated=True)
 secure_router_v1 = APIRouter(prefix="/api/v1")
+secure_router_v2 = APIRouter(prefix="/api/v2")
 
 
 def get_app(config: ApplicationConfig):
@@ -130,12 +149,14 @@ def get_app(config: ApplicationConfig):
         }
     app.include_router(open_router)
     app.include_router(secure_router_v1, dependencies=dependencies)
+    app.include_router(secure_router_v2, dependencies=dependencies)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
 
     app.add_middleware(ObservabilityContextPropagator)
     app.add_middleware(VersionHeaders)
+    app.add_middleware(WebsocketTracing)
     app.middleware("http")(log_request_details)
     if config.api.cors:
         app.add_middleware(
@@ -562,6 +583,61 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
         status_code=status.HTTP_308_PERMANENT_REDIRECT,
         url=config.logout_redirect_endpoint.rstrip("/") + "?rd=" + encoded_url,
     )
+
+
+@secure_router_v2.websocket("/run_plan")
+async def run_plan(
+    ws: WebSocket, runner: Annotated[WorkerDispatcher, Depends(_runner)], user: Fedid
+):
+    LOGGER.info("Starting WS plan as %s", user)
+    await ws.accept()
+    rq = await ws.receive_text()
+    try:
+        task_request = ControlRequest.validate_json(rq)
+    except ValidationError:
+        LOGGER.error("Failed to deserialize request", exc_info=True)
+        await ws.close(code=1007, reason="Invalid Request")
+        return
+    LOGGER.info("Plan request: %s", task_request)
+
+    try:
+        task_id: str = runner.run(
+            interface.submit_task, task_request.task, {"user": user}
+        )
+        LOGGER.info("Task ID: %s", task_id)
+    except ValidationError as ve:
+        LOGGER.info("Plan args not valid: %s - %s", task_request, ve)
+        await ws.send_text(InvalidArgs.from_validation_error(ve).model_dump_json())
+        await ws.close(code=4002, reason="Invalid Args")
+        return
+    except KeyError as ke:
+        LOGGER.error("Plan %r not found", ke.args[0])
+        await ws.send_text(PlanNotFound(plan_name=ke.args[0]).model_dump_json())
+        await ws.close(code=4001, reason="unknown plan")
+        return
+
+    try:
+        with runner.event_pipe() as events:
+            LOGGER.info("Created event pipe")
+            runner.run(interface.begin_task, task=WorkerTask(task_id=task_id))
+            async for evt in events:
+                LOGGER.debug("Event: %s", evt)
+                await ws.send_text(Update(data=evt).model_dump_json())
+                if isinstance(evt, WorkerEvent) and evt.is_complete():
+                    LOGGER.info("End of stream")
+                    break
+    except WorkerBusyError:
+        LOGGER.error("Worker was busy")
+        await ws.send_text(ServerBusy().model_dump_json())
+        await ws.close(code=1013, reason="Worker busy")
+    except WebSocketDisconnect:
+        LOGGER.info("Client disconnected")
+        runner.run(
+            interface.cancel_active_task, failure=True, reason="Client disconnected"
+        )
+    else:
+        LOGGER.info("Plan complete")
+        await ws.close()
 
 
 @start_as_current_span(TRACER, "config")

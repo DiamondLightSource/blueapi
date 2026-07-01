@@ -15,7 +15,8 @@ from typing import Annotated, Any, cast
 import httpx
 import jwt
 import requests
-from fastapi import Depends, HTTPException, Request
+from fastapi import Cookie, Depends, Header, HTTPException
+from fastapi.requests import HTTPConnection
 from fastapi.security.utils import get_authorization_scheme_param
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
@@ -278,14 +279,16 @@ class TiledAuth(httpx.Auth):
         yield request
 
 
-def unchecked_bearer_token(req: Request) -> str | None:
+def unchecked_bearer_token(
+    auth_header: str | None = Header(alias="Authorization", default=None),
+    auth_cookie: str | None = Cookie(alias="Authorization", default=None),
+) -> str | None:
     """Get bearer token value from authorization header"""
     # This is an abridged version of the same feature of
     # OAuth2AuthorizationCodeBearer from fastapi. Replicating here prevents
     # passing unused configuration and means the schema does not include auth
     # details for servers that do not support it.
-    auth = req.headers.get("Authorization")
-    scheme, param = get_authorization_scheme_param(auth)
+    scheme, param = get_authorization_scheme_param(auth_header or auth_cookie)
     if scheme.casefold() != "bearer":
         return None
     return param.strip()
@@ -303,7 +306,7 @@ def build_access_token_check(config: OIDCConfig):
     """
     jwkclient = jwt.PyJWKClient(config.jwks_uri)
 
-    def validate_bearer_token(request: Request, token: UncheckedBearerToken):
+    def validate_bearer_token(request: HTTPConnection, token: UncheckedBearerToken):
         """Check that a bearer token is valid and inject into request state"""
         if not token:
             raise HTTPException(
@@ -326,7 +329,7 @@ def build_access_token_check(config: OIDCConfig):
     return validate_bearer_token
 
 
-def access_token(request: Request) -> Mapping[str, Any] | None:
+def access_token(request: HTTPConnection) -> Mapping[str, Any] | None:
     """Get the decoded and verified access token of the user making the request"""
     return getattr(request.state, "decoded_access_token", None)
 

@@ -384,7 +384,7 @@ class BlueapiRestClient:
                                 ]
                             )
                         case PlanNotFound(plan_name=name):
-                            raise UnknownPlanError(name)
+                            raise UnknownPlanError(message=name)
         except InvalidStatus as istat:
             match istat.response.status_code:
                 case 401 | 403:

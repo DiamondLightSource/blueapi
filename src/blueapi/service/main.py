@@ -606,7 +606,7 @@ async def run_plan(
         )
         LOGGER.info("Task ID: %s", task_id)
     except ValidationError as ve:
-        LOGGER.error("Args not valid", exc_info=True)
+        LOGGER.info("Plan args not valid: %s - %s", task_request, ve)
         await ws.send_text(InvalidArgs.from_validation_error(ve).model_dump_json())
         await ws.close(code=4002, reason="Invalid Args")
         return

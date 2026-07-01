@@ -369,7 +369,7 @@ async def get_tasks(
     fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
     opa: Annotated[OpaUserClient, Depends(opa)],
-    task_status: str | SkipJsonSchema[None] = None,
+    task_status: TaskStatusEnum | SkipJsonSchema[None] = None,
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.

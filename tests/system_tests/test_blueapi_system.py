@@ -94,12 +94,12 @@ def load_config(path: Path) -> ApplicationConfig:
     return loader.load()
 
 
-def get_access_token() -> str:
+def get_access_token(user:str="alice") -> str:
     token_url = "http://localhost:8081/realms/master/protocol/openid-connect/token"
     response = requests.post(
         token_url,
         data={
-            "client_id": "system-test-blueapi",
+            "client_id": "system-test-blueapi-"+user,
             "client_secret": "secret",
             "grant_type": "client_credentials",
         },

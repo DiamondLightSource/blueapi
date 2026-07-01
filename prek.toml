@@ -13,7 +13,7 @@ hooks = [
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.15.1"
+rev = "v0.15.20"
 hooks = [
   { id = "ruff-check", args = ["--fix"] },
   { id = "ruff-format" },
@@ -21,7 +21,7 @@ hooks = [
 
 [[repos]]
 repo = "https://github.com/astral-sh/uv-pre-commit"
-rev = "0.10.2"
+rev = "0.11.26"
 hooks = [
   { id = "uv-sync", args = [] },
 ]
@@ -29,16 +29,16 @@ hooks = [
 [[repos]]
 repo = "https://github.com/norwoodj/helm-docs"
 rev = "v1.14.2"
-hooks = [{ id = "helm-docs-built", args = ["--chart-search-root=helm"] }]
+hooks = [{ id = "helm-docs-container", args = ["--chart-search-root=helm"] }]
 
 [[repos]]
 repo = "https://github.com/losisin/helm-values-schema-json"
-rev = "v2.3.1"
+rev = "v2.5.0"
 hooks = [
   { id = "helm-schema", args = ["--config", "helm/blueapi/.schema.yaml"] }
 ]
 
 [[repos]]
 repo = "https://github.com/gitleaks/gitleaks"
-rev = "v8.28.0"
-hooks = [{ id = "gitleaks" }]
+rev = "v8.30.1"
+hooks = [{ id = "gitleaks-docker" }]

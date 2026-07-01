@@ -14,8 +14,7 @@ jobs:
       # are preinstalled, so: make docs · tox -e docs · npm ci && npm run docs
       build-command: |
         uv run --locked tox -e docs # build docs
-        #rm build/html/.doctrees/environment.pickle # Remove environment.pickle
-        find . -name environment.pickle
+        rm _build/html/.doctrees/environment.pickle # Remove environment.pickle
 
   release:
     needs: [docs]

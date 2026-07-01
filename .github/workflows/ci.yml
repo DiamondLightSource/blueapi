@@ -13,7 +13,7 @@ jobs:
       # Whatever turns your sources into docs/_build/html at $BASE_URL. uv and Node
       # are preinstalled, so: make docs · tox -e docs · npm ci && npm run docs
       build-command: |
-        uv run --locked tox -e docs # build docs
+        uv run --locked tox -e docs # Build docs
         rm _build/html/.doctrees/environment.pickle # Remove environment.pickle
 
   release:

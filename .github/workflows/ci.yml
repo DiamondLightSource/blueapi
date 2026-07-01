@@ -14,7 +14,8 @@ jobs:
       # are preinstalled, so: make docs · tox -e docs · npm ci && npm run docs
       build-command: |
         uv run --locked tox -e docs # build docs
-        rm build/html/.doctrees/environment.pickle # Remove environment.pickle
+        #rm build/html/.doctrees/environment.pickle # Remove environment.pickle
+        find . -name environment.pickle
 
   release:
     needs: [docs]
@@ -26,7 +27,7 @@ jobs:
   publish:
     needs: [docs]
     # don't publish a pages site in the fork's org
-    if: github.repository == 'ORG/REPO'
+    if: github.repository == 'shree-iyengar-dls/blueapi'
     uses: ./.github/workflows/publish-dispatch.yml # your workflow (below)
     with:
       version-name: ${{ needs.docs.outputs.version-name }}

@@ -36,6 +36,7 @@
             "env": {
                 "OTLP_EXPORT_ENABLED": "false"
             },
+            "envFile": "${workspaceFolder}/example-services/.env"
         },
         {
             "name": "Blueapi Controller",

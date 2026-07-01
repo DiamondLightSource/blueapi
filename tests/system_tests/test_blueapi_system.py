@@ -34,7 +34,6 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.worker.event import (
-    TaskError,
     TaskResult,
     TaskStatus,
     WorkerEvent,
@@ -94,12 +93,12 @@ def load_config(path: Path) -> ApplicationConfig:
     return loader.load()
 
 
-def get_access_token(user:str="alice") -> str:
+def get_access_token(user: str = "alice") -> str:
     token_url = "http://localhost:8081/realms/master/protocol/openid-connect/token"
     response = requests.post(
         token_url,
         data={
-            "client_id": "system-test-blueapi-"+user,
+            "client_id": "system-test-blueapi-" + user,
             "client_secret": "secret",
             "grant_type": "client_credentials",
         },
@@ -612,14 +611,8 @@ def test_unauthorized_plan_run(
             if event.name == "stream_resource":
                 resource.put_nowait(event.doc)
 
-    outcome = client_with_stomp.run_task(task, on_event)
-    assert outcome.task_failed
-    assert outcome.task_complete
-    assert isinstance(outcome.result, TaskError)
-    assert outcome.result.type == "ClientError"
-    assert outcome.result.message.startswith(
-        "403: Access policy rejects the provided access blob"
-    )
+    with pytest.raises(UnauthorisedAccessError, match="Not authorized to submit task"):
+        client_with_stomp.run_task(task, on_event)
 
 
 # Regression test for #1480

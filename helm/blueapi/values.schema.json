@@ -694,6 +694,7 @@
                 "well_known_url": {
                     "title": "Well Known Url",
                     "description": "URL to fetch OIDC config from the provider",
+                    "deprecated": true,
                     "anyOf": [
                         {
                             "type": "string"

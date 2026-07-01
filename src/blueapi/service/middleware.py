@@ -1,5 +1,6 @@
 import logging
 import uuid
+from collections.abc import Iterable
 
 from opentelemetry.context import attach
 from opentelemetry.propagate import get_global_textmap
@@ -60,6 +61,17 @@ class ObservabilityContextPropagator:
         return await self.app(scope, receive, send)
 
 
+Header = tuple[bytes, bytes]
+
+
+def _redact_headers(headers: list[Header] | None) -> Iterable[Header]:
+    for key, value in headers or []:
+        if key == b"authorization":
+            if (space := value.find(b" ")) >= 0:
+                value = value[:space] + b" [REDACTED]"
+        yield (key, value)
+
+
 class WebsocketTracing:
     def __init__(self, app: ASGIApp):
         self.app = app
@@ -74,7 +86,11 @@ class WebsocketTracing:
         client: tuple[str, int] = scope.get("client", ("unknown", 0))
         extra = {"conn": conn_id, "client": client}
 
-        WS_LOGGER.debug("%r", scope, extra=extra)
+        WS_LOGGER.debug(
+            "New Connection from %r",
+            {**scope, "headers": list(_redact_headers(scope.get("headers")))},
+            extra=extra,
+        )
 
         async def local_send(msg: Message):
             match msg.get("type"):

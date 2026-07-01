@@ -38,11 +38,7 @@ class OpaClient:
                 }
             },
         )
-        try:
-            return (await resp.json())["result"]
-        except KeyError as e:
-            LOGGER.error("Failed to get authorization response from OPA")
-            raise e
+        return (await resp.json())["result"]
 
     @classmethod
     def for_config(

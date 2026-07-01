@@ -181,9 +181,9 @@ def test_multi_start(inert_worker: TaskWorker) -> None:
 def test_submit_task(
     worker: TaskWorker,
 ) -> None:
-    assert worker.get_tasks() == []
+    assert worker.get_tasks_by_status() == []
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [
+    assert worker.get_tasks_by_status() == [
         TrackableTask.model_construct(
             task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
         )
@@ -191,15 +191,15 @@ def test_submit_task(
 
 
 def test_submit_multiple_tasks(worker: TaskWorker) -> None:
-    assert worker.get_tasks() == []
+    assert worker.get_tasks_by_status() == []
     task_id_1 = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [
+    assert worker.get_tasks_by_status() == [
         TrackableTask.model_construct(
             task_id=task_id_1, request_id=ANY, task=_SIMPLE_TASK
         )
     ]
     task_id_2 = worker.submit_task(_LONG_TASK)
-    assert worker.get_tasks() == [
+    assert worker.get_tasks_by_status() == [
         TrackableTask.model_construct(
             task_id=task_id_1, request_id=ANY, task=_SIMPLE_TASK
         ),
@@ -217,14 +217,14 @@ def test_stop_with_task_pending(inert_worker: TaskWorker) -> None:
 
 def test_restart_leaves_task_pending(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [
+    assert worker.get_tasks_by_status() == [
         TrackableTask.model_construct(
             task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
         )
     ]
     worker.stop()
     worker.start()
-    assert worker.get_tasks() == [
+    assert worker.get_tasks_by_status() == [
         TrackableTask.model_construct(
             task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
         )
@@ -234,13 +234,13 @@ def test_restart_leaves_task_pending(worker: TaskWorker) -> None:
 def test_submit_before_start_pending(inert_worker: TaskWorker) -> None:
     task_id = inert_worker.submit_task(_SIMPLE_TASK)
     inert_worker.start()
-    assert inert_worker.get_tasks() == [
+    assert inert_worker.get_tasks_by_status() == [
         TrackableTask.model_construct(
             task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
         )
     ]
     inert_worker.stop()
-    assert inert_worker.get_tasks() == [
+    assert inert_worker.get_tasks_by_status() == [
         TrackableTask.model_construct(
             task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
         )
@@ -249,13 +249,13 @@ def test_submit_before_start_pending(inert_worker: TaskWorker) -> None:
 
 def test_clear_task(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    assert worker.get_tasks() == [
+    assert worker.get_tasks_by_status() == [
         TrackableTask.model_construct(
             task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
         )
     ]
     assert worker.clear_task(task_id)
-    assert worker.get_tasks() == []
+    assert worker.get_tasks_by_status() == []
 
 
 def test_clear_nonexistent_task(worker: TaskWorker) -> None:
@@ -693,7 +693,7 @@ def test_submit_task_span_ok(
     exporter: JsonObjectSpanExporter,
     worker: TaskWorker,
 ) -> None:
-    assert worker.get_tasks() == []
+    assert worker.get_tasks_by_status() == []
     with asserting_span_exporter(exporter, "submit_task", "task.name", "task.params"):
         worker.submit_task(_SIMPLE_TASK)
 

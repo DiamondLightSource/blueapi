@@ -233,11 +233,6 @@ def begin_task(
     return task
 
 
-def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
-    """Retrieve a list of tasks based on their status."""
-    return worker().get_tasks_by_status(status)
-
-
 def get_active_task() -> TrackableTask | None:
     """Task the worker is currently running"""
     return worker().get_active_task()
@@ -264,10 +259,10 @@ def cancel_active_task(failure: bool, reason: str | None) -> str:
     return worker().cancel_active_task(failure, reason)
 
 
-def get_tasks() -> list[TrackableTask]:
-    """Return a list of all tasks on the worker,
-    any one of which can be triggered with begin_task"""
-    return worker().get_tasks()
+def get_tasks_by_status(status: TaskStatusEnum | None = None) -> list[TrackableTask]:
+    """Retrieve a list of tasks based on their status.
+    Return a list of all tasks on the worker if status is None"""
+    return worker().get_tasks_by_status(status)
 
 
 def get_task_by_id(task_id: str) -> TrackableTask | None:

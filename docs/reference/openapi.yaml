@@ -607,7 +607,7 @@ paths:
     get:
       description: 'Retrieve tasks based on their status.
 
-        The status of a newly created task is ''unstarted''.'
+        The status of a newly created task is PENDING.'
       operationId: get_tasks_api_v1_tasks_get
       parameters:
       - in: query
@@ -1004,7 +1004,7 @@ paths:
       deprecated: true
       description: 'Retrieve tasks based on their status.
 
-        The status of a newly created task is ''unstarted''.'
+        The status of a newly created task is PENDING.'
       operationId: get_tasks_tasks_get
       parameters:
       - in: query

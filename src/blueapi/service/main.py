@@ -316,38 +316,18 @@ def delete_submitted_task(
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
-@start_as_current_span(TRACER, "v")
-def validate_task_status(v: str) -> TaskStatusEnum:
-    v_upper = v.upper()
-    if v_upper not in TaskStatusEnum.__members__:
-        raise ValueError("Invalid status query parameter")
-    return TaskStatusEnum(v_upper)
-
-
 @secure_router_v1.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
 def get_tasks(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    task_status: TaskStatusEnum | SkipJsonSchema[None] = None,
+    task_status: TaskStatusEnum | None = None,
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
-    The status of a newly created task is 'unstarted'.
+    The status of a newly created task is PENDING.
     """
-    if task_status:
-        add_span_attributes({"status": task_status})
-        try:
-            desired_status = validate_task_status(task_status)
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid status query parameter",
-            ) from e
-
-        tasks = runner.run(interface.get_tasks_by_status, desired_status)
-    else:
-        tasks = runner.run(interface.get_tasks)
+    tasks = runner.run(interface.get_tasks_by_status, task_status)
     return TasksListResponse(tasks=tasks)
 
 

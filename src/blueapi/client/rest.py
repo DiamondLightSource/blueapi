@@ -357,7 +357,7 @@ class BlueapiRestClient:
     def run_blocking(
         self, req: TaskRequest
     ) -> Iterable[DataEvent | WorkerEvent | ProgressEvent]:
-        url = self._ws_address().unicode_string().removesuffix("/") + "/api/v2/run_plan"
+        url = self._ws_address().unicode_string().rstrip("/") + "/api/v2/run_plan"
         headers = get_context_propagator()
         if self._session_manager:
             auth = self._session_manager.get_valid_access_token()

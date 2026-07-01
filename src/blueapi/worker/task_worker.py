@@ -215,7 +215,7 @@ class TaskWorker:
         Retrieve a list of tasks based on their status.
         Args:
            status Optional[TaskStatusEnum]: The status to filter tasks by.
-           If 
+           If status is None return all tasks.
         Returns:
           list[TrackableTask]: A list of tasks that match the given status.
         """

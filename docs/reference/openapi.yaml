@@ -614,7 +614,10 @@ paths:
         name: task_status
         required: false
         schema:
-          $ref: '#/components/schemas/TaskStatusEnum'
+          anyOf:
+          - $ref: '#/components/schemas/TaskStatusEnum'
+          - type: 'null'
+          title: Task Status
       responses:
         '200':
           content:
@@ -1011,7 +1014,10 @@ paths:
         name: task_status
         required: false
         schema:
-          $ref: '#/components/schemas/TaskStatusEnum'
+          anyOf:
+          - $ref: '#/components/schemas/TaskStatusEnum'
+          - type: 'null'
+          title: Task Status
       responses:
         '200':
           content:

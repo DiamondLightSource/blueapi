@@ -27,7 +27,6 @@ from observability_utils.tracing import (
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
-from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 

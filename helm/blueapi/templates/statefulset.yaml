@@ -62,6 +62,8 @@ spec:
         persistentVolumeClaim:
           {{- if .Values.initContainer.persistentVolume.existingClaimName }}
           claimName: {{ .Values.initContainer.persistentVolume.existingClaimName }}
+          {{- else if .Values.initContainer.persistentVolume.customName }}
+          claimName: {{ include "blueapi.fullname" . }}-scratchr{{ .Values.initContainer.persistentVolume.customName }}-{{ .Values.image.tag | default .Chart.AppVersion }}
           {{- else }}
           claimName: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
           {{- end }}

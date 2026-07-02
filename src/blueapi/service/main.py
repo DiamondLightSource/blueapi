@@ -658,7 +658,11 @@ async def run_plan(
 
     try:
         with runner.event_pipe() as events:
-            LOGGER.info("Created event pipe")
+            active_task = runner.run(interface.get_active_task)
+            if active_task is not None and not active_task.is_complete:
+                await ws.send_text(ServerBusy().model_dump_json())
+                await ws.close(code=1013, reason="Worker busy")
+                return
             runner.run(interface.begin_task, task=WorkerTask(task_id=task_id))
             async for evt in events:
                 LOGGER.debug("Event: %s", evt)

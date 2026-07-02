@@ -38,6 +38,7 @@ from blueapi.service.protocol import (
     ControlResponse,
     InvalidArgs,
     PlanNotFound,
+    ServerBusy,
     Submit,
     Update,
 )
@@ -385,6 +386,8 @@ class BlueapiRestClient:
                             )
                         case PlanNotFound(plan_name=name):
                             raise UnknownPlanError(message=name)
+                        case ServerBusy():
+                            raise BlueskyRemoteControlError(409, "Server is busy")
         except InvalidStatus as istat:
             match istat.response.status_code:
                 case 401 | 403:

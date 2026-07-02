@@ -230,7 +230,7 @@ def begin_task(
     if task.task_id is not None:
         try:
             active_worker.begin_task(task.task_id)
-        except KeyError:
+        except:
             for channel, token in subscribers:
                 channel.unsubscribe(token)
             raise

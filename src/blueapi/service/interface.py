@@ -259,10 +259,10 @@ def cancel_active_task(failure: bool, reason: str | None) -> str:
     return worker().cancel_active_task(failure, reason)
 
 
-def get_tasks_by_status(status: TaskStatusEnum | None = None) -> list[TrackableTask]:
+def get_tasks(status: TaskStatusEnum | None = None) -> list[TrackableTask]:
     """Retrieve a list of tasks based on their status.
     Return a list of all tasks on the worker if status is None"""
-    return worker().get_tasks_by_status(status)
+    return worker().get_tasks(status)
 
 
 def get_task_by_id(task_id: str) -> TrackableTask | None:

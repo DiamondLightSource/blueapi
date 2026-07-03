@@ -411,7 +411,7 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
     }
 
 
-def test_get_tasks_by_status_invalid(client: TestClient) -> None:
+def test_get_tasks_invalid(client: TestClient) -> None:
     response = client.get("/tasks", params={"task_status": "AN_INVALID_STATUS"})
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 

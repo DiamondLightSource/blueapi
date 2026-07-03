@@ -326,7 +326,7 @@ def get_tasks(
     Retrieve tasks based on their status.
     The status of a newly created task is PENDING.
     """
-    tasks = runner.run(interface.get_tasks_by_status, task_status)
+    tasks = runner.run(interface.get_tasks, task_status)
     return TasksListResponse(tasks=tasks)
 
 

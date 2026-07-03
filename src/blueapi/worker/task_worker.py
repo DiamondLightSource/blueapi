@@ -208,9 +208,7 @@ class TaskWorker:
         return self._pending_tasks.get(task_id, None) or self._completed_tasks[task_id]
 
     @start_as_current_span(TRACER)
-    def get_tasks_by_status(
-        self, status: TaskStatusEnum | None = None
-    ) -> list[TrackableTask]:
+    def get_tasks(self, status: TaskStatusEnum | None = None) -> list[TrackableTask]:
         """
         Retrieve a list of tasks based on their status.
         Args:

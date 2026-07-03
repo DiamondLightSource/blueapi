@@ -635,7 +635,7 @@ async def run_plan(
     try:
         task_request = ControlRequest.validate_json(rq)
     except ValidationError:
-        LOGGER.error("Failed to deserialize request", exc_info=True)
+        LOGGER.info("Failed to deserialize request: %r", rq, exc_info=True)
         await ws.close(code=1007, reason="Invalid Request")
         return
     LOGGER.info("Plan request: %s", task_request)
@@ -651,7 +651,7 @@ async def run_plan(
         await ws.close(code=4002, reason="Invalid Args")
         return
     except KeyError as ke:
-        LOGGER.error("Plan %r not found", ke.args[0])
+        LOGGER.info("Plan %r not recognised", ke.args[0])
         await ws.send_text(PlanNotFound(plan_name=ke.args[0]).model_dump_json())
         await ws.close(code=4001, reason="unknown plan")
         return
@@ -670,7 +670,7 @@ async def run_plan(
                 LOGGER.debug("Event: %s", evt)
                 await ws.send_text(Update(data=evt).model_dump_json())
                 if isinstance(evt, WorkerEvent) and evt.is_complete():
-                    LOGGER.info("End of stream")
+                    LOGGER.debug("End of stream")
                     break
     except WorkerBusyError:
         LOGGER.error("Worker was busy")

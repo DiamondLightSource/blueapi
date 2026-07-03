@@ -665,6 +665,8 @@ async def run_plan(
                 return
             runner.run(interface.begin_task, task=WorkerTask(task_id=task_id))
             async for evt in events:
+                if evt.task_id != task_id:
+                    continue
                 LOGGER.debug("Event: %s", evt)
                 await ws.send_text(Update(data=evt).model_dump_json())
                 if isinstance(evt, WorkerEvent) and evt.is_complete():

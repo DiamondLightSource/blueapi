@@ -10,7 +10,7 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from pydantic import BaseModel, TypeAdapter, ValidationError, WebsocketUrl
+from pydantic import BaseModel, TypeAdapter, ValidationError
 from pydantic_core import PydanticSerializationError
 from websockets.exceptions import InvalidStatus
 from websockets.sync.client import connect
@@ -358,7 +358,7 @@ class BlueapiRestClient:
     def run_blocking(
         self, req: TaskRequest
     ) -> Iterable[DataEvent | WorkerEvent | ProgressEvent]:
-        url = self._ws_address().unicode_string().rstrip("/") + "/api/v2/run_plan"
+        url = self._config.ws_address.unicode_string().rstrip("/") + "/api/v2/run_plan"
         headers = get_context_propagator()
         if self._session_manager:
             auth = self._session_manager.get_valid_access_token()
@@ -394,15 +394,6 @@ class BlueapiRestClient:
                     raise UnauthorisedAccessError() from None
             print(vars(istat))
             return
-
-    def _ws_address(self) -> WebsocketUrl:
-        api = self._config.url
-        if api.host is None:
-            raise ValueError("No host configured")
-        scheme = "ws" if api.scheme == "http" else "wss"
-        return WebsocketUrl.build(
-            scheme=scheme, host=api.host, port=api.port, path=api.path
-        )
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

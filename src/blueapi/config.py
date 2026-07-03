@@ -22,6 +22,7 @@ from pydantic import (
     TypeAdapter,
     UrlConstraints,
     ValidationError,
+    WebsocketUrl,
     field_validator,
     model_validator,
 )
@@ -167,8 +168,24 @@ class CORSConfig(BlueapiBaseModel):
 
 
 class RestConfig(BlueapiBaseModel):
-    url: HttpUrl = HttpUrl("http://localhost:8000")
+    url: Annotated[
+        HttpUrl,
+        UrlConstraints(preserve_empty_path=True),
+        Field("http://localhost:8000", validate_default=True),
+    ]
     cors: CORSConfig | None = None
+
+    @property
+    def ws_address(self) -> WebsocketUrl:
+        api = self.url
+        if api.host is None:
+            # type hints say it could be None but not possible to construct
+            # HttpUrl without host
+            raise ValueError("No host configured")  # pragma: no cover
+        scheme = "ws" if api.scheme == "http" else "wss"
+        return WebsocketUrl.build(
+            scheme=scheme, host=api.host, port=api.port, path=api.path
+        )
 
 
 class ScratchRepository(BlueapiBaseModel):

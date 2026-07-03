@@ -12,13 +12,14 @@ import pytest
 import responses
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, WebsocketUrl
 
 from blueapi.config import (
     CONFIG_SCHEMA_LOCATION,
     ApplicationConfig,
     ConfigLoader,
     OIDCConfig,
+    RestConfig,
     generate_config_schema,
 )
 from blueapi.utils import InvalidConfigError
@@ -571,3 +572,15 @@ def test_issuer_url_preferred_over_well_known_url(caplog):
             oidc._well_known_url == "issuer_url" + "/.well-known/openid-configuration"
         )
     assert "well_known_url and issuer are both set" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "url,ws_url",
+    [
+        ("http://localhost:8000", "ws://localhost:8000"),
+        ("https://localhost:8000", "wss://localhost:8000"),
+    ],
+)
+def test_ws_address(url: str, ws_url: str):
+    conf = RestConfig.model_validate({"url": url})
+    assert conf.ws_address == WebsocketUrl(ws_url)

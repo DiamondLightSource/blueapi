@@ -232,7 +232,7 @@ def blueapi_rest_client_get_methods() -> list[str]:
     return [
         name
         for name, method in BlueapiRestClient.__dict__.items()
-        if not name.startswith("__")
+        if not name.startswith("_")
         and callable(method)
         and len(params := inspect.signature(method).parameters) == 1
         and "self" in params

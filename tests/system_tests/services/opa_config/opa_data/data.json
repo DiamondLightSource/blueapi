@@ -4,7 +4,8 @@
             "beamlines": {
                 "adsim": {
                     "sessions": [
-                        1
+                        1,
+                        2
                     ]
                 }
             },
@@ -30,7 +31,9 @@
             },
             "subjects": {
                 "admin": {
-                    "permissions": ["super_admin"],
+                    "permissions": [
+                        "super_admin"
+                    ],
                     "proposals": [],
                     "sessions": []
                 },

@@ -782,7 +782,7 @@
                 },
                 "url": {
                     "title": "Url",
-                    "default": "http://localhost:8000/",
+                    "default": "http://localhost:8000",
                     "type": "string",
                     "format": "uri",
                     "maxLength": 2083,

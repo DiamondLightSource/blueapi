@@ -100,7 +100,12 @@ def user(request) -> User:
 
 
 @pytest.fixture
-def small_task(user: User, instrument_session: str | None = None) -> TaskRequest:
+def instrument_session(request) -> str:
+    return getattr(request, "param", VALID_INSTRUMENT_SESSION[User.alice])
+
+
+@pytest.fixture
+def small_task(user: User, instrument_session: str) -> TaskRequest:
     return TaskRequest(
         name="sleep",
         params={"time": 0.0},
@@ -620,16 +625,11 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
 
 
 @pytest.mark.parametrize(
-    "task,scan_id,user,expectation",
+    "instrument_session,user,expectation",
     [
         (
             # bob cannot submit a task that alice is on
-            TaskRequest(
-                name="sleep",
-                params={"time": 1},
-                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
-            ),
-            CURRENT_NUMTRACKER_NUM + 1,
+            VALID_INSTRUMENT_SESSION[User.alice],
             User.bob,
             pytest.raises(
                 UnauthorisedAccessError, match="Not authorized to submit task"
@@ -637,12 +637,7 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
         ),
         (
             # alice cannot submit a task that bob is on
-            TaskRequest(
-                name="sleep",
-                params={"time": 1},
-                instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
-            ),
-            CURRENT_NUMTRACKER_NUM + 1,
+            VALID_INSTRUMENT_SESSION[User.bob],
             User.alice,
             pytest.raises(
                 UnauthorisedAccessError, match="Not authorized to submit task"
@@ -650,56 +645,31 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
         ),
         (
             # alice can submit a task that alice is on
-            TaskRequest(
-                name="sleep",
-                params={"time": 1},
-                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
-            ),
-            CURRENT_NUMTRACKER_NUM + 1,
+            VALID_INSTRUMENT_SESSION[User.alice],
             User.alice,
             nullcontext(),
         ),
         (
             # bob can submit a task that bob is on
-            TaskRequest(
-                name="sleep",
-                params={"time": 1},
-                instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
-            ),
-            CURRENT_NUMTRACKER_NUM + 1,
+            VALID_INSTRUMENT_SESSION[User.bob],
             User.bob,
             nullcontext(),
         ),
         (
             # admin can submit a task that bob is on
-            TaskRequest(
-                name="sleep",
-                params={"time": 1},
-                instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
-            ),
-            CURRENT_NUMTRACKER_NUM + 1,
+            VALID_INSTRUMENT_SESSION[User.bob],
             User.admin,
             nullcontext(),
         ),
         (
             # admin can submit a task that alice is on
-            TaskRequest(
-                name="sleep",
-                params={"time": 1},
-                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
-            ),
-            CURRENT_NUMTRACKER_NUM + 1,
+            VALID_INSTRUMENT_SESSION[User.alice],
             User.admin,
             nullcontext(),
         ),
         (
             # admin still needs to put a valid instrument_session
-            TaskRequest(
-                name="sleep",
-                params={"time": 1},
-                instrument_session=VALID_INSTRUMENT_SESSION[User.alice] + "3231232",
-            ),
-            CURRENT_NUMTRACKER_NUM + 1,
+            VALID_INSTRUMENT_SESSION[User.alice] + "3231232",
             User.admin,
             pytest.raises(
                 UnauthorisedAccessError, match="Not authorized to submit task"
@@ -709,13 +679,13 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
 )
 def test_submit_plan_authorization(
     client: BlueapiClient,
-    task: TaskRequest,
-    scan_id: int,
+    small_task: TaskRequest,
     user: str,
+    instrument_session: str,
     expectation,
 ):
     with expectation:
-        client.create_task(task)
+        client.create_task(small_task)
 
 
 def test_get_tasks_authorization(client: BlueapiClient): ...

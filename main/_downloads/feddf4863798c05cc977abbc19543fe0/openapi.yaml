@@ -333,6 +333,14 @@ components:
       - type
       title: TaskResult
       type: object
+    TaskStatusEnum:
+      enum:
+      - PENDING
+      - COMPLETE
+      - ERROR
+      - RUNNING
+      title: TaskStatusEnum
+      type: string
     TasksListResponse:
       additionalProperties: false
       description: Diagnostic information on the tasks
@@ -441,7 +449,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.4.0
+  version: 1.4.1
 openapi: 3.1.0
 paths:
   /api/v1/devices:
@@ -599,15 +607,17 @@ paths:
     get:
       description: 'Retrieve tasks based on their status.
 
-        The status of a newly created task is ''unstarted''.'
+        The status of a newly created task is PENDING.'
       operationId: get_tasks_api_v1_tasks_get
       parameters:
       - in: query
         name: task_status
         required: false
         schema:
+          anyOf:
+          - $ref: '#/components/schemas/TaskStatusEnum'
+          - type: 'null'
           title: Task Status
-          type: string
       responses:
         '200':
           content:
@@ -997,15 +1007,17 @@ paths:
       deprecated: true
       description: 'Retrieve tasks based on their status.
 
-        The status of a newly created task is ''unstarted''.'
+        The status of a newly created task is PENDING.'
       operationId: get_tasks_tasks_get
       parameters:
       - in: query
         name: task_status
         required: false
         schema:
+          anyOf:
+          - $ref: '#/components/schemas/TaskStatusEnum'
+          - type: 'null'
           title: Task Status
-          type: string
       responses:
         '200':
           content:

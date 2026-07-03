@@ -129,9 +129,11 @@ class WebsocketTracing:
             message = await receive()
             match message.get("type"):
                 case "websocket.receive":
-                    WS_LOGGER.debug("Received: %r", message.get("text"))
+                    WS_LOGGER.debug("Received: %r", message.get("text"), extra=extra)
                 case "websocket.connect":
-                    WS_LOGGER.debug("New connection from %s:%d", *client)
+                    WS_LOGGER.debug("New connection from %s:%d", *client, extra=extra)
+                case _:
+                    WS_LOGGER.debug("Received other: %r", message, extra=extra)
             return message
 
         return await self.app(scope, local_receive, local_send)

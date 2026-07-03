@@ -262,28 +262,32 @@ def test_subscribers_removed_when_task_not_found(
     worker.worker_events.unsubscribe.assert_called_once_with(remove_token)
 
 
-@patch("blueapi.service.interface.TaskWorker.get_tasks_by_status")
-def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
-    pending_task1 = TrackableTask(task_id="0", task=Task(name="pending_task1"))
-    pending_task2 = TrackableTask(task_id="1", task=Task(name="pending_task2"))
-    running_task = TrackableTask(task_id="2", task=Task(name="running_task"))
-
-    def mock_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
-        if status == TaskStatusEnum.PENDING:
-            return [pending_task1, pending_task2]
-        elif status == TaskStatusEnum.RUNNING:
-            return [running_task]
-        else:
-            return []
-
-    get_tasks_by_status_mock.side_effect = mock_tasks_by_status
-
-    assert interface.get_tasks_by_status(TaskStatusEnum.PENDING) == [
-        pending_task1,
-        pending_task2,
+@patch("blueapi.service.interface.TaskWorker.get_tasks")
+def test_get_tasks(get_tasks_mock: MagicMock):
+    running_task = [TrackableTask(task_id="2", task=Task(name="running_task"))]
+    pending_task = [
+        TrackableTask(task_id="0", task=Task(name="pending_task1")),
+        TrackableTask(task_id="1", task=Task(name="pending_task2")),
     ]
-    assert interface.get_tasks_by_status(TaskStatusEnum.RUNNING) == [running_task]
-    assert interface.get_tasks_by_status(TaskStatusEnum.COMPLETE) == []
+
+    def mock_tasks(
+        status: TaskStatusEnum | None = None,
+    ) -> list[TrackableTask]:
+        if status == TaskStatusEnum.PENDING:
+            return pending_task
+        elif status == TaskStatusEnum.RUNNING:
+            return running_task
+        elif status == TaskStatusEnum.COMPLETE:
+            return []
+        else:
+            return pending_task + running_task
+
+    get_tasks_mock.side_effect = mock_tasks
+
+    assert interface.get_tasks(TaskStatusEnum.PENDING) == pending_task
+    assert interface.get_tasks(TaskStatusEnum.RUNNING) == running_task
+    assert interface.get_tasks(TaskStatusEnum.COMPLETE) == []
+    assert interface.get_tasks() == pending_task + running_task
 
 
 @patch("blueapi.service.interface.BlueskyContext.numtracker")
@@ -332,18 +336,6 @@ def test_cancel_active_task(cancel_active_task_mock: MagicMock):
     cancel_active_task_mock.return_value = task_id
     assert interface.cancel_active_task(fail, reason) == task_id
     cancel_active_task_mock.assert_called_once_with(fail, reason)
-
-
-@patch("blueapi.service.interface.TaskWorker.get_tasks")
-def test_get_tasks(get_tasks_mock: MagicMock):
-    tasks = [
-        TrackableTask(task_id="0", task=Task(name="0")),
-        TrackableTask(task_id="1", task=Task(name="1")),
-        TrackableTask(task_id="2", task=Task(name="2")),
-    ]
-    get_tasks_mock.return_value = tasks
-
-    assert interface.get_tasks() == tasks
 
 
 @pytest.mark.parametrize("tiled_enabled", [True, False])

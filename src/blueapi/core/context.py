@@ -2,15 +2,13 @@ import logging
 import sys
 from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field, fields, is_dataclass
-from importlib import import_module
+from importlib import import_module, metadata
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
 from typing import Any, Generic, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
-from dodal.common.beamlines.beamline_utils import get_path_provider, set_path_provider
-from dodal.utils import AnyDevice, make_all_devices
 from ophyd_async.core import NotConnectedError, PathProvider
 from pydantic import (
     BaseModel,
@@ -26,10 +24,9 @@ from blueapi import utils
 from blueapi.config import (
     ApplicationConfig,
     DeviceManagerSource,
-    DeviceSource,
-    DodalSource,
     EnvironmentConfig,
     PlanSource,
+    ServiceAccount,
     TiledConfig,
 )
 from blueapi.core.protocols import DeviceManager
@@ -44,6 +41,7 @@ from blueapi.utils.path_provider import StartDocumentPathProvider
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
+    AsyncDevice,
     Device,
     Plan,
     PlanGenerator,
@@ -102,8 +100,12 @@ def qualified_generic_name(target: type) -> str:
     return f"{qualified_name(target)}{subscript}"
 
 
-def is_bluesky_type(typ: type) -> bool:
-    return typ in BLUESKY_PROTOCOLS or isinstance(typ, BLUESKY_PROTOCOLS)
+def is_bluesky_type(typ: Any) -> bool:
+    return (
+        typ in BLUESKY_PROTOCOLS
+        or isinstance(typ, BLUESKY_PROTOCOLS)
+        or (isinstance(typ, type) and issubclass(typ, AsyncDevice))
+    )
 
 
 C = TypeVar("C", covariant=True)
@@ -120,7 +122,7 @@ class BlueskyContext:
     configuration: InitVar[ApplicationConfig | None] = None
 
     run_engine: RunEngine = field(
-        default_factory=lambda: RunEngine(context_managers=[])
+        default_factory=lambda: RunEngine(context_managers=[], call_returns_result=True)
     )
     tiled_conf: TiledConfig | None = field(default=None, init=False, repr=False)
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
@@ -145,8 +147,6 @@ class BlueskyContext:
                 )
 
             path_provider = StartDocumentPathProvider()
-            # TODO: Remove this when device manager is rolled out
-            set_path_provider(path_provider)
 
             self.run_engine.subscribe(path_provider.run_start, "start")
             self.run_engine.subscribe(path_provider.run_stop, "stop")
@@ -155,8 +155,8 @@ class BlueskyContext:
             # local reference so it's available in _update_scan_num
             numtracker = self.numtracker
 
-            def _update_scan_num(md: dict[str, Any]) -> int:
-                scan = numtracker.create_scan(
+            async def _update_scan_num(md: dict[str, Any]) -> int:
+                scan = await numtracker.create_scan(
                     md["instrument_session"], md["instrument"]
                 )
                 md["data_session_directory"] = str(scan.scan.directory.path)
@@ -167,13 +167,6 @@ class BlueskyContext:
             self.run_engine.scan_id_source = _update_scan_num
 
         self.with_config(configuration.env)
-        if configuration.numtracker and not isinstance(
-            get_path_provider(), StartDocumentPathProvider
-        ):
-            raise InvalidConfigError(
-                "Numtracker has been configured but a path provider was imported with "
-                "the devices. Remove this path provider to use numtracker."
-            )
 
         if (tiled_conf := configuration.tiled) is not None and tiled_conf.enabled:
             if configuration.env.metadata is None:
@@ -181,6 +174,13 @@ class BlueskyContext:
                     "Tiled has been configured but `instrument` metadata is not set - "
                     "this field is required to make authorization decisions."
                 )
+            if isinstance(tiled_conf.authentication, ServiceAccount):
+                if configuration.oidc is None:
+                    raise InvalidConfigError(
+                        "Tiled has been configured but oidc configuration is missing "
+                        "this field is required to make authorization decisions."
+                    )
+                tiled_conf.authentication.token_url = configuration.oidc.token_endpoint
             self.tiled_conf = tiled_conf
 
     def find_device(self, addr: str | list[str]) -> Device | None:
@@ -204,23 +204,40 @@ class BlueskyContext:
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
             self.run_engine.md |= config.metadata.model_dump()
+
+        package_map = metadata.packages_distributions()
+        packages = {src.module.split(".")[0] for src in config.sources}
+        for pkg in packages:
+            if root_pkg := package_map.get(pkg):
+                version = metadata.version(root_pkg[0])
+                LOGGER.info("Using package %s[%s]", root_pkg[0], version)
+
         for source in config.sources:
             mod = import_module(source.module)
 
             match source:
                 case PlanSource():
+                    LOGGER.info("Including plans from %s", source.module)
                     self.with_plan_module(mod)
-                case DeviceSource():
-                    self.with_device_module(mod)
-                case DodalSource(mock=mock):
-                    self.with_dodal_module(mod, mock=mock)
                 case DeviceManagerSource(mock=mock, name=name):
+                    LOGGER.info(
+                        "Including devices from 'deviceManager' source %s:%s",
+                        source.module,
+                        name,
+                    )
                     manager = getattr(mod, name)
                     if not isinstance(manager, DeviceManager):
                         raise ValueError(
                             f"{name} in module {mod} is not a device manager"
                         )
                     self.with_device_manager(manager, mock)
+        if not self.devices:
+            LOGGER.warning(
+                "Context had no devices after loading environment - are all modules "
+                "included and marked with the correct 'kind'?"
+            )
+        if not self.plans:
+            LOGGER.warning("Context had no plans registered after loading environment")
 
     def with_plan_module(self, module: ModuleType) -> None:
         """
@@ -273,45 +290,19 @@ class BlueskyContext:
                 f"{len(errs)} errors while connecting devices",
                 exc_info=NotConnectedError(errs),
             )
+        if not (
+            build_result.devices
+            or build_result.build_errors
+            or build_result.connection_errors
+        ):
+            LOGGER.warning("Device manager did not build any devices")
+
+        utils.report_successful_devices(build_result.devices, mock, LOGGER)
+
         return build_result.devices, {
             **build_result.build_errors,
             **build_result.connection_errors,
         }
-
-    def with_device_module(self, module: ModuleType) -> None:
-        self.with_dodal_module(module)
-
-    def with_dodal_module(
-        self, module: ModuleType, **kwargs
-    ) -> tuple[dict[str, AnyDevice], dict[str, Exception]]:
-        """
-        Discover all device factories in the specified module,
-        construct devices by invoking them and register them with the device context,
-        Then attempt to connect to all the devices.
-
-        Args:
-            module: The python module to inspect for factories
-            kwargs: keyword arguments that will be passed to make_all_devices() and
-                to connect_devices() for construction and connection respectively
-        Returns:
-            A tuple containing a map of device name to devices, and a map of
-            device name to any exceptions encountered.
-        """
-        devices, exceptions = make_all_devices(module, **kwargs)
-
-        exceptions |= utils.connect_devices(self.run_engine, module, devices, **kwargs)
-
-        for device in devices.values():
-            self.register_device(device)
-
-        # If exceptions have occurred, we log them but we do not make blueapi
-        # fall over
-        if len(exceptions) > 0:
-            LOGGER.warning(
-                f"{len(exceptions)} exceptions occurred while instantiating devices"
-            )
-            LOGGER.exception(NotConnectedError(exceptions))
-        return devices, exceptions
 
     def register_plan(self, plan: PlanGenerator) -> PlanGenerator:
         """
@@ -335,6 +326,7 @@ class BlueskyContext:
             __config__=BlueapiPlanModelConfig,
             **self._type_spec_for_function(plan),  # type: ignore
         )
+        LOGGER.debug("Registering plan %s from %s", plan.__name__, plan.__module__)
         self.plans[plan.__name__] = Plan(
             name=plan.__name__, model=model, description=plan.__doc__
         )
@@ -396,12 +388,13 @@ class BlueskyContext:
                 ) -> CoreSchema:
                     def valid(value):
                         val = self.find_device(value)
-                        if not val or not is_compatible(
-                            val, cls.origin or target, cls.args
-                        ):
+                        if not val:
+                            raise ValueError(f"Device {value} cannot be found")
+                        elif not is_compatible(val, cls.origin or target, cls.args):
+                            actual = qualified_name(type(val))
                             required = qualified_generic_name(target)
                             raise ValueError(
-                                f"Device {value} is not of type {required}"
+                                f"Device {value} ({actual}) is not of type {required}"
                             )
                         return val
 
@@ -476,7 +469,7 @@ class BlueskyContext:
             )
         return new_args
 
-    def _convert_type(self, typ: type | Any, no_default: bool = True) -> type:
+    def _convert_type(self, typ: Any, no_default: bool = True) -> type:
         """
         Recursively convert a type to something that can be deserialised by
         pydantic. Bluesky protocols (and types that extend them) are replaced
@@ -495,7 +488,7 @@ class BlueskyContext:
         if typ is NoneType and not no_default:
             return SkipJsonSchema[NoneType]
         root = get_origin(typ)
-        if is_bluesky_type(typ) or (root is not None and is_bluesky_type(root)):
+        if is_bluesky_type(root or typ):
             return self._reference(typ)
         args = get_args(typ)
         if args:

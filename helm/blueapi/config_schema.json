@@ -100,77 +100,16 @@
             "type": "object",
             "$id": "DeviceManagerSource"
         },
-        "DeviceSource": {
-            "additionalProperties": false,
-            "properties": {
-                "module": {
-                    "description": "Module to be imported",
-                    "title": "Module",
-                    "type": "string"
-                },
-                "kind": {
-                    "const": "deviceFunctions",
-                    "default": "deviceFunctions",
-                    "title": "Kind",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "module"
-            ],
-            "title": "DeviceSource",
-            "type": "object",
-            "$id": "DeviceSource"
-        },
-        "DodalSource": {
-            "additionalProperties": false,
-            "properties": {
-                "module": {
-                    "description": "Module to be imported",
-                    "title": "Module",
-                    "type": "string"
-                },
-                "kind": {
-                    "const": "dodal",
-                    "default": "dodal",
-                    "title": "Kind",
-                    "type": "string"
-                },
-                "mock": {
-                    "default": false,
-                    "description": "If true, ophyd_async device connections are mocked",
-                    "title": "Mock",
-                    "type": "boolean"
-                }
-            },
-            "required": [
-                "module"
-            ],
-            "title": "DodalSource",
-            "type": "object",
-            "$id": "DodalSource"
-        },
         "EnvironmentConfig": {
             "additionalProperties": false,
             "description": "Config for the RunEngine environment",
             "properties": {
                 "sources": {
-                    "default": [
-                        {
-                            "module": "dodal.plans",
-                            "kind": "planFunctions"
-                        },
-                        {
-                            "module": "dodal.plan_stubs.wrapped",
-                            "kind": "planFunctions"
-                        }
-                    ],
+                    "default": [],
                     "items": {
                         "discriminator": {
                             "mapping": {
-                                "deviceFunctions": "DeviceSource",
                                 "deviceManager": "DeviceManagerSource",
-                                "dodal": "DodalSource",
                                 "planFunctions": "PlanSource"
                             },
                             "propertyName": "kind"
@@ -178,12 +117,6 @@
                         "oneOf": [
                             {
                                 "$ref": "PlanSource"
-                            },
-                            {
-                                "$ref": "DeviceSource"
-                            },
-                            {
-                                "$ref": "DodalSource"
                             },
                             {
                                 "$ref": "DeviceManagerSource"
@@ -300,9 +233,31 @@
             "additionalProperties": false,
             "properties": {
                 "well_known_url": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "deprecated": true,
                     "description": "URL to fetch OIDC config from the provider",
-                    "title": "Well Known Url",
-                    "type": "string"
+                    "title": "Well Known Url"
+                },
+                "issuer": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "description": "URL of OIDC provider",
+                    "title": "Issuer"
                 },
                 "client_id": {
                     "description": "Client ID",
@@ -323,12 +278,39 @@
                 }
             },
             "required": [
-                "well_known_url",
                 "client_id"
             ],
             "title": "OIDCConfig",
             "type": "object",
             "$id": "OIDCConfig"
+        },
+        "OpaConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "root": {
+                    "default": "http://localhost:8181/",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1,
+                    "title": "Root",
+                    "type": "string"
+                },
+                "audience": {
+                    "default": "account",
+                    "title": "Audience",
+                    "type": "string"
+                },
+                "tiled_service_account_check": {
+                    "title": "Tiled Service Account Check",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "tiled_service_account_check"
+            ],
+            "title": "OpaConfig",
+            "type": "object",
+            "$id": "OpaConfig"
         },
         "PlanSource": {
             "additionalProperties": false,
@@ -429,11 +411,38 @@
                     "description": "URL to clone from",
                     "title": "Remote Url",
                     "type": "string"
+                },
+                "target_revision": {
+                    "description": "Revision (branch or tag) to check out when cloning - defaults to remote's HEAD. If a tag is used, the repo will be left in a 'detached head' state.",
+                    "title": "Target Revision",
+                    "type": "string"
                 }
             },
             "title": "ScratchRepository",
             "type": "object",
             "$id": "ScratchRepository"
+        },
+        "ServiceAccount": {
+            "additionalProperties": false,
+            "properties": {
+                "client_id": {
+                    "default": "",
+                    "description": "Service account client ID",
+                    "title": "Client Id",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "default": "",
+                    "description": "Service account client secret",
+                    "format": "password",
+                    "title": "Client Secret",
+                    "type": "string",
+                    "writeOnly": true
+                }
+            },
+            "title": "ServiceAccount",
+            "type": "object",
+            "$id": "ServiceAccount"
         },
         "StompConfig": {
             "additionalProperties": false,
@@ -486,17 +495,21 @@
                     "title": "Url",
                     "type": "string"
                 },
-                "api_key": {
+                "authentication": {
                     "anyOf": [
                         {
                             "type": "string"
+                        },
+                        {
+                            "$ref": "ServiceAccount"
                         },
                         {
                             "type": "null"
                         }
                     ],
                     "default": null,
-                    "title": "Api Key"
+                    "description": "Tiled Authentication can be API_KEY or OIDC Service account",
+                    "title": "Authentication"
                 }
             },
             "title": "TiledConfig",
@@ -575,6 +588,17 @@
             "anyOf": [
                 {
                     "$ref": "NumtrackerConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null
+        },
+        "opa": {
+            "anyOf": [
+                {
+                    "$ref": "OpaConfig"
                 },
                 {
                     "type": "null"

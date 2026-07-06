@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from textwrap import dedent
 
-import requests
+import httpx
 from pydantic import Field, HttpUrl
 
 from blueapi.utils import BlueapiBaseModel
@@ -62,7 +62,7 @@ class NumtrackerClient:
 
         self._headers = headers
 
-    def create_scan(
+    async def create_scan(
         self, instrument_session: str, instrument: str
     ) -> NumtrackerScanMutationResponse:
         """
@@ -94,16 +94,29 @@ class NumtrackerClient:
             """)
         }
 
-        response = requests.post(
-            self._url.unicode_string(),
-            headers=self._headers,
-            json=query,
-        )
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self._url.unicode_string(),
+                headers=self._headers,
+                json=query,
+            )
 
         response.raise_for_status()
         json = response.json()
 
         if json.get("errors") is not None:
+            for error in json["errors"]:
+                code = error.get("extensions", {}).get("code")
+                match code:
+                    case "AUTH_FAILED":
+                        raise RuntimeError(
+                            f"Not authorised to create a scan number for "
+                            f"{instrument} and {instrument_session}"
+                        )
+                    case "AUTH_MISSING":
+                        raise RuntimeError("Numtracker authentication missing")
+                    case "AUTH_SERVER_ERROR":
+                        raise RuntimeError("Numtracker server authentication error")
             raise RuntimeError(f"Numtracker error: {json['errors']}")
 
         new_collection = NumtrackerScanMutationResponse.model_validate(json["data"])

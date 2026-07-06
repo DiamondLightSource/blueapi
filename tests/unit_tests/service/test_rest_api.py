@@ -64,7 +64,10 @@ def client(mock_runner: Mock) -> Iterator[TestClient]:
 
 @pytest.fixture
 def client_with_auth(
-    mock_runner: Mock, oidc_config: OIDCConfig, valid_token_with_jwt: dict[str, Any]
+    mock_runner: Mock,
+    oidc_config: OIDCConfig,
+    valid_token_with_jwt: dict[str, Any],
+    mock_authn_server,
 ) -> Iterator[TestClient]:
     with patch("blueapi.service.interface.worker"):
         main.setup_runner(runner=mock_runner)
@@ -248,8 +251,28 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
 
     response = client.post("/tasks", json=task.model_dump())
 
-    mock_runner.run.assert_called_with(submit_task, task)
+    mock_runner.run.assert_called_with(submit_task, task, {"user": "Unknown"})
     assert response.json() == {"task_id": task_id}
+
+
+def test_create_task_inserts_auth_metadata(
+    mock_runner: Mock,
+    client_with_auth: TestClient,
+) -> None:
+    task = TaskRequest(
+        name="count",
+        params={"detectors": ["x"]},
+        instrument_session=FAKE_INSTRUMENT_SESSION,
+    )
+    client_with_auth.follow_redirects = False
+    task_id = str(uuid.uuid4())
+
+    # mock_runner.run.side_effect = [task_id]
+    mock_runner.run.return_value = [task_id]
+
+    client_with_auth.post("/tasks", json=task.model_dump())
+
+    mock_runner.run.assert_called_with(submit_task, task, {"user": "jd1"})
 
 
 def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> None:
@@ -336,6 +359,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                     "params": {"time": 0.0},
                     "metadata": {},
                 },
+                "outcome": None,
                 "task_id": "0",
             },
             {
@@ -348,6 +372,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                     "params": {},
                     "metadata": {},
                 },
+                "outcome": None,
                 "task_id": "1",
             },
         ]
@@ -379,15 +404,16 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
                     "params": {},
                     "metadata": {},
                 },
+                "outcome": None,
                 "task_id": "3",
             }
         ]
     }
 
 
-def test_get_tasks_by_status_invalid(client: TestClient) -> None:
+def test_get_tasks_by_invalid_status(client: TestClient) -> None:
     response = client.get("/tasks", params={"task_status": "AN_INVALID_STATUS"})
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:
@@ -472,6 +498,7 @@ def test_get_task(mock_runner: Mock, client: TestClient):
                 "foo": "bar",
             },
         },
+        "outcome": None,
         "task_id": f"{task_id}",
     }
 
@@ -500,6 +527,7 @@ def test_get_all_tasks(mock_runner: Mock, client: TestClient):
                 "is_complete": False,
                 "is_pending": True,
                 "request_id": None,
+                "outcome": None,
                 "errors": [],
             }
         ]
@@ -607,7 +635,7 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.STOPPING
 
-    mock_runner.run.side_effect = [current_state, TransitionError(), final_state]
+    mock_runner.run.side_effect = [current_state, TransitionError()]
 
     response = client.put(
         "/worker/state",
@@ -615,7 +643,9 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == final_state
+    assert response.json() == {
+        "detail": f"Error while transitioning from {current_state} to {final_state}"
+    }
 
 
 def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
@@ -631,7 +661,9 @@ def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == final_state
+    assert response.json() == {
+        "detail": f"Cannot transition from {current_state} to {requested_state}"
+    }
 
 
 def test_get_environment_idle(mock_runner: Mock, client: TestClient) -> None:
@@ -750,7 +782,7 @@ def test_docs_redirect(
 ):
     client_with_auth.follow_redirects = False
     response = client_with_auth.get("/")
-    assert response.headers.get("location") == main.DOCS_ENDPOINT
+    assert response.headers.get("location") == ApplicationConfig.DOCS_ENDPOINT
     assert response.status_code == status.HTTP_307_TEMPORARY_REDIRECT
 
 

@@ -2,7 +2,6 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from enum import Enum
 from typing import Annotated
 
 import jwt
@@ -17,28 +16,31 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.responses import RedirectResponse, StreamingResponse
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
     start_as_current_span,
 )
-from opentelemetry.context import attach
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.propagate import get_global_textmap
 from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
-from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi.config import ApplicationConfig, OIDCConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
+from blueapi.service.authentication import Fedid, build_access_token_check
+from blueapi.service.middleware import (
+    ObservabilityContextPropagator,
+    VersionHeaders,
+)
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
+from .authorization import OpaClient, validate_tiled_config
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -57,38 +59,10 @@ from .model import (
 )
 from .runner import WorkerDispatcher
 
-#: API version to publish in OpenAPI schema
-REST_API_VERSION = "1.1.2"
-
-LICENSE_INFO: dict[str, str] = {
-    "name": "Apache 2.0",
-    "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
-}
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
-CONTEXT_HEADER = "traceparent"
-VENDOR_CONTEXT_HEADER = "tracestate"
-AUTHORIZAITON_HEADER = "authorization"
-PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
-DOCS_ENDPOINT = "/docs"
-
-
-class Tag(str, Enum):
-    TASK = "Task"
-    PLAN = "Plan"
-    DEVICE = "Device"
-    ENV = "Environment"
-    META = "Meta"
-
-
-TAG_METADATA: list[dict[str, str]] = [
-    {"name": Tag.TASK, "description": "Endpoints related to tasks"},
-    {"name": Tag.PLAN, "description": "Endpoints to get plans"},
-    {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
-    {"name": Tag.ENV, "description": "Endpoints related to server environment"},
-    {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
-]
+TRACER = get_tracer("interface")
 
 
 def _runner() -> WorkerDispatcher:
@@ -120,40 +94,47 @@ def teardown_runner():
 def lifespan(config: ApplicationConfig):
     @asynccontextmanager
     async def inner(app: FastAPI):
+        meta = config.env.metadata
         setup_runner(config)
-        yield
+        async with OpaClient.for_config(meta and meta.instrument, config.opa) as opa:
+            app.state.authz = opa
+            await validate_tiled_config(config.tiled.authentication, config.oidc, opa)
+            yield
         teardown_runner()
 
     return inner
 
 
-secure_router = APIRouter()
 open_router = APIRouter()
+secure_router = APIRouter(deprecated=True)
+secure_router_v1 = APIRouter(prefix="/api/v1")
 
 
 def get_app(config: ApplicationConfig):
     app = FastAPI(
-        docs_url=DOCS_ENDPOINT,
+        docs_url=ApplicationConfig.DOCS_ENDPOINT,
         title="BlueAPI Control",
         summary="BlueAPI wraps bluesky plans and devices and "
         "exposes endpoints to send commands/receive data",
         lifespan=lifespan(config),
-        version=REST_API_VERSION,
-        license_info=LICENSE_INFO,
-        openapi_tags=TAG_METADATA,
+        version=ApplicationConfig.REST_API_VERSION,
+        license_info=ApplicationConfig.LICENSE_INFO,
+        openapi_tags=ApplicationConfig.TAG_METADATA,
     )
     dependencies = []
     if config.oidc:
-        dependencies.append(Depends(verify_access_token(config.oidc)))
+        dependencies.append(Depends(build_access_token_check(config.oidc)))
         app.swagger_ui_init_oauth = {
             "clientId": "NOT_SUPPORTED",
         }
     app.include_router(open_router)
+    app.include_router(secure_router_v1, dependencies=dependencies)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
-    app.middleware("http")(add_api_version_header)
-    app.middleware("http")(inject_propagated_observability_context)
+
+    app.add_middleware(ObservabilityContextPropagator)
+    app.add_middleware(VersionHeaders)
     app.middleware("http")(log_request_details)
     if config.api.cors:
         app.add_middleware(
@@ -164,31 +145,6 @@ def get_app(config: ApplicationConfig):
             allow_headers=config.api.cors.allow_headers,
         )
     return app
-
-
-def verify_access_token(config: OIDCConfig):
-    jwkclient = jwt.PyJWKClient(config.jwks_uri)
-    oauth_scheme = OAuth2AuthorizationCodeBearer(
-        authorizationUrl=config.authorization_endpoint,
-        tokenUrl=config.token_endpoint,
-        refreshUrl=config.token_endpoint,
-    )
-
-    def inner(access_token: str = Depends(oauth_scheme)):
-        signing_key = jwkclient.get_signing_key_from_jwt(access_token)
-        jwt.decode(
-            access_token,
-            signing_key.key,
-            algorithms=config.id_token_signing_alg_values_supported,
-            verify=True,
-            audience=config.client_audience,
-            issuer=config.issuer,
-        )
-
-    return inner
-
-
-TRACER = get_tracer("interface")
 
 
 async def on_key_error_404(_: Request, __: Exception):
@@ -210,10 +166,12 @@ async def on_token_error_401(_: Request, __: Exception):
 def root_redirect() -> RedirectResponse:
     """Redirect to docs url"""
     return RedirectResponse(
-        status_code=status.HTTP_307_TEMPORARY_REDIRECT, url=DOCS_ENDPOINT
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+        url=ApplicationConfig.DOCS_ENDPOINT,
     )
 
 
+@secure_router_v1.get("/environment", tags=[Tag.ENV])
 @secure_router.get("/environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER, "runner")
 def get_environment(
@@ -223,6 +181,7 @@ def get_environment(
     return runner.state
 
 
+@secure_router_v1.delete("/environment", tags=[Tag.ENV])
 @secure_router.delete("/environment", tags=[Tag.ENV])
 async def delete_environment(
     background_tasks: BackgroundTasks,
@@ -253,6 +212,7 @@ def get_oidc_config(
     return config
 
 
+@secure_router_v1.get("/plans", tags=[Tag.PLAN])
 @secure_router.get("/plans", tags=[Tag.PLAN])
 @start_as_current_span(TRACER)
 def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResponse:
@@ -261,6 +221,7 @@ def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResp
     return PlanResponse(plans=plans)
 
 
+@secure_router_v1.get("/plans/{name}", tags=[Tag.PLAN])
 @secure_router.get("/plans/{name}", tags=[Tag.PLAN])
 @start_as_current_span(TRACER, "name")
 def get_plan_by_name(
@@ -270,6 +231,7 @@ def get_plan_by_name(
     return runner.run(interface.get_plan, name)
 
 
+@secure_router_v1.get("/devices", tags=[Tag.DEVICE])
 @secure_router.get("/devices", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER)
 def get_devices(
@@ -280,6 +242,7 @@ def get_devices(
     return DeviceResponse(devices=devices)
 
 
+@secure_router_v1.get("/devices/{name}", tags=[Tag.DEVICE])
 @secure_router.get("/devices/{name}", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER, "name")
 def get_device_by_name(
@@ -296,6 +259,7 @@ example_task_request = TaskRequest(
 )
 
 
+@secure_router_v1.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @secure_router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @start_as_current_span(
     TRACER,
@@ -309,10 +273,12 @@ def submit_task(
     response: Response,
     task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    user: Fedid,
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        task_id: str = runner.run(interface.submit_task, task_request)
+        user = user or "Unknown"
+        task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
@@ -329,12 +295,16 @@ def submit_task(
             for err in e.errors()
         ]
 
+        LOGGER.info("Error submitting task: %s - %s", task_request, e)
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=errors,
         ) from e
 
 
+@secure_router_v1.delete(
+    "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
+)
 @secure_router.delete(
     "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
 )
@@ -346,41 +316,26 @@ def delete_submitted_task(
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
-@start_as_current_span(TRACER, "v")
-def validate_task_status(v: str) -> TaskStatusEnum:
-    v_upper = v.upper()
-    if v_upper not in TaskStatusEnum.__members__:
-        raise ValueError("Invalid status query parameter")
-    return TaskStatusEnum(v_upper)
-
-
+@secure_router_v1.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
 def get_tasks(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    task_status: str | SkipJsonSchema[None] = None,
+    task_status: TaskStatusEnum | None = None,
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
-    The status of a newly created task is 'unstarted'.
+    The status of a newly created task is PENDING.
     """
-    tasks = []
-    if task_status:
-        add_span_attributes({"status": task_status})
-        try:
-            desired_status = validate_task_status(task_status)
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid status query parameter",
-            ) from e
-
-        tasks = runner.run(interface.get_tasks_by_status, desired_status)
-    else:
-        tasks = runner.run(interface.get_tasks)
+    tasks = runner.run(interface.get_tasks, task_status)
     return TasksListResponse(tasks=tasks)
 
 
+@secure_router_v1.put(
+    "/worker/task",
+    responses={status.HTTP_409_CONFLICT: {}},
+    tags=[Tag.TASK],
+)
 @secure_router.put(
     "/worker/task",
     responses={status.HTTP_409_CONFLICT: {}},
@@ -411,10 +366,11 @@ def get_passthrough_headers(request: Request) -> dict[str, str]:
     return {
         key: value
         for key, value in request.headers.items()
-        if key.casefold() in PROPAGATED_HEADERS
+        if key.casefold() in ApplicationConfig.PROPAGATED_HEADERS
     }
 
 
+@secure_router_v1.get("/tasks/{task_id}", tags=[Tag.TASK])
 @secure_router.get("/tasks/{task_id}", tags=[Tag.TASK])
 @start_as_current_span(TRACER, "task_id")
 def get_task(
@@ -428,6 +384,10 @@ def get_task(
     return task
 
 
+@secure_router_v1.get(
+    "/worker/task",
+    tags=[Tag.TASK],
+)
 @secure_router.get(
     "/worker/task",
     tags=[Tag.TASK],
@@ -441,6 +401,10 @@ def get_active_task(
     return WorkerTask(task_id=task_id)
 
 
+@secure_router_v1.get(
+    "/worker/state",
+    tags=[Tag.TASK],
+)
 @secure_router.get(
     "/worker/state",
     tags=[Tag.TASK],
@@ -466,6 +430,15 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 }
 
 
+@secure_router_v1.put(
+    "/worker/state",
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {},
+        status.HTTP_202_ACCEPTED: {},
+    },
+    tags=[Tag.TASK],
+)
 @secure_router.put(
     "/worker/state",
     status_code=status.HTTP_202_ACCEPTED,
@@ -516,14 +489,24 @@ def set_state(
                     state_change_request.new_state is WorkerState.ABORTING,
                     state_change_request.reason,
                 )
-            except TransitionError:
-                response.status_code = status.HTTP_400_BAD_REQUEST
+            except TransitionError as e:
+                suffix = f" - {e}" if str(e) else ""
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Error while transitioning from {current_state} "
+                        f"to {new_state}{suffix}"
+                    ),
+                ) from e
     else:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(f"Cannot transition from {current_state} to {new_state}"),
+        )
     return runner.run(interface.get_worker_state)
 
 
+@secure_router_v1.get("/python_environment", tags=[Tag.ENV])
 @secure_router.get("/python_environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER)
 def get_python_environment(
@@ -545,6 +528,7 @@ def health_probe() -> HealthProbeResponse:
     return HealthProbeResponse(status=Health.OK)
 
 
+@secure_router_v1.get("/logout", include_in_schema=False)
 @secure_router.get("/logout", include_in_schema=False)
 def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     """Redirect to logout url"""
@@ -587,39 +571,25 @@ def start(config: ApplicationConfig):
     )
 
 
-async def add_api_version_header(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-):
-    response = await call_next(request)
-    response.headers["X-API-Version"] = REST_API_VERSION
-    return response
-
-
 async def log_request_details(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
 ) -> Response:
-    msg = f"method: {request.method} url: {request.url} body: {await request.body()}"
-    if request.url.path == "/healthz":
-        LOGGER.debug(msg)
-    else:
-        LOGGER.info(msg)
+    """Middleware to log request's host, method, path, status and request and
+    body
+
+    Logs GET as debug, all else as info."""
+    log = LOGGER.debug if request.method == "GET" else LOGGER.info
+    request_body = await request.body()
+    client = request.client or Address("Unknown", -1)
+    log_message = f"{client.host}:{client.port} {request.method} {request.url.path}"
+    extra = {
+        "request_body": request_body,
+    }
+    if request.method != "GET":
+        log(log_message, extra=extra)
+
     response = await call_next(request)
-    return response
+    log_message += f" {response.status_code}"
+    log(log_message, extra=extra)
 
-
-async def inject_propagated_observability_context(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    """Middleware to extract any propagated observability context from the
-    HTTP headers and attach it to the local one.
-    """
-    headers = request.headers
-    if CONTEXT_HEADER in headers:
-        carrier = {CONTEXT_HEADER: headers[CONTEXT_HEADER]}
-        if VENDOR_CONTEXT_HEADER in headers:
-            carrier[VENDOR_CONTEXT_HEADER] = headers[VENDOR_CONTEXT_HEADER]
-        ctx = get_global_textmap().extract(carrier)
-
-        attach(ctx)
-    response = await call_next(request)
     return response

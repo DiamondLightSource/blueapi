@@ -1,28 +1,35 @@
+import logging
 import os
 import re
 import textwrap
 from collections.abc import Mapping
-from enum import Enum
+from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Annotated, Any, Generic, Literal, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Generic, Literal, Self, TypeVar, cast
 
 import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
+    AliasChoices,
     AnyUrl,
     BaseModel,
     Field,
     HttpUrl,
+    SecretStr,
     TypeAdapter,
     UrlConstraints,
     ValidationError,
     field_validator,
+    model_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+
+LOGGER = logging.getLogger(__name__)
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -43,10 +50,8 @@ yaml.Loader.add_implicit_resolver("!expand", re.compile(r".*\$.*"), None)
 yaml.Loader.add_constructor("!expand", _expand_env)
 
 
-class SourceKind(str, Enum):
+class SourceKind(StrEnum):
     PLAN_FUNCTIONS = "planFunctions"
-    DEVICE_FUNCTIONS = "deviceFunctions"
-    DODAL = "dodal"
     DEVICE_MANAGER = "deviceManager"
 
 
@@ -60,19 +65,6 @@ class PlanSource(Source):
     )
 
 
-class DeviceSource(Source):
-    kind: Literal[SourceKind.DEVICE_FUNCTIONS] = Field(
-        SourceKind.DEVICE_FUNCTIONS, init=False
-    )
-
-
-class DodalSource(Source):
-    kind: Literal[SourceKind.DODAL] = Field(SourceKind.DODAL, init=False)
-    mock: bool = Field(
-        description="If true, ophyd_async device connections are mocked", default=False
-    )
-
-
 class DeviceManagerSource(Source):
     kind: Literal[SourceKind.DEVICE_MANAGER] = Field(
         SourceKind.DEVICE_MANAGER, init=False
@@ -81,7 +73,9 @@ class DeviceManagerSource(Source):
         description="If true, ophyd_async device connections are mocked", default=False
     )
     name: str = Field(
-        default="devices", description="Name of the device manager in the module"
+        default="devices",
+        description="Name of the device manager in the module",
+        exclude_if=lambda v: v == "devices",
     )
 
 
@@ -106,13 +100,26 @@ class StompConfig(BlueapiBaseModel):
     )
 
 
+class ServiceAccount(BlueapiBaseModel):
+    client_id: str = Field(description="Service account client ID", default="")
+    client_secret: SecretStr = Field(
+        description="Service account client secret", default=SecretStr("")
+    )
+    token_url: SkipJsonSchema[str] = Field(
+        description="Field overridden by OIDCConfig.token_endpoint", default=""
+    )
+
+
 class TiledConfig(BlueapiBaseModel):
     enabled: bool = Field(
         description="True if blueapi should forward data to a Tiled instance",
         default=False,
     )
     url: HttpUrl = HttpUrl("http://localhost:8407")
-    api_key: str | None = os.environ.get("TILED_SINGLE_USER_API_KEY", None)
+    authentication: str | ServiceAccount | None = Field(
+        description="Tiled Authentication can be API_KEY or OIDC Service account",
+        default=os.environ.get("TILED_SINGLE_USER_API_KEY", None),
+    )
 
 
 class WorkerEventConfig(BlueapiBaseModel):
@@ -134,13 +141,10 @@ class EnvironmentConfig(BlueapiBaseModel):
 
     sources: list[
         Annotated[
-            PlanSource | DeviceSource | DodalSource | DeviceManagerSource,
+            PlanSource | DeviceManagerSource,
             Field(discriminator="kind"),
         ]
-    ] = [
-        PlanSource(module="dodal.plans"),
-        PlanSource(module="dodal.plan_stubs.wrapped"),
-    ]
+    ] = Field(default=[])
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
     metadata: MetadataConfig | None = Field(default=None)
 
@@ -176,6 +180,18 @@ class ScratchRepository(BlueapiBaseModel):
         description="URL to clone from",
         default="https://github.com/example/example.git",
     )
+    target_revision: str | SkipJsonSchema[None] = Field(
+        description=(
+            "Revision (branch or tag) to check out when cloning - defaults to "
+            "remote's HEAD. If a tag is used, the repo will be left in a "
+            "'detached head' state."
+        ),
+        validation_alias=AliasChoices("branch", "tag", "target_revision"),
+        exclude_if=lambda f: f is None,
+        # using default_factory instead of default means the schema doesn't
+        # include an invalid value
+        default_factory=lambda: None,
+    )
 
     @field_validator("remote_url")
     @classmethod
@@ -206,18 +222,47 @@ class ScratchConfig(BlueapiBaseModel):
 
 
 class OIDCConfig(BlueapiBaseModel):
-    well_known_url: str = Field(
-        description="URL to fetch OIDC config from the provider"
+    well_known_url: str | None = Field(
+        description="URL to fetch OIDC config from the provider",
+        deprecated=True,
+        default=None,
     )
+    issuer: str | None = Field(description="URL of OIDC provider", default=None)
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
     logout_redirect_endpoint: str = Field(
         description="The oidc endpoint required to logout", default=""
     )
 
+    @model_validator(mode="after")
+    def check_urls(self) -> Self:
+        if self.issuer is None and self.well_known_url is None:
+            raise ValueError("Please provide 'OIDCConfig.issuer'")
+        if self.well_known_url:
+            LOGGER.warning(
+                DeprecationWarning(
+                    "OIDCConfig.well_known_url is deprecated, "
+                    "Please use OIDCConfig.issuer"
+                ),
+            )
+        return self
+
+    @cached_property
+    def _well_known_url(self) -> str:
+        if self.issuer:
+            if self.well_known_url:
+                LOGGER.warning(
+                    DeprecationWarning(
+                        "well_known_url and issuer are both set. "
+                        "Defaulting to issuer URL"
+                    ),
+                )
+            return self.issuer + "/.well-known/openid-configuration"
+        return cast(str, self.well_known_url)
+
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
-        response: requests.Response = requests.get(self.well_known_url)
+        response = requests.get(self._well_known_url)
         response.raise_for_status()
         return response.json()
 
@@ -230,10 +275,6 @@ class OIDCConfig(BlueapiBaseModel):
     @cached_property
     def token_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("token_endpoint"))
-
-    @cached_property
-    def issuer(self) -> str:
-        return cast(str, self._config_from_oidc_url.get("issuer"))
 
     @cached_property
     def authorization_endpoint(self) -> str:
@@ -260,11 +301,49 @@ class NumtrackerConfig(BlueapiBaseModel):
     detector_file_template: str = "{instrument}-{scan_id}-{device_name}"
 
 
+class Tag(StrEnum):
+    TASK = "Task"
+    PLAN = "Plan"
+    DEVICE = "Device"
+    ENV = "Environment"
+    META = "Meta"
+
+
+class OpaConfig(BlueapiBaseModel):
+    root: HttpUrl = HttpUrl("http://localhost:8181")
+    audience: str = "account"
+    tiled_service_account_check: str
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
     config tree.
     """
+
+    #: API version to publish in OpenAPI schema
+    REST_API_VERSION: ClassVar[str] = "1.4.1"
+
+    LICENSE_INFO: ClassVar[dict[str, str]] = {
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    }
+    CONTEXT_HEADER: ClassVar[str] = "traceparent"
+    VENDOR_CONTEXT_HEADER: ClassVar[str] = "tracestate"
+    AUTHORIZAITON_HEADER: ClassVar[str] = "authorization"
+    PROPAGATED_HEADERS: ClassVar[set[str]] = {
+        CONTEXT_HEADER,
+        VENDOR_CONTEXT_HEADER,
+        AUTHORIZAITON_HEADER,
+    }
+    DOCS_ENDPOINT: ClassVar[str] = "/docs"
+    TAG_METADATA: ClassVar[list[dict[str, str]]] = [
+        {"name": Tag.TASK, "description": "Endpoints related to tasks"},
+        {"name": Tag.PLAN, "description": "Endpoints to get plans"},
+        {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
+        {"name": Tag.ENV, "description": "Endpoints related to server environment"},
+        {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
+    ]
 
     stomp: StompConfig = Field(default_factory=StompConfig)
     tiled: TiledConfig = Field(default_factory=TiledConfig)
@@ -275,14 +354,21 @@ class ApplicationConfig(BlueapiBaseModel):
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
     numtracker: NumtrackerConfig | None = None
+    opa: OpaConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):
             return (
                 (self.stomp == other.stomp)
+                & (self.tiled == other.tiled)
                 & (self.env == other.env)
                 & (self.logging == other.logging)
                 & (self.api == other.api)
+                & (self.scratch == other.scratch)
+                & (self.oidc == other.oidc)
+                & (self.auth_token_path == other.auth_token_path)
+                & (self.numtracker == other.numtracker)
+                & (self.opa == other.opa)
             )
         return False
 
@@ -326,9 +412,9 @@ class ConfigLoader(Generic[C]):
 
         recursively_update_map(self._values, values)
 
-    def use_values_from_yaml(self, path: Path) -> None:
+    def use_values_from_yaml(self, *paths: Path) -> None:
         """
-        Use all values provided in a YAML/JSON file in the
+        Use all values provided in a YAML/JSON files in the
         config, override any defaults and values set by
         previous calls into this class.
 
@@ -336,9 +422,9 @@ class ConfigLoader(Generic[C]):
             path (Path): Path to YAML/JSON file
         """
 
-        with path.open("r") as stream:
-            values = yaml.load(stream, yaml.Loader)
-        self.use_values(values)
+        for path in paths:
+            with path.open("r") as stream:
+                self.use_values(yaml.load(stream, yaml.Loader))
 
     def load(self) -> C:
         """
@@ -398,5 +484,5 @@ def generate_config_schema() -> dict[str, Any]:
             return json_schema
 
     return ApplicationConfig.model_json_schema(
-        schema_generator=_GenerateJsonSchema, ref_template="{model}"
+        by_alias=False, schema_generator=_GenerateJsonSchema, ref_template="{model}"
     )

@@ -1,4 +1,3 @@
-import importlib
 import json
 import os
 import uuid
@@ -8,6 +7,7 @@ from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, TypeVar
+from unittest import mock
 from unittest.mock import Mock, patch
 
 import pytest
@@ -17,7 +17,6 @@ from bluesky.protocols import Movable
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import MessageTopic
 from click.testing import CliRunner
-from opentelemetry import trace
 from ophyd_async.core import AsyncStatus
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError
@@ -25,7 +24,7 @@ from responses import matchers
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
-from blueapi.cli.cli import main
+from blueapi.cli.cli import ParametersType, main
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.client.rest import (
@@ -52,19 +51,14 @@ from blueapi.service.model import (
     TaskRequest,
     TaskResponse,
 )
-from blueapi.worker.event import ProgressEvent, TaskStatus, WorkerEvent, WorkerState
-
-
-@pytest.fixture(autouse=True)
-def reload_opentelemetry_trace_after_tests():
-    """Reload opentelemetry.trace after running each test.
-
-    OpenTelemetry only allows one global TracerProvider, however most cli entry-points
-    overwrite this to set up tracing. As OpenTelemetry does not have any functions to
-    aid testing, the library init has to be reloaded after each test to avoid errors.
-    """
-    yield
-    importlib.reload(trace)
+from blueapi.worker.event import (
+    ProgressEvent,
+    TaskError,
+    TaskResult,
+    TaskStatus,
+    WorkerEvent,
+    WorkerState,
+)
 
 
 @pytest.fixture
@@ -110,7 +104,7 @@ def test_runs_with_umask_002(
     mock_umask.assert_called_once_with(0o002)
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_connection_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
@@ -120,23 +114,21 @@ def test_connection_error_caught_by_wrapper_func(
     assert result.output == "Error: Failed to establish connection to blueapi server.\n"
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_authentication_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
-    mock_requests.side_effect = BlueskyRemoteControlError("<Response [401]>")
+    mock_requests.side_effect = UnauthorisedAccessError(message="<Response [401]>")
     result = runner.invoke(main, ["controller", "plans"])
-
     assert (
         result.output
         == "Error: Access denied. Please check your login status and try again.\n"
     )
 
 
-@patch("requests.request")
+@patch("blueapi.client.rest.requests.Session.request")
 def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
     mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
-
     result = runner.invoke(main, ["controller", "plans"])
     assert (
         isinstance(result.exception, BlueskyRemoteControlError)
@@ -198,15 +190,15 @@ def test_invalid_config_path_handling(runner: CliRunner):
     assert result.exit_code == 1
 
 
-@patch("blueapi.cli.cli.BlueapiClient.get_plans")
+@patch("blueapi.cli.cli.BlueapiClient.plans")
 @patch("blueapi.cli.cli.OutputFormat.FULL.display")
 def test_options_via_env(mock_display, mock_plans, runner: CliRunner):
     result = runner.invoke(
         main, args=["controller", "plans"], env={"BLUEAPI_CONTROLLER_OUTPUT": "full"}
     )
 
-    mock_plans.assert_called_once_with()
-    mock_display.assert_called_once_with(mock_plans.return_value)
+    mock_plans.__iter__.assert_called_once_with()
+    mock_display.assert_called_once_with(PlanResponse(plans=list(mock_plans)))
     assert result.exit_code == 0
 
 
@@ -302,7 +294,10 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             WorkerEvent(
                 state=WorkerState.RUNNING,
                 task_status=TaskStatus(
-                    task_id=task_id, task_complete=False, task_failed=False
+                    task_id=task_id,
+                    task_complete=False,
+                    task_failed=False,
+                    result=None,
                 ),
             ),
             ctx,
@@ -313,7 +308,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id=task_id, task_complete=False, task_failed=False
+                    task_id=task_id, task_complete=False, task_failed=False, result=None
                 ),
             ),
             ctx,
@@ -322,7 +317,10 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id=task_id, task_complete=True, task_failed=False
+                    task_id=task_id,
+                    task_complete=True,
+                    task_failed=False,
+                    result=TaskResult(result=None, type="NoneType"),
                 ),
             ),
             ctx,
@@ -349,6 +347,50 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
     assert result.exit_code == 0
     assert submit_response.call_count == 1
     assert run_response.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "result,failed,message",
+    [
+        (TaskResult(result=None, type="NoneType"), False, "Plan succeeded\n"),
+        (TaskResult(result=32, type="int"), False, "Plan succeeded: 32\n"),
+        (
+            TaskResult(result=None, type="CustomType"),
+            False,
+            "Plan returned unserializable result of type 'CustomType'\n",
+        ),
+        (
+            TaskError(type="ValueError", message="Error with value"),
+            True,
+            "Plan failed: ValueError: Error with value\n",
+        ),
+    ],
+)
+@patch("blueapi.cli.cli.BlueapiClient")
+def test_run_plan_feedback(
+    mock_client: Mock,
+    runner: CliRunner,
+    result: TaskResult | TaskError | None,
+    failed: bool,
+    message: str,
+):
+    bc = mock_client.from_config()
+    bc.run_task.return_value = TaskStatus(
+        task_id="foo_bar",
+        task_complete=True,
+        task_failed=failed,
+        result=result,
+    )
+    res = runner.invoke(
+        main,
+        ["controller", "run", "-i", "cm12345-1", "name"],
+    )
+    bc.run_task.assert_called_once_with(
+        TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
+        on_event=mock.ANY,
+    )
+    assert res.exit_code == 0
+    assert res.stdout == message
 
 
 @responses.activate
@@ -493,9 +535,7 @@ def test_valid_stomp_config_for_listener(
 
 
 @responses.activate
-def test_get_env(
-    runner: CliRunner,
-):
+def test_get_env(runner: CliRunner):
     environment_id = uuid.uuid4()
     responses.add(
         responses.GET,
@@ -512,6 +552,17 @@ def test_get_env(
         "initialized=True "
         "error_message=None\n"
     )
+
+
+@responses.activate
+def test_get_state(runner: CliRunner):
+    responses.add(
+        responses.GET, "http://localhost:8000/worker/state", json="IDLE", status=200
+    )
+    state = runner.invoke(main, ["controller", "state"])
+    print(state.stderr)
+    assert state.exit_code == 0
+    assert state.output == "IDLE\n"
 
 
 @responses.activate(assert_all_requests_are_fired=True)
@@ -648,7 +699,10 @@ def test_env_reload_server_side_error(runner: CliRunner):
     "exception, error_message",
     [
         (UnknownPlanError(), "Error: Plan 'sleep' was not recognised\n"),
-        (UnauthorisedAccessError(), "Error: Unauthorised request\n"),
+        (
+            UnauthorisedAccessError(),
+            "Error: Access denied. Please check your login status and try again.\n",
+        ),
         (
             InvalidParametersError(
                 errors=[
@@ -664,11 +718,15 @@ def test_env_reload_server_side_error(runner: CliRunner):
         ),
         (
             BlueskyRemoteControlError("Server error"),
-            "Error: server error with this message: Server error\n",
+            "Error: Remote control error: Server error\n",
         ),
         (
             ValueError("Error parsing parameters"),
             "Error: task could not run: Error parsing parameters\n",
+        ),
+        (
+            BlueskyStreamingError("streaming failed"),
+            "Error: Streaming error: streaming failed\n",
         ),
     ],
     ids=[
@@ -677,6 +735,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
         "invalid_parameters",
         "remote_control",
         "value_error",
+        "streaming_error",
     ],
 )
 def test_error_handling(exception, error_message, runner: CliRunner):
@@ -705,7 +764,7 @@ def test_error_handling(exception, error_message, runner: CliRunner):
     "params, error",
     [
         ("{", "Parameters are not valid JSON"),
-        ("[]", ""),
+        ("[]", "Parameters must be a JSON object with string keys"),
     ],
 )
 def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
@@ -722,8 +781,8 @@ def test_run_task_parsing_errors(params: str, error: str, runner: CliRunner):
             params,
         ],
     )
-    assert result.stderr.startswith("Error: " + error)
-    assert result.exit_code == 1
+    assert error in result.stderr
+    assert result.exit_code == 2
 
 
 def test_device_output_formatting():
@@ -897,7 +956,9 @@ def test_event_formatting():
     )
     worker = WorkerEvent(
         state=WorkerState.RUNNING,
-        task_status=TaskStatus(task_id="count", task_complete=False, task_failed=False),
+        task_status=TaskStatus(
+            task_id="count", task_complete=False, task_failed=False, result=None
+        ),
         errors=[],
         warnings=[],
     )
@@ -929,9 +990,12 @@ def test_event_formatting():
         OutputFormat.JSON,
         worker,
         (
-            """{"state": "RUNNING", "task_status": """
-            """{"task_id": "count", "task_complete": false, "task_failed": false}, """
-            """"errors": [], "warnings": []}\n"""
+            '{"state": "RUNNING", "task_status": {'
+            '"task_id": "count", '
+            '"result": null, '
+            '"task_complete": false, '
+            '"task_failed": false'
+            '}, "errors": [], "warnings": []}\n'
         ),
     )
     _assert_matching_formatting(OutputFormat.COMPACT, worker, "Worker Event: RUNNING\n")
@@ -997,7 +1061,22 @@ def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliR
             ScratchRepository(
                 name="dodal",
                 remote_url="https://github.com/DiamondLightSource/dodal.git",
-            )
+            ),
+            ScratchRepository(
+                name="with_target",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo",
+            ),
+            ScratchRepository(
+                name="with_branch",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo_branch",
+            ),
+            ScratchRepository(
+                name="with_tag",
+                remote_url="https://github.com/DiamondLightSource/dodal.git",
+                target_revision="demo_tag",
+            ),
         ],
     )
 
@@ -1025,7 +1104,7 @@ def test_login_success(
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
         assert (
             "Logging in\n"
-            "Please login from this URL:- https://example.com/verify\n"
+            "Please login from this URL:- https://auth.example.com/realms/master/verify\n"
             "Logged in and cached new token\n" == result.output
         )
         assert result.exit_code == 0
@@ -1064,7 +1143,7 @@ def test_login_when_cached_token_decode_fails(
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
         assert (
             "Logging in\n"
-            "Please login from this URL:- https://example.com/verify\n"
+            "Please login from this URL:- https://auth.example.com/realms/master/verify\n"
             "Logged in and cached new token\n" in result.output
         )
         assert result.exit_code == 0
@@ -1077,6 +1156,26 @@ def test_login_with_unauthenticated_server(
 ):
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
     assert "Server is not configured to use authentication!\n" == result.output
+    assert result.exit_code == 0
+
+
+@responses.activate
+def test_invalid_json(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+):
+    response = responses.add(
+        responses.GET,
+        "http://localhost:8000/config/oidc",
+        body="blah blah",
+        status=200,
+    )
+
+    result = runner.invoke(main, ["-c", config_with_auth, "login"])
+
+    assert response.call_count == 1
+    assert "Response does not contain a valid JSON object\n" == result.output
     assert result.exit_code == 0
 
 
@@ -1320,3 +1419,62 @@ def test_config_schema(
             stream.write.assert_called()
     else:
         assert json.loads(result.output) == expected
+
+
+@pytest.mark.parametrize("value,result", [({}, {}), ("{}", {}), (None, None)])
+def test_task_parameter_type(value, result):
+    t = ParametersType()
+    assert t.convert(value, None, None) == result
+
+
+@pytest.mark.parametrize(
+    "flag,level",
+    [("--verbose", "DEBUG"), ("--quiet", "ERROR"), ("-v", "DEBUG"), ("-q", "ERROR")],
+)
+def test_log_level_override(flag: str, level: str, runner: CliRunner):
+    with patch("blueapi.log.logging") as mock_log:
+        runner.invoke(main, [flag])
+        mock_log.getLogger().setLevel.assert_called_once_with(level)
+        mock_log.StreamHandler().setLevel.assert_called_once_with(level)
+
+
+@responses.activate
+def test_host_option(runner: CliRunner):
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        ["--host", "http://override.example.com:5678", "controller", "plans"],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0
+
+
+@responses.activate
+def test_host_overrides_config(runner: CliRunner):
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        [
+            "--host",
+            "http://override.example.com:5678",
+            "--config",
+            config_path,
+            "controller",
+            "plans",
+        ],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0

@@ -5,6 +5,7 @@ FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:resolute AS developer
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     graphviz \
+    tox &&  \
     && apt-get dist-clean
 
 # Install helm for the dev container. This is the recommended

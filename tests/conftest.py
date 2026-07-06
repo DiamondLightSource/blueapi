@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import time
-from collections.abc import Iterable
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, cast
@@ -20,7 +19,6 @@ from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
-from responses.matchers import json_params_matcher
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service.model import Cache
@@ -46,7 +44,7 @@ def run_engine(request):
     return run_engine
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def exporter() -> JsonObjectSpanExporter:
     setup_tracing("test", False)
     exporter = JsonObjectSpanExporter()
@@ -56,18 +54,12 @@ def exporter() -> JsonObjectSpanExporter:
     return exporter
 
 
-@pytest.fixture
-def oidc_url() -> str:
-    return (
-        "https://auth.example.com/realms/master/oidc/.well-known/openid-configuration"
-    )
+ISSUER = "https://auth.example.com/realms/master"
 
 
 @pytest.fixture
-def oidc_config(oidc_url: str) -> OIDCConfig:
-    return OIDCConfig(
-        well_known_url=oidc_url, client_id="blueapi-cli", client_audience="blueapi"
-    )
+def oidc_config() -> OIDCConfig:
+    return OIDCConfig(issuer=ISSUER, client_id="blueapi-cli", client_audience="blueapi")
 
 
 CACHE_FILE = "blueapi_cache"
@@ -88,7 +80,7 @@ def oidc_well_known() -> dict[str, Any]:
         "device_authorization_endpoint": "https://example.com/device_authorization",
         "authorization_endpoint": "https://example.com/authorization",
         "token_endpoint": "https://example.com/token",
-        "issuer": "https://example.com",
+        "issuer": ISSUER,
         "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
         "end_session_endpoint": "https://example.com/end_session",
         "id_token_signing_alg_values_supported": ["RS256"],
@@ -97,7 +89,7 @@ def oidc_well_known() -> dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def json_web_keyset() -> JWK:
-    return JWK.generate(kty="RSA", size=1024, kid="secret", use="sig", alg="RS256")
+    return JWK.generate(kty="RSA", size=2048, kid="secret", use="sig", alg="RS256")
 
 
 @pytest.fixture(scope="session")
@@ -112,6 +104,7 @@ def _make_token(
     rsa_private_key: str,
     jwt_access_token: bool = False,
     valid_audience: bool = True,
+    issuer: str = ISSUER,
 ) -> dict[str, str]:
     now = time.time()
 
@@ -119,7 +112,7 @@ def _make_token(
         "aud": "blueapi" if valid_audience else "invalid_audience",
         "exp": now + expires_in,
         "iat": now + issued_in,
-        "iss": "https://example.com",
+        "iss": issuer,
         "sub": "jd1",
         "name": "Jane Doe",
         "fedid": "jd1",
@@ -244,7 +237,6 @@ def device_code() -> str:
 
 @pytest.fixture
 def mock_authn_server(
-    oidc_url: str,
     oidc_well_known: dict[str, Any],
     oidc_config: OIDCConfig,
     valid_token: dict[str, Any],
@@ -258,7 +250,9 @@ def mock_authn_server(
         json=oidc_config.model_dump(),
     )
     # Fetch well-known OIDC flow URLs from server
-    requests_mock.get(oidc_url, json=oidc_well_known)
+    requests_mock.get(
+        ISSUER + "/.well-known/openid-configuration", json=oidc_well_known
+    )
     # When device flow begins, return a device_code
     requests_mock.post(
         oidc_well_known["device_authorization_endpoint"],
@@ -335,12 +329,9 @@ def mock_jwks_fetch(json_web_keyset: JWK):
     return patch("jwt.PyJWKClient.fetch_data", mock)
 
 
-NOT_CONFIGURED_INSTRUMENT = "p100"
-
-
-@pytest.fixture(scope="module")
-def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
-    query_working = {
+@pytest.fixture
+def nt_query() -> dict[str, str]:
+    return {
         "query": dedent("""
             mutation{
                 scan(
@@ -358,94 +349,11 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             }
             """)
     }
-    query_400 = {
-        "query": dedent("""
-            mutation{
-                scan(
-                    instrument: "p47",
-                    instrumentSession: "ab123"
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """)
-    }
-    query_500 = {
-        "query": dedent("""
-            mutation{
-                scan(
-                    instrument: "p48",
-                    instrumentSession: "ab123"
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """)
-    }
-    query_key_error = {
-        "query": dedent("""
-            mutation{
-                scan(
-                    instrument: "p49",
-                    instrumentSession: "ab123"
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """)
-    }
-    query_200_with_errors = {
-        "query": dedent(f"""
-            mutation{{
-                scan(
-                    instrument: "{NOT_CONFIGURED_INSTRUMENT}",
-                    instrumentSession: "ab123"
-                    ) {{
-                    directory{{
-                        instrumentSession
-                        instrument
-                        path
-                    }}
-                    scanFile
-                    scanNumber
-                }}
-            }}
-            """)
-    }
 
-    response_with_errors = {
-        "data": None,
-        "errors": [
-            {
-                "message": (
-                    "No configuration available for instrument "
-                    f'"{NOT_CONFIGURED_INSTRUMENT}"'
-                ),
-                "locations": [{"line": 3, "column": 5}],
-                "path": ["scan"],
-            }
-        ],
-    }
 
-    working_response = {
+@pytest.fixture
+def nt_response() -> dict[str, Any]:
+    return {
         "data": {
             "scan": {
                 "scanFile": "p46-11",
@@ -458,42 +366,3 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             }
         }
     }
-    empty_response = {}
-
-    with responses.RequestsMock(assert_all_requests_are_fired=False) as requests_mock:
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_working)],
-            status=200,
-            json=working_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_400)],
-            status=400,
-            json=empty_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_500)],
-            status=500,
-            json=empty_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_key_error)],
-            status=200,
-            json=empty_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            "https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_200_with_errors)],
-            status=200,
-            json=response_with_errors,
-        )
-        yield requests_mock

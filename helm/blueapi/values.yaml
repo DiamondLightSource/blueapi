@@ -36,8 +36,7 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext: {} # fsGroup: 2000
 
 securityContext:
   # https://github.com/DiamondLightSource/blueapi/issues/1096
@@ -131,13 +130,18 @@ startupProbe:
 # -- Additional volumes on the output StatefulSet definition.
 # Define volumes from e.g. Secrets, ConfigMaps or the Filesystem
 volumes: []
+#  - name: dls-sw-bl
+#    hostPath:
+#      path: "/dls_sw/i23"
+#      type: Directory
 
 # -- Additional volumeMounts on the output StatefulSet definition.
 # Define how volumes are mounted to the container referenced by using the same name.
-volumeMounts:
-  - name: worker-config
-    mountPath: "/config"
-    readOnly: true
+volumeMounts: []
+#  - name: dls-sw-bl
+#    mountPath: /dls_sw/i23
+#    readOnly: true
+#    mountPropagation: HostToContainer
 
 # -- May be required to run on specific nodes (e.g. the control machine)
 nodeSelector: {}
@@ -163,6 +167,7 @@ extraEnvVars: []
 #       key: tiled_api_key
 
 # -- Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters
+# -- Exclude health probe requests from tracing by default to prevent spamming
 tracing:
   otlp:
     enabled: false
@@ -170,6 +175,8 @@ tracing:
     server:
       host: http://opentelemetry-collector.tracing
       port: 4318
+  fastapi:
+    excludedURLs: "/healthz"
 
 # @schema $ref: config_schema.json
 # -- Config for the worker goes here, will be mounted into a config file
@@ -218,6 +225,8 @@ initContainer:
     enabled: false
     # -- May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release
     existingClaimName: ""
+    # -- Size of persistent volume
+    size: "1Gi"
 
 debug:
   # -- If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance

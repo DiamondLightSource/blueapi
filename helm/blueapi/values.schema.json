@@ -122,6 +122,10 @@
                         "existingClaimName": {
                             "description": "May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release",
                             "type": "string"
+                        },
+                        "size": {
+                            "description": "Size of persistent volume",
+                            "type": "string"
                         }
                     }
                 }
@@ -296,6 +300,14 @@
             "description": "Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters",
             "type": "object",
             "properties": {
+                "fastapi": {
+                    "type": "object",
+                    "properties": {
+                        "excludedURLs": {
+                            "type": "string"
+                        }
+                    }
+                },
                 "otlp": {
                     "type": "object",
                     "properties": {
@@ -322,21 +334,7 @@
         },
         "volumeMounts": {
             "description": "Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name.",
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "mountPath": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "readOnly": {
-                        "type": "boolean"
-                    }
-                }
-            }
+            "type": "array"
         },
         "volumes": {
             "description": "Additional volumes on the output StatefulSet definition. Define volumes from e.g. Secrets, ConfigMaps or the Filesystem",
@@ -535,54 +533,6 @@
             },
             "additionalProperties": false
         },
-        "DeviceSource": {
-            "$id": "DeviceSource",
-            "title": "DeviceSource",
-            "type": "object",
-            "required": [
-                "module"
-            ],
-            "properties": {
-                "kind": {
-                    "title": "Kind",
-                    "default": "deviceFunctions",
-                    "const": "deviceFunctions"
-                },
-                "module": {
-                    "title": "Module",
-                    "description": "Module to be imported",
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
-        },
-        "DodalSource": {
-            "$id": "DodalSource",
-            "title": "DodalSource",
-            "type": "object",
-            "required": [
-                "module"
-            ],
-            "properties": {
-                "kind": {
-                    "title": "Kind",
-                    "default": "dodal",
-                    "const": "dodal"
-                },
-                "mock": {
-                    "title": "Mock",
-                    "description": "If true, ophyd_async device connections are mocked",
-                    "default": false,
-                    "type": "boolean"
-                },
-                "module": {
-                    "title": "Module",
-                    "description": "Module to be imported",
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
-        },
         "EnvironmentConfig": {
             "$id": "EnvironmentConfig",
             "title": "EnvironmentConfig",
@@ -604,27 +554,12 @@
                 },
                 "sources": {
                     "title": "Sources",
-                    "default": [
-                        {
-                            "kind": "planFunctions",
-                            "module": "dodal.plans"
-                        },
-                        {
-                            "kind": "planFunctions",
-                            "module": "dodal.plan_stubs.wrapped"
-                        }
-                    ],
+                    "default": [],
                     "type": "array",
                     "items": {
                         "oneOf": [
                             {
                                 "$ref": "PlanSource"
-                            },
-                            {
-                                "$ref": "DeviceSource"
-                            },
-                            {
-                                "$ref": "DodalSource"
                             },
                             {
                                 "$ref": "DeviceManagerSource"
@@ -724,7 +659,6 @@
             "title": "OIDCConfig",
             "type": "object",
             "required": [
-                "well_known_url",
                 "client_id"
             ],
             "properties": {
@@ -739,6 +673,18 @@
                     "description": "Client ID",
                     "type": "string"
                 },
+                "issuer": {
+                    "title": "Issuer",
+                    "description": "URL of OIDC provider",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
                 "logout_redirect_endpoint": {
                     "title": "Logout Redirect Endpoint",
                     "description": "The oidc endpoint required to logout",
@@ -748,6 +694,41 @@
                 "well_known_url": {
                     "title": "Well Known Url",
                     "description": "URL to fetch OIDC config from the provider",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "OpaConfig": {
+            "$id": "OpaConfig",
+            "title": "OpaConfig",
+            "type": "object",
+            "required": [
+                "tiled_service_account_check"
+            ],
+            "properties": {
+                "audience": {
+                    "title": "Audience",
+                    "default": "account",
+                    "type": "string"
+                },
+                "root": {
+                    "title": "Root",
+                    "default": "http://localhost:8181/",
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1
+                },
+                "tiled_service_account_check": {
+                    "title": "Tiled Service Account Check",
                     "type": "string"
                 }
             },
@@ -851,6 +832,33 @@
                     "description": "URL to clone from",
                     "default": "https://github.com/example/example.git",
                     "type": "string"
+                },
+                "target_revision": {
+                    "title": "Target Revision",
+                    "description": "Revision (branch or tag) to check out when cloning - defaults to remote's HEAD. If a tag is used, the repo will be left in a 'detached head' state.",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "ServiceAccount": {
+            "$id": "ServiceAccount",
+            "title": "ServiceAccount",
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "title": "Client Id",
+                    "description": "Service account client ID",
+                    "default": "",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "title": "Client Secret",
+                    "description": "Service account client secret",
+                    "writeOnly": true,
+                    "default": "",
+                    "type": "string",
+                    "format": "password"
                 }
             },
             "additionalProperties": false
@@ -893,11 +901,15 @@
             "title": "TiledConfig",
             "type": "object",
             "properties": {
-                "api_key": {
-                    "title": "Api Key",
+                "authentication": {
+                    "title": "Authentication",
+                    "description": "Tiled Authentication can be API_KEY or OIDC Service account",
                     "anyOf": [
                         {
                             "type": "string"
+                        },
+                        {
+                            "$ref": "ServiceAccount"
                         },
                         {
                             "type": "null"
@@ -976,6 +988,16 @@
                     "anyOf": [
                         {
                             "$ref": "OIDCConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "opa": {
+                    "anyOf": [
+                        {
+                            "$ref": "OpaConfig"
                         },
                         {
                             "type": "null"

@@ -21,9 +21,10 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | imagePullSecrets | list | `[]` |  |
 | ingress | object | `{"annotations":{},"className":"nginx","enabled":false,"hosts":[{"host":"example.diamond.ac.uk","paths":[{"path":"/","pathType":"Prefix"}]}],"tls":[]}` | Configuring and enabling an ingress allows blueapi to be served at a nicer address, e.g. ixx-blueapi.diamond.ac.uk |
 | ingress.hosts[0] | object | `{"host":"example.diamond.ac.uk","paths":[{"path":"/","pathType":"Prefix"}]}` | Request a host from https://jira.diamond.ac.uk/servicedesk/customer/portal/2/create/91 of the form ixx-blueapi.diamond.ac.uk. Note: pathType: Prefix is required in Diamond's clusters |
-| initContainer | object | `{"enabled":false,"persistentVolume":{"enabled":false,"existingClaimName":""}}` | Configure the initContainer that checks out the scratch configuration repositories |
+| initContainer | object | `{"enabled":false,"persistentVolume":{"enabled":false,"existingClaimName":"","size":"1Gi"}}` | Configure the initContainer that checks out the scratch configuration repositories |
 | initContainer.persistentVolume.enabled | bool | `false` | Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container |
 | initContainer.persistentVolume.existingClaimName | string | `""` | May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release |
+| initContainer.persistentVolume.size | string | `"1Gi"` | Size of persistent volume |
 | initResources | object | `{}` | Override resources for init container. By default copies resources of main container. |
 | livenessProbe | object | `{"failureThreshold":3,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively. This is automatically disabled when in debug mode. |
 | nameOverride | string | `""` |  |
@@ -44,8 +45,8 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | serviceAccount.name | string | `""` |  |
 | startupProbe | object | `{"failureThreshold":5,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | A more lenient livenessProbe to allow the service to start fully. This is automatically disabled when in debug mode. |
 | tolerations | list | `[]` | May be required to run on specific nodes (e.g. the control machine) |
-| tracing | object | `{"otlp":{"enabled":false,"protocol":"http/protobuf","server":{"host":"http://opentelemetry-collector.tracing","port":4318}}}` | Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters |
-| volumeMounts | list | `[{"mountPath":"/config","name":"worker-config","readOnly":true}]` | Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name. |
+| tracing | object | `{"fastapi":{"excludedURLs":"/healthz"},"otlp":{"enabled":false,"protocol":"http/protobuf","server":{"host":"http://opentelemetry-collector.tracing","port":4318}}}` | Exclude health probe requests from tracing by default to prevent spamming |
+| volumeMounts | list | `[]` | Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name. |
 | volumes | list | `[]` | Additional volumes on the output StatefulSet definition. Define volumes from e.g. Secrets, ConfigMaps or the Filesystem |
 | worker | object | `{"api":{"url":"http://0.0.0.0:8000/"},"env":{"sources":[{"kind":"planFunctions","module":"dodal.plans"},{"kind":"planFunctions","module":"dodal.plan_stubs.wrapped"}]},"logging":{"graylog":{"enabled":false,"url":"tcp://graylog-log-target.diamond.ac.uk:12231/"},"level":"INFO"},"scratch":{"repositories":[],"root":"/workspace"},"stomp":{"auth":{"password":"guest","username":"guest"},"enabled":false,"url":"tcp://rabbitmq:61613/"}}` | Config for the worker goes here, will be mounted into a config file |
 | worker.api.url | string | `"http://0.0.0.0:8000/"` | 0.0.0.0 required to allow non-loopback traffic If using hostNetwork, the port must be free on the host |

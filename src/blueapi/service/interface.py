@@ -8,10 +8,11 @@ from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
-from blueapi.config import ApplicationConfig, OIDCConfig, StompConfig
+from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
+from blueapi.service.authentication import TiledAuth
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,
@@ -147,11 +148,15 @@ def get_device(name: str) -> DeviceModel:
     return DeviceModel.from_device(device)
 
 
-def submit_task(task_request: TaskRequest) -> str:
+def submit_task(
+    task_request: TaskRequest, metadata: dict[str, Any] | None = None
+) -> str:
     """Submit a task to be run on begin_task"""
-    metadata: dict[str, Any] = {
-        "instrument_session": task_request.instrument_session,
-    }
+    # Can't default arg to mutable data structure:
+    if metadata is None:
+        metadata = {}
+
+    metadata["instrument_session"] = task_request.instrument_session
     if context().tiled_conf is not None:
         md = config().env.metadata
         # We raise an InvalidConfigError on setting tiled_conf if this isn't set
@@ -182,16 +187,25 @@ def begin_task(
     if nt := active_context.numtracker:
         nt.set_headers(pass_through_headers or {})
 
+    subscribers = []
     if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
-        tiled_client = from_uri(
-            str(tiled_config.url),
-            api_key=tiled_config.api_key,
-            headers=pass_through_headers,
-        )
+        if isinstance(tiled_config.authentication, ServiceAccount):
+            tiled_client = from_uri(
+                str(tiled_config.url),
+                auth=TiledAuth(tiled_auth=tiled_config.authentication),
+            )
+        else:
+            tiled_client = from_uri(
+                str(tiled_config.url),
+                api_key=tiled_config.authentication,
+                headers=pass_through_headers,
+            )
+
         tiled_writer_token = active_context.run_engine.subscribe(
             TiledWriter(tiled_client, batch_size=1)
         )
+        subscribers.append((active_context.run_engine, tiled_writer_token))
 
         def remove_callback_when_task_finished(
             event: WorkerEvent, correlation_id: str | None
@@ -201,21 +215,22 @@ def begin_task(
                 and event.task_status.task_id == task.task_id
                 and event.task_status.task_complete
             ):
-                active_context.run_engine.unsubscribe(tiled_writer_token)
-                active_worker.worker_events.unsubscribe(remove_callback)
+                for channel, token in subscribers:
+                    channel.unsubscribe(token)
 
         remove_callback = active_worker.worker_events.subscribe(
             remove_callback_when_task_finished
         )
+        subscribers.append((active_worker.worker_events, remove_callback))
 
     if task.task_id is not None:
-        active_worker.begin_task(task.task_id)
+        try:
+            active_worker.begin_task(task.task_id)
+        except KeyError:
+            for channel, token in subscribers:
+                channel.unsubscribe(token)
+            raise
     return task
-
-
-def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
-    """Retrieve a list of tasks based on their status."""
-    return worker().get_tasks_by_status(status)
 
 
 def get_active_task() -> TrackableTask | None:
@@ -244,10 +259,10 @@ def cancel_active_task(failure: bool, reason: str | None) -> str:
     return worker().cancel_active_task(failure, reason)
 
 
-def get_tasks() -> list[TrackableTask]:
-    """Return a list of all tasks on the worker,
-    any one of which can be triggered with begin_task"""
-    return worker().get_tasks()
+def get_tasks(status: TaskStatusEnum | None = None) -> list[TrackableTask]:
+    """Retrieve a list of tasks based on their status.
+    Return a list of all tasks on the worker if status is None"""
+    return worker().get_tasks(status)
 
 
 def get_task_by_id(task_id: str) -> TrackableTask | None:

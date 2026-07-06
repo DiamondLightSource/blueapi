@@ -2,20 +2,26 @@ from __future__ import annotations
 
 import base64
 import os
+import threading
 import time
 import webbrowser
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from functools import cached_property
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
+import httpx
 import jwt
 import requests
+from fastapi import Depends, HTTPException, Request
+from fastapi.security.utils import get_authorization_scheme_param
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
+from starlette.status import HTTP_401_UNAUTHORIZED
 
-from blueapi.config import OIDCConfig
+from blueapi.config import OIDCConfig, ServiceAccount
 from blueapi.service.model import Cache
 
 DEFAULT_CACHE_DIR = "~/.cache/"
@@ -45,11 +51,13 @@ class SessionCacheManager(CacheManager):
 
     def save_cache(self, cache: Cache) -> None:
         self.delete_cache()
+        self._create_parent_folder_if_necessary()
         with open(self._file_path, "xb") as token_file:
             token_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
         os.chmod(self._file_path, 0o600)
 
     def load_cache(self) -> Cache:
+        self._create_parent_folder_if_necessary()
         with open(self._file_path, "rb") as cache_file:
             return TypeAdapter(Cache).validate_json(
                 base64.b64decode(cache_file.read()).decode("utf-8")
@@ -69,6 +77,7 @@ class SessionCacheManager(CacheManager):
     def can_access_cache(self) -> bool:
         assert self._token_path
         try:
+            self._create_parent_folder_if_necessary()
             self._token_path.write_text("")
         except IsADirectoryError:
             print("Invalid path: a directory path was provided instead of a file path")
@@ -77,6 +86,9 @@ class SessionCacheManager(CacheManager):
             print(f"Permission denied: Cannot write to {self._token_path.absolute()}")
             return False
         return True
+
+    def _create_parent_folder_if_necessary(self):
+        self._token_path.parent.mkdir(parents=True, exist_ok=True)
 
 
 class SessionManager:
@@ -239,3 +251,90 @@ class JWTAuth(AuthBase):
         if self.token:
             request.headers["Authorization"] = f"Bearer {self.token}"
         return request
+
+
+class TiledAuth(httpx.Auth):
+    def __init__(self, tiled_auth: ServiceAccount):
+        if tiled_auth.token_url == "":
+            raise RuntimeError("Token URL is not set please check oidc config")
+        self._tiled_auth: ServiceAccount = tiled_auth
+        self._sync_lock = threading.RLock()
+
+    def get_access_token(self):
+        with self._sync_lock:
+            response = httpx.post(
+                self._tiled_auth.token_url,
+                data={
+                    "client_id": self._tiled_auth.client_id,
+                    "client_secret": self._tiled_auth.client_secret.get_secret_value(),
+                    "grant_type": "client_credentials",
+                },
+            )
+            response.raise_for_status()
+            return response.json().get("access_token")
+
+    def sync_auth_flow(self, request):
+        request.headers["Authorization"] = f"Bearer {self.get_access_token()}"
+        yield request
+
+
+def unchecked_bearer_token(req: Request) -> str | None:
+    """Get bearer token value from authorization header"""
+    # This is an abridged version of the same feature of
+    # OAuth2AuthorizationCodeBearer from fastapi. Replicating here prevents
+    # passing unused configuration and means the schema does not include auth
+    # details for servers that do not support it.
+    auth = req.headers.get("Authorization")
+    scheme, param = get_authorization_scheme_param(auth)
+    if scheme.casefold() != "bearer":
+        return None
+    return param.strip()
+
+
+UncheckedBearerToken = Annotated[str | None, Depends(unchecked_bearer_token)]
+
+
+def build_access_token_check(config: OIDCConfig):
+    """
+    Create a function to validate the bearer token of requests
+
+    The returned function should be used via fastAPI's 'Depends' mechanism to
+    ensure users are authenticated
+    """
+    jwkclient = jwt.PyJWKClient(config.jwks_uri)
+
+    def validate_bearer_token(request: Request, token: UncheckedBearerToken):
+        """Check that a bearer token is valid and inject into request state"""
+        if not token:
+            raise HTTPException(
+                status_code=HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        signing_key = jwkclient.get_signing_key_from_jwt(token)
+        decoded: dict[str, Any] = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=config.id_token_signing_alg_values_supported,
+            verify=True,
+            audience=config.client_audience,
+            issuer=config.issuer,
+        )
+        request.state.decoded_access_token = decoded
+
+    return validate_bearer_token
+
+
+def access_token(request: Request) -> Mapping[str, Any] | None:
+    """Get the decoded and verified access token of the user making the request"""
+    return getattr(request.state, "decoded_access_token", None)
+
+
+def fedid(
+    access_token: Annotated[Mapping[str, Any] | None, Depends(access_token)],
+) -> str | None:
+    return access_token.get("fedid") if access_token else None
+
+
+Fedid = Annotated[str | None, Depends(fedid)]

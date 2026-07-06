@@ -1,9 +1,9 @@
 # .github/workflows/publish-dispatch.yml
 name: Publish (dispatch)
 on:
-  workflow_call:                    # ci.yml's `publish` job, for every event
+  workflow_call: # ci.yml's `publish` job, for every event
     inputs:
-      version-name: { required: false, default: "", type: string }
+      version-name: {required: false, default: "", type: string}
   # tag re-dispatch + fork-PR preview + manual re-deploy
   workflow_dispatch:
     inputs:
@@ -11,9 +11,14 @@ on:
         description: "Fork PR to approve + preview (empty = re-deploy)"
         required: false
         default: ""
+      retry-until:
+        description: "Internal = epoch-second retry deadline. Don't set manually."
+        required: false
+        default: ""
+
 jobs:
   publish:
-    uses: DiamondLightSource/myst-version-switcher-plugin/.github/workflows/publish.yml@v0.20.0
+    uses: DiamondLightSource/myst-version-switcher-plugin/.github/workflows/publish.yml@v0.22.0
     with:
       # "" on dispatch → pure durable gather
       version-name: ${{ inputs.version-name }}
@@ -21,6 +26,8 @@ jobs:
       pr: ${{ inputs.pr }}
       # the file the tag re-dispatch re-fires
       dispatch-workflow: publish-dispatch.yml
+      # forwarded so the re-dispatch job's auto-retry can re-fire this shim
+      retry-until: ${{ inputs.retry-until }}
     permissions:
       contents: read
       actions: write

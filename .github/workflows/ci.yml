@@ -8,18 +8,17 @@ on:
 
 jobs:
   docs: # Call the docs building workflow directly
-    uses: DiamondLightSource/myst-version-switcher-plugin/.github/workflows/docs.yml@v0.20.0
+    uses: DiamondLightSource/myst-version-switcher-plugin/.github/workflows/docs.yml@v0.22.0
     with:
       # Whatever turns your sources into docs/_build/html at $BASE_URL. uv and Node
       # are preinstalled, so: make docs · tox -e docs · npm ci && npm run docs
-      build-command: |
-        uv run --locked tox -e docs # Build docs
-        rm _build/html/.doctrees/environment.pickle # Remove environment.pickle
+      build-command: tox -e docs
+      html-dir: build/html
 
   release:
     needs: [docs]
     if: github.ref_type == 'tag' # tag pushes only
-    uses: DiamondLightSource/myst-version-switcher-plugin/.github/workflows/release.yml@v0.20.0
+    uses: DiamondLightSource/myst-version-switcher-plugin/.github/workflows/release.yml@v0.22.0
     permissions:
       contents: write # create the Release + attach assets
 

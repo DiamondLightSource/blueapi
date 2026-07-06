@@ -5,6 +5,7 @@ list see the documentation:
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
+import os
 import sys
 from pathlib import Path
 from subprocess import check_output
@@ -131,7 +132,19 @@ copybutton_prompt_is_regexp = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
+
+version_name = os.environ.get("VERSION_NAME", "local")
+
 html_theme = "pydata_sphinx_theme"
+html_theme_options = {
+    "switcher": {
+        "json_url": "https://ORG.github.io/REPO/switcher.json",
+        "version_match": version_name,
+    },
+    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
+    # switcher.json doesn't exist until the first deploy; don't fail the build on it.
+    "check_switcher": False,
+}
 github_repo = "blueapi"
 github_user = "DiamondLightSource"
 switcher_json = f"https://{github_user}.github.io/{github_repo}/switcher.json"

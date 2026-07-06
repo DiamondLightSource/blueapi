@@ -36,6 +36,7 @@ dependencies = [
     "pyjwt[crypto]",
     "tomlkit",
     "graypy>=2.1.0",
+    "prometheus-fastapi-instrumentator>=7.1.0",
     "httpx>=0.28.1",
     "aiohttp>=3.13.5",
 ]

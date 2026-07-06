@@ -26,6 +26,7 @@ from observability_utils.tracing import (
 )
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.trace import get_tracer_provider
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -563,6 +564,9 @@ def start(config: ApplicationConfig):
         http_capture_headers_server_request=[",*"],
         http_capture_headers_server_response=[",*"],
     )
+
+    Instrumentator().instrument(app).expose(app)
+
     app.state.config = config
     assert config.api.url.host is not None, "API URL missing host"
     assert config.api.url.port is not None, "API URL missing port"

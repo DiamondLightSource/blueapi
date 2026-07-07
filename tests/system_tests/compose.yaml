@@ -64,7 +64,6 @@ services:
     network_mode: host # Port 8181
     volumes:
       - "./services/opa_config:/mnt"
-      - "/scratch/ckk43848/authz/policy:/mnt/policy/"
     environment:
       - ISSUER=http://localhost:8081/realms/master
     entrypoint: "sh /mnt/entrypoint.sh"

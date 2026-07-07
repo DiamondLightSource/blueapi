@@ -197,7 +197,7 @@ commands = [
         "--fail-on-warning",
         "--keep-going",
         "docs",
-        "_build/html",
+        "build/html",
         { replace = "posargs", default = [
         ], extend = true },
     ],
@@ -212,7 +212,7 @@ commands = [
         "--watch",
         "README.md",
         "docs",
-        "_build/html",
+        "build/html",
         { replace = "posargs", default = [
         ], extend = true },
     ],

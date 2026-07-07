@@ -2,7 +2,7 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated, Any
+from typing import Annotated
 
 import jwt
 from fastapi import (
@@ -19,27 +19,28 @@ from fastapi import (
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
     start_as_current_span,
 )
-from opentelemetry.context import attach
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.propagate import get_global_textmap
 from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
-from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
-from blueapi import __version__
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface
+from blueapi.service.authentication import Fedid, build_access_token_check
+from blueapi.service.middleware import (
+    ObservabilityContextPropagator,
+    VersionHeaders,
+)
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
+from .authorization import OpaClient, validate_tiled_config
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -61,6 +62,7 @@ from .runner import WorkerDispatcher
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
+TRACER = get_tracer("interface")
 
 
 def _runner() -> WorkerDispatcher:
@@ -92,8 +94,12 @@ def teardown_runner():
 def lifespan(config: ApplicationConfig):
     @asynccontextmanager
     async def inner(app: FastAPI):
+        meta = config.env.metadata
         setup_runner(config)
-        yield
+        async with OpaClient.for_config(meta and meta.instrument, config.opa) as opa:
+            app.state.authz = opa
+            await validate_tiled_config(config.tiled.authentication, config.oidc, opa)
+            yield
         teardown_runner()
 
     return inner
@@ -117,7 +123,7 @@ def get_app(config: ApplicationConfig):
     )
     dependencies = []
     if config.oidc:
-        dependencies.append(Depends(decode_access_token(config.oidc)))
+        dependencies.append(Depends(build_access_token_check(config.oidc)))
         app.swagger_ui_init_oauth = {
             "clientId": "NOT_SUPPORTED",
         }
@@ -126,8 +132,9 @@ def get_app(config: ApplicationConfig):
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
-    app.middleware("http")(add_version_headers)
-    app.middleware("http")(inject_propagated_observability_context)
+
+    app.add_middleware(ObservabilityContextPropagator)
+    app.add_middleware(VersionHeaders)
     app.middleware("http")(log_request_details)
     if config.api.cors:
         app.add_middleware(
@@ -138,32 +145,6 @@ def get_app(config: ApplicationConfig):
             allow_headers=config.api.cors.allow_headers,
         )
     return app
-
-
-def decode_access_token(config: OIDCConfig):
-    jwkclient = jwt.PyJWKClient(config.jwks_uri)
-    oauth_scheme = OAuth2AuthorizationCodeBearer(
-        authorizationUrl=config.authorization_endpoint,
-        tokenUrl=config.token_endpoint,
-        refreshUrl=config.token_endpoint,
-    )
-
-    def inner(request: Request, access_token: str = Depends(oauth_scheme)):
-        signing_key = jwkclient.get_signing_key_from_jwt(access_token)
-        decoded: dict[str, Any] = jwt.decode(
-            access_token,
-            signing_key.key,
-            algorithms=config.id_token_signing_alg_values_supported,
-            verify=True,
-            audience=config.client_audience,
-            issuer=config.issuer,
-        )
-        request.state.decoded_access_token = decoded
-
-    return inner
-
-
-TRACER = get_tracer("interface")
 
 
 async def on_key_error_404(_: Request, __: Exception):
@@ -292,18 +273,11 @@ def submit_task(
     response: Response,
     task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    user: Fedid,
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        # Extract user from jwt if using OIDC (if jwt exists)
-        access_token: dict[str, Any] | None = getattr(
-            request.state, "decoded_access_token", None
-        )
-        if access_token:
-            user: str = access_token.get("fedid", "Unknown")
-        else:
-            user = "Unknown"
-
+        user = user or "Unknown"
         task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
@@ -321,8 +295,9 @@ def submit_task(
             for err in e.errors()
         ]
 
+        LOGGER.info("Error submitting task: %s - %s", task_request, e)
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=errors,
         ) from e
 
@@ -341,38 +316,18 @@ def delete_submitted_task(
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
-@start_as_current_span(TRACER, "v")
-def validate_task_status(v: str) -> TaskStatusEnum:
-    v_upper = v.upper()
-    if v_upper not in TaskStatusEnum.__members__:
-        raise ValueError("Invalid status query parameter")
-    return TaskStatusEnum(v_upper)
-
-
 @secure_router_v1.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
 def get_tasks(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    task_status: str | SkipJsonSchema[None] = None,
+    task_status: TaskStatusEnum | None = None,
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
-    The status of a newly created task is 'unstarted'.
+    The status of a newly created task is PENDING.
     """
-    if task_status:
-        add_span_attributes({"status": task_status})
-        try:
-            desired_status = validate_task_status(task_status)
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid status query parameter",
-            ) from e
-
-        tasks = runner.run(interface.get_tasks_by_status, desired_status)
-    else:
-        tasks = runner.run(interface.get_tasks)
+    tasks = runner.run(interface.get_tasks, task_status)
     return TasksListResponse(tasks=tasks)
 
 
@@ -534,11 +489,20 @@ def set_state(
                     state_change_request.new_state is WorkerState.ABORTING,
                     state_change_request.reason,
                 )
-            except TransitionError:
-                response.status_code = status.HTTP_400_BAD_REQUEST
+            except TransitionError as e:
+                suffix = f" - {e}" if str(e) else ""
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Error while transitioning from {current_state} "
+                        f"to {new_state}{suffix}"
+                    ),
+                ) from e
     else:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(f"Cannot transition from {current_state} to {new_state}"),
+        )
     return runner.run(interface.get_worker_state)
 
 
@@ -607,53 +571,25 @@ def start(config: ApplicationConfig):
     )
 
 
-async def add_version_headers(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-):
-    response = await call_next(request)
-    response.headers["X-API-Version"] = ApplicationConfig.REST_API_VERSION
-    response.headers["X-BlueAPI-Version"] = __version__
-    return response
-
-
 async def log_request_details(
     request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
 ) -> Response:
-    """Middleware to log all request's host, method, path, status and request and
-    body"""
-    log = LOGGER.debug if request.url.path == "/healthz" else LOGGER.info
+    """Middleware to log request's host, method, path, status and request and
+    body
+
+    Logs GET as debug, all else as info."""
+    log = LOGGER.debug if request.method == "GET" else LOGGER.info
     request_body = await request.body()
     client = request.client or Address("Unknown", -1)
     log_message = f"{client.host}:{client.port} {request.method} {request.url.path}"
     extra = {
         "request_body": request_body,
     }
-    log(log_message, extra=extra)
+    if request.method != "GET":
+        log(log_message, extra=extra)
 
     response = await call_next(request)
     log_message += f" {response.status_code}"
     log(log_message, extra=extra)
 
-    return response
-
-
-async def inject_propagated_observability_context(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    """Middleware to extract any propagated observability context from the
-    HTTP headers and attach it to the local one.
-    """
-    headers = request.headers
-    if ApplicationConfig.CONTEXT_HEADER in headers:
-        carrier = {
-            ApplicationConfig.CONTEXT_HEADER: headers[ApplicationConfig.CONTEXT_HEADER]
-        }
-        if ApplicationConfig.VENDOR_CONTEXT_HEADER in headers:
-            carrier[ApplicationConfig.VENDOR_CONTEXT_HEADER] = headers[
-                ApplicationConfig.VENDOR_CONTEXT_HEADER
-            ]
-        ctx = get_global_textmap().extract(carrier)
-
-        attach(ctx)
-    response = await call_next(request)
     return response

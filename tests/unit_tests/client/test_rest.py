@@ -1,3 +1,4 @@
+import json
 import uuid
 from pathlib import Path
 from typing import Any
@@ -7,18 +8,22 @@ import pytest
 import requests
 import responses
 from packaging.version import Version
+from pydantic_core import PydanticSerializationError
 from responses import DELETE, GET, PUT, matchers
 
 from blueapi import __version__
+from blueapi.client.client import DeviceRef
 from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
     InvalidParametersError,
+    NotFoundError,
     ParameterError,
     UnauthorisedAccessError,
     UnknownPlanError,
     _create_task_exceptions,
+    _exception,
 )
 from blueapi.config import OIDCConfig
 from blueapi.service.authentication import SessionCacheManager, SessionManager
@@ -26,6 +31,7 @@ from blueapi.service.model import (
     DeviceModel,
     EnvironmentResponse,
     PlanModel,
+    TaskRequest,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -53,8 +59,9 @@ def rest_with_auth(oidc_config: OIDCConfig, tmp_path) -> BlueapiRestClient:
 @pytest.mark.parametrize(
     "code,expected_exception",
     [
-        (404, KeyError),
-        (401, BlueskyRemoteControlError),
+        (404, NotFoundError),
+        (401, UnauthorisedAccessError),
+        (403, UnauthorisedAccessError),
         (450, BlueskyRemoteControlError),
         (500, BlueskyRemoteControlError),
     ],
@@ -73,13 +80,52 @@ def test_rest_error_code(
         rest.get_plans()
 
 
+def test_create_task_serialization():
+    rest = Mock(spec=BlueapiRestClient)
+    request = TaskRequest(
+        name="demo",
+        instrument_session="cm12345-1",
+        params={"devices": [DeviceRef(name="foo", cache=Mock(), model=Mock())]},
+    )
+
+    BlueapiRestClient.create_task(rest, request)
+
+    rest._request_and_deserialize.assert_called_once_with(
+        "/tasks",
+        TaskResponse,
+        method="POST",
+        get_exception=_create_task_exceptions,
+        data={
+            "name": "demo",
+            "instrument_session": "cm12345-1",
+            "params": {"devices": ["foo"]},
+        },
+    )
+
+
+def test_create_task_serialization_error():
+    class CustomType:
+        pass
+
+    rest = Mock(spec=BlueapiRestClient)
+    request = TaskRequest(
+        name="demo",
+        instrument_session="cm12345-1",
+        params={"devices": [CustomType()]},
+    )
+
+    with pytest.raises(PydanticSerializationError, match="not serializable"):
+        BlueapiRestClient.create_task(rest, request)
+    rest._request_and_deserialize.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "code,content,expected_exception",
     [
         (200, None, None),
-        (401, None, UnauthorisedAccessError()),
-        (403, None, UnauthorisedAccessError()),
-        (404, None, UnknownPlanError()),
+        (401, "", UnauthorisedAccessError(401, "")),
+        (403, "", UnauthorisedAccessError(403, "")),
+        (404, "", UnknownPlanError(404, "")),
         (
             422,
             """{
@@ -101,6 +147,11 @@ def test_rest_error_code(
                 ]
             ),
         ),
+        (
+            422,
+            '{"detail": "not a list"}',
+            BlueskyRequestError(422, ""),
+        ),
         (450, "non-standard", BlueskyRequestError(450, "non-standard")),
         (500, "internal_error", BlueskyRequestError(500, "internal_error")),
     ],
@@ -111,13 +162,30 @@ def test_create_task_exceptions(
     response = Mock(spec=requests.Response)
     response.status_code = code
     response.text = content
-    import json
 
     response.json.side_effect = lambda: json.loads(content) if content else None
     err = _create_task_exceptions(response)
     assert isinstance(err, type(expected_exception))
-    if expected_exception is not None:
-        assert err.args == expected_exception.args
+    if isinstance(expected_exception, InvalidParametersError):
+        assert isinstance(err, InvalidParametersError)
+        assert err.errors == expected_exception.errors
+    elif expected_exception is not None:
+        assert err.args[0] == code
+        if content is not None:
+            assert err.args[1] == content
+
+
+def test_exception_non_json_body_falls_back_to_text():
+    response = Mock(spec=requests.Response)
+    response.status_code = 500
+    response.text = "Internal Server Error"
+    response.json.side_effect = json.JSONDecodeError("Expecting value", "", 0)
+    response.request = Mock()
+    response.request.url = "http://localhost:8000/test"
+    response.content = b"Internal Server Error"
+    err = _exception(response)
+    assert isinstance(err, BlueskyRemoteControlError)
+    assert err.args[1] == "Internal Server Error"
 
 
 def test_auth_request_functionality(
@@ -356,3 +424,10 @@ def test_set_state(
     method = getattr(rest, method_name)
     res = method(*args)
     assert res == result
+
+
+@responses.activate
+def test_get_missing_plan(rest: BlueapiRestClient):
+    responses.add(GET, "http://localhost:8000/plans/foo", status=404)
+    with pytest.raises(UnknownPlanError):
+        rest.get_plan("foo")

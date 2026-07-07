@@ -3,6 +3,7 @@ import logging
 import time
 from collections.abc import Iterable
 from concurrent.futures import Future
+from contextlib import suppress
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
@@ -42,7 +43,13 @@ from blueapi.worker.event import ProgressEvent, TaskError, TaskResult, TaskStatu
 from blueapi.worker.task_worker import TrackableTask
 
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError
+from .rest import (
+    BlueapiRestClient,
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    NotFoundError,
+    ServiceUnavailableError,
+)
 
 TRACER = get_tracer("client")
 
@@ -99,9 +106,8 @@ class DeviceCache:
             self._cache[name] = device
             setattr(self, model.name, device)
             return device
-        except KeyError:
-            pass
-        raise AttributeError(f"No device named '{name}' available")
+        except NotFoundError as e:
+            raise AttributeError(f"No device named '{name}' available") from e
 
     def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):
@@ -115,23 +121,23 @@ class DeviceCache:
         return f"DeviceCache({len(self._cache)} devices)"
 
 
-class DeviceRef(str):
+class DeviceRef:
+    name: str
     model: DeviceModel
     _cache: DeviceCache
 
-    def __new__(cls, name: str, cache: DeviceCache, model: DeviceModel):
-        instance = super().__new__(cls, name)
-        instance.model = model
-        instance._cache = cache
-        return instance
+    def __init__(self, name: str, cache: DeviceCache, model: DeviceModel):
+        self.name = name
+        self.model = model
+        self._cache = cache
 
     def __getattr__(self, name) -> "DeviceRef":
         if name.startswith("_"):
             raise AttributeError(f"No child device named {name}")
-        return self._cache[f"{self}.{name}"]
+        return self._cache[f"{self.name}.{name}"]
 
     def __repr__(self):
-        return f"Device({self})"
+        return f"Device({self.name})"
 
 
 class Plan:
@@ -668,9 +674,18 @@ class BlueapiClient:
             EnvironmentResponse: Details of the new worker
             environment.
         """
-
         try:
             status = self._rest.delete_environment()
+            # clear the cached plans/devices as they may have changed
+            with suppress(AttributeError):
+                del self.plans
+            with suppress(AttributeError):
+                del self.devices
+        except (
+            BlueskyRequestError,
+            ServiceUnavailableError,
+        ):
+            raise
         except Exception as e:
             raise BlueskyRemoteControlError(
                 "Failed to tear down the environment"

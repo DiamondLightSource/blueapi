@@ -9,11 +9,6 @@ import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
-from dodal.common.beamlines.beamline_utils import (
-    clear_path_provider,
-    get_path_provider,
-    set_path_provider,
-)
 from ophyd_async.epics.motor import Motor
 from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
@@ -25,7 +20,6 @@ from blueapi.config import (
     MetadataConfig,
     NumtrackerConfig,
     OIDCConfig,
-    PlanSource,
     ScratchConfig,
     StompConfig,
     TiledConfig,
@@ -44,7 +38,6 @@ from blueapi.service.model import (
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.utils.numtracker import NumtrackerClient
-from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import (
     TaskResult,
     TaskStatus,
@@ -160,16 +153,22 @@ def test_get_devices(context_mock: MagicMock):
     context_mock.return_value = context
 
     assert interface.get_devices() == [
-        DeviceModel(name="my_device", protocols=[ProtocolInfo(name="Stoppable")]),
+        DeviceModel(
+            name="my_device",
+            protocols=[
+                ProtocolInfo(name="Stoppable", types=[]),
+            ],
+        ),
         DeviceModel(
             name="my_axis",
             protocols=[
+                ProtocolInfo(name="Checkable", types=[]),
                 ProtocolInfo(name="Flyable", types=[]),
                 ProtocolInfo(name="Movable", types=[]),
                 ProtocolInfo(name="Readable", types=[]),
                 ProtocolInfo(name="Stageable", types=[]),
                 ProtocolInfo(name="Stoppable", types=[]),
-                ProtocolInfo(name="Subscribable", types=["float"]),
+                ProtocolInfo(name="Subscribable", types=[]),
                 ProtocolInfo(name="Configurable", types=[]),
                 ProtocolInfo(name="Device", types=[]),
             ],
@@ -269,28 +268,32 @@ def test_subscribers_removed_when_task_not_found(
     worker.worker_events.unsubscribe.assert_called_once_with(remove_token)
 
 
-@patch("blueapi.service.interface.TaskWorker.get_tasks_by_status")
-def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
-    pending_task1 = TrackableTask(task_id="0", task=Task(name="pending_task1"))
-    pending_task2 = TrackableTask(task_id="1", task=Task(name="pending_task2"))
-    running_task = TrackableTask(task_id="2", task=Task(name="running_task"))
-
-    def mock_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
-        if status == TaskStatusEnum.PENDING:
-            return [pending_task1, pending_task2]
-        elif status == TaskStatusEnum.RUNNING:
-            return [running_task]
-        else:
-            return []
-
-    get_tasks_by_status_mock.side_effect = mock_tasks_by_status
-
-    assert interface.get_tasks_by_status(TaskStatusEnum.PENDING) == [
-        pending_task1,
-        pending_task2,
+@patch("blueapi.service.interface.TaskWorker.get_tasks")
+def test_get_tasks(get_tasks_mock: MagicMock):
+    running_task = [TrackableTask(task_id="2", task=Task(name="running_task"))]
+    pending_task = [
+        TrackableTask(task_id="0", task=Task(name="pending_task1")),
+        TrackableTask(task_id="1", task=Task(name="pending_task2")),
     ]
-    assert interface.get_tasks_by_status(TaskStatusEnum.RUNNING) == [running_task]
-    assert interface.get_tasks_by_status(TaskStatusEnum.COMPLETE) == []
+
+    def mock_tasks(
+        status: TaskStatusEnum | None = None,
+    ) -> list[TrackableTask]:
+        if status == TaskStatusEnum.PENDING:
+            return pending_task
+        elif status == TaskStatusEnum.RUNNING:
+            return running_task
+        elif status == TaskStatusEnum.COMPLETE:
+            return []
+        else:
+            return pending_task + running_task
+
+    get_tasks_mock.side_effect = mock_tasks
+
+    assert interface.get_tasks(TaskStatusEnum.PENDING) == pending_task
+    assert interface.get_tasks(TaskStatusEnum.RUNNING) == running_task
+    assert interface.get_tasks(TaskStatusEnum.COMPLETE) == []
+    assert interface.get_tasks() == pending_task + running_task
 
 
 @patch("blueapi.service.interface.BlueskyContext.numtracker")
@@ -339,18 +342,6 @@ def test_cancel_active_task(cancel_active_task_mock: MagicMock):
     cancel_active_task_mock.return_value = task_id
     assert interface.cancel_active_task(fail, reason) == task_id
     cancel_active_task_mock.assert_called_once_with(fail, reason)
-
-
-@patch("blueapi.service.interface.TaskWorker.get_tasks")
-def test_get_tasks(get_tasks_mock: MagicMock):
-    tasks = [
-        TrackableTask(task_id="0", task=Task(name="0")),
-        TrackableTask(task_id="1", task=Task(name="1")),
-        TrackableTask(task_id="2", task=Task(name="2")),
-    ]
-    get_tasks_mock.return_value = tasks
-
-    assert interface.get_tasks() == tasks
 
 
 @pytest.mark.parametrize("tiled_enabled", [True, False])
@@ -611,63 +602,6 @@ def test_numtracker_requires_instrument_metadata():
     # Clearing the config here prevents the same exception as above being
     # raised in the ensure_worker_stopped fixture
     interface.set_config(ApplicationConfig())
-
-
-def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
-    conf = ApplicationConfig()
-    mock_provider = Mock()
-    set_path_provider(mock_provider)
-
-    assert get_path_provider() == mock_provider
-    interface.setup(conf)
-    assert get_path_provider() == mock_provider
-
-    clear_path_provider()
-
-
-def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
-    conf = ApplicationConfig()
-    interface.setup(conf)
-
-    with pytest.raises(NameError):
-        get_path_provider()
-
-
-def test_setup_with_numtracker_makes_start_document_provider():
-    conf = ApplicationConfig(
-        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
-        numtracker=NumtrackerConfig(),
-    )
-    interface.setup(conf)
-
-    path_provider = get_path_provider()
-
-    assert isinstance(path_provider, StartDocumentPathProvider)
-
-    clear_path_provider()
-
-
-def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
-    conf = ApplicationConfig(
-        env=EnvironmentConfig(
-            sources=[
-                PlanSource(
-                    module="tests.unit_tests.service.example_beamline_with_path_provider",
-                ),
-            ],
-            metadata=MetadataConfig(instrument="p46"),
-        ),
-        numtracker=NumtrackerConfig(),
-    )
-
-    with pytest.raises(
-        InvalidConfigError,
-        match="Numtracker has been configured but a path provider was imported"
-        " with the devices. Remove this path provider to use numtracker.",
-    ):
-        interface.setup(conf)
-
-    clear_path_provider()
 
 
 @patch("blueapi.utils.numtracker.NumtrackerClient.create_scan")

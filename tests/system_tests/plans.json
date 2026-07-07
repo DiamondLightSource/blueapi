@@ -2,21 +2,31 @@
     "plans": [
         {
             "name": "count",
-            "description": "Reads from a number of devices.\n    Wraps bluesky.plans.count(det, num, delay, md=metadata) exposing only serializable\n    parameters and metadata.\n    ",
+            "description": "Reads from a number of devices.\n\nWraps bluesky.plans.count(det, num, delay, md=metadata) exposing only serializable\nparameters and metadata.\n",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
                     "detectors": {
                         "items": {
-                            "enum": [
-                                "det",
-                                "stage"
-                            ],
-                            "type": "bluesky.protocols.Readable"
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
                         },
                         "title": "Detectors",
-                        "type": "array",
-                        "uniqueItems": true
+                        "type": "array"
                     },
                     "num": {
                         "title": "Num",
@@ -50,8 +60,609 @@
             }
         },
         {
+            "name": "list_grid_rscan",
+            "description": "Scan independent trajectories, relative to current positions.\n\nThe scan is defined by providing a list of points for each scan trajectory. Snakes\nall fast axes by default (all axes but the first axis provided). Wraps\nbluesky.plans.rel_list_grid_scan(det, *args, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "snake_axes": {
+                        "title": "Snake Axes",
+                        "type": "boolean"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "list_grid_rscan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "list_grid_scan",
+            "description": "Scan independent trajectories.\n\nThe scan is defined by providing a list of points for each scan trajectory. Snakes\nall fast axes by default (all axes but the first axis provided). Wraps\nbluesky.plans.list_grid_scan(det, *args, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "snake_axes": {
+                        "title": "Snake Axes",
+                        "type": "boolean"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "list_grid_scan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "list_rscan",
+            "description": "Scan concurrent trajector(y/ies), relative to current position.\n\nThe scan is defined by providing a list of points for each scan trajectory.\nWraps bluesky.plans.rel_list_scan(det, *args, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "list_rscan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "list_scan",
+            "description": "Scan concurrent single or multi-motor trajector(y/ies).\n\nThe scan is defined by providing a list of points for each scan trajectory.\nWraps bluesky.plans.list_scan(det, *args, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "list_scan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "num_grid_rscan",
+            "description": "Scan independent trajectories, relative to current positions.\n\nThe scan is defined by number of points along scan trajectories. Snakes all fast\naxes by default (all axes but the first axis provided). Wraps\nbluesky.plans.rel_grid_scan(det, *args, snake_axes, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "snake_axes": {
+                        "anyOf": [
+                            {
+                                "items": {},
+                                "type": "array"
+                            },
+                            {
+                                "type": "boolean"
+                            }
+                        ],
+                        "title": "Snake Axes"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "num_grid_rscan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "num_grid_scan",
+            "description": "Scan independent multi-motor trajectories.\n\nThe scan is defined by number of points along scan trajectories. Snakes all fast\naxes by default (all axes but the first axis provided). Wraps\nbluesky.plans.grid_scan(det, *args, snake_axes, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "snake_axes": {
+                        "anyOf": [
+                            {
+                                "items": {},
+                                "type": "array"
+                            },
+                            {
+                                "type": "boolean"
+                            }
+                        ],
+                        "title": "Snake Axes"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "num_grid_scan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "num_rscan",
+            "description": "Scan concurrent trajector(y/ies), relative to current position(s).\n\nThe scan is defined by number of points along scan trajector(y/ies). Wraps\nbluesky.plans.rel_scan(det, *args, num, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "num": {
+                        "title": "Num",
+                        "type": "integer"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "num_rscan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "num_scan",
+            "description": "Scan concurrent single or multi-motor trajector(y/ies).\n\nThe scan is defined by number of points along scan trajector(y/ies). Wraps\nbluesky.plans.scan(det, *args, num, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "num": {
+                        "title": "Num",
+                        "type": "integer"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params",
+                    "num"
+                ],
+                "title": "num_scan",
+                "type": "object"
+            }
+        },
+        {
             "name": "spec_scan",
-            "description": "Generic plan for reading `detectors` at every point of a ScanSpec `Spec`.\n    A `Spec` is an N-dimensional path.\n    ",
+            "description": "Generic plan for reading `detectors` at every point of a ScanSpec `Spec`.\nA `Spec` is an N-dimensional path.\n",
             "schema": {
                 "$defs": {
                     "Concat_Reference_": {
@@ -693,8 +1304,296 @@
             }
         },
         {
+            "name": "step_grid_rscan",
+            "description": "Scan independent trajectories with specified step size, relative to position.\n\nGenerates list(s) of points for each trajectory, used with\nbluesky.plans.list_grid_scan(det, *args, md=metadata). Snakes all fast axes by\ndefault (all axes but the first axis provided).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "snake_axes": {
+                        "title": "Snake Axes",
+                        "type": "boolean"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "step_grid_rscan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "step_grid_scan",
+            "description": "Scan independent trajectories with specified step size.\n\nGenerates list(s) of points for each trajectory, used with\nbluesky.plans.list_grid_scan(det, *args, md=metadata). Snakes all fast axes by\ndefault (all axes but the first axis provided).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "snake_axes": {
+                        "title": "Snake Axes",
+                        "type": "boolean"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "step_grid_scan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "step_rscan",
+            "description": "Scan concurrent trajectories with specified step size, relative to position.\n\nGenerates list(s) of points for each trajectory, used with\nbluesky.plans.rel_list_scan(det, *args, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "step_rscan",
+                "type": "object"
+            }
+        },
+        {
+            "name": "step_scan",
+            "description": "Scan concurrent trajectories with specified step size.\n\nGenerates list(s) of points for each trajectory, used with\nbluesky.plans.list_scan(det, *args, md=metadata).\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "detectors": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "bluesky.protocols.Readable"
+                                },
+                                {
+                                    "enum": [
+                                        "det",
+                                        "stage"
+                                    ],
+                                    "type": "ophyd_async.core._protocol.AsyncReadable"
+                                }
+                            ]
+                        },
+                        "title": "Detectors",
+                        "type": "array"
+                    },
+                    "params": {
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "prefixItems": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable"
+                                },
+                                {
+                                    "items": {
+                                        "anyOf": [
+                                            {
+                                                "type": "number"
+                                            },
+                                            {
+                                                "type": "integer"
+                                            }
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            ],
+                            "type": "array"
+                        },
+                        "title": "Params",
+                        "type": "array"
+                    },
+                    "metadata": {
+                        "additionalProperties": true,
+                        "title": "Metadata",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "detectors",
+                    "params"
+                ],
+                "title": "step_scan",
+                "type": "object"
+            }
+        },
+        {
             "name": "set_absolute",
-            "description": "Set a device, wrapper for `bp.abs_set`.\n\n    Args:\n        movable (Movable[T]): The device to set.\n        value (T): The new value.\n        group (Group | None, optional): The message group to associate with the setting,\n            for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete (e.g.\n            a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "description": "Set a device, wrapper for `bp.abs_set`.\n\nArgs:\n    movable (Movable[T]): The device to set.\n    value (T): The new value.\n    group (Group | None, optional): The message group to associate with the setting,\n        for sequencing. Defaults to None.\n    wait (bool, optional): The group should wait until all setting is complete (e.g.\n        a motor has finished moving). Defaults to False.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -728,7 +1627,7 @@
         },
         {
             "name": "set_relative",
-            "description": "Change a device, wrapper for `bp.rel_set`.\n\n    Args:\n        movable (Movable): The device to set.\n        value (T): The new value.\n        group (Group | None, optional): The message group to associate with the setting,\n            for sequencing. Defaults to None.\n        wait (bool, optional): The group should wait until all setting is complete (e.g.\n            a motor has finished moving). Defaults to False.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "description": "Change a device, wrapper for `bp.rel_set`.\n\nArgs:\n    movable (Movable): The device to set.\n    value (T): The new value.\n    group (Group | None, optional): The message group to associate with the setting,\n        for sequencing. Defaults to None.\n    wait (bool, optional): The group should wait until all setting is complete (e.g.\n        a motor has finished moving). Defaults to False.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -762,7 +1661,7 @@
         },
         {
             "name": "move",
-            "description": "Move a device, wrapper for `bp.mv`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target positions.\n        group (Group | None, optional): The message group to associate with the setting,\n            for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "description": "Move a device, wrapper for `bp.mv`.\n\nArgs:\n    moves (Mapping[Movable, T]): Mapping of Movables to target positions.\n    group (Group | None, optional): The message group to associate with the setting,\n        for sequencing. Defaults to None.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -785,7 +1684,7 @@
         },
         {
             "name": "move_relative",
-            "description": "Move a device relative to its current position, wrapper for `bp.mvr`.\n\n    Args:\n        moves (Mapping[Movable, T]): Mapping of Movables to target deltas.\n        group (Group | None, optional): The message group to associate with the\n            setting, for sequencing. Defaults to None.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "description": "Move a device relative to its current position, wrapper for `bp.mvr`.\n\nArgs:\n    moves (Mapping[Movable, T]): Mapping of Movables to target deltas.\n    group (Group | None, optional): The message group to associate with the\n        setting, for sequencing. Defaults to None.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -808,7 +1707,7 @@
         },
         {
             "name": "sleep",
-            "description": "Suspend all action for a given time, wrapper for `bp.sleep`.\n\n    Args:\n        time (float): Time to wait in seconds.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "description": "Suspend all action for a given time, wrapper for `bp.sleep`.\n\nArgs:\n    time (float): Time to wait in seconds.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -826,7 +1725,7 @@
         },
         {
             "name": "wait",
-            "description": "Wait for a group status to complete, wrapper for `bp.wait`.\n    Does not expose move_on, as when used as a stub will not fail on Timeout.\n\n    Args:\n        group (Group | None, optional): The name of the group to wait for, defaults to\n            None, in which case waits for all groups that have not yet been awaited.\n        timeout (float | None, default=None): a timeout in seconds.\n\n    Returns:\n        MsgGenerator: Plan.\n\n    Yields:\n        Iterator[MsgGenerator]: Bluesky messages.\n    ",
+            "description": "Wait for a group status to complete, wrapper for `bp.wait`.\nDoes not expose move_on, as when used as a stub will not fail on Timeout.\n\nArgs:\n    group (Group | None, optional): The name of the group to wait for, defaults to\n        None, in which case waits for all groups that have not yet been awaited.\n    timeout (float | None, default=None): a timeout in seconds.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
             "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -840,6 +1739,47 @@
                     }
                 },
                 "title": "wait",
+                "type": "object"
+            }
+        },
+        {
+            "name": "rd",
+            "description": "Reads a single-value non-triggered object, wrapper for `bps.rd`.\n\nArgs:\n    readable (Readable): The device to be read\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "readable": {
+                        "enum": [
+                            "det",
+                            "stage"
+                        ],
+                        "title": "Readable",
+                        "type": "bluesky.protocols.Readable"
+                    }
+                },
+                "required": [
+                    "readable"
+                ],
+                "title": "rd",
+                "type": "object"
+            }
+        },
+        {
+            "name": "stop",
+            "description": "Stop a device, wrapper for `bps.stop`.\n\nArgs:\n    stoppable (Stoppable): Device to be stopped\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "stoppable": {
+                        "enum": [],
+                        "title": "Stoppable",
+                        "type": "bluesky.protocols.Stoppable"
+                    }
+                },
+                "required": [
+                    "stoppable"
+                ],
+                "title": "stop",
                 "type": "object"
             }
         }

@@ -20,7 +20,7 @@ from observability_utils.tracing import (
 )
 from ophyd_async.core import AsyncStatus
 
-from blueapi.config import DeviceSource, EnvironmentConfig
+from blueapi.config import DeviceManagerSource, EnvironmentConfig, PlanSource
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import PlanModel
@@ -109,8 +109,13 @@ def second_fake_device() -> FakeDevice:
 @pytest.fixture
 def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(DeviceSource(module="devices"))
+    ctx_config = EnvironmentConfig(
+        sources=[
+            PlanSource(module="dodal.plans"),
+            PlanSource(module="dodal.plan_stubs.wrapped"),
+        ]
+    )
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.register_plan(failing_plan)
     ctx.register_device(fake_device)
     ctx.register_device(second_fake_device)
@@ -121,8 +126,13 @@ def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyC
 @pytest.fixture
 def context_without_devices() -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(DeviceSource(module="devices"))
+    ctx_config = EnvironmentConfig(
+        sources=[
+            PlanSource(module="dodal.plans"),
+            PlanSource(module="dodal.plan_stubs.wrapped"),
+        ]
+    )
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.with_config(ctx_config)
     return ctx
 
@@ -512,7 +522,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     task: Task | None = None,
     timeout: float = 5.0,
 ) -> None:
-    default_task = Task(name="count", params={"detectors": {"motor"}, "num": 1})
+    default_task = Task(name="count", params={"detectors": ["motor"], "num": 1})
     task = task or default_task
 
     event_streams: list[EventStream[Any, int]] = [
@@ -618,7 +628,7 @@ def take_events_from_streams(
         (TaskStatusEnum.COMPLETE, ["task3"]),
     ],
 )
-def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
+def test_get_tasks(worker: TaskWorker, status, expected_task_ids):
     worker._pending_tasks = {
         "task1": TrackableTask(
             task_id="task1",
@@ -648,7 +658,7 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
         ),
     }
 
-    result = worker.get_tasks_by_status(status)
+    result = worker.get_tasks(status)
     result_ids = [task.task_id for task in result]
 
     assert result_ids == expected_task_ids

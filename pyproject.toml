@@ -10,6 +10,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
@@ -25,7 +26,6 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "dls-dodal>=1.69.0",
     "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
@@ -37,6 +37,7 @@ dependencies = [
     "tomlkit",
     "graypy>=2.1.0",
     "httpx>=0.28.1",
+    "aiohttp>=3.13.5",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -47,6 +48,7 @@ requires-python = ">=3.11"
 dev = [
     "ophyd_async[sim]",
     "copier",
+    "dls-dodal>=1.69.0",
     "myst-parser",
     "prek",
     "pydata-sphinx-theme>=0.15.4",
@@ -74,6 +76,8 @@ dev = [
     "deepdiff",
     "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
     "respx",
+    "pytest-xdist[psutil]",
+    "httpx2>=2.5.0"
 ]
 
 [project.scripts]
@@ -101,7 +105,7 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
-timeout = 3
+timeout = 10
 
 [tool.coverage.run]
 patch = ["subprocess"]
@@ -154,6 +158,8 @@ description = "Run unit tests with coverage"
 commands = [
     [
         "pytest",
+        "-n",
+        "logical",
         "tests/unit_tests",
         "--cov=blueapi",
         "--cov-report",

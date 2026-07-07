@@ -3,7 +3,7 @@ import time
 from asyncio import Queue
 from collections.abc import Generator
 from contextlib import nullcontext
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -44,16 +44,28 @@ from blueapi.worker.event import (
 from blueapi.worker.task_worker import TrackableTask
 
 
-class User(Enum):
+class User(StrEnum):
     alice = "alice"
     bob = "bob"
     admin = "admin"
 
 
+class NonAdminUser(StrEnum):
+    alice = "alice"
+    bob = "bob"
+
+
+class AdminUser(StrEnum):
+    admin = "admin"
+
+
+ValidUser = User | NonAdminUser | AdminUser
+
 # Below is the default authorized instrument session for Users
-VALID_INSTRUMENT_SESSION: dict[User, str] = {
+VALID_INSTRUMENT_SESSION: dict[ValidUser, str] = {
     User.alice: "cm12345-1",
     User.bob: "cm12345-2",
+    User.admin: "cm12345-2",  # Added as a placeholder
 }
 
 CURRENT_NUMTRACKER_NUM = 43
@@ -95,7 +107,7 @@ def load_config(path: Path) -> ApplicationConfig:
 
 
 @pytest.fixture
-def user(request) -> User:
+def user(request) -> ValidUser:
     return getattr(request, "param", User.alice)
 
 
@@ -105,7 +117,17 @@ def instrument_session(request) -> str:
 
 
 @pytest.fixture
-def small_task(user: User, instrument_session: str) -> TaskRequest:
+def small_task(user: ValidUser, instrument_session: str) -> TaskRequest:
+    return TaskRequest(
+        name="sleep",
+        params={"time": 0.0},
+        instrument_session=instrument_session
+        if instrument_session
+        else VALID_INSTRUMENT_SESSION[user],
+    )
+
+
+def small_task_2(user: ValidUser, instrument_session: str) -> TaskRequest:
     return TaskRequest(
         name="sleep",
         params={"time": 0.0},
@@ -116,7 +138,7 @@ def small_task(user: User, instrument_session: str) -> TaskRequest:
 
 
 @pytest.fixture
-def long_task(user: User, instrument_session: str | None = None) -> TaskRequest:
+def long_task(user: ValidUser, instrument_session: str | None = None) -> TaskRequest:
     return TaskRequest(
         name="sleep",
         params={"time": 1.0},
@@ -126,7 +148,7 @@ def long_task(user: User, instrument_session: str | None = None) -> TaskRequest:
     )
 
 
-def get_access_token(user: User) -> str:
+def get_access_token(user: ValidUser) -> str:
     token_url = "http://localhost:8081/realms/master/protocol/openid-connect/token"
     response = requests.post(
         token_url,
@@ -149,7 +171,7 @@ def client_without_auth() -> Generator[BlueapiClient]:
         yield BlueapiClient.from_config(config=ApplicationConfig())
 
 
-def patch_session(user: User):
+def patch_session(user: ValidUser):
     mock_session_manager = MagicMock()
     mock_session_manager.get_valid_access_token.return_value = get_access_token(user)
     return patch(
@@ -159,7 +181,7 @@ def patch_session(user: User):
 
 
 @pytest.fixture
-def client_with_stomp(user: User) -> Generator[BlueapiClient]:
+def client_with_stomp(user: ValidUser) -> Generator[BlueapiClient]:
     with patch_session(user):
         yield BlueapiClient.from_config(
             config=load_config(_DATA_PATH / "config-cli.yaml")
@@ -167,9 +189,19 @@ def client_with_stomp(user: User) -> Generator[BlueapiClient]:
 
 
 @pytest.fixture
-def client(user: User) -> Generator[BlueapiClient]:
+def client(user: ValidUser) -> Generator[BlueapiClient]:
     with patch_session(user):
         yield BlueapiClient.from_config(config=ApplicationConfig())
+
+
+@pytest.fixture
+def client_factory() -> dict[ValidUser, BlueapiClient]:
+    users: dict[ValidUser, BlueapiClient] = {}
+    for user in User:
+        with patch_session(user):
+            users[user] = BlueapiClient.from_config(config=ApplicationConfig())
+
+    return users
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -688,7 +720,102 @@ def test_submit_plan_authorization(
         client.create_task(small_task)
 
 
-def test_get_tasks_authorization(client: BlueapiClient): ...
+def test_user_can_only_get_their_own_task(client_factory):
+    tasks = {}
+    for user in NonAdminUser:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(small_task_2(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    for user in NonAdminUser:
+        for task in client_factory[user].get_all_tasks().tasks:
+            assert task.task.metadata["user"] == user.value
+            assert tasks[user] == task.task_id
+
+
+def test_admin_can_get_all_task(client_factory):
+    tasks = {}
+    for user in User:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(small_task_2(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    for user in AdminUser:
+        all_tasks = {}
+        for task in client_factory[user].get_all_tasks().tasks:
+            all_tasks[task.task.metadata["user"]] = task.task_id
+        assert tasks == all_tasks
+
+
+def test_user_can_only_delete_their_own_task(client_factory):
+    tasks = {}
+    for user in NonAdminUser:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(small_task_2(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    # for user in NonAdminUser:
+    #     with pytest.raises():
+    #         client_factory[user].clear_task()
+
+    for user in NonAdminUser:
+        client_factory[user].clear_task(tasks[user])
+
+
+def test_admin_can_delete_anytask(client_factory):
+    tasks = {}
+    for user in User:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(small_task_2(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    for task in tasks:
+        client_factory[AdminUser.admin].clear_task(task)
+
+
+def test_any_user_can_get_active_task(client_factory):
+    task_id = (
+        client_factory[AdminUser.admin]
+        .create_and_start_task(
+            small_task_2(AdminUser.admin, VALID_INSTRUMENT_SESSION[AdminUser.admin])
+        )
+        .task_id
+    )
+
+    for user in User:
+        assert client_factory[user].get_active_task == task_id
+
+
+def test_only_user_who_create_a_task_can_set_it_active_task(client_factory): ...
+
+
+def test_admin_can_set_any_task_active_task(client_factory): ...
+
+
+@pytest.mark.parametrize(
+    "user",
+    [
+        User.bob,
+        User.alice,
+        User.admin,
+    ],
+)
+def test_any_user_can_get_worker_state(client: BlueapiClient, user: User):
+    assert client.get_state() == WorkerState.IDLE
+
+
+def test_user_can_only_set_worker_state_if_its_their_task(): ...
+
+
+def test_admin_can_set_state_for_any_task(): ...
 
 
 # Regression test for #1480

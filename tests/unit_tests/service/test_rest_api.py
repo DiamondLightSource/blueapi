@@ -9,7 +9,7 @@ import pytest
 from bluesky.protocols import Stoppable
 from fastapi import status
 from fastapi.testclient import TestClient
-from httpx import Headers
+from httpx2 import Headers
 from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
 from super_state_machine.errors import TransitionError

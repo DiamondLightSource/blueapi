@@ -36,7 +36,7 @@ dependencies = [
     "pyjwt[crypto]",
     "tomlkit",
     "graypy>=2.1.0",
-    "httpx2>=2.5.0",
+    "httpx>=0.28.1",
     "aiohttp>=3.13.5",
 ]
 dynamic = ["version"]
@@ -77,6 +77,7 @@ dev = [
     "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
     "respx",
     "pytest-xdist[psutil]",
+    "httpx2>=2.5.0"
 ]
 
 [project.scripts]

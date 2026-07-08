@@ -346,7 +346,7 @@ def test_instrument_session_propagated(
     response = rest_client.create_task(small_task)
     trackable_task = rest_client.get_task(response.task_id)
     assert trackable_task.task.metadata == {
-        "user": User.alice.value,
+        "user": User.alice,
         "instrument_session": VALID_INSTRUMENT_SESSION[User.alice],
         "tiled_access_tags": [
             '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
@@ -720,7 +720,7 @@ def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
         ),
     ],
 )
-def test_submit_plan_authorization(
+def test_create_task_authorization(
     client: BlueapiClient,
     small_task: TaskRequest,
     user: str,
@@ -731,7 +731,7 @@ def test_submit_plan_authorization(
         client.create_task(small_task)
 
 
-def test_user_can_only_get_their_own_task(
+def test_non_admin_can_only_get_own_tasks(
     client_factory: dict[ValidUser, BlueapiClient],
 ):
     tasks = {}
@@ -748,7 +748,7 @@ def test_user_can_only_get_their_own_task(
             assert tasks[user] == task.task_id
 
 
-def test_admin_can_get_all_task(client_factory: dict[ValidUser, BlueapiClient]):
+def test_admin_can_get_all_tasks(client_factory: dict[ValidUser, BlueapiClient]):
     tasks = {}
     for user in User:
         tasks[user] = (
@@ -764,7 +764,7 @@ def test_admin_can_get_all_task(client_factory: dict[ValidUser, BlueapiClient]):
         assert tasks == all_tasks
 
 
-def test_user_can_only_delete_their_own_task(
+def test_non_admin_can_only_delete_own_tasks(
     client_factory: dict[ValidUser, BlueapiClient],
 ):
     tasks = {}
@@ -785,7 +785,7 @@ def test_user_can_only_delete_their_own_task(
         client_factory[user].clear_task(tasks[user])
 
 
-def test_admin_can_delete_anytask(client_factory: dict[ValidUser, BlueapiClient]):
+def test_admin_can_delete_any_task(client_factory: dict[ValidUser, BlueapiClient]):
     tasks = {}
     for user in User:
         tasks[user] = (
@@ -798,7 +798,9 @@ def test_admin_can_delete_anytask(client_factory: dict[ValidUser, BlueapiClient]
         client_factory[AdminUser.admin].clear_task(task)
 
 
-def test_any_user_can_get_active_task(client_factory: dict[ValidUser, BlueapiClient]):
+def test_any_user_can_retrieve_active_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
     task_id = (
         client_factory[AdminUser.admin]
         .create_and_start_task(
@@ -811,7 +813,7 @@ def test_any_user_can_get_active_task(client_factory: dict[ValidUser, BlueapiCli
         assert client_factory[user].get_active_task().task_id == task_id
 
 
-def test_only_user_who_create_a_task_can_set_it_active_task(
+def test_non_admin_can_only_start_own_tasks(
     client_factory: dict[ValidUser, BlueapiClient],
 ):
     tasks = {}
@@ -836,7 +838,7 @@ def test_only_user_who_create_a_task_can_set_it_active_task(
         client_factory[user].start_task(WorkerTask(task_id=tasks[user]))
 
 
-def test_admin_can_set_any_task_active_task(
+def test_admin_can_start_any_task(
     client_factory: dict[ValidUser, BlueapiClient],
 ):
     tasks = {}
@@ -859,11 +861,11 @@ def test_admin_can_set_any_task_active_task(
         User.admin,
     ],
 )
-def test_any_user_can_get_worker_state(client: BlueapiClient, user: User):
+def test_any_user_can_retrieve_worker_state(client: BlueapiClient, user: User):
     assert client.get_state() == WorkerState.IDLE
 
 
-def test_user_can_only_set_worker_state_if_its_their_task(
+def test_non_admin_can_only_abort_own_tasks(
     client_factory: dict[ValidUser, BlueapiClient],
 ):
     client_factory[NonAdminUser.alice].create_and_start_task(
@@ -879,7 +881,7 @@ def test_user_can_only_set_worker_state_if_its_their_task(
     client_factory[NonAdminUser.alice].abort()
 
 
-def test_admin_user_can_update_state_of_any_task(
+def test_admin_can_abort_any_task(
     client_factory: dict[ValidUser, BlueapiClient],
 ):
     for user in User:

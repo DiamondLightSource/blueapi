@@ -21,11 +21,10 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
-      - name: Set up Docker Compose
-        uses: docker/setup-compose-action@v2
-
-      - name: Run docker compose
-        run: docker compose -f "tests/system_tests/compose.yaml" up -d
+      - name: Compose services
+        uses: hoverkraft-tech/compose-action@11beaa1c2dae4e8ed7b1665aa074723b6cecb0e4 # v3.0.0
+        with:
+          compose-file: "tests/system_tests/compose.yaml"
 
       - name: Start Blueapi Server
         env:

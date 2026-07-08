@@ -28,7 +28,7 @@ DEFAULT_CACHE_DIR = "~/.cache/"
 SCOPES = "openid offline_access"
 
 
-class TokenRetriever(Protocol):
+class TokenSource(Protocol):
     def get_valid_access_token(self) -> str: ...
 
 
@@ -95,7 +95,7 @@ class SessionCacheManager(CacheManager):
         self._token_path.parent.mkdir(parents=True, exist_ok=True)
 
 
-class SessionManager:
+class SessionManager(TokenSource):
     def __init__(self, server_config: OIDCConfig, cache_manager: CacheManager) -> None:
         self._server_config = server_config
         self._cache_manager: CacheManager = cache_manager
@@ -246,10 +246,8 @@ class SessionManager:
 
 
 class JWTAuth(AuthBase):
-    def __init__(self, session_manager: TokenRetriever | None):
-        self.token: str = (
-            session_manager.get_valid_access_token() if session_manager else ""
-        )
+    def __init__(self, token_source: TokenSource | None):
+        self.token: str = token_source.get_valid_access_token() if token_source else ""
 
     def __call__(self, request):
         if self.token:

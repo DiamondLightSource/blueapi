@@ -49,7 +49,7 @@ def rest() -> BlueapiRestClient:
 @pytest.fixture
 def rest_with_auth(oidc_config: OIDCConfig, tmp_path) -> BlueapiRestClient:
     return BlueapiRestClient(
-        token_retreiver=SessionManager(
+        token_source=SessionManager(
             server_config=oidc_config,
             cache_manager=SessionCacheManager(tmp_path / "blueapi_cache"),
         )

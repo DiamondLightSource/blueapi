@@ -1081,6 +1081,29 @@ def test_cancel_running_task_records_failure(worker: TaskWorker) -> None:
     assert task_id not in worker._pending_tasks
 
 
+def test_cancel_active_task_does_not_overwrite_existing_outcome(
+    worker: TaskWorker,
+) -> None:
+    task_id = worker.submit_task(_LONG_TASK)
+
+    running_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.RUNNING,
+    )
+    worker.begin_task(task_id)
+    running_future.result(timeout=5.0)
+
+    current = worker._current
+    assert current is not None
+    with worker._status_lock:
+        current.set_exception(Exception("worker thread got there first"))
+
+    worker.cancel_active_task(failure=True, reason="caller's reason")
+
+    assert isinstance(current.outcome, TaskError)
+    assert current.outcome.message == "worker thread got there first"
+
+
 def test_cancel_active_task_does_not_block_caller_when_paused(
     worker: TaskWorker,
 ) -> None:
@@ -1136,6 +1159,43 @@ def test_cancel_wins_race_with_concurrent_resume(worker: TaskWorker) -> None:
     assert events[-1].errors == ["changed my mind"]
     assert task_id in worker._completed_tasks
     assert task_id not in worker._pending_tasks
+
+
+def test_second_cancel_while_paused_supersedes_first(worker: TaskWorker) -> None:
+
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    complete_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.cancel_active_task(failure=False, reason="first, graceful")
+    worker.cancel_active_task(failure=True, reason="second, urgent")
+    events = complete_future.result(timeout=5.0)
+
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_failed
+    assert isinstance(events[-1].task_status.result, TaskError)
+    assert events[-1].errors == ["second, urgent"]
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_stop_while_paused_completes_task(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    worker.stop()
+
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+    assert worker._completed_tasks[task_id].is_complete
+    assert worker._completed_tasks[task_id].outcome is not None
 
 
 def test_resume_when_not_paused_does_nothing(worker: TaskWorker) -> None:

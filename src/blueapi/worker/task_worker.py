@@ -207,10 +207,14 @@ class TaskWorker:
         default_reason = "Task failed for unknown reason"
         if failure:
             self._ctx.run_engine.abort(reason or default_reason)
-            current.set_exception(Exception(reason or default_reason))
+            with self._status_lock:
+                if current.outcome is None:
+                    current.set_exception(Exception(reason or default_reason))
         else:
             self._ctx.run_engine.stop()
-            current.set_result(None)
+            with self._status_lock:
+                if current.outcome is None:
+                    current.set_result(None)
         self._task_channel.put(CancelSignal(failure=failure, reason=reason))
         add_span_attributes(
             {"Task aborted" if failure else "Task stopped": reason or ""}
@@ -459,14 +463,22 @@ class TaskWorker:
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
-                        if self._current.outcome is None:
-                            self._current.set_result(result)
+                        with self._status_lock:
+                            # A concurrent cancel_active_task() may have
+                            # already set the outcome.
+                            if self._current.outcome is None:
+                                self._current.set_result(result)
                     except RunEngineInterrupted:
+                        # Raised for both a normal pause (outcome still None)
+                        # and an abort interrupting a running plan (outcome
+                        # already TaskError) - only the latter is a failure.
                         if isinstance(self._current.outcome, TaskError):
                             self._report_error(Exception(self._current.outcome.message))
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
-                        self._current.set_exception(e)
+                        with self._status_lock:
+                            if self._current.outcome is None:
+                                self._current.set_exception(e)
                         raise
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
@@ -508,10 +520,20 @@ class TaskWorker:
                     )
 
             elif isinstance(next_task, CancelSignal):
-                self._apply_cancel(next_task)
+                self._apply_cancel(self._pending_cancel or next_task)
 
             elif isinstance(next_task, KillSignal):
+                # If we receive a kill signal we begin to shut the worker down.
+                # Note that the kill signal is explicitly not a type of task as we don't
+                # want it to be part of the worker's public API
                 self._pending_cancel = None
+                if self._current is not None and self._ctx.run_engine.state == "paused":
+                    self._apply_cancel(
+                        CancelSignal(
+                            failure=True,
+                            reason="Worker is stopping while the task was paused",
+                        )
+                    )
                 self._stopping.set()
                 add_span_attributes({"server shutting down": "true"})
             else:
@@ -526,6 +548,8 @@ class TaskWorker:
                 self._current_task_otel_context = None
 
         if self._current is not None:
+            # Don't finalize while paused - the task isn't done yet, it may
+            # still be resumed or cancelled.
             if self._ctx.run_engine.state != "paused":
                 self._current.is_complete = True
                 self._pending_tasks.pop(self._current.task_id)
@@ -586,6 +610,8 @@ class TaskWorker:
         self._errors.append(str(err))
 
     def _apply_cancel(self, signal: "CancelSignal") -> None:
+        # Only ever runs on the worker thread, so no lock is needed here -
+        # unlike the caller-thread path in cancel_active_task().
         self._pending_cancel = None
         default_reason = "Task failed for unknown reason"
         if self._current is not None:

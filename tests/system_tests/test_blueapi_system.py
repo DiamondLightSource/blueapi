@@ -3,7 +3,7 @@ import time
 from asyncio import Queue
 from collections.abc import Generator
 from contextlib import nullcontext
-from enum import StrEnum
+from enum import StrEnum, auto
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -45,18 +45,18 @@ from blueapi.worker.task_worker import TrackableTask
 
 
 class User(StrEnum):
-    alice = "alice"
-    bob = "bob"
-    admin = "admin"
+    alice = auto()
+    bob = auto()
+    admin = auto()
 
 
 class NonAdminUser(StrEnum):
-    alice = "alice"
-    bob = "bob"
+    alice = auto()
+    bob = auto()
 
 
 class AdminUser(StrEnum):
-    admin = "admin"
+    admin = auto()
 
 
 ValidUser = User | NonAdminUser | AdminUser
@@ -65,10 +65,10 @@ ValidUser = User | NonAdminUser | AdminUser
 VALID_INSTRUMENT_SESSION: dict[ValidUser, str] = {
     User.alice: "cm12345-1",
     User.bob: "cm12345-2",
-    User.admin: "cm12345-2",  # Added as a placeholder
+    User.admin: "cm12345-2",  # Placeholder session for admin
 }
-
 CURRENT_NUMTRACKER_NUM = 43
+
 
 _DATA_PATH = Path(__file__).parent
 
@@ -116,21 +116,12 @@ def instrument_session(request) -> str:
     return getattr(request, "param", VALID_INSTRUMENT_SESSION[User.alice])
 
 
-@pytest.fixture
-def small_task(user: ValidUser, instrument_session: str) -> TaskRequest:
+def task_factory(
+    user: ValidUser, instrument_session: str | None, time: float = 0.0
+) -> TaskRequest:
     return TaskRequest(
         name="sleep",
-        params={"time": 0.0},
-        instrument_session=instrument_session
-        if instrument_session
-        else VALID_INSTRUMENT_SESSION[user],
-    )
-
-
-def small_task_2(user: ValidUser, instrument_session: str) -> TaskRequest:
-    return TaskRequest(
-        name="sleep",
-        params={"time": 0.0},
+        params={"time": time},
         instrument_session=instrument_session
         if instrument_session
         else VALID_INSTRUMENT_SESSION[user],
@@ -138,14 +129,13 @@ def small_task_2(user: ValidUser, instrument_session: str) -> TaskRequest:
 
 
 @pytest.fixture
-def long_task(user: ValidUser, instrument_session: str | None = None) -> TaskRequest:
-    return TaskRequest(
-        name="sleep",
-        params={"time": 1.0},
-        instrument_session=instrument_session
-        if instrument_session
-        else VALID_INSTRUMENT_SESSION[user],
-    )
+def small_task(user: ValidUser, instrument_session: str | None) -> TaskRequest:
+    return task_factory(user, instrument_session)
+
+
+@pytest.fixture
+def long_task(user: ValidUser, instrument_session: str | None) -> TaskRequest:
+    return task_factory(user, instrument_session, time=1.0)
 
 
 def get_access_token(user: ValidUser) -> str:
@@ -656,6 +646,27 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
     assert not final_event.task_failed
 
 
+# Regression test for #1480
+def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
+    with pytest.raises(NotFoundError):
+        # This task hasn't been submitted so should return an error...
+        client_with_stomp._rest.update_worker_task(WorkerTask(task_id="missing"))
+
+    # ...but should leave the serve in a state where it can still run tasks
+    res = client_with_stomp.run_task(
+        TaskRequest(
+            name="count",
+            params={
+                "detectors": [
+                    "det",
+                ],
+            },
+            instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+        )
+    )
+    assert isinstance(res.result, TaskResult)
+
+
 @pytest.mark.parametrize(
     "instrument_session,user,expectation",
     [
@@ -720,12 +731,14 @@ def test_submit_plan_authorization(
         client.create_task(small_task)
 
 
-def test_user_can_only_get_their_own_task(client_factory):
+def test_user_can_only_get_their_own_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
     tasks = {}
     for user in NonAdminUser:
         tasks[user] = (
             client_factory[user]
-            .create_task(small_task_2(user, VALID_INSTRUMENT_SESSION[user]))
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
             .task_id
         )
 
@@ -735,12 +748,12 @@ def test_user_can_only_get_their_own_task(client_factory):
             assert tasks[user] == task.task_id
 
 
-def test_admin_can_get_all_task(client_factory):
+def test_admin_can_get_all_task(client_factory: dict[ValidUser, BlueapiClient]):
     tasks = {}
     for user in User:
         tasks[user] = (
             client_factory[user]
-            .create_task(small_task_2(user, VALID_INSTRUMENT_SESSION[user]))
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
             .task_id
         )
 
@@ -751,53 +764,91 @@ def test_admin_can_get_all_task(client_factory):
         assert tasks == all_tasks
 
 
-def test_user_can_only_delete_their_own_task(client_factory):
+def test_user_can_only_delete_their_own_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
     tasks = {}
     for user in NonAdminUser:
         tasks[user] = (
             client_factory[user]
-            .create_task(small_task_2(user, VALID_INSTRUMENT_SESSION[user]))
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
             .task_id
         )
 
-    # for user in NonAdminUser:
-    #     with pytest.raises():
-    #         client_factory[user].clear_task()
+    with pytest.raises(NotFoundError):
+        client_factory[NonAdminUser.alice].clear_task(tasks[NonAdminUser.bob])
+
+    with pytest.raises(NotFoundError):
+        client_factory[NonAdminUser.bob].clear_task(tasks[NonAdminUser.alice])
 
     for user in NonAdminUser:
         client_factory[user].clear_task(tasks[user])
 
 
-def test_admin_can_delete_anytask(client_factory):
+def test_admin_can_delete_anytask(client_factory: dict[ValidUser, BlueapiClient]):
     tasks = {}
     for user in User:
         tasks[user] = (
             client_factory[user]
-            .create_task(small_task_2(user, VALID_INSTRUMENT_SESSION[user]))
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
             .task_id
         )
 
-    for task in tasks:
+    for task in tasks.values():
         client_factory[AdminUser.admin].clear_task(task)
 
 
-def test_any_user_can_get_active_task(client_factory):
+def test_any_user_can_get_active_task(client_factory: dict[ValidUser, BlueapiClient]):
     task_id = (
         client_factory[AdminUser.admin]
         .create_and_start_task(
-            small_task_2(AdminUser.admin, VALID_INSTRUMENT_SESSION[AdminUser.admin])
+            task_factory(AdminUser.admin, VALID_INSTRUMENT_SESSION[AdminUser.admin])
         )
         .task_id
     )
 
     for user in User:
-        assert client_factory[user].get_active_task == task_id
+        assert client_factory[user].get_active_task().task_id == task_id
 
 
-def test_only_user_who_create_a_task_can_set_it_active_task(client_factory): ...
+def test_only_user_who_create_a_task_can_set_it_active_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    tasks = {}
+    for user in NonAdminUser:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    with pytest.raises(NotFoundError):
+        client_factory[NonAdminUser.alice].start_task(
+            WorkerTask(task_id=tasks[NonAdminUser.bob])
+        )
+
+    with pytest.raises(NotFoundError):
+        client_factory[NonAdminUser.bob].start_task(
+            WorkerTask(task_id=tasks[NonAdminUser.alice])
+        )
+
+    for user in NonAdminUser:
+        client_factory[user].start_task(WorkerTask(task_id=tasks[user]))
 
 
-def test_admin_can_set_any_task_active_task(client_factory): ...
+def test_admin_can_set_any_task_active_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    tasks = {}
+    for user in User:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    for task in tasks.values():
+        client_factory[AdminUser.admin].start_task(WorkerTask(task_id=task))
 
 
 @pytest.mark.parametrize(
@@ -812,28 +863,27 @@ def test_any_user_can_get_worker_state(client: BlueapiClient, user: User):
     assert client.get_state() == WorkerState.IDLE
 
 
-def test_user_can_only_set_worker_state_if_its_their_task(): ...
-
-
-def test_admin_can_set_state_for_any_task(): ...
-
-
-# Regression test for #1480
-def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
-    with pytest.raises(NotFoundError):
-        # This task hasn't been submitted so should return an error...
-        client_with_stomp._rest.update_worker_task(WorkerTask(task_id="missing"))
-
-    # ...but should leave the serve in a state where it can still run tasks
-    res = client_with_stomp.run_task(
-        TaskRequest(
-            name="count",
-            params={
-                "detectors": [
-                    "det",
-                ],
-            },
-            instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+def test_user_can_only_set_worker_state_if_its_their_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    client_factory[NonAdminUser.alice].create_and_start_task(
+        task_factory(
+            NonAdminUser.alice, VALID_INSTRUMENT_SESSION[NonAdminUser.alice], time=1
         )
     )
-    assert isinstance(res.result, TaskResult)
+    with pytest.raises(
+        UnauthorisedAccessError, match="Not authorized to set worker state"
+    ):
+        client_factory[NonAdminUser.bob].abort()
+
+    client_factory[NonAdminUser.alice].abort()
+
+
+def test_admin_user_can_update_state_of_any_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    for user in User:
+        client_factory[user].create_and_start_task(
+            task_factory(user, VALID_INSTRUMENT_SESSION[user], time=1)
+        )
+        client_factory[AdminUser.admin].abort()

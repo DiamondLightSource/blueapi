@@ -21,4 +21,7 @@ jobs:
         run: helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.3.1
 
       - name: Run tox
+        env:
+          # To allow pyright version to be latest and not decided by the uv.lock
+          PYRIGHT_PYTHON_FORCE_VERSION: latest
         run: uv run --locked tox -e ${{ inputs.tox }}

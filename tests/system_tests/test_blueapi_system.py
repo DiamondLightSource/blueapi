@@ -633,7 +633,7 @@ def test_plan_runs(
             name="set_absolute",
             params={
                 "movable": "stage.x",
-                "value": "4.0",
+                "value": 4.0,
             },
             instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
         ),

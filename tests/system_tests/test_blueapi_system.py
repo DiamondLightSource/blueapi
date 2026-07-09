@@ -67,6 +67,7 @@ VALID_INSTRUMENT_SESSION: dict[ValidUser, str] = {
     User.bob: "cm12345-2",
     User.admin: "cm12345-2",  # Placeholder session for admin
 }
+INVALID_INSTRUMENT_SESSION = "cm54321-1"
 CURRENT_NUMTRACKER_NUM = 43
 
 
@@ -579,7 +580,7 @@ def test_delete_current_environment(client: BlueapiClient):
     ],
 )
 def test_plan_runs(
-    client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int, user: User
+    client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int, user: ValidUser
 ):
     resource = Queue(maxsize=1)
     start = Queue(maxsize=1)
@@ -712,7 +713,7 @@ def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
         ),
         (
             # admin still needs to put a valid instrument_session
-            VALID_INSTRUMENT_SESSION[User.alice] + "3231232",
+            INVALID_INSTRUMENT_SESSION,
             User.admin,
             pytest.raises(
                 UnauthorisedAccessError, match="Not authorized to submit task"
@@ -723,7 +724,7 @@ def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
 def test_create_task_authorization(
     client: BlueapiClient,
     small_task: TaskRequest,
-    user: str,
+    user: ValidUser,
     instrument_session: str,
     expectation,
 ):

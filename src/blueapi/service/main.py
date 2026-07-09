@@ -26,6 +26,7 @@ from observability_utils.tracing import (
 )
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.trace import get_tracer_provider
+from prometheus_client import make_asgi_app
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
@@ -144,6 +145,11 @@ def get_app(config: ApplicationConfig):
             allow_methods=config.api.cors.allow_methods,
             allow_headers=config.api.cors.allow_headers,
         )
+
+    # Add prometheus asgi middleware to route /metrics requests
+    metrics_app = make_asgi_app()
+    app.mount("/metrics", metrics_app)
+
     return app
 
 

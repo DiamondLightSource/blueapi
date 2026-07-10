@@ -419,19 +419,19 @@ def test_put_worker_task(rest_client: BlueapiRestClient, small_task: TaskRequest
 def test_put_worker_task_fails_if_not_idle(
     rest_client: BlueapiRestClient, small_task: TaskRequest, long_task: TaskRequest
 ):
-    _small_task = rest_client.create_task(small_task)
-    _long_task = rest_client.create_task(long_task)
+    small_task_id = rest_client.create_task(small_task).task_id
+    long_task_id = rest_client.create_task(long_task).task_id
 
-    rest_client.update_worker_task(WorkerTask(task_id=_long_task.task_id))
+    rest_client.update_worker_task(WorkerTask(task_id=long_task_id))
     active_task = rest_client.get_active_task()
-    assert active_task.task_id == _long_task.task_id
+    assert active_task.task_id == long_task_id
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
-        rest_client.update_worker_task(WorkerTask(task_id=_small_task.task_id))
+        rest_client.update_worker_task(WorkerTask(task_id=small_task_id))
     assert exception.value.args[0] == 409
     rest_client.cancel_current_task(WorkerState.ABORTING)
-    rest_client.clear_task(_small_task.task_id)
-    rest_client.clear_task(_long_task.task_id)
+    rest_client.clear_task(small_task_id)
+    rest_client.clear_task(long_task_id)
 
 
 def test_get_worker_state(client: BlueapiClient):

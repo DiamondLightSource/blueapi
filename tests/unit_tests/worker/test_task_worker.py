@@ -48,6 +48,7 @@ _INDEFINITE_TASK = Task(
 _FAILING_TASK = Task(name="failing_plan", params={})
 _PAUSING_TASK = Task(name="pausing_plan", params={})
 _PAUSING_TASK_SLOW_CLEANUP = Task(name="pausing_plan_with_slow_cleanup", params={})
+_TWICE_PAUSING_TASK = Task(name="twice_pausing_plan", params={})
 _ABORT_CLEANUP_DELAY = 1.0
 _TASK_WITH_METADATA = Task(
     name="sleep",
@@ -93,6 +94,11 @@ def pausing_plan_with_slow_cleanup() -> MsgGenerator:
         yield from plan_stubs.pause()
     finally:
         time.sleep(_ABORT_CLEANUP_DELAY)
+
+
+def twice_pausing_plan() -> MsgGenerator:
+    yield from plan_stubs.pause()
+    yield from plan_stubs.pause()
 
 
 @dataclasses.dataclass
@@ -1081,6 +1087,34 @@ def test_cancel_running_task_records_failure(worker: TaskWorker) -> None:
     assert task_id not in worker._pending_tasks
 
 
+def test_cancel_running_task_gracefully(worker: TaskWorker) -> None:
+    # Covers the failure=False branch of cancel_active_task() while the
+    # RunEngine is actively running (not paused) - RE.stop() is called
+    # directly on the caller's thread and must not be reported as a failure.
+    task_id = worker.submit_task(_LONG_TASK)
+
+    running_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.RUNNING,
+    )
+    worker.begin_task(task_id)
+    running_future.result(timeout=5.0)
+
+    cancel_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.cancel_active_task(failure=False)
+    events = cancel_future.result(timeout=5.0)
+
+    assert events[-1].errors == []
+    assert events[-1].task_status is not None
+    assert not events[-1].task_status.task_failed
+    assert isinstance(events[-1].task_status.result, TaskResult)
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
 def test_cancel_active_task_does_not_overwrite_existing_outcome(
     worker: TaskWorker,
 ) -> None:
@@ -1210,6 +1244,30 @@ def test_resume_when_not_paused_does_nothing(worker: TaskWorker) -> None:
     events = complete_future.result(timeout=5.0)
 
     assert all(e.errors == [] for e in events)
+
+
+def test_resume_re_pauses_when_plan_pauses_again(worker: TaskWorker) -> None:
+    # Covers the RunEngineInterrupted branch of the ResumeSignal handler:
+    # RE.resume() raises RunEngineInterrupted rather than completing when the
+    # plan immediately pauses again, and this must not be treated as a
+    # failure or leave the task in a half-finished state.
+    worker._ctx.register_plan(twice_pausing_plan)
+    task_id = worker.submit_task(_TWICE_PAUSING_TASK)
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    paused_again_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.PAUSED,
+    )
+    worker.resume()
+    paused_again_future.result(timeout=5.0)
+
+    assert worker.state == WorkerState.PAUSED
+    current = worker._current
+    assert current is not None
+    assert current.outcome is None
+    assert task_id in worker._pending_tasks
+    assert task_id not in worker._completed_tasks
 
 
 def test_can_run_task_after_resume(worker: TaskWorker) -> None:

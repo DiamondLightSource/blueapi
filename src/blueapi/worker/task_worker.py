@@ -204,17 +204,24 @@ class TaskWorker:
 
         # RE.abort()/stop() are thread-safe and must be called immediately —
         # putting only a CancelSignal would no-op if the worker is blocked in do_task()
+        #
+        # The outcome must be set *before* calling abort()/stop(), not after:
+        # those calls block until the worker thread's do_task() unblocks (either
+        # returning normally or raising RunEngineInterrupted), and that thread's
+        # own handling doesn't set a result for a plain stop. Setting it first
+        # ensures the outcome is already in place by the time the worker thread
+        # finalizes and reports the task's final status.
         default_reason = "Task failed for unknown reason"
         if failure:
-            self._ctx.run_engine.abort(reason or default_reason)
             with self._status_lock:
                 if current.outcome is None:
                     current.set_exception(Exception(reason or default_reason))
+            self._ctx.run_engine.abort(reason or default_reason)
         else:
-            self._ctx.run_engine.stop()
             with self._status_lock:
                 if current.outcome is None:
                     current.set_result(None)
+            self._ctx.run_engine.stop()
         self._task_channel.put(CancelSignal(failure=failure, reason=reason))
         add_span_attributes(
             {"Task aborted" if failure else "Task stopped": reason or ""}

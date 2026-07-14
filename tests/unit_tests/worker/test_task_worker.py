@@ -1,6 +1,7 @@
 import dataclasses
 import itertools
 import threading
+import time
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future
 from pathlib import Path
@@ -8,6 +9,7 @@ from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
 
+import bluesky.plan_stubs as plan_stubs
 import pydantic
 import pytest
 from bluesky.protocols import Movable, Readable, Status
@@ -35,7 +37,7 @@ from blueapi.worker import (
     WorkerEvent,
     WorkerState,
 )
-from blueapi.worker.event import TaskResult, TaskStatusEnum
+from blueapi.worker.event import TaskError, TaskResult, TaskStatusEnum
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
@@ -44,6 +46,10 @@ _INDEFINITE_TASK = Task(
     params={"movable": "fake_device", "value": 4.0},
 )
 _FAILING_TASK = Task(name="failing_plan", params={})
+_PAUSING_TASK = Task(name="pausing_plan", params={})
+_PAUSING_TASK_SLOW_CLEANUP = Task(name="pausing_plan_with_slow_cleanup", params={})
+_TWICE_PAUSING_TASK = Task(name="twice_pausing_plan", params={})
+_ABORT_CLEANUP_DELAY = 1.0
 _TASK_WITH_METADATA = Task(
     name="sleep",
     params={"time": 0.0},
@@ -77,6 +83,22 @@ class FakeDevice(Movable[float]):
 
 def failing_plan() -> MsgGenerator:
     raise KeyError("I failed")
+
+
+def pausing_plan() -> MsgGenerator:
+    yield from plan_stubs.pause()
+
+
+def pausing_plan_with_slow_cleanup() -> MsgGenerator:
+    try:
+        yield from plan_stubs.pause()
+    finally:
+        time.sleep(_ABORT_CLEANUP_DELAY)
+
+
+def twice_pausing_plan() -> MsgGenerator:
+    yield from plan_stubs.pause()
+    yield from plan_stubs.pause()
 
 
 @dataclasses.dataclass
@@ -278,12 +300,14 @@ def test_does_not_allow_simultaneous_running_tasks(
 
 
 def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
-    task_id = worker.submit_task(_SIMPLE_TASK)
+    # _LONG_TASK, since a near-instant task could complete (clearing the
+    # active task) before get_active_task() below is called.
+    task_id = worker.submit_task(_LONG_TASK)
     assert worker.get_active_task() is None
     worker.begin_task(task_id)
     active_task = worker.get_active_task()
     assert active_task is not None
-    assert active_task.task == _SIMPLE_TASK
+    assert active_task.task == _LONG_TASK
 
 
 @patch("blueapi.worker.task_worker.plan_tag_filter_context")
@@ -344,9 +368,9 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     assert events[-1].task_status.task_failed
     assert events[-1].errors == ["'I failed'"]
 
-    active_task = worker.get_active_task()
-    assert active_task is not None
-    assert active_task.errors == ["'I failed'"]
+    completed_task = worker._completed_tasks.get(task_id)
+    assert completed_task is not None
+    assert completed_task.errors == ["'I failed'"]
 
 
 def test_task_not_run_twice(worker: TaskWorker) -> None:
@@ -453,6 +477,19 @@ def begin_task_and_wait_until_complete(
 
     worker.begin_task(task_id)
     return events.result(timeout=timeout)
+
+
+def begin_task_and_wait_until_paused(
+    worker: TaskWorker,
+    task_id: str,
+    timeout: float = 5.0,
+) -> None:
+    paused_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.PAUSED,
+    )
+    worker.begin_task(task_id)
+    paused_future.result(timeout=timeout)
 
 
 #
@@ -922,3 +959,327 @@ def test_task_result_serialization(plan_result, task_result, type_name):
     res = TaskResult.from_result(plan_result)
     assert res.result == task_result
     assert res.type == type_name
+
+
+def test_pause_does_not_publish_error_event(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    events_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.PAUSED,
+    )
+    worker.begin_task(task_id)
+    events = events_future.result(timeout=5.0)
+
+    assert all(e.errors == [] for e in events)
+
+
+def test_paused_task_remains_in_pending(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    assert task_id in worker._pending_tasks
+    assert task_id not in worker._completed_tasks
+
+
+def test_worker_state_is_paused(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    assert worker.state == WorkerState.PAUSED
+
+
+def test_resume_after_pause_completes_task(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    complete_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.resume()
+    events = complete_future.result(timeout=5.0)
+
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_complete
+    assert isinstance(events[-1].task_status.result, TaskResult)
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_cancel_active_task_abort(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    cancel_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: (
+            e.state == WorkerState.IDLE
+            and e.task_status is not None
+            and e.task_status.task_complete
+        ),
+    )
+    worker.cancel_active_task(failure=True)
+    events = cancel_future.result(timeout=5.0)
+
+    assert events[-1].errors == ["Task failed for unknown reason"]
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_failed
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_cancel_active_task_graceful(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    cancel_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: (
+            e.state == WorkerState.IDLE
+            and e.task_status is not None
+            and e.task_status.task_complete
+        ),
+    )
+    worker.cancel_active_task(failure=False)
+    events = cancel_future.result(timeout=5.0)
+
+    assert events[-1].errors == []
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_complete
+    assert isinstance(events[-1].task_status.result, TaskResult)
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_cancel_running_task_records_failure(worker: TaskWorker) -> None:
+    # _LONG_TASK uses asyncio.sleep so the RE event loop is free to process the
+    # abort signal — unlike FakeDevice which blocks the loop with a sync wait.
+    task_id = worker.submit_task(_LONG_TASK)
+
+    running_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.RUNNING,
+    )
+    worker.begin_task(task_id)
+    running_future.result(timeout=5.0)
+
+    cancel_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.cancel_active_task(failure=True, reason="mid-run abort")
+    events = cancel_future.result(timeout=5.0)
+
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_failed
+    assert isinstance(events[-1].task_status.result, TaskError)
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_cancel_running_task_gracefully(worker: TaskWorker) -> None:
+    # cancel_active_task(failure=False) on a running (not paused) task must
+    # not be reported as a failure.
+    task_id = worker.submit_task(_LONG_TASK)
+
+    running_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.RUNNING,
+    )
+    worker.begin_task(task_id)
+    running_future.result(timeout=5.0)
+
+    cancel_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.cancel_active_task(failure=False)
+    events = cancel_future.result(timeout=5.0)
+
+    assert events[-1].errors == []
+    assert events[-1].task_status is not None
+    assert not events[-1].task_status.task_failed
+    assert isinstance(events[-1].task_status.result, TaskResult)
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_cancel_active_task_does_not_overwrite_existing_outcome(
+    worker: TaskWorker,
+) -> None:
+    task_id = worker.submit_task(_LONG_TASK)
+
+    running_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.RUNNING,
+    )
+    worker.begin_task(task_id)
+    running_future.result(timeout=5.0)
+
+    current = worker._current
+    assert current is not None
+    with worker._status_lock:
+        current.set_exception(Exception("worker thread got there first"))
+
+    worker.cancel_active_task(failure=True, reason="caller's reason")
+
+    assert isinstance(current.outcome, TaskError)
+    assert current.outcome.message == "worker thread got there first"
+
+
+def test_cancel_active_task_does_not_block_caller_when_paused(
+    worker: TaskWorker,
+) -> None:
+
+    worker._ctx.register_plan(pausing_plan_with_slow_cleanup)
+    task_id = worker.submit_task(_PAUSING_TASK_SLOW_CLEANUP)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    start = time.monotonic()
+    worker.cancel_active_task(failure=True)
+    elapsed = time.monotonic() - start
+
+    assert elapsed < _ABORT_CLEANUP_DELAY / 2, (
+        f"cancel_active_task(failure=True) blocked its caller for "
+        f"{elapsed:.2f}s while the RunEngine finished aborting a paused "
+        "task. It must enqueue the cancellation and return immediately, "
+        "the same way resume() does, instead of calling RE.abort() "
+        "synchronously on the caller's thread."
+    )
+
+    complete_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    events = complete_future.result(timeout=5.0)
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_failed
+    assert task_id in worker._completed_tasks
+
+
+def test_cancel_wins_race_with_concurrent_resume(worker: TaskWorker) -> None:
+    # A cancel queued right after a resume must still win, not be dropped in
+    # favour of the resume completing the task first.
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    complete_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.resume()
+    worker.cancel_active_task(failure=True, reason="changed my mind")
+    events = complete_future.result(timeout=5.0)
+
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_failed
+    assert isinstance(events[-1].task_status.result, TaskError)
+    assert events[-1].errors == ["changed my mind"]
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_second_cancel_while_paused_supersedes_first(worker: TaskWorker) -> None:
+
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    complete_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.cancel_active_task(failure=False, reason="first, graceful")
+    worker.cancel_active_task(failure=True, reason="second, urgent")
+    events = complete_future.result(timeout=5.0)
+
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_failed
+    assert isinstance(events[-1].task_status.result, TaskError)
+    assert events[-1].errors == ["second, urgent"]
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+
+
+def test_stop_while_paused_completes_task(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    worker.stop()
+
+    assert task_id in worker._completed_tasks
+    assert task_id not in worker._pending_tasks
+    assert worker._completed_tasks[task_id].is_complete
+    assert worker._completed_tasks[task_id].outcome is not None
+
+
+def test_resume_when_not_paused_does_nothing(worker: TaskWorker) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    begin_task_and_wait_until_complete(worker, task_id)
+
+    complete_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.IDLE,
+    )
+    worker.resume()
+    events = complete_future.result(timeout=5.0)
+
+    assert all(e.errors == [] for e in events)
+
+
+def test_resume_re_pauses_when_plan_pauses_again(worker: TaskWorker) -> None:
+    # If the plan pauses again immediately on resume, that's not a failure
+    # and must not leave the task half-finished.
+    worker._ctx.register_plan(twice_pausing_plan)
+    task_id = worker.submit_task(_TWICE_PAUSING_TASK)
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    paused_again_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.state == WorkerState.PAUSED,
+    )
+    worker.resume()
+    paused_again_future.result(timeout=5.0)
+
+    assert worker.state == WorkerState.PAUSED
+    current = worker._current
+    assert current is not None
+    assert current.outcome is None
+    assert task_id in worker._pending_tasks
+    assert task_id not in worker._completed_tasks
+
+
+def test_can_run_task_after_resume(worker: TaskWorker) -> None:
+    worker._ctx.register_plan(pausing_plan)
+    task_id = worker.submit_task(_PAUSING_TASK)
+    begin_task_and_wait_until_paused(worker, task_id)
+
+    complete_future: Future[list[WorkerEvent]] = take_events(
+        worker.worker_events,
+        lambda e: e.is_complete(),
+    )
+    worker.resume()
+    complete_future.result(timeout=5.0)
+
+    task_id_2 = worker.submit_task(_SIMPLE_TASK)
+    events = begin_task_and_wait_until_complete(worker, task_id_2)
+    assert events[-1].task_status is not None
+    assert events[-1].task_status.task_complete

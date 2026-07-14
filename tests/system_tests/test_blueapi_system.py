@@ -408,11 +408,14 @@ def test_delete_non_existent_task(rest_client: BlueapiRestClient):
         rest_client.clear_task("Not-exists")
 
 
-def test_put_worker_task(rest_client: BlueapiRestClient, small_task: TaskRequest):
-    created_task = rest_client.create_task(small_task)
+def test_put_worker_task(rest_client: BlueapiRestClient, long_task: TaskRequest):
+    # long_task, since a near-instant task could complete (clearing the
+    # active task) before get_active_task() below is called.
+    created_task = rest_client.create_task(long_task)
     rest_client.update_worker_task(WorkerTask(task_id=created_task.task_id))
     active_task = rest_client.get_active_task()
     assert active_task.task_id == created_task.task_id
+    rest_client.cancel_current_task(WorkerState.ABORTING)
     rest_client.clear_task(created_task.task_id)
 
 
@@ -802,16 +805,23 @@ def test_admin_can_delete_any_task(client_factory: dict[ValidUser, BlueapiClient
 def test_any_user_can_retrieve_active_task(
     client_factory: dict[ValidUser, BlueapiClient],
 ):
+    # time=1.0, since a near-instant task could complete (clearing the active
+    # task) before every user's get_active_task() below has been called.
     task_id = (
         client_factory[AdminUser.admin]
         .create_and_start_task(
-            task_factory(AdminUser.admin, VALID_INSTRUMENT_SESSION[AdminUser.admin])
+            task_factory(
+                AdminUser.admin, VALID_INSTRUMENT_SESSION[AdminUser.admin], time=1.0
+            )
         )
         .task_id
     )
 
     for user in User:
         assert client_factory[user].get_active_task().task_id == task_id
+
+    client_factory[AdminUser.admin].abort()
+    client_factory[AdminUser.admin].clear_task(task_id)
 
 
 def test_non_admin_can_only_start_own_tasks(

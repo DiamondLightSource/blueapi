@@ -1088,9 +1088,8 @@ def test_cancel_running_task_records_failure(worker: TaskWorker) -> None:
 
 
 def test_cancel_running_task_gracefully(worker: TaskWorker) -> None:
-    # Covers the failure=False branch of cancel_active_task() while the
-    # RunEngine is actively running (not paused) - RE.stop() is called
-    # directly on the caller's thread and must not be reported as a failure.
+    # cancel_active_task(failure=False) on a running (not paused) task must
+    # not be reported as a failure.
     task_id = worker.submit_task(_LONG_TASK)
 
     running_future: Future[list[WorkerEvent]] = take_events(
@@ -1170,10 +1169,8 @@ def test_cancel_active_task_does_not_block_caller_when_paused(
 
 
 def test_cancel_wins_race_with_concurrent_resume(worker: TaskWorker) -> None:
-    # Regression test: resume() and cancel_active_task() are both deferred to
-    # the worker thread while paused. If resume() is queued first and runs to
-    # completion before the cancel is looked at, the cancel must still win -
-    # not be silently dropped in favour of a "successful" task.
+    # A cancel queued right after a resume must still win, not be dropped in
+    # favour of the resume completing the task first.
     worker._ctx.register_plan(pausing_plan)
     task_id = worker.submit_task(_PAUSING_TASK)
 
@@ -1247,10 +1244,8 @@ def test_resume_when_not_paused_does_nothing(worker: TaskWorker) -> None:
 
 
 def test_resume_re_pauses_when_plan_pauses_again(worker: TaskWorker) -> None:
-    # Covers the RunEngineInterrupted branch of the ResumeSignal handler:
-    # RE.resume() raises RunEngineInterrupted rather than completing when the
-    # plan immediately pauses again, and this must not be treated as a
-    # failure or leave the task in a half-finished state.
+    # If the plan pauses again immediately on resume, that's not a failure
+    # and must not leave the task half-finished.
     worker._ctx.register_plan(twice_pausing_plan)
     task_id = worker.submit_task(_TWICE_PAUSING_TASK)
     begin_task_and_wait_until_paused(worker, task_id)

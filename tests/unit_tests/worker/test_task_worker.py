@@ -300,12 +300,14 @@ def test_does_not_allow_simultaneous_running_tasks(
 
 
 def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
-    task_id = worker.submit_task(_SIMPLE_TASK)
+    # _LONG_TASK, since a near-instant task could complete (clearing the
+    # active task) before get_active_task() below is called.
+    task_id = worker.submit_task(_LONG_TASK)
     assert worker.get_active_task() is None
     worker.begin_task(task_id)
     active_task = worker.get_active_task()
     assert active_task is not None
-    assert active_task.task == _SIMPLE_TASK
+    assert active_task.task == _LONG_TASK
 
 
 @patch("blueapi.worker.task_worker.plan_tag_filter_context")

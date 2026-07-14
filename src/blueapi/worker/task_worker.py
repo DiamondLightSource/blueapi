@@ -509,7 +509,10 @@ class TaskWorker:
                             result = self._ctx.run_engine.resume()
                             self._current.set_result(result)
                         except RunEngineInterrupted:
-                            pass
+                            # Expected when the plan pauses again immediately
+                            # after resuming - not a failure, just leave the
+                            # task's outcome unset so it stays resumable.
+                            LOGGER.debug("RunEngine resume interrupted; ignoring")
                     else:
                         LOGGER.warning(
                             "Received resume signal but no active task, ignoring"
@@ -798,7 +801,7 @@ class ResumeSignal:
     Object put in the worker's task queue to tell it to resume if paused.
     """
 
-    ...
+    pass
 
 
 @dataclass

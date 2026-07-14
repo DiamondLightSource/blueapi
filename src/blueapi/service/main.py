@@ -40,7 +40,13 @@ from blueapi.service.middleware import (
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import TaskStatusEnum
 
-from .authorization import OpaClient, validate_tiled_config
+from .authorization import (
+    OpaClient,
+    OpaUserClient,
+    opa,
+    submit_permission,
+    validate_tiled_config,
+)
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -145,6 +151,37 @@ def get_app(config: ApplicationConfig):
             allow_headers=config.api.cors.allow_headers,
         )
     return app
+
+
+async def access_task_permission(
+    opa: Annotated[OpaUserClient | None, Depends(opa)],
+    task_id: str,
+    fedid: Fedid,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+):
+    task = runner.run(interface.get_task_by_id, task_id)
+
+    if (
+        opa
+        and not await opa.admin()
+        and (task and fedid != task.task.metadata.get("user"))
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+# start_task_permission is used when there is WorkerTask
+async def start_task_permission(
+    task: WorkerTask,
+    opa: Annotated[OpaUserClient, Depends(opa)],
+    fedid: Fedid,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+):
+    if not task.task_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="No task id provided",
+        )
+    await access_task_permission(opa, task.task_id, fedid, runner)
 
 
 async def on_key_error_404(_: Request, __: Exception):
@@ -272,13 +309,13 @@ def submit_task(
     request: Request,
     response: Response,
     task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
+    _: Annotated[None, Depends(submit_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    user: Fedid,
+    fedid: Fedid,
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        user = user or "Unknown"
-        task_id: str = runner.run(interface.submit_task, task_request, {"user": user})
+        task_id: str = runner.run(interface.submit_task, task_request, {"user": fedid})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
     except ValidationError as e:
@@ -311,6 +348,7 @@ def submit_task(
 @start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
+    _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
@@ -319,8 +357,10 @@ def delete_submitted_task(
 @secure_router_v1.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
-def get_tasks(
+async def get_tasks(
+    fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    opa: Annotated[OpaUserClient, Depends(opa)],
     task_status: TaskStatusEnum | None = None,
 ) -> TasksListResponse:
     """
@@ -328,6 +368,10 @@ def get_tasks(
     The status of a newly created task is PENDING.
     """
     tasks = runner.run(interface.get_tasks, task_status)
+
+    if opa and not await opa.admin():
+        tasks = [t for t in tasks if t.task.metadata.get("user") == fedid]
+
     return TasksListResponse(tasks=tasks)
 
 
@@ -345,6 +389,7 @@ def get_tasks(
 def set_active_task(
     request: Request,
     task: WorkerTask,
+    _: Annotated[None, Depends(start_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
@@ -375,6 +420,7 @@ def get_passthrough_headers(request: Request) -> dict[str, str]:
 @start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
+    _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TrackableTask:
     """Retrieve a task"""
@@ -449,9 +495,11 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
     tags=[Tag.TASK],
 )
 @start_as_current_span(TRACER, "state_change_request.new_state")
-def set_state(
+async def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
+    fedid: Fedid,
+    opa: Annotated[OpaUserClient, Depends(opa)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:
     """
@@ -478,6 +526,19 @@ def set_state(
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
+        active = runner.run(interface.get_active_task)
+
+        if (
+            opa
+            and not await opa.admin()
+            and active
+            and active.task.metadata.get("user") != fedid
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to set worker state",
+            )
+
         if new_state == WorkerState.PAUSED:
             runner.run(interface.pause_worker, state_change_request.defer)
         elif new_state == WorkerState.RUNNING:

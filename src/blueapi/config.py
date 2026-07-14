@@ -313,6 +313,8 @@ class OpaConfig(BlueapiBaseModel):
     root: HttpUrl = HttpUrl("http://localhost:8181")
     audience: str = "account"
     tiled_service_account_check: str
+    submit_task_check: str
+    admin_check: str
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -322,7 +324,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.4.1"
+    REST_API_VERSION: ClassVar[str] = "1.5.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",

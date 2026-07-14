@@ -344,6 +344,8 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "root": "http://opa.example.com/",
                 "audience": "account",
                 "tiled_service_account_check": "v1/tiled_service_account",
+                "submit_task_check": "v1/submit_task",
+                "admin_check": "v1/admin_check",
             },
         },
         {

@@ -4,14 +4,16 @@
             "beamlines": {
                 "adsim": {
                     "sessions": [
-                        1
+                        1,
+                        2
                     ]
                 }
             },
             "proposals": {
                 "12345": {
                     "sessions": {
-                        "1": 1
+                        "1": 1,
+                        "2": 2
                     }
                 }
             },
@@ -20,16 +22,33 @@
                     "beamline": "adsim",
                     "proposal_number": 12345,
                     "visit_number": 1
+                },
+                "2": {
+                    "beamline": "adsim",
+                    "proposal_number": 12345,
+                    "visit_number": 2
                 }
             },
             "subjects": {
+                "admin": {
+                    "permissions": [
+                        "super_admin"
+                    ],
+                    "proposals": [],
+                    "sessions": []
+                },
                 "alice": {
                     "permissions": [],
-                    "proposals": [
-                        12345
-                    ],
+                    "proposals": [],
                     "sessions": [
                         1
+                    ]
+                },
+                "bob": {
+                    "permissions": [],
+                    "proposals": [],
+                    "sessions": [
+                        2
                     ]
                 }
             }

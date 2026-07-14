@@ -190,10 +190,9 @@ class TaskWorker:
             raise TransitionError("Attempted to cancel while no active Task")
 
         if self._ctx.run_engine.state == "paused":
-            # abort()/stop() block here until cleanup finishes - defer to the
-            # worker thread, like ResumeSignal does for resume(). Recorded
-            # separately so a queued ResumeSignal can't race ahead of this
-            # and finish the task before the cancel is even looked at.
+            # abort()/stop() block until cleanup finishes, so defer to the worker
+            # thread. Also recorded in _pending_cancel so a queued ResumeSignal
+            # can't race ahead and finish the task before this is looked at.
             signal = CancelSignal(failure=failure, reason=reason)
             self._pending_cancel = signal
             try:
@@ -202,15 +201,10 @@ class TaskWorker:
                 pass  # a signal already queued will check _pending_cancel
             return current.task_id
 
-        # RE.abort()/stop() are thread-safe and must be called immediately —
-        # putting only a CancelSignal would no-op if the worker is blocked in do_task()
-        #
-        # The outcome must be set *before* calling abort()/stop(), not after:
-        # those calls block until the worker thread's do_task() unblocks (either
-        # returning normally or raising RunEngineInterrupted), and that thread's
-        # own handling doesn't set a result for a plain stop. Setting it first
-        # ensures the outcome is already in place by the time the worker thread
-        # finalizes and reports the task's final status.
+        # RE.abort()/stop() are thread-safe and must be called immediately -
+        # putting only a CancelSignal would no-op if the worker is blocked in
+        # do_task(). The outcome is set beforehand so it's already in place
+        # once the worker thread's do_task() unblocks and finalizes.
         default_reason = "Task failed for unknown reason"
         if failure:
             with self._status_lock:
@@ -471,14 +465,13 @@ class TaskWorker:
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
                         with self._status_lock:
-                            # A concurrent cancel_active_task() may have
-                            # already set the outcome.
+                            # cancel_active_task() may have set this concurrently.
                             if self._current.outcome is None:
                                 self._current.set_result(result)
                     except RunEngineInterrupted:
-                        # Raised for both a normal pause (outcome still None)
-                        # and an abort interrupting a running plan (outcome
-                        # already TaskError) - only the latter is a failure.
+                        # Raised by both a pause (outcome still None) and an
+                        # abort (outcome already TaskError) - only the latter
+                        # is a failure.
                         if isinstance(self._current.outcome, TaskError):
                             self._report_error(Exception(self._current.outcome.message))
                     except Exception as e:
@@ -507,8 +500,8 @@ class TaskWorker:
             elif isinstance(next_task, ResumeSignal):
                 pending_cancel = self._pending_cancel
                 if pending_cancel is not None:
-                    # A cancel was requested after this resume was already
-                    # queued - it takes priority, so this resume never runs.
+                    # A cancel queued after this resume takes priority, so
+                    # this resume never runs.
                     self._apply_cancel(pending_cancel)
                 elif self._ctx.run_engine.state == "paused":
                     if self._current is not None:
@@ -516,9 +509,8 @@ class TaskWorker:
                             result = self._ctx.run_engine.resume()
                             self._current.set_result(result)
                         except RunEngineInterrupted:
-                            # Expected when the plan pauses again immediately
-                            # after resuming - not a failure, just leave the
-                            # task's outcome unset so it stays resumable.
+                            # Plan paused again immediately - not a failure,
+                            # leave the outcome unset so it stays resumable.
                             LOGGER.debug("RunEngine resume interrupted; ignoring")
                     else:
                         LOGGER.warning(
@@ -558,8 +550,7 @@ class TaskWorker:
                 self._current_task_otel_context = None
 
         if self._current is not None:
-            # Don't finalize while paused - the task isn't done yet, it may
-            # still be resumed or cancelled.
+            # Not done yet while paused - it may still be resumed or cancelled.
             if self._ctx.run_engine.state != "paused":
                 self._current.is_complete = True
                 self._pending_tasks.pop(self._current.task_id)
@@ -620,8 +611,8 @@ class TaskWorker:
         self._errors.append(str(err))
 
     def _apply_cancel(self, signal: "CancelSignal") -> None:
-        # Only ever runs on the worker thread, so no lock is needed here -
-        # unlike the caller-thread path in cancel_active_task().
+        # Only runs on the worker thread, so no lock needed (unlike
+        # cancel_active_task()'s caller-thread path).
         self._pending_cancel = None
         default_reason = "Task failed for unknown reason"
         if self._current is not None:

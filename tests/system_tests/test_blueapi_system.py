@@ -349,9 +349,8 @@ def test_delete_non_existent_task(rest_client: BlueapiRestClient):
 
 
 def test_put_worker_task(rest_client: BlueapiRestClient):
-    # Uses _LONG_TASK, not _SIMPLE_TASK: the active task is cleared as soon as
-    # it completes, so a near-instant task can finish before get_active_task()
-    # is called, racily returning None instead of the task just submitted.
+    # _LONG_TASK, since a near-instant task could complete (clearing the
+    # active task) before get_active_task() below is called.
     created_task = rest_client.create_task(_LONG_TASK)
     rest_client.update_worker_task(WorkerTask(task_id=created_task.task_id))
     active_task = rest_client.get_active_task()

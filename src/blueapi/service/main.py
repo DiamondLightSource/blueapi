@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 import jwt
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -28,7 +29,6 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
-from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.service import interface

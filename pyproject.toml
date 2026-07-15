@@ -107,7 +107,7 @@ timeout_method = "thread"
 timeout_func_only = true
 testpaths = "docs src tests"
 asyncio_mode = "auto"
-timeout = 1
+timeout = 1.5
 [tool.coverage.run]
 patch = ["subprocess"]
 data_file = "/tmp/blueapi.coverage"

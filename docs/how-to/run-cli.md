@@ -23,6 +23,6 @@ Then run
 blueapi -c custom-address.yaml controller plans
 ```
 
-The CLI has a number of features including [running plans](../tutorials/run-plan.md) and 
+The CLI has a number of features including [running plans](../tutorials/run-plan-cli.md) and 
 
 See also [Full CLI reference](../reference/cli.md)

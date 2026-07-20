@@ -466,7 +466,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "stomp-py" },
-    { name = "super-state-machine" },
     { name = "tiled", extra = ["client"] },
     { name = "tomlkit" },
     { name = "uvicorn" },
@@ -530,7 +529,6 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests" },
     { name = "stomp-py" },
-    { name = "super-state-machine" },
     { name = "tiled", extras = ["client"], specifier = ">=0.2.4" },
     { name = "tomlkit" },
     { name = "uvicorn" },
@@ -5741,15 +5739,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3f/9d/2eac45f75ce1f9708cf23c5361e74d0b855013d842d3c0aef64ce0667405/stomp_py-9.0.0.tar.gz", hash = "sha256:77b63fdd6cb2fb5e3d7032c5e1cde70c005f498d6096b77827efe71913196464", size = 39701, upload-time = "2026-05-12T19:05:15.221Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a5/99/b010daaf1db86ea6ff3b831e70a5484bfe9c4fbf2f5f2ad6578160c56917/stomp_py-9.0.0-py3-none-any.whl", hash = "sha256:d115c85950b92dad358d11bc361b23d23994d21ff7eef50119f487f718ea4be2", size = 44242, upload-time = "2026-05-12T19:05:16.657Z" },
-]
-
-[[package]]
-name = "super-state-machine"
-version = "2.1.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/37/6c/6c13e32bf1903f1d71bb21dd8d0b62a7977d514a0d2c399bfaec2e8e4299/super_state_machine-2.1.0.tar.gz", hash = "sha256:dbea42b7440255e76726221a8b1c7980d8928d427bc3c25714c10e0c6f15cfe6", size = 20180, upload-time = "2025-09-06T15:08:56.776Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/e9/e1286da32d514ab1bab27b0f28b00e012f4634aa4521fff7a17bfd9c302a/super_state_machine-2.1.0-py2.py3-none-any.whl", hash = "sha256:c6a4d07202486096004055c77824d979c59248ea23b689addb46a5867e259821", size = 8134, upload-time = "2025-09-06T15:08:55.275Z" },
 ]
 
 [[package]]

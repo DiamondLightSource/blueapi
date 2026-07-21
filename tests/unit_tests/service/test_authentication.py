@@ -205,7 +205,8 @@ def test_tiled_auth_sync_auth_flow():
 def test_unchecked_bearer_token(
     header: str | None, cookie: str | None, token: str | None
 ):
-    assert unchecked_bearer_token(header, cookie) == token
+    req = Mock(headers={"Authorization": header}, cookies={"Authorization": cookie})
+    assert unchecked_bearer_token(req) == token
 
 
 def test_access_token():

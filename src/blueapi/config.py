@@ -168,11 +168,7 @@ class CORSConfig(BlueapiBaseModel):
 
 
 class RestConfig(BlueapiBaseModel):
-    url: Annotated[
-        HttpUrl,
-        UrlConstraints(preserve_empty_path=True),
-        Field("http://localhost:8000", validate_default=True),
-    ]
+    url: HttpUrl = HttpUrl("http://localhost:8000")
     cors: CORSConfig | None = None
 
     @property
@@ -183,8 +179,12 @@ class RestConfig(BlueapiBaseModel):
             # HttpUrl without host
             raise ValueError("No host configured")  # pragma: no cover
         scheme = "ws" if api.scheme == "http" else "wss"
+
+        # HttpUrl adds "/" to the start of paths, even if none was specified so
+        # remove existing leading '/' to prevent duplication
+        path = (api.path or "").removeprefix("/")
         return WebsocketUrl.build(
-            scheme=scheme, host=api.host, port=api.port, path=api.path
+            scheme=scheme, host=api.host, port=api.port, path=path
         )
 
 

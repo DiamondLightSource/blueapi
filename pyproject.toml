@@ -103,11 +103,11 @@ addopts = '--tb=native -vv --doctest-modules --doctest-glob="*.rst"'
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
-timeout_method = "thread"
-timeout_func_only = true
 testpaths = "docs src tests"
 asyncio_mode = "auto"
 timeout = 1.5
+timeout_method = "thread"
+timeout_func_only = true
 [tool.coverage.run]
 patch = ["subprocess"]
 data_file = "/tmp/blueapi.coverage"

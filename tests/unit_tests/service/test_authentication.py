@@ -189,19 +189,23 @@ def test_tiled_auth_sync_auth_flow():
 
 
 @pytest.mark.parametrize(
-    "header,token",
+    "header,cookie,token",
     [
-        (None, None),
-        ("ApiKey foobar", None),
-        ("Bearer foobar", "foobar"),
-        ("Bearer   with_whitespace   ", "with_whitespace"),
-        ("Bearerfoobar", None),
+        (None, None, None),
+        ("", None, None),
+        ("ApiKey foobar", None, None),
+        ("Bearer foobar", None, "foobar"),
+        ("Bearer   with_whitespace   ", None, "with_whitespace"),
+        ("Bearerfoobar", None, None),
+        (None, "Bearer foobar", "foobar"),
+        ("", "Bearer foo", "foo"),
+        ("Bearer foo", "bearer bar", "foo"),
     ],
 )
-def test_unchecked_bearer_token(header: str | None, token: str | None):
-    req = Mock()
-    req.headers.get.side_effect = lambda key: header if key == "Authorization" else None
-
+def test_unchecked_bearer_token(
+    header: str | None, cookie: str | None, token: str | None
+):
+    req = Mock(headers={"Authorization": header}, cookies={"Authorization": cookie})
     assert unchecked_bearer_token(req) == token
 
 

@@ -1,6 +1,6 @@
 import json
 import logging
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any, Literal, TypeVar
 
 import requests
@@ -12,10 +12,13 @@ from observability_utils.tracing import (
 )
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from pydantic_core import PydanticSerializationError
+from websockets.exceptions import InvalidStatus
+from websockets.sync.client import connect
 
 from blueapi import __version__
 from blueapi.client import client
 from blueapi.config import RestConfig
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
     DeviceModel,
@@ -31,13 +34,24 @@ from blueapi.service.model import (
     TasksListResponse,
     WorkerTask,
 )
+from blueapi.service.protocol import (
+    ControlResponse,
+    InvalidArgs,
+    PlanNotFound,
+    ServerBusy,
+    Submit,
+    Update,
+)
 from blueapi.worker import TrackableTask, WorkerState
+from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 T = TypeVar("T")
 
 TRACER = get_tracer("rest")
 
 LOGGER = logging.getLogger(__name__)
+
+USER_AGENT = f"blueapi cli {__version__}"
 
 
 class BlueskyRequestError(Exception):
@@ -86,8 +100,8 @@ class NoContentError(Exception):
 
 class ParameterError(BaseModel):
     loc: list[str | int]
-    msg: str
-    type: str
+    msg: str | None
+    type: str | None
     input: Any
 
     def field(self):
@@ -307,14 +321,15 @@ class BlueapiRestClient:
     ) -> T:
         url = self._config.url.unicode_string().removesuffix("/") + suffix
         # Get the trace context to propagate to the REST API
-        carr = get_context_propagator()
+        headers = get_context_propagator()
+        headers["User-Agent"] = USER_AGENT
         try:
             response = self._pool.request(
                 method,
                 url,
                 json=data,
                 params=params,
-                headers=carr,
+                headers=headers,
                 auth=JWTAuth(self._session_manager),
             )
         except requests.exceptions.ConnectionError as ce:
@@ -339,6 +354,46 @@ class BlueapiRestClient:
             _response_json(response)
         )
         return deserialized
+
+    def run_blocking(
+        self, req: TaskRequest
+    ) -> Iterable[DataEvent | WorkerEvent | ProgressEvent]:
+        url = self._config.ws_address.unicode_string().rstrip("/") + "/api/v2/run_plan"
+        headers = get_context_propagator()
+        if self._session_manager:
+            auth = self._session_manager.get_valid_access_token()
+            headers["Authorization"] = f"Bearer {auth}"
+        try:
+            with connect(
+                url,
+                additional_headers=headers,
+                user_agent_header=USER_AGENT,
+            ) as ws:
+                ws.send(Submit(task=req).model_dump_json())
+                for message in ws:
+                    event = ControlResponse.validate_json(message)
+                    match event:
+                        case Update(data=data):
+                            yield data
+                        case InvalidArgs(errors=errors):
+                            raise InvalidParametersError(
+                                [
+                                    ParameterError(
+                                        loc=e.loc, msg=e.msg, type=e.type, input=e.input
+                                    )
+                                    for e in errors
+                                ]
+                            )
+                        case PlanNotFound(plan_name=name):
+                            raise UnknownPlanError(message=name)
+                        case ServerBusy():
+                            raise BlueskyRemoteControlError(409, "Server is busy")
+        except InvalidStatus as istat:
+            match istat.response.status_code:
+                case 401 | 403:
+                    raise UnauthorisedAccessError() from None
+            print(vars(istat))
+            return
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

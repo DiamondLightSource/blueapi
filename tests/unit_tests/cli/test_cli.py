@@ -7,7 +7,6 @@ from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, TypeVar
-from unittest import mock
 from unittest.mock import Mock, patch
 
 import pytest
@@ -385,9 +384,9 @@ def test_run_plan_feedback(
         main,
         ["controller", "run", "-i", "cm12345-1", "name"],
     )
+    bc.add_callback.assert_called_once()
     bc.run_task.assert_called_once_with(
         TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
-        on_event=mock.ANY,
     )
     assert res.exit_code == 0
     assert res.stdout == message

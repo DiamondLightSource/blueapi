@@ -1,4 +1,6 @@
 import logging
+import uuid
+from collections.abc import Iterable
 
 from opentelemetry.context import attach
 from opentelemetry.propagate import get_global_textmap
@@ -8,6 +10,7 @@ from blueapi import __version__
 from blueapi.config import ApplicationConfig
 
 OBS_LOGGER = logging.getLogger("blueapi.service.middleware.observability")
+WS_LOGGER = logging.getLogger("blueapi.service.middleware.websocket")
 
 CONTEXT_HEADER = ApplicationConfig.CONTEXT_HEADER.encode()
 VENDOR_CONTEXT_HEADER = ApplicationConfig.VENDOR_CONTEXT_HEADER.encode()
@@ -56,3 +59,81 @@ class ObservabilityContextPropagator:
             attach(get_global_textmap().extract(carrier))
 
         return await self.app(scope, receive, send)
+
+
+Header = tuple[bytes, bytes]
+
+
+def _redact_headers(headers: list[Header] | None) -> Iterable[Header]:
+    for key, value in headers or []:
+        if key == b"authorization":
+            if (space := value.find(b" ")) >= 0:
+                value = value[:space] + b" [REDACTED]"
+        yield (key, value)
+
+
+class WebsocketTracing:
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        active = WS_LOGGER.isEnabledFor(logging.DEBUG)
+
+        if scope.get("type") != "websocket" or not active:
+            return await self.app(scope, receive, send)
+
+        conn_id = uuid.uuid4()
+        client: tuple[str, int] = scope.get("client", ("unknown", 0))
+        extra = {"conn": conn_id, "client": client}
+
+        WS_LOGGER.debug(
+            "New Connection from %r",
+            {**scope, "headers": list(_redact_headers(scope.get("headers")))},
+            extra=extra,
+        )
+
+        async def local_send(msg: Message):
+            match msg.get("type"):
+                case "websocket.send":
+                    WS_LOGGER.debug("Sending: %r", msg.get("text"), extra=extra)
+                case "websocket.accept":
+                    WS_LOGGER.debug(
+                        "Accepting websocket - sending headers: %r",
+                        msg.get("headers"),
+                        extra=extra,
+                    )
+                case "websocket.close":
+                    WS_LOGGER.debug(
+                        "Closing with code: %r, reason: %r",
+                        msg.get("code"),
+                        msg.get("reason"),
+                        extra=extra,
+                    )
+                case "websocket.http.response.start":
+                    WS_LOGGER.debug(
+                        "HTTP Response: status=%r, headers=%r",
+                        msg.get("status"),
+                        msg.get("headers"),
+                        extra=extra,
+                    )
+                case "websocket.http.response.body":
+                    WS_LOGGER.debug(
+                        "HTTP Response Content: %r", msg.get("body"), extra=extra
+                    )
+                case _:
+                    WS_LOGGER.debug("Sending other: %r", msg, extra=extra)
+
+            await send(msg)
+
+        async def local_receive() -> Message:
+            message = await receive()
+            match message.get("type"):
+                case "websocket.receive":
+                    WS_LOGGER.debug("Received: %r", message.get("text"), extra=extra)
+                case "websocket.connect":
+                    WS_LOGGER.debug("New connection from %s:%d", *client, extra=extra)
+                case _:
+                    WS_LOGGER.debug("Received other: %r", message, extra=extra)
+            return message
+
+        return await self.app(scope, local_receive, local_send)

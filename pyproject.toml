@@ -104,8 +104,9 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
-timeout = 10
-
+timeout = 1.5
+timeout_method = "thread"
+timeout_func_only = true
 [tool.coverage.run]
 patch = ["subprocess"]
 data_file = "/tmp/blueapi.coverage"
@@ -159,6 +160,8 @@ commands = [
         "pytest",
         "-n",
         "logical",
+        "--max-worker-restart",
+        "0",
         "tests/unit_tests",
         "--cov=blueapi",
         "--cov-report",

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType, NoneType
-from typing import Any, Generic, TypeVar, Union
+from typing import Generic, TypeVar, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -46,7 +46,7 @@ from blueapi.config import (
 )
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
 from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
-from blueapi.core.protocols import DeviceConnectResult, DeviceManager
+from blueapi.core.protocols import DeviceManager, StaticDeviceManager
 from blueapi.utils.invalid_config_error import InvalidConfigError
 
 SIM_MOTOR_NAME = "sim"
@@ -668,22 +668,6 @@ def test_explicit_none_arg_generated_schema(
         "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "null"}]}
     }
     assert "foo" in schema.get("required", [])
-
-
-@dataclass
-class StaticDeviceManager:
-    devices: dict[str, Any] = field(default_factory=dict)
-    build_errors: dict[str, Exception] = field(default_factory=dict)
-    connection_errors: dict[str, Exception] = field(default_factory=dict)
-
-    def build_and_connect(
-        self,
-        *,
-        mock: bool = False,
-        timeout: float | None = None,
-        fixtures: dict[str, Any] | None = None,
-    ) -> DeviceConnectResult:
-        return self
 
 
 def test_empty_device_manager(empty_context: BlueskyContext):

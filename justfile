@@ -39,6 +39,17 @@ repl:
     #!/usr/bin/env bash
     uv run --with ptpython ptpython -i <(cat << EOF
     from blueapi.client import BlueapiClient
+    from blueapi.client.rest import ServiceUnavailableError
     bc = BlueapiClient.from_config_file("tests/system_tests/config.yaml").with_instrument_session("cm12345-1")
+    try:
+        bc.login()
+    except KeyboardInterrupt:
+        print("Login cancelled")
+    except ServiceUnavailableError:
+        print("Couldn't access blueapi server to log in")
+    except Exception as e:
+        import traceback
+        print("Couldn't log in")
+        traceback.print_exception(e, chain=False)
     EOF
     )

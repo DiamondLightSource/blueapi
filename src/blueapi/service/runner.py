@@ -71,7 +71,6 @@ class WorkerDispatcher:
         self.start()
         LOGGER.info("Runner reloaded")
 
-    @start_as_current_span(TRACER)
     def start(self):
         environment_id = uuid.uuid4()
         try:
@@ -110,7 +109,6 @@ class WorkerDispatcher:
                 error_message=_safe_exception_message(e),
             )
 
-    @start_as_current_span(TRACER, "function", "args", "kwargs")
     def run(
         self,
         function: Callable[P, T],

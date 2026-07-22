@@ -174,6 +174,15 @@
         "podSecurityContext": {
             "type": "object"
         },
+        "pvcAutoDeletion": {
+            "description": "If enabled, runs a weekly CronJob that deletes blueapi scratch PVCs unused for more than 3 months. To protect a PVC from deletion, set the annotation \"\"protected\" to \"true\" on it.",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
         "readinessProbe": {
             "description": "Readiness probe, if configured kubernetes will not route traffic to this pod if failed consecutively. This could allow the service time to recover if it is being overwhelmed by traffic, but without the to ability to load balance or scale up/outwards, upstream services will need to know to back off. This is automatically disabled when in debug mode.",
             "type": "object",
@@ -289,6 +298,15 @@
                 },
                 "periodSeconds": {
                     "type": "integer"
+                }
+            }
+        },
+        "timeStampCron": {
+            "description": "If enabled, runs a daily CronJob that stamps blueapi scratch PVCs with a last-used annotation when mounted by a running pod",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
                 }
             }
         },

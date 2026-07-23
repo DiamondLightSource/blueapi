@@ -32,6 +32,7 @@ from blueapi.core import (
 )
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
 from blueapi.log import plan_tag_filter_context
+from blueapi.metrics import TaskWorkerMetrics
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
 
@@ -151,6 +152,7 @@ class TaskWorker:
         self._stopped.set()
         self._broadcast_statuses = broadcast_statuses
         self._current_task_otel_context = None
+        self._task_worker_metrics = TaskWorkerMetrics()
         setup_tracing("BlueAPIWorker", OTLP_EXPORT_ENABLED)
 
     @start_as_current_span(TRACER, "task_id")
@@ -436,9 +438,11 @@ class TaskWorker:
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
+                        self._task_worker_metrics.inc_task_success()
                         self._current.set_result(result)
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
+                        self._task_worker_metrics.inc_task_failure()
                         self._current.set_exception(e)
                         self._report_error(e)
 

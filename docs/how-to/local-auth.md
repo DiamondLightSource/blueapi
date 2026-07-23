@@ -1,6 +1,6 @@
 # Run Auth Locally
 
-BlueAPI can be secured using OIDC authenticaiton. For development it can be useful to run a containerised version of the OIDC stack, to serve a local instance of BlueAPI.
+BlueAPI can be secured using OIDC authentication. For development, it can be useful to run a containerised version of the OIDC stack, to serve a local instance of BlueAPI.
 
 To run the stack:
 

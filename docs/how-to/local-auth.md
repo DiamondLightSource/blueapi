@@ -1,6 +1,6 @@
-# Run Auth Locally
+# Run BlueAPI and connect to services locally
 
-BlueAPI can be secured using OIDC authentication. For development, it can be useful to run a containerised version of the OIDC stack, to serve a local instance of BlueAPI.
+For development purposes, it can be useful to run BlueAPI and adjacent services (Numtracker, Tiled, OPA etc.) locally. To do this, since BlueaPI can be secured using OIDC authentication, a containerised version of the OIDC stack should be run. This includes launching an instance of NumTracker, RabbitMQ, Keycloal, Tiled, OPA and a number of IOCs, in detached mode. Running BlueAPI and connected services locally as opposed to connecting to the cluster can be useful for learning more about the stack, running system tests, checking if changes during development propagate as expected etc. 
 
 To run the stack:
 

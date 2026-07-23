@@ -60,7 +60,7 @@ Navigate to the ArgoCD page https://argocd.diamond.ac.uk/ and select the require
 
 ![p46 ArgoCD](argo_cd_p46.png)
 
-Having opened the p46-blueapi-0 pod, select 'LOGS' at the top and look at the logs. Below, we can see in the highlighted sections that the correct task_id, plan (count), detector and instrument session were used. Towards the end of the logs is 'Task ran successfully - returned None' indicating that the plan did indeed run successfully. For more information on the count plan, you can look [here] (https://github.com/DiamondLightSource/dodal/blob/db980cba9cb22b9d4c603c6f1309ea5a5c419ab8/src/dodal/plans/wrapped.py#L31). (Note: We are not expecting an output from the count plan).
+Having opened the p46-blueapi-0 pod, select 'LOGS' at the top and look at the logs. Below, we can see in the highlighted sections that the correct task_id, plan, detector and instrument session were used. Towards the end of the logs is 'Task ran successfully - returned None' indicating that the plan did indeed run successfully. For more information on the count plan, you can look [here] (https://github.com/DiamondLightSource/dodal/blob/db980cba9cb22b9d4c603c6f1309ea5a5c419ab8/src/dodal/plans/wrapped.py#L31). (Note: We are not expecting an output from the count plan).
 
 ![ArgoCD logs](argo_logs.png)
 
@@ -68,6 +68,7 @@ Having opened the p46-blueapi-0 pod, select 'LOGS' at the top and look at the lo
 ## Troubleshooting
 - 401 Response/cannot Execute plan - reload whole BlueAPI docs web page and log-in again using Keycloak. 
 - 2XX Task was created but could not be run successfully, no response - check logs for correct instrument session, have motor limits been exceeded?
-- New plan changes have been pushed to the repo but the plan isn't showing up - may need to pull through PlanDev and re-load the environmant
-- Make sure the blueapi pod is pointing to the correct commit in ArgoCD (check values.yaml file in p46-depolyment repo and change if required). 
-    - Update values.yml as needed, Re-submit and re-create a task using BlueAPI and run again using same steps as above. 
+- New plan changes have been pushed to the repo but the plan isn't showing up 
+    - May need to pull through PlanDev and reload the environment
+    - Make sure the blueapi pod is pointing to the correct commit in ArgoCD (check values.yaml file in pxx-depolyment repo which is accessed through [epics-containers] (https://github.com/epics-containers) ). 
+        - Update values.yaml as needed, re-submit and re-create a task using BlueAPI and run again using same steps as above. 

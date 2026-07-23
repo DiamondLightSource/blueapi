@@ -1,7 +1,7 @@
 # Run a Plan from Docs page
 
 :::{note}
-This page describes how to run a plan from the docs page for the p-xx testing rigs. 
+This page describes how to run a plan from the docs page for the p-xx testing rigs. As a prerequisite to this tutorial, you should have access to the pollux namespace and p-xx training rig namespaces. Visit this link to request access.
 :::
 
 Following [this link](https://p46-blueapi.diamond.ac.uk/docs), will take you to the blueapi docs for p46. After keycloak login, you should see the page below. 

@@ -6,7 +6,7 @@
 
 You will need to [get numtracker itself configured for your instrument](https://github.com/DiamondLightSource/numtracker/wiki/new_beamline). 
 
-Blueapi needs [valid authentication configured](./authenticate.md) to communicate with numtracker. It will propogate its auth token so both blueapi and numtracker should be aware of who the user is and that they have permission to be on the instrument sessions (visits) that are intended for use.
+Blueapi needs [valid authentication configured](../how-to/authenticate.md) to communicate with numtracker. It will propogate its auth token so both blueapi and numtracker should be aware of who the user is and that they have permission to be on the instrument sessions (visits) that are intended for use.
 
 ## Configuration
 

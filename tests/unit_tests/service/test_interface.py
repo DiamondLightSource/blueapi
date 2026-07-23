@@ -153,16 +153,22 @@ def test_get_devices(context_mock: MagicMock):
     context_mock.return_value = context
 
     assert interface.get_devices() == [
-        DeviceModel(name="my_device", protocols=[ProtocolInfo(name="Stoppable")]),
+        DeviceModel(
+            name="my_device",
+            protocols=[
+                ProtocolInfo(name="Stoppable", types=[]),
+            ],
+        ),
         DeviceModel(
             name="my_axis",
             protocols=[
+                ProtocolInfo(name="Checkable", types=[]),
                 ProtocolInfo(name="Flyable", types=[]),
                 ProtocolInfo(name="Movable", types=[]),
                 ProtocolInfo(name="Readable", types=[]),
                 ProtocolInfo(name="Stageable", types=[]),
                 ProtocolInfo(name="Stoppable", types=[]),
-                ProtocolInfo(name="Subscribable", types=["float"]),
+                ProtocolInfo(name="Subscribable", types=[]),
                 ProtocolInfo(name="Configurable", types=[]),
                 ProtocolInfo(name="Device", types=[]),
             ],

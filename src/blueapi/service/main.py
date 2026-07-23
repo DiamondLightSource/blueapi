@@ -26,12 +26,12 @@ from observability_utils.tracing import (
 )
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.trace import get_tracer_provider
-from prometheus_client import make_asgi_app
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 from super_state_machine.errors import TransitionError
 
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
+from blueapi.metrics import make_metrics_app
 from blueapi.service import interface
 from blueapi.service.authentication import Fedid, build_access_token_check
 from blueapi.service.middleware import (
@@ -147,7 +147,7 @@ def get_app(config: ApplicationConfig):
         )
 
     # Add prometheus asgi middleware to route /metrics requests
-    metrics_app = make_asgi_app()
+    metrics_app = make_metrics_app()
     app.mount("/metrics", metrics_app)
 
     return app

@@ -361,13 +361,23 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
 
 
 @patch("blueapi.metrics.TaskWorkerMetrics.inc_task_failure")
+def test_plan_success_increments_success_metric(
+    success_metric_inc: Mock,
+    worker: TaskWorker,
+) -> None:
+    task_id = worker.submit_task(_SIMPLE_TASK)
+    worker.begin_task(task_id)
+    success_metric_inc.assert_called_once()
+
+
+@patch("blueapi.metrics.TaskWorkerMetrics.inc_task_failure")
 def test_plan_failure_increments_failure_metric(
-    task_worker_metrics: Mock,
+    failure_metric_inc: Mock,
     worker: TaskWorker,
 ) -> None:
     task_id = worker.submit_task(_FAILING_TASK)
     worker.begin_task(task_id)
-    task_worker_metrics.assert_called_once()
+    failure_metric_inc.assert_called_once()
 
 
 def test_task_not_run_twice(worker: TaskWorker) -> None:

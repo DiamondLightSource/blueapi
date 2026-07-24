@@ -360,13 +360,13 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     assert active_task.errors == ["'I failed'"]
 
 
-@patch("blueapi.metrics.TaskWorkerMetrics.inc_task_failure")
+@patch("blueapi.metrics.TaskWorkerMetrics.inc_task_success")
 def test_plan_success_increments_success_metric(
     success_metric_inc: Mock,
     worker: TaskWorker,
 ) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
-    worker.begin_task(task_id)
+    begin_task_and_wait_until_complete(worker, task_id)
     success_metric_inc.assert_called_once()
 
 
@@ -376,7 +376,7 @@ def test_plan_failure_increments_failure_metric(
     worker: TaskWorker,
 ) -> None:
     task_id = worker.submit_task(_FAILING_TASK)
-    worker.begin_task(task_id)
+    begin_task_and_wait_until_complete(worker, task_id)
     failure_metric_inc.assert_called_once()
 
 

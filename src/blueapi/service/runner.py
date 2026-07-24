@@ -173,7 +173,7 @@ class EventStream:
                 await data_available.wait()
                 data_available.clear()
             return self._rx.recv()
-        except BrokenPipeError:
+        except EOFError:
             raise StopAsyncIteration() from None
         finally:
             asyncio.get_event_loop().remove_reader(self._rx.fileno())

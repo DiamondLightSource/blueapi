@@ -380,6 +380,18 @@ def test_plan_failure_increments_failure_metric(
     failure_metric_inc.assert_called_once()
 
 
+@patch("blueapi.metrics.TaskWorkerMetrics.time_task")
+def test_tasks_use_time_metric(
+    time_metric: Mock,
+    worker: TaskWorker,
+) -> None:
+    # Bad test, but checks that processed tasks tall TaskWorkerMetrics.time_task
+    time_metric.side_effect = lambda: prometheus_client.Histogram("foo", "bar").time()
+    task_id = worker.submit_task(_FAILING_TASK)
+    begin_task_and_wait_until_complete(worker, task_id)
+    time_metric.assert_called_once()
+
+
 def test_task_not_run_twice(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
     events_future: Future[list[WorkerEvent]] = take_events(

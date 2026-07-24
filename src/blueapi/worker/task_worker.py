@@ -8,6 +8,7 @@ from queue import Full, Queue
 from threading import Event, RLock
 from typing import Any, TypeVar
 
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import Status
 from observability_utils.tracing import (
     add_span_attributes,
@@ -20,7 +21,6 @@ from opentelemetry.context import Context, get_current
 from opentelemetry.trace import SpanKind
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
-from super_state_machine.errors import TransitionError
 
 from blueapi.core import (
     OTLP_EXPORT_ENABLED,

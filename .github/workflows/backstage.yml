@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v7
       - name: check catalog-info.yaml file
         uses: RoadieHQ/backstage-entity-validator@421bdcd5e3e400ef1913eb16d4f9dacdc5016801 # v0.6.0
         with:

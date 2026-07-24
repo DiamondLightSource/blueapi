@@ -32,8 +32,4 @@ class TaskWorkerMetrics:
         self.task_failure_counter.inc()
 
     def time_task(self) -> Timer:
-        # @functools.wraps(func)
-        # def time(*args, **kwargs):
-        #     with self.task_duration_histogram.time():
-        #         func(*args, **kwargs)
         return self.task_duration_histogram.time()

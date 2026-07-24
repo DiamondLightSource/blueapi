@@ -428,6 +428,7 @@ class TaskWorker:
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
 
+                @self._task_worker_metrics.time_task()
                 def process_task():
                     LOGGER.info(f"Got new task: {next_task}")
                     self._current = next_task

@@ -216,6 +216,10 @@ worker:
       enabled: False
       url: tcp://graylog-log-target.diamond.ac.uk:12231/
 
+  # -- Configures metrics
+  metrics:
+    enabled: False
+
 # -- Configure the initContainer that checks out the scratch configuration repositories
 initContainer:
   enabled: false

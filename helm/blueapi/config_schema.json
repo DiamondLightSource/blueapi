@@ -208,6 +208,19 @@
             "type": "object",
             "$id": "MetadataConfig"
         },
+        "MetricsConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "default": false,
+                    "title": "Enabled",
+                    "type": "boolean"
+                }
+            },
+            "title": "MetricsConfig",
+            "type": "object",
+            "$id": "MetricsConfig"
+        },
         "NumtrackerConfig": {
             "additionalProperties": false,
             "properties": {
@@ -555,6 +568,9 @@
         },
         "logging": {
             "$ref": "LoggingConfig"
+        },
+        "metrics": {
+            "$ref": "MetricsConfig"
         },
         "api": {
             "$ref": "RestConfig"

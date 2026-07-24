@@ -153,8 +153,9 @@ def get_app(config: ApplicationConfig):
         )
 
     # Add prometheus asgi middleware to route /metrics requests
-    metrics_app = make_metrics_app()
-    app.mount("/metrics", metrics_app)
+    if config.metrics.enabled:
+        metrics_app = make_metrics_app()
+        app.mount("/metrics", metrics_app)
 
     return app
 

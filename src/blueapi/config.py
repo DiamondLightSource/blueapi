@@ -159,6 +159,10 @@ class LoggingConfig(BlueapiBaseModel):
     graylog: GraylogConfig = GraylogConfig()
 
 
+class MetricsConfig(BlueapiBaseModel):
+    enabled: bool = False
+
+
 class CORSConfig(BlueapiBaseModel):
     origins: list[str]
     allow_credentials: bool = False
@@ -351,6 +355,7 @@ class ApplicationConfig(BlueapiBaseModel):
     tiled: TiledConfig = Field(default_factory=TiledConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    metrics: MetricsConfig = Field(default_factory=MetricsConfig)
     api: RestConfig = Field(default_factory=RestConfig)
     scratch: ScratchConfig | None = None
     oidc: OIDCConfig | None = None

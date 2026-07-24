@@ -8,6 +8,7 @@ from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
 
+import prometheus_client
 import pydantic
 import pytest
 from bluesky.protocols import Movable, Readable, Status
@@ -135,6 +136,16 @@ def context_without_devices() -> BlueskyContext:
     ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.with_config(ctx_config)
     return ctx
+
+
+@pytest.fixture(autouse=True)
+def reset_prometheus_collectors():
+    """Unregister all collectors from default prometheus register
+
+    Avoids collector double registration each time TaskWorkerMetrics instantiates"""
+    collectors = tuple(prometheus_client.REGISTRY._collector_to_names.keys())
+    for collector in collectors:
+        prometheus_client.REGISTRY.unregister(collector)
 
 
 @pytest.fixture
@@ -347,6 +358,16 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     active_task = worker.get_active_task()
     assert active_task is not None
     assert active_task.errors == ["'I failed'"]
+
+
+@patch("blueapi.metrics.TaskWorkerMetrics.inc_task_failure")
+def test_plan_failure_increments_failure_metric(
+    task_worker_metrics: Mock,
+    worker: TaskWorker,
+) -> None:
+    task_id = worker.submit_task(_FAILING_TASK)
+    worker.begin_task(task_id)
+    task_worker_metrics.assert_called_once()
 
 
 def test_task_not_run_twice(worker: TaskWorker) -> None:

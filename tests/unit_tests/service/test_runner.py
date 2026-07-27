@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Callable
 from multiprocessing import Pipe
+from multiprocessing.connection import Connection
 from multiprocessing.pool import Pool as PoolClass
 from typing import Any, Generic, TypeVar
 from unittest.mock import MagicMock, Mock, NonCallableMock, patch
@@ -358,9 +359,15 @@ async def test_aiter_event_stream_is_self():
     assert aiter(stream) is stream
 
 
-async def test_event_stream_no_event():
+async def test_event_stream_wait_for_event():
     tx, rx = Pipe()
-    stream = EventStream(rx)
+
+    mrx = Mock(spec=Connection)
+    mrx.poll.side_effect = [False, False, True]
+    mrx.fileno.side_effect = rx.fileno
+    mrx.recv.side_effect = rx.recv
+
+    stream = EventStream(mrx)
 
     evt = WorkerEvent(
         state=WorkerState.RUNNING,
@@ -369,15 +376,9 @@ async def test_event_stream_no_event():
         ),
     )
 
-    read = anext(stream)
-    # start the coroutine
-    _ = read.send(None)
-
-    print("Task not done")
-
     tx.send(evt)
 
-    with pytest.raises(StopAsyncIteration):
-        read.send(None)
-    # assert await read == evt
-    # assert not read.done()
+    read = await anext(stream)
+    assert read == evt
+
+    assert len(mrx.poll.mock_calls) == 3

@@ -1,6 +1,8 @@
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
+from pydantic_core import InitErrorDetails
 
 from blueapi.service.model import TaskRequest
 from blueapi.service.protocol import (
@@ -68,3 +70,35 @@ def test_request_deserialization(src: str, res: Any):
 def test_response_deserialization(src: str, res: Any):
     req = ControlResponse.validate_json(src)
     assert req == res
+
+
+def test_from_empty_validation_error():
+    err = InvalidArgs.from_validation_error(
+        ValidationError("Error validating request", [])
+    )
+    assert err == InvalidArgs(errors=[])
+
+
+def test_from_validation_error():
+    err = InvalidArgs.from_validation_error(
+        ValidationError.from_exception_data(
+            title="Error validating request",
+            line_errors=[
+                InitErrorDetails(
+                    loc=("foo", "bar"),
+                    type="missing",
+                    input={"foo": {"no": "bar"}},
+                )
+            ],
+        ),
+    )
+    assert err == InvalidArgs(
+        errors=[
+            ArgumentError(
+                loc=["body", "params", "foo", "bar"],
+                msg="Field required",
+                type="missing",
+                input={"foo": {"no": "bar"}},
+            )
+        ]
+    )

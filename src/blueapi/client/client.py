@@ -472,7 +472,8 @@ class BlueapiClient:
                 except Exception as e:
                     log.error(f"Callback ({cb}) failed for event: {event}", exc_info=e)
             if isinstance(event, WorkerEvent) and event.is_complete():
-                if event.task_status is None:
+                # task_status will always be present if event is complete
+                if event.task_status is None:  # pragma: no cover
                     raise BlueskyRemoteControlError(
                         "Server completed without task status"
                     )

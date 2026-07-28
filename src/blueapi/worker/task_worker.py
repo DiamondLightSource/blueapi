@@ -56,6 +56,7 @@ LOGGER = logging.getLogger(__name__)
 TRACER = get_tracer("task_worker")
 """ Initialise a Tracer for this module provided by the app's global TracerProvider. """
 
+METRICS = TaskWorkerMetrics()
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
 WORKER_THREAD_STATE = "worker thread state"
 
@@ -153,7 +154,6 @@ class TaskWorker:
         self._stopped.set()
         self._broadcast_statuses = broadcast_statuses
         self._current_task_otel_context = None
-        self._task_worker_metrics = TaskWorkerMetrics()
         setup_tracing("BlueAPIWorker", OTLP_EXPORT_ENABLED)
 
     @start_as_current_span(TRACER, "task_id")
@@ -448,7 +448,7 @@ class TaskWorker:
                         self._current.set_exception(e)
                         self._report_error(e)
                     finally:
-                        self._task_worker_metrics.observe_task(
+                        METRICS.observe_task(
                             task_name=self._current.task.name,
                             success=task_success,
                             duration=time.time() - start,

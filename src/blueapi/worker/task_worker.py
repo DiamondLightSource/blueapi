@@ -1,4 +1,5 @@
 import logging
+import time
 import uuid
 from collections.abc import Iterable, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -428,9 +429,10 @@ class TaskWorker:
             next_task: TrackableTask | KillSignal = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
 
-                @self._task_worker_metrics.time_task()
                 def process_task():
                     LOGGER.info(f"Got new task: {next_task}")
+                    start = time.time()
+                    task_success = False
                     self._current = next_task
                     self._current.is_pending = False
                     meta = {"task_id": self._current.task_id}
@@ -439,13 +441,18 @@ class TaskWorker:
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
-                        self._task_worker_metrics.inc_task_success()
                         self._current.set_result(result)
+                        task_success = True
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
-                        self._task_worker_metrics.inc_task_failure()
                         self._current.set_exception(e)
                         self._report_error(e)
+                    finally:
+                        self._task_worker_metrics.observe_task(
+                            task_name=self._current.task.name,
+                            success=task_success,
+                            duration=time.time() - start,
+                        )
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:

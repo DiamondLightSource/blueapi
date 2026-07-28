@@ -5,7 +5,6 @@ from prometheus_client import (
     make_asgi_app,
     multiprocess,
 )
-from prometheus_client.context_managers import Timer
 
 
 def make_metrics_app():
@@ -15,18 +14,44 @@ def make_metrics_app():
 
 
 class TaskWorkerMetrics:
+    """Metrics instrumenting TaskWorker
+
+    Includes metrics and methods used to instrument TaskWorker
+    """
+
     def __init__(self):
-        self.task_success_counter = Counter("blueapi_task_success", "Successful tasks")
-        self.task_failure_counter = Counter("blueapi_task_failure", "Failed tasks")
-        self.task_duration_histogram = Histogram(
-            "blueapi_task_duration_seconds", "Duration of task in seconds"
+        self._task_success_counter = Counter(
+            "blueapi_task_success", "Successful tasks", ["task_name"]
+        )
+        self._task_failure_counter = Counter(
+            "blueapi_task_failure", "Failed tasks", ["task_name"]
+        )
+        self._task_duration_histogram = Histogram(
+            "blueapi_task_duration_seconds",
+            "Duration of task in seconds",
+            ["task_name", "success"],
         )
 
-    def inc_task_success(self):
-        self.task_success_counter.inc()
+    def observe_task(
+        self,
+        task_name: str,
+        success: bool,
+        duration: float,
+    ):
+        """Update metrics to include task
 
-    def inc_task_failure(self):
-        self.task_failure_counter.inc()
+        Increments success or failure task counter and adds duration to
+        duration Histogram. All metrics given task_name label.
 
-    def time_task(self) -> Timer:
-        return self.task_duration_histogram.time()
+        Args:
+            task_name: Name of task (eg. sleep)
+            success: Whether task completed without error
+            duration: Runtime of task
+        """
+        if success:
+            self._task_success_counter.labels(task_name=task_name).inc()
+        else:
+            self._task_success_counter.labels(task_name=task_name).inc()
+        self._task_duration_histogram.labels(
+            task_name=task_name, success=success
+        ).observe(duration)

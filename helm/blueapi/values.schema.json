@@ -394,6 +394,15 @@
                         }
                     }
                 },
+                "metrics": {
+                    "description": "Configures metrics",
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        }
+                    }
+                },
                 "scratch": {
                     "description": "If initContainer is enabled the default branch of python projects in this section are installed into the venv *without their dependencies*",
                     "type": "object",
@@ -629,6 +638,19 @@
                 "instrument": {
                     "title": "Instrument",
                     "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "MetricsConfig": {
+            "$id": "MetricsConfig",
+            "title": "MetricsConfig",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "title": "Enabled",
+                    "default": false,
+                    "type": "boolean"
                 }
             },
             "additionalProperties": false
@@ -983,6 +1005,9 @@
                 },
                 "logging": {
                     "$ref": "LoggingConfig"
+                },
+                "metrics": {
+                    "$ref": "MetricsConfig"
                 },
                 "numtracker": {
                     "anyOf": [

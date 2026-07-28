@@ -1,6 +1,3 @@
-import functools
-from typing import Callable
-
 from prometheus_client import (
     CollectorRegistry,
     Counter,

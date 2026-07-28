@@ -16,10 +16,10 @@ def make_metrics_app():
 
 class TaskWorkerMetrics:
     def __init__(self):
-        self.task_success_counter = Counter("task_success", "Successful tasks")
-        self.task_failure_counter = Counter("task_failure", "Failed tasks")
+        self.task_success_counter = Counter("blueapi_task_success", "Successful tasks")
+        self.task_failure_counter = Counter("blueapi_task_failure", "Failed tasks")
         self.task_duration_histogram = Histogram(
-            "task_duration_seconds", "Duration of task in seconds"
+            "blueapi_task_duration_seconds", "Duration of task in seconds"
         )
 
     def inc_task_success(self):

@@ -360,36 +360,28 @@ def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     assert active_task.errors == ["'I failed'"]
 
 
-@patch("blueapi.metrics.TaskWorkerMetrics.inc_task_success")
-def test_plan_success_increments_success_metric(
-    success_metric_inc: Mock,
+@patch("blueapi.metrics.TaskWorkerMetrics.observe_task")
+def test_plan_success_records_metrics(
+    metric_mock: Mock,
     worker: TaskWorker,
 ) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
     begin_task_and_wait_until_complete(worker, task_id)
-    success_metric_inc.assert_called_once()
+    metric_mock.assert_called_once_with(
+        task_name=_SIMPLE_TASK.name, success=True, duration=ANY
+    )
 
 
-@patch("blueapi.metrics.TaskWorkerMetrics.inc_task_failure")
-def test_plan_failure_increments_failure_metric(
-    failure_metric_inc: Mock,
+@patch("blueapi.metrics.TaskWorkerMetrics.observe_task")
+def test_plan_failure_records_metrics(
+    metric_mock: Mock,
     worker: TaskWorker,
 ) -> None:
     task_id = worker.submit_task(_FAILING_TASK)
     begin_task_and_wait_until_complete(worker, task_id)
-    failure_metric_inc.assert_called_once()
-
-
-@patch("blueapi.metrics.TaskWorkerMetrics.time_task")
-def test_tasks_use_time_metric(
-    time_metric: Mock,
-    worker: TaskWorker,
-) -> None:
-    # Bad test, but checks that processed tasks tall TaskWorkerMetrics.time_task
-    time_metric.side_effect = lambda: prometheus_client.Histogram("foo", "bar").time()
-    task_id = worker.submit_task(_FAILING_TASK)
-    begin_task_and_wait_until_complete(worker, task_id)
-    time_metric.assert_called_once()
+    metric_mock.assert_called_once_with(
+        task_name=_FAILING_TASK.name, success=False, duration=ANY
+    )
 
 
 def test_task_not_run_twice(worker: TaskWorker) -> None:

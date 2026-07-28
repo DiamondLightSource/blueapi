@@ -8,7 +8,6 @@ from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
 
-import prometheus_client
 import pydantic
 import pytest
 from bluesky.protocols import Movable, Readable, Status
@@ -136,16 +135,6 @@ def context_without_devices() -> BlueskyContext:
     ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.with_config(ctx_config)
     return ctx
-
-
-@pytest.fixture(autouse=True)
-def reset_prometheus_collectors():
-    """Unregister all collectors from default prometheus register
-
-    Avoids collector double registration each time TaskWorkerMetrics instantiates"""
-    collectors = tuple(prometheus_client.REGISTRY._collector_to_names.keys())
-    for collector in collectors:
-        prometheus_client.REGISTRY.unregister(collector)
 
 
 @pytest.fixture

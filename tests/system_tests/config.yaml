@@ -17,7 +17,7 @@ numtracker:
   url: http://localhost:8406/graphql
 tiled:
   enabled: true
-  url: http://localhost:4181/api/v1
+  url: http://localhost:8407/api/v1
   authentication:
     client_id: "tiled-writer"
     client_secret: "secret"

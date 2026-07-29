@@ -653,16 +653,14 @@ async def run_plan(
     except KeyError as ke:
         LOGGER.info("Plan %r not recognised", ke.args[0])
         await ws.send_text(PlanNotFound(plan_name=ke.args[0]).model_dump_json())
-        await ws.close(code=4001, reason="unknown plan")
+        await ws.close(code=4001, reason="Unknown Plan")
         return
 
     try:
         with runner.event_pipe() as events:
             active_task = runner.run(interface.get_active_task)
             if active_task is not None and not active_task.is_complete:
-                await ws.send_text(ServerBusy().model_dump_json())
-                await ws.close(code=1013, reason="Worker busy")
-                return
+                raise WorkerBusyError("Task already running")
             runner.run(interface.begin_task, task=WorkerTask(task_id=task_id))
             async for evt in events:
                 if evt.task_id != task_id:

@@ -43,6 +43,9 @@ license.file = "LICENSE"
 readme = "README.md"
 requires-python = ">=3.11"
 
+[project.optional-dependencies]
+demo = ["dls-dodal>=1.69.0", "ophyd-async[demo]"]
+
 [dependency-groups]
 dev = [
     "ophyd_async[sim]",
@@ -76,7 +79,7 @@ dev = [
     "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
     "respx",
     "pytest-xdist[psutil]",
-    "httpx2>=2.5.0"
+    "httpx2>=2.5.0",
 ]
 
 [project.scripts]

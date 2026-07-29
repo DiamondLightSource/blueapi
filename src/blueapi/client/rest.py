@@ -392,8 +392,8 @@ class BlueapiRestClient:
             match istat.response.status_code:
                 case 401 | 403:
                     raise UnauthorisedAccessError() from None
-            print(vars(istat))
-            return
+                case _:
+                    raise BlueskyRemoteControlError() from istat
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

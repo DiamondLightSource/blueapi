@@ -10,10 +10,12 @@ import responses
 from packaging.version import Version
 from pydantic_core import PydanticSerializationError
 from responses import DELETE, GET, PUT, matchers
+from websockets import Headers, InvalidStatus, Response
 
 from blueapi import __version__
 from blueapi.client.client import DeviceRef
 from blueapi.client.rest import (
+    USER_AGENT,
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
@@ -431,3 +433,96 @@ def test_get_missing_plan(rest: BlueapiRestClient):
     responses.add(GET, "http://localhost:8000/plans/foo", status=404)
     with pytest.raises(UnknownPlanError):
         rest.get_plan("foo")
+
+
+@patch("blueapi.client.rest.connect")
+def test_run_blocking(mock_connect: Mock, rest: BlueapiRestClient):
+    ws = MagicMock()
+    ws.__enter__.return_value.__iter__.return_value = iter(
+        ['{"kind": "update", "data": {"name": "start", "doc":{}, "task_id":"t_uid"}}']
+    )
+    mock_connect.return_value = ws
+    conn = rest.run_blocking(
+        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
+    )
+    next(iter(conn))
+    mock_connect.assert_called_once_with(
+        "ws://localhost:8000/api/v2/run_plan",
+        additional_headers={},
+        user_agent_header=USER_AGENT,
+    )
+
+
+@pytest.mark.parametrize(
+    "event,error,message",
+    [
+        (
+            """{
+                "kind":"invalid_args",
+                "errors": [{
+                    "loc": ["bar"],
+                    "msg": "Field required",
+                    "type": "missing",
+                    "input": {}
+                }]
+            }""",
+            InvalidParametersError,
+            "ParameterError",
+        ),
+        ('{"kind": "busy"}', BlueskyRemoteControlError, "Server is busy"),
+        ('{"kind": "plan_not_found", "plan_name": "foo"}', UnknownPlanError, "foo"),
+    ],
+)
+@patch("blueapi.client.rest.connect")
+def test_run_blocking_errors(
+    mock_connect: Mock,
+    rest: BlueapiRestClient,
+    event: str,
+    error: type[Exception],
+    message: str,
+):
+    ws = MagicMock()
+    ws.__enter__.return_value.__iter__.return_value = iter([event])
+    mock_connect.return_value = ws
+    conn = rest.run_blocking(
+        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
+    )
+    with pytest.raises(error, match=message):
+        next(iter(conn))
+    mock_connect.assert_called_once_with(
+        "ws://localhost:8000/api/v2/run_plan",
+        additional_headers={},
+        user_agent_header=USER_AGENT,
+    )
+
+
+@pytest.mark.parametrize("status_code", [401, 403])
+@patch("blueapi.client.rest.connect")
+def test_run_blocking_ws_failures(
+    mock_connect: Mock, rest: BlueapiRestClient, status_code: int
+):
+    mock_connect.side_effect = InvalidStatus(
+        response=Response(
+            status_code=status_code, reason_phrase="test_error", headers=Headers()
+        )
+    )
+    conn = rest.run_blocking(
+        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
+    )
+    with pytest.raises(UnauthorisedAccessError):
+        next(iter(conn))
+
+
+@patch("blueapi.client.rest.connect")
+def test_run_blocking_unknown_error(mock_connect: Mock, rest: BlueapiRestClient):
+    mock_connect.side_effect = InvalidStatus(
+        response=Response(
+            status_code=1234, reason_phrase="test_error", headers=Headers()
+        )
+    )
+
+    conn = rest.run_blocking(
+        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
+    )
+    with pytest.raises(BlueskyRemoteControlError):
+        next(iter(conn))

@@ -1048,3 +1048,14 @@ def test_run_blocking_error_if_cut_short(client: BlueapiClient, mock_rest: Mock)
         BlueskyRemoteControlError, match="Connection closed before plan completed"
     ):
         client.run_blocking(Mock())
+
+
+def test_run_blocking_ignores_callback_error(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: [COMPLETE_EVENT]
+
+    def broken_callback(_: AnyEvent):
+        raise Exception("This callback is broken")
+
+    client.add_callback(broken_callback)
+    res = client.run_blocking(Mock())
+    assert res == COMPLETE_EVENT.task_status

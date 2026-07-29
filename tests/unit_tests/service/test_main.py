@@ -1,22 +1,18 @@
-import contextlib
 from unittest import mock
-from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
+from unittest.mock import Mock, call, patch
 
 import pytest
-from fastapi import FastAPI, Request, WebSocket
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from blueapi import __version__
 from blueapi.config import ApplicationConfig
-from blueapi.service import interface
 from blueapi.service.main import (
     get_passthrough_headers,
     lifespan,
     log_request_details,
-    run_plan,
 )
 from blueapi.service.middleware import VersionHeaders
-from blueapi.service.runner import WorkerDispatcher
 
 
 async def test_add_version_header():
@@ -120,24 +116,3 @@ async def test_lifespan(setup: Mock, teardown: Mock):
         teardown.assert_not_called()
 
     teardown.assert_called_once()
-
-
-async def test_websocket_run_plan():
-    ws = Mock(spec=WebSocket)
-    runner = Mock(spec=WorkerDispatcher)
-    events = MagicMock()
-    events.__aiter__.return_value = MagicMock(__anext__=Mock(side_effect=[1, 2, 3]))
-    runner.event_pipe.return_value = contextlib.nullcontext(events)
-    runner.run.side_effect = lambda mth, *a, **kw: {
-        interface.submit_task: "task_uid"
-    }.get(mth)
-
-    ws.receive_text = AsyncMock(
-        return_value="""{
-            "kind": "submit",
-            "task": {"name": "foo", "params": {}, "instrument_session": "cm12345-1"}
-            }"""
-    )
-
-    await run_plan(ws, runner, user="abc12345")
-    ws.close.assert_called_once_with()

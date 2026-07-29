@@ -1,18 +1,20 @@
+import contextlib
 import uuid
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 from unittest.mock import MagicMock, Mock, patch
 
 import jwt
 import pytest
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import Stoppable
-from fastapi import HTTPException, status
+from fastapi import FastAPI, HTTPException, WebSocketDisconnect, status
 from fastapi.testclient import TestClient
 from httpx2 import Headers
 from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
+from starlette.types import Message, Receive, Scope, Send
 
 from blueapi.config import (
     ApplicationConfig,
@@ -43,7 +45,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.service.runner import WorkerDispatcher
-from blueapi.worker.event import WorkerState
+from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -57,7 +59,7 @@ FAKE_INSTRUMENT_SESSION = "cm12345-1"
 
 @pytest.fixture
 def mock_runner() -> Mock:
-    return Mock(spec=WorkerDispatcher)
+    return MagicMock(spec=WorkerDispatcher)
 
 
 @pytest.fixture
@@ -995,3 +997,263 @@ def test_logout_when_oidc_config_invalid(
 
     response = client_with_auth.get("/logout")
     assert response.status_code == status.HTTP_205_RESET_CONTENT
+
+
+async def test_websocket_run_plan(mock_runner: Mock, client: TestClient):
+    mock_runner.run.side_effect = lambda req, *a, **kw: {
+        interface.get_active_task: None,
+        interface.submit_task: "task_id",
+        interface.begin_task: None,
+    }.get(req)
+    mock_runner.event_pipe.return_value = contextlib.nullcontext(
+        _aiter(
+            WorkerEvent(
+                state=WorkerState.RUNNING,
+                task_status=TaskStatus(
+                    task_id="task_id",
+                    result=None,
+                    task_complete=False,
+                    task_failed=False,
+                ),
+            ),
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id="task_id",
+                    result=None,
+                    task_complete=True,
+                    task_failed=False,
+                ),
+            ),
+        )
+    )
+
+    with client.websocket_connect("/api/v2/run_plan") as ws_client:
+        ws_client.send_json(
+            {
+                "kind": "submit",
+                "task": {
+                    "name": "foo",
+                    "params": {"one": "two"},
+                    "instrument_session": "cm12345-1",
+                },
+            }
+        )
+        assert ws_client.receive_json() == {
+            "kind": "update",
+            "data": {
+                "state": "RUNNING",
+                "task_status": {
+                    "task_id": "task_id",
+                    "result": None,
+                    "task_complete": False,
+                    "task_failed": False,
+                },
+                "errors": [],
+                "warnings": [],
+            },
+        }
+        assert ws_client.receive_json() == {
+            "kind": "update",
+            "data": {
+                "state": "IDLE",
+                "task_status": {
+                    "task_id": "task_id",
+                    "result": None,
+                    "task_complete": True,
+                    "task_failed": False,
+                },
+                "errors": [],
+                "warnings": [],
+            },
+        }
+        with pytest.raises(WebSocketDisconnect) as discon:
+            ws_client.receive_text()
+
+        # Check it's a 'normal' end of stream disconnect
+        assert discon.value.code == 1000
+        assert discon.value.reason == ""
+
+
+@pytest.mark.parametrize("req", ["not a json object", "[]", '{"invalid": "keys"}'])
+def test_websocket_run_plan_invalid_request(
+    req: str, mock_runner: Mock, client: TestClient
+):
+    with client.websocket_connect("/api/v2/run_plan") as ws_client:
+        ws_client.send_text(req)
+        with pytest.raises(WebSocketDisconnect) as disco:
+            ws_client.receive_text()
+        assert disco.value.code == 1007
+        assert disco.value.reason == "Invalid Request"
+
+
+@pytest.mark.parametrize(
+    "exc,err_message,code,reason",
+    [
+        (
+            KeyError("foo"),
+            {
+                "kind": "plan_not_found",
+                "plan_name": "foo",
+            },
+            4001,
+            "Unknown Plan",
+        ),
+        (
+            ValidationError("Not valid", []),
+            {"kind": "invalid_args", "errors": []},
+            4002,
+            "Invalid Args",
+        ),
+    ],
+)
+def test_websocket_run_plan_submit_error(
+    exc, err_message, code, reason, mock_runner: Mock, client: TestClient
+):
+    mock_runner.run.side_effect = exc
+    with client.websocket_connect("/api/v2/run_plan") as ws_client:
+        ws_client.send_json(
+            {
+                "kind": "submit",
+                "task": {"name": "foo", "instrument_session": "cm12345-1"},
+            }
+        )
+        assert ws_client.receive_json() == err_message
+        with pytest.raises(WebSocketDisconnect) as disco:
+            ws_client.receive_text()
+        assert disco.value.code == code
+        assert disco.value.reason == reason
+
+
+def test_websocket_run_plan_server_busy(mock_runner: Mock, client: TestClient):
+    mock_runner.run.side_effect = [
+        "task_id",  # submit_task
+        Mock(name="active_task", is_complete=False),
+    ]
+    with client.websocket_connect("/api/v2/run_plan") as ws_client:
+        ws_client.send_json(
+            {"kind": "submit", "task": {"name": "foo", "instrument_session": "cm123-1"}}
+        )
+        assert ws_client.receive_json() == {"kind": "busy"}
+        with pytest.raises(WebSocketDisconnect) as disco:
+            ws_client.receive_text()
+        assert disco.value.code == 1013
+        assert disco.value.reason == "Worker busy"
+    pass
+
+
+def test_websocket_run_plan_unrelated_events(mock_runner: Mock, client: TestClient):
+    mock_runner.run.side_effect = lambda req, *a, **kw: {
+        interface.get_active_task: None,
+        interface.submit_task: "task_id",
+        interface.begin_task: None,
+    }.get(req)
+    mock_runner.event_pipe.return_value = contextlib.nullcontext(
+        _aiter(
+            WorkerEvent(
+                state=WorkerState.RUNNING,
+                task_status=TaskStatus(
+                    task_id="other_task_id",
+                    result=None,
+                    task_complete=False,
+                    task_failed=False,
+                ),
+            ),
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id="task_id",
+                    result=None,
+                    task_complete=True,
+                    task_failed=False,
+                ),
+            ),
+        )
+    )
+
+    with client.websocket_connect("/api/v2/run_plan") as ws_client:
+        ws_client.send_json(
+            {
+                "kind": "submit",
+                "task": {
+                    "name": "foo",
+                    "params": {"one": "two"},
+                    "instrument_session": "cm12345-1",
+                },
+            }
+        )
+        # first event is not sent
+        assert ws_client.receive_json() == {
+            "kind": "update",
+            "data": {
+                "state": "IDLE",
+                "task_status": {
+                    "task_id": "task_id",
+                    "result": None,
+                    "task_complete": True,
+                    "task_failed": False,
+                },
+                "errors": [],
+                "warnings": [],
+            },
+        }
+        with pytest.raises(WebSocketDisconnect) as discon:
+            ws_client.receive_text()
+
+        # Check it's a 'normal' end of stream disconnect
+        assert discon.value.code == 1000
+        assert discon.value.reason == ""
+    pass
+
+
+def test_websocket_run_plan_client_disconnect_cancels(
+    mock_runner: Mock, client: TestClient
+):
+    mock_runner.run.side_effect = ["task_id", None, None, None]
+    mock_runner.event_pipe.return_value = contextlib.nullcontext(
+        _aiter(
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id="task_id",
+                    result=None,
+                    task_complete=False,
+                    task_failed=False,
+                ),
+            ),
+        )
+    )
+
+    class Disconnector:
+        def __init__(self, app):
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            async def local_send(message: Message):
+                if message.get("type") == "websocket.send":
+                    # Simulate the connection being closed
+                    raise OSError()
+                await send(message)
+
+            return await self.app(scope, receive, local_send)
+
+    cast(FastAPI, client.app).add_middleware(Disconnector)
+    with client.websocket_connect("/api/v2/run_plan") as ws:
+        ws.send_json(
+            {
+                "kind": "submit",
+                "task": {
+                    "name": "foo",
+                    "params": {"one": "two"},
+                    "instrument_session": "cm12345-1",
+                },
+            }
+        )
+    mock_runner.run.assert_called_with(
+        interface.cancel_active_task, failure=True, reason="Client disconnected"
+    )
+
+
+async def _aiter(*values: Any) -> AsyncIterator:
+    for value in values:
+        yield value

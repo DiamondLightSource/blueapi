@@ -49,11 +49,13 @@ def rest() -> BlueapiRestClient:
 
 
 @pytest.fixture
-def rest_with_auth(oidc_config: OIDCConfig, tmp_path) -> BlueapiRestClient:
+def rest_with_auth(
+    oidc_config: OIDCConfig, token_cache_file: Path
+) -> BlueapiRestClient:
     return BlueapiRestClient(
         session_manager=SessionManager(
             server_config=oidc_config,
-            cache_manager=SessionCacheManager(tmp_path / "blueapi_cache"),
+            cache_manager=SessionCacheManager(token_cache_file),
         )
     )
 
@@ -449,6 +451,30 @@ def test_run_blocking(mock_connect: Mock, rest: BlueapiRestClient):
     mock_connect.assert_called_once_with(
         "ws://localhost:8000/api/v2/run_plan",
         additional_headers={},
+        user_agent_header=USER_AGENT,
+    )
+
+
+@patch("blueapi.client.rest.connect")
+def test_run_blocking_auth(
+    mock_connect: Mock,
+    rest_with_auth: BlueapiRestClient,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,  # creates the cache file
+    cached_valid_token_value: str,  # the value from the file
+):
+    ws = MagicMock()
+    ws.__enter__.return_value.__iter__.return_value = iter(
+        ['{"kind": "update", "data": {"name": "start", "doc":{}, "task_id":"t_uid"}}']
+    )
+    mock_connect.return_value = ws
+    conn = rest_with_auth.run_blocking(
+        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
+    )
+    next(iter(conn))
+    mock_connect.assert_called_once_with(
+        "ws://localhost:8000/api/v2/run_plan",
+        additional_headers={"Authorization": f"Bearer {cached_valid_token_value}"},
         user_agent_header=USER_AGENT,
     )
 

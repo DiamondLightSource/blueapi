@@ -51,7 +51,7 @@ class TaskWorkerMetrics:
         if success:
             self._task_success_counter.labels(task_name=task_name).inc()
         else:
-            self._task_success_counter.labels(task_name=task_name).inc()
+            self._task_failure_counter.labels(task_name=task_name).inc()
         self._task_duration_histogram.labels(
             task_name=task_name, success=success
         ).observe(duration)

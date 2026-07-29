@@ -9,7 +9,7 @@ from blueapi.core.context import BlueskyContext
 @pytest.fixture
 def context() -> BlueskyContext:
     loader = ConfigLoader(ApplicationConfig)
-    loader.use_values_from_yaml(Path("tests/unit_tests/tutorial/test_demo.yaml"))
+    loader.use_values_from_yaml(Path("docs/resources/config.yaml"))
     config: ApplicationConfig = loader.load()
     return BlueskyContext(configuration=config)
 

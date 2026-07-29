@@ -651,6 +651,11 @@
                     "title": "Enabled",
                     "default": false,
                     "type": "boolean"
+                },
+                "prometheus_multiproc_dir": {
+                    "title": "Prometheus Multiproc Dir",
+                    "default": "/tmp",
+                    "type": "string"
                 }
             },
             "additionalProperties": false

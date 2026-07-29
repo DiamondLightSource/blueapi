@@ -161,6 +161,7 @@ class LoggingConfig(BlueapiBaseModel):
 
 class MetricsConfig(BlueapiBaseModel):
     enabled: bool = False
+    prometheus_multiproc_dir: str = "/tmp"
 
 
 class CORSConfig(BlueapiBaseModel):

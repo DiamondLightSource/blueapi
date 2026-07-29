@@ -215,6 +215,11 @@
                     "default": false,
                     "title": "Enabled",
                     "type": "boolean"
+                },
+                "prometheus_multiproc_dir": {
+                    "default": "/tmp",
+                    "title": "Prometheus Multiproc Dir",
+                    "type": "string"
                 }
             },
             "title": "MetricsConfig",

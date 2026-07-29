@@ -8,6 +8,7 @@ from prometheus_client import (
 
 
 def make_metrics_app():
+    """Create metrics ASGI app to mount to FastAPI server"""
     registry = CollectorRegistry()
     multiprocess.MultiProcessCollector(registry)
     return make_asgi_app(registry=registry)

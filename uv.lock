@@ -471,6 +471,12 @@ dependencies = [
     { name = "uvicorn" },
 ]
 
+[package.optional-dependencies]
+demo = [
+    { name = "dls-dodal" },
+    { name = "ophyd-async", extra = ["sim"] },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "copier" },
@@ -514,6 +520,7 @@ requires-dist = [
     { name = "bluesky", extras = ["plotting"], specifier = ">=1.14.0" },
     { name = "bluesky-stomp", specifier = ">=0.1.6" },
     { name = "click", specifier = ">=8.2.0" },
+    { name = "dls-dodal", marker = "extra == 'demo'", specifier = ">=1.69.0" },
     { name = "event-model", specifier = "==1.23.1" },
     { name = "fastapi", specifier = ">=0.112.0" },
     { name = "gitpython" },
@@ -523,6 +530,7 @@ requires-dist = [
     { name = "opentelemetry-distro", specifier = ">=0.48b0" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.48b0" },
     { name = "ophyd-async", specifier = ">=0.13.5" },
+    { name = "ophyd-async", extras = ["sim"], marker = "extra == 'demo'" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pydantic-settings" },
     { name = "pyjwt", extras = ["crypto"] },
@@ -533,6 +541,7 @@ requires-dist = [
     { name = "tomlkit" },
     { name = "uvicorn" },
 ]
+provides-extras = ["demo"]
 
 [package.metadata.requires-dev]
 dev = [

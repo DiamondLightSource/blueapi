@@ -370,6 +370,7 @@ class ApplicationConfig(BlueapiBaseModel):
                 & (self.tiled == other.tiled)
                 & (self.env == other.env)
                 & (self.logging == other.logging)
+                & (self.metrics == other.metrics)
                 & (self.api == other.api)
                 & (self.scratch == other.scratch)
                 & (self.oidc == other.oidc)

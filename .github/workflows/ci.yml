@@ -59,7 +59,7 @@ jobs:
       id-token: write
 
   release:
-    needs: [docs]
+    needs: [dist, test, docs]
     if: github.ref_type == 'tag' # tag pushes only
     uses: DiamondLightSource/myst-version-switcher-plugin/.github/workflows/release.yml@v0.24
     permissions:

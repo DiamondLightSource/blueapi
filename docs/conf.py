@@ -5,9 +5,8 @@ list see the documentation:
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
+import os
 import sys
-from pathlib import Path
-from subprocess import check_output
 
 import requests
 
@@ -21,14 +20,7 @@ project = "blueapi"
 # The full version, including alpha/beta/rc tags.
 release = blueapi.__version__
 
-# The short X.Y version.
-if "+" in release:
-    # Not on a tag, use branch name
-    root = Path(__file__).absolute().parent.parent
-    git_branch = check_output("git branch --show-current".split(), cwd=root)
-    version = git_branch.decode().strip()
-else:
-    version = release
+version = os.environ.get("VERSION_NAME", "local")
 
 extensions = [
     # Use this for generating API docs

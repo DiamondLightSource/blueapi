@@ -48,7 +48,7 @@ After creating a task in Step 2, it still needs to be set to be the active task.
 
 ![Set active task default](create_task_default.png)
 
-Preess 'Try it out' and paste the copied 'task_id' from earlier in the 'Request' body.
+Press 'Try it out' and paste the copied 'task_id' from earlier in the 'Request' body.
 
 ![Set active task](set_active_task.png)
 

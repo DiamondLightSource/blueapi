@@ -31,10 +31,11 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
+from starlette.status import WS_1007_INVALID_FRAME_PAYLOAD_DATA, WS_1013_TRY_AGAIN_LATER
 
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service import interface
+from blueapi.service import interface, protocol
 from blueapi.service.authentication import (
     Fedid,
     build_access_token_check,
@@ -45,10 +46,11 @@ from blueapi.service.middleware import (
     WebsocketTracing,
 )
 from blueapi.service.protocol import (
-    ControlRequest,
     InvalidArgs,
     PlanNotFound,
     ServerBusy,
+    Submit,
+    Unauthorized,
     Update,
 )
 from blueapi.worker import TrackableTask, WorkerState
@@ -627,18 +629,34 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
 
 @secure_router_v2.websocket("/run_plan")
 async def run_plan(
-    ws: WebSocket, runner: Annotated[WorkerDispatcher, Depends(_runner)], user: Fedid
+    ws: WebSocket,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    user: Fedid,
+    opa: Annotated[OpaUserClient | None, Depends(opa)],
 ):
     LOGGER.info("Starting WS plan as %s", user)
     await ws.accept()
     rq = await ws.receive_text()
     try:
-        task_request = ControlRequest.validate_json(rq)
+        task_request = Submit.model_validate_json(rq)
     except ValidationError:
         LOGGER.info("Failed to deserialize request: %r", rq, exc_info=True)
-        await ws.close(code=1007, reason="Invalid Request")
+        await ws.close(
+            code=WS_1007_INVALID_FRAME_PAYLOAD_DATA, reason="Invalid Request"
+        )
         return
     LOGGER.info("Plan request: %s", task_request)
+
+    if opa:
+        try:
+            await opa.can_submit_task(task_request.task)
+        except Exception as e:
+            LOGGER.info(
+                "User %s does not have permission to run task", user, exc_info=e
+            )
+            await ws.send_text(Unauthorized().model_dump_json())
+            await ws.close(code=protocol.AUTHZ_ERROR, reason="Unauthorized")
+            return
 
     try:
         task_id: str = runner.run(
@@ -648,12 +666,12 @@ async def run_plan(
     except ValidationError as ve:
         LOGGER.info("Plan args not valid: %s - %s", task_request, ve)
         await ws.send_text(InvalidArgs.from_validation_error(ve).model_dump_json())
-        await ws.close(code=4002, reason="Invalid Args")
+        await ws.close(code=protocol.INVALID_ARGS, reason="Invalid Args")
         return
     except KeyError as ke:
         LOGGER.info("Plan %r not recognised", ke.args[0])
         await ws.send_text(PlanNotFound(plan_name=ke.args[0]).model_dump_json())
-        await ws.close(code=4001, reason="Unknown Plan")
+        await ws.close(code=protocol.UNKNOWN_PLAN, reason="Unknown Plan")
         return
 
     try:
@@ -673,7 +691,7 @@ async def run_plan(
     except WorkerBusyError:
         LOGGER.error("Worker was busy")
         await ws.send_text(ServerBusy().model_dump_json())
-        await ws.close(code=1013, reason="Worker busy")
+        await ws.close(code=WS_1013_TRY_AGAIN_LATER, reason="Worker busy")
     except WebSocketDisconnect:
         LOGGER.info("Client disconnected")
         runner.run(

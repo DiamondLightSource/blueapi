@@ -28,7 +28,7 @@ Next, press the 'Execute' button and scroll down to 'Responses' where you should
 
 ![Show devices](show_devices.png)
 
-2. Submit a task using one of the available devices.
+2. Create a task using one of the available devices.
 
 Scroll back up to the 'Submit Task' endpoint (/api/v1/tasks). The default setting that should appear in the request body is the example of a 'count' task using detector 'x' and instrument session 'cm12345-1'. 
 
@@ -42,9 +42,9 @@ Press 'Execute' and you should receive a '201' response that contains a 'task_id
 
 ![Execute task](run_plan_execute.png)
 
-3. Create a task using the task_id generated
+3. Set created task in the previous step to be the active task 
 
-After posting a task, it still needs to be created such that it becomes active task. Scroll down to the 'Set Active Task' endpoint (/api/v1/worker/task). The default for 'task_id' should be 'string'.
+After creating a task in Step 2, it still needs to be set to be the active task. Scroll down to the 'Set Active Task' endpoint (/api/v1/worker/task). The default for 'task_id' should be 'string'.
 
 ![Set active task default](create_task_default.png)
 

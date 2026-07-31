@@ -4,6 +4,7 @@ from asyncio import Queue
 from collections.abc import Generator
 from contextlib import nullcontext
 from enum import StrEnum, auto
+from itertools import count
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -115,6 +116,27 @@ def user(request) -> ValidUser:
 @pytest.fixture
 def instrument_session(request) -> str:
     return getattr(request, "param", VALID_INSTRUMENT_SESSION[User.alice])
+
+
+@pytest.fixture(scope="module")
+def local_numtracker():
+    """
+    Local version of what we expect the numtracker to provide
+
+    Allows different combinations of tests to be run without having to hard
+    code the expected scan numbers.
+    """
+    return count(CURRENT_NUMTRACKER_NUM + 1)
+
+
+@pytest.fixture
+def scan_id(local_numtracker) -> int:
+    """
+    The next value we expect to use for a scan_id
+
+    Should be used in any test that calls out to numtracker.
+    """
+    return next(local_numtracker)
 
 
 def task_factory(
@@ -534,20 +556,14 @@ def test_delete_current_environment(client: BlueapiClient):
 
 
 @pytest.mark.parametrize(
-    "task,scan_id,user",
+    "task,user",
     [
         (
             TaskRequest(
                 name="count",
-                params={
-                    "detectors": [
-                        "det",
-                    ],
-                    "num": 3,
-                },
+                params={"detectors": ["det"], "num": 3},
                 instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
-            CURRENT_NUMTRACKER_NUM + 1,
             User.alice,
         ),
         (
@@ -576,13 +592,17 @@ def test_delete_current_environment(client: BlueapiClient):
                 },
                 instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
             ),
-            CURRENT_NUMTRACKER_NUM + 2,
             User.bob,
         ),
     ],
 )
+@pytest.mark.parametrize("run_method", ["run_task", "run_blocking"])
 def test_plan_runs(
-    client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int, user: ValidUser
+    client_with_stomp: BlueapiClient,
+    task: TaskRequest,
+    scan_id: int,
+    user: ValidUser,
+    run_method: str,
 ):
     resource = Queue(maxsize=1)
     start = Queue(maxsize=1)
@@ -594,7 +614,8 @@ def test_plan_runs(
             if event.name == "stream_resource":
                 resource.put_nowait(event.doc)
 
-    final_event = client_with_stomp.run_task(task, on_event)
+    runner = getattr(client_with_stomp, run_method)
+    final_event = runner(task, on_event)
     assert isinstance(final_event.result, TaskResult)
     assert final_event.task_complete
     assert not final_event.task_failed

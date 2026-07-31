@@ -23,6 +23,10 @@ from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import TaskRequest
 from blueapi.worker.event import ProgressEvent, WorkerEvent
 
+UNKNOWN_PLAN = 4001
+INVALID_ARGS = 4002
+AUTHZ_ERROR = 4003
+
 
 class ArgumentError(BaseModel):
     loc: list[str | int]
@@ -82,6 +86,10 @@ class ServerBusy(BaseModel):
     kind: Literal["busy"] = "busy"
 
 
+class Unauthorized(BaseModel):
+    kind: Literal["unauthorized"] = "unauthorized"
+
+
 class Update(BaseModel):
     kind: Literal["update"] = "update"
     data: WorkerEvent | DataEvent | ProgressEvent
@@ -89,6 +97,7 @@ class Update(BaseModel):
 
 ControlResponse = TypeAdapter(
     Annotated[
-        PlanNotFound | InvalidArgs | ServerBusy | Update, Field(discriminator="kind")
+        PlanNotFound | InvalidArgs | ServerBusy | Unauthorized | Update,
+        Field(discriminator="kind"),
     ]
 )

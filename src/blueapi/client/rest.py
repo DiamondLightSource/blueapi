@@ -40,6 +40,7 @@ from blueapi.service.protocol import (
     PlanNotFound,
     ServerBusy,
     Submit,
+    Unauthorized,
     Update,
 )
 from blueapi.worker import TrackableTask, WorkerState
@@ -388,6 +389,10 @@ class BlueapiRestClient:
                             raise UnknownPlanError(message=name)
                         case ServerBusy():
                             raise BlueskyRemoteControlError(409, "Server is busy")
+                        case Unauthorized():
+                            raise UnauthorisedAccessError(
+                                403, "Not authorized to submit task"
+                            )
         except InvalidStatus as istat:
             match istat.response.status_code:
                 case 401 | 403:

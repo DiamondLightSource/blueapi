@@ -4,7 +4,8 @@ from contextlib import AbstractAsyncContextManager, aclosing, nullcontext
 from typing import Annotated, Any, Self, cast
 
 from aiohttp import ClientSession
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
+from fastapi.requests import HTTPConnection
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 from blueapi.config import OIDCConfig, OpaConfig, ServiceAccount
@@ -114,7 +115,7 @@ async def validate_tiled_config(
 
 
 async def opa(
-    request: Request, token: str | None = Depends(unchecked_bearer_token)
+    request: HTTPConnection, token: str | None = Depends(unchecked_bearer_token)
 ) -> OpaUserClient | None:
 
     if opa := cast(OpaClient | None, getattr(request.app.state, "authz", None)):

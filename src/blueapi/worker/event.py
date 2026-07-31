@@ -2,10 +2,10 @@ from collections.abc import Mapping
 from enum import StrEnum
 from typing import Any, Literal, Self
 
+from bluesky._vendor.super_state_machine.extras import PropertyMachine, ProxyString
 from bluesky.run_engine import RunEngineStateMachine
 from pydantic import Field, PydanticSchemaGenerationError, TypeAdapter
 from pydantic_core import PydanticSerializationError
-from super_state_machine.extras import PropertyMachine, ProxyString
 
 from blueapi.utils import BlueapiBaseModel
 

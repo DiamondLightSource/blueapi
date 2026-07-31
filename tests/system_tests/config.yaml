@@ -25,3 +25,8 @@ oidc:
   issuer: "http://localhost:8081/realms/master"
   client_id: "ixx-cli-blueapi"
   client_audience: "ixx-blueapi"
+opa:
+  root: "http://localhost:8181/v1/data/diamond/policy/"
+  tiled_service_account_check: "blueapi/tiled_service_account_for_beamline"
+  submit_task_check: "blueapi/write_to_beamline_visit"
+  admin_check: "admin/admin"

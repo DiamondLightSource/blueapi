@@ -711,9 +711,15 @@
             "title": "OpaConfig",
             "type": "object",
             "required": [
-                "tiled_service_account_check"
+                "tiled_service_account_check",
+                "submit_task_check",
+                "admin_check"
             ],
             "properties": {
+                "admin_check": {
+                    "title": "Admin Check",
+                    "type": "string"
+                },
                 "audience": {
                     "title": "Audience",
                     "default": "account",
@@ -726,6 +732,10 @@
                     "format": "uri",
                     "maxLength": 2083,
                     "minLength": 1
+                },
+                "submit_task_check": {
+                    "title": "Submit Task Check",
+                    "type": "string"
                 },
                 "tiled_service_account_check": {
                     "title": "Tiled Service Account Check",

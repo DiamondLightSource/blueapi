@@ -399,6 +399,8 @@ class BlueapiRestClient:
                     raise UnauthorisedAccessError() from None
                 case _:
                     raise BlueskyRemoteControlError() from istat
+        except ConnectionRefusedError as cre:
+            raise ServiceUnavailableError() from cre
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

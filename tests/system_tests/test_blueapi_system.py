@@ -2,7 +2,6 @@ import inspect
 import time
 from asyncio import Queue
 from collections.abc import Generator
-from contextlib import nullcontext
 from enum import StrEnum, auto
 from itertools import count
 from pathlib import Path
@@ -690,56 +689,40 @@ def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
 
 
 @pytest.mark.parametrize(
-    "instrument_session,user,expectation",
+    "instrument_session,user",
     [
-        (
-            # bob cannot submit a task that alice is on
-            VALID_INSTRUMENT_SESSION[User.alice],
-            User.bob,
-            pytest.raises(
-                UnauthorisedAccessError, match="Not authorized to submit task"
-            ),
-        ),
-        (
-            # alice cannot submit a task that bob is on
-            VALID_INSTRUMENT_SESSION[User.bob],
-            User.alice,
-            pytest.raises(
-                UnauthorisedAccessError, match="Not authorized to submit task"
-            ),
-        ),
-        (
-            # alice can submit a task that alice is on
-            VALID_INSTRUMENT_SESSION[User.alice],
-            User.alice,
-            nullcontext(),
-        ),
-        (
-            # bob can submit a task that bob is on
-            VALID_INSTRUMENT_SESSION[User.bob],
-            User.bob,
-            nullcontext(),
-        ),
-        (
-            # admin can submit a task that bob is on
-            VALID_INSTRUMENT_SESSION[User.bob],
-            User.admin,
-            nullcontext(),
-        ),
-        (
-            # admin can submit a task that alice is on
-            VALID_INSTRUMENT_SESSION[User.alice],
-            User.admin,
-            nullcontext(),
-        ),
-        (
-            # admin still needs to put a valid instrument_session
-            INVALID_INSTRUMENT_SESSION,
-            User.admin,
-            pytest.raises(
-                UnauthorisedAccessError, match="Not authorized to submit task"
-            ),
-        ),
+        # bob cannot submit a task that alice is on
+        (VALID_INSTRUMENT_SESSION[User.alice], User.bob),
+        # alice cannot submit a task that bob is on
+        (VALID_INSTRUMENT_SESSION[User.bob], User.alice),
+        # admin still needs to put a valid instrument_session
+        (INVALID_INSTRUMENT_SESSION, User.admin),
+    ],
+)
+@pytest.mark.parametrize("method_name", ["create_task", "run_blocking"])
+def test_run_task_without_authz(
+    client: BlueapiClient,
+    small_task: TaskRequest,
+    user: ValidUser,
+    instrument_session: str,
+    method_name: str,
+):
+    method = getattr(client, method_name)
+    with pytest.raises(UnauthorisedAccessError, match="Not authorized to submit task"):
+        method(small_task)
+
+
+@pytest.mark.parametrize(
+    "instrument_session,user",
+    [
+        # alice can submit a task that alice is on
+        (VALID_INSTRUMENT_SESSION[User.alice], User.alice),
+        # bob can submit a task that bob is on
+        (VALID_INSTRUMENT_SESSION[User.bob], User.bob),
+        # admin can submit a task that bob is on
+        (VALID_INSTRUMENT_SESSION[User.bob], User.admin),
+        # admin can submit a task that alice is on
+        (VALID_INSTRUMENT_SESSION[User.alice], User.admin),
     ],
 )
 def test_create_task_authorization(
@@ -747,10 +730,8 @@ def test_create_task_authorization(
     small_task: TaskRequest,
     user: ValidUser,
     instrument_session: str,
-    expectation,
 ):
-    with expectation:
-        client.create_task(small_task)
+    client.create_task(small_task)
 
 
 def test_non_admin_can_only_get_own_tasks(
@@ -911,3 +892,10 @@ def test_admin_can_abort_any_task(
             task_factory(user, VALID_INSTRUMENT_SESSION[user], time=1)
         )
         client_factory[AdminUser.admin].abort()
+
+
+def test_run_blocking_requires_auth(
+    client_without_auth: BlueapiClient, small_task: TaskRequest
+):
+    with pytest.raises(UnauthorisedAccessError):
+        client_without_auth.run_blocking(small_task)

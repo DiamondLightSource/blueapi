@@ -6,13 +6,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import jwt
 import pytest
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import Stoppable
 from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 from httpx2 import Headers
 from pydantic import BaseModel, ValidationError
 from pydantic_core import InitErrorDetails
-from super_state_machine.errors import TransitionError
 
 from blueapi.config import (
     ApplicationConfig,

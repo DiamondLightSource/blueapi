@@ -34,7 +34,9 @@
             "module": "blueapi",
             "args": "--config ${input:config_path} serve",
             "env": {
-                "OTLP_EXPORT_ENABLED": "false"
+                "OTLP_EXPORT_ENABLED": "false",
+                "EPICS_CA_NAME_SERVERS": "127.0.0.1:9064",
+                "EPICS_PVA_NAME_SERVERS": "127.0.0.1:9075"
             },
         },
         {

@@ -107,8 +107,11 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
+# Timeout settings for pytest-timeout 
 timeout = 10
-
+# Timeout using thread method to make pytest-timeout work with pytest-xdist
+timeout_method = "thread"
+timeout_func_only = true
 [tool.coverage.run]
 patch = ["subprocess"]
 data_file = "/tmp/blueapi.coverage"
@@ -162,6 +165,9 @@ commands = [
         "pytest",
         "-n",
         "logical",
+        # Disable worker restarts so pytest-xdist does not rerun a test in another worker after pytest-timeout triggers
+        "--max-worker-restart",
+        "0",
         "tests/unit_tests",
         "--cov=blueapi",
         "--cov-report",

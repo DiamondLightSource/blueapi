@@ -540,6 +540,22 @@ def test_run_blocking_ws_failures(
 
 
 @patch("blueapi.client.rest.connect")
+def test_run_blocking_unauthorised(mock_connect: Mock, rest: BlueapiRestClient):
+    ws = MagicMock()
+    event = """{
+            "kind":"unauthorized"
+            }"""
+    ws.__enter__.return_value.__iter__.return_value = iter([event])
+    mock_connect.return_value = ws
+
+    conn = rest.run_blocking(
+        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
+    )
+    with pytest.raises(UnauthorisedAccessError):
+        next(iter(conn))
+
+
+@patch("blueapi.client.rest.connect")
 def test_run_blocking_unknown_error(mock_connect: Mock, rest: BlueapiRestClient):
     mock_connect.side_effect = InvalidStatus(
         response=Response(

@@ -22,6 +22,7 @@ from blueapi.client.rest import (
     InvalidParametersError,
     NotFoundError,
     ParameterError,
+    ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
     _create_task_exceptions,
@@ -41,6 +42,10 @@ from blueapi.service.model import (
 from blueapi.worker.event import WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
+
+TASK_REQUEST = TaskRequest(
+    name="foo", params={"one": "two"}, instrument_session="cm12345-1"
+)
 
 
 @pytest.fixture
@@ -444,9 +449,7 @@ def test_run_blocking(mock_connect: Mock, rest: BlueapiRestClient):
         ['{"kind": "update", "data": {"name": "start", "doc":{}, "task_id":"t_uid"}}']
     )
     mock_connect.return_value = ws
-    conn = rest.run_blocking(
-        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
-    )
+    conn = rest.run_blocking(TASK_REQUEST)
     next(iter(conn))
     mock_connect.assert_called_once_with(
         "ws://localhost:8000/api/v2/run_plan",
@@ -468,9 +471,7 @@ def test_run_blocking_auth(
         ['{"kind": "update", "data": {"name": "start", "doc":{}, "task_id":"t_uid"}}']
     )
     mock_connect.return_value = ws
-    conn = rest_with_auth.run_blocking(
-        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
-    )
+    conn = rest_with_auth.run_blocking(TASK_REQUEST)
     next(iter(conn))
     mock_connect.assert_called_once_with(
         "ws://localhost:8000/api/v2/run_plan",
@@ -510,9 +511,7 @@ def test_run_blocking_errors(
     ws = MagicMock()
     ws.__enter__.return_value.__iter__.return_value = iter([event])
     mock_connect.return_value = ws
-    conn = rest.run_blocking(
-        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
-    )
+    conn = rest.run_blocking(TASK_REQUEST)
     with pytest.raises(error, match=message):
         next(iter(conn))
     mock_connect.assert_called_once_with(
@@ -532,9 +531,7 @@ def test_run_blocking_ws_failures(
             status_code=status_code, reason_phrase="test_error", headers=Headers()
         )
     )
-    conn = rest.run_blocking(
-        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
-    )
+    conn = rest.run_blocking(TASK_REQUEST)
     with pytest.raises(UnauthorisedAccessError):
         next(iter(conn))
 
@@ -548,23 +545,36 @@ def test_run_blocking_unauthorised(mock_connect: Mock, rest: BlueapiRestClient):
     ws.__enter__.return_value.__iter__.return_value = iter([event])
     mock_connect.return_value = ws
 
-    conn = rest.run_blocking(
-        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
-    )
+    conn = rest.run_blocking(TASK_REQUEST)
     with pytest.raises(UnauthorisedAccessError):
         next(iter(conn))
 
 
+@pytest.mark.parametrize(
+    "conn_err,exp_err",
+    [
+        (
+            InvalidStatus(
+                response=Response(
+                    status_code=1234, reason_phrase="test_error", headers=Headers()
+                )
+            ),
+            BlueskyRemoteControlError,
+        ),
+        (
+            ConnectionRefusedError(),
+            ServiceUnavailableError,
+        ),
+    ],
+)
 @patch("blueapi.client.rest.connect")
-def test_run_blocking_unknown_error(mock_connect: Mock, rest: BlueapiRestClient):
-    mock_connect.side_effect = InvalidStatus(
-        response=Response(
-            status_code=1234, reason_phrase="test_error", headers=Headers()
-        )
-    )
-
-    conn = rest.run_blocking(
-        TaskRequest(name="foo", params={"one": "two"}, instrument_session="cm12345-1")
-    )
-    with pytest.raises(BlueskyRemoteControlError):
+def test_run_blocking_connect_error(
+    mock_connect: Mock,
+    rest: BlueapiRestClient,
+    conn_err: Exception,
+    exp_err: type[Exception],
+):
+    mock_connect.side_effect = conn_err
+    conn = rest.run_blocking(TASK_REQUEST)
+    with pytest.raises(exp_err):
         next(iter(conn))

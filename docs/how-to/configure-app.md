@@ -27,7 +27,7 @@ Create a YAML file for configuring blueapi:
 ## Run the Server
 
 ```
-blueapi --config /path/to/stomp.yaml serve
+blueapi --config /path/to/file.yaml serve
 ```
 
 The server should print a connection message to the console. If there is an error, it will print an error message instead.

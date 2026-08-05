@@ -774,6 +774,17 @@ class BlueapiClient:
             else:
                 print("Server is not configured to use authentication!")
 
+    def logout(self, token_path: Path | None = None):
+        try:
+            auth: SessionManager = SessionManager.from_cache(token_path)
+            auth.logout()
+        except FileNotFoundError:
+            print("Logged out")
+        except ValueError as e:
+            print(f"Invalid login token: {e}")
+        except Exception as e:
+            print(f"Failed to logout from blueapi with error: {e}")
+
 
 class PlanFailedError(Exception):
     def __init__(self, typ: str, message: str):

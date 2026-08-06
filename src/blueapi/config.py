@@ -132,6 +132,7 @@ class WorkerEventConfig(BlueapiBaseModel):
 
 class MetadataConfig(BlueapiBaseModel):
     instrument: str
+    task_id: str
 
 
 class EnvironmentConfig(BlueapiBaseModel):

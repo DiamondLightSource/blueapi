@@ -1,7 +1,10 @@
 import logging
+import re
 import uuid
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
+from fastapi.datastructures import Headers
+from fastapi.responses import PlainTextResponse
 from opentelemetry.context import attach
 from opentelemetry.propagate import get_global_textmap
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -70,6 +73,56 @@ def _redact_headers(headers: list[Header] | None) -> Iterable[Header]:
             if (space := value.find(b" ")) >= 0:
                 value = value[:space] + b" [REDACTED]"
         yield (key, value)
+
+
+class WebsocketCORS:
+    def __init__(
+        self,
+        app: ASGIApp,
+        allow_origins: Sequence[str] = (),
+        allow_origin_regex: str | None = None,
+    ):
+        self.app = app
+        if "*" == allow_origins or (
+            "*" in allow_origins and not isinstance(allow_origins, str)
+        ):
+            # a single str is also a Sequence[str] and '*.example.com' should
+            # not count as a full wildcard
+            self.allow_origins = None
+        elif isinstance(allow_origins, str):
+            self.allow_origins = (allow_origins,)
+        else:
+            self.allow_origins = tuple(allow_origins)
+
+        self.allow_origin_regex = (
+            re.compile(allow_origin_regex) if allow_origin_regex else None
+        )
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope.get("type") != "websocket" or (
+            # we're not going to check the origin anyway
+            self.allow_origins is None and self.allow_origin_regex is None
+        ):
+            await self.app(scope, receive, send)
+            return
+
+        headers = Headers(scope=scope)
+        origin = headers.get("origin")
+
+        if origin is not None and not self.allow_origin(origin):
+            response = PlainTextResponse("Origin not on allow list", 403)
+            await response(scope, receive, send)
+            return
+
+        await self.app(scope, receive, send)
+
+    def allow_origin(self, origin: str) -> bool:
+        if self.allow_origins is not None:
+            return origin in self.allow_origins
+        elif self.allow_origin_regex is not None:
+            return self.allow_origin_regex.match(origin) is not None
+        else:
+            return False
 
 
 class WebsocketTracing:

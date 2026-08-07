@@ -1000,3 +1000,19 @@ def test_client_login_no_oidc(
     client.login()
 
     mock_session_manager.assert_not_called()
+
+
+@patch("blueapi.client.client.SessionManager")
+def test_client_logout(mock_session_manager: Mock, client: BlueapiClient):
+    client.logout()
+
+    mock_session_manager.from_cache.assert_called_once()
+    mock_session_manager.from_cache.return_value.logout.assert_called_once()
+
+
+@patch("blueapi.client.client.SessionManager")
+def test_client_logout_invalid_token(mock_session_manager: Mock, client: BlueapiClient):
+    mock_session_manager.from_cache.side_effect = ValueError("No token")
+
+    client.logout()
+    mock_session_manager.from_cache.return_value.logout.assert_not_called()

@@ -68,7 +68,7 @@ jobs:
   publish:
     needs: [docs]
     # don't publish a pages site in the fork's org
-    if: github.repository == 'DiamondLightSource/blueapi' && github.ref_type == 'tag' # publish only on tags
+    if: github.repository == 'DiamondLightSource/blueapi'
     uses: ./.github/workflows/publish-dispatch.yml # your workflow (below)
     with:
       version-name: ${{ needs.docs.outputs.version-name }}

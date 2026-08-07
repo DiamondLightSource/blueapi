@@ -5,7 +5,7 @@ BlueAPI can use persistent volumes as a scratch area. This allows the user to re
 ## Configuration
 
 :::{seealso}
-[Configure the Application](./configure-app.md)
+[Configure the Application](../how-to/configure-app.md)
 :::
 
 The relevant configuration is below:

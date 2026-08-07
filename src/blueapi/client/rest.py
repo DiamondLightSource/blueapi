@@ -1,6 +1,6 @@
 import json
 import logging
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Mapping
 from typing import Any, Literal, TypeVar
 
 import requests
@@ -12,8 +12,6 @@ from observability_utils.tracing import (
 )
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from pydantic_core import PydanticSerializationError
-from websockets.exceptions import InvalidStatus
-from websockets.sync.client import connect
 
 from blueapi import __version__
 from blueapi.client import client
@@ -33,15 +31,6 @@ from blueapi.service.model import (
     TaskResponse,
     TasksListResponse,
     WorkerTask,
-)
-from blueapi.service.protocol import (
-    ControlResponse,
-    InvalidArgs,
-    PlanNotFound,
-    ServerBusy,
-    Submit,
-    Unauthorized,
-    Update,
 )
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import ProgressEvent, WorkerEvent
@@ -356,51 +345,52 @@ class BlueapiRestClient:
         )
         return deserialized
 
-    def run_blocking(
-        self, req: TaskRequest
-    ) -> Iterable[DataEvent | WorkerEvent | ProgressEvent]:
-        url = self._config.ws_address.unicode_string().rstrip("/") + "/api/v2/run_plan"
+    def run_blocking(self, req: TaskRequest):
+        url = (
+            self._config.url.unicode_string().removesuffix("/") + "/api/v2/run/sse_plan"
+        )
         headers = get_context_propagator()
-        if self._session_manager:
-            auth = self._session_manager.get_valid_access_token()
-            headers["Authorization"] = f"Bearer {auth}"
+        headers["User-Agent"] = USER_AGENT
         try:
-            with connect(
+            with self._pool.post(
                 url,
-                additional_headers=headers,
-                user_agent_header=USER_AGENT,
-            ) as ws:
-                ws.send(Submit(task=req).model_dump_json())
-                for message in ws:
-                    event = ControlResponse.validate_json(message)
-                    match event:
-                        case Update(data=data):
-                            yield data
-                        case InvalidArgs(errors=errors):
-                            raise InvalidParametersError(
-                                [
-                                    ParameterError(
-                                        loc=e.loc, msg=e.msg, type=e.type, input=e.input
-                                    )
-                                    for e in errors
-                                ]
-                            )
-                        case PlanNotFound(plan_name=name):
-                            raise UnknownPlanError(message=name)
-                        case ServerBusy():
-                            raise BlueskyRemoteControlError(409, "Server is busy")
-                        case Unauthorized():
-                            raise UnauthorisedAccessError(
-                                403, "Not authorized to submit task"
-                            )
-        except InvalidStatus as istat:
-            match istat.response.status_code:
-                case 401 | 403:
-                    raise UnauthorisedAccessError() from None
-                case _:
-                    raise BlueskyRemoteControlError() from istat
-        except ConnectionRefusedError as cre:
-            raise ServiceUnavailableError() from cre
+                json=req.model_dump(),
+                headers=headers,
+                stream=True,
+                auth=JWTAuth(self._session_manager),
+            ) as response:
+                exception = _create_task_exceptions(response)
+                print(exception)
+                if exception is not None:
+                    raise exception
+                if (
+                    server_version := response.headers.get("x-blueapi-version")
+                ) is not None:
+                    from packaging.version import Version
+
+                    if (server_version := Version(server_version).base_version) != (
+                        client_version := Version(__version__).base_version
+                    ):
+                        LOGGER.warning(
+                            f"Version mismatch: Blueapi server version is "
+                            f"{server_version} but client version is {client_version}. "
+                            f"Some features may not work as expected."
+                        )
+                lines = response.iter_lines()
+                data = []
+                for line in lines:
+                    print()
+                    if line:  # and line.startswith(b"data: "):
+                        data.append(line.decode("utf-8"))
+                        continue
+                    src = "\n".join(data)
+                    event = TypeAdapter(
+                        WorkerEvent | DataEvent | ProgressEvent
+                    ).validate_json(src)
+                    yield event
+                    data.clear()
+        except requests.ConnectionError as ce:
+            raise ServiceUnavailableError() from ce
 
 
 # https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0

@@ -627,6 +627,55 @@ def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
     )
 
 
+async def stream_task_events(runner, task_id):
+    with runner.event_pipe() as events:
+        runner.run(interface.begin_task, WorkerTask(task_id=task_id))
+        async for evt in events:
+            if evt.task_id != task_id:
+                continue
+            LOGGER.debug("Event: %s", evt)
+            yield evt.model_dump_json()
+            yield "\n"
+            if isinstance(evt, WorkerEvent) and evt.is_complete():
+                LOGGER.debug("End of stream")
+                break
+
+
+@secure_router_v2.post("/run/sse_plan")
+async def run_plan_sse(
+    req: TaskRequest,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    user: Fedid,
+    opa: Annotated[OpaUserClient | None, Depends(opa)],
+):
+    try:
+        task_id: str = runner.run(interface.submit_task, req, {"user": user})
+    except ValidationError as e:
+        # Add body/params context to location and ensure that all required
+        # fields defined in the generated schema are present
+        errors = [
+            {
+                "loc": ["body", "params", *err.get("loc", [])],
+                "msg": err.get("msg", None),
+                "type": err.get("type", None),
+                # Input is not listed as required but is useful to have if available
+                "input": err.get("input", None),
+            }
+            for err in e.errors()
+        ]
+
+        LOGGER.info("Error submitting task: %s - %s", req, e)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=errors,
+        ) from e
+
+    print("Starting stream")
+    return StreamingResponse(
+        stream_task_events(runner, task_id), media_type="text/event-stream"
+    )
+
+
 @secure_router_v2.websocket("/run_plan")
 async def run_plan(
     ws: WebSocket,

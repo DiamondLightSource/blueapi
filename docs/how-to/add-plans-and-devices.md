@@ -25,7 +25,7 @@ To add plans, you would add the following into your configuration file:
 :language: yaml
 ```
 
-For BlueAPI to register plans from repositories, they should be added to the `__init__.py` file with `__all__` = [<plan_name>, ...].
+For BlueAPI to detect plans from repositories and be registered, they must be added to the `__init__.py` file with `__all__` = [<plan_name>, ...].
 
 
 Devices are added similarly, using `deviceManager` as the `kind`, like so:

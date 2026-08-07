@@ -24,7 +24,7 @@ A Helm chart deploying a worker pod that runs Bluesky plans
 | initContainer | object | `{"enabled":false,"persistentVolume":{"customName":"","enabled":false,"existingClaimName":"","size":"1Gi"}}` | Configure the initContainer that checks out the scratch configuration repositories |
 | initContainer.persistentVolume.customName | string | `""` | May be set to create or use a PVC named `ixx-blueapi-scratch-{customName}-a.b.c` |
 | initContainer.persistentVolume.enabled | bool | `false` | Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container |
-| initContainer.persistentVolume.existingClaimName | string | `""` | Will be deleted in Blueapi 2.0. May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release |
+| initContainer.persistentVolume.existingClaimName | string | `""` | Deprecated. May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release |
 | initContainer.persistentVolume.size | string | `"1Gi"` | Size of persistent volume |
 | initResources | object | `{}` | Override resources for init container. By default copies resources of main container. |
 | livenessProbe | object | `{"failureThreshold":3,"httpGet":{"path":"/healthz","port":"http"},"periodSeconds":10}` | Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively. This is automatically disabled when in debug mode. |

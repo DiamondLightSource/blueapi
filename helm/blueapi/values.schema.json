@@ -124,7 +124,7 @@
                             "type": "boolean"
                         },
                         "existingClaimName": {
-                            "description": "Will be deleted in Blueapi 2.0. May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release",
+                            "description": "Deprecated. May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release",
                             "type": "string"
                         },
                         "size": {

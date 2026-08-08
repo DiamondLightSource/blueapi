@@ -714,14 +714,10 @@
             "$id": "OpaConfig",
             "title": "OpaConfig",
             "type": "object",
-            "required": [
-                "tiled_service_account_check",
-                "submit_task_check",
-                "admin_check"
-            ],
             "properties": {
                 "admin_check": {
                     "title": "Admin Check",
+                    "default": "admin/admin",
                     "type": "string"
                 },
                 "audience": {
@@ -739,10 +735,12 @@
                 },
                 "submit_task_check": {
                     "title": "Submit Task Check",
+                    "default": "blueapi/write_to_beamline_visit",
                     "type": "string"
                 },
                 "tiled_service_account_check": {
                     "title": "Tiled Service Account Check",
+                    "default": "blueapi/tiled_service_account_for_beamline",
                     "type": "string"
                 }
             },

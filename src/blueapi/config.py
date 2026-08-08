@@ -306,9 +306,9 @@ class Tag(StrEnum):
 class OpaConfig(BlueapiBaseModel):
     root: HttpUrl = HttpUrl("http://localhost:8181")
     audience: str = "account"
-    tiled_service_account_check: str
-    submit_task_check: str
-    admin_check: str
+    tiled_service_account_check: str = "blueapi/tiled_service_account_for_beamline"
+    submit_task_check: str = "blueapi/write_to_beamline_visit"
+    admin_check: str = "admin/admin"
 
 
 class ApplicationConfig(BlueapiBaseModel):

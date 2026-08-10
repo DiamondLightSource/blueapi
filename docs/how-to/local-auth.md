@@ -18,6 +18,8 @@ To run the stack:
 > alias docker=podman
 > ```
 
+There are also docs in the [Developer Guide](https://dev-guide.diamond.ac.uk/epics-containers/reference/setup/#docker-compose) to set up docker-compose on DLS workstations.
+
 3. Run `source tests/system_tests/.env` which will set required EPICS environmental variables
 4. Run `blueapi -c tests/system_tests/config.yaml serve` to launch BlueAPI configured to use the launched stack. This may take a while, as BlueAPI will attempt to connect to a number of devices via Channel Access
 

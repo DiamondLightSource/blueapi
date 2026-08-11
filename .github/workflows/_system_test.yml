@@ -28,6 +28,13 @@ jobs:
           # Optional: Specify one or more compose files
           compose-files: |
             tests/system_tests/compose.yaml
+            example-services/compose.yml
+            example-services/services/bl01t-ea-test-01/compose.yml
+            example-services/services/bl01t-di-cam-01/compose.yml
+            example-services/services/bl01t-mo-sim-01/compose.yml
+            example-services/services/gateway/compose.yml
+            example-services/services/pvagw/compose.yml
+            example-services/services/epics-opis/compose.yml
 
       - name: Display Cache Info
         run: |
@@ -62,4 +69,4 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose down
+        run: docker compose -f tests/system_tests/compose.yaml down

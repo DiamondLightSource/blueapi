@@ -21,10 +21,35 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
-      - name: Compose services
-        uses: hoverkraft-tech/compose-action@11beaa1c2dae4e8ed7b1665aa074723b6cecb0e4 # v3.0.0
+      - name: Cache Docker Compose Images
+        id: cache-docker
+        uses: seijikohara/docker-compose-cache-action@fe63c2c0dfe435a8852d9e9c361d8b378ad50c3a # v1.8.21
         with:
-          compose-file: "tests/system_tests/compose.yaml"
+          # Optional: Specify one or more compose files
+          compose-files: |
+            tests/system_tests/compose.yaml
+
+      - name: Display Cache Info
+        run: |
+          echo "Cache hit for all images: ${{ steps.cache-docker.outputs.cache-hit }}"
+
+          # Parse the JSON output to display image information
+          IMAGE_LIST='${{ steps.cache-docker.outputs.image-list }}'
+
+          if [[ -n "$IMAGE_LIST" ]]; then
+            echo "Images processed:"
+            echo "$IMAGE_LIST" | jq -r '.[] | "- \(.name) [\(.status)]: \(.size) bytes processed in \(.processingTimeMs)ms"'
+          else
+            echo "No images processed"
+          fi
+              
+      # - name: Set up Docker Compose
+      #   uses: docker/setup-compose-action@v2
+      #   with:
+      #     version: v5.4.0
+      
+      - name: Run all example services
+        run: docker compose -f tests/system_tests/compose.yaml up -d
 
       - name: Start Blueapi Server
         env:
@@ -34,3 +59,7 @@ jobs:
 
       - name: Run tests
         run: uv run --locked tox -e system-test
+
+      - name: Stop services
+        if: always()
+        run: docker compose down

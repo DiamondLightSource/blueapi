@@ -10,6 +10,7 @@ from typing import Any, TypeVar
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import Status
+from bluesky.utils import RunEngineInterrupted
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
@@ -75,9 +76,11 @@ class TrackableTask(BlueapiBaseModel):
 
     def set_result(self, result: Any):
         self.outcome = TaskResult.from_result(result)
+        self.is_complete = True
 
     def set_exception(self, err: Exception):
         self.outcome = TaskError.from_exception(err)
+        self.is_complete = True
 
 
 class TaskWorker:
@@ -316,8 +319,9 @@ class TaskWorker:
             self._current_task_otel_context = get_current()
             """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
-            task_started.wait(timeout=5.0)
-            if not task_started.is_set():
+            if task_started.wait(timeout=5.0):
+                self._pending_tasks.pop(trackable_task.task_id)
+            else:
                 raise TimeoutError("Failed to start plan within timeout")
         except Full as f:
             LOGGER.error("Cannot submit task while another is running")
@@ -411,7 +415,8 @@ class TaskWorker:
         Command the worker to resume
         """
         LOGGER.info("Requesting to resume the worker")
-        self._ctx.run_engine.resume()
+        self._current_task_otel_context = get_current()
+        self._task_channel.put(ResumeSignal())
 
     @start_as_current_span(TRACER)
     def _cycle_with_error_handling(self) -> None:
@@ -424,20 +429,34 @@ class TaskWorker:
     def _cycle(self) -> None:
         try:
             LOGGER.info("Awaiting task")
-            next_task: TrackableTask | KillSignal = self._task_channel.get()
+            next_task: TrackableTask | KillSignal | ResumeSignal = (
+                self._task_channel.get()
+            )
+            if isinstance(next_task, ResumeSignal):
+                if self._current is None or self._current.is_complete:
+                    raise Exception("Can't resume")
+                next_task = self._current
             if isinstance(next_task, TrackableTask):
 
                 def process_task():
                     LOGGER.info(f"Got new task: {next_task}")
                     self._current = next_task
+                    resume = not self._current.is_pending
                     self._current.is_pending = False
                     meta = {"task_id": self._current.task_id}
                     try:
-                        result = self._current.task.do_task(self._ctx)
+                        if resume:
+                            result = self._ctx.run_engine.resume()
+                        else:
+                            result = self._current.task.do_task(self._ctx)
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
                         self._current.set_result(result)
+                    except RunEngineInterrupted:
+                        LOGGER.info("Task paused")
+                        if self._ctx.run_engine.state != "paused":
+                            raise
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
                         self._current.set_exception(e)
@@ -473,9 +492,7 @@ class TaskWorker:
             if self._current_task_otel_context is not None:
                 self._current_task_otel_context = None
 
-        if self._current is not None:
-            self._current.is_complete = True
-            self._pending_tasks.pop(self._current.task_id)
+        if self._current is not None and self._current.is_complete:
             self._completed_tasks[self._current.task_id] = self._current
         self._report_status()
         self._errors.clear()
@@ -682,6 +699,9 @@ class KillSignal:
     """
 
     ...
+
+
+class ResumeSignal: ...
 
 
 def run_worker_in_own_thread(

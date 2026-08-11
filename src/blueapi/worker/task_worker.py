@@ -10,6 +10,7 @@ from typing import Any, TypeVar
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import Status
+from bluesky.run_engine import RunEngineResult
 from bluesky.utils import RunEngineInterrupted
 from observability_utils.tracing import (
     add_span_attributes,
@@ -447,12 +448,14 @@ class TaskWorker:
                     try:
                         if resume:
                             result = self._ctx.run_engine.resume()
+                            if isinstance(result, RunEngineResult):
+                                self._current.set_result(result.plan_result)
                         else:
                             result = self._current.task.do_task(self._ctx)
+                            self._current.set_result(result)
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
-                        self._current.set_result(result)
                     except RunEngineInterrupted:
                         LOGGER.info("Task paused")
                         if self._ctx.run_engine.state != "paused":

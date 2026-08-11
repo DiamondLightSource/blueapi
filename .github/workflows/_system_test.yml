@@ -25,7 +25,7 @@ jobs:
         id: cache-docker
         uses: seijikohara/docker-compose-cache-action@fe63c2c0dfe435a8852d9e9c361d8b378ad50c3a # v1.8.21
         with:
-          # Optional: Specify one or more compose files
+          skip-digest-verification: true
           compose-files: |
             tests/system_tests/compose.yaml
             example-services/compose.yaml

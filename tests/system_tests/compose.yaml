@@ -60,7 +60,7 @@ services:
       - label=disable
 
   opa:
-    image: openpolicyagent/opa:edge-static-debug
+    image: openpolicyagent/opa:1.20.0-dev-static-debug
     network_mode: host # Port 8181
     volumes:
       - "./services/opa_config:/mnt"

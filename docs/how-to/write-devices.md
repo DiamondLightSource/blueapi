@@ -23,5 +23,5 @@ The return type annotation `-> MyTypeOfDetector` is required as blueapi uses it 
 The device is created via a function rather than a global to preserve side-effect-free imports. Each device must have its own factory function.
 
 :::{seealso}
-[Numtracker integration](../how-to/integrate-with-numtracker.md) for how to configure where detectors write files.
+[Numtracker integration](../how-to/1.4%20integrate-with-numtracker.md) for how to configure where detectors write files.
 :::

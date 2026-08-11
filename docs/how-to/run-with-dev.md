@@ -22,5 +22,5 @@ debugging capabilities.
 [debug in vscode](../images/debug-vscode.png)
 
 :::{seealso}
-[Scratch Area](../how-to/edit-live.md) for in-the-loop development of plans and devices
+[Scratch Area](../how-to/1.5%20edit-live.md) for in-the-loop development of plans and devices
 :::

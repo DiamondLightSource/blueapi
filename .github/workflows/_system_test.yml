@@ -28,7 +28,7 @@ jobs:
           # Optional: Specify one or more compose files
           compose-files: |
             tests/system_tests/compose.yaml
-            example-services/compose.yml
+            example-services/compose.yaml
             example-services/services/bl01t-ea-test-01/compose.yml
             example-services/services/bl01t-di-cam-01/compose.yml
             example-services/services/bl01t-mo-sim-01/compose.yml

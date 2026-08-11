@@ -13,8 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          # Need this to get version number from last tag
-          fetch-depth: 0
+          fetch-depth: 1
           # Check out example services
           submodules: true
 

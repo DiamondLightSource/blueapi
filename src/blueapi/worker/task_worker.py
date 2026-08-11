@@ -435,29 +435,36 @@ class TaskWorker:
             )
             if isinstance(next_task, ResumeSignal):
                 if self._current is None or self._current.is_complete:
-                    raise Exception("Can't resume")
+                    LOGGER.debug(
+                        "Ignoring resume signal - nothing to resume: current=%s",
+                        self._current,
+                    )
+                    return
+                # If there is an incomplete task, treat it as the next task to run
                 next_task = self._current
+
             if isinstance(next_task, TrackableTask):
 
                 def process_task():
                     LOGGER.info(f"Got new task: {next_task}")
                     self._current = next_task
-                    resume = not self._current.is_pending
-                    self._current.is_pending = False
                     meta = {"task_id": self._current.task_id}
                     try:
-                        if resume:
-                            result = self._ctx.run_engine.resume()
-                            if isinstance(result, RunEngineResult):
-                                self._current.set_result(result.plan_result)
-                        else:
+                        if self._current.is_pending:
+                            self._current.is_pending = False
                             result = self._current.task.do_task(self._ctx)
-                            self._current.set_result(result)
+                        else:
+                            LOGGER.debug("Resuming previous task")
+                            result = self._ctx.run_engine.resume()
+                        if isinstance(result, RunEngineResult):
+                            # Should always be a RunEngineResult if the run
+                            # engine is configured correctly
+                            self._current.set_result(result.plan_result)
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
                     except RunEngineInterrupted:
-                        LOGGER.info("Task paused")
+                        LOGGER.info("Task paused", extra=meta)
                         if self._ctx.run_engine.state != "paused":
                             raise
                     except Exception as e:

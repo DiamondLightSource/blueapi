@@ -409,10 +409,10 @@ def test_delete_non_existent_task(rest_client: BlueapiRestClient):
         rest_client.clear_task("Not-exists")
 
 
-def test_put_worker_task(rest_client: BlueapiRestClient):
-    # _LONG_TASK, since a near-instant task could complete (clearing the
+def test_put_worker_task(rest_client: BlueapiRestClient, long_task: TaskRequest):
+    # long_task, since a near-instant task could complete (clearing the
     # active task) before get_active_task() below is called.
-    created_task = rest_client.create_task(_LONG_TASK)
+    created_task = rest_client.create_task(long_task)
     rest_client.update_worker_task(WorkerTask(task_id=created_task.task_id))
     active_task = rest_client.get_active_task()
     assert active_task.task_id == created_task.task_id
@@ -809,13 +809,17 @@ def test_any_user_can_retrieve_active_task(
     task_id = (
         client_factory[AdminUser.admin]
         .create_and_start_task(
-            task_factory(AdminUser.admin, VALID_INSTRUMENT_SESSION[AdminUser.admin])
+            task_factory(
+                AdminUser.admin, VALID_INSTRUMENT_SESSION[AdminUser.admin], time=1
+            )
         )
         .task_id
     )
 
     for user in User:
         assert client_factory[user].get_active_task().task_id == task_id
+
+    client_factory[AdminUser.admin].abort()
 
 
 def test_non_admin_can_only_start_own_tasks(

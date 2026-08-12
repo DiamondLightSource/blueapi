@@ -556,8 +556,9 @@ class TaskWorker:
                 self._pending_tasks.pop(self._current.task_id)
                 self._completed_tasks[self._current.task_id] = self._current
         if self._ctx.run_engine.state != "paused":
-            self._report_status()
+            finished_task = self._current
             self._current = None
+            self._report_status(finished_task)
             self._errors.clear()
             self._warnings.clear()
             self._completed_statuses.clear()
@@ -602,7 +603,7 @@ class TaskWorker:
             old_state = WorkerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
         self._state = new_state
-        self._report_status()
+        self._report_status(self._current)
 
     def _report_error(self, err: Exception) -> None:
         LOGGER.error(err, exc_info=True)
@@ -637,26 +638,24 @@ class TaskWorker:
             )
 
     @start_as_current_span(TRACER)
-    def _report_status(
-        self,
-    ) -> None:
+    def _report_status(self, current: TrackableTask | None) -> None:
         task_status: TaskStatus | None
         errors = self._errors
         warnings = self._warnings
-        if self._current is not None:
+        if current is not None:
             task_status = TaskStatus(
-                task_id=self._current.task_id,
-                task_complete=self._current.is_complete,
-                task_failed=bool(self._current.errors)
-                or isinstance(self._current.outcome, TaskError),
-                result=self._current.outcome,
+                task_id=current.task_id,
+                task_complete=current.is_complete,
+                task_failed=bool(current.errors)
+                or isinstance(current.outcome, TaskError),
+                result=current.outcome,
             )
-            correlation_id = self._current.task_id
+            correlation_id = current.task_id
             add_span_attributes(
                 {
-                    "task_id": self._current.task_id,
-                    "task_complete": self._current.is_complete,
-                    "task_failed": self._current.errors,
+                    "task_id": current.task_id,
+                    "task_complete": current.is_complete,
+                    "task_failed": current.errors,
                 }
             )
         else:

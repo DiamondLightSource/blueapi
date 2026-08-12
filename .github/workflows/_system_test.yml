@@ -11,10 +11,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v7
         with:
-          # Need this to get version number from last tag
-          fetch-depth: 0
+          fetch-depth: 1
           # Check out example services
           submodules: true
 
@@ -22,7 +21,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Compose services
-        uses: hoverkraft-tech/compose-action@d2bee4f07e8ca410d6b196d00f90c12e7d48c33a # v2.6.0
+        uses: hoverkraft-tech/compose-action@11beaa1c2dae4e8ed7b1665aa074723b6cecb0e4 # v3.0.0
         with:
           compose-file: "tests/system_tests/compose.yaml"
 

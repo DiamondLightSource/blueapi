@@ -263,6 +263,7 @@ def reset_numtracker():
               }}
             }}"""
         },
+        headers={"authorization": "Bearer " + get_access_token(User.admin)},
     ).raise_for_status()
     yield
 
@@ -541,7 +542,7 @@ def test_delete_current_environment(client: BlueapiClient):
                     "detectors": [
                         "det",
                     ],
-                    "num": 5,
+                    "num": 3,
                 },
                 instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
@@ -557,14 +558,14 @@ def test_delete_current_environment(client: BlueapiClient):
                         "outer": {
                             "axis": "stage.x",
                             "start": 0.0,
-                            "stop": 10.0,
+                            "stop": 0.4,
                             "num": 2,
                             "type": "Linspace",
                         },
                         "inner": {
                             "axis": "stage.theta",
                             "start": 5.0,
-                            "stop": 15.0,
+                            "stop": 5.3,
                             "num": 3,
                             "type": "Linspace",
                         },
@@ -634,7 +635,7 @@ def test_plan_runs(
             name="set_absolute",
             params={
                 "movable": "stage.x",
-                "value": 4.0,
+                "value": 1.0,
             },
             instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
         ),

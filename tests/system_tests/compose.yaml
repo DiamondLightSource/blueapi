@@ -4,8 +4,13 @@ include:
 services:
   numtracker:
     image: ghcr.io/diamondlightsource/numtracker:1.0.2
-    ports:
-      - "8406:8000"
+    network_mode: host # Port 8406
+    environment:
+      - NUMTRACKER_AUTH_HOST=http://localhost:8181/
+      - NUMTRACKER_PORT=8406
+      - NUMTRACKER_LOG_LEVEL=info
+      - NUMTRACKER_AUTH_ACCESS=v1/data/diamond/policy/numtracker/write_to_beamline_visit
+      - NUMTRACKER_AUTH_ADMIN=v1/data/diamond/policy/admin/configure_beamline
     security_opt:
       - label=disable
 

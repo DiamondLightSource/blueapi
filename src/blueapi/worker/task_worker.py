@@ -5,7 +5,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
 from queue import Full, Queue
-from threading import Event, RLock
+from threading import Condition, Event, RLock
 from typing import Any, TypeVar
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
@@ -21,7 +21,7 @@ from observability_utils.tracing import (
 from opentelemetry.baggage import get_baggage
 from opentelemetry.context import Context, get_current
 from opentelemetry.trace import SpanKind
-from pydantic import Field
+from pydantic import Field, computed_field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.core import (
@@ -70,18 +70,27 @@ class TrackableTask(BlueapiBaseModel):
     task_id: str
     task: Task
     request_id: str | SkipJsonSchema[None] = None
-    is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
     outcome: TaskResult | TaskError | None = None
 
+    @computed_field
+    @property
+    def is_complete(self) -> bool:
+        return self.outcome is not None
+
+    @model_validator(mode="before")
+    @classmethod
+    def remove_complete(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # fix pydantic falling over itself with computed fields
+        values.pop("is_complete", None)
+        return values
+
     def set_result(self, result: Any):
         self.outcome = TaskResult.from_result(result)
-        self.is_complete = True
 
     def set_exception(self, err: Exception):
         self.outcome = TaskError.from_exception(err)
-        self.is_complete = True
 
 
 class TaskWorker:
@@ -114,6 +123,7 @@ class TaskWorker:
     _task_channel: Queue  # type: ignore
     _current: TrackableTask | None
     _status_lock: RLock
+    _state_change: Condition
     _status_snapshot: dict[str, StatusView]
     _completed_statuses: set[str]
     _worker_events: EventPublisher[WorkerEvent]
@@ -147,6 +157,7 @@ class TaskWorker:
         self._progress_events = EventPublisher()
         self._data_events = EventPublisher()
         self._status_lock = RLock()
+        self._state_change = Condition()
         self._status_snapshot = {}
         self._completed_statuses = set()
         self._started = Event()
@@ -184,22 +195,32 @@ class TaskWorker:
         Returns:
             The task_id of the active task
         """
-        if self._current is None:
+
+        current = self._current
+        if current is None:
             # Persuades type checker that self._current is not None
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
-        if failure:
-            default_reason = "Task failed for unknown reason"
-            self._ctx.run_engine.abort(reason or default_reason)
-            add_span_attributes({"Task aborted": reason or default_reason})
+
+        if self._current_task_otel_context is None:
+            self._current_task_otel_context = get_current()
+
+        reason = reason or ("Task aborted" if failure else "Task stopped")
+        if self._state != WorkerState.RUNNING:
+            with self._state_change:
+                self._task_channel.put(AbortSignal(failure, reason))
+                self._state_change.wait_for(lambda: self._state == WorkerState.IDLE)
         else:
-            self._ctx.run_engine.stop()
-            default_reason = "Cancellation successful: Task stopped without error"
-            add_span_attributes({"Task stopped": reason or default_reason})
-        return self._current.task_id
+            if failure:
+                current.outcome = TaskError(type="Abort", message=reason)
+                self._ctx.run_engine.abort(reason=reason)
+            else:
+                current.outcome = TaskResult.from_result(None)
+                self._ctx.run_engine.stop()
+        return current.task_id
 
     @start_as_current_span(TRACER, "task_id")
-    def get_task_by_id(self, task_id: str) -> TrackableTask | None:
+    def get_task_by_id(self, task_id: str) -> TrackableTask:
         """
         Returns a task matching the task ID supplied,
         if the worker knows of it.
@@ -209,6 +230,9 @@ class TaskWorker:
             Optional[TrackableTask[T]]: The task matching the ID,
                 None if the task ID is unknown to the worker.
         """
+        current = self._current
+        if current and current.task_id == task_id:
+            return current
         return self._pending_tasks.get(task_id, None) or self._completed_tasks[task_id]
 
     @start_as_current_span(TRACER)
@@ -222,11 +246,8 @@ class TaskWorker:
           list[TrackableTask]: A list of tasks that match the given status.
         """
         if status == TaskStatusEnum.RUNNING:
-            return [
-                task
-                for task in self._pending_tasks.values()
-                if not task.is_pending and not task.is_complete
-            ]
+            current = self._current
+            return [current] if current else []
         elif status == TaskStatusEnum.PENDING:
             return [task for task in self._pending_tasks.values() if task.is_pending]
         elif status == TaskStatusEnum.COMPLETE:
@@ -417,7 +438,9 @@ class TaskWorker:
         """
         LOGGER.info("Requesting to resume the worker")
         self._current_task_otel_context = get_current()
-        self._task_channel.put(ResumeSignal())
+        with self._state_change:
+            self._task_channel.put(ResumeSignal())
+            self._state_change.wait_for(lambda: self._state != WorkerState.PAUSED)
 
     @start_as_current_span(TRACER)
     def _cycle_with_error_handling(self) -> None:
@@ -430,7 +453,7 @@ class TaskWorker:
     def _cycle(self) -> None:
         try:
             LOGGER.info("Awaiting task")
-            next_task: TrackableTask | KillSignal | ResumeSignal = (
+            next_task: TrackableTask | KillSignal | ResumeSignal | AbortSignal = (
                 self._task_channel.get()
             )
             if isinstance(next_task, ResumeSignal):
@@ -471,9 +494,7 @@ class TaskWorker:
                                 "RunEngineResult. Is `call_returns_result` set?"
                             )
                     except RunEngineInterrupted:
-                        LOGGER.info("Task paused", extra=meta)
-                        if self._ctx.run_engine.state != "paused":
-                            raise
+                        LOGGER.info("Task interrupted", extra=meta)
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
                         self._current.set_exception(e)
@@ -494,6 +515,16 @@ class TaskWorker:
                             process_task()
                     else:
                         process_task()
+            elif isinstance(next_task, AbortSignal):
+                if self._current and not self._current.is_complete:
+                    if next_task.failure:
+                        result = self._ctx.run_engine.abort(reason=next_task.reason)
+                        self._current.outcome = TaskError(
+                            type="Abort", message=next_task.reason
+                        )
+                    else:
+                        result = self._ctx.run_engine.stop()
+                        self._current.set_result(result.plan_result)
 
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
@@ -549,14 +580,18 @@ class TaskWorker:
         raw_new_state: RawRunEngineState,
         raw_old_state: RawRunEngineState | None = None,
     ) -> None:
-        new_state = WorkerState.from_bluesky_state(raw_new_state)
-        if raw_old_state:
-            old_state = WorkerState.from_bluesky_state(raw_old_state)
-        else:
-            old_state = WorkerState.UNKNOWN
-        LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        self._state = new_state
-        self._report_status()
+        print("Start of _on_state_change")
+        with self._state_change:
+            new_state = WorkerState.from_bluesky_state(raw_new_state)
+            if raw_old_state:
+                old_state = WorkerState.from_bluesky_state(raw_old_state)
+            else:
+                old_state = WorkerState.UNKNOWN
+            LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
+            self._state = new_state
+            self._state_change.notify()
+            self._report_status()
+        print("End of _on_state_change")
 
     def _report_error(self, err: Exception) -> None:
         LOGGER.error(err, exc_info=True)
@@ -719,6 +754,12 @@ class KillSignal:
 
 
 class ResumeSignal: ...
+
+
+@dataclass
+class AbortSignal:
+    failure: bool
+    reason: str
 
 
 def run_worker_in_own_thread(

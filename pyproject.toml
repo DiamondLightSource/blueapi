@@ -165,6 +165,9 @@ commands = [
         "pytest",
         "-n",
         "logical",
+        # Disable worker restarts so pytest-xdist does not rerun a test in another worker after pytest-timeout triggers     
+        "--max-worker-restart",
+        "0",
         { replace = "posargs", default = [
             "tests/unit_tests",
         ], extend = true },

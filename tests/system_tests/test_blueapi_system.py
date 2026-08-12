@@ -263,6 +263,7 @@ def reset_numtracker():
               }}
             }}"""
         },
+        headers={"authorization": "Bearer " + get_access_token(User.admin)},
     ).raise_for_status()
     yield
 

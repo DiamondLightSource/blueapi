@@ -460,9 +460,16 @@ class TaskWorker:
                             # Should always be a RunEngineResult if the run
                             # engine is configured correctly
                             self._current.set_result(result.plan_result)
-                        LOGGER.info(
-                            "Task ran successfully - returned: %s", result, extra=meta
-                        )
+                            LOGGER.info(
+                                "Task ran successfully - returned: %s",
+                                result.plan_result,
+                                extra=meta,
+                            )
+                        else:
+                            LOGGER.warn(
+                                "Task ran successfully but did not return "
+                                "RunEngineResult. Is `call_returns_result` set?"
+                            )
                     except RunEngineInterrupted:
                         LOGGER.info("Task paused", extra=meta)
                         if self._ctx.run_engine.state != "paused":

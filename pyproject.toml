@@ -162,14 +162,14 @@ commands = [
         "pytest",
         "-n",
         "logical",
-        "tests/unit_tests",
+        { replace = "posargs", default = [
+            "tests/unit_tests",
+        ], extend = true },
         "--cov=blueapi",
         "--cov-report",
         "term",
         "--cov-report",
         "xml:cov.xml",
-        { replace = "posargs", default = [
-        ], extend = true },
     ],
 ]
 

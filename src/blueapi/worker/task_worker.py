@@ -493,8 +493,10 @@ class TaskWorker:
                                 "Task ran successfully but did not return "
                                 "RunEngineResult. Is `call_returns_result` set?"
                             )
-                    except RunEngineInterrupted:
+                    except RunEngineInterrupted as rei:
                         LOGGER.info("Task interrupted", extra=meta)
+                        if self._ctx.run_engine.state != "paused":
+                            self._report_error(rei)
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
                         self._current.set_exception(e)

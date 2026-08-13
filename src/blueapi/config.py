@@ -238,7 +238,7 @@ class OIDCConfig(BlueapiBaseModel):
     def check_urls(self) -> Self:
         if self.issuer is None and self.well_known_url is None:
             raise ValueError("Please provide 'OIDCConfig.issuer'")
-        if self.well_known_url:
+        if "well_known_url" in self.model_fields_set:
             LOGGER.warning(
                 DeprecationWarning(
                     "OIDCConfig.well_known_url is deprecated, "
@@ -250,7 +250,7 @@ class OIDCConfig(BlueapiBaseModel):
     @cached_property
     def _well_known_url(self) -> str:
         if self.issuer:
-            if self.well_known_url:
+            if "well_known_url" in self.model_fields_set:
                 LOGGER.warning(
                     DeprecationWarning(
                         "well_known_url and issuer are both set. "

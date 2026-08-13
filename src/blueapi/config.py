@@ -240,10 +240,7 @@ class OIDCConfig(BlueapiBaseModel):
             raise ValueError("Please provide 'OIDCConfig.issuer'")
         if self.__dict__.get("well_known_url"):
             LOGGER.warning(
-                DeprecationWarning(
-                    "OIDCConfig.well_known_url is deprecated, "
-                    "Please use OIDCConfig.issuer"
-                ),
+                "OIDCConfig.well_known_url is deprecated, Please use OIDCConfig.issuer"
             )
         return self
 
@@ -252,10 +249,7 @@ class OIDCConfig(BlueapiBaseModel):
         if self.issuer:
             if self.__dict__.get("well_known_url"):
                 LOGGER.warning(
-                    DeprecationWarning(
-                        "well_known_url and issuer are both set. "
-                        "Defaulting to issuer URL"
-                    ),
+                    "well_known_url and issuer are both set. Defaulting to issuer URL"
                 )
             return self.issuer + "/.well-known/openid-configuration"
         return cast(str, self.well_known_url)

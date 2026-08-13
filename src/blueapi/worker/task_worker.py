@@ -583,16 +583,16 @@ class TaskWorker:
         raw_old_state: RawRunEngineState | None = None,
     ) -> None:
         print("Start of _on_state_change")
+        new_state = WorkerState.from_bluesky_state(raw_new_state)
+        if raw_old_state:
+            old_state = WorkerState.from_bluesky_state(raw_old_state)
+        else:
+            old_state = WorkerState.UNKNOWN
+        LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
         with self._state_change:
-            new_state = WorkerState.from_bluesky_state(raw_new_state)
-            if raw_old_state:
-                old_state = WorkerState.from_bluesky_state(raw_old_state)
-            else:
-                old_state = WorkerState.UNKNOWN
-            LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
             self._state = new_state
             self._state_change.notify()
-            self._report_status()
+        self._report_status()
         print("End of _on_state_change")
 
     def _report_error(self, err: Exception) -> None:

@@ -273,6 +273,7 @@ class TaskWorker:
         """
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
+        task.metadata["blueapi_task_id"] = task_id
         add_span_attributes({"TaskId": task_id})
         request_id = get_baggage("correlation_id")
         # If request id is not a string, we do not pass it into a TrackableTask

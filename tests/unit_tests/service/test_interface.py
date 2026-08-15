@@ -368,6 +368,7 @@ def test_get_task_by_id(
 
     expected_metadata: dict[str, Any] = {
         "instrument_session": FAKE_INSTRUMENT_SESSION,
+        "blueapi_task_id": task_id,
     }
 
     if tiled_enabled:
@@ -408,13 +409,15 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
         metadata,
     )
 
+    expected_metadata = {**metadata, "blueapi_task_id": task_id}
+
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
         request_id=ANY,
         task=Task(
             name="my_plan",
             params={},
-            metadata=metadata,
+            metadata=expected_metadata,
         ),
         is_complete=False,
         is_pending=True,

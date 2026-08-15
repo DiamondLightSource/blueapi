@@ -342,7 +342,7 @@ def test_create_task_and_delete_task_by_id(
     rest_client.clear_task(create_task.task_id)
 
 
-def test_instrument_session_propagated(
+def test_task_metadata_propagated(
     rest_client: BlueapiRestClient, small_task: TaskRequest
 ):
     response = rest_client.create_task(small_task)
@@ -353,6 +353,7 @@ def test_instrument_session_propagated(
         "tiled_access_tags": [
             '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
         ],
+        "blueapi_task_id": response.task_id,
     }
 
 
@@ -624,6 +625,8 @@ def test_plan_runs(
     assert start_metadata["instrument_session"] == VALID_INSTRUMENT_SESSION[user]
     assert "scan_id" in start_metadata
     assert start_metadata["scan_id"] == scan_id
+    assert "blueapi_task_id" in start_metadata
+    assert start_metadata["blueapi_task_id"] == final_event.task_id
     assert "detectors" in start_metadata
     assert "det" in start_metadata["detectors"]
 

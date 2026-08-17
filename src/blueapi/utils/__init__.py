@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable, Mapping
 from functools import wraps
 from logging import Logger
@@ -29,6 +30,8 @@ __all__ = [
 
 Args = ParamSpec("Args")
 Return = TypeVar("Return")
+
+INSTRUMENT_SESSION_RE = re.compile(r"^[a-z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$")
 
 
 def report_successful_devices(

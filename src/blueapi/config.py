@@ -236,26 +236,20 @@ class OIDCConfig(BlueapiBaseModel):
 
     @model_validator(mode="after")
     def check_urls(self) -> Self:
-        if self.issuer is None and self.well_known_url is None:
+        if self.issuer is None and self.__dict__.get("well_known_url") is None:
             raise ValueError("Please provide 'OIDCConfig.issuer'")
-        if self.well_known_url:
+        if self.__dict__.get("well_known_url"):
             LOGGER.warning(
-                DeprecationWarning(
-                    "OIDCConfig.well_known_url is deprecated, "
-                    "Please use OIDCConfig.issuer"
-                ),
+                "OIDCConfig.well_known_url is deprecated, Please use OIDCConfig.issuer"
             )
         return self
 
     @cached_property
     def _well_known_url(self) -> str:
         if self.issuer:
-            if self.well_known_url:
+            if self.__dict__.get("well_known_url"):
                 LOGGER.warning(
-                    DeprecationWarning(
-                        "well_known_url and issuer are both set. "
-                        "Defaulting to issuer URL"
-                    ),
+                    "well_known_url and issuer are both set. Defaulting to issuer URL"
                 )
             return self.issuer + "/.well-known/openid-configuration"
         return cast(str, self.well_known_url)
@@ -313,6 +307,8 @@ class OpaConfig(BlueapiBaseModel):
     root: HttpUrl = HttpUrl("http://localhost:8181")
     audience: str = "account"
     tiled_service_account_check: str
+    submit_task_check: str
+    admin_check: str
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -322,7 +318,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.4.0"
+    REST_API_VERSION: ClassVar[str] = "1.5.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",

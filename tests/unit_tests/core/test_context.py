@@ -28,6 +28,7 @@ from ophyd_async.core import (
     init_devices,
 )
 from ophyd_async.epics.adaravis import AravisDetector
+from ophyd_async.epics.adcore import ADWriterFactory
 from ophyd_async.epics.motor import Motor
 from pydantic import TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
@@ -136,7 +137,7 @@ def alt_motor(run_engine: RunEngine) -> Motor:
 def sim_detector(tmp_path: Path) -> StandardDetector:
     path_provider = StaticPathProvider(UUIDFilenameProvider(), tmp_path)
     with init_devices(mock=True):
-        sim_det = AravisDetector("DET:", path_provider)
+        sim_det = AravisDetector("DET:", ADWriterFactory.hdf(path_provider))
     return sim_det
 
 

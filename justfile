@@ -31,6 +31,9 @@ unit *OPTS:
 system *OPTS:
     uv run pytest tests/system_tests {{ OPTS }}
 
+test-common *OPTS:
+    uv run pytest blueapi-common/tests {{ OPTS }}
+
 coverage:
     uv run pytest tests/unit_tests --cov --cov-report html
     xdg-open htmlcov/index.html

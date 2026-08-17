@@ -9,11 +9,17 @@ resolution-markers = [
     "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.12.*' and sys_platform == 'win32'",
-    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.12.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.12' and sys_platform == 'win32'",
+    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
     "python_full_version < '3.12' and sys_platform == 'emscripten'",
+    "python_full_version == '3.12.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
+
+[manifest]
+members = [
+    "blueapi",
+    "blueapi-common",
 ]
 
 [[package]]
@@ -448,6 +454,7 @@ source = { editable = "." }
 dependencies = [
     { name = "aioca" },
     { name = "aiohttp" },
+    { name = "blueapi-common" },
     { name = "bluesky", extra = ["plotting"] },
     { name = "bluesky-stomp" },
     { name = "click" },
@@ -517,6 +524,7 @@ dev = [
 requires-dist = [
     { name = "aioca" },
     { name = "aiohttp", specifier = ">=3.13.5" },
+    { name = "blueapi-common", editable = "blueapi-common" },
     { name = "bluesky", extras = ["plotting"], specifier = ">=1.14.0" },
     { name = "bluesky-stomp", specifier = ">=0.1.6" },
     { name = "click", specifier = ">=8.2.0" },
@@ -578,6 +586,11 @@ dev = [
     { name = "types-requests" },
     { name = "types-urllib3" },
 ]
+
+[[package]]
+name = "blueapi-common"
+version = "0.1.0"
+source = { editable = "blueapi-common" }
 
 [[package]]
 name = "bluesky"

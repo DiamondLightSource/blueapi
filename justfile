@@ -47,6 +47,10 @@ unit *OPTS="-n logical":
 system *OPTS:
     uv run pytest tests/system_tests {{ OPTS }}
 
+[doc('Run the unit test suite for the common api package')]
+test-common *OPTS:
+    uv run pytest blueapi-common/tests {{ OPTS }}
+
 [doc('Run unit tests with coverage and open the HTML report')]
 coverage:
     uv run pytest tests/unit_tests --cov --cov-report html

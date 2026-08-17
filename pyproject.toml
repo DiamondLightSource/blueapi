@@ -37,6 +37,7 @@ dependencies = [
     "graypy>=2.1.0",
     "httpx>=0.28.1",
     "aiohttp>=3.13.5",
+    "blueapi-common",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -249,6 +250,7 @@ extend-immutable-calls = [
     "fastapi.Body",
     "fastapi.Task",
     "dodal.common.inject",
+    "blueapi-common.inject"
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -256,3 +258,11 @@ extend-immutable-calls = [
 # See https://github.com/DiamondLightSource/python-copier-template/issues/154
 # Remove this line to forbid private member access in tests
 "tests/**/*" = ["SLF001"]
+
+[tool.uv.workspace]
+members = [
+    "blueapi-common",
+]
+
+[tool.uv.sources]
+blueapi-common = { workspace = true }

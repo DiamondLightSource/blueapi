@@ -97,3 +97,45 @@ def foo(a: Inject(Movable, "bar")): ...
 
 Not sure if this could be made to support type checking. Even if it could, I'm
 not sure it's clearer or more concise than the previous options.
+
+
+## Unknowns
+
+* How do positional only args map to schemas?
+
+
+# Required functionality
+
+## Strings be converted to devices
+
+For the predefined Device types, strings should automatically be converted to
+devices.
+
+Not doing this would require every existing plan to be updated and is not
+feasible.
+
+## Other types should be injectable if marked
+
+Eg `server: Injected[str]` should allow config to be passed at runtime without
+relying on globals
+
+## Defaults can be specified for devices
+
+Even when devices are not in scope it should be possible to define a default.
+eg, "use the devices named 'stage_x'".
+
+## Composite devices can be specified
+
+Devices made up of other devices that should be available in the calling
+namespace should be available to the plan.
+
+## Components of composite devices should be overridable
+
+If a composite device abc reqiuires 'x', 'y' and 'z', it should be possible to just
+specify 'y', eg by `{"abc": {"y": "non-standard"}}`
+
+## Types should match as much as possible
+
+A plan defined as `(mov: Movable[T], pos: T)` should try and deserialize pos to
+the correct `T` if the injected `mov` object has a `T` discoverable at runtime,
+eg by `get_args`.

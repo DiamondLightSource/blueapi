@@ -775,6 +775,11 @@ class BlueapiClient:
             else:
                 print("Server is not configured to use authentication!")
 
+    def logout(self):
+        if sm := self._rest.session_manager:
+            sm.logout()
+            self._rest.session_manager = None
+
 
 class PlanFailedError(Exception):
     def __init__(self, typ: str, message: str):

@@ -771,8 +771,14 @@ class BlueapiClient:
                     oidc, cache_manager=SessionCacheManager(token_path)
                 )
                 auth.start_device_flow()
+                self._rest.session_manager = auth
             else:
                 print("Server is not configured to use authentication!")
+
+    def logout(self):
+        if sm := self._rest.session_manager:
+            sm.logout()
+            self._rest.session_manager = None
 
 
 class PlanFailedError(Exception):

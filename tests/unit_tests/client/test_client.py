@@ -1000,3 +1000,13 @@ def test_client_login_no_oidc(
     client.login()
 
     mock_session_manager.assert_not_called()
+
+
+def test_client_logout(mock_rest: Mock, client: BlueapiClient):
+    mock_session_manager = Mock()
+    mock_rest.session_manager = mock_session_manager
+
+    client.logout()
+
+    mock_session_manager.logout.assert_called_once()
+    assert mock_rest.session_manager is None

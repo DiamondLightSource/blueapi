@@ -186,7 +186,7 @@ def _response_json(response: requests.Response) -> Any:
 
 class BlueapiRestClient:
     _config: RestConfig
-    _session_manager: SessionManager | None
+    session_manager: SessionManager | None
     _pool: requests.Session
 
     def __init__(
@@ -195,7 +195,7 @@ class BlueapiRestClient:
         session_manager: SessionManager | None = None,
     ) -> None:
         self._config = config or RestConfig()
-        self._session_manager = session_manager
+        self.session_manager = session_manager
         self._pool = requests.Session()
 
     def get_plans(self) -> PlanResponse:
@@ -315,7 +315,7 @@ class BlueapiRestClient:
                 json=data,
                 params=params,
                 headers=carr,
-                auth=JWTAuth(self._session_manager),
+                auth=JWTAuth(self.session_manager),
             )
         except requests.exceptions.ConnectionError as ce:
             raise ServiceUnavailableError() from ce

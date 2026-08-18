@@ -294,7 +294,7 @@ class SubHandles:
     data: int
 
 
-def pipe_events(tx: Connection) -> SubHandles:
+def pipe_events(sender: Connection) -> SubHandles:
     tw = worker()
 
     def handler(
@@ -303,10 +303,9 @@ def pipe_events(tx: Connection) -> SubHandles:
     ) -> None:
 
         try:
-            tx.send(worker_event)
+            sender.send(worker_event)
         except BrokenPipeError:
             LOGGER.warning("Sending event to broken pipe")
-            pass
 
     w = tw.worker_events.subscribe(handler)
     d = tw.data_events.subscribe(handler)
@@ -314,8 +313,8 @@ def pipe_events(tx: Connection) -> SubHandles:
     return SubHandles(worker=w, data=d, progress=p)
 
 
-def unpipe_events(hnd: SubHandles) -> None:
+def unpipe_events(handles: SubHandles) -> None:
     tw = worker()
-    tw.worker_events.unsubscribe(hnd.worker)
-    tw.data_events.unsubscribe(hnd.data)
-    tw.progress_events.unsubscribe(hnd.progress)
+    tw.worker_events.unsubscribe(handles.worker)
+    tw.data_events.unsubscribe(handles.data)
+    tw.progress_events.unsubscribe(handles.progress)

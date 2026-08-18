@@ -159,24 +159,24 @@ class WorkerDispatcher:
 
 
 class EventStream:
-    def __init__(self, rx: Connection):
-        self._rx = rx
+    def __init__(self, events: Connection):
+        self._events = events
 
     def __aiter__(self) -> AsyncIterator[WorkerEvent | DataEvent | ProgressEvent]:
         return self
 
     async def __anext__(self) -> WorkerEvent | DataEvent | ProgressEvent:
         data_available = asyncio.Event()
-        asyncio.get_event_loop().add_reader(self._rx.fileno(), data_available.set)
+        asyncio.get_event_loop().add_reader(self._events.fileno(), data_available.set)
         try:
-            while not self._rx.poll():
+            while not self._events.poll():
                 await data_available.wait()
                 data_available.clear()
-            return self._rx.recv()
+            return self._events.recv()
         except EOFError:
             raise StopAsyncIteration() from None
         finally:
-            asyncio.get_event_loop().remove_reader(self._rx.fileno())
+            asyncio.get_event_loop().remove_reader(self._events.fileno())
 
 
 class EventPipe:
@@ -188,17 +188,17 @@ class EventPipe:
         self.handles = []
 
     def __enter__(self) -> EventStream:
-        tx, rx = Pipe()
-        hnd = self.runner.run(interface.pipe_events, tx)
-        LOGGER.debug("Subscribing new event pipe: %s", hnd)
-        self.handles.append((hnd, tx))
-        return EventStream(rx)
+        send, recv = Pipe()
+        handles = self.runner.run(interface.pipe_events, send)
+        LOGGER.debug("Subscribing new event pipe: %s", handles)
+        self.handles.append((handles, send))
+        return EventStream(recv)
 
     def __exit__(self, *exc):
-        hnd, conn = self.handles.pop()
-        LOGGER.debug("Unsubscribing event pipe: %s", hnd)
+        handles, conn = self.handles.pop()
+        LOGGER.debug("Unsubscribing event pipe: %s", handles)
         conn.close()
-        self.runner.run(interface.unpipe_events, hnd)
+        self.runner.run(interface.unpipe_events, handles)
 
 
 class InvalidRunnerStateError(Exception):

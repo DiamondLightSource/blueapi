@@ -44,7 +44,7 @@ from blueapi.service.authentication import (
 from blueapi.service.middleware import (
     ObservabilityContextPropagator,
     VersionHeaders,
-    WebsocketCORS,
+    WebsocketOriginCheck,
     WebsocketTracing,
 )
 from blueapi.service.protocol import (
@@ -176,7 +176,7 @@ def get_app(config: ApplicationConfig):
             allow_headers=config.api.cors.allow_headers,
         )
         app.add_middleware(
-            WebsocketCORS,
+            WebsocketOriginCheck,
             allow_origins=config.api.cors.origins,
         )
     return app

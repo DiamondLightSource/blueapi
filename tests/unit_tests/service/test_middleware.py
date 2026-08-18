@@ -12,6 +12,7 @@ from blueapi.service.middleware import (
     VERSION,
     ObservabilityContextPropagator,
     VersionHeaders,
+    WebsocketOriginCheck,
     WebsocketTracing,
     _redact_headers,
 )
@@ -146,6 +147,14 @@ def patch_ws_logger(func):
         "blueapi.service.middleware.WS_LOGGER",
         isEnabledFor=Mock(name="custom", return_value=True),
     )(func)
+
+
+@pytest.fixture
+def plain_text_response():
+    with patch(
+        "blueapi.service.middleware.PlainTextResponse", return_value=AsyncMock()
+    ) as ptr:
+        yield ptr
 
 
 @patch_ws_logger
@@ -299,3 +308,105 @@ async def test_websocket_tracing_local_receive(
 
     # We should not be modifying anything
     assert received == message
+
+
+async def test_websocket_origin_check_ignores_http(
+    asgi: Mock, send: AsyncMock, receive: AsyncMock
+):
+    # Defaults to blocking all origins
+    woc = WebsocketOriginCheck(asgi)
+
+    await woc({}, send, receive)
+
+    asgi.assert_called_once_with({}, send, receive)
+
+
+async def test_websocket_origin_check_blocks_by_default(
+    plain_text_response: Mock, asgi: Mock, send: AsyncMock, receive: AsyncMock
+):
+    woc = WebsocketOriginCheck(asgi)
+
+    scope = {"type": "websocket", "headers": [(b"origin", b"https://example.com")]}
+    await woc(scope, send, receive)
+
+    plain_text_response().assert_called_once_with(scope, send, receive)
+
+    asgi.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "origin,allowed,allow",
+    [
+        ("http://example.com", "http://example.com", True),
+        ("http://example.com", ("http://example.com",), True),
+        ("http://example.com", ("*",), True),
+        ("http://example.com", "*", True),
+        (
+            "http://example.com",
+            (
+                "https://other.tld",
+                "http://example.com",
+            ),
+            True,
+        ),
+        (
+            "http://invalid.com",
+            (
+                "https://other.tld",
+                "http://example.com",
+            ),
+            False,
+        ),
+        ("https://example.com", ("http://example.com",), False),  # scheme mismatch
+    ],
+)
+async def test_websocket_origin_check_allows_valid_origin(
+    plain_text_response: Mock,
+    asgi: Mock,
+    send: AsyncMock,
+    receive: AsyncMock,
+    origin: str,
+    allowed: str | tuple[str],
+    allow: bool,
+):
+    woc = WebsocketOriginCheck(asgi, allow_origins=allowed)
+    scope = {"type": "websocket", "headers": [(b"origin", origin.encode())]}
+
+    await woc(scope, send, receive)
+
+    if allow:
+        asgi.assert_called_once_with(scope, send, receive)
+        plain_text_response.assert_not_called()
+    else:
+        asgi.assert_not_called()
+        plain_text_response().assert_called_once_with(scope, send, receive)
+
+
+@pytest.mark.parametrize(
+    "origin,allow_re,allow",
+    [
+        ("http://example.com", ".*.example.com", True),
+        ("http://subdomain.example.com", "http://.*.example.com", True),
+        ("http://example.com", ".*.other.com", False),
+    ],
+)
+async def test_websocket_origin_check_allows_valid_origin_re(
+    plain_text_response: Mock,
+    asgi: Mock,
+    send: AsyncMock,
+    receive: AsyncMock,
+    origin: str,
+    allow_re: str,
+    allow: bool,
+):
+    woc = WebsocketOriginCheck(asgi, allow_origin_regex=allow_re)
+    scope = {"type": "websocket", "headers": [(b"origin", origin.encode())]}
+
+    await woc(scope, send, receive)
+
+    if allow:
+        asgi.assert_called_once_with(scope, send, receive)
+        plain_text_response.assert_not_called()
+    else:
+        asgi.assert_not_called()
+        plain_text_response().assert_called_once_with(scope, send, receive)

@@ -75,7 +75,7 @@ def _redact_headers(headers: list[Header] | None) -> Iterable[Header]:
         yield (key, value)
 
 
-class WebsocketCORS:
+class WebsocketOriginCheck:
     def __init__(
         self,
         app: ASGIApp,
@@ -90,9 +90,9 @@ class WebsocketCORS:
             # not count as a full wildcard
             self.allow_origins = None
         elif isinstance(allow_origins, str):
-            self.allow_origins = (allow_origins,)
+            self.allow_origins = {allow_origins}
         else:
-            self.allow_origins = tuple(allow_origins)
+            self.allow_origins = set(allow_origins)
 
         self.allow_origin_regex = (
             re.compile(allow_origin_regex) if allow_origin_regex else None
@@ -117,12 +117,10 @@ class WebsocketCORS:
         await self.app(scope, receive, send)
 
     def allow_origin(self, origin: str) -> bool:
-        if self.allow_origins is not None:
-            return origin in self.allow_origins
-        elif self.allow_origin_regex is not None:
-            return self.allow_origin_regex.match(origin) is not None
-        else:
-            return False
+        allow = self.allow_origins is not None and origin in self.allow_origins
+        if not allow and self.allow_origin_regex is not None:
+            allow = self.allow_origin_regex.match(origin) is not None
+        return allow
 
 
 class WebsocketTracing:

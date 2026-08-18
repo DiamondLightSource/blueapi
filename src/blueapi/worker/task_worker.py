@@ -8,6 +8,7 @@ from queue import Full, Queue
 from threading import Event, RLock
 from typing import Any, TypeVar
 
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import Status
 from observability_utils.tracing import (
     add_span_attributes,
@@ -20,7 +21,6 @@ from opentelemetry.context import Context, get_current
 from opentelemetry.trace import SpanKind
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
-from super_state_machine.errors import TransitionError
 
 from blueapi.core import (
     OTLP_EXPORT_ENABLED,
@@ -194,16 +194,6 @@ class TaskWorker:
             add_span_attributes({"Task stopped": reason or default_reason})
         return self._current.task_id
 
-    @start_as_current_span(TRACER)
-    def get_tasks(self) -> list[TrackableTask]:
-        """
-        Return a list of all tasks on the worker,
-        any one of which can be triggered with begin_task.
-        Returns:
-            List[TrackableTask[T]]: List of task objects
-        """
-        return list(self._pending_tasks.values()) + list(self._completed_tasks.values())
-
     @start_as_current_span(TRACER, "task_id")
     def get_task_by_id(self, task_id: str) -> TrackableTask | None:
         """
@@ -217,12 +207,13 @@ class TaskWorker:
         """
         return self._pending_tasks.get(task_id, None) or self._completed_tasks[task_id]
 
-    @start_as_current_span(TRACER, "status")
-    def get_tasks_by_status(self, status: TaskStatusEnum) -> list[TrackableTask]:
+    @start_as_current_span(TRACER)
+    def get_tasks(self, status: TaskStatusEnum | None = None) -> list[TrackableTask]:
         """
         Retrieve a list of tasks based on their status.
         Args:
-           status TaskStatusEnum: The status to filter tasks by.
+           status Optional[TaskStatusEnum]: The status to filter tasks by.
+           If status is None return all tasks.
         Returns:
           list[TrackableTask]: A list of tasks that match the given status.
         """
@@ -236,6 +227,10 @@ class TaskWorker:
             return [task for task in self._pending_tasks.values() if task.is_pending]
         elif status == TaskStatusEnum.COMPLETE:
             return list(self._completed_tasks.values())
+        elif status is None:
+            return list(self._pending_tasks.values()) + list(
+                self._completed_tasks.values()
+            )
         return []
 
     @start_as_current_span(TRACER)
@@ -278,6 +273,7 @@ class TaskWorker:
         """
         task.prepare_params(self._ctx)  # Will raise if parameters are invalid
         task_id: str = str(uuid.uuid4())
+        task.metadata["blueapi_task_id"] = task_id
         add_span_attributes({"TaskId": task_id})
         request_id = get_baggage("correlation_id")
         # If request id is not a string, we do not pass it into a TrackableTask

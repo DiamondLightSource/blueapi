@@ -1,12 +1,16 @@
 import logging
 from collections.abc import Mapping
 from contextlib import AbstractAsyncContextManager, aclosing, nullcontext
-from typing import Any, Self
+from typing import Annotated, Any, Self, cast
 
 from aiohttp import ClientSession
+from fastapi import Depends, HTTPException, Request
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 from blueapi.config import OIDCConfig, OpaConfig, ServiceAccount
-from blueapi.service.authentication import TiledAuth
+from blueapi.service.authentication import TiledAuth, unchecked_bearer_token
+from blueapi.service.model import TaskRequest
+from blueapi.utils import INSTRUMENT_SESSION_RE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -56,6 +60,41 @@ class OpaClient:
                 f"Tiled service account is not valid for '{self._instrument}'"
             )
 
+    async def require_submit_task(self, instrument_session: str, token: str):
+        if not (match := INSTRUMENT_SESSION_RE.match(instrument_session)):
+            raise ValueError("Invalid instrument session")
+
+        if not await self._call_opa(
+            self._config.submit_task_check,
+            {
+                "token": token,
+                "proposal": int(match["proposal"]),
+                "visit": int(match["visit"]),
+            },
+        ):
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN, detail="Not authorized to submit task"
+            )
+
+    async def is_admin(self, token: str) -> bool:
+        return await self._call_opa(self._config.admin_check, {"token": token})
+
+
+class OpaUserClient:
+    client: OpaClient
+    token: str
+
+    def __init__(self, client: OpaClient, token: str):
+        self.client = client
+        self.token = token
+
+    async def can_submit_task(self, task: TaskRequest):
+        LOGGER.info("Checking permissions to run task")
+        await self.client.require_submit_task(task.instrument_session, self.token)
+
+    async def admin(self) -> bool:
+        return await self.client.is_admin(self.token)
+
 
 async def validate_tiled_config(
     tiled: ServiceAccount | str | None, oidc: OIDCConfig | None, opa: OpaClient | None
@@ -72,3 +111,24 @@ async def validate_tiled_config(
     tiled.token_url = oidc.token_endpoint
     auth = TiledAuth(tiled)
     await opa.require_tiled_service_account(auth.get_access_token())
+
+
+async def opa(
+    request: Request, token: str | None = Depends(unchecked_bearer_token)
+) -> OpaUserClient | None:
+
+    if opa := cast(OpaClient | None, getattr(request.app.state, "authz", None)):
+        if not token:
+            raise HTTPException(
+                status_code=HTTP_401_UNAUTHORIZED, detail="Authentication missing"
+            )
+        return OpaUserClient(opa, token)
+    return None
+
+
+async def submit_permission(
+    opa: Annotated[OpaUserClient | None, Depends(opa)],
+    task_request: TaskRequest,
+):
+    if opa:
+        await opa.can_submit_task(task_request)

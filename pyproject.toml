@@ -10,6 +10,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
@@ -25,7 +26,6 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn",
     "requests",
-    "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
     "GitPython",
     "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "bluesky-stomp>=0.1.6",
@@ -42,6 +42,9 @@ dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
 requires-python = ">=3.11"
+
+[project.optional-dependencies]
+demo = ["dls-dodal>=1.69.0", "ophyd-async[sim]"]
 
 [dependency-groups]
 dev = [
@@ -76,6 +79,7 @@ dev = [
     "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
     "respx",
     "pytest-xdist[psutil]",
+    "httpx2>=2.5.0",
 ]
 
 [project.scripts]
@@ -103,8 +107,11 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
+# Timeout settings for pytest-timeout 
 timeout = 10
-
+# Timeout using thread method to make pytest-timeout work with pytest-xdist
+timeout_method = "thread"
+timeout_func_only = true
 [tool.coverage.run]
 patch = ["subprocess"]
 data_file = "/tmp/blueapi.coverage"
@@ -158,6 +165,9 @@ commands = [
         "pytest",
         "-n",
         "logical",
+        # Disable worker restarts so pytest-xdist does not rerun a test in another worker after pytest-timeout triggers
+        "--max-worker-restart",
+        "0",
         "tests/unit_tests",
         "--cov=blueapi",
         "--cov-report",

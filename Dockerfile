@@ -1,6 +1,6 @@
 # The devcontainer should use the developer target and run as root with podman
 # or docker with user namespaces.
-FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:noble AS developer
+FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:resolute AS developer
 
 # Add any system dependencies for the developer/build environment here
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
@@ -47,7 +47,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-ins
     && apt-get dist-clean
 
 # Install uv to allow setup-scratch to run
-COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /uvx /bin/
 
 # For this pod to understand finding user information from LDAP
 RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf

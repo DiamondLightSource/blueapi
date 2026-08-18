@@ -133,7 +133,6 @@ def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> 
         "uv",
         "pip",
         "install",
-        "--no-deps",
     ]
     for path in paths:
         _validate_directory(path)

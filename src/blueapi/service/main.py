@@ -21,6 +21,7 @@ from fastapi import (
 )
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.requests import HTTPConnection
 from fastapi.responses import RedirectResponse, StreamingResponse
 from observability_utils.tracing import (
     add_span_attributes,
@@ -435,7 +436,7 @@ def set_active_task(
     return task
 
 
-def get_passthrough_headers(request: Request) -> dict[str, str]:
+def get_passthrough_headers(request: HTTPConnection) -> dict[str, str]:
     return {
         key: value
         for key, value in request.headers.items()
@@ -684,7 +685,11 @@ async def run_plan(
             active_task = runner.run(interface.get_active_task)
             if active_task is not None and not active_task.is_complete:
                 raise WorkerBusyError("Task already running")
-            runner.run(interface.begin_task, task=WorkerTask(task_id=task_id))
+            runner.run(
+                interface.begin_task,
+                task=WorkerTask(task_id=task_id),
+                pass_through_headers=get_passthrough_headers(ws),
+            )
             async for evt in events:
                 if evt.task_id != task_id:
                     continue

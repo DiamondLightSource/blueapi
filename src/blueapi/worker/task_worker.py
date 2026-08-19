@@ -218,6 +218,9 @@ class TaskWorker:
         else:
             # The worker thread's own do_task() may be finishing concurrently
             # on another thread - don't clobber whatever it already recorded.
+            # abort()/stop() must be called without holding _state_change:
+            # _on_state_change() needs that same lock, and abort()/stop()
+            # don't return until its state-change callbacks have run.
             try:
                 if failure:
                     with self._status_lock:
@@ -230,7 +233,16 @@ class TaskWorker:
                             current.outcome = TaskResult.from_result(None)
                     self._ctx.run_engine.stop()
             except TransitionError:
-                return current.task_id
+                pass
+            with self._state_change:
+                if not self._state_change.wait_for(
+                    lambda: current.task_id in self._completed_tasks,
+                    timeout=self._start_stop_timeout,
+                ):
+                    raise TimeoutError(
+                        "Worker did not finish cancelling within "
+                        f"{self._start_stop_timeout} seconds"
+                    )
         return current.task_id
 
     @start_as_current_span(TRACER, "task_id")

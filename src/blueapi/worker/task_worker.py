@@ -113,12 +113,8 @@ class TaskWorker:
     _errors: list[str]
     _warnings: list[str]
 
-    # The queue is actually a channel between 2 threads
-    # most programming languages have a separate abstraction for this
-    # but Python reuses Queue
-    # So it's not used as a standard queue,
-    # but as a box in which to put the "current" task and nothing else
-    # So the calling thread can only ever submit one plan at a time.
+    # A channel to the worker thread, not really a queue - maxsize=1 makes it
+    # a single-item box, so only one plan can be in flight at a time.
 
     _task_channel: Queue  # type: ignore
     _current: TrackableTask | None
@@ -212,7 +208,7 @@ class TaskWorker:
             with self._state_change:
                 self._task_channel.put(AbortSignal(failure, reason))
                 if not self._state_change.wait_for(
-                    lambda: self._state == WorkerState.IDLE,
+                    lambda: current.task_id in self._completed_tasks,
                     timeout=self._start_stop_timeout,
                 ):
                     raise TimeoutError(
@@ -318,7 +314,6 @@ class TaskWorker:
         task_id: str = str(uuid.uuid4())
         add_span_attributes({"TaskId": task_id})
         request_id = get_baggage("correlation_id")
-        # If request id is not a string, we do not pass it into a TrackableTask
         if not isinstance(request_id, str):
             LOGGER.warning(f"Invalid correlation id detected: {request_id}")
             request_id = None
@@ -387,7 +382,6 @@ class TaskWorker:
         """
         LOGGER.info("Attempting to stop worker")
 
-        # If the worker has not yet started there is nothing to do.
         if self._started.is_set():
             self._task_channel.put(KillSignal())
         else:

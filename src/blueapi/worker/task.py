@@ -2,6 +2,7 @@ import logging
 from collections.abc import Mapping
 from typing import Any
 
+from bluesky.run_engine import RunEngineResult
 from pydantic import BaseModel, Field, TypeAdapter
 
 from blueapi.core import BlueskyContext
@@ -29,7 +30,7 @@ class Task(BlueapiBaseModel):
         # Re-create dict manually to avoid nesting in model_dump output
         return {field: getattr(model, field) for field in model.__pydantic_fields__}
 
-    def do_task(self, ctx: BlueskyContext) -> None:
+    def do_task(self, ctx: BlueskyContext) -> Any:
         LOGGER.info(
             f"Asked to run plan {self.name} with {self.params} and "
             f"metadata {self.metadata} for all runs"
@@ -39,9 +40,12 @@ class Task(BlueapiBaseModel):
         prepared_params = self.prepare_params(ctx)
         ctx.run_engine.md.update(self.metadata)
         result = ctx.run_engine(func(**prepared_params))
-        if isinstance(result, tuple):  # pragma: no cover
-            # this is never true if the run_engine is configured correctly
-            return None
+        if not isinstance(result, RunEngineResult):
+            # this is unreachable unless something has misconfigured it.
+            raise RuntimeError(
+                "RunEngine did not return a RunEngineResult - is "
+                "call_returns_result set on this RunEngine instance?"
+            )
         return result.plan_result
 
 

@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Callable
+from textwrap import dedent
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
@@ -828,16 +829,13 @@ def test_plan_multi_parameter_fallback_help_text(client):
         ),
         client,
     )
-    assert (
-        plan.help_text == dedent("""\
+    assert plan.help_text == dedent("""\
             Plan foo(
                 one: Any,
                 two: list[Any] | bool,
                 three: Any = 3,
                 four: Any | None = None
             )""")
-
-    )
 
 
 def test_plan_help_text_with_ref(client):

@@ -829,12 +829,14 @@ def test_plan_multi_parameter_fallback_help_text(client):
         client,
     )
     assert (
-        plan.help_text == "Plan foo(\n"
-        "    one: Any,\n"
-        "    two: list[Any] | bool,\n"
-        "    three: Any = 3,\n"
-        "    four: Any | None = None\n"
-        ")"
+        plan.help_text == dedent("""\
+            Plan foo(
+                one: Any,
+                two: list[Any] | bool,
+                three: Any = 3,
+                four: Any | None = None
+            )""")
+
     )
 
 

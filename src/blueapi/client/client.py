@@ -60,8 +60,8 @@ _REPR_MAX_ARGS_INLINE = 3
 
 
 def _pretty_type(schema: dict[str, Any]) -> str:
-    if "$ref" in schema:
-        return schema["$ref"].split("/")[-1]
+    if ref := schema.get("$ref"):
+        return ref.split("/")[-1]
 
     if schema.get("type") == "array":
         item_schema = schema.get("items", {})

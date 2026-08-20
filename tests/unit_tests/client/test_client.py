@@ -883,8 +883,7 @@ def test_plan_properties(client):
         ),
         client,
     )
-
-    assert plan.properties == {"one", "two"}
+    assert plan.properties == {"one": {}, "two": {}}
     assert plan.required == ["one"]
 
 

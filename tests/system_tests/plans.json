@@ -119,13 +119,15 @@
                         "type": "array"
                     },
                     "snake_axes": {
+                        "default": "True",
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -193,13 +195,15 @@
                         "type": "array"
                     },
                     "snake_axes": {
+                        "default": "True",
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -269,7 +273,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -339,7 +344,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -421,7 +427,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -503,7 +510,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -577,7 +585,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -651,7 +660,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -1364,13 +1374,15 @@
                         "type": "array"
                     },
                     "snake_axes": {
+                        "default": "True",
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -1438,13 +1450,15 @@
                         "type": "array"
                     },
                     "snake_axes": {
+                        "default": "True",
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -1514,7 +1528,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [
@@ -1584,7 +1599,8 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object"
+                        "type": "object",
+                        "default": null
                     }
                 },
                 "required": [

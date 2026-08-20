@@ -29,9 +29,9 @@
                         "type": "array"
                     },
                     "num": {
+                        "default": 1,
                         "title": "Num",
-                        "type": "integer",
-                        "default": 1
+                        "type": "integer"
                     },
                     "delay": {
                         "anyOf": [
@@ -45,14 +45,13 @@
                                 "type": "array"
                             }
                         ],
-                        "default": 0.0,
+                        "default": 0,
                         "title": "Delay"
                     },
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -126,8 +125,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -202,8 +200,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -273,8 +270,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -344,8 +340,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -422,14 +417,13 @@
                                 "type": "boolean"
                             }
                         ],
-                        "title": "Snake Axes",
-                        "default": true
+                        "default": true,
+                        "title": "Snake Axes"
                     },
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -506,14 +500,13 @@
                                 "type": "boolean"
                             }
                         ],
-                        "title": "Snake Axes",
-                        "default": true
+                        "default": true,
+                        "title": "Snake Axes"
                     },
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -587,8 +580,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -662,8 +654,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -1307,8 +1298,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -1383,8 +1373,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -1459,8 +1448,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -1530,8 +1518,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -1601,8 +1588,7 @@
                     "metadata": {
                         "additionalProperties": true,
                         "title": "Metadata",
-                        "type": "object",
-                        "default": null
+                        "type": "object"
                     }
                 },
                 "required": [
@@ -1632,13 +1618,12 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string",
-                        "default": null
+                        "type": "string"
                     },
                     "wait": {
+                        "default": true,
                         "title": "Wait",
-                        "type": "boolean",
-                        "default": false
+                        "type": "boolean"
                     }
                 },
                 "required": [
@@ -1668,13 +1653,12 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string",
-                        "default": null
+                        "type": "string"
                     },
                     "wait": {
+                        "default": true,
                         "title": "Wait",
-                        "type": "boolean",
-                        "default": false
+                        "type": "boolean"
                     }
                 },
                 "required": [
@@ -1698,8 +1682,7 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string",
-                        "default": null
+                        "type": "string"
                     }
                 },
                 "required": [
@@ -1722,8 +1705,7 @@
                     },
                     "group": {
                         "title": "Group",
-                        "type": "string",
-                        "default": null
+                        "type": "string"
                     }
                 },
                 "required": [
@@ -1759,13 +1741,11 @@
                 "properties": {
                     "group": {
                         "title": "Group",
-                        "type": "string",
-                        "default": null
+                        "type": "string"
                     },
                     "timeout": {
                         "title": "Timeout",
-                        "type": "number",
-                        "default": null
+                        "type": "number"
                     }
                 },
                 "title": "wait",

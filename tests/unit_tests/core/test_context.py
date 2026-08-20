@@ -377,7 +377,7 @@ def test_function_spec_with_optional_params(empty_context: BlueskyContext):
     _type = SkipJsonSchema[empty_context._convert_type(arg_type, False)]
     inner_type, *annotations = get_args(_type)
     assert spec["foo"][0] == inner_type
-    assert spec["foo"][1].default is None
+    assert spec["foo"][1].default_factory() is None  # type: ignore
 
 
 def test_basic_type_conversion(empty_context: BlueskyContext):
@@ -641,7 +641,7 @@ def test_optional_arg_generated_schema(
     empty_context.register_plan(demo_plan)
     schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
-        "foo": {"title": "Foo", "type": "integer", "default": None},
+        "foo": {"title": "Foo", "type": "integer"},
     }
     assert "foo" not in schema.get("required", [])
 
@@ -669,11 +669,7 @@ def test_optional_overloaded_arg_generated_schema(
     empty_context.register_plan(demo_plan)
     schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
-        "foo": {
-            "title": "Foo",
-            "anyOf": [{"type": "integer"}, {"type": "string"}],
-            "default": None,
-        }
+        "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "string"}]}
     }
     assert "foo" not in schema.get("required", [])
 

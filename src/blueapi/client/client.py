@@ -1,7 +1,7 @@
 import itertools
 import logging
 import time
-from collections.abc import Iterable, KeysView
+from collections.abc import Iterable
 from concurrent.futures import Future
 from contextlib import suppress
 from functools import cached_property
@@ -57,32 +57,13 @@ log = logging.getLogger(__name__)
 
 _REPR_MAX_LENGTH = 100
 _REPR_MAX_ARGS_INLINE = 3
-
-
-def _pretty_type(schema: dict[str, Any]) -> str:
-    if "$ref" in schema:
-        return schema["$ref"].split("/")[-1]
-
-    if schema.get("type") == "array":
-        item_schema = schema.get("items", {})
-        inner = _pretty_type(item_schema)
-        return f"list[{inner}]"
-
-    if "anyOf" in schema:
-        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
-
-    json_type = schema.get("type")
-    type_map = {
-        "string": "str",
-        "integer": "int",
-        "boolean": "bool",
-        "number": "float",
-        "object": "dict",
-    }
-    if isinstance(json_type, str):
-        return type_map.get(json_type, json_type.split(".")[-1])
-
-    return "Any"
+_JSON_TYPE_MAP = {
+    "string": "str",
+    "integer": "int",
+    "boolean": "bool",
+    "number": "float",
+    "object": "dict",
+}
 
 
 class MissingInstrumentSessionError(Exception):
@@ -192,8 +173,8 @@ class Plan:
         return self.model.description or f"Plan {self!r}"
 
     @property
-    def properties(self) -> KeysView[str]:
-        return self.model.parameter_schema.get("properties", {}).keys()
+    def properties(self) -> dict[str, Any]:
+        return self.model.parameter_schema.get("properties", {})
 
     @property
     def required(self) -> list[str]:
@@ -230,29 +211,20 @@ class Plan:
         return params
 
     def __repr__(self) -> str:
-        def _format_arg(name: str, info: dict[str, Any], required: set[str]) -> str:
-            typ = _pretty_type(info)
+        required = set(self.required)
 
-            is_required = name in required
-            has_default = "default" in info
+        def _format_arg(name: str, info: dict[str, Any]) -> str:
+            typ = _pretty_type(info)
             default = info.get("default")
 
-            if is_required:
+            if name in required:
                 return f"{name}: {typ}"
-
-            # optional with explicit default
-            if has_default:
-                if default is None:
-                    return f"{name}: {typ} | None = None"
-                return f"{name}: {typ} = {repr(default)}"
-
-            # optional with no default
+            if default := info.get("default"):
+                return f"{name}: {typ} = {default!r}"
             return f"{name}: {typ} | None = None"
 
-        props = self.model.parameter_schema.get("properties", {})
-        args = [
-            _format_arg(name, info, set(self.required)) for name, info in props.items()
-        ]
+        props: dict = self.model.parameter_schema.get("properties", {})
+        args = [_format_arg(name, info) for name, info in props.items()]
         single_line = f"{self.name}({', '.join(args)})"
 
         if len(single_line) <= _REPR_MAX_LENGTH and len(args) <= _REPR_MAX_ARGS_INLINE:
@@ -842,3 +814,22 @@ class PlanFailedError(Exception):
     def __init__(self, typ: str, message: str):
         super().__init__(message)
         self._type = typ
+
+
+def _pretty_type(schema: dict[str, Any]) -> str:
+    if "$ref" in schema:
+        return schema["$ref"].split("/")[-1]
+
+    if schema.get("type") == "array":
+        item_schema = schema.get("items", {})
+        inner = _pretty_type(item_schema)
+        return f"list[{inner}]"
+
+    if "anyOf" in schema:
+        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
+
+    json_type = schema.get("type")
+    if isinstance(json_type, str):
+        return _JSON_TYPE_MAP.get(json_type, json_type.split(".")[-1])
+
+    return "Any"

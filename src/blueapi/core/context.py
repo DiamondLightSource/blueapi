@@ -459,15 +459,19 @@ class BlueskyContext:
             ):
                 default_factory = self._composite_factory(arg_type)
                 _type = SkipJsonSchema[self._convert_type(arg_type, no_default)]
-                field_info = FieldInfo(default_factory=default_factory)
+                info = FieldInfo(default_factory=default_factory)
             else:
                 _type = self._convert_type(arg_type, no_default)
-                if no_default:
-                    field_info = FieldInfo()
-                else:
-                    field_info = FieldInfo(default=para.default)
 
-            new_args[name] = (_type, field_info)
+                match para.default:
+                    case Parameter.empty:
+                        info = FieldInfo(default_factory=None)
+                    case None:
+                        info = FieldInfo(default_factory=lambda: None)
+                    case _:
+                        info = FieldInfo(default=para.default)
+
+            new_args[name] = (_type, info)
 
         return new_args
 

@@ -67,8 +67,8 @@ def _pretty_type(schema: dict[str, Any]) -> str:
         items = schema.get("items", {})
         return f"list[{_pretty_type(items)}]"
 
-    if "anyOf" in schema:
-        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
+    if anyof := schema.get("anyOf"):
+        return " | ".join(_pretty_type(s) for s in anyof)
 
     json_type = schema.get("type")
     type_map = {

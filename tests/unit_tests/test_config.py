@@ -210,17 +210,12 @@ def temp_yaml_config_file(
     config_data = request.param
 
     # Create a temporary YAML file with the configuration
-    with tempfile.NamedTemporaryFile(
-        suffix=".yaml", mode="w", delete=False
-    ) as temp_yaml_file:
+    with tempfile.NamedTemporaryFile(suffix=".yaml", mode="w") as temp_yaml_file:
         yaml.dump(config_data, temp_yaml_file)
         temp_yaml_file_path = temp_yaml_file.name
 
-    # Provide the path and the config data
-    yield Path(temp_yaml_file_path), config_data
-
-    # Cleanup after test execution
-    os.remove(temp_yaml_file_path)
+        # Provide the path and the config data
+        yield Path(temp_yaml_file_path), config_data
 
 
 # Parameterized test to run with different configurations

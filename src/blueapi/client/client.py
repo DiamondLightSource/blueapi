@@ -64,9 +64,8 @@ def _pretty_type(schema: dict[str, Any]) -> str:
         return ref.split("/")[-1]
 
     if schema.get("type") == "array":
-        item_schema = schema.get("items", {})
-        inner = _pretty_type(item_schema)
-        return f"list[{inner}]"
+        items = schema.get("items", {})
+        return f"list[{_pretty_type(items)}]"
 
     if "anyOf" in schema:
         return " | ".join(_pretty_type(s) for s in schema["anyOf"])

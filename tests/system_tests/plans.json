@@ -422,7 +422,8 @@
                                 "type": "boolean"
                             }
                         ],
-                        "title": "Snake Axes"
+                        "title": "Snake Axes",
+                        "default": true
                     },
                     "metadata": {
                         "additionalProperties": true,
@@ -505,7 +506,8 @@
                                 "type": "boolean"
                             }
                         ],
-                        "title": "Snake Axes"
+                        "title": "Snake Axes",
+                        "default": true
                     },
                     "metadata": {
                         "additionalProperties": true,

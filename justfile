@@ -1,7 +1,8 @@
 SESSION := "cm12345-1"
+RUNNER := "docker"
 
 compose +ARGS="up -d":
-    docker compose -f tests/system_tests/compose.yaml {{ARGS}}
+    {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ARGS}}
 
 configure-adsim: (compose "exec" "numtracker" "/app/numtracker" "client" "configure" "adsim"
         "--directory" '/tmp/'

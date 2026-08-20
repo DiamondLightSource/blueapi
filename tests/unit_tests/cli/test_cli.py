@@ -72,8 +72,8 @@ def mock_stomp_client(mock_connection: Mock) -> StompClient:
 
 
 @pytest.fixture
-def runner():
-    return CliRunner()
+def runner(tmp_path: Path):
+    return CliRunner(env={"XDG_CACHE_HOME": str(tmp_path)})
 
 
 def test_cli_version(runner: CliRunner):

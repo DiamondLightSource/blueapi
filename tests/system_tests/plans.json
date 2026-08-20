@@ -119,7 +119,7 @@
                         "type": "array"
                     },
                     "snake_axes": {
-                        "default": "True",
+                        "default": true,
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
@@ -195,7 +195,7 @@
                         "type": "array"
                     },
                     "snake_axes": {
-                        "default": "True",
+                        "default": true,
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
@@ -1374,7 +1374,7 @@
                         "type": "array"
                     },
                     "snake_axes": {
-                        "default": "True",
+                        "default": true,
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
@@ -1450,7 +1450,7 @@
                         "type": "array"
                     },
                     "snake_axes": {
-                        "default": "True",
+                        "default": true,
                         "title": "Snake Axes",
                         "type": "boolean"
                     },

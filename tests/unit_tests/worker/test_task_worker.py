@@ -39,7 +39,6 @@ from blueapi.worker import (
     WorkerState,
 )
 from blueapi.worker.event import TaskError, TaskResult, TaskStatusEnum
-from blueapi.worker.task_worker import CancelSignal
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
@@ -315,6 +314,20 @@ def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
     assert task is not None
     assert task.task == _SIMPLE_TASK
     assert not task.is_pending
+
+
+def test_get_active_task_returns_current_task_while_running(
+    worker: TaskWorker,
+    fake_device: FakeDevice,
+) -> None:
+    task_id = worker.submit_task(_INDEFINITE_TASK)
+    worker.begin_task(task_id)
+
+    active = worker.get_active_task()
+
+    assert active is not None
+    assert active.task_id == task_id
+    fake_device.event.set()
 
 
 @patch("blueapi.worker.task_worker.plan_tag_filter_context")
@@ -1196,33 +1209,6 @@ def test_concurrent_resume_and_cancel_do_not_corrupt_state(
     assert task_id not in worker._pending_tasks
     completed = worker._completed_tasks[task_id]
     assert completed.outcome is not None
-
-
-def test_second_cancel_while_first_still_queued_supersedes_it(
-    worker: TaskWorker,
-) -> None:
-    worker._ctx.register_plan(pausing_plan)
-    task_id = worker.submit_task(_PAUSING_TASK)
-
-    begin_task_and_wait_until_paused(worker, task_id)
-
-    complete_future: Future[list[WorkerEvent]] = take_events(
-        worker.worker_events,
-        lambda e: e.is_complete(),
-    )
-    first_signal = CancelSignal(failure=False, reason="first, graceful")
-    worker._pending_cancel = first_signal
-    worker._task_channel.put_nowait(first_signal)
-    second_signal = CancelSignal(failure=True, reason="second, urgent")
-    worker._pending_cancel = second_signal
-    events = complete_future.result(timeout=5.0)
-
-    assert events[-1].task_status is not None
-    assert events[-1].task_status.task_failed
-    assert isinstance(events[-1].task_status.result, TaskError)
-    assert events[-1].errors == ["second, urgent"]
-    assert task_id in worker._completed_tasks
-    assert task_id not in worker._pending_tasks
 
 
 def test_stop_while_paused_completes_task(worker: TaskWorker) -> None:

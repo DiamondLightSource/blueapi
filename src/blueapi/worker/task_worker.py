@@ -2,7 +2,7 @@ import logging
 import uuid
 from collections.abc import Iterable, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from queue import Full, Queue
 from threading import Condition, Event, RLock
@@ -118,7 +118,6 @@ class TaskWorker:
 
     _task_channel: Queue  # type: ignore
     _current: TrackableTask | None
-    _pending_cancel: "CancelSignal | None"
     _status_lock: RLock
     _state_change: Condition
     _status_snapshot: dict[str, StatusView]
@@ -150,7 +149,6 @@ class TaskWorker:
         self._warnings = []
         self._task_channel = Queue(maxsize=1)
         self._current = None
-        self._pending_cancel = None
         self._worker_events = EventPublisher()
         self._progress_events = EventPublisher()
         self._data_events = EventPublisher()
@@ -461,24 +459,12 @@ class TaskWorker:
         """
         LOGGER.info("Requesting to resume the worker")
         self._current_task_otel_context = get_current()
-        current = self._current
-
-        def resumed() -> bool:
-            if self._state == WorkerState.PAUSED:
-                return False
-            if self._state == WorkerState.IDLE:
-                return current is None or current.task_id in self._completed_tasks
-            return True
-
-        with self._state_change:
-            self._task_channel.put(ResumeSignal())
-            if not self._state_change.wait_for(
-                resumed,
-                timeout=self._start_stop_timeout,
-            ):
-                raise TimeoutError(
-                    f"Worker did not resume within {self._start_stop_timeout} seconds"
-                )
+        signal = ResumeSignal()
+        self._task_channel.put(signal)
+        if not signal.done.wait(timeout=self._start_stop_timeout):
+            raise TimeoutError(
+                f"Worker did not resume within {self._start_stop_timeout} seconds"
+            )
 
     @start_as_current_span(TRACER)
     def _cycle_with_error_handling(self) -> None:
@@ -489,9 +475,12 @@ class TaskWorker:
 
     @start_as_current_span(TRACER)
     def _cycle(self) -> None:
+        next_task: TrackableTask | ResumeSignal | CancelSignal | KillSignal | None = (
+            None
+        )
         try:
             LOGGER.info("Awaiting task")
-            next_task: TrackableTask | KillSignal = self._task_channel.get()
+            next_task = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
 
                 def process_task():
@@ -538,12 +527,7 @@ class TaskWorker:
                         process_task()
 
             elif isinstance(next_task, ResumeSignal):
-                pending_cancel = self._pending_cancel
-                if pending_cancel is not None:
-                    # A cancel queued after this resume takes priority, so
-                    # this resume never runs.
-                    self._apply_cancel(pending_cancel)
-                elif self._state == WorkerState.PAUSED:
+                if self._state == WorkerState.PAUSED:
                     if self._current is not None:
                         try:
                             result = self._ctx.run_engine.resume()
@@ -562,13 +546,12 @@ class TaskWorker:
                     )
 
             elif isinstance(next_task, CancelSignal):
-                self._apply_cancel(self._pending_cancel or next_task)
+                self._apply_cancel(next_task)
 
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't
                 # want it to be part of the worker's public API
-                self._pending_cancel = None
                 if self._current is not None and self._state == WorkerState.PAUSED:
                     self._apply_cancel(
                         CancelSignal(
@@ -602,6 +585,13 @@ class TaskWorker:
             self._errors.clear()
             self._warnings.clear()
             self._completed_statuses.clear()
+
+        if isinstance(next_task, ResumeSignal):
+            # Unconditional and last: resumed-to-running, completed,
+            # re-paused, or superseded by a cancel above all end up here
+            # regardless of which branch was taken, so resume() always
+            # gets woken once this signal is fully done being processed.
+            next_task.done.set()
 
     @property
     def worker_events(self) -> EventStream[WorkerEvent, int]:
@@ -668,7 +658,6 @@ class TaskWorker:
                     current.set_result(None)
 
     def _apply_cancel(self, signal: "CancelSignal") -> None:
-        self._pending_cancel = None
         current = self._current
 
         if signal.failure:
@@ -844,9 +833,14 @@ class KillSignal:
 class ResumeSignal:
     """
     Object put in the worker's task queue to tell it to resume if paused.
+    done is set once _cycle() has fully finished processing this specific
+    signal - resumed to running, completed, re-paused, or superseded by a
+    cancel - whichever it is. A dedicated Event rather than polling shared
+    state avoids missing a wakeup if the state changes again (e.g. pauses
+    right back) before the waiting thread gets scheduled to check it.
     """
 
-    pass
+    done: Event = field(default_factory=Event)
 
 
 @dataclass

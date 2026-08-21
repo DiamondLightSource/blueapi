@@ -206,7 +206,7 @@ class TaskWorker:
         reason = reason or ("Task aborted" if failure else "Task stopped")
         if self._state != WorkerState.RUNNING:
             with self._state_change:
-                self._task_channel.put(AbortSignal(failure, reason))
+                self._task_channel.put(CancelSignal(failure, reason))
                 if not self._state_change.wait_for(
                     lambda: current.task_id in self._completed_tasks,
                     timeout=self._start_stop_timeout,
@@ -561,7 +561,7 @@ class TaskWorker:
                         "Received resume signal but RunEngine is not paused, ignoring"
                     )
 
-            elif isinstance(next_task, (CancelSignal, AbortSignal)):
+            elif isinstance(next_task, CancelSignal):
                 self._apply_cancel(self._pending_cancel or next_task)
 
             elif isinstance(next_task, KillSignal):
@@ -654,7 +654,7 @@ class TaskWorker:
         self._errors.append(str(err))
 
     def _finalize_cancel_outcome(
-        self, current: TrackableTask, signal: "CancelSignal | AbortSignal"
+        self, current: TrackableTask, signal: "CancelSignal"
     ) -> None:
         """
         Set current's outcome for a cancellation, unless something else (e.g.
@@ -667,7 +667,7 @@ class TaskWorker:
                 else:
                     current.set_result(None)
 
-    def _apply_cancel(self, signal: "CancelSignal | AbortSignal") -> None:
+    def _apply_cancel(self, signal: "CancelSignal") -> None:
         self._pending_cancel = None
         current = self._current
 
@@ -847,12 +847,6 @@ class ResumeSignal:
     """
 
     pass
-
-
-@dataclass
-class AbortSignal:
-    failure: bool
-    reason: str
 
 
 @dataclass

@@ -46,14 +46,17 @@ services:
     security_opt:
       - label=disable
 
-  keycloak-config:
+  configure-services:
     image: ghcr.io/astral-sh/uv:python3.13-alpine
     network_mode: host
     volumes:
-      - ./services/keycloak_config:/config:ro
+      - ./services/startup.py:/startup.py:ro
     environment:
       - KEYCLOAK_SERVER=http://localhost:8081
-    command: ["uv", "run", "/config/startup.py"]
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KEYCLOAK_REALM=master
+    command: ["uv", "run", "/startup.py"]
     depends_on:
       keycloak:
         condition: service_healthy

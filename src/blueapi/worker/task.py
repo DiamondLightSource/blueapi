@@ -40,7 +40,7 @@ class Task(BlueapiBaseModel):
         prepared_params = self.prepare_params(ctx)
         ctx.run_engine.md.update(self.metadata)
         result = ctx.run_engine(func(**prepared_params))
-        if not isinstance(result, RunEngineResult):
+        if not isinstance(result, RunEngineResult):  # pragma: no cover
             # this is unreachable unless something has misconfigured it.
             raise RuntimeError(
                 "RunEngine did not return a RunEngineResult - is "

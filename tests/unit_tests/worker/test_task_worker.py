@@ -1066,6 +1066,9 @@ def test_cancel_active_task_abort(worker: TaskWorker) -> None:
     assert events[-1].task_status.task_failed
     assert task_id in worker._completed_tasks
     assert task_id not in worker._pending_tasks
+    outcome = worker._completed_tasks[task_id].outcome
+    assert isinstance(outcome, TaskError)
+    assert outcome.type == "Abort"
 
 
 def test_cancel_active_task_graceful(worker: TaskWorker) -> None:
@@ -1115,6 +1118,7 @@ def test_cancel_running_task_records_failure(worker: TaskWorker) -> None:
     assert events[-1].task_status is not None
     assert events[-1].task_status.task_failed
     assert isinstance(events[-1].task_status.result, TaskError)
+    assert events[-1].task_status.result.type == "Abort"
     assert task_id in worker._completed_tasks
     assert task_id not in worker._pending_tasks
 

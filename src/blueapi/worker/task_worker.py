@@ -650,7 +650,9 @@ class TaskWorker:
         with self._status_lock:
             if current.outcome is None:
                 if signal.failure:
-                    current.set_exception(Exception(signal.reason or "Task aborted"))
+                    current.outcome = TaskError(
+                        type="Abort", message=signal.reason or "Task aborted"
+                    )
                 else:
                     current.set_result(None)
 

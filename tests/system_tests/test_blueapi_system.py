@@ -74,31 +74,9 @@ CURRENT_NUMTRACKER_NUM = 43
 _DATA_PATH = Path(__file__).parent
 
 
-# These system tests are run in the "system_tests" CI job, they can also be run
-# and debugged locally.
-#
-# 1. Spin up dummy versions of associated services
-# (outside of devcontainer)
-#
-# git submodule init
-# docker compose -f tests/system_tests/compose.yaml up -d
-#
-# 2. Spin up blueapi server (inside devcontainer)
-#
-# source tests/system_tests/.env
-# export TILED_SINGLE_USER_API_KEY=foo
-# blueapi -c tests/system_tests/config.yaml serve
-#
-# Note: You can login into blueapi using username: admin and password: admin
-# 3. Run the system tests
-# tox -e system-test
-#
-# 4. To tear down the associated services
-# (outside of devcontainer)
-#
-# docker compose -f tests/system_tests/compose.yaml down
-
-# This client will give tokens for alice
+# These system tests are run in the "system_tests" CI job.
+# They can also be run and debugged locally.
+# Follow the instructions in: docs/how-to/run-blueapi-and-services-locally
 
 
 def load_config(path: Path) -> ApplicationConfig:

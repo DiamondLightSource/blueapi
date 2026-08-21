@@ -1,5 +1,7 @@
 import uuid
 from collections.abc import Callable
+from multiprocessing import Pipe
+from multiprocessing.connection import Connection
 from multiprocessing.pool import Pool as PoolClass
 from typing import Any, Generic, TypeVar
 from unittest.mock import MagicMock, Mock, NonCallableMock, patch
@@ -14,12 +16,14 @@ from pydantic import BaseModel, ValidationError
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
 from blueapi.service.runner import (
+    EventStream,
     InvalidRunnerStateError,
     RpcError,
     WorkerDispatcher,
     _safe_exception_message,
     import_and_run_function,
 )
+from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 
 
 @pytest.fixture
@@ -300,3 +304,81 @@ def test_run_span_ok(
 ):
     with asserting_span_exporter(exporter, "run", "function", "args", "kwargs"):
         started_runner.run(interface.get_plans)
+
+
+@patch("blueapi.service.runner.Pipe")
+def test_event_pipe(mock_pipe: Mock):
+    tx = Mock()
+    rx = Mock()
+
+    mock_pipe.return_value = (tx, rx)
+
+    dispatcher = Mock()
+    dispatcher.run.side_effect = lambda mth, *a: {
+        interface.pipe_events: 42,
+        interface.unpipe_events: None,
+    }[mth]
+    evt_pipe = WorkerDispatcher.event_pipe(dispatcher)
+
+    with evt_pipe:
+        dispatcher.run.assert_called_with(interface.pipe_events, tx)
+
+    dispatcher.run.assert_called_with(interface.unpipe_events, 42)
+
+    assert len(dispatcher.run.mock_calls) == 2
+
+
+async def test_event_stream():
+    tx, rx = Pipe()
+    stream = EventStream(rx)
+
+    evt = WorkerEvent(
+        state=WorkerState.RUNNING,
+        task_status=TaskStatus(
+            task_id="foo", task_complete=False, task_failed=False, result=None
+        ),
+    )
+
+    tx.send(evt)
+
+    assert (await anext(stream)) == evt
+
+
+async def test_end_of_event_stream():
+    tx, rx = Pipe()
+    stream = EventStream(rx)
+
+    tx.close()
+
+    with pytest.raises(StopAsyncIteration):
+        await anext(stream)
+
+
+async def test_aiter_event_stream_is_self():
+    stream = EventStream(Mock())
+    assert aiter(stream) is stream
+
+
+async def test_event_stream_wait_for_event():
+    tx, rx = Pipe()
+
+    mrx = Mock(spec=Connection)
+    mrx.poll.side_effect = [False, False, True]
+    mrx.fileno.side_effect = rx.fileno
+    mrx.recv.side_effect = rx.recv
+
+    stream = EventStream(mrx)
+
+    evt = WorkerEvent(
+        state=WorkerState.RUNNING,
+        task_status=TaskStatus(
+            task_id="foo", task_complete=False, task_failed=False, result=None
+        ),
+    )
+
+    tx.send(evt)
+
+    read = await anext(stream)
+    assert read == evt
+
+    assert len(mrx.poll.mock_calls) == 3

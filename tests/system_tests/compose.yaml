@@ -35,10 +35,6 @@ services:
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin
       - KC_HOSTNAME=http://localhost:8081
     command: ["start-dev"]
-    volumes:
-      - ./services/keycloak_config/:/tmp/config/
-    post_start:
-      - command: bash /tmp/config/startup.sh
     ports:
       - 8081:8080
     healthcheck:
@@ -47,6 +43,20 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    security_opt:
+      - label=disable
+
+  keycloak-config:
+    image: ghcr.io/astral-sh/uv:python3.13-alpine
+    network_mode: host
+    volumes:
+      - ./services/keycloak_config:/config:ro
+    environment:
+      - KEYCLOAK_SERVER=http://localhost:8081
+    command: ["uv", "run", "/config/startup.py"]
+    depends_on:
+      keycloak:
+        condition: service_healthy
     security_opt:
       - label=disable
 

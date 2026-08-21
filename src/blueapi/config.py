@@ -22,6 +22,7 @@ from pydantic import (
     TypeAdapter,
     UrlConstraints,
     ValidationError,
+    WebsocketUrl,
     field_validator,
     model_validator,
 )
@@ -170,6 +171,22 @@ class RestConfig(BlueapiBaseModel):
     url: HttpUrl = HttpUrl("http://localhost:8000")
     cors: CORSConfig | None = None
 
+    @property
+    def ws_address(self) -> WebsocketUrl:
+        api = self.url
+        if api.host is None:
+            # type hints say it could be None but not possible to construct
+            # HttpUrl without host
+            raise ValueError("No host configured")  # pragma: no cover
+        scheme = "ws" if api.scheme == "http" else "wss"
+
+        # HttpUrl adds "/" to the start of paths, even if none was specified so
+        # remove existing leading '/' to prevent duplication
+        path = (api.path or "").removeprefix("/")
+        return WebsocketUrl.build(
+            scheme=scheme, host=api.host, port=api.port, path=path
+        )
+
 
 class ScratchRepository(BlueapiBaseModel):
     name: str = Field(
@@ -236,26 +253,20 @@ class OIDCConfig(BlueapiBaseModel):
 
     @model_validator(mode="after")
     def check_urls(self) -> Self:
-        if self.issuer is None and self.well_known_url is None:
+        if self.issuer is None and self.__dict__.get("well_known_url") is None:
             raise ValueError("Please provide 'OIDCConfig.issuer'")
-        if self.well_known_url:
+        if self.__dict__.get("well_known_url"):
             LOGGER.warning(
-                DeprecationWarning(
-                    "OIDCConfig.well_known_url is deprecated, "
-                    "Please use OIDCConfig.issuer"
-                ),
+                "OIDCConfig.well_known_url is deprecated, Please use OIDCConfig.issuer"
             )
         return self
 
     @cached_property
     def _well_known_url(self) -> str:
         if self.issuer:
-            if self.well_known_url:
+            if self.__dict__.get("well_known_url"):
                 LOGGER.warning(
-                    DeprecationWarning(
-                        "well_known_url and issuer are both set. "
-                        "Defaulting to issuer URL"
-                    ),
+                    "well_known_url and issuer are both set. Defaulting to issuer URL"
                 )
             return self.issuer + "/.well-known/openid-configuration"
         return cast(str, self.well_known_url)
@@ -312,9 +323,9 @@ class Tag(StrEnum):
 class OpaConfig(BlueapiBaseModel):
     root: HttpUrl = HttpUrl("http://localhost:8181")
     audience: str = "account"
-    tiled_service_account_check: str
-    submit_task_check: str
-    admin_check: str
+    tiled_service_account_check: str = "blueapi/tiled_service_account_for_beamline"
+    submit_task_check: str = "blueapi/write_to_beamline_visit"
+    admin_check: str = "admin/admin"
 
 
 class ApplicationConfig(BlueapiBaseModel):

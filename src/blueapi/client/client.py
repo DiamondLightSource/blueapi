@@ -459,6 +459,27 @@ class BlueapiClient:
 
         return self.active_task
 
+    @start_as_current_span(TRACER, "request")
+    def run_blocking(
+        self, request: TaskRequest, on_event: OnAnyEvent | None = None
+    ) -> TaskStatus:
+        for event in self._rest.run_blocking(request):
+            if on_event is not None:
+                on_event(event)
+            for cb in self._callbacks.values():
+                try:
+                    cb(event)
+                except Exception as e:
+                    log.error(f"Callback ({cb}) failed for event: {event}", exc_info=e)
+            if isinstance(event, WorkerEvent) and event.is_complete():
+                # task_status will always be present if event is complete
+                if event.task_status is None:  # pragma: no cover
+                    raise BlueskyRemoteControlError(
+                        "Server completed without task status"
+                    )
+                return event.task_status
+        raise BlueskyRemoteControlError("Connection closed before plan completed.")
+
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,
@@ -771,8 +792,14 @@ class BlueapiClient:
                     oidc, cache_manager=SessionCacheManager(token_path)
                 )
                 auth.start_device_flow()
+                self._rest.session_manager = auth
             else:
                 print("Server is not configured to use authentication!")
+
+    def logout(self):
+        if sm := self._rest.session_manager:
+            sm.logout()
+            self._rest.session_manager = None
 
 
 class PlanFailedError(Exception):

@@ -20,7 +20,7 @@ class Task(BlueapiBaseModel):
     params: Mapping[str, Any] = Field(
         description="Values for parameters to plan, if any", default_factory=dict
     )
-    metadata: Mapping[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         description="Any metadata to apply to all runs within this task",
         default_factory=dict,
     )

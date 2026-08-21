@@ -1,7 +1,8 @@
 SESSION := "cm12345-1"
+RUNNER := "docker"
 
 compose +ARGS="up -d":
-    docker compose -f tests/system_tests/compose.yaml {{ARGS}}
+    {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ARGS}}
 
 configure-adsim: (compose "exec" "numtracker" "/app/numtracker" "client" "configure" "adsim"
         "--directory" '/tmp/'
@@ -25,8 +26,8 @@ lint:
     uv run prek run --all-files
     uv run pyright src tests
 
-unit *OPTS:
-    uv run pytest -n logical tests/unit_tests {{ OPTS }}
+unit *OPTS="-n logical":
+    uv run pytest tests/unit_tests {{ OPTS }}
 
 system *OPTS:
     uv run pytest tests/system_tests {{ OPTS }}
@@ -39,6 +40,17 @@ repl:
     #!/usr/bin/env bash
     uv run --with ptpython ptpython -i <(cat << EOF
     from blueapi.client import BlueapiClient
+    from blueapi.client.rest import ServiceUnavailableError
     bc = BlueapiClient.from_config_file("tests/system_tests/config.yaml").with_instrument_session("cm12345-1")
+    try:
+        bc.login()
+    except KeyboardInterrupt:
+        print("Login cancelled")
+    except ServiceUnavailableError:
+        print("Couldn't access blueapi server to log in")
+    except Exception as e:
+        import traceback
+        print("Couldn't log in")
+        traceback.print_exception(e, chain=False)
     EOF
     )

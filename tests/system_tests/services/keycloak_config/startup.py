@@ -21,7 +21,7 @@ import os
 from typing import Any
 
 from mantelo import KeycloakAdmin
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 SERVER = os.environ.get("KEYCLOAK_SERVER", "http://localhost:8081")
 REALM = os.environ.get("KEYCLOAK_REALM", "master")
@@ -40,8 +40,6 @@ admin = KeycloakAdmin.from_username_password(
 
 
 class ProtocolMapper(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     name: str
     protocol: str = "openid-connect"
     protocol_mapper: str = Field(alias="protocolMapper")
@@ -50,8 +48,6 @@ class ProtocolMapper(BaseModel):
 
 
 class ClientProtocolMappers(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     protocol_mappers: list[ProtocolMapper] = Field(alias="protocolMappers")
 
     def payload(self) -> dict[str, Any]:
@@ -60,10 +56,10 @@ class ClientProtocolMappers(BaseModel):
 
 def general_mappers(audience: str) -> dict[str, Any]:
     return ClientProtocolMappers(
-        protocol_mappers=[
+        protocolMappers=[
             ProtocolMapper(
                 name="username",
-                protocol_mapper="oidc-usermodel-attribute-mapper",
+                protocolMapper="oidc-usermodel-attribute-mapper",
                 config={
                     "aggregate.attrs": "false",
                     "introspection.token.claim": "true",
@@ -79,7 +75,7 @@ def general_mappers(audience: str) -> dict[str, Any]:
             ),
             ProtocolMapper(
                 name="audience-mapper",
-                protocol_mapper="oidc-audience-mapper",
+                protocolMapper="oidc-audience-mapper",
                 config={
                     "introspection.token.claim": "true",
                     "access.token.claim": "true",
@@ -92,10 +88,10 @@ def general_mappers(audience: str) -> dict[str, Any]:
 
 def beamline_service_account_mappers() -> dict[str, Any]:
     return ClientProtocolMappers(
-        protocol_mappers=[
+        protocolMappers=[
             ProtocolMapper(
                 name="beamline",
-                protocol_mapper="oidc-hardcoded-claim-mapper",
+                protocolMapper="oidc-hardcoded-claim-mapper",
                 config={
                     "introspection.token.claim": "true",
                     "claim.value": "adsim",
@@ -110,7 +106,7 @@ def beamline_service_account_mappers() -> dict[str, Any]:
             ),
             ProtocolMapper(
                 name="tiled",
-                protocol_mapper="oidc-audience-mapper",
+                protocolMapper="oidc-audience-mapper",
                 config={
                     "id.token.claim": "false",
                     "lightweight.claim": "false",
@@ -125,10 +121,10 @@ def beamline_service_account_mappers() -> dict[str, Any]:
 
 def user_service_account_mappers(audience: str, fedid: str) -> dict[str, Any]:
     return ClientProtocolMappers(
-        protocol_mappers=[
+        protocolMappers=[
             ProtocolMapper(
                 name="fedid",
-                protocol_mapper="oidc-hardcoded-claim-mapper",
+                protocolMapper="oidc-hardcoded-claim-mapper",
                 config={
                     "introspection.token.claim": "true",
                     "claim.value": fedid,
@@ -141,7 +137,7 @@ def user_service_account_mappers(audience: str, fedid: str) -> dict[str, Any]:
             ),
             ProtocolMapper(
                 name="audience-mapper",
-                protocol_mapper="oidc-audience-mapper",
+                protocolMapper="oidc-audience-mapper",
                 config={
                     "introspection.token.claim": "true",
                     "access.token.claim": "true",

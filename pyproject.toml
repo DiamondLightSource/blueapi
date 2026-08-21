@@ -101,9 +101,7 @@ reportMissingImports = false  # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
-# keycloak_config is a standalone script run inside its own uv/mantelo container, not
-# importable by the test suite's environment, so it is excluded from doctest collection.
-addopts = '--tb=native -vv --doctest-modules --doctest-glob="*.rst" --ignore=tests/system_tests/services/keycloak_config'
+addopts = '--tb=native -vv --doctest-modules --doctest-glob="*.rst" --ignore=tests/system_tests/services/*'
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests

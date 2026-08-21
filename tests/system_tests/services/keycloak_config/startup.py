@@ -54,6 +54,42 @@ class ClientProtocolMappers(BaseModel):
         return self.model_dump(by_alias=True)
 
 
+def audience_mapper(
+    audience: str,
+    name: str = "audience-mapper",
+    extra_config: dict[str, str] | None = None,
+) -> ProtocolMapper:
+    return ProtocolMapper(
+        name=name,
+        protocolMapper="oidc-audience-mapper",
+        config={
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "included.custom.audience": audience,
+            **(extra_config or {}),
+        },
+    )
+
+
+def hardcoded_claim_mapper(
+    name: str, claim_value: str, extra_config: dict[str, str] | None = None
+) -> ProtocolMapper:
+    return ProtocolMapper(
+        name=name,
+        protocolMapper="oidc-hardcoded-claim-mapper",
+        config={
+            "introspection.token.claim": "true",
+            "claim.value": claim_value,
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": name,
+            "jsonType.label": "String",
+            **(extra_config or {}),
+        },
+    )
+
+
 def general_mappers(audience: str) -> dict[str, Any]:
     return ClientProtocolMappers(
         protocolMappers=[
@@ -73,15 +109,7 @@ def general_mappers(audience: str) -> dict[str, Any]:
                     "jsonType.label": "String",
                 },
             ),
-            ProtocolMapper(
-                name="audience-mapper",
-                protocolMapper="oidc-audience-mapper",
-                config={
-                    "introspection.token.claim": "true",
-                    "access.token.claim": "true",
-                    "included.custom.audience": audience,
-                },
-            ),
+            audience_mapper(audience),
         ]
     ).payload()
 
@@ -89,31 +117,18 @@ def general_mappers(audience: str) -> dict[str, Any]:
 def beamline_service_account_mappers() -> dict[str, Any]:
     return ClientProtocolMappers(
         protocolMappers=[
-            ProtocolMapper(
-                name="beamline",
-                protocolMapper="oidc-hardcoded-claim-mapper",
-                config={
-                    "introspection.token.claim": "true",
-                    "claim.value": "adsim",
-                    "userinfo.token.claim": "true",
-                    "id.token.claim": "true",
+            hardcoded_claim_mapper(
+                "beamline",
+                "adsim",
+                extra_config={
                     "lightweight.claim": "false",
-                    "access.token.claim": "true",
-                    "claim.name": "beamline",
-                    "jsonType.label": "String",
                     "access.tokenResponse.claim": "false",
                 },
             ),
-            ProtocolMapper(
+            audience_mapper(
+                "tiled-writer",
                 name="tiled",
-                protocolMapper="oidc-audience-mapper",
-                config={
-                    "id.token.claim": "false",
-                    "lightweight.claim": "false",
-                    "access.token.claim": "true",
-                    "introspection.token.claim": "true",
-                    "included.custom.audience": "tiled-writer",
-                },
+                extra_config={"id.token.claim": "false", "lightweight.claim": "false"},
             ),
         ]
     ).payload()
@@ -122,28 +137,8 @@ def beamline_service_account_mappers() -> dict[str, Any]:
 def user_service_account_mappers(audience: str, fedid: str) -> dict[str, Any]:
     return ClientProtocolMappers(
         protocolMappers=[
-            ProtocolMapper(
-                name="fedid",
-                protocolMapper="oidc-hardcoded-claim-mapper",
-                config={
-                    "introspection.token.claim": "true",
-                    "claim.value": fedid,
-                    "userinfo.token.claim": "true",
-                    "id.token.claim": "true",
-                    "access.token.claim": "true",
-                    "claim.name": "fedid",
-                    "jsonType.label": "String",
-                },
-            ),
-            ProtocolMapper(
-                name="audience-mapper",
-                protocolMapper="oidc-audience-mapper",
-                config={
-                    "introspection.token.claim": "true",
-                    "access.token.claim": "true",
-                    "included.custom.audience": audience,
-                },
-            ),
+            hardcoded_claim_mapper("fedid", fedid),
+            audience_mapper(audience),
         ]
     ).payload()
 

@@ -302,12 +302,19 @@ def test_does_not_allow_simultaneous_running_tasks(
 
 
 def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
+    # _SIMPLE_TASK (sleep 0.0) can start and finish before this thread wakes
+    # up from begin_task() and gets scheduled again, so get_active_task()
+    # racing against that completion is not guaranteed to still show it.
+    # is_pending flips False the moment the task starts and never reverts,
+    # so it's a durable signal that begin_task() actually kicked it off,
+    # regardless of whether it's since completed.
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_active_task() is None
     worker.begin_task(task_id)
-    active_task = worker.get_active_task()
-    assert active_task is not None
-    assert active_task.task == _SIMPLE_TASK
+    task = worker.get_task_by_id(task_id)
+    assert task is not None
+    assert task.task == _SIMPLE_TASK
+    assert not task.is_pending
 
 
 @patch("blueapi.worker.task_worker.plan_tag_filter_context")

@@ -663,9 +663,7 @@ class TaskWorker:
         with self._status_lock:
             if current.outcome is None:
                 if signal.failure:
-                    current.set_exception(
-                        Exception(signal.reason or "Task failed for unknown reason")
-                    )
+                    current.set_exception(Exception(signal.reason or "Task aborted"))
                 else:
                     current.set_result(None)
 
@@ -674,7 +672,7 @@ class TaskWorker:
         current = self._current
 
         if signal.failure:
-            reason = signal.reason or "Task failed for unknown reason"
+            reason = signal.reason or "Task aborted"
             if current is not None:
                 self._ctx.run_engine.abort(reason)
                 self._finalize_cancel_outcome(current, signal)
@@ -686,12 +684,7 @@ class TaskWorker:
             if current is not None:
                 self._ctx.run_engine.stop()
                 self._finalize_cancel_outcome(current, signal)
-            add_span_attributes(
-                {
-                    "Task stopped": signal.reason
-                    or "Cancellation successful: Task stopped without error"
-                }
-            )
+            add_span_attributes({"Task stopped": signal.reason or "Task stopped"})
 
     @start_as_current_span(TRACER)
     def _report_status(self, current: TrackableTask | None) -> None:

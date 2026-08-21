@@ -15,8 +15,8 @@ from mantelo import KeycloakAdmin
 
 SERVER = os.environ.get("KEYCLOAK_SERVER")
 REALM = os.environ.get("KEYCLOAK_REALM")
-ADMIN_USERNAME = os.environ.get("KEYCLOAK_ADMIN_USERNAME")
-ADMIN_PASSWORD = os.environ.get("KEYCLOAK_ADMIN_PASSWORD")
+ADMIN_USERNAME = os.environ.get("KC_BOOTSTRAP_ADMIN_USERNAME")
+ADMIN_PASSWORD = os.environ.get("KC_BOOTSTRAP_ADMIN_PASSWORD")
 
 USERS = {"alice": "alice", "bob": "bob"}
 
@@ -168,19 +168,19 @@ def create_client(
 @create_client
 def create_cli_client(
     aud: str = "",
-    attributes: dict[str, str] = {  # noqa: B006
-        "frontchannel.logout.session.required": "true",
-        "oauth2.device.authorization.grant.enabled": "true",
-        "use.refresh.tokens": "true",
-        "backchannel.logout.session.required": "true",
-    },
+    attributes: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     payload = general_mappers(aud)
     payload.update(
         standardFlowEnabled=False,
         publicClient=True,
         redirectUris=["/*"],
-        attributes=attributes,
+        attributes={
+            "frontchannel.logout.session.required": "true",
+            "oauth2.device.authorization.grant.enabled": "true",
+            "use.refresh.tokens": "true",
+            "backchannel.logout.session.required": "true",
+        },
     )
     return payload
 
@@ -190,10 +190,7 @@ def create_web_client(
     aud: str,
     secret: str,
     root_url: str,
-    attributes: dict[str, str] = {  # noqa: B006
-        "frontchannel.logout.session.required": "true",
-        "use.refresh.tokens": "true",
-    },
+    attributes: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     payload = general_mappers(aud)
     payload.update(
@@ -239,13 +236,17 @@ def create_clients() -> None:
         client_id="ixx-blueapi",
         aud="ixx-blueapi",
         secret="blueapi-secret",
-        rootUrl="http://localhost:4180",
+        root_url="http://localhost:4180",
+        attributes={
+            "frontchannel.logout.session.required": "true",
+            "use.refresh.tokens": "true",
+        },
     )
     create_web_client(
         client_id="tiled",
         aud="tiled",
         secret="tiled-secret",
-        rootUrl="http://localhost:4181",
+        root_url="http://localhost:4181",
     )
     create_beamline_service_account_client(client_id="tiled-writer")
 

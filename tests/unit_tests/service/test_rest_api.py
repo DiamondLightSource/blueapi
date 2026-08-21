@@ -46,7 +46,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.service.runner import WorkerDispatcher
-from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
+from blueapi.worker.event import TaskResult, TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TrackableTask
 
@@ -384,7 +384,7 @@ def test_put_plan_fails_if_not_idle(mock_runner: Mock, client: TestClient) -> No
 
     # Set to non idle
     mock_runner.run.return_value = TrackableTask(
-        task=Task(name="none"), task_id=task_id_current, is_complete=False
+        task=Task(name="none"), task_id=task_id_current
     )
 
     resp = client.put("/worker/task", json={"task_id": task_id_new})
@@ -399,7 +399,6 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
         TrackableTask(
             task_id="1",
             task=Task(name="first_task"),
-            is_complete=False,
             is_pending=True,
         ),
     ]
@@ -446,7 +445,7 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
         TrackableTask(
             task_id="3",
             task=Task(name="third_task"),
-            is_complete=True,
+            outcome=TaskResult.from_result(42),
             is_pending=False,
         ),
     ]
@@ -466,7 +465,7 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
                     "params": {},
                     "metadata": {},
                 },
-                "outcome": None,
+                "outcome": {"outcome": "success", "type": "int", "result": 42},
                 "task_id": "3",
             }
         ]
@@ -547,7 +546,7 @@ def test_set_active_task_active_task_complete(
     mock_runner.run.return_value = TrackableTask(
         task_id="1",
         task=Task(name="a_completed_task"),
-        is_complete=True,
+        outcome=TaskResult.from_result(42),
         is_pending=False,
     )
 
@@ -566,7 +565,6 @@ def test_set_active_task_worker_already_running(
     mock_runner.run.return_value = TrackableTask(
         task_id="1",
         task=Task(name="a_running_task"),
-        is_complete=False,
         is_pending=False,
     )
 

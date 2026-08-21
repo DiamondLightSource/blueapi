@@ -205,14 +205,7 @@ class TaskWorker:
         if self._state != WorkerState.RUNNING:
             with self._state_change:
                 self._task_channel.put(CancelSignal(failure, reason))
-                if not self._state_change.wait_for(
-                    lambda: current.task_id in self._completed_tasks,
-                    timeout=self._start_stop_timeout,
-                ):
-                    raise TimeoutError(
-                        "Worker did not finish cancelling within "
-                        f"{self._start_stop_timeout} seconds"
-                    )
+                self._wait_for_cancel_completion(current)
         else:
             # The worker thread's own do_task() may be finishing concurrently
             # on another thread - don't clobber whatever it already recorded.
@@ -233,15 +226,19 @@ class TaskWorker:
             except TransitionError:
                 pass
             with self._state_change:
-                if not self._state_change.wait_for(
-                    lambda: current.task_id in self._completed_tasks,
-                    timeout=self._start_stop_timeout,
-                ):
-                    raise TimeoutError(
-                        "Worker did not finish cancelling within "
-                        f"{self._start_stop_timeout} seconds"
-                    )
+                self._wait_for_cancel_completion(current)
         return current.task_id
+
+    def _wait_for_cancel_completion(self, current: TrackableTask) -> None:
+        # Must be called while holding self._state_change.
+        if not self._state_change.wait_for(
+            lambda: current.task_id in self._completed_tasks,
+            timeout=self._start_stop_timeout,
+        ):
+            raise TimeoutError(
+                "Worker did not finish cancelling within "
+                f"{self._start_stop_timeout} seconds"
+            )
 
     @start_as_current_span(TRACER, "task_id")
     def get_task_by_id(self, task_id: str) -> TrackableTask | None:

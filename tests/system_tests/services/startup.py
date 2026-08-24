@@ -2,6 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #   "mantelo==2.2.1",
+#   "requests"
 # ]
 # ///
 """Configure the local Keycloak instance used by the system tests."""
@@ -11,12 +12,13 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
+import requests
 from mantelo import KeycloakAdmin
 
-SERVER = os.environ.get("KEYCLOAK_SERVER")
-REALM = os.environ.get("KEYCLOAK_REALM")
-ADMIN_USERNAME = os.environ.get("KC_BOOTSTRAP_ADMIN_USERNAME")
-ADMIN_PASSWORD = os.environ.get("KC_BOOTSTRAP_ADMIN_PASSWORD")
+SERVER = os.environ.get("KEYCLOAK_SERVER", "http://localhost:8081")
+REALM = os.environ.get("KEYCLOAK_REALM", "master")
+ADMIN_USERNAME = os.environ.get("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
 
 USERS = {"alice": "alice", "bob": "bob"}
 
@@ -138,6 +140,9 @@ def cleanup_components() -> None:
 
 def create_users() -> None:
     for username, password in USERS.items():
+        if admin.users.get(username=username):
+            print(f">> Skipping {username} (exists)")
+            continue
         response, _ = admin.users.as_raw().post({"username": username, "enabled": True})
         user_id = response.headers["Location"].rsplit("/", 1)[-1]
         admin.users(user_id).reset_password.put(
@@ -229,6 +234,7 @@ def create_user_service_account_client(
 def create_clients() -> None:
     create_cli_client(client_id="ixx-cli-blueapi", aud="ixx-blueapi")
     create_cli_client(client_id="tiled-cli", aud="tiled")
+    create_cli_client(client_id="numtracker", aud="numtracker")
     create_web_client(
         client_id="ixx-blueapi",
         aud="ixx-blueapi",
@@ -254,7 +260,44 @@ def create_clients() -> None:
         )
 
 
+def configure_numtracker():
+    def _():
+        token_url = SERVER + "/realms/master/protocol/openid-connect/token"
+        response = requests.post(
+            token_url,
+            data={
+                "client_id": "system-test-blueapi-admin",
+                "client_secret": "secret",
+                "grant_type": "client_credentials",
+            },
+        )
+        response.raise_for_status()
+        return response.json().get("access_token")
+
+    nt_url = os.environ.get("NT_URL", "http://localhost:8406/graphql")
+    response = requests.post(
+        str(nt_url),
+        json={
+            "query": """mutation {
+              configure(instrument: "adsim",
+                        config: {directory: "/tmp/",
+                            scan: "{instrument}-{scan_number}",
+                            detector: "{instrument}-{scan_number}-{detector}",
+                            scanNumber: 43}) {
+                scanTemplate
+              }
+            }"""
+        },
+        headers={"authorization": "Bearer " + _()},
+    )
+    response.raise_for_status()
+    if response.json().get("errors") is not None:
+        raise Exception(response.json())
+    print(">> Configurated numtracker")
+
+
 if __name__ == "__main__":
     cleanup_components()
     create_users()
     create_clients()
+    configure_numtracker()

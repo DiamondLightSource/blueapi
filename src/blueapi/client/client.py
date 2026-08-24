@@ -223,8 +223,7 @@ class Plan:
                 return f"{name}: {typ} = {default!r}"
             return f"{name}: {typ} | None = None"
 
-        props: dict = self.model.parameter_schema.get("properties", {})
-        args = [_format_arg(name, info) for name, info in props.items()]
+        args = [_format_arg(name, info) for name, info in self.properties.items()]
         single_line = f"{self.name}({', '.join(args)})"
 
         if len(single_line) <= _REPR_MAX_LENGTH and len(args) <= _REPR_MAX_ARGS_INLINE:

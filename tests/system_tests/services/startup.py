@@ -166,10 +166,7 @@ def create_client(
 
 
 @create_client
-def create_cli_client(
-    aud: str = "",
-    attributes: dict[str, str] | None = None,
-) -> dict[str, Any]:
+def create_cli_client(aud: str = "") -> dict[str, Any]:
     payload = general_mappers(aud)
     payload.update(
         standardFlowEnabled=False,
@@ -198,7 +195,7 @@ def create_web_client(
         secret=secret,
         rootUrl=root_url,
         redirectUris=[f"{root_url}/*"],
-        **({"attributes": attributes} if attributes else {}),
+        attributes=attributes or {},
     )
     return payload
 

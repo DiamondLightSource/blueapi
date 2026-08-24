@@ -1074,3 +1074,52 @@ def test_client_logout(mock_rest: Mock, client: BlueapiClient):
 
     mock_session_manager.logout.assert_called_once()
     assert mock_rest.session_manager is None
+
+
+@pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
+def test_run_blocking(event: WorkerEvent, client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: [event]
+    res = client.run_blocking(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    assert res == event.task_status
+
+
+@pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
+def test_run_blocking_callbacks(
+    event: WorkerEvent, client: BlueapiClient, mock_rest: Mock
+):
+    callback = Mock()
+    mock_rest.run_blocking.side_effect = lambda req: [event]
+    client.run_blocking(Mock(), on_event=callback)
+
+    callback.assert_called_once_with(event)
+
+
+@pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
+def test_run_blocking_client_callbacks(
+    event: WorkerEvent, client: BlueapiClient, mock_rest: Mock
+):
+    callback = Mock()
+    mock_rest.run_blocking.side_effect = lambda req: [event]
+    client.add_callback(callback)
+    client.run_blocking(Mock())
+
+    callback.assert_called_once_with(event)
+
+
+def test_run_blocking_error_if_cut_short(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: []
+    with pytest.raises(
+        BlueskyRemoteControlError, match="Connection closed before plan completed"
+    ):
+        client.run_blocking(Mock())
+
+
+def test_run_blocking_ignores_callback_error(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: [COMPLETE_EVENT]
+
+    def broken_callback(_: AnyEvent):
+        raise Exception("This callback is broken")
+
+    client.add_callback(broken_callback)
+    res = client.run_blocking(Mock())
+    assert res == COMPLETE_EVENT.task_status

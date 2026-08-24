@@ -322,6 +322,19 @@ def listen_to_events(obj: dict) -> None:
 @click.argument("name", type=str)
 @click.argument("parameters", type=ParametersType(), default={}, required=False)
 @click.option(
+    "--ws",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help=textwrap.dedent("""
+        Run the plan in the foreground using the (experimental) websocket connection
+        to monitor progress. Allows plans to be run without a message bus and associated
+        configuration.
+
+        Has no effect if --bg is also passed as the plan will not be monitored.
+        """),
+)
+@click.option(
     "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
 )
 @click.option(
@@ -348,14 +361,15 @@ def run_plan(
     name: str,
     timeout: float | None,
     foreground: bool,
+    ws: bool,
     instrument_session: str,
     parameters: TaskParameters,
 ) -> None:
     """Run a plan with parameters
 
     To run in the foreground and block until it is complete, stomp
-    configuration is required. Without stomp configuration, '--bg' can be used
-    to start a plan in the background.
+    configuration or the experimental --ws flag is required. Without stomp
+    configuration, '--bg' can be used to start a plan in the background.
     """
 
     client = cast(BlueapiClient, obj["client"])
@@ -374,7 +388,13 @@ def run_plan(
                 elif isinstance(event, DataEvent):
                     callback(event.name, event.doc)
 
-            resp = client.run_task(task, on_event=on_event)
+            client.add_callback(on_event)
+
+            if ws:
+                resp = client.run_blocking(task)
+            else:
+                resp = client.run_task(task)
+
             match resp.result:
                 case TaskResult(result=None, type="NoneType"):
                     print("Plan succeeded")

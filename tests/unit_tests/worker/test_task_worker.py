@@ -922,3 +922,43 @@ def test_task_result_serialization(plan_result, task_result, type_name):
     res = TaskResult.from_result(plan_result)
     assert res.result == task_result
     assert res.type == type_name
+
+
+@pytest.mark.parametrize(
+    "status,complete",
+    [
+        (None, False),
+        (
+            TaskStatus(
+                task_id="foo", result=None, task_complete=False, task_failed=False
+            ),
+            False,
+        ),
+        (
+            TaskStatus(
+                task_id="foo", result=None, task_complete=True, task_failed=False
+            ),
+            True,
+        ),
+    ],
+)
+def test_worker_event_complete(status: TaskStatus | None, complete: bool):
+    event = WorkerEvent(
+        state=WorkerState.IDLE, task_status=status
+    )  # state is not used in check
+    assert event.is_complete() == complete
+
+
+def test_worker_event_task_id():
+    event = WorkerEvent(
+        state=WorkerState.RUNNING,
+        task_status=TaskStatus(
+            task_id="foo", result=None, task_complete=False, task_failed=False
+        ),
+    )
+    assert event.task_id == "foo"
+
+
+def test_worker_event_no_task_id():
+    event = WorkerEvent(state=WorkerState.IDLE, task_status=None)
+    assert event.task_id is None

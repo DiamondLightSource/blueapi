@@ -173,3 +173,9 @@ class WorkerEvent(BlueapiBaseModel):
 
     def is_complete(self) -> bool:
         return self.task_status is not None and self.task_status.task_complete
+
+    @property
+    def task_id(self) -> str | None:
+        if task := self.task_status:
+            return task.task_id
+        return None

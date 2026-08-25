@@ -6,7 +6,7 @@ default: compose serve
 init:
     git submodule update --init --recursive
 
-compose +ARGS="up -d": init
+compose +ARGS="up -d --no-recreate": init
     {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ARGS}}
 
 serve *OPTS:

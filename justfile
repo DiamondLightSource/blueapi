@@ -1,7 +1,12 @@
 SESSION := "cm12345-1"
-RUNNER := "docker"
+RUNNER := `command -v docker || command -v podman`
 
-compose +ARGS="up -d":
+default: compose serve
+
+init:
+    git submodule update --init --recursive
+
+compose +ARGS="up -d": init
     {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ARGS}}
 
 serve *OPTS:

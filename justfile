@@ -4,14 +4,6 @@ RUNNER := "docker"
 compose +ARGS="up -d":
     {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ARGS}}
 
-configure-adsim: (compose "exec" "numtracker" "/app/numtracker" "client" "configure" "adsim"
-        "--directory" '/tmp/'
-        "--scan" '{instrument}-{scan_number}'
-        "--detector" '{instrument}-{scan_number}-{detector}'
-        "--number" "43")
-
-services: compose configure-adsim
-
 serve *OPTS:
     #!/usr/bin/env bash
     source tests/system_tests/.env

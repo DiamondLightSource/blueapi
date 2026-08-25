@@ -5,7 +5,6 @@ from collections.abc import Iterable
 from concurrent.futures import Future
 from contextlib import suppress
 from functools import cached_property
-from itertools import chain
 from pathlib import Path
 from typing import Any, Self
 
@@ -55,6 +54,16 @@ TRACER = get_tracer("client")
 
 
 log = logging.getLogger(__name__)
+
+_REPR_MAX_LENGTH = 100
+_REPR_MAX_ARGS_INLINE = 3
+_JSON_TYPE_MAP = {
+    "string": "str",
+    "integer": "int",
+    "boolean": "bool",
+    "number": "float",
+    "object": "dict",
+}
 
 
 class MissingInstrumentSessionError(Exception):
@@ -164,8 +173,8 @@ class Plan:
         return self.model.description or f"Plan {self!r}"
 
     @property
-    def properties(self) -> set[str]:
-        return self.model.parameter_schema.get("properties", {}).keys()
+    def properties(self) -> dict[str, Any]:
+        return self.model.parameter_schema.get("properties", {})
 
     @property
     def required(self) -> list[str]:
@@ -201,10 +210,29 @@ class Plan:
             raise TypeError(f"Missing argument(s) for {missing}")
         return params
 
-    def __repr__(self):
-        opts = [p for p in self.properties if p not in self.required]
-        params = ", ".join(chain(self.required, (f"{opt}=None" for opt in opts)))
-        return f"{self.name}({params})"
+    def __repr__(self) -> str:
+        required = set(self.required)
+
+        def _format_arg(name: str, info: dict[str, Any]) -> str:
+            typ = _pretty_type(info)
+            default = info.get("default")
+
+            if name in required:
+                return f"{name}: {typ}"
+            if default := info.get("default"):
+                return f"{name}: {typ} = {default!r}"
+            return f"{name}: {typ} | None = None"
+
+        args = [_format_arg(name, info) for name, info in self.properties.items()]
+        single_line = f"{self.name}({', '.join(args)})"
+
+        if len(single_line) <= _REPR_MAX_LENGTH and len(args) <= _REPR_MAX_ARGS_INLINE:
+            return single_line
+
+        indent = "    "
+        # Fall back to multiline if too many arguments or too long.
+        multiline_args = ",\n".join(f"{indent}{arg}" for arg in args)
+        return f"{self.name}(\n{multiline_args}\n)"
 
 
 class BlueapiClient:
@@ -458,6 +486,27 @@ class BlueapiClient:
         """
 
         return self.active_task
+
+    @start_as_current_span(TRACER, "request")
+    def run_blocking(
+        self, request: TaskRequest, on_event: OnAnyEvent | None = None
+    ) -> TaskStatus:
+        for event in self._rest.run_blocking(request):
+            if on_event is not None:
+                on_event(event)
+            for cb in self._callbacks.values():
+                try:
+                    cb(event)
+                except Exception as e:
+                    log.error(f"Callback ({cb}) failed for event: {event}", exc_info=e)
+            if isinstance(event, WorkerEvent) and event.is_complete():
+                # task_status will always be present if event is complete
+                if event.task_status is None:  # pragma: no cover
+                    raise BlueskyRemoteControlError(
+                        "Server completed without task status"
+                    )
+                return event.task_status
+        raise BlueskyRemoteControlError("Connection closed before plan completed.")
 
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
@@ -771,11 +820,36 @@ class BlueapiClient:
                     oidc, cache_manager=SessionCacheManager(token_path)
                 )
                 auth.start_device_flow()
+                self._rest.session_manager = auth
             else:
                 print("Server is not configured to use authentication!")
+
+    def logout(self):
+        if sm := self._rest.session_manager:
+            sm.logout()
+            self._rest.session_manager = None
 
 
 class PlanFailedError(Exception):
     def __init__(self, typ: str, message: str):
         super().__init__(message)
         self._type = typ
+
+
+def _pretty_type(schema: dict[str, Any]) -> str:
+    if "$ref" in schema:
+        return schema["$ref"].split("/")[-1]
+
+    if schema.get("type") == "array":
+        item_schema = schema.get("items", {})
+        inner = _pretty_type(item_schema)
+        return f"list[{inner}]"
+
+    if "anyOf" in schema:
+        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
+
+    json_type = schema.get("type")
+    if isinstance(json_type, str):
+        return _JSON_TYPE_MAP.get(json_type, json_type.split(".")[-1])
+
+    return "Any"

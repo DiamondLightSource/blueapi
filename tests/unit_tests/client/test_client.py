@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Callable
+from textwrap import dedent
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
@@ -806,7 +807,71 @@ def test_plan_fallback_help_text(client):
         ),
         client,
     )
-    assert plan.help_text == "Plan foo(one, two=None)"
+    assert plan.help_text == "Plan foo(one: Any, two: Any | None = None)"
+
+
+def test_plan_multi_parameter_fallback_help_text(client):
+    plan = Plan(
+        "foo",
+        PlanModel(
+            name="foo",
+            schema={
+                "properties": {
+                    "one": {},
+                    "two": {
+                        "anyOf": [{"items": {}, "type": "array"}, {"type": "boolean"}],
+                    },
+                    "three": {"default": 3},
+                    "four": {"default": None},
+                },
+                "required": ["one", "two"],
+            },
+        ),
+        client,
+    )
+    assert plan.help_text == dedent("""\
+            Plan foo(
+                one: Any,
+                two: list[Any] | bool,
+                three: Any = 3,
+                four: Any | None = None
+            )""")
+
+
+def test_plan_help_text_with_ref(client):
+    schema = {
+        "$defs": {
+            "Spec": {
+                "properties": {
+                    "foo": {"type": "integer"},
+                    "bar": {"$ref": "#/$defs/InnerSpec"},
+                },
+                "required": ["foo", "bar"],
+            },
+            "InnerSpec": {
+                "properties": {
+                    "x": {"type": "number"},
+                    "y": {"default": 10, "type": "number"},
+                },
+                "required": ["x"],
+            },
+        },
+        "properties": {
+            "spec": {"$ref": "#/$defs/Spec"},
+            "meta": {"type": "string", "default": "abc"},
+        },
+        "required": ["spec"],
+    }
+
+    plan = Plan(
+        "ref_plan",
+        PlanModel(name="ref_plan", schema=schema),
+        client,
+    )
+
+    expected = "Plan ref_plan(spec: Spec, meta: str = 'abc')"
+
+    assert plan.help_text == expected
 
 
 def test_plan_properties(client):
@@ -818,8 +883,7 @@ def test_plan_properties(client):
         ),
         client,
     )
-
-    assert plan.properties == {"one", "two"}
+    assert plan.properties == {"one": {}, "two": {}}
     assert plan.required == ["one"]
 
 
@@ -1000,3 +1064,62 @@ def test_client_login_no_oidc(
     client.login()
 
     mock_session_manager.assert_not_called()
+
+
+def test_client_logout(mock_rest: Mock, client: BlueapiClient):
+    mock_session_manager = Mock()
+    mock_rest.session_manager = mock_session_manager
+
+    client.logout()
+
+    mock_session_manager.logout.assert_called_once()
+    assert mock_rest.session_manager is None
+
+
+@pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
+def test_run_blocking(event: WorkerEvent, client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: [event]
+    res = client.run_blocking(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    assert res == event.task_status
+
+
+@pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
+def test_run_blocking_callbacks(
+    event: WorkerEvent, client: BlueapiClient, mock_rest: Mock
+):
+    callback = Mock()
+    mock_rest.run_blocking.side_effect = lambda req: [event]
+    client.run_blocking(Mock(), on_event=callback)
+
+    callback.assert_called_once_with(event)
+
+
+@pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
+def test_run_blocking_client_callbacks(
+    event: WorkerEvent, client: BlueapiClient, mock_rest: Mock
+):
+    callback = Mock()
+    mock_rest.run_blocking.side_effect = lambda req: [event]
+    client.add_callback(callback)
+    client.run_blocking(Mock())
+
+    callback.assert_called_once_with(event)
+
+
+def test_run_blocking_error_if_cut_short(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: []
+    with pytest.raises(
+        BlueskyRemoteControlError, match="Connection closed before plan completed"
+    ):
+        client.run_blocking(Mock())
+
+
+def test_run_blocking_ignores_callback_error(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: [COMPLETE_EVENT]
+
+    def broken_callback(_: AnyEvent):
+        raise Exception("This callback is broken")
+
+    client.add_callback(broken_callback)
+    res = client.run_blocking(Mock())
+    assert res == COMPLETE_EVENT.task_status

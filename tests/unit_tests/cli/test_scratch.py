@@ -3,7 +3,6 @@ import stat
 import uuid
 from collections.abc import Generator
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from unittest.mock import ANY, MagicMock, Mock, PropertyMock, call, patch
 
 import pytest
@@ -23,19 +22,12 @@ from blueapi.utils import get_owner_gid
 
 
 @pytest.fixture
-def directory_path() -> Generator[Path]:
-    temporary_directory = TemporaryDirectory()
-    yield Path(temporary_directory.name)
-    temporary_directory.cleanup()
-
-
-@pytest.fixture
-def directory_path_with_sgid(directory_path: Path) -> Path:
+def directory_path_with_sgid(tmp_path: Path) -> Path:
     os.chmod(
-        directory_path,
-        os.stat(directory_path).st_mode + stat.S_ISGID,
+        tmp_path,
+        os.stat(tmp_path).st_mode + stat.S_ISGID,
     )
-    return directory_path
+    return tmp_path
 
 
 @pytest.fixture
@@ -160,12 +152,12 @@ def test_repo_discovery_errors_if_file_found_with_repo_name(file_path: Path):
 
 
 @patch("blueapi.cli.scratch.Repo")
-def test_cloned_repo_changes_to_new_branch(mock_repo, directory_path: Path):
+def test_cloned_repo_changes_to_new_branch(mock_repo, tmp_path: Path):
     repo = MagicMock(name="ClonedRepo", spec=Repo)
     repo.heads.demo = None
     mock_repo.clone_from.return_value = repo
 
-    ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
+    ensure_repo("http://example.com/foo.git", tmp_path / "demo_branch", "demo")
 
     mock_repo.clone_from.assert_called_once_with(
         "http://example.com/foo.git",
@@ -176,23 +168,23 @@ def test_cloned_repo_changes_to_new_branch(mock_repo, directory_path: Path):
 
 
 @patch("blueapi.cli.scratch.Repo")
-def test_existing_repo_not_changed_to_existing_branch(mock_repo, directory_path: Path):
-    (directory_path / "demo_branch").mkdir()
+def test_existing_repo_not_changed_to_existing_branch(mock_repo, tmp_path: Path):
+    (tmp_path / "demo_branch").mkdir()
 
-    ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
+    ensure_repo("http://example.com/foo.git", tmp_path / "demo_branch", "demo")
 
-    mock_repo.assert_called_once_with(directory_path / "demo_branch")
+    mock_repo.assert_called_once_with(tmp_path / "demo_branch")
     mock_repo.clone_from.assert_not_called()
 
 
 @patch("blueapi.cli.scratch.Repo")
-def test_existing_repo_not_changed_to_new_branch(mock_repo, directory_path: Path):
-    (directory_path / "demo_branch").mkdir()
+def test_existing_repo_not_changed_to_new_branch(mock_repo, tmp_path: Path):
+    (tmp_path / "demo_branch").mkdir()
     repo = MagicMock(name="ExistingRepo", spec=Repo)
     repo.heads.demo = None
     mock_repo.return_value = repo
 
-    ensure_repo("http://example.com/foo.git", directory_path / "demo_branch", "demo")
+    ensure_repo("http://example.com/foo.git", tmp_path / "demo_branch", "demo")
 
     mock_repo.clone_from.assert_not_called()
     repo.create_head.assert_not_called()
@@ -201,17 +193,17 @@ def test_existing_repo_not_changed_to_new_branch(mock_repo, directory_path: Path
 @patch("blueapi.cli.scratch.Repo")
 @patch("blueapi.cli.scratch.LOGGER")
 def test_existing_repo_state_checked(
-    mock_logger: MagicMock, mock_repo: MagicMock, directory_path: Path
+    mock_logger: MagicMock, mock_repo: MagicMock, tmp_path: Path
 ):
     repo = mock_repo.return_value
     repo.head.commit.name_rev = "current"
     repo.refs = {"demo": Mock()}
 
-    ensure_repo("http://example.com/foo.git", directory_path, "demo")
+    ensure_repo("http://example.com/foo.git", tmp_path, "demo")
 
     mock_logger.warning.assert_called_once_with(
         "Repository %s not at target revision: %r instead of %r",
-        directory_path.name,
+        tmp_path.name,
         repo.head.commit.name_rev,
         "demo",
     )
@@ -220,13 +212,13 @@ def test_existing_repo_state_checked(
 @patch("blueapi.cli.scratch.Repo")
 @patch("blueapi.cli.scratch.LOGGER")
 def test_existing_repo_unknown_revision(
-    mock_logger: MagicMock, mock_repo: MagicMock, directory_path: Path
+    mock_logger: MagicMock, mock_repo: MagicMock, tmp_path: Path
 ):
     repo = mock_repo.return_value
     repo.head.commit.name_rev = "current"
     repo.refs = {}
 
-    ensure_repo("http://example.com/foo.git", directory_path, "demo")
+    ensure_repo("http://example.com/foo.git", tmp_path, "demo")
 
     mock_logger.warning.assert_called_once_with(
         "Target revision %r not found",
@@ -251,9 +243,9 @@ def test_setup_scratch_fails_on_non_directory_root(
 
 
 def test_setup_scratch_fails_on_non_sgid_root(
-    directory_path: Path,
+    tmp_path: Path,
 ):
-    config = ScratchConfig(root=directory_path, repositories=[], required_gid=1000)
+    config = ScratchConfig(root=tmp_path, repositories=[], required_gid=1000)
     with pytest.raises(PermissionError):
         setup_scratch(config)
 
@@ -608,8 +600,8 @@ def test_get_python_env_filters_by_name_and_source(
 
 
 @pytest.fixture
-def pyproject_file(directory_path: Path) -> Generator[Path]:
-    pyproject_path = directory_path / "pyproject.toml"
+def pyproject_file(tmp_path: Path) -> Generator[Path]:
+    pyproject_path = tmp_path / "pyproject.toml"
     with pyproject_path.open("w") as f:
         f.write(
             """
@@ -627,16 +619,16 @@ def test_get_project_name_from_pyproject_returns_name(pyproject_file: Path):
 
 
 def test_get_project_name_from_pyproject_returns_empty_if_no_pyproject(
-    directory_path: Path,
+    tmp_path: Path,
 ):
-    project_name = _get_project_name_from_pyproject(directory_path)
+    project_name = _get_project_name_from_pyproject(tmp_path)
     assert project_name == ""
 
 
 def test_get_project_name_from_pyproject_returns_empty_if_no_name_key(
-    directory_path: Path,
+    tmp_path: Path,
 ):
-    pyproject_path = directory_path / "pyproject.toml"
+    pyproject_path = tmp_path / "pyproject.toml"
     with pyproject_path.open("w") as f:
         f.write(
             """
@@ -644,5 +636,5 @@ def test_get_project_name_from_pyproject_returns_empty_if_no_name_key(
             version = "1.0.0"
             """
         )
-    project_name = _get_project_name_from_pyproject(directory_path)
+    project_name = _get_project_name_from_pyproject(tmp_path)
     assert project_name == ""

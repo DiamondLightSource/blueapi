@@ -12,13 +12,14 @@ import pytest
 import responses
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, WebsocketUrl
 
 from blueapi.config import (
     CONFIG_SCHEMA_LOCATION,
     ApplicationConfig,
     ConfigLoader,
     OIDCConfig,
+    RestConfig,
     generate_config_schema,
 )
 from blueapi.utils import InvalidConfigError
@@ -210,17 +211,12 @@ def temp_yaml_config_file(
     config_data = request.param
 
     # Create a temporary YAML file with the configuration
-    with tempfile.NamedTemporaryFile(
-        suffix=".yaml", mode="w", delete=False
-    ) as temp_yaml_file:
+    with tempfile.NamedTemporaryFile(suffix=".yaml", mode="w") as temp_yaml_file:
         yaml.dump(config_data, temp_yaml_file)
         temp_yaml_file_path = temp_yaml_file.name
 
-    # Provide the path and the config data
-    yield Path(temp_yaml_file_path), config_data
-
-    # Cleanup after test execution
-    os.remove(temp_yaml_file_path)
+        # Provide the path and the config data
+        yield Path(temp_yaml_file_path), config_data
 
 
 # Parameterized test to run with different configurations
@@ -571,3 +567,15 @@ def test_issuer_url_preferred_over_well_known_url(caplog):
             oidc._well_known_url == "issuer_url" + "/.well-known/openid-configuration"
         )
     assert "well_known_url and issuer are both set" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "url,ws_url",
+    [
+        ("http://localhost:8000", "ws://localhost:8000"),
+        ("https://localhost:8000", "wss://localhost:8000"),
+    ],
+)
+def test_ws_address(url: str, ws_url: str):
+    conf = RestConfig.model_validate({"url": url})
+    assert conf.ws_address == WebsocketUrl(ws_url)

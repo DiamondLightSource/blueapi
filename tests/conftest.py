@@ -66,8 +66,13 @@ CACHE_FILE = "blueapi_cache"
 
 
 @pytest.fixture
-def config_with_auth(tmp_path: Path) -> str:
-    config = ApplicationConfig(auth_token_path=tmp_path / CACHE_FILE)
+def token_cache_file(tmp_path: Path) -> Path:
+    return tmp_path / CACHE_FILE
+
+
+@pytest.fixture
+def config_with_auth(token_cache_file: Path, tmp_path: Path) -> str:
+    config = ApplicationConfig(auth_token_path=token_cache_file)
     config_path = tmp_path / "auth_config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
@@ -134,7 +139,7 @@ def _make_token(
 
 @pytest.fixture
 def cached_valid_refresh(
-    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
+    token_cache_file: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
     cache = Cache(
         oidc_config=oidc_config,
@@ -142,14 +147,14 @@ def cached_valid_refresh(
         refresh_token=expired_token["refresh_token"],
         id_token=expired_token["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+    with open(token_cache_file, "xb") as cache_file:
         cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    return token_cache_file
 
 
 @pytest.fixture
 def cached_expired_refresh(
-    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
+    token_cache_file: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
     cache = Cache(
         oidc_config=oidc_config,
@@ -157,14 +162,16 @@ def cached_expired_refresh(
         refresh_token="expired_refresh",
         id_token=expired_token["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+    with open(token_cache_file, "xb") as cache_file:
         cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    return token_cache_file
 
 
 @pytest.fixture
 def cached_valid_token(
-    tmp_path: Path, valid_token_with_jwt: dict[str, Any], oidc_config: OIDCConfig
+    token_cache_file: Path,
+    valid_token_with_jwt: dict[str, Any],
+    oidc_config: OIDCConfig,
 ) -> Path:
     cache = Cache(
         oidc_config=oidc_config,
@@ -172,14 +179,21 @@ def cached_valid_token(
         refresh_token=valid_token_with_jwt["refresh_token"],
         id_token=valid_token_with_jwt["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+    with open(token_cache_file, "xb") as cache_file:
         cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    return token_cache_file
+
+
+@pytest.fixture
+def cached_valid_token_value(
+    valid_token_with_jwt: dict[str, Any],
+) -> str:
+    return valid_token_with_jwt["access_token"]
 
 
 @pytest.fixture
 def cache_with_invalid_audience(
-    tmp_path: Path,
+    token_cache_file: Path,
     oidc_config: OIDCConfig,
     valid_token_with_jwt_invalid_audience: dict[str, Any],
 ) -> Path:
@@ -189,9 +203,9 @@ def cache_with_invalid_audience(
         refresh_token=valid_token_with_jwt_invalid_audience["refresh_token"],
         id_token=valid_token_with_jwt_invalid_audience["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+    with open(token_cache_file, "xb") as cache_file:
         cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    return token_cache_file
 
 
 @pytest.fixture

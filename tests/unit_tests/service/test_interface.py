@@ -2,6 +2,7 @@ import json
 import uuid
 from dataclasses import dataclass
 from inspect import isawaitable
+from multiprocessing.connection import Connection as PipeConnection
 from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, patch
 
@@ -368,6 +369,7 @@ def test_get_task_by_id(
 
     expected_metadata: dict[str, Any] = {
         "instrument_session": FAKE_INSTRUMENT_SESSION,
+        "blueapi_task_id": task_id,
     }
 
     if tiled_enabled:
@@ -408,13 +410,15 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
         metadata,
     )
 
+    expected_metadata = {**metadata, "blueapi_task_id": task_id}
+
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
         request_id=ANY,
         task=Task(
             name="my_plan",
             params={},
-            metadata=metadata,
+            metadata=expected_metadata,
         ),
         is_complete=False,
         is_pending=True,
@@ -683,3 +687,47 @@ async def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
     assert isawaitable(scan_id) and await scan_id
 
     assert ctx.run_engine.md["scan_file"] == "p46-11"
+
+
+@patch("blueapi.service.interface.worker")
+def test_pipe_events(mock_worker: Mock):
+    worker = mock_worker()
+    tx = Mock(spec=PipeConnection)
+
+    interface.pipe_events(tx)
+
+    worker.worker_events.subscribe.assert_called_once()
+    worker.data_events.subscribe.assert_called_once()
+    worker.progress_events.subscribe.assert_called_once()
+
+    handler = worker.worker_events.subscribe.call_args[0][0]
+
+    evt = Mock()
+    handler(evt, "ignored correlation id")
+    tx.send.assert_called_once_with(evt)
+
+
+@patch("blueapi.service.interface.worker")
+def test_pipe_events_ignores_broken_pipe(mock_worker: Mock):
+    worker = mock_worker()
+    tx = Mock(spec=PipeConnection)
+
+    interface.pipe_events(tx)
+
+    worker.worker_events.subscribe.assert_called_once()
+    handler = worker.worker_events.subscribe.call_args[0][0]
+
+    tx.send.side_effect = BrokenPipeError()
+    # ensure that exceptions are not raised
+    handler(Mock(), "ignored correlation id")
+
+
+@patch("blueapi.service.interface.worker")
+def test_unpipe_events(mock_worker: Mock):
+    worker = mock_worker()
+    handles = interface.SubHandles(worker=1, progress=2, data=3)
+    interface.unpipe_events(handles)
+
+    worker.worker_events.unsubscribe.assert_called_once_with(1)
+    worker.progress_events.unsubscribe.assert_called_once_with(2)
+    worker.data_events.unsubscribe.assert_called_once_with(3)

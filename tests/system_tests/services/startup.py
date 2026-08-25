@@ -19,6 +19,7 @@ SERVER = os.environ.get("KEYCLOAK_SERVER", "http://localhost:8081")
 REALM = os.environ.get("KEYCLOAK_REALM", "master")
 ADMIN_USERNAME = os.environ.get("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
+NT_URL = os.environ.get("NT_URL", "http://localhost:8406/graphql")
 
 USERS = {"alice": "alice", "bob": "bob"}
 
@@ -261,34 +262,32 @@ def create_clients() -> None:
 
 
 def configure_numtracker():
-    def _():
-        token_url = SERVER + "/realms/master/protocol/openid-connect/token"
-        response = requests.post(
-            token_url,
-            data={
-                "client_id": "system-test-blueapi-admin",
-                "client_secret": "secret",
-                "grant_type": "client_credentials",
-            },
-        )
-        response.raise_for_status()
-        return response.json().get("access_token")
-
-    nt_url = os.environ.get("NT_URL", "http://localhost:8406/graphql")
+    token_url = SERVER + "/realms/master/protocol/openid-connect/token"
     response = requests.post(
-        str(nt_url),
+        token_url,
+        data={
+            "client_id": "system-test-blueapi-admin",
+            "client_secret": "secret",
+            "grant_type": "client_credentials",
+        },
+    )
+    response.raise_for_status()
+    access_token = response.json().get("access_token")
+
+    response = requests.post(
+        NT_URL,
         json={
             "query": """mutation {
               configure(instrument: "adsim",
                         config: {directory: "/tmp/",
-                            scan: "{instrument}-{scan_number}",
-                            detector: "{instrument}-{scan_number}-{detector}",
-                            scanNumber: 43}) {
+                        scan: "{instrument}-{scan_number}",
+                        detector: "{instrument}-{scan_number}-{detector}",
+                        scanNumber: 43}) {
                 scanTemplate
               }
             }"""
         },
-        headers={"authorization": "Bearer " + _()},
+        headers={"authorization": "Bearer " + access_token},
     )
     response.raise_for_status()
     if response.json().get("errors") is not None:

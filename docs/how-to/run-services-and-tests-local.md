@@ -1,32 +1,29 @@
 # Run BlueAPI and connect to services locally
 
-For development purposes, it can be useful to run BlueAPI and adjacent services (Numtracker, Tiled, OPA etc.) locally. To do this, a containerised version of the stack should be run. This includes launching an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs, in detached mode. Running BlueAPI and connected services locally as opposed to connecting to the cluster can be useful for learning more about the stack, running system tests, checking if changes during development propagate as expected etc. 
+For development purposes, it can be useful to run BlueAPI and adjacent services (Numtracker, Tiled, OPA etc.) locally, i.e. not in a devcontainer. Following the steps in this page will allow you to launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs, in detached mode. This can be useful for learning about the stack, running system tests checking if changes during development propagate as expected etc. 
 
 Before starting, ensure you have followed the [Installation instructions](../tutorials/1.%20installation.md).
 
-1. In the root directory run `git submodule update --init --recursive` to initialise the example-services repo
-2. Run `docker compose -f tests/system_tests/compose.yaml up -d` to launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs, in detached mode
->[!NOTE]
-> On DLS workstations, perform these setup steps since docker compose is not available by default:
->
-> Run `systemctl enable --user podman.socket --now` to set up a podman user service and socket
->
-> Add the following lines to your `$HOME/.profile` file:
-> ```
-> module load docker-compose/5.1.1
-> export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
-> alias docker=podman
-> ```
+1. Before starting, run: `module load uv just docker-compose/5.4.0`  in the terminal. This will ensure you have the required packages.
 
-There are also docs in the [Developer Guide](https://dev-guide.diamond.ac.uk/epics-containers/reference/setup/#docker-compose) to set up docker-compose on DLS workstations.
+2. The default command `just` into the terminal will do the following:
+    - A. initialise the example-services repo
+    - B. launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs in detached mode
+    - C. set required EPICS environmental variables
+    - D. start the BlueAPI server using the the config in `tests/system_tests/config.yaml`
 
-3. Run `source tests/system_tests/.env` which will set required EPICS environmental variables
-4. Run `blueapi -c tests/system_tests/config.yaml serve` to launch BlueAPI configured to use the launched stack. This may take a while, as BlueAPI will attempt to connect to a number of devices via 
-5. In a new terminal window, run the system tests with `tox -e system-test`. (You may need to reactivate the venv you created).
-6. To run all the blueapi unit tests: `tox -e tests`
-7. To test changes you have made (in a branch for example), you may need to restart the server. Navigate back to the terminal window where the server is running and press CTRL +C 
-8. To tear down the associated services: `docker compose -f tests/system_tests/compose.yaml down`
+3. To run the above separately use the following commands:
+    - 2A and 2B: `just compose`
+    - 2C and 2D: `just serve`
 
+4. In a new terminal window, to run unit and system tests respectively: `just unit` and `just system`
+
+5. Other commands available (use `just --list` to see them)
+    - `just run PLAN PARAMS`: provide session, plan and parameter details to run a plan
+    - `just lint`: will run all the precommit checks, update the BlueAPI schema, run pyright
+    - `just coverage`: generate code coverage report
+    - `just repl`: will give you a repl with pre-configured and logged in client
+    - `just compose down`: tear down adjacent services
 
 Channel Access
 

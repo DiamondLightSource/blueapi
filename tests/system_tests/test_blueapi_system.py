@@ -271,7 +271,7 @@ def clean_existing_tasks(rest_client: BlueapiRestClient):
 def reset_numtracker():
     server_config = load_config(Path(_DATA_PATH, "config.yaml"))
     nt_url = server_config.numtracker.url  # type: ignore - if numtracker is None we should fail
-    requests.post(
+    response = requests.post(
         str(nt_url),
         json={
             "query": f"""mutation {{
@@ -285,7 +285,10 @@ def reset_numtracker():
             }}"""
         },
         headers={"authorization": "Bearer " + get_access_token(User.admin)},
-    ).raise_for_status()
+    )
+    response.raise_for_status()
+    if response.json().get("errors") is not None:
+        raise Exception(response.json())
     yield
 
 

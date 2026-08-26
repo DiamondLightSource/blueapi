@@ -29,6 +29,7 @@
                         "type": "array"
                     },
                     "num": {
+                        "default": 1,
                         "title": "Num",
                         "type": "integer"
                     },
@@ -44,6 +45,7 @@
                                 "type": "array"
                             }
                         ],
+                        "default": 0,
                         "title": "Delay"
                     },
                     "metadata": {
@@ -116,6 +118,7 @@
                         "type": "array"
                     },
                     "snake_axes": {
+                        "default": true,
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
@@ -190,6 +193,7 @@
                         "type": "array"
                     },
                     "snake_axes": {
+                        "default": true,
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
@@ -413,6 +417,7 @@
                                 "type": "boolean"
                             }
                         ],
+                        "default": true,
                         "title": "Snake Axes"
                     },
                     "metadata": {
@@ -495,6 +500,7 @@
                                 "type": "boolean"
                             }
                         ],
+                        "default": true,
                         "title": "Snake Axes"
                     },
                     "metadata": {
@@ -1360,6 +1366,7 @@
                         "type": "array"
                     },
                     "snake_axes": {
+                        "default": true,
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
@@ -1434,6 +1441,7 @@
                         "type": "array"
                     },
                     "snake_axes": {
+                        "default": true,
                         "title": "Snake Axes",
                         "type": "boolean"
                     },
@@ -1613,6 +1621,7 @@
                         "type": "string"
                     },
                     "wait": {
+                        "default": true,
                         "title": "Wait",
                         "type": "boolean"
                     }
@@ -1647,6 +1656,7 @@
                         "type": "string"
                     },
                     "wait": {
+                        "default": true,
                         "title": "Wait",
                         "type": "boolean"
                     }

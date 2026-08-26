@@ -1,7 +1,16 @@
 SESSION := "cm12345-1"
-RUNNER := "docker"
+RUNNER := `command -v docker || command -v podman`
 
-compose +ARGS="up -d":
+default: compose serve
+
+init-example-services:
+    #!/usr/bin/env bash
+    # Clone the example-services submodule if needed but leave it alone otherwise
+    if [[ $(git submodule status example-services) =~ ^- ]]; then
+        git submodule update --init example-services
+    fi
+
+compose +ARGS="up -d --no-recreate": init-example-services
     {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ARGS}}
 
 serve *OPTS:

@@ -529,7 +529,9 @@ class TaskWorker:
                     if self._current is not None:
                         try:
                             result = self._ctx.run_engine.resume()
-                            self._current.set_result(result)
+                            with self._status_lock:
+                                if self._current.outcome is None:
+                                    self._current.set_result(result)
                         except RunEngineInterrupted:
                             # Plan paused again immediately - not a failure,
                             # leave the outcome unset so it stays resumable.

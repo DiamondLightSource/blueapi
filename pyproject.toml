@@ -13,31 +13,19 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "tiled[client]>=0.2.4",
-    "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
-    "ophyd-async>=0.13.5",
-    "aioca",
     "pydantic>=2.0",
     "pydantic-settings",
-    "stomp-py",
+    "stomp.py",
     "PyYAML>=6.0.2",
     "click>=8.2.0",
-    "fastapi>=0.112.0",
-    "uvicorn",
     "requests",
-    "dls-dodal>=1.69.0",
-    "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
-    "GitPython",
-    "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "bluesky-stomp>=0.1.6",
-    "opentelemetry-distro>=0.48b0",
-    "opentelemetry-instrumentation-fastapi>=0.48b0",
-    "observability-utils>=0.1.4",
     "pyjwt[crypto]",
     "tomlkit",
     "graypy>=2.1.0",
     "httpx>=0.28.1",
 ]
+
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
@@ -85,6 +73,25 @@ GitHub = "https://github.com/DiamondLightSource/blueapi"
 [[project.authors]] # Further authors may be added by duplicating this section
 email = "callum.forrester@diamond.ac.uk"
 name = "Callum Forrester"
+
+[project.optional-dependencies]
+server=[
+    "uvicorn",
+    "dls-dodal>=1.69.0",
+    "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
+    "GitPython",
+    "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
+    "opentelemetry-distro>=0.48b0",
+    "opentelemetry-instrumentation-fastapi>=0.48b0",
+    "observability-utils>=0.1.4",
+     "tiled[client]>=0.2.4",
+    "fastapi>=0.112.0",
+    "aioca",
+    "ophyd-async>=0.13.5",
+    "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
+
+]
+
 
 [tool.setuptools_scm]
 version_file = "src/blueapi/_version.py"

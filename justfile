@@ -10,7 +10,7 @@ init-example-services:
         git submodule update --init example-services
     fi
 
-compose +ARGS="up -d --no-recreate": init
+compose +ARGS="up -d --no-recreate": init-example-services
     {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ARGS}}
 
 serve *OPTS:

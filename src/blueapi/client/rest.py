@@ -370,7 +370,7 @@ class BlueapiRestClient:
                 additional_headers=headers,
                 user_agent_header=USER_AGENT,
             ) as ws:
-                ws.send(Submit(task=req).model_dump_json())
+                ws.send(Submit(task=req).model_dump_json(fallback=_task_model_fallback))
                 for message in ws:
                     event = ControlResponse.validate_json(message)
                     match event:

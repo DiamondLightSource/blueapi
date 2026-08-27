@@ -11,11 +11,13 @@ from typing import Self
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 from observability_utils.tracing import get_tracer, start_as_current_span
+from pydantic import HttpUrl
 
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
     MissingStompConfigurationError,
+    RestConfig,
 )
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionCacheManager, SessionManager
@@ -106,6 +108,11 @@ class BlueapiClient(ClientProtocol):
             return cls(rest, events)
         else:
             return cls(rest)
+
+    @classmethod
+    def for_host(cls, host: str) -> Self:
+        conf = ApplicationConfig(api=RestConfig(url=HttpUrl(host)))
+        return cls.from_config(conf)
 
     @cached_property
     @start_as_current_span(TRACER)
@@ -311,10 +318,22 @@ class BlueapiClient(ClientProtocol):
 
         return self.active_task
 
-    @start_as_current_span(TRACER, "request")
-    def run_blocking(
+    @start_as_current_span(TRACER, "task", "timeout")
+    def run_task(
+        self,
+        task: TaskRequest,
+        on_event: OnAnyEvent | None = None,
+        timeout: float | None = None,
+    ) -> TaskStatus:
+        if self._events is None:
+            return self.run_ws(task, on_event)
+        else:
+            return self.run_stomp(task, on_event)
+
+    def run_ws(
         self, request: TaskRequest, on_event: OnAnyEvent | None = None
     ) -> TaskStatus:
+        log.info("Running plan via websocket")
         for event in self._rest.run_blocking(request):
             if on_event is not None:
                 on_event(event)
@@ -332,13 +351,13 @@ class BlueapiClient(ClientProtocol):
                 return event.task_status
         raise BlueskyRemoteControlError("Connection closed before plan completed.")
 
-    @start_as_current_span(TRACER, "task", "timeout")
-    def run_task(
+    def run_stomp(
         self,
         task: TaskRequest,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> TaskStatus:
+        log.info("Running plan via stomp")
         """
         Synchronously run a task, requires a message bus connection
 

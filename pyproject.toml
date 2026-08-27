@@ -26,7 +26,7 @@ dependencies = [
     "fastapi>=0.112.0",
     "uvicorn>=0.52.1",
     "requests",
-    "GitPython",
+    "GitPython>=3.1.58",                             #security base min https://github.com/advisories/GHSA-4gmw-gg2m-w46p
     "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "bluesky-stomp>=0.1.6",
     "opentelemetry-distro>=0.48b0",

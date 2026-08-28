@@ -1,5 +1,5 @@
 SESSION := "cm12345-1"
-RUNNER := `command -v docker || command -v podman`
+RUNNER := `command -v docker || command -v podman || true`
 
 default: compose serve
 

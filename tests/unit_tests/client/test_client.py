@@ -151,6 +151,11 @@ def test_client_from_config():
     assert bc._rest._config.url == HttpUrl("http://example.com:8082")
 
 
+def test_client_for_host():
+    bc = BlueapiClient.for_host("http://custom.example.com:1234")
+    assert bc._rest._config.url == HttpUrl("http://custom.example.com:1234")
+
+
 def test_get_plans(client: BlueapiClient):
     assert PlanResponse(plans=[p.model for p in client.plans]) == PLANS
 

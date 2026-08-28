@@ -286,8 +286,11 @@ class BlueapiClient:
             return cls(rest)
 
     @classmethod
-    def for_host(cls, host: str) -> Self:
-        conf = ApplicationConfig(api=RestConfig(url=HttpUrl(host)))
+    def for_host(cls, host: str | None = None) -> Self:
+        if host:
+            conf = ApplicationConfig(api=RestConfig(url=HttpUrl(host)))
+        else:
+            conf = ApplicationConfig()
         return cls.from_config(conf)
 
     @cached_property

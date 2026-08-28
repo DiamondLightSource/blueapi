@@ -397,7 +397,7 @@ def run_plan(
                 # no preference was given so use whichever we have config for
                 resp = client.run_task(task)
             elif ws:
-                resp = client.run_ws(task)
+                resp = client.run_blocking(task)
             else:
                 resp = client.run_stomp(task)
 

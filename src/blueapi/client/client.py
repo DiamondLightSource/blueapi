@@ -502,11 +502,11 @@ class BlueapiClient:
         timeout: float | None = None,
     ) -> TaskStatus:
         if self._events is None:
-            return self.run_ws(task, on_event)
+            return self.run_blocking(task, on_event)
         else:
             return self.run_stomp(task, on_event)
 
-    def run_ws(
+    def run_blocking(
         self, request: TaskRequest, on_event: OnAnyEvent | None = None
     ) -> TaskStatus:
         log.info("Running plan via websocket")

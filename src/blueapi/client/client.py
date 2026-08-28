@@ -500,10 +500,10 @@ class BlueapiClient:
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> TaskStatus:
-        if self._events is None:
-            return self.run_blocking(task, on_event)
-        else:
+        if self._events:
             return self.run_stomp(task, on_event)
+        else:
+            return self.run_blocking(task, on_event)
 
     @start_as_current_span(TRACER, "task")
     def run_blocking(

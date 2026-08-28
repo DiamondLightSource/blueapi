@@ -84,6 +84,14 @@ class RunEngineWorker:
     def submit(self, task: Task):
         idle = self.task_lock.acquire(blocking=False)
         try:
+            # TODO: pass some kind of event so we can wait for task acceptance
+            # maybe add a submit_lock to prevent second submission until task
+            # has been accepted?
+            # - Worker thread calls .wait() and unlocks
+            # - submit calls .acquire()
+            # - submit sets task and calls .notify()
+            # - submit calls .release() - it has to to allow the worker to continue
+            # - second submit calls .acquire() before worker's .wait() returns
             if not idle or self.active_task is not None:
                 raise ValueError("Worker is busy")
             print("  worker was idle")
@@ -109,6 +117,7 @@ class RunEngineWorker:
         try:
             if idle:
                 if self.active_task is not None:
+                    # TODO: Find a better way of handling this
                     print(
                         "Aborted between task being submitted and it being accepted "
                         "- drop task"

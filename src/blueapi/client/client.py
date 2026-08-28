@@ -494,7 +494,6 @@ class BlueapiClient:
 
         return self.active_task
 
-    @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,
         task: TaskRequest,
@@ -506,11 +505,12 @@ class BlueapiClient:
         else:
             return self.run_stomp(task, on_event)
 
+    @start_as_current_span(TRACER, "task")
     def run_blocking(
-        self, request: TaskRequest, on_event: OnAnyEvent | None = None
+        self, task: TaskRequest, on_event: OnAnyEvent | None = None
     ) -> TaskStatus:
-        log.info("Running plan via websocket")
-        for event in self._rest.run_blocking(request):
+        log.debug("Running plan via websocket")
+        for event in self._rest.run_blocking(task):
             if on_event is not None:
                 on_event(event)
             for cb in self._callbacks.values():
@@ -527,13 +527,14 @@ class BlueapiClient:
                 return event.task_status
         raise BlueskyRemoteControlError("Connection closed before plan completed.")
 
+    @start_as_current_span(TRACER, "task", "timeout")
     def run_stomp(
         self,
         task: TaskRequest,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> TaskStatus:
-        log.info("Running plan via stomp")
+        log.debug("Running plan via stomp")
         """
         Synchronously run a task, requires a message bus connection
 

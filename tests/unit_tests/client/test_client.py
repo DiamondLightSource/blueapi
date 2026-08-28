@@ -439,7 +439,7 @@ def test_cannot_run_task_without_message_bus(client: BlueapiClient):
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
-        client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+        client.run_stomp(TaskRequest(name="foo", instrument_session="cm12345-1"))
 
 
 def test_run_task_sets_up_control(
@@ -717,7 +717,7 @@ def test_cannot_run_task_span_ok(
         match="Stomp configuration required to run plans is missing or disabled",
     ):
         with asserting_span_exporter(exporter, "grun_task"):
-            client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+            client.run_stomp(TaskRequest(name="foo", instrument_session="cm12345-1"))
 
 
 def test_instrument_session_required(client):

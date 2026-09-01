@@ -15,8 +15,8 @@ compose +ARGS="up -d --no-recreate": init-example-services
 
 serve *OPTS:
     #!/usr/bin/env bash
-    source tests/system_tests/.env
-    uv run blueapi -c tests/system_tests/config.yaml {{OPTS}} serve
+    source tests/system_tests/.env # sets required EPICS environmental variables
+    uv run blueapi -c tests/system_tests/config.yaml {{OPTS}} serve  #start BlueAPI server using config in config.yaml file
 
 run PLAN PARAMS:
     uv run blueapi -c tests/system_tests/config.yaml controller run -i {{ SESSION }} {{ PLAN }} '{{ PARAMS }}'

@@ -15,6 +15,9 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
     rm get_helm.sh
 RUN helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.3.1
 
+# Enable bash completion for just commands
+RUN echo 'source <(just --completions bash)' >> /root/terminal-config/bashrc-default
+
 # The build stage installs the context into the venv
 FROM developer AS build
 

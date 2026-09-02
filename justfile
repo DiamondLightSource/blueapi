@@ -1,5 +1,12 @@
 SESSION := "cm12345-1"
-RUNNER := `command -v docker || command -v podman`
+RUNNER := `command -v docker || command -v podman || true`
+
+_check-runner:
+    #!/usr/bin/env bash
+    if [[ "{{ RUNNER }}" == "" ]]; then
+        echo "{{ style('error') }}error{{ NORMAL }}: No container runtime available - either podman or docker is required"
+        exit 1
+    fi
 
 default: compose serve
 
@@ -10,7 +17,7 @@ init-example-services:
         git submodule update --init example-services
     fi
 
-compose +ARGS="up -d --no-recreate": init-example-services
+compose +ARGS="up -d --no-recreate": init-example-services _check-runner
     {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ARGS}}
 
 serve *OPTS:

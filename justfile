@@ -52,7 +52,7 @@ coverage:
     uv run pytest tests/unit_tests --cov --cov-report html
     xdg-open htmlcov/index.html
 
-[doc('Start an interactive REPL with an authenticated blueapi clien')]
+[doc('Start an interactive REPL with an authenticated blueapi client')]
 repl:
     #!/usr/bin/env bash
     uv run --with ptpython ptpython -i <(cat << EOF

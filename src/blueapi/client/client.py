@@ -497,6 +497,7 @@ class BlueapiClient:
 
         return self.active_task
 
+    @start_as_current_span(TRACER, "task")
     def run_task(
         self,
         task: TaskRequest,

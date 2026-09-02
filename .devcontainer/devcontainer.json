@@ -45,8 +45,7 @@
                 "charliermarsh.ruff",
                 "ms-pyright.pyright",
                 "ms-azuretools.vscode-docker",
-                "ms-kubernetes-tools.vscode-kubernetes-tools",
-                "kokakiwi.vscode-just"
+                "ms-kubernetes-tools.vscode-kubernetes-tools"
             ]
         }
     },

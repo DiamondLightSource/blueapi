@@ -14,7 +14,6 @@ default: compose serve
 [doc('Clone the example-services submodule if needed but leave it alone otherwise')]
 init-example-services:
     #!/usr/bin/env bash
-    # Clone the example-services submodule if needed but leave it alone otherwise
     if [[ $(git submodule status example-services) =~ ^- ]]; then
         git submodule update --init example-services
     fi
@@ -23,13 +22,13 @@ init-example-services:
 compose +ARGS="up -d --no-recreate": init-example-services _check-runner
     {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ ARGS }}
 
-[doc('Run the blueapi server against the system test config')]
+[doc('Run the blueapi server with the system test config')]
 serve *OPTS:
     #!/usr/bin/env bash
     source tests/system_tests/.env
     uv run blueapi -c tests/system_tests/config.yaml {{ OPTS }} serve
 
-[doc('Run a plan against the blueapi controller')]
+[doc('Run a plan using the blueapi CLI')]
 run PLAN PARAMS:
     uv run blueapi -c tests/system_tests/config.yaml controller run -i {{ SESSION }} {{ PLAN }} '{{ PARAMS }}'
 
@@ -53,7 +52,7 @@ coverage:
     uv run pytest tests/unit_tests --cov --cov-report html
     xdg-open htmlcov/index.html
 
-[doc('Start an interactive REPL logged in to a blueapi client')]
+[doc('Start an interactive REPL with an authenticated blueapi clien')]
 repl:
     #!/usr/bin/env bash
     uv run --with ptpython ptpython -i <(cat << EOF

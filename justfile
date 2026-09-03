@@ -1,15 +1,15 @@
 SESSION := "cm12345-1"
 RUNNER := `command -v docker || command -v podman || true`
 
+[doc('Start the example services via compose and run the blueapi server')]
+dev-server: compose serve
+
 _check-runner:
     #!/usr/bin/env bash
     if [[ "{{ RUNNER }}" == "" ]]; then
         echo "{{ style('error') }}error{{ NORMAL }}: No container runtime available - either podman or docker is required"
         exit 1
     fi
-
-[doc('Start the example services via compose and run the blueapi server')]
-default: compose serve
 
 [doc('Clone the example-services submodule if needed but leave it alone otherwise')]
 init-example-services:

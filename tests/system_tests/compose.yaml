@@ -65,10 +65,11 @@ services:
       - label=disable
 
   tiled:
-    image: ghcr.io/bluesky/tiled:0.2.12
+    image: ghcr.io/bluesky/tiled:0.2.18
     network_mode: host # Port 8407
     environment:
       - PYTHONPATH=/deploy/
+      - VITE_LOGIN_REDIRECT=falsex
     volumes:
       - ./services/tiled_config:/deploy/config
     command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8407"]

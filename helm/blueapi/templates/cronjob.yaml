@@ -1,0 +1,173 @@
+{{- if .Values.timeStampCron.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: [""]
+  resources: ["pods", "persistentvolumeclaims"]
+  verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "blueapi.fullname" . }}-last-used-stamper
+  namespace: {{ .Release.Namespace }}
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "@daily"
+
+  jobTemplate:
+    spec:
+      # amount of attempts of labeling a pvc
+      backoffLimit: 3
+      # job stops after 180 seconds
+      activeDeadlineSeconds: 180
+      template:
+        spec:
+          serviceAccountName: {{ include "blueapi.fullname" . }}-last-used-stamper
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+            - name: {{include "blueapi.fullname" . }}-pvc-stamper-script
+              configMap:
+                name: {{include "blueapi.fullname" . }}-pvc-stamper-script
+                defaultMode: 0555
+          containers:
+          - name: last-used-stamper
+            env:
+              - name: RELEASE_NAME
+                value: {{ .Release.Name }}
+              - name: RELEASE_NAMESPACE
+                value: {{ .Release.Namespace }}
+              - name: RELEASE_FULLNAME
+                value: {{include "blueapi.fullname" . }}
+            volumeMounts:
+              - name: {{include "blueapi.fullname" . }}-pvc-stamper-script
+                mountPath: /scripts
+            image: rancher/kubectl@sha256:05d2b313e2f397e0ade252136aed47abd72d56ead11d1b027ac70f66362c8495 # v1.36.0
+            imagePullPolicy: IfNotPresent
+            command: ["/scripts/time-stamper.sh"]
+          restartPolicy: OnFailure
+{{- end }}
+{{- if .Values.pvcAutoDeletion.enabled }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "blueapi.fullname" . }}-pvc-auto-deletion
+  namespace: {{ .Release.Namespace }}
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "blueapi.fullname" . }}-pvc-auto-deletion
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get", "list", "patch","delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "blueapi.fullname" . }}-pvc-auto-deletion
+  namespace: {{ .Release.Namespace }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "blueapi.fullname" . }}-pvc-auto-deletion
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "blueapi.fullname" . }}-pvc-auto-deletion
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "blueapi.fullname" . }}-pvc-auto-deletion
+  namespace: {{ .Release.Namespace }}
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "@weekly"
+
+  jobTemplate:
+    spec:
+      # amount of attempts for pvc deletion 
+      backoffLimit: 3
+      # job stops after 300 seconds
+      activeDeadlineSeconds: 300
+      template:
+        spec:
+          serviceAccountName: {{ include "blueapi.fullname" . }}-pvc-auto-deletion
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+            - name: {{include "blueapi.fullname" . }}-pvc-auto-deletion-script
+              configMap:
+                name: {{include "blueapi.fullname" . }}-pvc-auto-deletion-script
+                defaultMode: 0555
+          containers:
+          - name: pvc-auto-deletion
+            env:
+              - name: RELEASE_NAME
+                value: {{ .Release.Name }}
+              - name: RELEASE_NAMESPACE
+                value: {{ .Release.Namespace }}
+              - name: RELEASE_FULLNAME
+                value: {{include "blueapi.fullname" . }}
+            volumeMounts:
+              - name: {{include "blueapi.fullname" . }}-pvc-auto-deletion-script
+                mountPath: /scripts
+            image: rancher/kubectl@sha256:05d2b313e2f397e0ade252136aed47abd72d56ead11d1b027ac70f66362c8495 # v1.36.0
+            imagePullPolicy: IfNotPresent
+            command: ["/scripts/pvc-deletion.sh"]
+          restartPolicy: OnFailure
+{{- end }}

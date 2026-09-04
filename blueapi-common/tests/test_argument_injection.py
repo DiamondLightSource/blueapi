@@ -1,7 +1,12 @@
-from typing import Annotated
+from typing import Annotated, Any, TypeVar, Unpack
 
 import pytest
 from blueapi_common import Inject, Injected, source_args
+from bluesky.protocols import Movable, Status
+
+
+def inject(name: str) -> Any:
+    return name
 
 
 def single_inject(x: Injected[int]): ...
@@ -28,7 +33,17 @@ def keyword_injected_arg(x: Injected[int] = 43): ...
 def keyword_only_arg(*, x: Injected[int]): ...
 
 
-context = {"x": 42, "bar": 73, "fizz": "buzz"}
+def default_strings(foo: Movable = inject("bar")): ...
+
+
+T_co = TypeVar("T_co", contravariant=True)
+
+
+class DummyMovable(Movable):
+    def set(self, *args: Unpack[tuple[T_co]]) -> Status: ...
+
+
+context = {"int_42": 42, "int_73": 73, "str_buzz": "buzz"}
 
 
 @pytest.mark.parametrize(
@@ -64,3 +79,11 @@ def test_arg_overrides(function, args, kwargs, exp_args, exp_kwargs):
 
     assert a == exp_args
     assert kw == exp_kwargs
+
+
+def test_backwards_compatible_strings():
+    dev = DummyMovable()
+    a, kw = source_args(default_strings, (), {}, {"bar": dev}.get)
+
+    assert a == (dev,)
+    assert kw == {}

@@ -1,11 +1,57 @@
 import inspect
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import cached_property
 from inspect import Parameter
 from typing import Annotated, Any, TypeVar, get_args, get_origin
 
+from bluesky.protocols import (
+    Checkable,
+    Configurable,
+    Flyable,
+    Movable,
+    Pausable,
+    Readable,
+    Stageable,
+    Stoppable,
+    Subscribable,
+    Triggerable,
+    WritesExternalAssets,
+)
+from ophyd_async.core import Device as AsyncDevice
 from pydantic import TypeAdapter
+
+# An object that encapsulates the device to do useful things to produce
+# data (e.g. move and read)
+Device = (
+    Checkable
+    | Flyable
+    | Movable
+    | Pausable
+    | Readable
+    | Stageable
+    | Stoppable
+    | Subscribable
+    | WritesExternalAssets
+    | Configurable
+    | Triggerable
+    | AsyncDevice
+)
+
+# Protocols defining interface to hardware
+BLUESKY_PROTOCOLS = tuple(Device.__args__)  # type: ignore
+
+
+def is_bluesky_type(typ: Any) -> bool:
+    return (
+        typ in BLUESKY_PROTOCOLS
+        or isinstance(typ, BLUESKY_PROTOCOLS)
+        or (isinstance(typ, type) and issubclass(typ, AsyncDevice))
+    )
+
+
+log = logging.getLogger(__name__)
 
 
 def inject(name: str | None = None) -> Any:
@@ -36,7 +82,7 @@ MISSING = Missing()
 class RawValue:
     name: str
     passed: Any = MISSING
-    default: Any = Parameter.empty
+    default: Any = MISSING
     target: type[Any] = type[Any]
     meta: tuple[Any, ...] = ()
 
@@ -45,13 +91,22 @@ class RawValue:
         for meta in self.meta:
             if isinstance(meta, Inject):
                 return meta
+        # Check for the `foo: int = inject("bar")` case
+        if isinstance(self.default, Inject):
+            return self.default
 
     def resolve(self, lookup) -> Any:
         value = self.passed
-        if value is MISSING:
-            value = self.default
         if value is MISSING and (inj := self.inject):
             value = lookup(inj.name or self.name)
+        if value is MISSING and self.default is not MISSING:
+            value = self.default
+        print(f"{value=}, {self=}")
+        if isinstance(value, str) and len(value) and is_bluesky_type(self.target):
+            log.warn("Using strings as defaults for injected args is deprecated")
+            print("Looking up ", value)
+            value = lookup(value)
+            print(value)
         if not isinstance(value, self.target):
             return TypeAdapter(self.target).validate_python(value)
         return value

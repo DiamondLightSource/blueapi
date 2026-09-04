@@ -322,14 +322,17 @@ def listen_to_events(obj: dict) -> None:
 @click.argument("name", type=str)
 @click.argument("parameters", type=ParametersType(), default={}, required=False)
 @click.option(
-    "--ws",
+    "--ws/--stomp",
     type=bool,
     is_flag=True,
-    default=False,
+    default=None,  # the classic three-state boolean
     help=textwrap.dedent("""
-        Run the plan in the foreground using the (experimental) websocket connection
-        to monitor progress. Allows plans to be run without a message bus and associated
-        configuration.
+        Method used to monitor the progress of plans when run in the foreground.
+        --stomp requires stomp configuration, --ws uses the (currently experimental)
+        websocket connection.
+
+        If neither is specified, stomp is used if configuration is present and
+        websockets are used if not.
 
         Has no effect if --bg is also passed as the plan will not be monitored.
         """),
@@ -361,7 +364,7 @@ def run_plan(
     name: str,
     timeout: float | None,
     foreground: bool,
-    ws: bool,
+    ws: bool | None,
     instrument_session: str,
     parameters: TaskParameters,
 ) -> None:
@@ -390,10 +393,13 @@ def run_plan(
 
             client.add_callback(on_event)
 
-            if ws:
+            if ws is None:
+                # no preference was given so use whichever we have config for
+                resp = client.run_task(task)
+            elif ws:
                 resp = client.run_blocking(task)
             else:
-                resp = client.run_task(task)
+                resp = client.run_stomp(task)
 
             match resp.result:
                 case TaskResult(result=None, type="NoneType"):

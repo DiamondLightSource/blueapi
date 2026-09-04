@@ -26,10 +26,9 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: 'tag_for_scanning'
-          version: 'v0.74.0'
-          format: 'table'
-          exit-code: '1'
+          image-ref: "tag_for_scanning"
+          version: "latest"
+          exit-code: "1"
           ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"

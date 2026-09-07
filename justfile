@@ -49,8 +49,8 @@ system *OPTS:
 
 [doc('Run unit tests with coverage and open the HTML report')]
 coverage:
-    uv run pytest tests/unit_tests --cov --cov-report html
-    xdg-open htmlcov/index.html
+    just unit "-n logical --cov --cov-report html"
+    uv run python -m webbrowser -t htmlcov/index.html
 
 [doc('Start an interactive REPL with an authenticated blueapi client')]
 repl:

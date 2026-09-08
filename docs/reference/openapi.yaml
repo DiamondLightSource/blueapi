@@ -365,7 +365,7 @@ components:
           title: Errors
           type: array
         is_complete:
-          default: false
+          readOnly: true
           title: Is Complete
           type: boolean
         is_pending:
@@ -389,6 +389,7 @@ components:
       required:
       - task_id
       - task
+      - is_complete
       title: TrackableTask
       type: object
     ValidationError:
@@ -449,7 +450,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.5.0
+  version: 1.5.1
 openapi: 3.1.0
 paths:
   /api/v1/devices:

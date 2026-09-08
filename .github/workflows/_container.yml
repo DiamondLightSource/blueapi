@@ -52,9 +52,6 @@ jobs:
           load: true
           tags: tag_for_testing
 
-      - name: Test cli works in cached runtime image
-        run: docker run --rm tag_for_testing --version
-
       - name: Create tags for publishing image
         id: meta
         uses: docker/metadata-action@v6
@@ -63,6 +60,20 @@ jobs:
           tags: |
             type=ref,event=tag
             type=raw,value=latest
+
+      - name: Test cli works in cached runtime image
+        id: app-version
+        run: |
+          APP_VERSION=$(docker run --rm tag_for_testing --version)
+          echo "Version in built container: $APP_VERSION"
+          echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check versions match
+        if: github.ref_type == 'tag'
+        run: '[[ "$APP_VERSION" = "blueapi, version $REPO_VERSION" ]]'
+        env:
+          APP_VERSION: ${{ steps.app-version.outputs.version }}
+          REPO_VERSION: ${{ steps.meta.outputs.version }}
 
       - name: Push cached image to container registry
         if: inputs.publish && github.ref_type == 'tag'

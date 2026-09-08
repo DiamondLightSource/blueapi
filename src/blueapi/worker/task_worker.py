@@ -2,12 +2,13 @@ import logging
 import uuid
 from collections.abc import Iterable, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from queue import Full, Queue
-from threading import Event, RLock
+from threading import Condition, Event, RLock
 from typing import Any, TypeVar
 
+from bluesky import RunEngineInterrupted
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import Status
 from observability_utils.tracing import (
@@ -19,7 +20,7 @@ from observability_utils.tracing import (
 from opentelemetry.baggage import get_baggage
 from opentelemetry.context import Context, get_current
 from opentelemetry.trace import SpanKind
-from pydantic import Field
+from pydantic import Field, computed_field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.core import (
@@ -68,10 +69,22 @@ class TrackableTask(BlueapiBaseModel):
     task_id: str
     task: Task
     request_id: str | SkipJsonSchema[None] = None
-    is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
     outcome: TaskResult | TaskError | None = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def is_complete(self) -> bool:
+        return self.outcome is not None
+
+    @model_validator(mode="before")
+    @classmethod
+    def remove_complete(cls, values: Any) -> Any:
+        # fix pydantic falling over itself with computed fields
+        if isinstance(values, dict):
+            values.pop("is_complete", None)
+        return values
 
     def set_result(self, result: Any):
         self.outcome = TaskResult.from_result(result)
@@ -100,16 +113,13 @@ class TaskWorker:
     _errors: list[str]
     _warnings: list[str]
 
-    # The queue is actually a channel between 2 threads
-    # most programming languages have a separate abstraction for this
-    # but Python reuses Queue
-    # So it's not used as a standard queue,
-    # but as a box in which to put the "current" task and nothing else
-    # So the calling thread can only ever submit one plan at a time.
+    # A channel to the worker thread, not really a queue - maxsize=1 makes it
+    # a single-item box, so only one plan can be in flight at a time.
 
     _task_channel: Queue  # type: ignore
     _current: TrackableTask | None
     _status_lock: RLock
+    _state_change: Condition
     _status_snapshot: dict[str, StatusView]
     _completed_statuses: set[str]
     _worker_events: EventPublisher[WorkerEvent]
@@ -143,6 +153,7 @@ class TaskWorker:
         self._progress_events = EventPublisher()
         self._data_events = EventPublisher()
         self._status_lock = RLock()
+        self._state_change = Condition()
         self._status_snapshot = {}
         self._completed_statuses = set()
         self._started = Event()
@@ -180,19 +191,54 @@ class TaskWorker:
         Returns:
             The task_id of the active task
         """
-        if self._current is None:
+
+        current = self._current
+        if current is None:
             # Persuades type checker that self._current is not None
             # We only allow this method to be called if a Plan is active
             raise TransitionError("Attempted to cancel while no active Task")
-        if failure:
-            default_reason = "Task failed for unknown reason"
-            self._ctx.run_engine.abort(reason or default_reason)
-            add_span_attributes({"Task aborted": reason or default_reason})
+
+        if self._current_task_otel_context is None:
+            self._current_task_otel_context = get_current()
+
+        reason = reason or ("Task aborted" if failure else "Task stopped")
+        if self._state != WorkerState.RUNNING:
+            with self._state_change:
+                self._task_channel.put(CancelSignal(failure, reason))
+                self._wait_for_cancel_completion(current)
         else:
-            self._ctx.run_engine.stop()
-            default_reason = "Cancellation successful: Task stopped without error"
-            add_span_attributes({"Task stopped": reason or default_reason})
-        return self._current.task_id
+            # The worker thread's own do_task() may be finishing concurrently
+            # on another thread - don't clobber whatever it already recorded.
+            # abort()/stop() must be called without holding _state_change:
+            # _on_state_change() needs that same lock, and abort()/stop()
+            # don't return until its state-change callbacks have run.
+            try:
+                if failure:
+                    with self._status_lock:
+                        if current.outcome is None:
+                            current.outcome = TaskError(type="Abort", message=reason)
+                    self._ctx.run_engine.abort(reason=reason)
+                else:
+                    with self._status_lock:
+                        if current.outcome is None:
+                            current.outcome = TaskResult.from_result(None)
+                    self._ctx.run_engine.stop()
+            except TransitionError:
+                pass
+            with self._state_change:
+                self._wait_for_cancel_completion(current)
+        return current.task_id
+
+    def _wait_for_cancel_completion(self, current: TrackableTask) -> None:
+        # Must be called while holding self._state_change.
+        if not self._state_change.wait_for(
+            lambda: current.task_id in self._completed_tasks,
+            timeout=self._start_stop_timeout,
+        ):
+            raise TimeoutError(
+                "Worker did not finish cancelling within "
+                f"{self._start_stop_timeout} seconds"
+            )
 
     @start_as_current_span(TRACER, "task_id")
     def get_task_by_id(self, task_id: str) -> TrackableTask | None:
@@ -205,6 +251,9 @@ class TaskWorker:
             Optional[TrackableTask[T]]: The task matching the ID,
                 None if the task ID is unknown to the worker.
         """
+        current = self._current
+        if current is not None and current.task_id == task_id:
+            return current
         return self._pending_tasks.get(task_id, None) or self._completed_tasks[task_id]
 
     @start_as_current_span(TRACER)
@@ -218,11 +267,8 @@ class TaskWorker:
           list[TrackableTask]: A list of tasks that match the given status.
         """
         if status == TaskStatusEnum.RUNNING:
-            return [
-                task
-                for task in self._pending_tasks.values()
-                if not task.is_pending and not task.is_complete
-            ]
+            current = self._current
+            return [current] if current is not None else []
         elif status == TaskStatusEnum.PENDING:
             return [task for task in self._pending_tasks.values() if task.is_pending]
         elif status == TaskStatusEnum.COMPLETE:
@@ -276,7 +322,6 @@ class TaskWorker:
         task.metadata["blueapi_task_id"] = task_id
         add_span_attributes({"TaskId": task_id})
         request_id = get_baggage("correlation_id")
-        # If request id is not a string, we do not pass it into a TrackableTask
         if not isinstance(request_id, str):
             LOGGER.warning(f"Invalid correlation id detected: {request_id}")
             request_id = None
@@ -316,8 +361,9 @@ class TaskWorker:
             self._current_task_otel_context = get_current()
             """ Cache the current trace context as the one for this task id """
             self._task_channel.put_nowait(trackable_task)
-            task_started.wait(timeout=5.0)
-            if not task_started.is_set():
+            if task_started.wait(timeout=5.0):
+                self._pending_tasks.pop(trackable_task.task_id)
+            else:
                 raise TimeoutError("Failed to start plan within timeout")
         except Full as f:
             LOGGER.error("Cannot submit task while another is running")
@@ -344,7 +390,6 @@ class TaskWorker:
         """
         LOGGER.info("Attempting to stop worker")
 
-        # If the worker has not yet started there is nothing to do.
         if self._started.is_set():
             self._task_channel.put(KillSignal())
         else:
@@ -411,7 +456,13 @@ class TaskWorker:
         Command the worker to resume
         """
         LOGGER.info("Requesting to resume the worker")
-        self._ctx.run_engine.resume()
+        self._current_task_otel_context = get_current()
+        signal = ResumeSignal()
+        self._task_channel.put(signal)
+        if not signal.done.wait(timeout=self._start_stop_timeout):
+            raise TimeoutError(
+                f"Worker did not resume within {self._start_stop_timeout} seconds"
+            )
 
     @start_as_current_span(TRACER)
     def _cycle_with_error_handling(self) -> None:
@@ -422,9 +473,12 @@ class TaskWorker:
 
     @start_as_current_span(TRACER)
     def _cycle(self) -> None:
+        next_task: TrackableTask | ResumeSignal | CancelSignal | KillSignal | None = (
+            None
+        )
         try:
             LOGGER.info("Awaiting task")
-            next_task: TrackableTask | KillSignal = self._task_channel.get()
+            next_task = self._task_channel.get()
             if isinstance(next_task, TrackableTask):
 
                 def process_task():
@@ -437,11 +491,22 @@ class TaskWorker:
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
-                        self._current.set_result(result)
+                        with self._status_lock:
+                            # cancel_active_task() may have set this concurrently.
+                            if self._current.outcome is None:
+                                self._current.set_result(result)
+                    except RunEngineInterrupted:
+                        # Raised by both a pause (outcome still None) and an
+                        # abort (outcome already TaskError) - only the latter
+                        # is a failure.
+                        if isinstance(self._current.outcome, TaskError):
+                            self._report_error(Exception(self._current.outcome.message))
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
-                        self._current.set_exception(e)
-                        self._report_error(e)
+                        with self._status_lock:
+                            if self._current.outcome is None:
+                                self._current.set_exception(e)
+                        raise
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:
@@ -459,10 +524,41 @@ class TaskWorker:
                     else:
                         process_task()
 
+            elif isinstance(next_task, ResumeSignal):
+                if self._state == WorkerState.PAUSED:
+                    if self._current is not None:
+                        try:
+                            result = self._ctx.run_engine.resume()
+                            with self._status_lock:
+                                if self._current.outcome is None:
+                                    self._current.set_result(result)
+                        except RunEngineInterrupted:
+                            # Plan paused again immediately - not a failure,
+                            # leave the outcome unset so it stays resumable.
+                            LOGGER.debug("RunEngine resume interrupted; ignoring")
+                    else:
+                        LOGGER.warning(
+                            "Received resume signal but no active task, ignoring"
+                        )
+                else:
+                    LOGGER.warning(
+                        "Received resume signal but RunEngine is not paused, ignoring"
+                    )
+
+            elif isinstance(next_task, CancelSignal):
+                self._apply_cancel(next_task)
+
             elif isinstance(next_task, KillSignal):
                 # If we receive a kill signal we begin to shut the worker down.
                 # Note that the kill signal is explicitly not a type of task as we don't
                 # want it to be part of the worker's public API
+                if self._current is not None and self._state == WorkerState.PAUSED:
+                    self._apply_cancel(
+                        CancelSignal(
+                            failure=True,
+                            reason="Worker is stopping while the task was paused",
+                        )
+                    )
                 self._stopping.set()
                 add_span_attributes({"server shutting down": "true"})
             else:
@@ -470,17 +566,32 @@ class TaskWorker:
         except Exception as err:
             self._report_error(err)
         finally:
-            if self._current_task_otel_context is not None:
+            if self._current_task_otel_context is not None and self._state not in [
+                WorkerState.PANICKED,
+                WorkerState.PAUSED,
+            ]:
                 self._current_task_otel_context = None
 
         if self._current is not None:
-            self._current.is_complete = True
-            self._pending_tasks.pop(self._current.task_id)
-            self._completed_tasks[self._current.task_id] = self._current
-        self._report_status()
-        self._errors.clear()
-        self._warnings.clear()
-        self._completed_statuses.clear()
+            # Not done yet while paused - it may still be resumed or cancelled.
+            if self._state != WorkerState.PAUSED:
+                self._completed_tasks[self._current.task_id] = self._current
+        if self._state != WorkerState.PAUSED:
+            finished_task = self._current
+            self._current = None
+            with self._state_change:
+                self._state_change.notify_all()
+            self._report_status(finished_task)
+            self._errors.clear()
+            self._warnings.clear()
+            self._completed_statuses.clear()
+
+        if isinstance(next_task, ResumeSignal):
+            # Unconditional and last: resumed-to-running, completed,
+            # re-paused, or superseded by a cancel above all end up here
+            # regardless of which branch was taken, so resume() always
+            # gets woken once this signal is fully done being processed.
+            next_task.done.set()
 
     @property
     def worker_events(self) -> EventStream[WorkerEvent, int]:
@@ -521,8 +632,10 @@ class TaskWorker:
         else:
             old_state = WorkerState.UNKNOWN
         LOGGER.debug(f"Notifying state change {old_state} -> {new_state}")
-        self._state = new_state
-        self._report_status()
+        with self._state_change:
+            self._state = new_state
+            self._state_change.notify_all()
+        self._report_status(self._current)
 
     def _report_error(self, err: Exception) -> None:
         LOGGER.error(err, exc_info=True)
@@ -530,26 +643,60 @@ class TaskWorker:
             self._current.errors.append(str(err))
         self._errors.append(str(err))
 
-    @start_as_current_span(TRACER)
-    def _report_status(
-        self,
+    def _finalize_cancel_outcome(
+        self, current: TrackableTask, signal: "CancelSignal"
     ) -> None:
+        """
+        Set current's outcome for a cancellation, unless something else (e.g.
+        the worker thread finishing do_task() on its own) already got there first.
+        """
+        with self._status_lock:
+            if current.outcome is None:
+                if signal.failure:
+                    current.outcome = TaskError(
+                        type="Abort", message=signal.reason or "Task aborted"
+                    )
+                else:
+                    current.set_result(None)
+
+    def _apply_cancel(self, signal: "CancelSignal") -> None:
+        current = self._current
+
+        if signal.failure:
+            reason = signal.reason or "Task aborted"
+            if current is not None:
+                self._ctx.run_engine.abort(reason)
+                self._finalize_cancel_outcome(current, signal)
+            add_span_attributes({"Task aborted": reason})
+            LOGGER.error("Task failed: %s", reason)
+            if current is not None:
+                self._report_error(Exception(reason))
+        else:
+            if current is not None:
+                self._ctx.run_engine.stop()
+                self._finalize_cancel_outcome(current, signal)
+            add_span_attributes({"Task stopped": signal.reason or "Task stopped"})
+
+    @start_as_current_span(TRACER)
+    def _report_status(self, current: TrackableTask | None) -> None:
         task_status: TaskStatus | None
         errors = self._errors
         warnings = self._warnings
-        if self._current is not None:
+        if current is not None:
+            task_complete = current.task_id in self._completed_tasks
             task_status = TaskStatus(
-                task_id=self._current.task_id,
-                task_complete=self._current.is_complete,
-                task_failed=bool(self._current.errors),
-                result=self._current.outcome,
+                task_id=current.task_id,
+                task_complete=task_complete,
+                task_failed=bool(current.errors)
+                or isinstance(current.outcome, TaskError),
+                result=current.outcome,
             )
-            correlation_id = self._current.task_id
+            correlation_id = current.task_id
             add_span_attributes(
                 {
-                    "task_id": self._current.task_id,
-                    "task_complete": self._current.is_complete,
-                    "task_failed": self._current.errors,
+                    "task_id": current.task_id,
+                    "task_complete": task_complete,
+                    "task_failed": current.errors,
                 }
             )
         else:
@@ -599,7 +746,7 @@ class TaskWorker:
                 )
 
         else:
-            raise KeyError(
+            raise RuntimeError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"
             )
 
@@ -682,6 +829,30 @@ class KillSignal:
     """
 
     ...
+
+
+@dataclass
+class ResumeSignal:
+    """
+    Object put in the worker's task queue to tell it to resume if paused.
+    done is set once _cycle() has fully finished processing this specific
+    signal - resumed to running, completed, re-paused, or superseded by a
+    cancel - whichever it is. A dedicated Event rather than polling shared
+    state avoids missing a wakeup if the state changes again (e.g. pauses
+    right back) before the waiting thread gets scheduled to check it.
+    """
+
+    done: Event = field(default_factory=Event)
+
+
+@dataclass
+class CancelSignal:
+    """
+    Object put in the worker's task queue to tell it to cancel the current task.
+    """
+
+    failure: bool
+    reason: str | None
 
 
 def run_worker_in_own_thread(

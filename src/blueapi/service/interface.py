@@ -1,3 +1,4 @@
+import json
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -8,7 +9,9 @@ from typing import Any
 from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from fastapi import status
 from tiled.client import from_uri
+from tiled.client.utils import ClientError
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
@@ -25,6 +28,7 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
+from blueapi.utils import TILED_PROPOSAL_RE
 from blueapi.utils.serialization import access_blob
 from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
@@ -205,7 +209,43 @@ def begin_task(
                 api_key=tiled_config.authentication,
                 headers=pass_through_headers,
             )
-
+        if task.task_id is not None:
+            task_ = get_task_by_id(task_id=task.task_id)
+            if task_ is not None:
+                task_metadata = task_.task.metadata
+                instrument = active_context.run_engine.md["instrument"]
+                instrument_session = task_metadata["instrument_session"]
+                if not (match := TILED_PROPOSAL_RE.match(instrument_session)):
+                    raise ValueError("Invalid instrument session")
+                proposal = match["proposal"]
+                # Each level's access blob is the prefix of the full
+                # (beamline, proposal, visit) one that access_blob() builds,
+                # matching the beamline/proposal/session tiers the tiled
+                # access policy expects a container to be tagged with.
+                session_blob = json.loads(access_blob(instrument_session, instrument))
+                level_access_tags = [
+                    [json.dumps({"beamline": instrument})],
+                    [json.dumps({"beamline": instrument, "proposal": proposal})],
+                    [json.dumps(session_blob)],
+                ]
+                for key, access_tags in zip(
+                    (instrument, proposal, instrument_session),
+                    level_access_tags,
+                    strict=True,
+                ):
+                    if key not in tiled_client:
+                        try:
+                            tiled_client.create_container(
+                                key=key, access_tags=access_tags
+                            )
+                        except ClientError as e:
+                            if (
+                                e.response.status_code == status.HTTP_409_CONFLICT
+                            ):  # already exists
+                                ...
+                            else:
+                                raise
+                    tiled_client = tiled_client[key]
         tiled_writer_token = active_context.run_engine.subscribe(
             TiledWriter(tiled_client, batch_size=1)
         )
@@ -230,7 +270,7 @@ def begin_task(
     if task.task_id is not None:
         try:
             active_worker.begin_task(task.task_id)
-        except:
+        except Exception:
             for channel, token in subscribers:
                 channel.unsubscribe(token)
             raise

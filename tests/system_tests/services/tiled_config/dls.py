@@ -2,7 +2,7 @@ import json
 import logging
 
 from fastapi import HTTPException
-from pydantic import BaseModel, HttpUrl, TypeAdapter
+from pydantic import BaseModel, HttpUrl, TypeAdapter, ValidationError
 from starlette.status import (
     HTTP_401_UNAUTHORIZED,
 )
@@ -21,9 +21,35 @@ logger = logging.getLogger(__name__)
 
 
 class DiamondAccessBlob(BaseModel):
-    proposal: int
-    visit: int
     beamline: str
+    # The full proposal code, e.g. "cm12345" - tiled.rego strips the leading
+    # letters itself where it needs the bare number.
+    proposal: str | None = None
+    visit: int | None = None
+
+
+# Maps a composite access tag's "key" (as produced by tiled.rego's
+# beamline_tag/proposal_tag/session_tag, e.g.
+# "beamline:i22,proposal:cm111,session:cm111-1") to the corresponding OPA
+# input field. All of these are strings on an existing node's tag - "session"
+# here is the full "cm111-1" instrument session, not the internal numeric
+# session id used by modify_session, so it's kept under its own field name
+# rather than aliased to "visit".
+_TAG_KEY_TO_INPUT_FIELD = {
+    "beamline": "beamline",
+    "proposal": "proposal",
+    "session": "session",
+}
+
+
+def _parse_composite_tag(tag: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    for part in tag.split(","):
+        key, _, value = part.partition(":")
+        field = _TAG_KEY_TO_INPUT_FIELD.get(key)
+        if field is not None:
+            fields[field] = value
+    return fields
 
 
 def _check_principal(principal: Principal | None):
@@ -51,7 +77,6 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         allowed_tags_endpoint: str = "tiled/user_sessions",
         scopes_endpoint: str = "tiled/scopes",
         modify_node_endpoint: str = "tiled/modify_session",
-        empty_access_blob_public: bool = True,
         provider: str | None = None,
     ):
         self._token_audience = token_audience
@@ -64,7 +89,6 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             scopes_endpoint=scopes_endpoint,
             provider=provider,
             modify_node_endpoint=modify_node_endpoint,
-            empty_access_blob_public=empty_access_blob_public,
         )
 
     async def init_node(
@@ -75,8 +99,6 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         access_blob: AccessBlob | None = None,
     ) -> tuple[bool, AccessBlob | None]:
         _check_principal(principal)
-        if access_blob is None and self._empty_access_blob_public is not None:
-            return self._empty_access_blob_public, access_blob
         decision = await self._get_external_decision(
             self._create_node,
             self.build_input(principal, authn_access_tags, authn_scopes, access_blob),
@@ -131,9 +153,17 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             and "tags" in access_blob
             and len(access_blob["tags"]) > 0
         ):
-            blob = self._type_adapter.validate_json(access_blob["tags"][0])
+            tag = access_blob["tags"][0]
+            try:
+                blob = self._type_adapter.validate_json(tag)
+            except ValidationError:
+                # Not a create-request JSON blob - it's a composite tag
+                # already assigned to an existing node (e.g. tiled checking
+                # scopes on a parent before creating a child).
+                blob = None
+                _input.update(_parse_composite_tag(tag))
             if isinstance(blob, DiamondAccessBlob):
-                _input.update(blob.model_dump())
+                _input.update(blob.model_dump(exclude_none=True))
             elif isinstance(blob, int):
                 _input["session"] = str(blob)
 

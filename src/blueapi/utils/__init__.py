@@ -32,6 +32,8 @@ Args = ParamSpec("Args")
 Return = TypeVar("Return")
 
 INSTRUMENT_SESSION_RE = re.compile(r"^[a-z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$")
+# Full proposal code (e.g. "cm12345" from "cm12345-1") for building tiled node paths.
+TILED_PROPOSAL_RE = re.compile(r"^(?P<proposal>[a-z]{2}\d+)-\d+$")
 
 
 def report_successful_devices(

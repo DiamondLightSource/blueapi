@@ -1,4 +1,5 @@
 import inspect
+import subprocess
 import time
 from asyncio import Queue
 from collections.abc import Generator
@@ -74,31 +75,9 @@ CURRENT_NUMTRACKER_NUM = 43
 _DATA_PATH = Path(__file__).parent
 
 
-# These system tests are run in the "system_tests" CI job, they can also be run
-# and debugged locally.
-#
-# 1. Spin up dummy versions of associated services
-# (outside of devcontainer)
-#
-# git submodule init
-# docker compose -f tests/system_tests/compose.yaml up -d
-#
-# 2. Spin up blueapi server (inside devcontainer)
-#
-# source tests/system_tests/.env
-# export TILED_SINGLE_USER_API_KEY=foo
-# blueapi -c tests/system_tests/config.yaml serve
-#
-# Note: You can login into blueapi using username: admin and password: admin
-# 3. Run the system tests
-# tox -e system-test
-#
-# 4. To tear down the associated services
-# (outside of devcontainer)
-#
-# docker compose -f tests/system_tests/compose.yaml down
-
-# This client will give tokens for alice
+# These system tests are run in the "system_tests" CI job.
+# They can also be run and debugged locally.
+# Follow the instructions in: docs/how-to/run-blueapi-and-services-locally
 
 
 def load_config(path: Path) -> ApplicationConfig:
@@ -906,3 +885,72 @@ def test_run_blocking_requires_auth(
 ):
     with pytest.raises(UnauthorisedAccessError):
         client_without_auth.run_blocking(small_task)
+
+
+# Kept last: installs packages into the environment, so it must not run
+# before (and potentially disturb) the tests above.
+@pytest.mark.timeout(600)
+@pytest.mark.parametrize(
+    "repos,expected_location_name,expected_version",
+    [
+        pytest.param(
+            [("dodal", "2.6.2"), ("dodalv3.0.0", "3.0.0")],
+            "dodalv3.0.0",
+            "3.0.0",
+            id="v2-then-v3",
+        ),
+        pytest.param(
+            [("dodalv3.0.0", "3.0.0"), ("dodal", "2.6.2")],
+            "dodal",
+            "2.6.2",
+            id="v3-then-v2",
+        ),
+    ],
+)
+def test_setup_scratch_last_repo_wins_for_duplicate_package(
+    tmp_path: Path,
+    repos: list[tuple[str, str]],
+    expected_location_name: str,
+    expected_version: str,
+):
+    """
+    Regression test for https://github.com/DiamondLightSource/blueapi/issues/1590
+
+    Two scratch repositories both provide the dls-dodal package, pinned to
+    different tags. setup-scratch installs each editable in config order, so
+    the later entry must be what is left installed.
+    """
+    scratch_root = tmp_path / "scratch"
+    scratch_root.mkdir()
+    overlay = tmp_path / "overlay.yaml"
+    repo_entries = "\n".join(
+        f"""    - name: {name}
+      remote_url: https://github.com/DiamondLightSource/dodal.git
+      target_revision: "{revision}\""""
+        for name, revision in repos
+    )
+    overlay.write_text(f"""
+scratch:
+  root: {scratch_root}
+  repositories:
+{repo_entries}
+""")
+
+    result = subprocess.run(
+        ["uv", "run", "blueapi", "-c", str(overlay), "setup-scratch"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+    installed = subprocess.run(
+        ["uv", "run", "--no-sync", "uv", "pip", "show", "dls-dodal"],
+        capture_output=True,
+        text=True,
+    )
+    assert (
+        f"Editable project location: {scratch_root / expected_location_name}"
+        in installed.stdout
+    )
+    assert "Name: dls-dodal" in installed.stdout
+    assert f"Version: {expected_version}" in installed.stdout

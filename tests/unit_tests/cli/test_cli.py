@@ -356,7 +356,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
         (
             TaskResult(result=None, type="CustomType"),
             False,
-            "Plan returned unserializable result of type 'CustomType'\n",
+            "Plan succeeded but returned unserializable result of type 'CustomType'\n",
         ),
         (
             TaskError(type="ValueError", message="Error with value"),

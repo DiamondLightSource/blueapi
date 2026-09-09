@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from inspect import Parameter, signature
 from typing import Any
 
@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TaskParams(BlueapiBaseModel):
-    args: tuple[Any, ...] = ()
+    args: Sequence[Any] = []
     kwargs: Mapping[str, Any] = Field(default_factory=dict)
 
 
@@ -32,7 +32,7 @@ class Task(BlueapiBaseModel):
 
     def prepare_params(
         self, ctx: BlueskyContext
-    ) -> tuple[tuple[Any, ...], Mapping[str, Any]]:
+    ) -> tuple[list[Any], Mapping[str, Any]]:
         return _lookup_params(ctx, self)
 
     def do_task(self, ctx: BlueskyContext) -> None:
@@ -52,7 +52,7 @@ class Task(BlueapiBaseModel):
 
 def _lookup_params(
     ctx: BlueskyContext, task: Task
-) -> tuple[tuple[Any, ...], Mapping[str, Any]]:
+) -> tuple[list[Any], Mapping[str, Any]]:
     """
     Validate and prepare the arguments for a plan.
     """
@@ -100,4 +100,4 @@ def _lookup_params(
             value = getattr(validated, name)
             kwargs[name] = value
 
-    return tuple(args), kwargs
+    return args, kwargs

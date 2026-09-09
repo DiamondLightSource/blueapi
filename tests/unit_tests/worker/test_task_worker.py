@@ -970,3 +970,73 @@ def test_worker_event_task_id():
 def test_worker_event_no_task_id():
     event = WorkerEvent(state=WorkerState.IDLE, task_status=None)
     assert event.task_id is None
+
+
+def test_task_worker_passes_positional_args(
+    context: BlueskyContext,
+) -> None:
+
+    def positional_plan(value: int) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(positional_plan)
+
+    task = Task(name="positional_plan", params=TaskParams(args=[42]))
+    args, kwargs = task.prepare_params(context)
+
+    assert args == [42]
+    assert kwargs == {}
+
+
+def test_task_worker_passes_multiple_positional_args(
+    context: BlueskyContext,
+) -> None:
+
+    def positional_plan(first: int, second: int) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(positional_plan)
+    task = Task(name="positional_plan", params=TaskParams(args=[1, 2]))
+    args, kwargs = task.prepare_params(context)
+
+    assert args == [1, 2]
+    assert kwargs == {}
+
+
+def test_task_worker_passes_positional_and_keyword_args(
+    context: BlueskyContext,
+) -> None:
+
+    def mixed_plan(
+        first: int,
+        second: int,
+        *,
+        third: int,
+    ) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(mixed_plan)
+    task = Task(
+        name="mixed_plan",
+        params=TaskParams(args=[1, 2], kwargs={"third": 3}),
+    )
+    args, kwargs = task.prepare_params(context)
+    assert args == [1, 2, 3]
+    assert kwargs == {}
+
+
+def test_task_worker_resolves_positional_device(
+    context: BlueskyContext,
+    fake_device: FakeDevice,
+) -> None:
+    def positional_device_plan(device: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(positional_device_plan)
+
+    task = Task(
+        name="positional_device_plan", params=TaskParams(args=[fake_device.name])
+    )
+    args, kwargs = task.prepare_params(context)
+    assert args == [fake_device]
+    assert kwargs == {}

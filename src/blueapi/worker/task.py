@@ -34,15 +34,13 @@ class Task(BlueapiBaseModel):
         self, ctx: BlueskyContext
     ) -> tuple[list[Any], Mapping[str, Any]]:
         """
-        Checks plan parameters against context
+        Checks the configured plan parameters against context
 
         Args:
             ctx: Context holding plans and devices
-            plan: Plan object including schema
-            params: Parameter values to be validated against schema
 
         Returns:
-            Mapping[str, Any]: _description_
+            tuple[list[Any], Mapping[str, Any]]: The prepared parameters for the plan.
         """
         plan = ctx.plans[self.name]
         func = ctx.plan_functions[self.name]

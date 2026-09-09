@@ -50,6 +50,7 @@ from blueapi.service.model import (
     TaskRequest,
     TaskResponse,
 )
+from blueapi.worker import TaskParams
 from blueapi.worker.event import (
     ProgressEvent,
     TaskError,
@@ -210,7 +211,7 @@ def test_invalid_config_via_env(runner: CliRunner):
 def test_submit_plan(runner: CliRunner):
     body_data = {
         "name": "sleep",
-        "params": {"time": 5},
+        "params": {"args": [], "kwargs": {"time": 5}},
         "instrument_session": "cm12345-1",
     }
 
@@ -270,7 +271,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             matchers.json_params_matcher(
                 {
                     "name": "sleep",
-                    "params": {"time": 3},
+                    "params": {"args": [], "kwargs": {"time": 3}},
                     "instrument_session": "cm12345-1",
                 }
             )
@@ -386,7 +387,7 @@ def test_run_plan_feedback(
     )
     bc.add_callback.assert_called_once()
     bc.run_task.assert_called_once_with(
-        TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
+        TaskRequest(name="name", params=TaskParams(), instrument_session="cm12345-1"),
     )
     assert res.exit_code == 0
     assert res.stdout == message
@@ -400,7 +401,7 @@ def test_run_plan_background_without_stomp(runner: CliRunner):
             matchers.json_params_matcher(
                 {
                     "name": "sleep",
-                    "params": {"time": 3},
+                    "params": {"args": [], "kwargs": {"time": 3}},
                     "instrument_session": "cm12345-1",
                 }
             )
@@ -503,7 +504,7 @@ def test_can_pass_an_instrument_session_with_an_environment_variable(
     mock_create_task.assert_called_once_with(
         TaskRequest(
             name="sleep",
-            params={"time": 5.0},
+            params=TaskParams(kwargs={"time": 5.0}),
             instrument_session="cm12345-1",
         )
     )

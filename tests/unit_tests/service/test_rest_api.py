@@ -172,7 +172,7 @@ def test_rest_config_with_cors(
 ):
     task = TaskRequest(
         name="my-plan",
-        params={"id": "x"},
+        params=TaskParams(kwargs={"id": "x"}),
         instrument_session=FAKE_INSTRUMENT_SESSION,
     )
     task_id = "f8424be3-203c-494e-b22f-219933b4fa67"
@@ -287,7 +287,7 @@ def test_get_non_existent_device_by_name(mock_runner: Mock, client: TestClient) 
 def test_create_task(mock_runner: Mock, client: TestClient) -> None:
     task = TaskRequest(
         name="count",
-        params={"detectors": ["x"]},
+        params=TaskParams(kwargs={"detectors": ["x"]}),
         instrument_session=FAKE_INSTRUMENT_SESSION,
     )
     task_id = str(uuid.uuid4())
@@ -306,7 +306,11 @@ def test_submit_task_requires_permission(
     mock_opa_client: Mock,
     access_token: str,
 ):
-    task = TaskRequest(name="sleep", params={"time": 2}, instrument_session="cm12345-2")
+    task = TaskRequest(
+        name="sleep",
+        params=TaskParams(kwargs={"time": 2}),
+        instrument_session="cm12345-2",
+    )
     client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
     mock_opa_client.can_submit_task.side_effect = HTTPException(status_code=403)
     mock_runner.run.side_effect = RuntimeError("Task should not be submitted")
@@ -323,7 +327,7 @@ def test_create_task_inserts_auth_metadata(
 ) -> None:
     task = TaskRequest(
         name="count",
-        params={"detectors": ["x"]},
+        params=TaskParams(kwargs={"detectors": ["x"]}),
         instrument_session=FAKE_INSTRUMENT_SESSION,
     )
     client_with_auth.follow_redirects = False

@@ -42,7 +42,14 @@ from blueapi.service.model import (
     TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker import ProgressEvent, Task, TrackableTask, WorkerEvent, WorkerState
+from blueapi.worker import (
+    ProgressEvent,
+    Task,
+    TaskParams,
+    TrackableTask,
+    WorkerEvent,
+    WorkerState,
+)
 from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 
 PLANS = PlanResponse(
@@ -72,7 +79,7 @@ DEVICES = DeviceResponse(
     ]
 )
 DEVICE = DeviceModel(name="foo", protocols=[])
-TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
+TASK = TrackableTask(task_id="foo", task=Task(name="bar", params=TaskParams()))
 TASKS = TasksListResponse(tasks=[TASK])
 ACTIVE_TASK = WorkerTask(task_id="bar")
 ENVIRONMENT_ID = uuid.uuid4()
@@ -900,11 +907,36 @@ p = pytest.param
 @pytest.mark.parametrize(
     "args,kwargs,params",
     [
-        p((1,), {}, {"one": 1}, id="required_as_positional"),
-        p((), {"one": 7}, {"one": 7}, id="required_as_keyword"),
-        p((1,), {"two": 23}, {"one": 1, "two": 23}, id="all_as_mixed_args_kwargs"),
-        p((1, 2), {}, {"one": 1, "two": 2}, id="all_as_positional"),
-        p((), {"one": 21, "two": 42}, {"one": 21, "two": 42}, id="all_as_keyword"),
+        p(
+            (1,),
+            {},
+            TaskParams(args=(1,), kwargs={}),
+            id="required_as_positional",
+        ),
+        p(
+            (),
+            {"one": 7},
+            TaskParams(args=(), kwargs={"one": 7}),
+            id="required_as_keyword",
+        ),
+        p(
+            (1,),
+            {"two": 23},
+            TaskParams(args=(1,), kwargs={"two": 23}),
+            id="all_as_mixed_args_kwargs",
+        ),
+        p(
+            (1, 2),
+            {},
+            TaskParams(args=(1, 2), kwargs={}),
+            id="all_as_positional",
+        ),
+        p(
+            (),
+            {"one": 21, "two": 42},
+            TaskParams(args=(), kwargs={"one": 21, "two": 42}),
+            id="all_as_keyword",
+        ),
     ],
 )
 def test_plan_param_mapping(args, kwargs, params):

@@ -14,6 +14,7 @@ from blueapi.service.authorization import (
     validate_tiled_config,
 )
 from blueapi.service.model import TaskRequest
+from blueapi.worker import TaskParams
 
 # Reusable client patch decorator
 patch_client_session = patch(
@@ -194,7 +195,7 @@ async def test_user_client_can_submit_task(result, context: AbstractContextManag
 
     with context:
         await user_client.can_submit_task(
-            TaskRequest(name="foo", params={}, instrument_session="cm12345-1")
+            TaskRequest(name="foo", params=TaskParams(), instrument_session="cm12345-1")
         )
     opa.require_submit_task.assert_called_once_with("cm12345-1", "foo_bar")
 

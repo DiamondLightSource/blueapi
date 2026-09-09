@@ -33,7 +33,62 @@ class Task(BlueapiBaseModel):
     def prepare_params(
         self, ctx: BlueskyContext
     ) -> tuple[list[Any], Mapping[str, Any]]:
-        return _lookup_params(ctx, self)
+        """
+        Checks plan parameters against context
+
+        Args:
+            ctx: Context holding plans and devices
+            plan: Plan object including schema
+            params: Parameter values to be validated against schema
+
+        Returns:
+            Mapping[str, Any]: _description_
+        """
+        plan = ctx.plans[self.name]
+        func = ctx.plan_functions[self.name]
+
+        sig = signature(func)
+        bound = sig.bind(*self.params.args, **self.params.kwargs)
+
+        # Only validate explicitly supplied arguments. This allows Pydantic's
+        # default/default_factory to provide injected defaults.
+        adapter = TypeAdapter(plan.model)
+        validated = adapter.validate_python(bound.arguments)
+
+        args: list[Any] = []
+        kwargs: dict[str, Any] = {}
+
+        for name, parameter in sig.parameters.items():
+            supplied = name in bound.arguments
+
+            if supplied:
+                value = getattr(validated, name)
+
+                match parameter.kind:
+                    case Parameter.POSITIONAL_ONLY:
+                        args.append(value)
+
+                    case Parameter.POSITIONAL_OR_KEYWORD:
+                        if name in self.params.kwargs:
+                            kwargs[name] = value
+                        else:
+                            args.append(value)
+
+                    case Parameter.VAR_POSITIONAL:
+                        args.extend(value)
+
+                    case Parameter.KEYWORD_ONLY:
+                        kwargs[name] = value
+
+                    case Parameter.VAR_KEYWORD:
+                        kwargs.update(value)
+
+            else:
+                # Let the generated Pydantic model provide the default.
+                value = getattr(validated, name)
+                kwargs[name] = value
+
+        return args, kwargs
 
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(
@@ -48,56 +103,3 @@ class Task(BlueapiBaseModel):
             # this is never true if the run_engine is configured correctly
             return None
         return result.plan_result
-
-
-def _lookup_params(
-    ctx: BlueskyContext, task: Task
-) -> tuple[list[Any], Mapping[str, Any]]:
-    """
-    Validate and prepare the arguments for a plan.
-    """
-    plan = ctx.plans[task.name]
-    func = ctx.plan_functions[task.name]
-
-    sig = signature(func)
-    bound = sig.bind(*task.params.args, **task.params.kwargs)
-
-    # Only validate explicitly supplied arguments. This allows Pydantic's
-    # default/default_factory to provide injected defaults.
-    adapter = TypeAdapter(plan.model)
-    validated = adapter.validate_python(bound.arguments)
-
-    args: list[Any] = []
-    kwargs: dict[str, Any] = {}
-
-    for name, parameter in sig.parameters.items():
-        supplied = name in bound.arguments
-
-        if supplied:
-            value = getattr(validated, name)
-
-            match parameter.kind:
-                case Parameter.POSITIONAL_ONLY:
-                    args.append(value)
-
-                case Parameter.POSITIONAL_OR_KEYWORD:
-                    if name in task.params.kwargs:
-                        kwargs[name] = value
-                    else:
-                        args.append(value)
-
-                case Parameter.VAR_POSITIONAL:
-                    args.extend(value)
-
-                case Parameter.KEYWORD_ONLY:
-                    kwargs[name] = value
-
-                case Parameter.VAR_KEYWORD:
-                    kwargs.update(value)
-
-        else:
-            # Let the generated Pydantic model provide the default.
-            value = getattr(validated, name)
-            kwargs[name] = value
-
-    return args, kwargs

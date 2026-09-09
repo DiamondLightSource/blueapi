@@ -47,7 +47,7 @@ from blueapi.service.model import (
 )
 from blueapi.service.runner import WorkerDispatcher
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
-from blueapi.worker.task import Task
+from blueapi.worker.task import Task, TaskParams
 from blueapi.worker.task_worker import TrackableTask
 
 
@@ -395,7 +395,10 @@ def test_put_plan_fails_if_not_idle(mock_runner: Mock, client: TestClient) -> No
 
 def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
     tasks = [
-        TrackableTask(task_id="0", task=Task(name="sleep", params={"time": 0.0})),
+        TrackableTask(
+            task_id="0",
+            task=Task(name="sleep", params=TaskParams(kwargs={"time": 0.0})),
+        ),
         TrackableTask(
             task_id="1",
             task=Task(name="first_task"),
@@ -418,7 +421,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "request_id": None,
                 "task": {
                     "name": "sleep",
-                    "params": {"time": 0.0},
+                    "params": {"args": [], "kwargs": {"time": 0.0}},
                     "metadata": {},
                 },
                 "outcome": None,
@@ -431,7 +434,7 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "request_id": None,
                 "task": {
                     "name": "first_task",
-                    "params": {},
+                    "params": {"args": [], "kwargs": {}},
                     "metadata": {},
                 },
                 "outcome": None,
@@ -463,7 +466,7 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
                 "request_id": None,
                 "task": {
                     "name": "third_task",
-                    "params": {},
+                    "params": {"args": [], "kwargs": {}},
                     "metadata": {},
                 },
                 "outcome": None,
@@ -627,7 +630,7 @@ def test_get_task(mock_runner: Mock, client: TestClient):
         "request_id": None,
         "task": {
             "name": "third_task",
-            "params": {},
+            "params": {"args": [], "kwargs": {}},
             "metadata": {
                 "foo": "bar",
             },
@@ -674,7 +677,7 @@ def test_get_all_tasks(mock_runner: Mock, client: TestClient):
                 "task_id": task_id,
                 "task": {
                     "name": "third_task",
-                    "params": {},
+                    "params": {"args": [], "kwargs": {}},
                     "metadata": {},
                 },
                 "is_complete": False,

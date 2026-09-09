@@ -62,7 +62,7 @@ SUBMIT_REQUEST = {
     "kind": "submit",
     "task": {
         "name": "foo",
-        "params": {"one": "two"},
+        "params": {"args": [], "kwargs": {"one": "two"}},
         "instrument_session": "cm12345-1",
     },
 }

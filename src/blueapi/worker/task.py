@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TaskParams(BlueapiBaseModel):
-    args: Sequence[Any] = []
+    args: Sequence[Any] = Field(default_factory=lambda: [])
     kwargs: Mapping[str, Any] = Field(default_factory=dict)
 
 

@@ -1021,8 +1021,8 @@ def test_task_worker_passes_positional_and_keyword_args(
         params=TaskParams(args=[1, 2], kwargs={"third": 3}),
     )
     args, kwargs = task.prepare_params(context)
-    assert args == [1, 2, 3]
-    assert kwargs == {}
+    assert args == [1, 2]
+    assert kwargs == {"third": 3}
 
 
 def test_task_worker_resolves_positional_device(

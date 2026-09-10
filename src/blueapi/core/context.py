@@ -5,7 +5,15 @@ from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module, metadata
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
-from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
@@ -32,12 +40,15 @@ from blueapi.config import (
 from blueapi.core.protocols import DeviceManager
 from blueapi.utils import (
     BlueapiPlanModelConfig,
-    NumtrackerClient,
     is_function_sourced_from_module,
     load_module_all,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.utils.path_provider import StartDocumentPathProvider
+
+if TYPE_CHECKING:
+    # Only needed by server config
+    from blueapi.service.numtracker import NumtrackerClient
 
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
@@ -125,7 +136,7 @@ class BlueskyContext:
         default_factory=lambda: RunEngine(context_managers=[], call_returns_result=True)
     )
     tiled_conf: TiledConfig | None = field(default=None, init=False, repr=False)
-    numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
+    numtracker: "NumtrackerClient | None" = field(default=None, init=False, repr=False)
     path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
@@ -139,6 +150,8 @@ class BlueskyContext:
 
         if (nt_conf := configuration.numtracker) is not None:
             if configuration.env.metadata is not None:
+                from blueapi.service.numtracker import NumtrackerClient
+
                 self.numtracker = NumtrackerClient(url=nt_conf.url)
             else:
                 raise InvalidConfigError(

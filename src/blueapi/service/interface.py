@@ -10,13 +10,13 @@ from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from tiled.client import from_uri
 
-from blueapi.cli.scratch import get_python_environment
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import TiledAuth
+from blueapi.service.environment import get_python_environment
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,

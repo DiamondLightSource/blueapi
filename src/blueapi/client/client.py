@@ -6,14 +6,11 @@ from concurrent.futures import Future
 from contextlib import suppress
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Self
+from typing import Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
-from observability_utils.tracing import (
-    get_tracer,
-    start_as_current_span,
-)
+from observability_utils.tracing import get_tracer, start_as_current_span
 
 from blueapi.config import (
     ApplicationConfig,
@@ -38,15 +35,17 @@ from blueapi.service.model import (
 )
 from blueapi.utils import deprecated
 from blueapi.worker import WorkerEvent, WorkerState
-from blueapi.worker.event import ProgressEvent, TaskError, TaskResult, TaskStatus
+from blueapi.worker.event import ProgressEvent, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
+from .devices import DeviceCache
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
+from .plans import PlanCache
+from .protocols import ClientProtocol
 from .rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
-    NotFoundError,
     ServiceUnavailableError,
 )
 
@@ -55,187 +54,12 @@ TRACER = get_tracer("client")
 
 log = logging.getLogger(__name__)
 
-_REPR_MAX_LENGTH = 100
-_REPR_MAX_ARGS_INLINE = 3
-_JSON_TYPE_MAP = {
-    "string": "str",
-    "integer": "int",
-    "boolean": "bool",
-    "number": "float",
-    "object": "dict",
-}
-
 
 class MissingInstrumentSessionError(Exception):
     pass
 
 
-class PlanCache:
-    def __init__(self, client: "BlueapiClient", plans: list[PlanModel]):
-        self._cache = {
-            model.name: Plan(name=model.name, model=model, client=client)
-            for model in plans
-        }
-        for name, plan in self._cache.items():
-            if name.startswith("_"):
-                continue
-            setattr(self, name, plan)
-
-    def __getitem__(self, name: str) -> "Plan":
-        return self._cache[name]
-
-    def __getattr__(self, name: str) -> "Plan":
-        raise AttributeError(f"No plan named '{name}' available")
-
-    def __iter__(self):
-        return iter(self._cache.values())
-
-    def __repr__(self) -> str:
-        return f"PlanCache({len(self._cache)} plans)"
-
-
-class DeviceCache:
-    def __init__(self, rest: BlueapiRestClient):
-        self._rest = rest
-        self._cache = {
-            model.name: DeviceRef(name=model.name, cache=self, model=model)
-            for model in rest.get_devices().devices
-        }
-        for name, device in self._cache.items():
-            if name.startswith("_"):
-                continue
-            setattr(self, name, device)
-
-    def __getitem__(self, name: str) -> "DeviceRef":
-        if dev := self._cache.get(name):
-            return dev
-        try:
-            model = self._rest.get_device(name)
-            device = DeviceRef(name=name, cache=self, model=model)
-            self._cache[name] = device
-            setattr(self, model.name, device)
-            return device
-        except NotFoundError as e:
-            raise AttributeError(f"No device named '{name}' available") from e
-
-    def __getattr__(self, name: str) -> "DeviceRef":
-        if name.startswith("_"):
-            return super().__getattribute__(name)
-        return self[name]
-
-    def __iter__(self):
-        return iter(self._cache.values())
-
-    def __repr__(self) -> str:
-        return f"DeviceCache({len(self._cache)} devices)"
-
-
-class DeviceRef:
-    name: str
-    model: DeviceModel
-    _cache: DeviceCache
-
-    def __init__(self, name: str, cache: DeviceCache, model: DeviceModel):
-        self.name = name
-        self.model = model
-        self._cache = cache
-
-    def __getattr__(self, name) -> "DeviceRef":
-        if name.startswith("_"):
-            raise AttributeError(f"No child device named {name}")
-        return self._cache[f"{self.name}.{name}"]
-
-    def __repr__(self):
-        return f"Device({self.name})"
-
-
-class Plan:
-    def __init__(self, name, model: PlanModel, client: "BlueapiClient"):
-        self.name = name
-        self.model = model
-        self._client = client
-        self.__doc__ = model.description
-
-    def __call__(self, *args, **kwargs) -> Any:
-        req = TaskRequest(
-            name=self.name,
-            params=self._build_args(*args, **kwargs),
-            instrument_session=self._client.instrument_session,
-        )
-        match self._client.run_task(req):
-            case TaskStatus(result=TaskResult(result=res)):
-                return res
-            case TaskStatus(result=TaskError(type=typ, message=msg)):
-                raise PlanFailedError(typ, msg)
-
-    @property
-    def help_text(self) -> str:
-        return self.model.description or f"Plan {self!r}"
-
-    @property
-    def properties(self) -> dict[str, Any]:
-        return self.model.parameter_schema.get("properties", {})
-
-    @property
-    def required(self) -> list[str]:
-        return self.model.parameter_schema.get("required", [])
-
-    def _build_args(self, *args, **kwargs):
-        log.info(
-            "Building args for %s, using %s and %s",
-            "[" + ",".join(self.properties) + "]",
-            args,
-            kwargs,
-        )
-
-        if len(args) > len(self.properties):
-            raise TypeError(f"{self.name} got too many arguments")
-        if extra := {k for k in kwargs if k not in self.properties}:
-            raise TypeError(f"{self.name} got unexpected arguments: {extra}")
-
-        params = {}
-        # Initially fill parameters using positional args assuming the order
-        # from the parameter_schema
-        for req, arg in zip(self.properties, args, strict=False):
-            params[req] = arg
-
-        # Then append any values given via kwargs
-        for key, value in kwargs.items():
-            # If we've already assumed a positional arg was this value, bail out
-            if key in params:
-                raise TypeError(f"{self.name} got multiple values for {key}")
-            params[key] = value
-
-        if missing := {k for k in self.required if k not in params}:
-            raise TypeError(f"Missing argument(s) for {missing}")
-        return params
-
-    def __repr__(self) -> str:
-        required = set(self.required)
-
-        def _format_arg(name: str, info: dict[str, Any]) -> str:
-            typ = _pretty_type(info)
-            default = info.get("default")
-
-            if name in required:
-                return f"{name}: {typ}"
-            if default := info.get("default"):
-                return f"{name}: {typ} = {default!r}"
-            return f"{name}: {typ} | None = None"
-
-        args = [_format_arg(name, info) for name, info in self.properties.items()]
-        single_line = f"{self.name}({', '.join(args)})"
-
-        if len(single_line) <= _REPR_MAX_LENGTH and len(args) <= _REPR_MAX_ARGS_INLINE:
-            return single_line
-
-        indent = "    "
-        # Fall back to multiline if too many arguments or too long.
-        multiline_args = ",\n".join(f"{indent}{arg}" for arg in args)
-        return f"{self.name}(\n{multiline_args}\n)"
-
-
-class BlueapiClient:
+class BlueapiClient(ClientProtocol):
     """Unified client for controlling blueapi"""
 
     _rest: BlueapiRestClient
@@ -828,28 +652,3 @@ class BlueapiClient:
         if sm := self._rest.session_manager:
             sm.logout()
             self._rest.session_manager = None
-
-
-class PlanFailedError(Exception):
-    def __init__(self, typ: str, message: str):
-        super().__init__(message)
-        self._type = typ
-
-
-def _pretty_type(schema: dict[str, Any]) -> str:
-    if "$ref" in schema:
-        return schema["$ref"].split("/")[-1]
-
-    if schema.get("type") == "array":
-        item_schema = schema.get("items", {})
-        inner = _pretty_type(item_schema)
-        return f"list[{inner}]"
-
-    if "anyOf" in schema:
-        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
-
-    json_type = schema.get("type")
-    if isinstance(json_type, str):
-        return _JSON_TYPE_MAP.get(json_type, json_type.split(".")[-1])
-
-    return "Any"

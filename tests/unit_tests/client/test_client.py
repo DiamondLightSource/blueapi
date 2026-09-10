@@ -12,15 +12,10 @@ from observability_utils.tracing import (
 from pydantic import HttpUrl
 
 from blueapi.client import BlueapiClient
-from blueapi.client.client import (
-    DeviceCache,
-    DeviceRef,
-    MissingInstrumentSessionError,
-    Plan,
-    PlanCache,
-    PlanFailedError,
-)
+from blueapi.client.client import DeviceCache, MissingInstrumentSessionError, PlanCache
+from blueapi.client.devices import DeviceRef
 from blueapi.client.event_bus import AnyEvent, EventBusClient
+from blueapi.client.plans import Plan, PlanFailedError
 from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,

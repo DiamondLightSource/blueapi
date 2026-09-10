@@ -449,29 +449,23 @@ wheels = [
 name = "blueapi"
 source = { editable = "." }
 dependencies = [
-    { name = "aioca" },
-    { name = "aiohttp" },
     { name = "bluesky", extra = ["plotting"] },
     { name = "bluesky-stomp" },
     { name = "click" },
     { name = "event-model" },
-    { name = "fastapi" },
     { name = "gitpython" },
-    { name = "graypy" },
-    { name = "httpx" },
     { name = "observability-utils" },
     { name = "opentelemetry-distro" },
-    { name = "opentelemetry-instrumentation-fastapi" },
     { name = "ophyd-async" },
+    { name = "packaging" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyjwt", extra = ["crypto"] },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "stomp-py" },
-    { name = "tiled", extra = ["client"] },
-    { name = "tomlkit" },
-    { name = "uvicorn" },
+    { name = "tqdm" },
+    { name = "websockets" },
 ]
 
 [package.optional-dependencies]
@@ -479,9 +473,21 @@ demo = [
     { name = "dls-dodal" },
     { name = "ophyd-async", extra = ["sim"] },
 ]
+server = [
+    { name = "aioca" },
+    { name = "aiohttp" },
+    { name = "fastapi" },
+    { name = "graypy" },
+    { name = "httpx" },
+    { name = "opentelemetry-instrumentation-fastapi" },
+    { name = "tiled", extra = ["client"] },
+    { name = "tomlkit" },
+    { name = "uvicorn" },
+]
 
 [package.dev-dependencies]
 dev = [
+    { name = "blueapi", extra = ["server"] },
     { name = "copier" },
     { name = "deepdiff" },
     { name = "dls-dodal" },
@@ -518,36 +524,40 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aioca" },
-    { name = "aiohttp", specifier = ">=3.13.5" },
+    { name = "aioca", marker = "extra == 'server'" },
+    { name = "aiohttp", marker = "extra == 'server'", specifier = ">=3.13.5" },
     { name = "bluesky", extras = ["plotting"], specifier = ">=1.14.0" },
     { name = "bluesky-stomp", specifier = ">=0.1.6" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "dls-dodal", marker = "extra == 'demo'", specifier = ">=1.69.0" },
     { name = "event-model", specifier = "==1.24.0" },
-    { name = "fastapi", specifier = ">=0.112.0" },
+    { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.112.0" },
     { name = "gitpython", specifier = ">=3.1.58" },
-    { name = "graypy", specifier = ">=2.1.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "graypy", marker = "extra == 'server'", specifier = ">=2.1.0" },
+    { name = "httpx", marker = "extra == 'server'", specifier = ">=0.28.1" },
     { name = "observability-utils", specifier = ">=0.1.4" },
     { name = "opentelemetry-distro", specifier = ">=0.48b0" },
-    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.48b0" },
+    { name = "opentelemetry-instrumentation-fastapi", marker = "extra == 'server'", specifier = ">=0.48b0" },
     { name = "ophyd-async", specifier = ">=0.13.5" },
     { name = "ophyd-async", extras = ["sim"], marker = "extra == 'demo'" },
+    { name = "packaging" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pydantic-settings" },
     { name = "pyjwt", extras = ["crypto"] },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests" },
     { name = "stomp-py" },
-    { name = "tiled", extras = ["client"], specifier = ">=0.2.4" },
-    { name = "tomlkit" },
-    { name = "uvicorn", specifier = ">=0.52.1" },
+    { name = "tiled", extras = ["client"], marker = "extra == 'server'", specifier = ">=0.2.4" },
+    { name = "tomlkit", marker = "extra == 'server'" },
+    { name = "tqdm" },
+    { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.52.1" },
+    { name = "websockets" },
 ]
-provides-extras = ["demo"]
+provides-extras = ["demo", "server"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "blueapi", extras = ["server"] },
     { name = "copier" },
     { name = "deepdiff" },
     { name = "dls-dodal", specifier = ">=1.69.0" },

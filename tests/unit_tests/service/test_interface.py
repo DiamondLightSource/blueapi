@@ -37,8 +37,8 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
+from blueapi.service.numtracker import NumtrackerClient
 from blueapi.utils.invalid_config_error import InvalidConfigError
-from blueapi.utils.numtracker import NumtrackerClient
 from blueapi.worker.event import (
     TaskResult,
     TaskStatus,
@@ -499,7 +499,7 @@ def test_stomp_config_makes_no_client_when_disabled(mock_stomp_client: StompClie
         assert interface.stomp_client() is None
 
 
-@patch("blueapi.cli.scratch._fetch_installed_packages_details")
+@patch("blueapi.service.environment._fetch_installed_packages_details")
 def test_get_scratch_no_config(mock_fetch_installed_packages: Mock):
     interface.set_config(ApplicationConfig(scratch=None))
     mock_fetch_installed_packages.return_value = []
@@ -545,7 +545,7 @@ def test_configure_numtracker():
     assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
 
-@patch("blueapi.utils.numtracker.httpx.AsyncClient.post")
+@patch("blueapi.service.numtracker.httpx.AsyncClient.post")
 async def test_headers_are_cleared(mock_post):
     mock_response = Mock()
     mock_post.return_value = mock_response
@@ -608,7 +608,7 @@ def test_numtracker_requires_instrument_metadata():
     interface.set_config(ApplicationConfig())
 
 
-@patch("blueapi.utils.numtracker.NumtrackerClient.create_scan")
+@patch("blueapi.service.numtracker.NumtrackerClient.create_scan")
 async def test_numtracker_create_scan_called_with_arguments_from_metadata(
     mock_create_scan,
 ):

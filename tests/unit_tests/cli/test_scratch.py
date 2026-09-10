@@ -10,7 +10,6 @@ from git import Repo
 
 from blueapi.cli.scratch import (
     _fetch_installed_packages_details,
-    _get_project_name_from_pyproject,
     ensure_repo,
     get_python_environment,
     scratch_install,
@@ -404,9 +403,7 @@ def config(directory_path_with_sgid: Path) -> ScratchConfig:
 
 @patch("blueapi.cli.scratch.Repo")
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
-@patch("blueapi.cli.scratch._get_project_name_from_pyproject")
 def test_get_python_env_returns_correct_packages(
-    mock_get_project_name: Mock,
     mock_fetch_installed_packages: Mock,
     mock_repo: Mock,
     directory_path_with_sgid: Path,
@@ -429,7 +426,6 @@ def test_get_python_env_returns_correct_packages(
 
     mock_repo.side_effect = [mock_repo_1, mock_repo_2]
 
-    mock_get_project_name.side_effect = ["foo-package", "bar-package"]
     mock_fetch_installed_packages.return_value = [
         PackageInfo(
             name="package-01",
@@ -443,14 +439,14 @@ def test_get_python_env_returns_correct_packages(
 
     assert response.installed_packages == [
         PackageInfo(
-            name="bar-package",
+            name="bar",
             version="http://example.com/bar.git @adsad23123",
             location="",
             is_dirty=True,
             source=SourceInfo.SCRATCH,
         ),
         PackageInfo(
-            name="foo-package",
+            name="foo",
             version="http://example.com/foo.git @main",
             location="",
             is_dirty=False,
@@ -468,9 +464,7 @@ def test_get_python_env_returns_correct_packages(
 
 @patch("blueapi.cli.scratch.Repo")
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
-@patch("blueapi.cli.scratch._get_project_name_from_pyproject")
 def test_fetch_python_env_with_identical_packages(
-    mock_get_project_name: Mock,
     mock_fetch_installed_packages: Mock,
     mock_repo: Mock,
     directory_path_with_sgid: Path,
@@ -484,10 +478,9 @@ def test_fetch_python_env_with_identical_packages(
 
     mock_repo.return_value = mock_repo_instance
 
-    mock_get_project_name.return_value = "foo-package"
     mock_fetch_installed_packages.return_value = [
         PackageInfo(
-            name="foo-package",
+            name="foo",
             version="http://example.com/foo.git @main",
             location="/some/location",
             is_dirty=False,
@@ -507,7 +500,7 @@ def test_fetch_python_env_with_identical_packages(
 
     assert response.installed_packages == [
         PackageInfo(
-            name="foo-package",
+            name="foo",
             version="http://example.com/foo.git @main",
             location="/some/location &&",
             is_dirty=False,
@@ -539,9 +532,7 @@ def test_fetch_installed_packages_details_returns_correct_packages(mock_distribu
 
 @patch("blueapi.cli.scratch.Repo")
 @patch("blueapi.cli.scratch._fetch_installed_packages_details")
-@patch("blueapi.cli.scratch._get_project_name_from_pyproject")
 def test_get_python_env_filters_by_name_and_source(
-    mock_get_project_name: Mock,
     mock_fetch_installed_packages: Mock,
     mock_repo: Mock,
     directory_path_with_sgid: Path,
@@ -555,7 +546,6 @@ def test_get_python_env_filters_by_name_and_source(
     mock_repo_instance.remotes = [Mock(url="http://example.com/foo.git")]
     mock_repo.return_value = mock_repo_instance
 
-    mock_get_project_name.return_value = "foo-package"
     mock_fetch_installed_packages.return_value = [
         PackageInfo(
             name="bar-package",
@@ -575,10 +565,10 @@ def test_get_python_env_filters_by_name_and_source(
         ],
     )
     # Test filtering by name
-    response_by_name = get_python_environment(config, name="foo-package")
+    response_by_name = get_python_environment(config, name="foo")
     assert response_by_name.installed_packages == [
         PackageInfo(
-            name="foo-package",
+            name="foo",
             version="http://example.com/foo.git @main",
             location="",
             is_dirty=False,
@@ -590,51 +580,10 @@ def test_get_python_env_filters_by_name_and_source(
     response_by_source = get_python_environment(config, source=SourceInfo.SCRATCH)
     assert response_by_source.installed_packages == [
         PackageInfo(
-            name="foo-package",
+            name="foo",
             version="http://example.com/foo.git @main",
             location="",
             is_dirty=False,
             source=SourceInfo.SCRATCH,
         )
     ]
-
-
-@pytest.fixture
-def pyproject_file(tmp_path: Path) -> Generator[Path]:
-    pyproject_path = tmp_path / "pyproject.toml"
-    with pyproject_path.open("w") as f:
-        f.write(
-            """
-            [project]
-            name = "example-project"
-            """
-        )
-    yield pyproject_path
-    os.remove(pyproject_path)
-
-
-def test_get_project_name_from_pyproject_returns_name(pyproject_file: Path):
-    project_name = _get_project_name_from_pyproject(pyproject_file.parent)
-    assert project_name == "example-project"
-
-
-def test_get_project_name_from_pyproject_returns_empty_if_no_pyproject(
-    tmp_path: Path,
-):
-    project_name = _get_project_name_from_pyproject(tmp_path)
-    assert project_name == ""
-
-
-def test_get_project_name_from_pyproject_returns_empty_if_no_name_key(
-    tmp_path: Path,
-):
-    pyproject_path = tmp_path / "pyproject.toml"
-    with pyproject_path.open("w") as f:
-        f.write(
-            """
-            [project]
-            version = "1.0.0"
-            """
-        )
-    project_name = _get_project_name_from_pyproject(tmp_path)
-    assert project_name == ""

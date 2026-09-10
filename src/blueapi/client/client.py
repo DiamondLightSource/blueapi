@@ -5,15 +5,13 @@ from collections.abc import Iterable
 from concurrent.futures import Future
 from contextlib import suppress
 from functools import cached_property
+from inspect import Parameter
 from pathlib import Path
 from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
-from observability_utils.tracing import (
-    get_tracer,
-    start_as_current_span,
-)
+from observability_utils.tracing import get_tracer, start_as_current_span
 
 from blueapi.config import (
     ApplicationConfig,
@@ -188,11 +186,14 @@ class Plan:
         positional_parameters = [
             name
             for name, kind in kinds.items()
-            if kind in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")
+            if kind
+            in (Parameter.POSITIONAL_ONLY.name, Parameter.POSITIONAL_OR_KEYWORD.name)
         ]
 
-        var_positional = any(kind == "VAR_POSITIONAL" for kind in kinds.values())
-        var_keyword = any(kind == "VAR_KEYWORD" for kind in kinds.values())
+        var_positional = any(
+            kind == Parameter.VAR_POSITIONAL.name for kind in kinds.values()
+        )
+        var_keyword = any(kind == Parameter.VAR_KEYWORD.name for kind in kinds.values())
 
         if not var_positional and len(args) > len(positional_parameters):
             raise TypeError(f"{self.name} got too many arguments")
@@ -218,7 +219,8 @@ class Plan:
         required = {
             name
             for name in self.required
-            if kinds[name] not in ("VAR_POSITIONAL", "VAR_KEYWORD")
+            if kinds[name]
+            not in (Parameter.VAR_POSITIONAL.name, Parameter.VAR_KEYWORD.name)
         }
 
         if missing := required - supplied:
@@ -233,10 +235,10 @@ class Plan:
             typ = _pretty_type(info)
             kind = kinds[name]
 
-            if kind == "VAR_POSITIONAL":
+            if kind == Parameter.VAR_POSITIONAL.name:
                 return f"*{name}: {typ}"
 
-            if kind == "VAR_KEYWORD":
+            if kind == Parameter.VAR_KEYWORD.name:
                 return f"**{name}: {typ}"
 
             if name in self.required:
@@ -250,23 +252,26 @@ class Plan:
         args: list[str] = []
         names = list(self.properties)
 
-        has_var_positional = "VAR_POSITIONAL" in kinds.values()
+        has_var_positional = Parameter.VAR_POSITIONAL.name in kinds.values()
 
         for i, name in enumerate(names):
             kind = kinds[name]
 
             # Positional-only parameters need a "/" after the last one.
-            if kind == "POSITIONAL_ONLY":
+            if kind == Parameter.POSITIONAL_ONLY.name:
                 args.append(_format_arg(name, self.properties[name]))
 
-                if i + 1 == len(names) or kinds[names[i + 1]] != "POSITIONAL_ONLY":
+                if (
+                    i + 1 == len(names)
+                    or kinds[names[i + 1]] != Parameter.POSITIONAL_ONLY.name
+                ):
                     args.append("/")
 
                 continue
 
             # Keyword-only parameters need a "*" separator if there is
             # no *args parameter to provide the separator.
-            if kind == "KEYWORD_ONLY" and not has_var_positional:
+            if kind == Parameter.KEYWORD_ONLY.name and not has_var_positional:
                 if not args or args[-1] != "*":
                     args.append("*")
 

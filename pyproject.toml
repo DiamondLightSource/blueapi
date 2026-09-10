@@ -17,6 +17,7 @@ dependencies = [
     "tiled[minimal-client]>=0.2.4",
     "pyarrow",                                       # Needed for TiledWriter
     "pandas",                                        # Needed for TiledWriter
+    "ndindex",
     "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd-async>=0.13.5",
     "aioca",

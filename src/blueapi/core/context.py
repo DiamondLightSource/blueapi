@@ -330,12 +330,17 @@ class BlueskyContext:
             name: parameter.kind.name
             for name, parameter in signature(plan).parameters.items()
         }
+        parameter_types = {
+            name: parameter.annotation
+            for name, parameter in signature(plan).parameters.items()
+        }
         LOGGER.debug("Registering plan %s from %s", plan.__name__, plan.__module__)
         self.plans[plan.__name__] = Plan(
             name=plan.__name__,
             model=model,
             description=plan.__doc__,
             parameter_kinds=parameter_kinds,
+            parameter_types=parameter_types,
         )
         self.plan_functions[plan.__name__] = plan
         return plan

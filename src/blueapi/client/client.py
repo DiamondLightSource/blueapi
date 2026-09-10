@@ -56,13 +56,6 @@ log = logging.getLogger(__name__)
 
 _REPR_MAX_LENGTH = 100
 _REPR_MAX_ARGS_INLINE = 3
-_JSON_TYPE_MAP = {
-    "string": "str",
-    "integer": "int",
-    "boolean": "bool",
-    "number": "float",
-    "object": "dict",
-}
 
 
 class MissingInstrumentSessionError(Exception):
@@ -232,7 +225,7 @@ class Plan:
         kinds = self.model.parameter_kinds
 
         def _format_arg(name: str, info: dict[str, Any]) -> str:
-            typ = _pretty_type(info)
+            typ = self.model.parameter_types[name]
             kind = kinds[name]
 
             if kind == Parameter.VAR_POSITIONAL.name:
@@ -247,7 +240,7 @@ class Plan:
             if "default" in info:
                 return f"{name}: {typ} = {info['default']!r}"
 
-            return f"{name}: {typ} | None = None"
+            return f"{name}: {typ} = None"
 
         args: list[str] = []
         names = list(self.properties)
@@ -887,22 +880,3 @@ class PlanFailedError(Exception):
     def __init__(self, typ: str, message: str):
         super().__init__(message)
         self._type = typ
-
-
-def _pretty_type(schema: dict[str, Any]) -> str:
-    if "$ref" in schema:
-        return schema["$ref"].split("/")[-1]
-
-    if schema.get("type") == "array":
-        item_schema = schema.get("items", {})
-        inner = _pretty_type(item_schema)
-        return f"list[{inner}]"
-
-    if "anyOf" in schema:
-        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
-
-    json_type = schema.get("type")
-    if isinstance(json_type, str):
-        return _JSON_TYPE_MAP.get(json_type, json_type.split(".")[-1])
-
-    return "Any"

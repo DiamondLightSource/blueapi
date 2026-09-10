@@ -94,6 +94,7 @@ class Plan(BlueapiBaseModel):
         description="Validation model of the parameters for the plan"
     )
     parameter_kinds: dict[str, str] = {}
+    parameter_types: dict[str, Any] = {}
 
 
 class DataEvent(BlueapiBaseModel):

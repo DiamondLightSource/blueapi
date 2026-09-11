@@ -38,9 +38,9 @@ from blueapi.worker import WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
-from .devices import DeviceCache
+from .device_cache import DeviceCache
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
-from .plans import PlanCache
+from .plan_cache import PlanCache
 from .protocols import ClientProtocol
 from .rest import (
     BlueapiRestClient,

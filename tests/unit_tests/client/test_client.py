@@ -1,26 +1,30 @@
-import uuid
 from collections.abc import Callable
-from textwrap import dedent
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from bluesky_stomp.messaging import MessageContext
-from observability_utils.tracing import (
-    JsonObjectSpanExporter,
-    asserting_span_exporter,
-)
+from observability_utils.tracing import JsonObjectSpanExporter, asserting_span_exporter
 from pydantic import HttpUrl
+from tests.unit_tests.client.constants import (
+    ACTIVE_TASK,
+    COMPLETE_EVENT,
+    DEVICE,
+    DEVICES,
+    ENV,
+    ENVIRONMENT_ID,
+    FAILED_EVENT,
+    NEW_ENV,
+    PLAN,
+    PLANS,
+)
 
 from blueapi.client import BlueapiClient
-from blueapi.client.client import DeviceCache, MissingInstrumentSessionError, PlanCache
-from blueapi.client.devices import DeviceRef
+from blueapi.client.client import MissingInstrumentSessionError
 from blueapi.client.event_bus import AnyEvent, EventBusClient
-from blueapi.client.plans import Plan, PlanFailedError
+from blueapi.client.plan_cache import Plan, PlanFailedError
 from blueapi.client.rest import (
-    BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
-    NotFoundError,
     ServiceUnavailableError,
 )
 from blueapi.config import MissingStompConfigurationError
@@ -34,90 +38,10 @@ from blueapi.service.model import (
     ProtocolInfo,
     TaskRequest,
     TaskResponse,
-    TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker import ProgressEvent, Task, TrackableTask, WorkerEvent, WorkerState
+from blueapi.worker import ProgressEvent, WorkerEvent, WorkerState
 from blueapi.worker.event import TaskError, TaskResult, TaskStatus
-
-PLANS = PlanResponse(
-    plans=[
-        PlanModel(name="foo"),
-        PlanModel(name="bar"),
-    ]
-)
-PLAN = PlanModel(name="foo")
-FULL_PLAN = PlanModel(
-    name="foobar",
-    description="Description of plan foobar",
-    schema={
-        "title": "foobar",
-        "description": "Model description of plan foobar",
-        "properties": {
-            "one": {},
-            "two": {},
-        },
-        "required": ["one"],
-    },
-)
-DEVICES = DeviceResponse(
-    devices=[
-        DeviceModel(name="foo", protocols=[]),
-        DeviceModel(name="bar", protocols=[]),
-    ]
-)
-DEVICE = DeviceModel(name="foo", protocols=[])
-TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
-TASKS = TasksListResponse(tasks=[TASK])
-ACTIVE_TASK = WorkerTask(task_id="bar")
-ENVIRONMENT_ID = uuid.uuid4()
-NEW_ENVIRONMENT_ID = uuid.uuid4()
-ENV = EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=True)
-NEW_ENV = EnvironmentResponse(environment_id=NEW_ENVIRONMENT_ID, initialized=True)
-COMPLETE_EVENT = WorkerEvent(
-    state=WorkerState.IDLE,
-    task_status=TaskStatus(
-        task_id="foo",
-        task_complete=True,
-        task_failed=False,
-        result=TaskResult(type="NoneType", result=None),
-    ),
-)
-FAILED_EVENT = WorkerEvent(
-    state=WorkerState.IDLE,
-    task_status=TaskStatus(
-        task_id="foo",
-        task_complete=True,
-        task_failed=True,
-        result=TaskError(type="PlanFailure", message="The plan failed"),
-    ),
-)
-
-
-@pytest.fixture
-def mock_rest() -> BlueapiRestClient:
-    mock = Mock(spec=BlueapiRestClient)
-
-    mock.get_plans.return_value = PLANS
-    mock.get_plan.side_effect = lambda n: {p.name: p for p in PLANS.plans}[n]
-    mock.get_devices.return_value = DEVICES
-    device_map = {d.name: d for d in DEVICES.devices}
-
-    def get_device(n: str):
-        if n not in device_map:
-            raise NotFoundError(404, "<Response [404]>")
-        return device_map[n]
-
-    mock.get_device.side_effect = get_device
-    mock.get_state.return_value = WorkerState.IDLE
-    mock.get_task.return_value = TASK
-    mock.get_all_tasks.return_value = TASKS
-    mock.get_active_task.return_value = ACTIVE_TASK
-    mock.get_environment.return_value = ENV
-    mock.delete_environment.return_value = EnvironmentResponse(
-        environment_id=ENVIRONMENT_ID, initialized=False
-    )
-    return mock
 
 
 @pytest.fixture
@@ -127,11 +51,6 @@ def mock_events() -> EventBusClient:
     ctx.correlation_id = "foo"
     mock_events.subscribe_to_all_events = lambda on_event: on_event(ctx, COMPLETE_EVENT)
     return mock_events
-
-
-@pytest.fixture
-def client(mock_rest: Mock) -> BlueapiClient:
-    return BlueapiClient(rest=mock_rest)
 
 
 @pytest.fixture
@@ -198,9 +117,9 @@ def test_get_child_device(mock_rest: Mock, client: BlueapiClient):
         else None
     )
     foo = client.devices.foo
-    assert foo.name == "foo"
+    assert foo.model.name == "foo"
     x = client.devices.foo.x
-    assert x.name == "foo.x"
+    assert x.model.name == "foo.x"
 
 
 def test_state_property(client: BlueapiClient):
@@ -574,7 +493,6 @@ def test_scripting_interface_returns_result():
         result=TaskResult(result=42, type="int"),
     )
     demo_plan = Plan(
-        "demo",
         client=client,
         model=PlanModel(name="demo", description="Demo plan", schema={}),
     )
@@ -590,7 +508,6 @@ def test_scripting_interface_raises_exceptions():
         result=TaskError(type="ValueError", message="Plan failed"),
     )
     demo_plan = Plan(
-        "demo",
         client=client,
         model=PlanModel(name="demo", description="Demo plan", schema={}),
     )
@@ -731,219 +648,6 @@ def test_fluent_instrument_session_setter(client):
     client2 = client.with_instrument_session("cm12345-3")
     assert client is client2
     assert client.instrument_session == "cm12345-3"
-
-
-def test_plan_cache_ignores_underscores(client):
-    cache = PlanCache(client, [PlanModel(name="_ignored"), PlanModel(name="used")])
-    with pytest.raises(AttributeError, match="_ignored"):
-        _ = cache._ignored
-
-
-def test_plan_cache_repr(client):
-    assert repr(client.plans) == "PlanCache(2 plans)"
-
-
-def test_device_cache_ignores_underscores():
-    rest = Mock()
-    rest.get_devices.return_value = DeviceResponse(
-        devices=[
-            DeviceModel(name="_ignored", protocols=[]),
-        ]
-    )
-    cache = DeviceCache(rest)
-    with pytest.raises(AttributeError, match="_ignored"):
-        _ = cache._ignored
-
-    rest.get_devices.reset_mock()
-    with pytest.raises(AttributeError, match="_anything"):
-        _ = cache._anything
-    rest.get_device.assert_not_called()
-
-
-def test_devices_are_cached(mock_rest):
-    cache = DeviceCache(mock_rest)
-    _ = cache.foo
-    mock_rest.get_device.assert_not_called()
-    _ = cache["foo"]
-    mock_rest.get_device.assert_not_called()
-
-
-def test_device_cache_repr(client):
-    assert repr(client.devices) == "DeviceCache(2 devices)"
-
-
-def test_device_repr():
-    cache = Mock()
-    model = Mock()
-    dev = DeviceRef(name="foo", cache=cache, model=model)
-    assert repr(dev) == "Device(foo)"
-
-
-def test_device_ignores_underscores():
-    cache = MagicMock()
-    model = Mock()
-    dev = DeviceRef(name="foo", cache=cache, model=model)
-    with pytest.raises(AttributeError, match="_underscore"):
-        _ = dev._underscore
-    cache.__getitem__.assert_not_called()
-
-
-def test_plan_help_text(client):
-    plan = Plan("foo", PlanModel(name="foo", description="help for foo"), client)
-    assert plan.help_text == "help for foo"
-
-
-def test_plan_fallback_help_text(client):
-    plan = Plan(
-        "foo",
-        PlanModel(
-            name="foo",
-            schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
-        ),
-        client,
-    )
-    assert plan.help_text == "Plan foo(one: Any, two: Any | None = None)"
-
-
-def test_plan_multi_parameter_fallback_help_text(client):
-    plan = Plan(
-        "foo",
-        PlanModel(
-            name="foo",
-            schema={
-                "properties": {
-                    "one": {},
-                    "two": {
-                        "anyOf": [{"items": {}, "type": "array"}, {"type": "boolean"}],
-                    },
-                    "three": {"default": 3},
-                    "four": {"default": None},
-                },
-                "required": ["one", "two"],
-            },
-        ),
-        client,
-    )
-    assert plan.help_text == dedent("""\
-            Plan foo(
-                one: Any,
-                two: list[Any] | bool,
-                three: Any = 3,
-                four: Any | None = None
-            )""")
-
-
-def test_plan_help_text_with_ref(client):
-    schema = {
-        "$defs": {
-            "Spec": {
-                "properties": {
-                    "foo": {"type": "integer"},
-                    "bar": {"$ref": "#/$defs/InnerSpec"},
-                },
-                "required": ["foo", "bar"],
-            },
-            "InnerSpec": {
-                "properties": {
-                    "x": {"type": "number"},
-                    "y": {"default": 10, "type": "number"},
-                },
-                "required": ["x"],
-            },
-        },
-        "properties": {
-            "spec": {"$ref": "#/$defs/Spec"},
-            "meta": {"type": "string", "default": "abc"},
-        },
-        "required": ["spec"],
-    }
-
-    plan = Plan(
-        "ref_plan",
-        PlanModel(name="ref_plan", schema=schema),
-        client,
-    )
-
-    expected = "Plan ref_plan(spec: Spec, meta: str = 'abc')"
-
-    assert plan.help_text == expected
-
-
-def test_plan_properties(client):
-    plan = Plan(
-        "foo",
-        PlanModel(
-            name="foo",
-            schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
-        ),
-        client,
-    )
-    assert plan.properties == {"one": {}, "two": {}}
-    assert plan.required == ["one"]
-
-
-def test_plan_empty_fallback_help_text(client):
-    plan = Plan(
-        "foo", PlanModel(name="foo", schema={"properties": {}, "required": []}), client
-    )
-    assert plan.help_text == "Plan foo()"
-
-
-p = pytest.param
-
-
-@pytest.mark.parametrize(
-    "args,kwargs,params",
-    [
-        p((1,), {}, {"one": 1}, id="required_as_positional"),
-        p((), {"one": 7}, {"one": 7}, id="required_as_keyword"),
-        p((1,), {"two": 23}, {"one": 1, "two": 23}, id="all_as_mixed_args_kwargs"),
-        p((1, 2), {}, {"one": 1, "two": 2}, id="all_as_positional"),
-        p((), {"one": 21, "two": 42}, {"one": 21, "two": 42}, id="all_as_keyword"),
-    ],
-)
-def test_plan_param_mapping(args, kwargs, params):
-    client = Mock()
-    client.instrument_session = "cm12345-1"
-    plan = Plan(
-        FULL_PLAN.name,
-        FULL_PLAN,
-        client,
-    )
-
-    plan(*args, **kwargs)
-    client.run_task.assert_called_once_with(
-        TaskRequest(name="foobar", instrument_session="cm12345-1", params=params)
-    )
-
-
-@pytest.mark.parametrize(
-    "args,kwargs,msg",
-    [
-        p((), {}, r"Missing argument\(s\) for \{'one'\}", id="missing_required"),
-        p((1,), {"one": 7}, "multiple values for one", id="duplicate_required"),
-        p((1, 2), {"two": 23}, "multiple values for two", id="duplicate_optional"),
-        p((1, 2, 3), {}, "too many arguments", id="too_many_args"),
-        p(
-            (),
-            {"unknown_key": 42},
-            r"got unexpected arguments: \{'unknown_key'\}",
-            id="unknown_arg",
-        ),
-    ],
-)
-def test_plan_invalid_param_mapping(args, kwargs, msg):
-    client = Mock()
-    client.instrument_session = "cm12345-1"
-    plan = Plan(
-        FULL_PLAN.name,
-        FULL_PLAN,
-        client,
-    )
-
-    with pytest.raises(TypeError, match=msg):
-        plan(*args, **kwargs)
-    client.run_task.assert_not_called()
 
 
 def test_adding_removing_callback(client):

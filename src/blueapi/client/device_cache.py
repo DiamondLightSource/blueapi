@@ -70,7 +70,7 @@ class DeviceRef(ClientObjectRef):
         self.model = model
         self._cache = cache
 
-    def __getattr__(self, name) -> "DeviceRef":
+    def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):
             raise AttributeError(f"No child device named {name}")
         return self._cache[f"{self.model.name}.{name}"]

@@ -13,7 +13,7 @@ from responses import DELETE, GET, PUT, matchers
 from websockets import Headers, InvalidStatus, Response
 
 from blueapi import __version__
-from blueapi.client.client import DeviceRef
+from blueapi.client.device_cache import DeviceRef
 from blueapi.client.rest import (
     USER_AGENT,
     BlueapiRestClient,
@@ -91,10 +91,12 @@ def test_rest_error_code(
 
 def test_create_task_serialization():
     rest = Mock(spec=BlueapiRestClient)
+    model = Mock()
+    model.name = "foo"
     request = TaskRequest(
         name="demo",
         instrument_session="cm12345-1",
-        params={"devices": [DeviceRef(name="foo", cache=Mock(), model=Mock())]},
+        params={"devices": [DeviceRef(cache=Mock(), model=model)]},
     )
 
     BlueapiRestClient.create_task(rest, request)

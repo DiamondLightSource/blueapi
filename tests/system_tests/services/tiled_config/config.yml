@@ -24,3 +24,4 @@ access_control:
   args:
     authorization_provider: "http://localhost:8181/v1/data/diamond/policy/"
     token_audience: account
+    empty_access_blob_public: true

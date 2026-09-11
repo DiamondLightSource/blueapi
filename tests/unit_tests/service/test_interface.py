@@ -10,10 +10,12 @@ import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
+from fastapi import status
 from ophyd_async.epics.motor import Motor
-from pydantic import HttpUrl
+from pydantic import HttpUrl, SecretStr
 from pytest_httpx import HTTPXMock
 from stomp.connect import StompConnection11 as Connection
+from tiled.client.utils import ClientError
 
 from blueapi.config import (
     ApplicationConfig,
@@ -22,11 +24,13 @@ from blueapi.config import (
     NumtrackerConfig,
     OIDCConfig,
     ScratchConfig,
+    ServiceAccount,
     StompConfig,
     TiledConfig,
 )
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
+from blueapi.service.authentication import TiledAuth
 from blueapi.service.model import (
     DeviceModel,
     PackageInfo,
@@ -255,8 +259,8 @@ def test_subscribers_removed_when_task_not_found(
     # regression test for #1480
     worker = worker_mock()
     ctx = context_mock()
+    worker.get_task_by_id.return_value = None
     worker.begin_task.side_effect = KeyError()
-
     with pytest.raises(KeyError):
         interface.begin_task(WorkerTask(task_id="missing"))
 
@@ -374,7 +378,7 @@ def test_get_task_by_id(
 
     if tiled_enabled:
         expected_access_tag = {
-            "proposal": 12345,
+            "proposal": "cm12345",
             "visit": 1,
             "beamline": "ixx",
         }
@@ -436,6 +440,7 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
     context().tiled_conf = TiledConfig()
     context().run_engine.subscribe.return_value = 17
     worker().worker_events.subscribe.return_value = 42
+    worker().get_task_by_id.return_value = None
 
     interface.begin_task(task)
 
@@ -474,6 +479,135 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
     )
     context().run_engine.unsubscribe.assert_called_once_with(17)
     worker().worker_events.unsubscribe.assert_called_once_with(42)
+
+
+def _existing_task(instrument_session: str = FAKE_INSTRUMENT_SESSION) -> TrackableTask:
+    return TrackableTask(
+        task_id="foo_bar",
+        task=Task(
+            name="my_plan",
+            params={},
+            metadata={"instrument_session": instrument_session},
+        ),
+    )
+
+
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_creates_tiled_containers(worker, context, from_uri, writer):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.md = {"instrument": "p46"}
+    worker().get_task_by_id.return_value = _existing_task()
+    root_client = from_uri()
+    proposal_client = root_client.__getitem__.return_value
+    session_client = proposal_client.__getitem__.return_value
+    final_client = session_client.__getitem__.return_value
+
+    interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+    root_client.create_container.assert_called_once_with(
+        key="p46", access_tags=[json.dumps({"beamline": "p46"})]
+    )
+    proposal_client.create_container.assert_called_once_with(
+        key="cm12345",
+        access_tags=[json.dumps({"beamline": "p46", "proposal": "cm12345"})],
+    )
+    session_client.create_container.assert_called_once_with(
+        key="cm12345-1",
+        access_tags=[
+            json.dumps({"proposal": "cm12345", "visit": 1, "beamline": "p46"})
+        ],
+    )
+    writer.assert_called_once_with(final_client, batch_size=1)
+
+
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_skips_existing_tiled_container(worker, context, from_uri, writer):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.md = {"instrument": "p46"}
+    worker().get_task_by_id.return_value = _existing_task()
+    root_client = from_uri()
+    proposal_client = root_client.__getitem__.return_value
+    session_client = proposal_client.__getitem__.return_value
+    for client in (root_client, proposal_client, session_client):
+        client.__contains__ = MagicMock(return_value=True)
+
+    interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+    root_client.create_container.assert_not_called()
+    proposal_client.create_container.assert_not_called()
+    session_client.create_container.assert_not_called()
+
+
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_raises_for_invalid_instrument_session(worker, context, from_uri):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.md = {"instrument": "p46"}
+    worker().get_task_by_id.return_value = _existing_task(
+        instrument_session="not-valid"
+    )
+
+    with pytest.raises(ValueError, match="Invalid instrument session"):
+        interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+
+@pytest.mark.parametrize(
+    "status_code,expect_raises",
+    [(status.HTTP_409_CONFLICT, False), (status.HTTP_500_INTERNAL_SERVER_ERROR, True)],
+)
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_handles_tiled_container_create_errors(
+    worker, context, from_uri, writer, status_code, expect_raises
+):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.md = {"instrument": "p46"}
+    worker().get_task_by_id.return_value = _existing_task()
+    tiled_client = from_uri()
+    tiled_client.create_container.side_effect = ClientError(
+        "error", request=MagicMock(), response=MagicMock(status_code=status_code)
+    )
+
+    if expect_raises:
+        with pytest.raises(ClientError):
+            interface.begin_task(WorkerTask(task_id="foo_bar"))
+    else:
+        interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_uses_service_account_auth_for_tiled(
+    worker, context, from_uri, writer
+):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig(
+        authentication=ServiceAccount(
+            client_id="tiled_writer",
+            client_secret=SecretStr("secret"),
+            token_url="https://example.com/token",
+        )
+    )
+    worker().get_task_by_id.return_value = None
+
+    interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+    assert isinstance(from_uri.call_args.kwargs["auth"], TiledAuth)
 
 
 def test_get_oidc_config(oidc_config: OIDCConfig):

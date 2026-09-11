@@ -26,6 +26,8 @@ class PlanFailedError(Exception):
 
 
 class PlanCache:
+    """Collection of plans that can be accessed by name or attribute."""
+
     def __init__(self, client: ClientProtocol, plans: list[PlanModel]):
         self._cache = {model.name: Plan(model=model, client=client) for model in plans}
         for name, plan in self._cache.items():
@@ -47,12 +49,27 @@ class PlanCache:
 
 
 class Plan:
+    """Callable client-side reference to a registered BlueAPI plan."""
+
     def __init__(self, model: PlanModel, client: ClientProtocol):
         self.model = model
         self._client = client
         self.__doc__ = model.description
 
     def __call__(self, *args, **kwargs) -> Any:
+        """Execute the plan with the supplied arguments.
+
+        Positional arguments are mapped to parameters in the order defined by
+        the plan's parameter schema. Keyword arguments are passed by name.
+
+        Returns:
+            The result returned by the plan.
+
+        Raises:
+            PlanFailedError: If plan execution fails on the server.
+            TypeError: If the supplied arguments do not match the plan
+                parameter schema.
+        """
         req = TaskRequest(
             name=self.model.name,
             params=self._build_args(*args, **kwargs),
@@ -76,7 +93,18 @@ class Plan:
     def required(self) -> list[str]:
         return self.model.parameter_schema.get("required", [])
 
-    def _build_args(self, *args, **kwargs):
+    def _build_args(self, *args, **kwargs) -> dict[str, Any]:
+        """Build a parameter mapping from positional and keyword arguments.
+
+        Positional arguments are assigned to parameters according to their
+        order in the plan's parameter schema. Keyword arguments are then
+        added by name.
+
+        Raises:
+            TypeError: If too many positional arguments, unexpected keyword
+                arguments, duplicate arguments, or required arguments are
+                supplied incorrectly.
+        """
         log.info(
             "Building args for %s, using %s and %s",
             "[" + ",".join(self.properties) + "]",
@@ -107,6 +135,12 @@ class Plan:
         return params
 
     def __repr__(self) -> str:
+        """Return a signature-like representation of the plan.
+
+        The representation includes parameter types and defaults derived from
+        the plan's JSON schema. Short signatures are rendered on one line;
+        longer signatures are formatted across multiple lines.
+        """
         required = set(self.required)
 
         def _format_arg(name: str, info: dict[str, Any]) -> str:
@@ -132,6 +166,12 @@ class Plan:
 
 
 def _pretty_type(schema: dict[str, Any]) -> str:
+    """Convert a JSON schema type definition into a readable Python type.
+
+    Handles references, arrays, unions, and primitive JSON schema types.
+    Unknown or unsupported schemas fall back to ``Any`` where no useful type
+    information is available.
+    """
     if "$ref" in schema:
         return schema["$ref"].split("/")[-1]
 

@@ -77,6 +77,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         allowed_tags_endpoint: str = "tiled/user_sessions",
         scopes_endpoint: str = "tiled/scopes",
         modify_node_endpoint: str = "tiled/modify_session",
+        empty_access_blob_public: bool = True,
         provider: str | None = None,
     ):
         self._token_audience = token_audience
@@ -89,6 +90,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             scopes_endpoint=scopes_endpoint,
             provider=provider,
             modify_node_endpoint=modify_node_endpoint,
+            empty_access_blob_public=empty_access_blob_public,
         )
 
     async def init_node(
@@ -99,6 +101,8 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         access_blob: AccessBlob | None = None,
     ) -> tuple[bool, AccessBlob | None]:
         _check_principal(principal)
+        if access_blob is None and self._empty_access_blob_public is not None:
+            return self._empty_access_blob_public, access_blob
         decision = await self._get_external_decision(
             self._create_node,
             self.build_input(principal, authn_access_tags, authn_scopes, access_blob),

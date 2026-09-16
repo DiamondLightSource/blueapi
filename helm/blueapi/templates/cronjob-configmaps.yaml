@@ -1,0 +1,22 @@
+{{- if .Values.timeStampCron.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name : {{include "blueapi.fullname" . }}-pvc-stamper-script
+data:
+  {{- $files := .Files }}
+  time-stamper.sh: |-
+{{ $files.Get "files/scripts/time-stamper.sh" | indent 4 }}
+---
+{{- end }}
+
+{{- if .Values.pvcAutoDeletion.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name : {{include "blueapi.fullname" . }}-pvc-auto-deletion-script
+data:
+  {{- $files := .Files }}
+  pvc-deletion.sh: |-
+{{ $files.Get "files/scripts/pvc-deletion.sh" | indent 4 }}
+{{- end }}

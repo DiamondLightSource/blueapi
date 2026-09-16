@@ -28,8 +28,8 @@ from blueapi.client.rest import (
     _create_task_exceptions,
     _exception,
 )
+from blueapi.client.session import SessionCacheManager, SessionManager
 from blueapi.config import OIDCConfig
-from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import (
     DeviceModel,
     EnvironmentResponse,

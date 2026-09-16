@@ -14,29 +14,25 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "tiled[client]>=0.2.4",
+    # Base install is the `blueapi` CLI/client (and usable as a library on its own).
+    # Add blueapi[server] to also run `blueapi serve`.
     "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd-async>=0.13.5",
-    "aioca",
     "pydantic>=2.0",
     "pydantic-settings",
     "stomp-py",
     "PyYAML>=6.0.2",
-    "click>=8.2.0",
-    "fastapi>=0.112.0",
-    "uvicorn>=0.52.1",
+    "click>=8.2.0",                                  # need for blueapi serve and blueapi setup-scratch
     "requests",
-    "GitPython>=3.1.58",                             #security base min https://github.com/advisories/GHSA-4gmw-gg2m-w46p
+    "GitPython>=3.1.58",                             #security base min https://github.com/advisories/GHSA-4gmw-gg2m-w46p - used by the server's /python_environment endpoint and the CLI's scratch setup
     "event-model==1.24.0",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "bluesky-stomp>=0.1.6",
     "opentelemetry-distro>=0.48b0",
-    "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
     "pyjwt[crypto]",
-    "tomlkit",
-    "graypy>=2.1.0",
-    "httpx>=0.28.1",
-    "aiohttp>=3.13.5",
+    "websockets",
+    "tqdm",
+    "packaging",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -45,9 +41,22 @@ requires-python = ">=3.11"
 
 [project.optional-dependencies]
 demo = ["dls-dodal>=1.69.0", "ophyd-async[sim]"]
+# Only needed to run `blueapi serve` (the FastAPI worker service).
+server = [
+    "fastapi>=0.112.0",
+    "uvicorn>=0.52.1",
+    "aiohttp>=3.13.5",
+    "opentelemetry-instrumentation-fastapi>=0.48b0",
+    "graypy>=2.1.0",
+    "aioca",
+    "tiled[client]>=0.2.4",
+    "httpx>=0.28.1",                                 # used by service/numtracker.py and service/authentication.py's TiledAuth
+    "tomlkit",
+]
 
 [dependency-groups]
 dev = [
+    "blueapi[server]",
     "ophyd_async[sim]",
     "copier",
     "dls-dodal>=1.69.0",

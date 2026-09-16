@@ -1,10 +1,10 @@
 import json
 import logging
 from collections.abc import Callable, Iterable, Mapping
+from http import HTTPStatus
 from typing import Any, Literal, TypeVar
 
 import requests
-from fastapi import status
 from observability_utils.tracing import (
     get_context_propagator,
     get_tracer,
@@ -17,9 +17,9 @@ from websockets.sync.client import connect
 
 from blueapi import __version__
 from blueapi.client import client
+from blueapi.client.session import JWTAuth, SessionManager
 from blueapi.config import RestConfig
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -338,7 +338,7 @@ class BlueapiRestClient:
         exception = get_exception(response)
         if exception is not None:
             raise exception
-        if response.status_code == status.HTTP_204_NO_CONTENT:
+        if response.status_code == HTTPStatus.NO_CONTENT:
             raise NoContentError(target_type)
         if (server_version := response.headers.get("x-blueapi-version")) is not None:
             from packaging.version import Version

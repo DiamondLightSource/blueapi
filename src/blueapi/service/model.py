@@ -58,6 +58,16 @@ class TasksListResponse(BlueapiBaseModel):
     tasks: list[TrackableTask] = Field(description="List of tasks")
 
 
+class TasksParamValidationResponse(BlueapiBaseModel):
+    """
+    Diagnostic information on the tasks
+    """
+
+    validated: bool = Field(
+        description="Whether the task params were sucessfully validated"
+    )
+
+
 class TaskRequest(BlueapiBaseModel):
     """
     Request to run a task with related info
@@ -69,6 +79,17 @@ class TaskRequest(BlueapiBaseModel):
     )
     instrument_session: str = Field(
         description="Instrument session associated with this task",
+    )
+
+
+class TaskParamsValidationRequest(BlueapiBaseModel):
+    """
+    Request to validate the parameters of a task
+    """
+
+    name: str = Field(description="Name of plan to run")
+    params: Mapping[str, Any] = Field(
+        description="Values for parameters to plan, if any", default_factory=dict
     )
 
 

@@ -31,6 +31,7 @@ from blueapi.service.model import (
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
+    TaskParams,
     TaskRequest,
     TaskResponse,
     TasksListResponse,
@@ -180,7 +181,7 @@ class Plan:
     def required(self) -> list[str]:
         return self.model.parameter_schema.get("required", [])
 
-    def _build_args(self, *args, **kwargs):
+    def _build_args(self, *args, **kwargs) -> TaskParams:
         log.info(
             "Building args for %s, using %s and %s",
             "[" + ",".join(self.properties) + "]",
@@ -188,27 +189,26 @@ class Plan:
             kwargs,
         )
 
-        if len(args) > len(self.properties):
+        properties = list(self.properties)
+
+        if len(args) > len(properties):
             raise TypeError(f"{self.name} got too many arguments")
-        if extra := {k for k in kwargs if k not in self.properties}:
+
+        if extra := {k for k in kwargs if k not in properties}:
             raise TypeError(f"{self.name} got unexpected arguments: {extra}")
 
-        params = {}
-        # Initially fill parameters using positional args assuming the order
-        # from the parameter_schema
-        for req, arg in zip(self.properties, args, strict=False):
-            params[req] = arg
+        positional_names = properties[: len(args)]
 
-        # Then append any values given via kwargs
-        for key, value in kwargs.items():
-            # If we've already assumed a positional arg was this value, bail out
-            if key in params:
-                raise TypeError(f"{self.name} got multiple values for {key}")
-            params[key] = value
+        if duplicate := set(positional_names) & kwargs.keys():
+            name = next(iter(duplicate))
+            raise TypeError(f"{self.name} got multiple values for {name}")
 
-        if missing := {k for k in self.required if k not in params}:
+        supplied = set(positional_names) | kwargs.keys()
+
+        if missing := set(self.required) - supplied:
             raise TypeError(f"Missing argument(s) for {missing}")
-        return params
+
+        return TaskParams(args=args, kwargs=kwargs)
 
     def __repr__(self) -> str:
         required = set(self.required)

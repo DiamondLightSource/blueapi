@@ -39,7 +39,7 @@ from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
-from blueapi.worker import ProgressEvent, WorkerEvent
+from blueapi.worker import ProgressEvent, TaskParams, WorkerEvent
 from blueapi.worker.event import TaskError, TaskResult
 
 from .scratch import setup_scratch
@@ -374,7 +374,9 @@ def run_plan(
 
     client = cast(BlueapiClient, obj["client"])
     task = TaskRequest(
-        name=name, params=parameters, instrument_session=instrument_session
+        name=name,
+        params=TaskParams(kwargs=parameters),
+        instrument_session=instrument_session,
     )
 
     try:

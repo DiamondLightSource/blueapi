@@ -311,7 +311,7 @@ def test_lookup_nonexistent_device_child(devicey_context: BlueskyContext):
 
 def test_lookup_non_device(devicey_context: BlueskyContext):
     with pytest.raises(ValueError):
-        devicey_context.find_device("sim._set_success")
+        devicey_context.find_device("sim.name")
 
 
 def test_add_non_plan(empty_context: BlueskyContext):

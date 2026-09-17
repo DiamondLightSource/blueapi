@@ -399,7 +399,10 @@ def run_plan(
                 case TaskResult(result=None, type="NoneType"):
                     print("Plan succeeded")
                 case TaskResult(result=None, type=t):
-                    print(f"Plan returned unserializable result of type '{t}'")
+                    print(
+                        f"Plan succeeded but returned "
+                        f"unserializable result of type '{t}'"
+                    )
                 case TaskResult(result=r):
                     print(f"Plan succeeded: {r}")
                 case TaskError(type=exc, message=m):

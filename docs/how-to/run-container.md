@@ -19,3 +19,12 @@ podman run ghcr.io/diamondlightsource/blueapi:latest
 ```
 
 To get a released version, use a numbered release instead of `latest`.
+
+## Starting the message bus
+
+The worker requires a running instance of the message bus, which in this case is RabbitMQ. The easiest way to start it is
+ to `compose` the services in `tests/system_tests/compose.yaml`
+
+```sh
+docker compose -f tests/system_tests/compose.yaml run rabbitmq --detach
+```

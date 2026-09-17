@@ -129,22 +129,16 @@ def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> 
     """
     if not paths:
         return
-    args = [
-        "uv",
-        "pip",
-        "install",
-    ]
+    LOGGER.info("Installing packages")
     for path in paths:
         _validate_directory(path)
-        args.extend(["-e", str(path)])
-
-    LOGGER.info("Installing packages")
-    process = Popen(args)
-    process.wait(timeout=timeout)
-    if process.returncode != 0:
-        raise RuntimeError(
-            f"Failed to install packages: Exit Code: {process.returncode}"
-        )
+        args = ["uv", "pip", "install", "-e", str(path)]
+        process = Popen(args)
+        process.wait(timeout=timeout)
+        if process.returncode != 0:
+            raise RuntimeError(
+                f"Failed to install packages: Exit Code: {process.returncode}"
+            )
 
 
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:

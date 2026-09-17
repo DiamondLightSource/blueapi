@@ -36,6 +36,7 @@ from blueapi.service.model import (
     TaskResponse,
     WorkerTask,
 )
+from blueapi.utils import TILED_PROPOSAL_RE
 from blueapi.worker.event import (
     TaskResult,
     TaskStatus,
@@ -354,7 +355,7 @@ def test_task_metadata_propagated(
         "user": User.alice,
         "instrument_session": VALID_INSTRUMENT_SESSION[User.alice],
         "tiled_access_tags": [
-            '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
+            '{"proposal": "cm12345", "visit": 1, "beamline": "adsim"}',
         ],
         "blueapi_task_id": response.task_id,
     }
@@ -612,7 +613,12 @@ def test_plan_runs(
     assert stream_resource["run_start"] == start_doc["uid"]
     assert stream_resource["uri"] == f"file://localhost/tmp/adsim-{scan_id}-det.h5"
 
-    tiled_url = f"http://localhost:8407/api/v1/metadata/{start_doc['uid']}"
+    proposal = TILED_PROPOSAL_RE.match(start_doc["instrument_session"])["proposal"]  # type: ignore
+    tiled_url = (
+        "http://localhost:8407/api/v1/metadata/"
+        f"{start_doc['instrument']}/{proposal}/{start_doc['instrument_session']}/"
+        f"{start_doc['uid']}"
+    )
     response = requests.get(
         tiled_url, headers={"authorization": "Bearer " + get_access_token(user)}
     )

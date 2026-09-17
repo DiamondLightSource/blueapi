@@ -8,27 +8,27 @@ from blueapi.utils.serialization import access_blob
     [
         (
             "cm12345-1",
-            '{"proposal": 12345, "visit": 1, "beamline": "ixx"}',
+            '{"proposal": "cm12345", "visit": 1, "beamline": "ixx"}',
         ),
         (
             "cm12345-111",
-            '{"proposal": 12345, "visit": 111, "beamline": "ixx"}',
+            '{"proposal": "cm12345", "visit": 111, "beamline": "ixx"}',
         ),
         (
             "cv12345-1",
-            '{"proposal": 12345, "visit": 1, "beamline": "ixx"}',
+            '{"proposal": "cv12345", "visit": 1, "beamline": "ixx"}',
         ),
         (
             "cm12345678-1",
-            '{"proposal": 12345678, "visit": 1, "beamline": "ixx"}',
+            '{"proposal": "cm12345678", "visit": 1, "beamline": "ixx"}',
         ),
         (
             "cm12345678-111",
-            '{"proposal": 12345678, "visit": 111, "beamline": "ixx"}',
+            '{"proposal": "cm12345678", "visit": 111, "beamline": "ixx"}',
         ),
         (
             "cv12345678-111",
-            '{"proposal": 12345678, "visit": 111, "beamline": "ixx"}',
+            '{"proposal": "cv12345678", "visit": 111, "beamline": "ixx"}',
         ),
     ],
 )

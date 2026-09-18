@@ -66,6 +66,7 @@ def setup_scratch(
 
     scratch_install(
         *(config.root / repo.name for repo in config.repositories),
+        use_uv_lock=[repo.use_uv_lock for repo in config.repositories],
         timeout=install_timeout,
     )
 
@@ -116,7 +117,11 @@ def ensure_repo(
         )
 
 
-def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
+def scratch_install(
+    *paths: Path,
+    use_uv_lock: list[bool] | None = None,
+    timeout: float = _DEFAULT_INSTALL_TIMEOUT,
+) -> None:
     """
     Install scratch packages. Make blueapi aware of repositories checked out in
     the scratch area. Make it automatically follow code changes to those repositories
@@ -125,15 +130,25 @@ def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> 
 
     Args:
         paths: List of Paths to the checked out repositories
+        use_uv_lock: Optional list of booleans indicating whether to install
+            using uv.lock
         timeout: Time to wait for installation subprocess
     """
     if not paths:
         return
+
+    use_uv_lock_list = use_uv_lock or [False] * len(paths)
+
     LOGGER.info("Installing packages")
-    for path in paths:
+    for path, uv_lock in zip(paths, use_uv_lock_list, strict=True):
         _validate_directory(path)
-        args = ["uv", "pip", "install", "-e", str(path)]
-        process = Popen(args)
+        if uv_lock:
+            args = ["uv", "sync", "--inexact"]
+            process = Popen(args, cwd=path)
+        else:
+            args = ["uv", "pip", "install", "-e", str(path)]
+            process = Popen(args)
+
         process.wait(timeout=timeout)
         if process.returncode != 0:
             raise RuntimeError(

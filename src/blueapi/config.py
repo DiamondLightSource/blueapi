@@ -209,6 +209,10 @@ class ScratchRepository(BlueapiBaseModel):
         # include an invalid value
         default_factory=lambda: None,
     )
+    use_uv_lock: bool = Field(
+        description="Whether to install the repository using uv.lock",
+        default=False,
+    )
 
     @field_validator("remote_url")
     @classmethod

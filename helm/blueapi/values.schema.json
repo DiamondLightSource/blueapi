@@ -849,6 +849,12 @@
                     "title": "Target Revision",
                     "description": "Revision (branch or tag) to check out when cloning - defaults to remote's HEAD. If a tag is used, the repo will be left in a 'detached head' state.",
                     "type": "string"
+                },
+                "use_uv_lock": {
+                    "title": "Use Uv Lock",
+                    "description": "Whether to install the repository using uv.lock",
+                    "default": false,
+                    "type": "boolean"
                 }
             },
             "additionalProperties": false

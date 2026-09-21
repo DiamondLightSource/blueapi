@@ -33,7 +33,6 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
     "pyjwt[crypto]",
-    "tomlkit",
     "graypy>=2.1.0",
     "httpx>=0.28.1",
     "aiohttp>=3.13.5",

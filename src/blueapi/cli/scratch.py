@@ -8,7 +8,6 @@ from pathlib import Path
 from subprocess import Popen
 
 from git import Repo
-from tomlkit import parse
 
 from blueapi.config import FORBIDDEN_OWN_REMOTE_URL, ScratchConfig
 from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, SourceInfo
@@ -180,15 +179,6 @@ def _validate_directory(path: Path) -> None:
         raise KeyError(f"{path}: Is a file, not a directory")
 
 
-def _get_project_name_from_pyproject(path: Path) -> str:
-    pyproject_path = path / "pyproject.toml"
-    if pyproject_path.exists():
-        with pyproject_path.open("r", encoding="utf-8") as file:
-            toml_data = parse(file.read())
-        return toml_data.get("project", {}).get("name", "")
-    return ""
-
-
 def _fetch_installed_packages_details() -> list[PackageInfo]:
     installed_packages = importlib.metadata.distributions()
     return [
@@ -234,7 +224,7 @@ def get_python_environment(
                 if repo.remotes
                 else f"UNKNOWN REMOTE @{branch}"
             )
-            package_name = _get_project_name_from_pyproject(local_directory)
+            package_name = local_directory.name
             package_location = ""
 
             packages.append(

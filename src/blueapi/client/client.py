@@ -5,15 +5,13 @@ from collections.abc import Iterable
 from concurrent.futures import Future
 from contextlib import suppress
 from functools import cached_property
+from inspect import Parameter
 from pathlib import Path
 from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
-from observability_utils.tracing import (
-    get_tracer,
-    start_as_current_span,
-)
+from observability_utils.tracing import get_tracer, start_as_current_span
 
 from blueapi.config import (
     ApplicationConfig,
@@ -58,13 +56,6 @@ log = logging.getLogger(__name__)
 
 _REPR_MAX_LENGTH = 100
 _REPR_MAX_ARGS_INLINE = 3
-_JSON_TYPE_MAP = {
-    "string": "str",
-    "integer": "int",
-    "boolean": "bool",
-    "number": "float",
-    "object": "dict",
-}
 
 
 class MissingInstrumentSessionError(Exception):
@@ -156,6 +147,7 @@ class Plan:
         self.model = model
         self._client = client
         self.__doc__ = model.description
+        self.parameter_kinds = model.parameter_kinds
 
     def __call__(self, *args, **kwargs) -> Any:
         req = TaskRequest(
@@ -182,48 +174,102 @@ class Plan:
         return self.model.parameter_schema.get("required", [])
 
     def _build_args(self, *args, **kwargs) -> TaskParams:
-        log.info(
-            "Building args for %s, using %s and %s",
-            "[" + ",".join(self.properties) + "]",
-            args,
-            kwargs,
+        kinds = self.parameter_kinds
+
+        positional_parameters = [
+            name
+            for name, kind in kinds.items()
+            if kind
+            in (Parameter.POSITIONAL_ONLY.name, Parameter.POSITIONAL_OR_KEYWORD.name)
+        ]
+
+        var_positional = any(
+            kind == Parameter.VAR_POSITIONAL.name for kind in kinds.values()
         )
+        var_keyword = any(kind == Parameter.VAR_KEYWORD.name for kind in kinds.values())
 
-        properties = list(self.properties)
-
-        if len(args) > len(properties):
+        if not var_positional and len(args) > len(positional_parameters):
             raise TypeError(f"{self.name} got too many arguments")
 
-        if extra := {k for k in kwargs if k not in properties}:
-            raise TypeError(f"{self.name} got unexpected arguments: {extra}")
+        # Check positional/keyword collisions.
+        for name in positional_parameters[: len(args)]:
+            if name in kwargs:
+                raise TypeError(f"{self.name} got multiple values for {name}")
 
-        positional_names = properties[: len(args)]
+        # Keyword arguments must correspond to a named parameter, unless
+        # the function has **kwargs.
+        if not var_keyword:
+            unexpected = set(kwargs) - set(kinds)
+            if unexpected:
+                raise TypeError(f"{self.name} got unexpected arguments: {unexpected}")
 
-        if duplicate := set(positional_names) & kwargs.keys():
-            name = next(iter(duplicate))
-            raise TypeError(f"{self.name} got multiple values for {name}")
+        # A keyword-only parameter cannot be supplied positionally.
+        # Since positional_parameters excludes KEYWORD_ONLY, this is
+        # automatically handled above.
 
-        supplied = set(positional_names) | kwargs.keys()
+        supplied = set(kwargs) | set(positional_parameters[: len(args)])
 
-        if missing := set(self.required) - supplied:
+        required = {
+            name
+            for name in self.required
+            if kinds[name]
+            not in (Parameter.VAR_POSITIONAL.name, Parameter.VAR_KEYWORD.name)
+        }
+
+        if missing := required - supplied:
             raise TypeError(f"Missing argument(s) for {missing}")
 
         return TaskParams(args=args, kwargs=kwargs)
 
     def __repr__(self) -> str:
-        required = set(self.required)
+        kinds = self.model.parameter_kinds
 
         def _format_arg(name: str, info: dict[str, Any]) -> str:
-            typ = _pretty_type(info)
-            default = info.get("default")
+            typ = self.model.parameter_types[name]
+            kind = kinds[name]
 
-            if name in required:
+            if kind == Parameter.VAR_POSITIONAL.name:
+                return f"*{name}: {typ}"
+
+            if kind == Parameter.VAR_KEYWORD.name:
+                return f"**{name}: {typ}"
+
+            if name in self.required:
                 return f"{name}: {typ}"
-            if default := info.get("default"):
-                return f"{name}: {typ} = {default!r}"
-            return f"{name}: {typ} | None = None"
 
-        args = [_format_arg(name, info) for name, info in self.properties.items()]
+            if "default" in info:
+                return f"{name}: {typ} = {info['default']!r}"
+
+            return f"{name}: {typ} = None"
+
+        args: list[str] = []
+        names = list(self.properties)
+
+        has_var_positional = Parameter.VAR_POSITIONAL.name in kinds.values()
+
+        for i, name in enumerate(names):
+            kind = kinds[name]
+
+            # Positional-only parameters need a "/" after the last one.
+            if kind == Parameter.POSITIONAL_ONLY.name:
+                args.append(_format_arg(name, self.properties[name]))
+
+                if (
+                    i + 1 == len(names)
+                    or kinds[names[i + 1]] != Parameter.POSITIONAL_ONLY.name
+                ):
+                    args.append("/")
+
+                continue
+
+            # Keyword-only parameters need a "*" separator if there is
+            # no *args parameter to provide the separator.
+            if kind == Parameter.KEYWORD_ONLY.name and not has_var_positional:
+                if not args or args[-1] != "*":
+                    args.append("*")
+
+            args.append(_format_arg(name, self.properties[name]))
+
         single_line = f"{self.name}({', '.join(args)})"
 
         if len(single_line) <= _REPR_MAX_LENGTH and len(args) <= _REPR_MAX_ARGS_INLINE:
@@ -834,22 +880,3 @@ class PlanFailedError(Exception):
     def __init__(self, typ: str, message: str):
         super().__init__(message)
         self._type = typ
-
-
-def _pretty_type(schema: dict[str, Any]) -> str:
-    if "$ref" in schema:
-        return schema["$ref"].split("/")[-1]
-
-    if schema.get("type") == "array":
-        item_schema = schema.get("items", {})
-        inner = _pretty_type(item_schema)
-        return f"list[{inner}]"
-
-    if "anyOf" in schema:
-        return " | ".join(_pretty_type(s) for s in schema["anyOf"])
-
-    json_type = schema.get("type")
-    if isinstance(json_type, str):
-        return _JSON_TYPE_MAP.get(json_type, json_type.split(".")[-1])
-
-    return "Any"

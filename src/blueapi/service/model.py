@@ -1,7 +1,8 @@
 import uuid
 from collections.abc import Iterable
 from enum import StrEnum
-from typing import Annotated, Any
+from types import NoneType, UnionType
+from typing import Annotated, Any, Union, get_args, get_origin
 
 from bluesky.protocols import HasName
 from pydantic import Field
@@ -88,11 +89,37 @@ class DeviceResponse(BlueapiBaseModel):
     devices: list[DeviceModel] = Field(description="Devices available to use in plans")
 
 
-class PlanModel(BlueapiBaseModel):
-    """
-    Representation of a plan
-    """
+def _pretty_annotation(annotation: Any) -> str:
+    # Unwrap Annotated[T, ...]
+    if get_origin(annotation) is Annotated:
+        annotation = get_args(annotation)[0]
 
+    # None
+    if annotation is NoneType:
+        return "None"
+
+    origin = get_origin(annotation)
+    args = get_args(annotation)
+
+    # PEP 604: T | U
+    if origin is UnionType:
+        return " | ".join(_pretty_annotation(arg) for arg in args)
+
+    # typing.Union[T, U]
+    if origin is Union:
+        return " | ".join(_pretty_annotation(arg) for arg in args)
+
+    # Generic types, e.g. Movable[float], tuple[T, ...], list[T]
+    if origin is not None:
+        origin_name = getattr(origin, "__name__", str(origin))
+        formatted_args = ", ".join(_pretty_annotation(arg) for arg in args)
+        return f"{origin_name}[{formatted_args}]"
+
+    # Plain classes
+    return getattr(annotation, "__name__", str(annotation))
+
+
+class PlanModel(BlueapiBaseModel):
     name: str = Field(description="Name of the plan")
     description: str | SkipJsonSchema[None] = Field(
         description="Docstring of the plan", default=None
@@ -102,6 +129,8 @@ class PlanModel(BlueapiBaseModel):
         alias="schema",
         default_factory=dict,
     )
+    parameter_kinds: dict[str, str] = Field(default_factory=dict)
+    parameter_types: dict[str, str] = Field(default_factory=dict)
 
     @classmethod
     def from_plan(cls, plan: Plan) -> "PlanModel":
@@ -109,6 +138,11 @@ class PlanModel(BlueapiBaseModel):
             name=plan.name,
             schema=plan.model.model_json_schema(),
             description=plan.description,
+            parameter_kinds=plan.parameter_kinds,
+            parameter_types={
+                name: _pretty_annotation(annotation)
+                for name, annotation in plan.parameter_types.items()
+            },
         )
 
 

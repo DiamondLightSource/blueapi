@@ -1,0 +1,326 @@
+---
+# Source: blueapi/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: release-name-blueapi-config
+data:
+  config.yaml: |-
+    api:
+      url: http://0.0.0.0:8000/
+    env:
+      events:
+        broadcast_status_events: false
+      metadata:
+        instrument: p48
+      sources:
+      - kind: deviceManager
+        module: dodal.beamlines.training_rig
+      - kind: planFunctions
+        module: dodal.plans
+    logging:
+      graylog:
+        enabled: true
+        url: tcp://graylog-log-target.diamond.ac.uk:12231/
+      level: INFO
+    numtracker:
+      url: https://numtracker-staging.diamond.ac.uk/graphql
+    oidc:
+      client_audience: account
+      client_id: blueapiCli
+      logout_redirect_endpoint: oauth2/sign_out
+      well_known_url: https://identity.diamond.ac.uk/realms/dls/.well-known/openid-configuration
+    scratch:
+      repositories:
+      - name: dodal
+        remote_url: https://github.com/DiamondLightSource/dodal.git
+      - name: htss-rig-bluesky
+        remote_url: https://github.com/DiamondLightSource/htss-rig-bluesky.git
+        target_revision: update-copier-template
+      root: /workspaces
+    stomp:
+      auth:
+        password: guest
+        username: guest
+      enabled: true
+      url: tcp://p48-rabbitmq-daq.diamond.ac.uk:61613
+    tiled:
+      authentication:
+        client_id: p48TiledWriter
+        client_secret: ${TILED_WRITER_SECRET}
+      enabled: true
+      url: https://tiled.diamond.ac.uk/api/v1/
+---
+# Source: blueapi/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: release-name-blueapi-otel-config
+data:
+---
+# Source: blueapi/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: release-name-blueapi-init-config
+data:
+  init_config.yaml: |-
+    scratch:
+      repositories:
+      - name: dodal
+        remote_url: https://github.com/DiamondLightSource/dodal.git
+      - name: htss-rig-bluesky
+        remote_url: https://github.com/DiamondLightSource/htss-rig-bluesky.git
+        target_revision: update-copier-template
+      root: /workspaces
+---
+# Source: blueapi/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: release-name-blueapi-test-config
+data:
+  init_config.yaml: |-
+    api:
+      url: http://release-name-blueapi:80/
+    stomp:
+      enabled: false
+      auth:
+        username: guest
+        password: guest
+      url: http://rabbitmq:61613/
+    logging:
+      level: "INFO"
+      graylog:
+        enabled: False
+        url: http://graylog-log-target.diamond.ac.uk:12232/
+---
+# Source: blueapi/templates/volumes.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: release-name-blueapi-scratch-0.1.0
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Source: blueapi/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: release-name-blueapi
+  labels:
+    helm.sh/chart: blueapi-0.1.0
+    app.kubernetes.io/name: blueapi
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: blueapi
+    app.kubernetes.io/instance: release-name
+---
+# Source: blueapi/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: release-name-blueapi
+  labels:
+    helm.sh/chart: blueapi-0.1.0
+    app.kubernetes.io/name: blueapi
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: blueapi
+      app.kubernetes.io/instance: release-name
+  template:
+    metadata:
+      annotations:
+        fluentd-ignore: "true"
+        checksum/config: e1f22a59a75c2819feb0c50ed96a46e42b9aa293571acfa9740d7642e8f22af2
+      labels:
+        helm.sh/chart: blueapi-0.1.0
+        app.kubernetes.io/name: blueapi
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: default
+      volumes:
+      - name: worker-config
+        projected:
+          sources:
+          - configMap:
+              name: release-name-blueapi-config
+      - name: init-config
+        projected:
+          sources:
+          - configMap:
+              name: release-name-blueapi-init-config
+      - name: venv
+        emptyDir:
+          sizeLimit: 5Gi
+      - name: scratch
+        persistentVolumeClaim:
+          claimName: release-name-blueapi-scratch-0.1.0
+      initContainers:
+      - name: setup-scratch
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+        image: "ghcr.io/dan-fernandes/blueapi:0.1.0"
+        imagePullPolicy: IfNotPresent
+        resources:
+            limits:
+              cpu: 2000m
+              memory: 4000Mi
+            requests:
+              cpu: 200m
+              memory: 400Mi
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Setting up scratch area"
+            blueapi -c /config/init_config.yaml setup-scratch
+            if [ $? -ne 0 ]; then echo 'Blueapi failed'; exit 1; fi;
+            echo "Exporting venv as artefact"
+            cp -r /app/.venv/* /artefacts
+        env:
+        - name: UV_CACHE_DIR
+          value: /app/.uv-cache
+        volumeMounts:
+          - name: init-config
+            mountPath: "/config"
+            readOnly: true
+          - name: venv
+            mountPath: /artefacts
+          - name: scratch
+            mountPath: /workspaces
+      containers:
+        - name: blueapi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+          image: "ghcr.io/dan-fernandes/blueapi:0.1.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 4000Mi
+            requests:
+              cpu: 200m
+              memory: 400Mi
+          volumeMounts:
+            - name: worker-config
+              mountPath: "/config"
+              readOnly: true
+            - name: scratch
+              mountPath: /workspaces
+            - name: venv
+              mountPath: /app/.venv
+          args:
+            - "-c"
+            - "/config/config.yaml"
+            - "serve"
+          command:
+          - "python"
+          - "-Xfrozen_modules=off"
+          - "-m"
+          - "debugpy"
+          - "--listen"
+          - "5678"
+          - "--configure-subProcess"
+          - "true"
+          - "-m"
+          - "blueapi"          
+          envFrom:
+            - configMapRef:
+                name: release-name-blueapi-otel-config
+          env:
+            - name: UV_CACHE_DIR
+              value: /app/.uv-cache
+            - name: DEBUG_MODE
+              value: "ON"
+            - name: BEAMLINE
+              value: p48
+            - name: INSTRUMENT
+              value: p48
+            - name: EPICS_PVA_NAME_SERVERS
+              value: p48-epics-gateways:9075
+            - name: EPICS_CA_NAME_SERVERS
+              value: p48-epics-gateways:9064
+            - name: EPICS_PVA_AUTO_ADDR_LIST
+              value: "NO"
+            - name: EPICS_CA_AUTO_ADDR_LIST
+              value: "NO"
+            - name: TILED_WRITER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: tiled-writer-secret
+                  name: blueapi-secret
+      nodeSelector:
+        beamline: p48
+      tolerations:
+        - effect: NoSchedule
+          key: beamline
+          operator: Equal
+          value: p48
+        - effect: NoSchedule
+          key: nodetype
+          operator: Equal
+          value: training-rig
+---
+# Source: blueapi/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "release-name-blueapi-test-connection"
+  labels:
+    helm.sh/chart: blueapi-0.1.0
+    app.kubernetes.io/name: blueapi
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  volumes:
+  - name: test-config
+    projected:
+      sources:
+        - configMap:
+            name: release-name-blueapi-test-config
+  containers:
+    - name: ping
+      volumeMounts:
+      - name: worker-config
+        mountPath: "/config"
+        readOnly: true
+      image: "ghcr.io/dan-fernandes/blueapi:0.1.0"
+      imagePullPolicy: IfNotPresent
+      command: ["blueapi"]
+      args:
+        - "-c"
+        - "/config/config.yaml"
+        - "controller"
+        - "plans"
+  restartPolicy: Never

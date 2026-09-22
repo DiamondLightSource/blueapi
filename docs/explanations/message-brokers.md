@@ -44,6 +44,6 @@ The consumer created in this tutorial will capture all messages generated during
 
 It is important to remember that while all queues are guaranteed to receive the same set of messages, there is no guarantee that each queue has consumed their messages.
 
-For example, a data analysis service listening for a Stop document may process events faster than a file writing service, which needs to write each event to disk. Receiving a Stop document would then only guarantee that Blueapi has completed the plan, not that the data is written to disk and ready for analysis.
+For example, a service listening for a Stop document to kick off data analysis may consume events faster than a file writing service, which needs to write each event to disk. Receiving a Stop document would then only guarantee that Blueapi has completed the plan, not that the data is written to disk and ready for analysis.
 
 The only guarantee we make is that all queues will receive all events in the correct order.

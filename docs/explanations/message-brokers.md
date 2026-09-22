@@ -4,7 +4,7 @@ Blueapi uses a message broker to communicate with certain downstream services su
 
 ## Messages
 
-When a plan is run, Blueapi broadcasts all worker events, progress events and data events to the configured message broker. The example below are messages broadcast during a `sleep` plan:
+When a plan is run, Blueapi broadcasts all worker events, progress events and data events to the configured message broker (see [Events Emitted by the Worker](events.md)). The example below are messages broadcast during a `sleep` plan:
 ``` sh
  [x] public.worker.event:b'{"state":"RUNNING","task_status":{"task_id":"ebef36e4-47bf-4145-855d-15e343a26424","result":null,"task_complete":false,"task_failed":false},"errors":[],"warnings":[]}'
  [x] public.worker.event:b'{"state":"IDLE","task_status":{"task_id":"ebef36e4-47bf-4145-855d-15e343a26424","result":null,"task_complete":false,"task_failed":false},"errors":[],"warnings":[]}'

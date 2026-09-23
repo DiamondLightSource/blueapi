@@ -46,7 +46,7 @@ from blueapi.worker.event import (
     WorkerEvent,
     WorkerState,
 )
-from blueapi.worker.task import Task
+from blueapi.worker.task import Task, TaskParams
 from blueapi.worker.task_worker import TrackableTask
 
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
@@ -385,7 +385,7 @@ def test_get_task_by_id(
         request_id=ANY,
         task=Task(
             name="my_plan",
-            params={},
+            params=TaskParams(),
             metadata=expected_metadata,
         ),
         is_complete=False,
@@ -417,7 +417,7 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
         request_id=ANY,
         task=Task(
             name="my_plan",
-            params={},
+            params=TaskParams(),
             metadata=expected_metadata,
         ),
         is_complete=False,

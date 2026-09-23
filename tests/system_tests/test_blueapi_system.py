@@ -32,6 +32,7 @@ from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
+    TaskParams,
     TaskRequest,
     TaskResponse,
     WorkerTask,
@@ -122,7 +123,7 @@ def task_factory(
 ) -> TaskRequest:
     return TaskRequest(
         name="sleep",
-        params={"time": time},
+        params=TaskParams(kwargs={"time": time}),
         instrument_session=instrument_session
         if instrument_session
         else VALID_INSTRUMENT_SESSION[user],
@@ -365,7 +366,7 @@ def test_create_task_validation_error(rest_client: BlueapiRestClient):
         rest_client.create_task(
             TaskRequest(
                 name="Not-exists",
-                params={"Not-exists": 0.0},
+                params=TaskParams(kwargs={"Not-exists": 0.0}),
                 instrument_session="Not-exists",
             )
         )
@@ -542,7 +543,7 @@ def test_delete_current_environment(client: BlueapiClient):
         (
             TaskRequest(
                 name="count",
-                params={"detectors": ["det"], "num": 3},
+                params=TaskParams(kwargs={"detectors": ["det"], "num": 3}),
                 instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
             User.alice,
@@ -550,27 +551,29 @@ def test_delete_current_environment(client: BlueapiClient):
         (
             TaskRequest(
                 name="spec_scan",
-                params={
-                    "detectors": ["det"],
-                    "spec": {
-                        "outer": {
-                            "axis": "stage.x",
-                            "start": 0.0,
-                            "stop": 0.4,
-                            "num": 2,
-                            "type": "Linspace",
+                params=TaskParams(
+                    kwargs={
+                        "detectors": ["det"],
+                        "spec": {
+                            "outer": {
+                                "axis": "stage.x",
+                                "start": 0.0,
+                                "stop": 0.4,
+                                "num": 2,
+                                "type": "Linspace",
+                            },
+                            "inner": {
+                                "axis": "stage.theta",
+                                "start": 5.0,
+                                "stop": 5.3,
+                                "num": 3,
+                                "type": "Linspace",
+                            },
+                            "gap": True,
+                            "type": "Product",
                         },
-                        "inner": {
-                            "axis": "stage.theta",
-                            "start": 5.0,
-                            "stop": 5.3,
-                            "num": 3,
-                            "type": "Linspace",
-                        },
-                        "gap": True,
-                        "type": "Product",
-                    },
-                },
+                    }
+                ),
                 instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
             ),
             User.bob,
@@ -638,10 +641,12 @@ def test_plan_runs(
     [
         TaskRequest(
             name="set_absolute",
-            params={
-                "movable": "stage.x",
-                "value": 1.0,
-            },
+            params=TaskParams(
+                kwargs={
+                    "movable": "stage.x",
+                    "value": 1.0,
+                }
+            ),
             instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
         ),
     ],
@@ -663,11 +668,11 @@ def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
     res = client_with_stomp.run_task(
         TaskRequest(
             name="count",
-            params={
-                "detectors": [
-                    "det",
-                ],
-            },
+            params=TaskParams(
+                kwargs={
+                    "detectors": ["det"],
+                }
+            ),
             instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
         )
     )

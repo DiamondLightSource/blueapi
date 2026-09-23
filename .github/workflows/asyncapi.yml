@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: check asyncapi.yaml file
-        uses: asyncapi/cli@268f7b4fa03db2f59c48ca6c9d37839f6c44d736 # v6.1.0
+        uses: asyncapi/cli@63df7607f902aba80e2ef4d88a5605821f49ec58 # v6.2.0
         with:
           command: validate
           filepath: "./docs/reference/asyncapi.yaml"

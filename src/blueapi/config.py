@@ -237,8 +237,10 @@ class ScratchConfig(BlueapiBaseModel):
         default_factory=list,
     )
     use_uv_lock: bool = Field(
-        description="""Whether to install the repository using uv.lock
-          (only valid for single repository)""",
+        description=(
+            "Whether to install the repository using uv.lock "
+            "(only valid for single repository)"
+        ),
         default=False,
     )
 

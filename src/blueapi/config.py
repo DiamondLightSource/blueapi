@@ -209,10 +209,6 @@ class ScratchRepository(BlueapiBaseModel):
         # include an invalid value
         default_factory=lambda: None,
     )
-    use_uv_lock: bool = Field(
-        description="Whether to install the repository using uv.lock",
-        default=False,
-    )
 
     @field_validator("remote_url")
     @classmethod
@@ -239,6 +235,11 @@ class ScratchConfig(BlueapiBaseModel):
     repositories: list[ScratchRepository] = Field(
         description="Details of repositories to be cloned and imported into blueapi",
         default_factory=list,
+    )
+    use_uv_lock: bool = Field(
+        description="""Whether to install the repository using uv.lock
+          (only valid for single repo)""",
+        default=False,
     )
 
 

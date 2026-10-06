@@ -333,9 +333,9 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     {
                         "name": "dodal",
                         "remote_url": "https://github.com/DiamondLightSource/dodal.git",
-                        "use_uv_lock": False,
                     }
                 ],
+                "use_uv_lock": False,
             },
             "opa": {
                 "root": "http://opa.example.com/",
@@ -397,9 +397,9 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     {
                         "name": "dodal",
                         "remote_url": "https://github.com/DiamondLightSource/dodal.git",
-                        "use_uv_lock": False,
                     }
                 ],
+                "use_uv_lock": False,
             },
             "opa": None,
         },

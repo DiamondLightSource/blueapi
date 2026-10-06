@@ -66,7 +66,7 @@ def setup_scratch(
 
     scratch_install(
         *(config.root / repo.name for repo in config.repositories),
-        use_uv_lock=[repo.use_uv_lock for repo in config.repositories],
+        use_uv_lock=config.use_uv_lock,
         timeout=install_timeout,
     )
 
@@ -119,7 +119,7 @@ def ensure_repo(
 
 def scratch_install(
     *paths: Path,
-    use_uv_lock: list[bool] | None = None,
+    use_uv_lock: bool = False,
     timeout: float = _DEFAULT_INSTALL_TIMEOUT,
 ) -> None:
     """
@@ -130,30 +130,37 @@ def scratch_install(
 
     Args:
         paths: List of Paths to the checked out repositories
-        use_uv_lock: Optional list of booleans indicating whether to install
-            using uv.lock
+        use_uv_lock: Whether to install using uv.lock (only applies if len(paths) == 1)
         timeout: Time to wait for installation subprocess
     """
     if not paths:
         return
 
-    use_uv_lock_list = use_uv_lock or [False] * len(paths)
-
     LOGGER.info("Installing packages")
-    for path, uv_lock in zip(paths, use_uv_lock_list, strict=True):
-        _validate_directory(path)
-        if uv_lock:
-            args = ["uv", "sync", "--inexact"]
-            process = Popen(args, cwd=path)
-        else:
-            args = ["uv", "pip", "install", "-e", str(path)]
-            process = Popen(args)
 
+    def _run_install(args: list[str], cwd: Path | None = None) -> None:
+        if cwd is not None:
+            process = Popen(args, cwd=cwd)
+        else:
+            process = Popen(args)
         process.wait(timeout=timeout)
         if process.returncode != 0:
             raise RuntimeError(
                 f"Failed to install packages: Exit Code: {process.returncode}"
             )
+
+    if use_uv_lock and len(paths) == 1:
+        path = paths[0]
+        _validate_directory(path)
+        _run_install(["uv", "sync", "--inexact"], cwd=path)
+    else:
+        if use_uv_lock:
+            LOGGER.warning(
+                "use_uv_lock is ignored when installing multiple repositories"
+            )
+        for path in paths:
+            _validate_directory(path)
+            _run_install(["uv", "pip", "install", "-e", str(path)])
 
 
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:

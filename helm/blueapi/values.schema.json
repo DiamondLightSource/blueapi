@@ -827,7 +827,7 @@
                 },
                 "use_uv_lock": {
                     "title": "Use Uv Lock",
-                    "description": "Whether to install the repository using uv.lock (only valid for single repo)",
+                    "description": "Whether to install the repository using uv.lock (only valid for single repository)",
                     "default": false,
                     "type": "boolean"
                 }

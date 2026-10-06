@@ -130,7 +130,8 @@ def scratch_install(
 
     Args:
         paths: List of Paths to the checked out repositories
-        use_uv_lock: Whether to install using uv.lock (only applies if len(paths) == 1)
+        use_uv_lock: Whether to install using uv.lock
+        (only applies if there a single repository)
         timeout: Time to wait for installation subprocess
     """
     if not paths:

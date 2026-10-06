@@ -45,13 +45,13 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
-demo = ["dls-dodal>=1.69.0", "ophyd-async[sim]"]
+demo = ["dls-dodal>=3.0.2", "ophyd-async[sim]"]
 
 [dependency-groups]
 dev = [
     "ophyd_async[sim]",
     "copier",
-    "dls-dodal>=1.69.0",
+    "dls-dodal>=3.0.2",
     "myst-parser",
     "prek",
     "pydata-sphinx-theme>=0.15.4",

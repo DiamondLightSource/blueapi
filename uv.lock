@@ -455,7 +455,7 @@ requires-dist = [
     { name = "bluesky-stomp", specifier = ">=0.1.6" },
     { name = "bluesky-tiled-plugins", git = "https://github.com/bluesky/bluesky-tiled-plugins?rev=make-dependencies-smaller" },
     { name = "click", specifier = ">=8.2.0" },
-    { name = "dls-dodal", marker = "extra == 'demo'", specifier = ">=1.69.0" },
+    { name = "dls-dodal", marker = "extra == 'demo'", specifier = ">=3.0.2" },
     { name = "event-model", specifier = "==1.24.0" },
     { name = "fastapi", specifier = ">=0.112.0" },
     { name = "gitpython", specifier = ">=3.1.58" },
@@ -482,7 +482,7 @@ provides-extras = ["demo"]
 dev = [
     { name = "copier" },
     { name = "deepdiff" },
-    { name = "dls-dodal", specifier = ">=1.69.0" },
+    { name = "dls-dodal", specifier = ">=3.0.2" },
     { name = "httpx2", specifier = ">=2.5.0" },
     { name = "jwcrypto" },
     { name = "mock" },

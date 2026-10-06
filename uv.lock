@@ -559,8 +559,8 @@ wheels = [
 
 [[package]]
 name = "bluesky-tiled-plugins"
-version = "2.0.12.dev13+g343b9f0a9"
-source = { git = "https://github.com/bluesky/bluesky-tiled-plugins?rev=make-dependencies-smaller#343b9f0a95e69c1493f719ee0660183b765db3fa" }
+version = "2.0.12.dev14+gfe032d9d9"
+source = { git = "https://github.com/bluesky/bluesky-tiled-plugins?rev=make-dependencies-smaller#fe032d9d94f78082e0d90c90ae33868a0f62549e" }
 dependencies = [
     { name = "dask" },
     { name = "event-model" },
@@ -571,8 +571,9 @@ dependencies = [
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "pytz" },
-    { name = "tiled", extra = ["minimal-client", "xarray"] },
+    { name = "tiled", extra = ["minimal-client"] },
     { name = "tzlocal" },
+    { name = "xarray" },
 ]
 
 [[package]]
@@ -1440,12 +1441,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/33/a7/6b3c7ac32b642fbbe0821111654e0bd8cfbe88f68560bcf23cc78ab35c71/dask-2026.8.0.tar.gz", hash = "sha256:8a94c37b5de6d869343340dc26c3c3acca7ec48a3abdabe00ea3abb1125884d5", size = 11561752, upload-time = "2026-08-24T19:21:25.906Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f8/3a/4fc99e788bcfa1b3b3f21abf57da45898d807d007e7f6fd1c7300904eb70/dask-2026.8.0-py3-none-any.whl", hash = "sha256:ccc0c83a189b0398602435189771d28dad7b5773b6089bb8dce14ae732dd782c", size = 1492182, upload-time = "2026-08-24T19:21:23.997Z" },
-]
-
-[package.optional-dependencies]
-array = [
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
 
 [[package]]
@@ -6439,12 +6434,6 @@ minimal-server = [
     { name = "uvicorn", extra = ["standard"] },
     { name = "zarr", version = "3.1.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "zarr", version = "3.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-]
-xarray = [
-    { name = "dask", extra = ["array"] },
-    { name = "pandas" },
-    { name = "pyarrow" },
-    { name = "xarray" },
 ]
 
 [[package]]

@@ -108,6 +108,13 @@ def _is_service_account(
     )
 
 
+def _sessions_instrument(token: str, instrument: str) -> str:
+    """Instrument to ask OPA for sessions on: a service account asks for its own
+    instrument, which gets all of that instrument's sessions"""
+    claims = _claims(token)
+    return instrument if claims.get("fedid") else claims.get("instrument", "")
+
+
 def _tags(access_blob: AccessBlob | None) -> list[str]:
     return list((access_blob or {}).get("tags") or [])
 
@@ -209,7 +216,11 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(AccessPolicy):
 
     async def _has_proposal(self, token: str, instrument: str, proposal: str) -> bool:
         return proposal in (
-            await self._opa("session/user_proposals", token, instrument=instrument)
+            await self._opa(
+                "session/user_proposals",
+                token,
+                instrument=_sessions_instrument(token, instrument),
+            )
             or []
         )
 
@@ -299,11 +310,15 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(AccessPolicy):
                 tags = [instrument]
             case [instrument, "raw" | "processed"]:
                 tags = await self._opa(
-                    "session/user_proposals", token, instrument=instrument
+                    "session/user_proposals",
+                    token,
+                    instrument=_sessions_instrument(token, instrument),
                 )
             case [instrument, "raw" | "processed", *_]:
                 tags = await self._opa(
-                    "session/user_sessions", token, instrument=instrument
+                    "session/user_sessions",
+                    token,
+                    instrument=_sessions_instrument(token, instrument),
                 )
             case _:
                 return NO_ACCESS  # type: ignore

@@ -300,11 +300,6 @@
                     "title": "Audience",
                     "type": "string"
                 },
-                "tiled_service_account_check": {
-                    "default": "blueapi/tiled_service_account_for_instrument",
-                    "title": "Tiled Service Account Check",
-                    "type": "string"
-                },
                 "submit_task_check": {
                     "default": "session/access",
                     "title": "Submit Task Check",

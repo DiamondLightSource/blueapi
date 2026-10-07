@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from contextlib import AbstractAsyncContextManager, aclosing, nullcontext
 from typing import Annotated, Any, Self, cast
 
+import jwt
 from aiohttp import ClientSession
 from fastapi import Depends, HTTPException
 from fastapi.requests import HTTPConnection
@@ -14,6 +15,9 @@ from blueapi.service.model import TaskRequest
 from blueapi.utils import INSTRUMENT_SESSION_RE
 
 LOGGER = logging.getLogger(__name__)
+
+#: Audience that grants a service account write access to tiled
+TILED_WRITER_AUDIENCE = "tiled-writer"
 
 
 class OpaClient:
@@ -52,15 +56,6 @@ class OpaClient:
         LOGGER.info("No OPA config provided - not creating OpaClient")
         return nullcontext()
 
-    async def require_tiled_service_account(self, token: str):
-        if not await self._call_opa(
-            self._config.tiled_service_account_check,
-            {"token": token, "instrument": self._instrument},
-        ):
-            raise ValueError(
-                f"Tiled service account is not valid for '{self._instrument}'"
-            )
-
     async def require_submit_task(self, instrument_session: str, token: str):
         if not (match := INSTRUMENT_SESSION_RE.match(instrument_session)):
             raise ValueError("Invalid instrument session")
@@ -98,21 +93,40 @@ class OpaUserClient:
         return await self.client.is_admin(self.token)
 
 
+def require_tiled_service_account(token: str, oidc: OIDCConfig, instrument: str):
+    """Check the token is a tiled writer service account for this instrument"""
+    signing_key = jwt.PyJWKClient(oidc.jwks_uri).get_signing_key_from_jwt(token)
+    try:
+        claims = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=oidc.id_token_signing_alg_values_supported,
+            audience=TILED_WRITER_AUDIENCE,
+            issuer=oidc.issuer,
+        )
+    except jwt.InvalidTokenError as e:
+        raise ValueError(f"Tiled service account token is not valid: {e}") from e
+    if claims.get("fedid") or claims.get("instrument") != instrument:
+        raise ValueError(f"Tiled service account is not valid for '{instrument}'")
+
+
 async def validate_tiled_config(
-    tiled: ServiceAccount | str | None, oidc: OIDCConfig | None, opa: OpaClient | None
+    tiled: ServiceAccount | str | None, oidc: OIDCConfig | None, instrument: str | None
 ):
     if not isinstance(tiled, ServiceAccount):
         # can't validate an API key
         return
 
-    if not opa or not oidc:
-        LOGGER.info("Missing OPA or OIDC configuration required to validate tiled auth")
+    if not oidc or not instrument:
+        LOGGER.info(
+            "Missing OIDC or instrument configuration required to validate tiled auth"
+        )
         return
 
     LOGGER.info("Validating tiled configuration")
     tiled.token_url = oidc.token_endpoint
     auth = TiledAuth(tiled)
-    await opa.require_tiled_service_account(auth.get_access_token())
+    require_tiled_service_account(auth.get_access_token(), oidc, instrument)
 
 
 async def opa(

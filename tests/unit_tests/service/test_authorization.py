@@ -1,6 +1,8 @@
+import time
 from contextlib import AbstractContextManager, nullcontext
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import jwt
 import pytest
 from fastapi import HTTPException
 from pydantic import HttpUrl
@@ -10,10 +12,13 @@ from blueapi.service.authorization import (
     OpaClient,
     OpaUserClient,
     opa,
+    require_tiled_service_account,
     submit_permission,
     validate_tiled_config,
 )
 from blueapi.service.model import TaskRequest
+
+ISSUER = "https://auth.example.com/realms/master"
 
 # Reusable client patch decorator
 patch_client_session = patch(
@@ -29,38 +34,6 @@ def opa_config() -> OpaConfig:
         root=HttpUrl("http://auth.example.com"),
         submit_task_check="/auth/submit",
         admin_check="/auth/admin",
-        tiled_service_account_check="/auth/tiled",
-    )
-
-
-@patch_client_session
-@pytest.mark.parametrize(
-    "result,context",
-    [
-        (False, pytest.raises(ValueError, match="Tiled service account is not valid ")),
-        (True, nullcontext()),
-    ],
-)
-async def test_tiled_service_account(
-    session: MagicMock,
-    opa_config: OpaConfig,
-    result: bool,
-    context: AbstractContextManager,
-):
-    session.return_value.post = AsyncMock(
-        return_value=MagicMock(json=AsyncMock(return_value={"result": result}))
-    )
-
-    client = OpaClient(instrument="p99", config=opa_config)
-
-    session.assert_called_once_with(base_url="http://auth.example.com/")
-    with context:
-        await client.require_tiled_service_account(token="foo_bar")
-    session().post.assert_called_once_with(
-        "/auth/tiled",
-        json={
-            "input": {"token": "foo_bar", "instrument": "p99", "audience": "account"}
-        },
     )
 
 
@@ -72,7 +45,7 @@ async def test_exception_raised_when_opa_fails(
     async with OpaClient.for_config("p45", opa_config) as client:
         assert client is not None
         with pytest.raises(RuntimeError, match="Connection failed"):
-            await client.require_tiled_service_account(token="foo_bar")
+            await client.is_admin(token="foo_bar")
 
 
 @patch_client_session
@@ -216,35 +189,91 @@ async def test_user_client_admin(result: bool):
     assert admin == result
 
 
-async def test_validate_tiled_config():
-    opa = MagicMock(spec=OpaClient)
-    tiled = ServiceAccount()
+@pytest.fixture
+def tiled_oidc() -> OIDCConfig:
     oidc = Mock(spec=OIDCConfig)
     oidc.token_endpoint = "token-endpoint"
-    with patch("blueapi.service.authorization.TiledAuth") as auth:
-        auth.return_value.get_access_token.return_value = "tiled-token"
-        await validate_tiled_config(tiled, oidc, opa)
+    oidc.jwks_uri = "https://example.com/certs"
+    oidc.issuer = ISSUER
+    oidc.id_token_signing_alg_values_supported = ["RS256"]
+    return oidc
 
-    auth.assert_called_once_with(tiled)
-    opa.require_tiled_service_account.assert_called_once_with("tiled-token")
+
+def tiled_token(rsa_private_key: str, **claims) -> str:
+    now = time.time()
+    return jwt.encode(
+        {"iss": ISSUER, "exp": now + 900, "iat": now, **claims},
+        key=rsa_private_key,
+        algorithm="RS256",
+        headers={"kid": "secret"},
+    )
+
+
+SERVICE_ACCOUNT = {"aud": ["tiled-writer", "account"], "instrument": "p99"}
+
+
+def test_require_tiled_service_account(
+    rsa_private_key: str, mock_jwks_fetch, tiled_oidc: OIDCConfig
+):
+    with mock_jwks_fetch:
+        require_tiled_service_account(
+            tiled_token(rsa_private_key, **SERVICE_ACCOUNT), tiled_oidc, "p99"
+        )
 
 
 @pytest.mark.parametrize(
-    "tiled_auth,oidc,opa_client",
+    "claims,match",
     [
-        (None, None, MagicMock(spec=OpaClient)),
+        ({**SERVICE_ACCOUNT, "instrument": "p45"}, "not valid for 'p99'"),
+        ({"aud": ["tiled-writer"]}, "not valid for 'p99'"),
+        ({**SERVICE_ACCOUNT, "fedid": "abc123"}, "not valid for 'p99'"),
+        ({**SERVICE_ACCOUNT, "aud": "account"}, "token is not valid"),
+        ({**SERVICE_ACCOUNT, "iss": "https://other.example.com"}, "token is not valid"),
+        ({**SERVICE_ACCOUNT, "exp": time.time() - 10}, "token is not valid"),
+    ],
+)
+def test_require_tiled_service_account_rejected(
+    rsa_private_key: str,
+    mock_jwks_fetch,
+    tiled_oidc: OIDCConfig,
+    claims: dict,
+    match: str,
+):
+    with mock_jwks_fetch, pytest.raises(ValueError, match=match):
+        require_tiled_service_account(
+            tiled_token(rsa_private_key, **claims), tiled_oidc, "p99"
+        )
+
+
+async def test_validate_tiled_config(tiled_oidc: OIDCConfig):
+    tiled = ServiceAccount()
+    with (
+        patch("blueapi.service.authorization.TiledAuth") as auth,
+        patch("blueapi.service.authorization.require_tiled_service_account") as check,
+    ):
+        auth.return_value.get_access_token.return_value = "tiled-token"
+        await validate_tiled_config(tiled, tiled_oidc, "p99")
+
+    auth.assert_called_once_with(tiled)
+    check.assert_called_once_with("tiled-token", tiled_oidc, "p99")
+
+
+@pytest.mark.parametrize(
+    "tiled_auth,oidc,instrument",
+    [
+        (None, None, "p99"),
         (
             None,
             OIDCConfig(well_known_url="http://example.com", client_id="test-client"),
-            MagicMock(spec=OpaClient),
+            "p99",
         ),
-        ("api_key", None, MagicMock(spec=OpaClient)),
+        ("api_key", None, "p99"),
         (
             "api_key",
             OIDCConfig(well_known_url="http://example.com", client_id="test-client"),
-            MagicMock(spec=OpaClient),
+            "p99",
         ),
-        (ServiceAccount(), None, MagicMock(spec=OpaClient)),
+        (ServiceAccount(), None, "p99"),
         (
             ServiceAccount(),
             OIDCConfig(well_known_url="http://example.com", client_id="test-client"),
@@ -255,11 +284,11 @@ async def test_validate_tiled_config():
 async def test_validate_tiled_config_with_missing_config(
     tiled_auth: ServiceAccount | str | None,
     oidc: OIDCConfig | None,
-    opa_client: MagicMock | None,
+    instrument: str | None,
 ):
-    assert await validate_tiled_config(tiled_auth, oidc, opa_client) is None
-    if opa_client is not None:
-        opa_client.require_tiled_service_account.assert_not_called()
+    with patch("blueapi.service.authorization.require_tiled_service_account") as check:
+        assert await validate_tiled_config(tiled_auth, oidc, instrument) is None
+    check.assert_not_called()
 
 
 async def test_opa_dependency_method():

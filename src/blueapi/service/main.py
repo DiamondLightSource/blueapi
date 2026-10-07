@@ -126,7 +126,9 @@ def lifespan(config: ApplicationConfig):
         setup_runner(config)
         async with OpaClient.for_config(meta and meta.instrument, config.opa) as opa:
             app.state.authz = opa
-            await validate_tiled_config(config.tiled.authentication, config.oidc, opa)
+            await validate_tiled_config(
+                config.tiled.authentication, config.oidc, meta and meta.instrument
+            )
             yield
         teardown_runner()
 

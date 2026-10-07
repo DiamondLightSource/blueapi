@@ -25,7 +25,7 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
-from blueapi.utils.serialization import access_blob
+from blueapi.utils.serialization import tiled_session_path
 from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -165,9 +165,10 @@ def submit_task(
         md = config().env.metadata
         # We raise an InvalidConfigError on setting tiled_conf if this isn't set
         assert md
-        metadata["tiled_access_tags"] = [
-            access_blob(task_request.instrument_session, md.instrument)
-        ]
+        # Runs are tagged the same as their instrument session node
+        metadata["tiled_access_tags"] = tiled_session_path(
+            task_request.instrument_session, md.instrument
+        )[-1][1]
     task = Task(
         name=task_request.name,
         params=task_request.params,
@@ -207,7 +208,7 @@ def begin_task(
             )
 
         tiled_writer_token = active_context.run_engine.subscribe(
-            TiledWriter(tiled_client, batch_size=1)
+            TiledWriter(_tiled_session_node(tiled_client, task), batch_size=1)
         )
         subscribers.append((active_context.run_engine, tiled_writer_token))
 
@@ -235,6 +236,23 @@ def begin_task(
                 channel.unsubscribe(token)
             raise
     return task
+
+
+def _tiled_session_node(tiled_client, task: WorkerTask):
+    """Get the tiled container for the task's instrument session, creating it
+    (and its parents) if needed"""
+    trackable = worker().get_task_by_id(task.task_id) if task.task_id else None
+    md = config().env.metadata
+    if trackable is None or md is None:
+        return tiled_client
+    node = tiled_client
+    for key, tags in tiled_session_path(
+        trackable.task.metadata["instrument_session"], md.instrument
+    ):
+        node = (
+            node[key] if key in node else node.create_container(key, access_tags=tags)
+        )
+    return node
 
 
 def get_active_task() -> TrackableTask | None:

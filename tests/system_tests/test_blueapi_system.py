@@ -353,10 +353,7 @@ def test_task_metadata_propagated(
     assert trackable_task.task.metadata == {
         "user": User.alice,
         "instrument_session": VALID_INSTRUMENT_SESSION[User.alice],
-        "tiled_access_tags": [
-            '{"proposal": 12345, "instrument_session": 1, "instrument": "adsim", '
-            '"proposal_category": "CM"}',
-        ],
+        "tiled_access_tags": ["adsim", "CM12345-1"],
         "blueapi_task_id": response.task_id,
     }
 
@@ -613,7 +610,12 @@ def test_plan_runs(
     assert stream_resource["run_start"] == start_doc["uid"]
     assert stream_resource["uri"] == f"file://localhost/tmp/adsim-{scan_id}-det.h5"
 
-    tiled_url = f"http://localhost:8407/api/v1/metadata/{start_doc['uid']}"
+    # Runs are written to <instrument>/raw/<proposal>/<session>, e.g. CM12345/1
+    proposal, session = VALID_INSTRUMENT_SESSION[user].upper().split("-")
+    tiled_url = (
+        "http://localhost:8407/api/v1/metadata/adsim/raw/"
+        f"{proposal}/{session}/{start_doc['uid']}"
+    )
     response = requests.get(
         tiled_url, headers={"authorization": "Bearer " + get_access_token(user)}
     )

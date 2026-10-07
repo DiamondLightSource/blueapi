@@ -1,4 +1,3 @@
-import json
 import uuid
 from dataclasses import dataclass
 from inspect import isawaitable
@@ -242,6 +241,7 @@ def test_begin_task_no_task_id(worker_mock: MagicMock):
     worker_mock.assert_not_called()
 
 
+@patch("blueapi.service.interface._tiled_session_node")
 @patch("blueapi.service.interface.from_uri")
 @patch("blueapi.service.interface.config")
 @patch("blueapi.service.interface.context")
@@ -251,6 +251,7 @@ def test_subscribers_removed_when_task_not_found(
     context_mock: MagicMock,
     config_mock: MagicMock,
     from_uri_mock: MagicMock,
+    session_node_mock: MagicMock,
 ):
     # regression test for #1480
     worker = worker_mock()
@@ -373,13 +374,7 @@ def test_get_task_by_id(
     }
 
     if tiled_enabled:
-        expected_access_tag = {
-            "proposal": 12345,
-            "instrument_session": 1,
-            "instrument": "ixx",
-            "proposal_category": "CM",
-        }
-        expected_metadata["tiled_access_tags"] = [json.dumps(expected_access_tag)]
+        expected_metadata["tiled_access_tags"] = ["ixx", "CM12345-1"]
 
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
@@ -427,11 +422,58 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
     )
 
 
+@patch("blueapi.service.interface.config")
+@patch("blueapi.service.interface.worker")
+def test_tiled_session_node_creates_missing_nodes(
+    worker: MagicMock, config_mock: MagicMock
+):
+    worker().get_task_by_id.return_value = TrackableTask(
+        task_id="foo",
+        task=Task(name="foo", metadata={"instrument_session": "cm12345-1"}),
+    )
+    config_mock.return_value = ApplicationConfig(
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx"))
+    )
+    # ixx and raw already exist, the proposal and session do not
+    proposal, session = MagicMock(), MagicMock()
+    proposal.__contains__.return_value = False
+    proposal.create_container.return_value = session
+    raw = MagicMock()
+    raw.__contains__.return_value = False
+    raw.create_container.return_value = proposal
+    ixx = MagicMock()
+    ixx.__contains__.return_value = True
+    ixx.__getitem__.return_value = raw
+    client = MagicMock()
+    client.__contains__.return_value = True
+    client.__getitem__.return_value = ixx
+
+    node = interface._tiled_session_node(client, WorkerTask(task_id="foo"))
+
+    assert node is session
+    client.__getitem__.assert_called_once_with("ixx")
+    ixx.__getitem__.assert_called_once_with("raw")
+    raw.create_container.assert_called_once_with(
+        "CM12345", access_tags=["ixx", "CM12345"]
+    )
+    proposal.create_container.assert_called_once_with(
+        "1", access_tags=["ixx", "CM12345-1"]
+    )
+
+
+@patch("blueapi.service.interface.worker")
+def test_tiled_session_node_without_task(worker: MagicMock):
+    worker().get_task_by_id.return_value = None
+    client = MagicMock()
+    assert interface._tiled_session_node(client, WorkerTask(task_id="foo")) is client
+
+
+@patch("blueapi.service.interface._tiled_session_node")
 @patch("blueapi.service.interface.TiledWriter")
 @patch("blueapi.service.interface.from_uri")
 @patch("blueapi.service.interface.context")
 @patch("blueapi.service.interface.worker")
-def test_remove_tiled_subscriber(worker, context, from_uri, writer):
+def test_remove_tiled_subscriber(worker, context, from_uri, writer, session_node):
     task = WorkerTask(task_id="foo_bar")
     context().numtracker = None
     context().tiled_conf = TiledConfig()
@@ -440,7 +482,8 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
 
     interface.begin_task(task)
 
-    writer.assert_called_once_with(from_uri(), batch_size=1)
+    session_node.assert_called_once_with(from_uri(), task)
+    writer.assert_called_once_with(session_node(), batch_size=1)
     context().run_engine.subscribe.assert_called_once_with(writer())
     worker().worker_events.subscribe.assert_called_once()
 

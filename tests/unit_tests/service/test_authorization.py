@@ -209,7 +209,7 @@ def tiled_token(rsa_private_key: str, **claims) -> str:
     )
 
 
-SERVICE_ACCOUNT = {"aud": ["tiled-writer", "account"], "instrument": "p99"}
+SERVICE_ACCOUNT = {"aud": ["tiled_writer_raw", "account"], "instrument": "p99"}
 
 
 def test_require_tiled_service_account(
@@ -225,7 +225,7 @@ def test_require_tiled_service_account(
     "claims,match",
     [
         ({**SERVICE_ACCOUNT, "instrument": "p45"}, "not valid for 'p99'"),
-        ({"aud": ["tiled-writer"]}, "not valid for 'p99'"),
+        ({"aud": ["tiled_writer_raw"]}, "not valid for 'p99'"),
         ({**SERVICE_ACCOUNT, "fedid": "abc123"}, "not valid for 'p99'"),
         ({**SERVICE_ACCOUNT, "aud": "account"}, "token is not valid"),
         ({**SERVICE_ACCOUNT, "iss": "https://other.example.com"}, "token is not valid"),

@@ -104,19 +104,19 @@ def general_mappers(audience: str) -> dict[str, Any]:
     }
 
 
-def beamline_service_account_mappers() -> dict[str, Any]:
+def beamline_service_account_mappers(instrument: str, aud: str) -> dict[str, Any]:
     return {
         "protocolMappers": [
             hardcoded_claim_mapper(
                 "instrument",
-                "adsim",
+                instrument,
                 extra_config={
                     "lightweight.claim": "false",
                     "access.tokenResponse.claim": "false",
                 },
             ),
             audience_mapper(
-                "tiled-writer",
+                aud,
                 name="tiled",
                 extra_config={"id.token.claim": "false", "lightweight.claim": "false"},
             ),
@@ -207,8 +207,10 @@ def create_web_client(
 
 
 @create_client
-def create_beamline_service_account_client(secret: str = "secret") -> dict[str, Any]:
-    payload = beamline_service_account_mappers()
+def create_beamline_service_account_client(
+    instrument: str = "adsim", aud: str = "tiled_writer_raw", secret: str = "secret"
+) -> dict[str, Any]:
+    payload = beamline_service_account_mappers(instrument, aud)
     payload.update(
         secret=secret,
         standardFlowEnabled=False,
@@ -253,6 +255,13 @@ def create_clients() -> None:
         root_url="http://localhost:4181",
     )
     create_beamline_service_account_client(client_id="tiled-writer")
+    create_beamline_service_account_client(
+        client_id="tiled-writer-processed", aud="tiled_writer_processed"
+    )
+    # Raw writer for a different instrument, used by the access policy tests
+    create_beamline_service_account_client(
+        client_id="tiled-writer-i22", instrument="i22"
+    )
 
     # A system-test service account for the admin user plus each of USERS.
     for fedid in ("admin", *USERS):

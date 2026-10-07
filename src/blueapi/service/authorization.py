@@ -17,7 +17,7 @@ from blueapi.utils import INSTRUMENT_SESSION_RE
 LOGGER = logging.getLogger(__name__)
 
 #: Audience that grants a service account write access to tiled
-TILED_WRITER_AUDIENCE = "tiled-writer"
+TILED_WRITER_AUDIENCE = "tiled_writer_raw"
 
 
 class OpaClient:

@@ -1,4 +1,3 @@
-import json
 from typing import Any
 
 from pydantic import BaseModel
@@ -29,17 +28,25 @@ def serialize(obj: Any) -> Any:
         return obj
 
 
-def access_blob(instrument_session: str, instrument: str) -> str:
+def tiled_session_path(
+    instrument_session: str, instrument: str
+) -> list[tuple[str, list[str]]]:
+    """
+    Keys and access tags of the tiled nodes from the instrument down to the
+    instrument session, e.g. for cm12345-1 on ixx:
+    ixx [ixx] / raw [ixx] / CM12345 [ixx, CM12345] / 1 [ixx, CM12345-1]
+    """
     m = utils.INSTRUMENT_SESSION_RE.match(instrument_session)
     if m is None:
         raise ValueError(
             "Unable to extract proposal and instrument session number from "
             f"instrument session {instrument_session}"
         )
-    blob = {
-        "proposal": int(m["proposal"]),
-        "instrument_session": int(m["instrument_session"]),
-        "instrument": instrument,
-        "proposal_category": m["category"].upper(),
-    }
-    return json.dumps(blob)
+    proposal = f"{m['category'].upper()}{m['proposal']}"
+    session = m["instrument_session"]
+    return [
+        (instrument, [instrument]),
+        ("raw", [instrument]),
+        (proposal, [instrument, proposal]),
+        (session, [instrument, f"{proposal}-{session}"]),
+    ]

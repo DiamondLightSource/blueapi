@@ -95,8 +95,12 @@ class OpaUserClient:
 
 def require_tiled_service_account(token: str, oidc: OIDCConfig, instrument: str):
     """Check the token is a tiled writer service account for this instrument"""
-    signing_key = jwt.PyJWKClient(oidc.jwks_uri).get_signing_key_from_jwt(token)
+    requirement = (
+        f"The tiled service account must have the '{TILED_WRITER_AUDIENCE}' "
+        f"audience, an 'instrument' claim of '{instrument}' and no 'fedid' claim"
+    )
     try:
+        signing_key = jwt.PyJWKClient(oidc.jwks_uri).get_signing_key_from_jwt(token)
         claims = jwt.decode(
             token,
             signing_key.key,
@@ -104,10 +108,14 @@ def require_tiled_service_account(token: str, oidc: OIDCConfig, instrument: str)
             audience=TILED_WRITER_AUDIENCE,
             issuer=oidc.issuer,
         )
-    except jwt.InvalidTokenError as e:
-        raise ValueError(f"Tiled service account token is not valid: {e}") from e
+    except jwt.PyJWTError as e:
+        raise ValueError(
+            f"Tiled service account token is not valid: {e}. {requirement}"
+        ) from e
     if claims.get("fedid") or claims.get("instrument") != instrument:
-        raise ValueError(f"Tiled service account is not valid for '{instrument}'")
+        raise ValueError(
+            f"Tiled service account is not valid for '{instrument}'. {requirement}"
+        )
 
 
 async def validate_tiled_config(

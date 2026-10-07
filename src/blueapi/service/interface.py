@@ -2,6 +2,7 @@ import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cache
+from http import HTTPStatus
 from multiprocessing.connection import Connection
 from typing import Any
 
@@ -9,6 +10,7 @@ from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from tiled.client import from_uri
+from tiled.client.utils import ClientError
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
@@ -193,7 +195,8 @@ def begin_task(
         nt.set_headers(pass_through_headers or {})
 
     subscribers = []
-    if tiled_config := active_context.tiled_conf:
+    # Without a task nothing runs, so there is nothing to write to tiled
+    if (tiled_config := active_context.tiled_conf) and task.task_id is not None:
         # Tiled queries the root node, so must create an authorized client
         if isinstance(tiled_config.authentication, ServiceAccount):
             tiled_client = from_uri(
@@ -241,17 +244,33 @@ def begin_task(
 def _tiled_session_node(tiled_client, task: WorkerTask):
     """Get the tiled container for the task's instrument session, creating it
     (and its parents) if needed"""
-    trackable = worker().get_task_by_id(task.task_id) if task.task_id else None
-    md = config().env.metadata
-    if trackable is None or md is None:
-        return tiled_client
-    node = tiled_client
-    for key, tags in tiled_session_path(
-        trackable.task.metadata["instrument_session"], md.instrument
+    if (
+        task.task_id is None
+        or (trackable := worker().get_task_by_id(task.task_id)) is None
     ):
-        node = (
-            node[key] if key in node else node.create_container(key, access_tags=tags)
-        )
+        raise KeyError(f"No task found with ID {task.task_id}")
+    md = config().env.metadata
+    if md is None:
+        raise ValueError("Instrument metadata is required to write to tiled")
+    path = tiled_session_path(
+        trackable.task.metadata["instrument_session"], md.instrument
+    )
+    try:
+        # Usually the session already exists, so look it up in one request
+        return tiled_client[tuple(key for key, _ in path)]
+    except KeyError:
+        pass
+    node = tiled_client
+    for key, tags in path:
+        try:
+            node = node[key]
+        except KeyError:
+            try:
+                node = node.create_container(key, access_tags=tags)
+            except ClientError as e:
+                if e.response.status_code != HTTPStatus.CONFLICT:
+                    raise
+                node = node[key]  # created by someone else in the meantime
     return node
 
 

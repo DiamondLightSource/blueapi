@@ -245,6 +245,19 @@ def test_require_tiled_service_account_rejected(
         )
 
 
+def test_require_tiled_service_account_jwks_failure(tiled_oidc: OIDCConfig):
+    with (
+        patch(
+            "jwt.PyJWKClient.fetch_data",
+            side_effect=jwt.PyJWKClientConnectionError("unreachable"),
+        ),
+        pytest.raises(ValueError, match="token is not valid: unreachable"),
+    ):
+        require_tiled_service_account(
+            jwt.encode({}, "x" * 32, headers={"kid": "secret"}), tiled_oidc, "p99"
+        )
+
+
 async def test_validate_tiled_config(tiled_oidc: OIDCConfig):
     tiled = ServiceAccount()
     with (

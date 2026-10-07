@@ -735,12 +735,7 @@
                 },
                 "submit_task_check": {
                     "title": "Submit Task Check",
-                    "default": "blueapi/write_to_beamline_visit",
-                    "type": "string"
-                },
-                "tiled_service_account_check": {
-                    "title": "Tiled Service Account Check",
-                    "default": "blueapi/tiled_service_account_for_beamline",
+                    "default": "session/access",
                     "type": "string"
                 }
             },

@@ -13,6 +13,7 @@ from ophyd_async.epics.motor import Motor
 from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
 from stomp.connect import StompConnection11 as Connection
+from tiled.client.utils import ClientError
 
 from blueapi.config import (
     ApplicationConfig,
@@ -422,11 +423,35 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
     )
 
 
-@patch("blueapi.service.interface.config")
-@patch("blueapi.service.interface.worker")
-def test_tiled_session_node_creates_missing_nodes(
-    worker: MagicMock, config_mock: MagicMock
-):
+class FakeTiledNode:
+    """Minimal tiled container: children by key, tuple keys look up a path"""
+
+    def __init__(self, tags=None, conflict: bool = False):
+        self.tags = tags
+        self.children: dict[str, FakeTiledNode] = {}
+        self.conflict = conflict
+        self.lookups: list = []
+
+    def __getitem__(self, key):
+        self.lookups.append(key)
+        if isinstance(key, tuple):
+            node = self
+            for k in key:
+                node = node.children[k]
+            return node
+        return self.children[key]
+
+    def create_container(self, key, access_tags):
+        if self.conflict:
+            # Someone else created it between our lookup and create
+            self.children[key] = FakeTiledNode(access_tags)
+            raise ClientError("conflict", MagicMock(), MagicMock(status_code=409))
+        self.children[key] = FakeTiledNode(access_tags)
+        return self.children[key]
+
+
+@pytest.fixture
+def session_task(worker: MagicMock, config_mock: MagicMock) -> WorkerTask:
     worker().get_task_by_id.return_value = TrackableTask(
         task_id="foo",
         task=Task(name="foo", metadata={"instrument_session": "cm12345-1"}),
@@ -434,38 +459,85 @@ def test_tiled_session_node_creates_missing_nodes(
     config_mock.return_value = ApplicationConfig(
         env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx"))
     )
-    # ixx and raw already exist, the proposal and session do not
-    proposal, session = MagicMock(), MagicMock()
-    proposal.__contains__.return_value = False
-    proposal.create_container.return_value = session
-    raw = MagicMock()
-    raw.__contains__.return_value = False
-    raw.create_container.return_value = proposal
-    ixx = MagicMock()
-    ixx.__contains__.return_value = True
-    ixx.__getitem__.return_value = raw
+    return WorkerTask(task_id="foo")
+
+
+@pytest.fixture
+def worker():
+    with patch("blueapi.service.interface.worker") as worker:
+        yield worker
+
+
+@pytest.fixture
+def config_mock():
+    with patch("blueapi.service.interface.config") as config:
+        yield config
+
+
+def test_tiled_session_node_existing_session_is_one_lookup(session_task: WorkerTask):
+    client = FakeTiledNode()
+    client.children["ixx"] = FakeTiledNode(["ixx"])
+    client.children["ixx"].children["raw"] = FakeTiledNode(["ixx"])
+    raw = client.children["ixx"].children["raw"]
+    raw.children["CM12345"] = FakeTiledNode(["ixx", "CM12345"])
+    session = FakeTiledNode(["ixx", "CM12345-1"])
+    raw.children["CM12345"].children["1"] = session
+
+    assert interface._tiled_session_node(client, session_task) is session
+    assert client.lookups == [("ixx", "raw", "CM12345", "1")]
+
+
+def test_tiled_session_node_creates_missing_nodes(session_task: WorkerTask):
+    client = FakeTiledNode()
+    client.children["ixx"] = FakeTiledNode(["ixx"])
+
+    node = interface._tiled_session_node(client, session_task)
+
+    raw = client.children["ixx"].children["raw"]
+    assert raw.tags == ["ixx"]
+    assert raw.children["CM12345"].tags == ["ixx", "CM12345"]
+    assert raw.children["CM12345"].children["1"] is node
+    assert node.tags == ["ixx", "CM12345-1"]
+
+
+def test_tiled_session_node_created_concurrently(session_task: WorkerTask):
+    client = FakeTiledNode(conflict=True)
+
+    node = interface._tiled_session_node(client, session_task)
+
+    # ixx was created concurrently, so it is looked up and the rest created
+    ixx = client.children["ixx"]
+    assert ixx.tags == ["ixx"]
+    assert node is ixx.children["raw"].children["CM12345"].children["1"]
+
+
+def test_tiled_session_node_other_errors_raised(session_task: WorkerTask):
     client = MagicMock()
-    client.__contains__.return_value = True
-    client.__getitem__.return_value = ixx
-
-    node = interface._tiled_session_node(client, WorkerTask(task_id="foo"))
-
-    assert node is session
-    client.__getitem__.assert_called_once_with("ixx")
-    ixx.__getitem__.assert_called_once_with("raw")
-    raw.create_container.assert_called_once_with(
-        "CM12345", access_tags=["ixx", "CM12345"]
+    client.__getitem__.side_effect = KeyError
+    client.create_container.side_effect = ClientError(
+        "forbidden", MagicMock(), MagicMock(status_code=403)
     )
-    proposal.create_container.assert_called_once_with(
-        "1", access_tags=["ixx", "CM12345-1"]
-    )
+    with pytest.raises(ClientError):
+        interface._tiled_session_node(client, session_task)
 
 
-@patch("blueapi.service.interface.worker")
-def test_tiled_session_node_without_task(worker: MagicMock):
+@pytest.mark.parametrize("task_id", ["foo", None])
+def test_tiled_session_node_without_task(worker: MagicMock, task_id: str | None):
     worker().get_task_by_id.return_value = None
-    client = MagicMock()
-    assert interface._tiled_session_node(client, WorkerTask(task_id="foo")) is client
+    with pytest.raises(KeyError, match="No task found"):
+        interface._tiled_session_node(MagicMock(), WorkerTask(task_id=task_id))
+
+
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+def test_no_tiled_writer_without_task(
+    context: MagicMock, from_uri: MagicMock, worker: MagicMock
+):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    interface.begin_task(WorkerTask(task_id=None))
+    from_uri.assert_not_called()
+    context().run_engine.subscribe.assert_not_called()
 
 
 @patch("blueapi.service.interface._tiled_session_node")

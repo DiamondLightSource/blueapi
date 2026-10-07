@@ -26,4 +26,4 @@ oidc:
   client_id: "ixx-cli-blueapi"
   client_audience: "ixx-blueapi"
 opa:
-  root: "http://localhost:8181/v1/data/diamond/policy/"
+  root: "http://localhost:8181/v1/data/diamond/"

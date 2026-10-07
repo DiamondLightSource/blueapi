@@ -31,7 +31,9 @@ __all__ = [
 Args = ParamSpec("Args")
 Return = TypeVar("Return")
 
-INSTRUMENT_SESSION_RE = re.compile(r"^[a-z]{2}(?P<proposal>\d+)-(?P<visit>\d+)$")
+INSTRUMENT_SESSION_RE = re.compile(
+    r"^(?P<category>[a-z]{2})(?P<proposal>\d+)-(?P<instrument_session>\d+)$"
+)
 
 
 def report_successful_devices(

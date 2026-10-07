@@ -22,6 +22,6 @@ trees:
 access_control:
   access_policy: "config.dls:DiamondOpenPolicyAgentAuthorizationPolicy"
   args:
-    authorization_provider: "http://localhost:8181/v1/data/diamond/policy/"
+    authorization_provider: "http://localhost:8181/v1/data/diamond/"
     token_audience: account
     empty_access_blob_public: true

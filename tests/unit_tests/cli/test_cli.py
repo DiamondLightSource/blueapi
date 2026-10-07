@@ -488,7 +488,7 @@ def test_can_pass_an_instrument_session_with_an_environment_variable(
         {"BLUEAPI_CONTROLLER_RUN_INSTRUMENT_SESSION": "cm12345-1"},
         clear=True,
     ):
-        # assert visit passed to rest
+        # assert instrument session passed to rest
         result = runner.invoke(
             main,
             [

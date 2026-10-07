@@ -3,14 +3,15 @@ include:
 
 services:
   numtracker:
-    image: ghcr.io/diamondlightsource/numtracker:1.0.2
+    build: ../../numtracker
     network_mode: host # Port 8406
     environment:
       - NUMTRACKER_AUTH_HOST=http://localhost:8181
       - NUMTRACKER_PORT=8406
       - NUMTRACKER_LOG_LEVEL=info
-      - NUMTRACKER_AUTH_ACCESS=v1/data/diamond/policy/numtracker/write_to_beamline_visit
-      - NUMTRACKER_AUTH_ADMIN=v1/data/diamond/policy/admin/configure_beamline
+      - NUMTRACKER_AUTH_ACCESS=v1/data/diamond/session/access
+      - NUMTRACKER_AUTH_ADMIN=v1/data/diamond/admin/admin
+      - NUMTRACKER_AUTH_INSTRUMENT_ADMIN=v1/data/diamond/admin/configure_instrument
     security_opt:
       - label=disable
 
@@ -80,13 +81,13 @@ services:
       - label=disable
 
   opa:
-    image: openpolicyagent/opa:edge-static-debug
+    build: ../../authorisation
     network_mode: host # Port 8181
     volumes:
-      - "./services/opa_config:/mnt"
+      - "../../authorisation/policies:/policies:ro"
+      - "./services/opa_config/opa_data:/dummy_bundle:ro"
     environment:
       - ISSUER=http://localhost:8081/realms/master
-    entrypoint: "sh /mnt/entrypoint.sh"
     security_opt:
       - label=disable
 

@@ -108,7 +108,7 @@ def beamline_service_account_mappers() -> dict[str, Any]:
     return {
         "protocolMappers": [
             hardcoded_claim_mapper(
-                "beamline",
+                "instrument",
                 "adsim",
                 extra_config={
                     "lightweight.claim": "false",

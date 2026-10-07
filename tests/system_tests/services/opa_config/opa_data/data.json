@@ -1,55 +1,47 @@
 {
     "diamond": {
         "data": {
-            "beamlines": {
-                "adsim": {
+            "accounts": {
+                "admin": {
+                    "groups": [
+                        "super_admin"
+                    ]
+                },
+                "alice": {
                     "sessions": [
-                        1,
-                        2
+                        "12345-1"
+                    ]
+                },
+                "bob": {
+                    "sessions": [
+                        "12345-2"
+                    ]
+                }
+            },
+            "group_instruments": {},
+            "instruments": {
+                "adsim": {
+                    "session_refs": [
+                        "CM12345-1",
+                        "CM12345-2"
                     ]
                 }
             },
             "proposals": {
                 "12345": {
-                    "sessions": {
-                        "1": 1,
-                        "2": 2
-                    }
+                    "category": "CM",
+                    "session_refs": [
+                        "CM12345-1",
+                        "CM12345-2"
+                    ]
                 }
             },
             "sessions": {
-                "1": {
-                    "beamline": "adsim",
-                    "proposal_number": 12345,
-                    "visit_number": 1
+                "12345-1": {
+                    "instrument": "adsim"
                 },
-                "2": {
-                    "beamline": "adsim",
-                    "proposal_number": 12345,
-                    "visit_number": 2
-                }
-            },
-            "subjects": {
-                "admin": {
-                    "permissions": [
-                        "super_admin"
-                    ],
-                    "proposals": [],
-                    "sessions": []
-                },
-                "alice": {
-                    "permissions": [],
-                    "proposals": [],
-                    "sessions": [
-                        1
-                    ]
-                },
-                "bob": {
-                    "permissions": [],
-                    "proposals": [],
-                    "sessions": [
-                        2
-                    ]
+                "12345-2": {
+                    "instrument": "adsim"
                 }
             }
         }

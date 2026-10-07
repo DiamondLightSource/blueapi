@@ -354,7 +354,8 @@ def test_task_metadata_propagated(
         "user": User.alice,
         "instrument_session": VALID_INSTRUMENT_SESSION[User.alice],
         "tiled_access_tags": [
-            '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
+            '{"proposal": 12345, "instrument_session": 1, "instrument": "adsim", '
+            '"proposal_category": "CM"}',
         ],
         "blueapi_task_id": response.task_id,
     }

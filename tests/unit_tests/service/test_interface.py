@@ -375,8 +375,9 @@ def test_get_task_by_id(
     if tiled_enabled:
         expected_access_tag = {
             "proposal": 12345,
-            "visit": 1,
-            "beamline": "ixx",
+            "instrument_session": 1,
+            "instrument": "ixx",
+            "proposal_category": "CM",
         }
         expected_metadata["tiled_access_tags"] = [json.dumps(expected_access_tag)]
 

@@ -29,16 +29,17 @@ def serialize(obj: Any) -> Any:
         return obj
 
 
-def access_blob(instrument_session: str, beamline: str) -> str:
+def access_blob(instrument_session: str, instrument: str) -> str:
     m = utils.INSTRUMENT_SESSION_RE.match(instrument_session)
     if m is None:
         raise ValueError(
-            "Unable to extract proposal and visit from "
+            "Unable to extract proposal and instrument session number from "
             f"instrument session {instrument_session}"
         )
     blob = {
         "proposal": int(m["proposal"]),
-        "visit": int(m["visit"]),
-        "beamline": beamline,
+        "instrument_session": int(m["instrument_session"]),
+        "instrument": instrument,
+        "proposal_category": m["category"].upper(),
     }
     return json.dumps(blob)

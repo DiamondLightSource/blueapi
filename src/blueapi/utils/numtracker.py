@@ -69,7 +69,7 @@ class NumtrackerClient:
         Create a new scan with numtracker.
 
         Args:
-            instrument_session: The proposal number, proposal code and visit ID
+            instrument_session: The proposal code, proposal number and session number
             e.g. cm12345-1
 
             instrument: The instrument to write data on e.g. i22

@@ -2,12 +2,11 @@ import json
 import logging
 
 from fastapi import HTTPException
-from pydantic import BaseModel, HttpUrl, TypeAdapter
+from pydantic import BaseModel, HttpUrl, ValidationError
 from starlette.status import (
     HTTP_401_UNAUTHORIZED,
 )
 from tiled.access_control.access_policies import (
-    ALL_ACCESS,
     NO_ACCESS,
     ExternalPolicyDecisionPoint,
     ResultHolder,
@@ -21,9 +20,17 @@ logger = logging.getLogger(__name__)
 
 
 class DiamondAccessBlob(BaseModel):
+    """Inputs for the session/access policy, supplied by the client creating a node"""
+
     proposal: int
-    visit: int
-    beamline: str
+    instrument_session: int
+    instrument: str
+    proposal_category: str
+
+    @property
+    def tag(self) -> str:
+        """Session reference in the format returned by session/user_sessions"""
+        return f"{self.proposal_category}{self.proposal}-{self.instrument_session}"
 
 
 def _check_principal(principal: Principal | None):
@@ -47,15 +54,14 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         self,
         authorization_provider: HttpUrl,
         token_audience: str,
-        create_node_endpoint: str = "tiled/user_session",
-        allowed_tags_endpoint: str = "tiled/user_sessions",
+        create_node_endpoint: str = "session/access",
+        allowed_tags_endpoint: str = "session/user_sessions",
         scopes_endpoint: str = "tiled/scopes",
-        modify_node_endpoint: str = "tiled/modify_session",
+        modify_node_endpoint: str = "session/access",
         empty_access_blob_public: bool = True,
         provider: str | None = None,
     ):
         self._token_audience = token_audience
-        self._type_adapter = TypeAdapter(DiamondAccessBlob | int)
 
         super().__init__(
             authorization_provider=authorization_provider,
@@ -80,10 +86,12 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         decision = await self._get_external_decision(
             self._create_node,
             self.build_input(principal, authn_access_tags, authn_scopes, access_blob),
-            ResultHolder[str],
+            ResultHolder[bool],
         )
-        if decision and decision.result is not None:
-            return (True, {"tags": [decision.result]})
+        if decision and decision.result:
+            blob = self._parse_blob(access_blob)
+            assert blob is not None  # session/access cannot pass without one
+            return (True, {"tags": [blob.tag]})
         raise ValueError("Permission denied not able to add the node")
 
     async def modify_node(
@@ -106,9 +114,21 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             self.build_input(principal, authn_access_tags, authn_scopes, access_blob),
             ResultHolder[bool],
         )
-        if decision:
-            return (decision.result, access_blob)
-        raise ValueError("Permission denied not able to add the node")
+        if decision and decision.result:
+            blob = self._parse_blob(access_blob)
+            assert blob is not None  # session/access cannot pass without one
+            return (True, {"tags": [blob.tag]})
+        raise ValueError("Permission denied not able to modify the node")
+
+    @staticmethod
+    def _parse_blob(access_blob: AccessBlob | None) -> DiamondAccessBlob | None:
+        # Client supplied blobs are JSON, stored node tags (e.g. CM12345-1) are not
+        if access_blob and access_blob.get("tags"):
+            try:
+                return DiamondAccessBlob.model_validate_json(access_blob["tags"][0])
+            except ValidationError:
+                return None
+        return None
 
     def build_input(
         self,
@@ -126,16 +146,8 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         ):
             _input["token"] = principal.access_token.get_secret_value()
 
-        if (
-            access_blob is not None
-            and "tags" in access_blob
-            and len(access_blob["tags"]) > 0
-        ):
-            blob = self._type_adapter.validate_json(access_blob["tags"][0])
-            if isinstance(blob, DiamondAccessBlob):
-                _input.update(blob.model_dump())
-            elif isinstance(blob, int):
-                _input["session"] = str(blob)
+        if blob := self._parse_blob(access_blob):
+            _input.update(blob.model_dump())
 
         return json.dumps({"input": _input})
 
@@ -154,8 +166,6 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             ResultHolder[list[str]],
         )
         if tags is not None:
-            if tags.result == ["*"]:
-                return ALL_ACCESS
             return [AccessBlobFilter(tags=tags.result, user_id=None)]  # type: ignore
         else:
             return NO_ACCESS  # type: ignore

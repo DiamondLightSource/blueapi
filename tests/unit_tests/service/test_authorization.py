@@ -58,7 +58,9 @@ async def test_tiled_service_account(
         await client.require_tiled_service_account(token="foo_bar")
     session().post.assert_called_once_with(
         "/auth/tiled",
-        json={"input": {"token": "foo_bar", "beamline": "p99", "audience": "account"}},
+        json={
+            "input": {"token": "foo_bar", "instrument": "p99", "audience": "account"}
+        },
     )
 
 
@@ -108,7 +110,7 @@ async def test_opa_adds_input_fields(session: MagicMock, opa_config: OpaConfig):
     session.assert_called_once()
     session().post.assert_called_once_with(
         "foo/bar",
-        json={"input": {"beamline": "p45", "audience": "account", "foo": "bar"}},
+        json={"input": {"instrument": "p45", "audience": "account", "foo": "bar"}},
     )
 
 
@@ -140,9 +142,10 @@ async def test_require_submit_task(
         json={
             "input": {
                 "token": "foo_bar",
-                "beamline": "p99",
+                "instrument": "p99",
                 "audience": "account",
-                "visit": 1,
+                "instrument_session": 1,
+                "proposal_category": "CM",
                 "proposal": 12345,
             }
         },
@@ -175,7 +178,9 @@ async def test_opa_is_admin(session: MagicMock, opa_config: OpaConfig, result: b
 
     session().post.assert_called_once_with(
         "/auth/admin",
-        json={"input": {"token": "foo_bar", "beamline": "p45", "audience": "account"}},
+        json={
+            "input": {"token": "foo_bar", "instrument": "p45", "audience": "account"}
+        },
     )
 
 

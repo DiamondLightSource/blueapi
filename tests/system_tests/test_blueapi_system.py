@@ -156,7 +156,7 @@ def get_access_token(user: ValidUser) -> str:
 @pytest.fixture(scope="module")
 def client_without_auth() -> Generator[BlueapiClient]:
     with patch(
-        "blueapi.service.authentication.SessionManager.from_cache",
+        "blueapi.client.session.SessionManager.from_cache",
         return_value=None,
     ):
         yield BlueapiClient.from_config(config=ApplicationConfig())
@@ -166,7 +166,7 @@ def patch_session(user: ValidUser):
     mock_session_manager = MagicMock()
     mock_session_manager.get_valid_access_token.return_value = get_access_token(user)
     return patch(
-        "blueapi.service.authentication.SessionManager.from_cache",
+        "blueapi.client.session.SessionManager.from_cache",
         return_value=mock_session_manager,
     )
 

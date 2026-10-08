@@ -60,13 +60,13 @@ def mock_stream_handler_emit() -> Generator[Mock]:
 
 @pytest.fixture
 def mock_graylog_emit() -> Generator[Mock]:
-    with patch("blueapi.log.GELFTCPHandler.emit") as graylog_emit:
+    with patch("graypy.GELFTCPHandler.emit") as graylog_emit:
         yield graylog_emit
 
 
 MOCK_HANDLER_EMIT_STRINGS = [
     "blueapi.log.logging.StreamHandler.emit",
-    "blueapi.log.GELFTCPHandler.emit",
+    "graypy.GELFTCPHandler.emit",
 ]
 
 

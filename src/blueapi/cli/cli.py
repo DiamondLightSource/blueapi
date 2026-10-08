@@ -31,13 +31,13 @@ from blueapi.client.rest import (
     UnauthorisedAccessError,
     UnknownPlanError,
 )
+from blueapi.client.session import SessionCacheManager, SessionManager
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
-from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
 from blueapi.worker import ProgressEvent, WorkerEvent
 from blueapi.worker.event import TaskError, TaskResult

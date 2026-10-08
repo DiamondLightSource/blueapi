@@ -53,6 +53,8 @@ _TASK_WITH_METADATA = Task(
     },
 )
 
+_SUCCESS = TaskResult(type="int", result=42)
+
 
 class FakeDevice(Movable[float]):
     event: threading.Event
@@ -629,21 +631,19 @@ def take_events_from_streams(
     ],
 )
 def test_get_tasks(worker: TaskWorker, status, expected_task_ids):
+    worker._current = TrackableTask(
+        task_id="task1",
+        task=Task(name="set_absolute", params={"movable": "fake_device", "value": 4.0}),
+        outcome=None,
+        is_pending=False,
+    )
     worker._pending_tasks = {
-        "task1": TrackableTask(
-            task_id="task1",
-            task=Task(
-                name="set_absolute", params={"movable": "fake_device", "value": 4.0}
-            ),
-            is_complete=False,
-            is_pending=False,
-        ),
         "task2": TrackableTask(
             task_id="task2",
             task=Task(
                 name="set_absolute", params={"movable": "fake_device", "value": 4.0}
             ),
-            is_complete=False,
+            outcome=_SUCCESS,
             is_pending=True,
         ),
     }
@@ -653,7 +653,7 @@ def test_get_tasks(worker: TaskWorker, status, expected_task_ids):
             task=Task(
                 name="set_absolute", params={"movable": "fake_device", "value": 4.0}
             ),
-            is_complete=True,
+            outcome=_SUCCESS,
             is_pending=False,
         ),
     }
@@ -668,7 +668,7 @@ def test_submitting_completed_task_fails(worker: TaskWorker):
     with pytest.raises(ValueError):
         worker._submit_trackable_task(
             TrackableTask(
-                task_id="task1", task=_SIMPLE_TASK, is_complete=True, is_pending=False
+                task_id="task1", task=_SIMPLE_TASK, is_pending=False, outcome=_SUCCESS
             )
         )
 
@@ -805,8 +805,6 @@ def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker)
     assert inert_worker._current_task_otel_context is None
     # Bad way to tell that this branch has been run, but I can't think of a better way
     # Have to set these values to match output
-    task.is_complete = False
-    task.is_pending = True
     mock_logger.info.assert_called_with(
         "Task ran successfully - returned: %s", None, extra={"task_id": "0"}
     )

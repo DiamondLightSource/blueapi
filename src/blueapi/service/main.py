@@ -55,7 +55,7 @@ from blueapi.service.protocol import (
     Unauthorized,
     Update,
 )
-from blueapi.worker import TrackableTask, WorkerState
+from blueapi.worker import TaskParams, TrackableTask, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent
 from blueapi.worker.worker_errors import WorkerBusyError
 
@@ -320,7 +320,7 @@ def get_device_by_name(
 
 example_task_request = TaskRequest(
     name="count",
-    params={"detectors": ["x"]},
+    params=TaskParams(kwargs={"detectors": ["x"]}),
     instrument_session="cm12345-1",
 )
 

@@ -15,6 +15,7 @@ from blueapi.service.protocol import (
     Resume,
     Submit,
 )
+from blueapi.worker import TaskParams
 
 
 @pytest.mark.parametrize(
@@ -29,7 +30,9 @@ from blueapi.service.protocol import (
                 }
             }""",
             Submit(
-                task=TaskRequest(name="foo", params={}, instrument_session="cm12345-1")
+                task=TaskRequest(
+                    name="foo", params=TaskParams(), instrument_session="cm12345-1"
+                )
             ),
         ),
         ('{"kind": "pause"}', Pause()),

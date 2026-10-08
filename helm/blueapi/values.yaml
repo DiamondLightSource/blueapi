@@ -188,7 +188,7 @@ worker:
   env:
     # -- modules (must be installed in the venv) to fetch devices/plans from
     sources:
-      # - kind: dodal
+      # - kind: deviceManager
       #   module: dodal.beamlines.adsim
       - kind: planFunctions
         module: dodal.plans

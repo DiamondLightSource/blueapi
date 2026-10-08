@@ -388,7 +388,6 @@ def test_get_task_by_id(
             params={},
             metadata=expected_metadata,
         ),
-        is_complete=False,
         is_pending=True,
         errors=[],
     )
@@ -420,7 +419,6 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
             params={},
             metadata=expected_metadata,
         ),
-        is_complete=False,
         is_pending=True,
         errors=[],
     )

@@ -30,15 +30,18 @@ def serialize(obj: Any) -> Any:
 
 
 def access_blob(instrument_session: str, beamline: str) -> str:
-    m = utils.INSTRUMENT_SESSION_RE.match(instrument_session)
-    if m is None:
+    session_match = utils.INSTRUMENT_SESSION_RE.match(instrument_session)
+    proposal_match = utils.TILED_PROPOSAL_RE.match(instrument_session)
+    if session_match is None or proposal_match is None:
         raise ValueError(
             "Unable to extract proposal and visit from "
             f"instrument session {instrument_session}"
         )
     blob = {
-        "proposal": int(m["proposal"]),
-        "visit": int(m["visit"]),
+        # The full proposal code (e.g. "cm12345"), not just its number - the
+        # tiled access policy strips the letters itself where it needs them.
+        "proposal": proposal_match["proposal"],
+        "visit": int(session_match["visit"]),
         "beamline": beamline,
     }
     return json.dumps(blob)

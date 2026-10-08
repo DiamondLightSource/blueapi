@@ -7,6 +7,7 @@ from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
 from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
+import bluesky.plan_stubs as bps
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from ophyd_async.core import NotConnectedError, PathProvider
@@ -52,6 +53,16 @@ from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
 
+DEFAULT_PLAN_STUBS = [
+    bps.abs_set,
+    bps.rel_set,
+    bps.mv,
+    bps.mvr,
+    bps.sleep,
+    bps.rd,
+    bps.stop,
+    bps.read,
+]
 
 if "ophyd" in sys.modules:
     # This is an awful hack/workaround to avoid blueapi hanging on shutdown when
@@ -136,6 +147,9 @@ class BlueskyContext:
     def __post_init__(self, configuration: ApplicationConfig | None):
         if not configuration:
             return
+
+        for plan_stub in DEFAULT_PLAN_STUBS:
+            self.register_plan(plan_stub)
 
         if (nt_conf := configuration.numtracker) is not None:
             if configuration.env.metadata is not None:

@@ -192,8 +192,6 @@ worker:
       #   module: dodal.beamlines.adsim
       - kind: planFunctions
         module: dodal.plans
-      - kind: planFunctions
-        module: dodal.plan_stubs.wrapped
   # -- Message bus configuration for returning status to GDA/forwarding documents downstream
   # Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret
   stomp:

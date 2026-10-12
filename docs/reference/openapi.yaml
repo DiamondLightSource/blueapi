@@ -274,7 +274,7 @@ components:
       - message
       title: TaskError
       type: object
-    TaskRequest:
+    TaskRequestV2:
       additionalProperties: false
       description: Request to run a task with related info
       properties:
@@ -294,7 +294,7 @@ components:
       required:
       - name
       - instrument_session
-      title: TaskRequest
+      title: TaskRequestV2
       type: object
     TaskResponse:
       additionalProperties: false
@@ -641,7 +641,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskRequest'
+              $ref: '#/components/schemas/TaskRequestV2'
               examples:
               - instrument_session: cm12345-1
                 name: count
@@ -1042,7 +1042,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskRequest'
+              $ref: '#/components/schemas/TaskRequestV2'
               examples:
               - instrument_session: cm12345-1
                 name: count

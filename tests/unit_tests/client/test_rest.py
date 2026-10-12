@@ -34,17 +34,19 @@ from blueapi.service.model import (
     DeviceModel,
     EnvironmentResponse,
     PlanModel,
-    TaskRequest,
+    TaskRequestV2,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
 )
 from blueapi.worker.event import WorkerState
-from blueapi.worker.task import Task, TaskParams
+from blueapi.worker.task import Task, TaskParametersV2
 from blueapi.worker.task_worker import TrackableTask
 
-TASK_REQUEST = TaskRequest(
-    name="foo", params=TaskParams(kwargs={"one": "two"}), instrument_session="cm12345-1"
+TASK_REQUEST = TaskRequestV2(
+    name="foo",
+    params=TaskParametersV2(kwargs={"one": "two"}),
+    instrument_session="cm12345-1",
 )
 
 
@@ -91,10 +93,10 @@ def test_rest_error_code(
 
 def test_create_task_serialization():
     rest = Mock(spec=BlueapiRestClient)
-    request = TaskRequest(
+    request = TaskRequestV2(
         name="demo",
         instrument_session="cm12345-1",
-        params=TaskParams(
+        params=TaskParametersV2(
             kwargs={"devices": [DeviceRef(name="foo", cache=Mock(), model=Mock())]}
         ),
     )
@@ -119,10 +121,10 @@ def test_create_task_serialization_error():
         pass
 
     rest = Mock(spec=BlueapiRestClient)
-    request = TaskRequest(
+    request = TaskRequestV2(
         name="demo",
         instrument_session="cm12345-1",
-        params=TaskParams(kwargs={"devices": [CustomType()]}),
+        params=TaskParametersV2(kwargs={"devices": [CustomType()]}),
     )
 
     with pytest.raises(PydanticSerializationError, match="not serializable"):

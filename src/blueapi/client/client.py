@@ -29,8 +29,8 @@ from blueapi.service.model import (
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
-    TaskParams,
-    TaskRequest,
+    TaskParametersV2,
+    TaskRequestV2,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -150,7 +150,7 @@ class Plan:
         self.parameter_kinds = model.parameter_kinds
 
     def __call__(self, *args, **kwargs) -> Any:
-        req = TaskRequest(
+        req = TaskRequestV2(
             name=self.name,
             params=self._build_args(*args, **kwargs),
             instrument_session=self._client.instrument_session,
@@ -173,7 +173,13 @@ class Plan:
     def required(self) -> list[str]:
         return self.model.parameter_schema.get("required", [])
 
-    def _build_args(self, *args, **kwargs) -> TaskParams:
+    def _build_args(self, *args, **kwargs) -> TaskParametersV2:
+        log.info(
+            "Building args for %s, using %s and %s",
+            "[" + ",".join(self.properties) + "]",
+            args,
+            kwargs,
+        )
         kinds = self.parameter_kinds
 
         positional_parameters = [
@@ -219,7 +225,7 @@ class Plan:
         if missing := required - supplied:
             raise TypeError(f"Missing argument(s) for {missing}")
 
-        return TaskParams(args=args, kwargs=kwargs)
+        return TaskParametersV2(args=args, kwargs=kwargs)
 
     def __repr__(self) -> str:
         kinds = self.model.parameter_kinds
@@ -535,7 +541,7 @@ class BlueapiClient:
 
     @start_as_current_span(TRACER, "request")
     def run_blocking(
-        self, request: TaskRequest, on_event: OnAnyEvent | None = None
+        self, request: TaskRequestV2, on_event: OnAnyEvent | None = None
     ) -> TaskStatus:
         for event in self._rest.run_blocking(request):
             if on_event is not None:
@@ -557,7 +563,7 @@ class BlueapiClient:
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,
-        task: TaskRequest,
+        task: TaskRequestV2,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> TaskStatus:
@@ -625,7 +631,7 @@ class BlueapiClient:
             return complete.result(timeout=timeout)
 
     @start_as_current_span(TRACER, "task")
-    def create_and_start_task(self, task: TaskRequest) -> TaskResponse:
+    def create_and_start_task(self, task: TaskRequestV2) -> TaskResponse:
         """
         Create a new task and instruct the worker to start it
         immediately.
@@ -651,7 +657,7 @@ class BlueapiClient:
 
     @start_as_current_span(TRACER, "task")
     @deprecated("rest client")
-    def create_task(self, task: TaskRequest) -> TaskResponse:
+    def create_task(self, task: TaskRequestV2) -> TaskResponse:
         """
         Create a new task, does not start execution
 

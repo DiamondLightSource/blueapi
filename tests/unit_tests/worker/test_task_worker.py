@@ -3,7 +3,6 @@ import itertools
 import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future
-from pathlib import Path
 from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
@@ -13,7 +12,6 @@ import pytest
 from bluesky.protocols import Movable, Readable, Status
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.common.types import UpdatingPathProvider
 from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
@@ -27,7 +25,7 @@ from blueapi.service.model import PlanModel
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.worker import (
     Task,
-    TaskParams,
+    TaskParametersV2,
     TaskStatus,
     TaskWorker,
     TrackableTask,
@@ -38,16 +36,16 @@ from blueapi.worker import (
 )
 from blueapi.worker.event import TaskResult, TaskStatusEnum
 
-_SIMPLE_TASK = Task(name="sleep", params=TaskParams(kwargs={"time": 0.0}))
-_LONG_TASK = Task(name="sleep", params=TaskParams(kwargs={"time": 1.0}))
+_SIMPLE_TASK = Task(name="sleep", params=TaskParametersV2(kwargs={"time": 0.0}))
+_LONG_TASK = Task(name="sleep", params=TaskParametersV2(kwargs={"time": 1.0}))
 _INDEFINITE_TASK = Task(
     name="set_absolute",
-    params=TaskParams(kwargs={"movable": "fake_device", "value": 4.0}),
+    params=TaskParametersV2(kwargs={"movable": "fake_device", "value": 4.0}),
 )
-_FAILING_TASK = Task(name="failing_plan", params=TaskParams())
+_FAILING_TASK = Task(name="failing_plan", params=TaskParametersV2())
 _TASK_WITH_METADATA = Task(
     name="sleep",
-    params=TaskParams(kwargs={"time": 0.0}),
+    params=TaskParametersV2(kwargs={"time": 0.0}),
     metadata={
         "foo": "bar",
         "baz": 0,
@@ -461,18 +459,7 @@ def begin_task_and_wait_until_complete(
 #
 
 
-@pytest.fixture
-def path_provider(tmp_path: Path):
-    # Prevents issue with leftover state from beamline tests
-    with patch("dodal.plan_stubs.data_session.get_path_provider") as mock:
-        mock.return_value = MagicMock(spec=UpdatingPathProvider, return_value=tmp_path)
-        mock.return_value.data_session.return_value = "foo"
-        yield
-
-
-def test_worker_and_data_events_produce_in_order(
-    worker: TaskWorker, path_provider
-) -> None:
+def test_worker_and_data_events_produce_in_order(worker: TaskWorker) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [
             WorkerEvent(
@@ -524,7 +511,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     timeout: float = 5.0,
 ) -> None:
     default_task = Task(
-        name="count", params=TaskParams(kwargs={"detectors": ["motor"], "num": 1})
+        name="count", params=TaskParametersV2(kwargs={"detectors": ["motor"], "num": 1})
     )
     task = task or default_task
 
@@ -637,7 +624,9 @@ def test_get_tasks(worker: TaskWorker, status, expected_task_ids):
             task_id="task1",
             task=Task(
                 name="set_absolute",
-                params=TaskParams(kwargs={"movable": "fake_device", "value": 4.0}),
+                params=TaskParametersV2(
+                    kwargs={"movable": "fake_device", "value": 4.0}
+                ),
             ),
             is_complete=False,
             is_pending=False,
@@ -646,7 +635,9 @@ def test_get_tasks(worker: TaskWorker, status, expected_task_ids):
             task_id="task2",
             task=Task(
                 name="set_absolute",
-                params=TaskParams(kwargs={"movable": "fake_device", "value": 4.0}),
+                params=TaskParametersV2(
+                    kwargs={"movable": "fake_device", "value": 4.0}
+                ),
             ),
             is_complete=False,
             is_pending=True,
@@ -657,7 +648,9 @@ def test_get_tasks(worker: TaskWorker, status, expected_task_ids):
             task_id="task3",
             task=Task(
                 name="set_absolute",
-                params=TaskParams(kwargs={"movable": "fake_device", "value": 4.0}),
+                params=TaskParametersV2(
+                    kwargs={"movable": "fake_device", "value": 4.0}
+                ),
             ),
             is_complete=True,
             is_pending=False,
@@ -981,7 +974,7 @@ def test_task_worker_passes_positional_args(
 
     context.register_plan(positional_plan)
 
-    task = Task(name="positional_plan", params=TaskParams(args=[42]))
+    task = Task(name="positional_plan", params=TaskParametersV2(args=[42]))
     args, kwargs = task.prepare_params(context)
 
     assert args == [42]
@@ -996,7 +989,7 @@ def test_task_worker_passes_multiple_positional_args(
         yield from ()
 
     context.register_plan(positional_plan)
-    task = Task(name="positional_plan", params=TaskParams(args=[1, 2]))
+    task = Task(name="positional_plan", params=TaskParametersV2(args=[1, 2]))
     args, kwargs = task.prepare_params(context)
 
     assert args == [1, 2]
@@ -1018,7 +1011,7 @@ def test_task_worker_passes_positional_and_keyword_args(
     context.register_plan(mixed_plan)
     task = Task(
         name="mixed_plan",
-        params=TaskParams(args=[1, 2], kwargs={"third": 3}),
+        params=TaskParametersV2(args=[1, 2], kwargs={"third": 3}),
     )
     args, kwargs = task.prepare_params(context)
     assert args == [1, 2]
@@ -1035,7 +1028,7 @@ def test_task_worker_resolves_positional_device(
     context.register_plan(positional_device_plan)
 
     task = Task(
-        name="positional_device_plan", params=TaskParams(args=[fake_device.name])
+        name="positional_device_plan", params=TaskParametersV2(args=[fake_device.name])
     )
     args, kwargs = task.prepare_params(context)
     assert args == [fake_device]

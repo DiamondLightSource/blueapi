@@ -34,7 +34,8 @@ from blueapi.service.model import (
     ProtocolInfo,
     PythonEnvironmentResponse,
     SourceInfo,
-    TaskRequest,
+    TaskRequestV1,
+    TaskRequestV2,
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
@@ -46,7 +47,7 @@ from blueapi.worker.event import (
     WorkerEvent,
     WorkerState,
 )
-from blueapi.worker.task import Task, TaskParams
+from blueapi.worker.task import Task, TaskParametersV2
 from blueapi.worker.task_worker import TrackableTask
 
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
@@ -192,10 +193,26 @@ def test_get_device(context_mock: MagicMock):
 
 
 @patch("blueapi.service.interface.context")
-def test_submit_task(context_mock: MagicMock):
+def test_submit_task_v2(context_mock: MagicMock):
     context = BlueskyContext()
     context.register_plan(my_plan)
-    task = TaskRequest(
+    task = TaskRequestV2(
+        name="my_plan",
+        instrument_session=FAKE_INSTRUMENT_SESSION,
+    )
+    context_mock.return_value = context
+    mock_uuid_value = "8dfbb9c2-7a15-47b6-bea8-b6b77c31d3d9"
+    with patch.object(uuid, "uuid4") as uuid_mock:
+        uuid_mock.return_value = uuid.UUID(mock_uuid_value)
+        task_uuid = interface.submit_task(task)
+    assert task_uuid == mock_uuid_value
+
+
+@patch("blueapi.service.interface.context")
+def test_submit_task_v1_converts_to_v2(context_mock: MagicMock):
+    context = BlueskyContext()
+    context.register_plan(my_plan)
+    task = TaskRequestV1(
         name="my_plan",
         instrument_session=FAKE_INSTRUMENT_SESSION,
     )
@@ -211,7 +228,7 @@ def test_submit_task(context_mock: MagicMock):
 def test_clear_task(context_mock: MagicMock):
     context = BlueskyContext()
     context.register_plan(my_plan)
-    task = TaskRequest(
+    task = TaskRequestV2(
         name="my_plan",
         instrument_session=FAKE_INSTRUMENT_SESSION,
     )
@@ -361,7 +378,7 @@ def test_get_task_by_id(
     context_mock.return_value = context
 
     task_id = interface.submit_task(
-        TaskRequest(
+        TaskRequestV2(
             name="my_plan",
             instrument_session=FAKE_INSTRUMENT_SESSION,
         ),
@@ -385,7 +402,7 @@ def test_get_task_by_id(
         request_id=ANY,
         task=Task(
             name="my_plan",
-            params=TaskParams(),
+            params=TaskParametersV2(),
             metadata=expected_metadata,
         ),
         is_complete=False,
@@ -403,7 +420,7 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
     metadata = {"foo": "bar"}
 
     task_id = interface.submit_task(
-        TaskRequest(
+        TaskRequestV2(
             name="my_plan",
             instrument_session=FAKE_INSTRUMENT_SESSION,
         ),
@@ -417,7 +434,7 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
         request_id=ANY,
         task=Task(
             name="my_plan",
-            params=TaskParams(),
+            params=TaskParametersV2(),
             metadata=expected_metadata,
         ),
         is_complete=False,

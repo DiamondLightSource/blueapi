@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from enum import StrEnum
 from typing import Annotated, Any
 
@@ -11,7 +11,7 @@ from blueapi.config import OIDCConfig
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 from blueapi.core.context import generic_bounds
 from blueapi.utils import BlueapiBaseModel
-from blueapi.worker import TaskParametersV2, WorkerState
+from blueapi.worker import TaskParametersV1, TaskParametersV2, WorkerState
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
 _UNKNOWN_NAME = "UNKNOWN"
@@ -58,16 +58,13 @@ class TasksListResponse(BlueapiBaseModel):
     tasks: list[TrackableTask] = Field(description="List of tasks")
 
 
-TaskParametersV2V1 = Mapping[str, Any]
-
-
 class TaskRequestV1(BlueapiBaseModel):
     """
     Request to run a task with related info. Supports **kwargs only.
     """
 
     name: str = Field(description="Name of plan to run")
-    params: TaskParametersV2V1 = Field(
+    params: TaskParametersV1 = Field(
         description="Values for parameters to plan, if any", default_factory=dict
     )
     instrument_session: str = Field(

@@ -48,7 +48,8 @@ class Task(BlueapiBaseModel):
             ctx: Context holding plans and devices
 
         Returns:
-            tuple[list[Any], Mapping[str, Any]]: The prepared parameters for the plan.
+            tuple[list[Any], Mapping[str, Any]]: The prepared *args and **kwargs
+                                                 parameters for the plan.
         """
         plan = ctx.plans[self.name]
         func = ctx.plan_functions[self.name]
@@ -88,7 +89,6 @@ class Task(BlueapiBaseModel):
 
                     case Parameter.VAR_KEYWORD:
                         kwargs.update(value)
-
             else:
                 # Let the generated Pydantic model provide the default.
                 value = getattr(validated, name)

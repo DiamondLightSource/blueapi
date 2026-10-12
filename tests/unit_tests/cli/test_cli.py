@@ -1431,10 +1431,23 @@ def test_config_schema(
         assert json.loads(result.output) == expected
 
 
-@pytest.mark.parametrize("value,result", [({}, {}), ("{}", {}), (None, None)])
-def test_task_parameter_type(value, result):
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ({}, TaskParametersV2()),
+        ("{}", TaskParametersV2()),
+        (None, TaskParametersV2()),
+        ('{"time": 3}', TaskParametersV2(kwargs={"time": 3})),
+        (
+            '{"args": [], "kwargs": {"time": 3}}',
+            TaskParametersV2(args=[], kwargs={"time": 3}),
+        ),
+    ],
+    ids=["empty-dict", "empty-json", "none", "v1", "v2"],
+)
+def test_task_parameter_type(value, expected):
     t = ParametersType()
-    assert t.convert(value, None, None) == result
+    assert t.convert(value, None, None) == expected
 
 
 @pytest.mark.parametrize(

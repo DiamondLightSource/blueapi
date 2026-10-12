@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from enum import StrEnum
 from typing import Annotated, Any
 
@@ -11,7 +11,7 @@ from blueapi.config import OIDCConfig
 from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
 from blueapi.core.context import generic_bounds
 from blueapi.utils import BlueapiBaseModel
-from blueapi.worker import TaskParams, WorkerState
+from blueapi.worker import TaskParametersV2, WorkerState
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
 _UNKNOWN_NAME = "UNKNOWN"
@@ -58,18 +58,47 @@ class TasksListResponse(BlueapiBaseModel):
     tasks: list[TrackableTask] = Field(description="List of tasks")
 
 
-class TaskRequest(BlueapiBaseModel):
+TaskParametersV2V1 = Mapping[str, Any]
+
+
+class TaskRequestV1(BlueapiBaseModel):
     """
-    Request to run a task with related info
+    Request to run a task with related info. Supports **kwargs only.
     """
 
     name: str = Field(description="Name of plan to run")
-    params: TaskParams = Field(
-        description="Values for parameters to plan, if any", default_factory=TaskParams
+    params: TaskParametersV2V1 = Field(
+        description="Values for parameters to plan, if any", default_factory=dict
     )
     instrument_session: str = Field(
         description="Instrument session associated with this task",
     )
+
+
+class TaskRequestV2(BlueapiBaseModel):
+    """
+    Request to run a task with related info. Supports *args and **kwargs.
+    """
+
+    name: str = Field(description="Name of plan to run")
+    params: TaskParametersV2 = Field(
+        description="Values for parameters to plan, if any",
+        default_factory=TaskParametersV2,
+    )
+    instrument_session: str = Field(
+        description="Instrument session associated with this task",
+    )
+
+    @classmethod
+    def from_v1(cls, task_v1: TaskRequestV1) -> "TaskRequestV2":
+        return cls(
+            name=task_v1.name,
+            instrument_session=task_v1.instrument_session,
+            params=TaskParametersV2(kwargs=task_v1.params),
+        )
+
+
+TaskRequest = TaskRequestV1 | TaskRequestV2
 
 
 class DeviceRequest(BlueapiBaseModel):

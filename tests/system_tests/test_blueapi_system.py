@@ -32,8 +32,8 @@ from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
-    TaskParams,
-    TaskRequest,
+    TaskParametersV2,
+    TaskRequestV2,
     TaskResponse,
     WorkerTask,
 )
@@ -120,10 +120,10 @@ def scan_id(local_numtracker) -> int:
 
 def task_factory(
     user: ValidUser, instrument_session: str | None, time: float = 0.0
-) -> TaskRequest:
-    return TaskRequest(
+) -> TaskRequestV2:
+    return TaskRequestV2(
         name="sleep",
-        params=TaskParams(kwargs={"time": time}),
+        params=TaskParametersV2(kwargs={"time": time}),
         instrument_session=instrument_session
         if instrument_session
         else VALID_INSTRUMENT_SESSION[user],
@@ -131,12 +131,12 @@ def task_factory(
 
 
 @pytest.fixture
-def small_task(user: ValidUser, instrument_session: str | None) -> TaskRequest:
+def small_task(user: ValidUser, instrument_session: str | None) -> TaskRequestV2:
     return task_factory(user, instrument_session)
 
 
 @pytest.fixture
-def long_task(user: ValidUser, instrument_session: str | None) -> TaskRequest:
+def long_task(user: ValidUser, instrument_session: str | None) -> TaskRequestV2:
     return task_factory(user, instrument_session, time=1.0)
 
 
@@ -340,14 +340,14 @@ def test_client_non_existent_device(client: BlueapiClient):
 
 
 def test_create_task_and_delete_task_by_id(
-    rest_client: BlueapiRestClient, small_task: TaskRequest
+    rest_client: BlueapiRestClient, small_task: TaskRequestV2
 ):
     create_task = rest_client.create_task(small_task)
     rest_client.clear_task(create_task.task_id)
 
 
 def test_task_metadata_propagated(
-    rest_client: BlueapiRestClient, small_task: TaskRequest
+    rest_client: BlueapiRestClient, small_task: TaskRequestV2
 ):
     response = rest_client.create_task(small_task)
     trackable_task = rest_client.get_task(response.task_id)
@@ -364,16 +364,16 @@ def test_task_metadata_propagated(
 def test_create_task_validation_error(rest_client: BlueapiRestClient):
     with pytest.raises(BlueskyRequestError, match="Internal Server Error"):
         rest_client.create_task(
-            TaskRequest(
+            TaskRequestV2(
                 name="Not-exists",
-                params=TaskParams(kwargs={"Not-exists": 0.0}),
+                params=TaskParametersV2(kwargs={"Not-exists": 0.0}),
                 instrument_session="Not-exists",
             )
         )
 
 
 def test_get_all_tasks(
-    rest_client: BlueapiRestClient, small_task: TaskRequest, long_task: TaskRequest
+    rest_client: BlueapiRestClient, small_task: TaskRequestV2, long_task: TaskRequestV2
 ):
     created_tasks: list[TaskResponse] = []
     for task in [small_task, long_task]:
@@ -390,7 +390,7 @@ def test_get_all_tasks(
         rest_client.clear_task(task_id)
 
 
-def test_get_task_by_id(rest_client: BlueapiRestClient, small_task: TaskRequest):
+def test_get_task_by_id(rest_client: BlueapiRestClient, small_task: TaskRequestV2):
     created_task = rest_client.create_task(small_task)
 
     get_task = rest_client.get_task(created_task.task_id)
@@ -414,7 +414,7 @@ def test_delete_non_existent_task(rest_client: BlueapiRestClient):
         rest_client.clear_task("Not-exists")
 
 
-def test_put_worker_task(rest_client: BlueapiRestClient, small_task: TaskRequest):
+def test_put_worker_task(rest_client: BlueapiRestClient, small_task: TaskRequestV2):
     created_task = rest_client.create_task(small_task)
     rest_client.update_worker_task(WorkerTask(task_id=created_task.task_id))
     active_task = rest_client.get_active_task()
@@ -423,7 +423,7 @@ def test_put_worker_task(rest_client: BlueapiRestClient, small_task: TaskRequest
 
 
 def test_put_worker_task_fails_if_not_idle(
-    rest_client: BlueapiRestClient, small_task: TaskRequest, long_task: TaskRequest
+    rest_client: BlueapiRestClient, small_task: TaskRequestV2, long_task: TaskRequestV2
 ):
     small_task_id = rest_client.create_task(small_task).task_id
     long_task_id = rest_client.create_task(long_task).task_id
@@ -453,7 +453,7 @@ def test_set_state_transition_error(client: BlueapiClient):
     assert "Cannot transition from IDLE to PAUSED" in exception.value.args[1]
 
 
-def test_get_task_by_status(rest_client: BlueapiRestClient, small_task: TaskRequest):
+def test_get_task_by_status(rest_client: BlueapiRestClient, small_task: TaskRequestV2):
     task_1 = rest_client.create_task(small_task)
     task_2 = rest_client.create_task(small_task)
     task_by_pending = rest_client.get_all_tasks()
@@ -484,7 +484,9 @@ def test_get_task_by_status(rest_client: BlueapiRestClient, small_task: TaskRequ
     rest_client.clear_task(task_id=task_2.task_id)
 
 
-def test_progress_with_stomp(client_with_stomp: BlueapiClient, small_task: TaskRequest):
+def test_progress_with_stomp(
+    client_with_stomp: BlueapiClient, small_task: TaskRequestV2
+):
     all_events: list[AnyEvent] = []
 
     def on_event(event: AnyEvent):
@@ -541,17 +543,17 @@ def test_delete_current_environment(client: BlueapiClient):
     "task,user",
     [
         (
-            TaskRequest(
+            TaskRequestV2(
                 name="count",
-                params=TaskParams(kwargs={"detectors": ["det"], "num": 3}),
+                params=TaskParametersV2(kwargs={"detectors": ["det"], "num": 3}),
                 instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
             User.alice,
         ),
         (
-            TaskRequest(
+            TaskRequestV2(
                 name="spec_scan",
-                params=TaskParams(
+                params=TaskParametersV2(
                     kwargs={
                         "detectors": ["det"],
                         "spec": {
@@ -583,7 +585,7 @@ def test_delete_current_environment(client: BlueapiClient):
 @pytest.mark.parametrize("run_method", ["run_task", "run_blocking"])
 def test_plan_runs(
     client_with_stomp: BlueapiClient,
-    task: TaskRequest,
+    task: TaskRequestV2,
     scan_id: int,
     user: ValidUser,
     run_method: str,
@@ -639,9 +641,9 @@ def test_plan_runs(
 @pytest.mark.parametrize(
     "task",
     [
-        TaskRequest(
+        TaskRequestV2(
             name="set_absolute",
-            params=TaskParams(
+            params=TaskParametersV2(
                 kwargs={
                     "movable": "stage.x",
                     "value": 1.0,
@@ -651,7 +653,7 @@ def test_plan_runs(
         ),
     ],
 )
-def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
+def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequestV2):
     final_event = client_with_stomp.run_task(task)
     assert isinstance(final_event.result, TaskResult)
     assert final_event.task_complete
@@ -666,9 +668,9 @@ def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
 
     # ...but should leave the serve in a state where it can still run tasks
     res = client_with_stomp.run_task(
-        TaskRequest(
+        TaskRequestV2(
             name="count",
-            params=TaskParams(
+            params=TaskParametersV2(
                 kwargs={
                     "detectors": ["det"],
                 }
@@ -693,7 +695,7 @@ def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
 @pytest.mark.parametrize("method_name", ["create_task", "run_blocking"])
 def test_run_task_without_authz(
     client: BlueapiClient,
-    small_task: TaskRequest,
+    small_task: TaskRequestV2,
     user: ValidUser,
     instrument_session: str,
     method_name: str,
@@ -718,7 +720,7 @@ def test_run_task_without_authz(
 )
 def test_create_task_authorization(
     client: BlueapiClient,
-    small_task: TaskRequest,
+    small_task: TaskRequestV2,
     user: ValidUser,
     instrument_session: str,
 ):
@@ -886,7 +888,7 @@ def test_admin_can_abort_any_task(
 
 
 def test_run_blocking_requires_auth(
-    client_without_auth: BlueapiClient, small_task: TaskRequest
+    client_without_auth: BlueapiClient, small_task: TaskRequestV2
 ):
     with pytest.raises(UnauthorisedAccessError):
         client_without_auth.run_blocking(small_task)

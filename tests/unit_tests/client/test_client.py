@@ -37,7 +37,7 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
     ProtocolInfo,
-    TaskRequest,
+    TaskRequestV2,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -45,7 +45,7 @@ from blueapi.service.model import (
 from blueapi.worker import (
     ProgressEvent,
     Task,
-    TaskParams,
+    TaskParametersV2,
     TrackableTask,
     WorkerEvent,
     WorkerState,
@@ -79,7 +79,7 @@ DEVICES = DeviceResponse(
     ]
 )
 DEVICE = DeviceModel(name="foo", protocols=[])
-TASK = TrackableTask(task_id="foo", task=Task(name="bar", params=TaskParams()))
+TASK = TrackableTask(task_id="foo", task=Task(name="bar", params=TaskParametersV2()))
 TASKS = TasksListResponse(tasks=[TASK])
 ACTIVE_TASK = WorkerTask(task_id="bar")
 ENVIRONMENT_ID = uuid.uuid4()
@@ -238,10 +238,10 @@ def test_create_and_start_task_calls_both_creating_and_starting_endpoints(
     mock_rest.create_task.return_value = TaskResponse(task_id="baz")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="baz")
     client.create_and_start_task(
-        TaskRequest(name="baz", instrument_session="cm12345-1")
+        TaskRequestV2(name="baz", instrument_session="cm12345-1")
     )
     mock_rest.create_task.assert_called_once_with(
-        TaskRequest(name="baz", instrument_session="cm12345-1")
+        TaskRequestV2(name="baz", instrument_session="cm12345-1")
     )
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="baz"))
 
@@ -253,7 +253,7 @@ def test_create_and_start_task_fails_if_task_creation_fails(
     mock_rest.create_task.side_effect = BlueskyRemoteControlError("No can do")
     with pytest.raises(BlueskyRemoteControlError):
         client.create_and_start_task(
-            TaskRequest(name="baz", instrument_session="cm12345-1")
+            TaskRequestV2(name="baz", instrument_session="cm12345-1")
         )
 
 
@@ -265,7 +265,7 @@ def test_create_and_start_task_fails_if_task_id_is_wrong(
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="bar")
     with pytest.raises(BlueskyRemoteControlError):
         client.create_and_start_task(
-            TaskRequest(name="baz", instrument_session="cm12345-1")
+            TaskRequestV2(name="baz", instrument_session="cm12345-1")
         )
 
 
@@ -277,7 +277,7 @@ def test_create_and_start_task_fails_if_task_start_fails(
     mock_rest.update_worker_task.side_effect = BlueskyRemoteControlError("No can do")
     with pytest.raises(BlueskyRemoteControlError):
         client.create_and_start_task(
-            TaskRequest(name="baz", instrument_session="cm12345-1")
+            TaskRequestV2(name="baz", instrument_session="cm12345-1")
         )
 
 
@@ -446,7 +446,7 @@ def test_cannot_run_task_without_message_bus(client: BlueapiClient):
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
-        client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+        client.run_task(TaskRequestV2(name="foo", instrument_session="cm12345-1"))
 
 
 def test_run_task_sets_up_control(
@@ -460,9 +460,11 @@ def test_run_task_sets_up_control(
     ctx.correlation_id = "foo"
     mock_events.subscribe_to_all_events = lambda on_event: on_event(COMPLETE_EVENT, ctx)
 
-    client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    client_with_events.run_task(
+        TaskRequestV2(name="foo", instrument_session="cm12345-1")
+    )
     mock_rest.create_task.assert_called_once_with(
-        TaskRequest(name="foo", instrument_session="cm12345-1")
+        TaskRequestV2(name="foo", instrument_session="cm12345-1")
     )
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="foo"))
 
@@ -481,7 +483,7 @@ def test_run_task_fails_on_failing_event(
 
     on_event = Mock()
     outcome = client_with_events.run_task(
-        TaskRequest(name="foo", instrument_session="cm12345-1"),
+        TaskRequestV2(name="foo", instrument_session="cm12345-1"),
         on_event=on_event,
     )
     assert outcome.task_failed
@@ -529,7 +531,8 @@ def test_run_task_calls_event_callback(
 
     mock_on_event = Mock()
     client_with_events.run_task(
-        TaskRequest(name="foo", instrument_session="cm12345-1"), on_event=mock_on_event
+        TaskRequestV2(name="foo", instrument_session="cm12345-1"),
+        on_event=mock_on_event,
     )
 
     assert mock_on_event.mock_calls == [call(test_event), call(COMPLETE_EVENT)]
@@ -571,7 +574,8 @@ def test_run_task_ignores_non_matching_events(
 
     mock_on_event = Mock()
     client_with_events.run_task(
-        TaskRequest(name="foo", instrument_session="cm12345-1"), on_event=mock_on_event
+        TaskRequestV2(name="foo", instrument_session="cm12345-1"),
+        on_event=mock_on_event,
     )
 
     mock_on_event.assert_called_once_with(COMPLETE_EVENT)
@@ -659,7 +663,7 @@ def test_create_and_start_task_span_ok(
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="baz")
     with asserting_span_exporter(exporter, "create_and_start_task", "task"):
         client.create_and_start_task(
-            TaskRequest(name="baz", instrument_session="cm12345-1")
+            TaskRequestV2(name="baz", instrument_session="cm12345-1")
         )
 
 
@@ -724,7 +728,7 @@ def test_cannot_run_task_span_ok(
         match="Stomp configuration required to run plans is missing or disabled",
     ):
         with asserting_span_exporter(exporter, "grun_task"):
-            client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+            client.run_task(TaskRequestV2(name="foo", instrument_session="cm12345-1"))
 
 
 def test_instrument_session_required(client):
@@ -910,31 +914,31 @@ p = pytest.param
         p(
             (1,),
             {},
-            TaskParams(args=(1,), kwargs={}),
+            TaskParametersV2(args=(1,), kwargs={}),
             id="required_as_positional",
         ),
         p(
             (),
             {"one": 7},
-            TaskParams(args=(), kwargs={"one": 7}),
+            TaskParametersV2(args=(), kwargs={"one": 7}),
             id="required_as_keyword",
         ),
         p(
             (1,),
             {"two": 23},
-            TaskParams(args=(1,), kwargs={"two": 23}),
+            TaskParametersV2(args=(1,), kwargs={"two": 23}),
             id="all_as_mixed_args_kwargs",
         ),
         p(
             (1, 2),
             {},
-            TaskParams(args=(1, 2), kwargs={}),
+            TaskParametersV2(args=(1, 2), kwargs={}),
             id="all_as_positional",
         ),
         p(
             (),
             {"one": 21, "two": 42},
-            TaskParams(args=(), kwargs={"one": 21, "two": 42}),
+            TaskParametersV2(args=(), kwargs={"one": 21, "two": 42}),
             id="all_as_keyword",
         ),
     ],
@@ -950,7 +954,7 @@ def test_plan_param_mapping(args, kwargs, params):
 
     plan(*args, **kwargs)
     client.run_task.assert_called_once_with(
-        TaskRequest(name="foobar", instrument_session="cm12345-1", params=params)
+        TaskRequestV2(name="foobar", instrument_session="cm12345-1", params=params)
     )
 
 
@@ -1029,7 +1033,9 @@ def test_client_callbacks(
 
     mock_events.subscribe_to_all_events = subscribe  # type: ignore
 
-    client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    client_with_events.run_task(
+        TaskRequestV2(name="foo", instrument_session="cm12345-1")
+    )
 
     assert callback.mock_calls == [call(test_event), call(COMPLETE_EVENT)]
 
@@ -1057,7 +1063,9 @@ def test_client_callback_failures(
 
     mock_events.subscribe_to_all_events = subscribe  # type: ignore
 
-    client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    client_with_events.run_task(
+        TaskRequestV2(name="foo", instrument_session="cm12345-1")
+    )
 
     assert failing_callback.mock_calls == [call(evt), call(COMPLETE_EVENT)]
     assert callback.mock_calls == [call(evt), call(COMPLETE_EVENT)]
@@ -1111,7 +1119,7 @@ def test_client_logout(mock_rest: Mock, client: BlueapiClient):
 @pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
 def test_run_blocking(event: WorkerEvent, client: BlueapiClient, mock_rest: Mock):
     mock_rest.run_blocking.side_effect = lambda req: [event]
-    res = client.run_blocking(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    res = client.run_blocking(TaskRequestV2(name="foo", instrument_session="cm12345-1"))
     assert res == event.task_status
 
 

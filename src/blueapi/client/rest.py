@@ -30,6 +30,8 @@ from blueapi.service.model import (
     PythonEnvironmentResponse,
     SourceInfo,
     TaskRequest,
+    TaskRequestV1,
+    TaskRequestV2,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -253,6 +255,8 @@ class BlueapiRestClient:
         return self._request_and_deserialize("/worker/task", WorkerTask)
 
     def create_task(self, task: TaskRequest) -> TaskResponse:
+        if isinstance(task, TaskRequestV1):
+            task = TaskRequestV2.from_v1(task)
         return self._request_and_deserialize(
             "/tasks",
             TaskResponse,
@@ -359,6 +363,9 @@ class BlueapiRestClient:
     def run_blocking(
         self, req: TaskRequest
     ) -> Iterable[DataEvent | WorkerEvent | ProgressEvent]:
+        if isinstance(req, TaskRequestV1):
+            req = TaskRequestV2.from_v1(req)
+
         url = self._config.ws_address.unicode_string().rstrip("/") + "/api/v2/run_plan"
         headers = get_context_propagator()
         if self.session_manager:
@@ -430,7 +437,7 @@ class ServiceUnavailableError(Exception):
 
 
 def _task_model_fallback(obj: Any) -> Any:
-    """Fallback method for serializing TaskRequests"""
+    """Fallback method for serializing TaskRequest"""
     if isinstance(obj, client.DeviceRef):
         return obj.name
     raise PydanticSerializationError(f"Object of type {type(obj)} not serializable")

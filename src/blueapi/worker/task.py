@@ -11,9 +11,16 @@ from blueapi.utils import BlueapiBaseModel
 LOGGER = logging.getLogger(__name__)
 
 
-class TaskParams(BlueapiBaseModel):
+TaskParametersV1 = Mapping[str, Any]
+
+
+class TaskParametersV2(BlueapiBaseModel):
     args: Sequence[Any] = Field(default_factory=lambda: [])
     kwargs: Mapping[str, Any] = Field(default_factory=dict)
+
+    @classmethod
+    def from_v1(cls, param: TaskParametersV1):
+        return cls(kwargs=param)
 
 
 class Task(BlueapiBaseModel):
@@ -22,8 +29,9 @@ class Task(BlueapiBaseModel):
     """
 
     name: str = Field(description="Name of plan to run")
-    params: TaskParams = Field(
-        description="Values for parameters to plan, if any", default_factory=TaskParams
+    params: TaskParametersV2 = Field(
+        description="Values for parameters to plan, if any",
+        default_factory=TaskParametersV2,
     )
     metadata: dict[str, Any] = Field(
         description="Any metadata to apply to all runs within this task",

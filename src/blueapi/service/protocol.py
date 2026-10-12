@@ -20,7 +20,7 @@ from typing import Annotated, Any, Literal, Self
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.model import TaskRequest
+from blueapi.service.model import TaskRequestV2
 from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 UNKNOWN_PLAN = 4001
@@ -37,7 +37,7 @@ class ArgumentError(BaseModel):
 
 class Submit(BaseModel):
     kind: Literal["submit"] = "submit"
-    task: TaskRequest
+    task: TaskRequestV2
 
 
 class Pause(BaseModel):

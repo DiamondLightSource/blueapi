@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 from pydantic_core import InitErrorDetails
 
-from blueapi.service.model import TaskRequest
+from blueapi.service.model import TaskRequestV2
 from blueapi.service.protocol import (
     Abort,
     ArgumentError,
@@ -15,7 +15,7 @@ from blueapi.service.protocol import (
     Resume,
     Submit,
 )
-from blueapi.worker import TaskParams
+from blueapi.worker import TaskParametersV2
 
 
 @pytest.mark.parametrize(
@@ -30,8 +30,10 @@ from blueapi.worker import TaskParams
                 }
             }""",
             Submit(
-                task=TaskRequest(
-                    name="foo", params=TaskParams(), instrument_session="cm12345-1"
+                task=TaskRequestV2(
+                    name="foo",
+                    params=TaskParametersV2(),
+                    instrument_session="cm12345-1",
                 )
             ),
         ),

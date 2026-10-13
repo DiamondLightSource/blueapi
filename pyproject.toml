@@ -80,6 +80,7 @@ dev = [
     "respx",
     "pytest-xdist[psutil]",
     "httpx2>=2.5.0",
+    "playwright>=1.63.0",
 ]
 
 [project.scripts]

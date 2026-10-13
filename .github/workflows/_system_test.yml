@@ -31,5 +31,8 @@ jobs:
           EPICS_PVA_NAME_SERVERS: 127.0.0.1:9075
         run: uv run blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
 
+      - name: Install browser for device flow login
+        run: uv run --locked playwright install --with-deps chromium
+
       - name: Run tests
         run: uv run --locked tox -e system-test

@@ -493,6 +493,7 @@ def test_scripting_interface_returns_result():
         result=TaskResult(result=42, type="int"),
     )
     demo_plan = Plan(
+        name="demo",
         client=client,
         model=PlanModel(name="demo", description="Demo plan", schema={}),
     )
@@ -508,6 +509,7 @@ def test_scripting_interface_raises_exceptions():
         result=TaskError(type="ValueError", message="Plan failed"),
     )
     demo_plan = Plan(
+        name="demo",
         client=client,
         model=PlanModel(name="demo", description="Demo plan", schema={}),
     )

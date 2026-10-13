@@ -432,5 +432,5 @@ class ServiceUnavailableError(Exception):
 def _task_model_fallback(obj: Any) -> Any:
     """Fallback method for serializing TaskRequests"""
     if isinstance(obj, ClientObjectRef):
-        return obj.model.name
+        return obj.name
     raise PydanticSerializationError(f"Object of type {type(obj)} not serializable")

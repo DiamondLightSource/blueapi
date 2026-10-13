@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from inspect import Parameter, signature
 from typing import Any
 
@@ -15,7 +15,7 @@ TaskParametersV1 = Mapping[str, Any]
 
 
 class TaskParametersV2(BlueapiBaseModel):
-    args: Sequence[Any] = Field(default_factory=lambda: [])
+    args: list[Any] = Field(default_factory=list)
     kwargs: Mapping[str, Any] = Field(default_factory=dict)
 
     @classmethod

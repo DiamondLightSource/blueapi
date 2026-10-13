@@ -13,7 +13,7 @@ from responses import DELETE, GET, PUT, matchers
 from websockets import Headers, InvalidStatus, Response
 
 from blueapi import __version__
-from blueapi.client.client import DeviceRef
+from blueapi.client.device_cache import DeviceRef
 from blueapi.client.rest import (
     USER_AGENT,
     BlueapiRestClient,

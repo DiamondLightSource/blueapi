@@ -8,7 +8,6 @@ from .base_model import BlueapiBaseModel, BlueapiModelConfig, BlueapiPlanModelCo
 from .file_permissions import get_owner_gid, is_sgid_set
 from .invalid_config_error import InvalidConfigError
 from .modules import is_function_sourced_from_module, load_module_all
-from .numtracker import NumtrackerClient
 from .serialization import serialize
 from .thread_exception import handle_all_exceptions
 
@@ -20,7 +19,6 @@ __all__ = [
     "BlueapiModelConfig",
     "BlueapiPlanModelConfig",
     "InvalidConfigError",
-    "NumtrackerClient",
     "report_successful_devices",
     "is_sgid_set",
     "get_owner_gid",

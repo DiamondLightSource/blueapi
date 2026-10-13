@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from copy import copy
 
 import click
-from graypy import GELFTCPHandler
 
 from blueapi.config import LoggingConfig
 
@@ -107,13 +106,15 @@ def set_up_stream_handler(
 
 def set_up_graylog_handler(
     logger: logging.Logger, logging_config: LoggingConfig, filters: list[logging.Filter]
-) -> GELFTCPHandler:
+) -> logging.Handler:
     """Creates and configures GELFTCPHandler, then attaches to logger.
 
     Args:
         logger: Logger to attach handler to
         logging_config: LoggingConfig
     """
+    from graypy import GELFTCPHandler
+
     assert logging_config.graylog.url.host is not None, "Graylog URL missing host"
     assert logging_config.graylog.url.port is not None, "Graylog URL missing port"
     graylog_handler = GELFTCPHandler(

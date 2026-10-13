@@ -33,12 +33,13 @@ def test_plan_cache_repr(client):
 
 
 def test_plan_help_text(client):
-    plan = Plan(PlanModel(name="foo", description="help for foo"), client)
+    plan = Plan("foo", PlanModel(name="foo", description="help for foo"), client)
     assert plan.help_text == "help for foo"
 
 
 def test_plan_fallback_help_text(client):
     plan = Plan(
+        "foo",
         PlanModel(
             name="foo",
             schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
@@ -50,6 +51,7 @@ def test_plan_fallback_help_text(client):
 
 def test_plan_multi_parameter_fallback_help_text(client):
     plan = Plan(
+        "foo",
         PlanModel(
             name="foo",
             schema={
@@ -100,7 +102,7 @@ def test_plan_help_text_with_ref(client):
         "required": ["spec"],
     }
 
-    plan = Plan(PlanModel(name="ref_plan", schema=schema), client)
+    plan = Plan("ref_plan", PlanModel(name="ref_plan", schema=schema), client)
     expected = "Plan ref_plan(spec: Spec, meta: str = 'abc')"
 
     assert plan.help_text == expected
@@ -108,6 +110,7 @@ def test_plan_help_text_with_ref(client):
 
 def test_plan_properties(client):
     plan = Plan(
+        "foo",
         PlanModel(
             name="foo",
             schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
@@ -120,7 +123,7 @@ def test_plan_properties(client):
 
 def test_plan_empty_fallback_help_text(client):
     plan = Plan(
-        PlanModel(name="foo", schema={"properties": {}, "required": []}), client
+        "foo", PlanModel(name="foo", schema={"properties": {}, "required": []}), client
     )
     assert plan.help_text == "Plan foo()"
 
@@ -141,7 +144,7 @@ p = pytest.param
 def test_plan_param_mapping(args, kwargs, params):
     client = Mock()
     client.instrument_session = "cm12345-1"
-    plan = Plan(FULL_PLAN, client)
+    plan = Plan("foobar", FULL_PLAN, client)
 
     plan(*args, **kwargs)
     client.run_task.assert_called_once_with(
@@ -167,7 +170,7 @@ def test_plan_param_mapping(args, kwargs, params):
 def test_plan_invalid_param_mapping(args, kwargs, msg):
     client = Mock()
     client.instrument_session = "cm12345-1"
-    plan = Plan(FULL_PLAN, client)
+    plan = Plan("foobar", FULL_PLAN, client)
 
     with pytest.raises(TypeError, match=msg):
         plan(*args, **kwargs)

@@ -29,7 +29,10 @@ class PlanCache:
     """Collection of plans that can be accessed by name or attribute."""
 
     def __init__(self, client: ClientProtocol, plans: list[PlanModel]):
-        self._cache = {model.name: Plan(model=model, client=client) for model in plans}
+        self._cache = {
+            model.name: Plan(name=model.name, model=model, client=client)
+            for model in plans
+        }
         for name, plan in self._cache.items():
             if name.startswith("_"):
                 continue
@@ -51,7 +54,8 @@ class PlanCache:
 class Plan:
     """Callable client-side reference to a registered BlueAPI plan."""
 
-    def __init__(self, model: PlanModel, client: ClientProtocol):
+    def __init__(self, name: str, model: PlanModel, client: ClientProtocol):
+        self.name = name
         self.model = model
         self._client = client
         self.__doc__ = model.description
@@ -71,7 +75,7 @@ class Plan:
                 parameter schema.
         """
         req = TaskRequest(
-            name=self.model.name,
+            name=self.name,
             params=self._build_args(*args, **kwargs),
             instrument_session=self._client.instrument_session,
         )
@@ -113,9 +117,9 @@ class Plan:
         )
 
         if len(args) > len(self.properties):
-            raise TypeError(f"{self.model.name} got too many arguments")
+            raise TypeError(f"{self.name} got too many arguments")
         if extra := {k for k in kwargs if k not in self.properties}:
-            raise TypeError(f"{self.model.name} got unexpected arguments: {extra}")
+            raise TypeError(f"{self.name} got unexpected arguments: {extra}")
 
         params = {}
         # Initially fill parameters using positional args assuming the order
@@ -127,7 +131,7 @@ class Plan:
         for key, value in kwargs.items():
             # If we've already assumed a positional arg was this value, bail out
             if key in params:
-                raise TypeError(f"{self.model.name} got multiple values for {key}")
+                raise TypeError(f"{self.name} got multiple values for {key}")
             params[key] = value
 
         if missing := {k for k in self.required if k not in params}:
@@ -154,7 +158,7 @@ class Plan:
             return f"{name}: {typ} | None = None"
 
         args = [_format_arg(name, info) for name, info in self.properties.items()]
-        single_line = f"{self.model.name}({', '.join(args)})"
+        single_line = f"{self.name}({', '.join(args)})"
 
         if len(single_line) <= _REPR_MAX_LENGTH and len(args) <= _REPR_MAX_ARGS_INLINE:
             return single_line
@@ -162,7 +166,7 @@ class Plan:
         indent = "    "
         # Fall back to multiline if too many arguments or too long.
         multiline_args = ",\n".join(f"{indent}{arg}" for arg in args)
-        return f"{self.model.name}(\n{multiline_args}\n)"
+        return f"{self.name}(\n{multiline_args}\n)"
 
 
 def _pretty_type(schema: dict[str, Any]) -> str:

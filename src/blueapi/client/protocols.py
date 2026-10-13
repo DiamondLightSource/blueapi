@@ -28,5 +28,5 @@ class RestClientProtocol(Protocol):
 
 
 class ClientObjectRef:
-	name: str
+    name: str
     model: DeviceModel

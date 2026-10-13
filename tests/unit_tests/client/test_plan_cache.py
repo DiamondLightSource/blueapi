@@ -135,23 +135,23 @@ p = pytest.param
     "plan_args",
     [
         pytest.param(
-            TaskParametersV2(args=[1], kwargs={}),
+            TaskParametersV2(args=(1,), kwargs={}),
             id="required_as_positional",
         ),
         pytest.param(
-            TaskParametersV2(args=[], kwargs={"one": 7}),
+            TaskParametersV2(args=(), kwargs={"one": 7}),
             id="required_as_keyword",
         ),
         pytest.param(
-            TaskParametersV2(args=[1], kwargs={"two": 23}),
+            TaskParametersV2(args=(1,), kwargs={"two": 23}),
             id="all_as_mixed_args_kwargs",
         ),
         p(
-            TaskParametersV2(args=[1, 2], kwargs={}),
+            TaskParametersV2(args=(1, 2), kwargs={}),
             id="all_as_positional",
         ),
         p(
-            TaskParametersV2(args=[], kwargs={"one": 21, "two": 42}),
+            TaskParametersV2(args=(), kwargs={"one": 21, "two": 42}),
             id="all_as_keyword",
         ),
     ],

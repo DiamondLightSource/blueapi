@@ -95,7 +95,7 @@ class Plan:
     def required(self) -> list[str]:
         return self.model.parameter_schema.get("required", [])
 
-    def _build_args(self, *args, **kwargs) -> TaskParametersV2:
+    def _build_args(self, *args: Any, **kwargs: Any) -> TaskParametersV2:
         """Build a parameter mapping from positional and keyword arguments.
 
         Positional arguments are assigned to parameters according to their

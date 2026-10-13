@@ -14,12 +14,10 @@ from tests.system_tests.test_blueapi_system import (
 )
 
 from blueapi.client import BlueapiClient
-from blueapi.client.client import (
-    DeviceRef,
-    MissingInstrumentSessionError,
-    Plan,
-)
+from blueapi.client.client import MissingInstrumentSessionError
+from blueapi.client.device_cache import DeviceRef
 from blueapi.client.event_bus import AnyEvent
+from blueapi.client.plan_cache import Plan
 from blueapi.client.rest import ServiceUnavailableError, UnauthorisedAccessError
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
@@ -170,7 +168,7 @@ def test_missing_sub_device(bc: BlueapiClient):
 
 
 def test_plans_iterable(bc: BlueapiClient):
-    names = {plan.name for plan in bc.plans}
+    names = {plan.model.name for plan in bc.plans}
     assert {"count", "sleep", "set_absolute"} <= names
     assert all(isinstance(plan, Plan) for plan in bc.plans)
 
@@ -307,7 +305,7 @@ def test_reload_environment_clears_caches(bc: BlueapiClient):
     assert new_env.environment_id != old_env.environment_id
     assert bc.plans is not plans
     assert bc.devices is not devices
-    assert {p.name for p in bc.plans} == {p.name for p in plans}
+    assert {p.model.name for p in bc.plans} == {p.model.name for p in plans}
 
 
 def test_callbacks_receive_worker_events(bc: BlueapiClient):

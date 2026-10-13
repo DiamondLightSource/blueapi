@@ -5,6 +5,9 @@ from blueapi.worker.event import TaskStatus
 
 from .event_bus import OnAnyEvent
 
+# This module is needed to break circular dependencies. The Device and Plan cache
+# #reference the clients. The Client reference the Device and Plan cache.
+
 
 class ClientProtocol(Protocol):
     def run_task(

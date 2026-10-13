@@ -9,7 +9,7 @@ from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 import bluesky.plan_stubs as bps
 from bluesky.protocols import HasName
-from bluesky.run_engine import RunEngine
+from bluesky.run_engine import RunEngine, RunEngineMetadata
 from ophyd_async.core import NotConnectedError, PathProvider
 from pydantic import (
     BaseModel,
@@ -169,7 +169,7 @@ class BlueskyContext:
             # local reference so it's available in _update_scan_num
             numtracker = self.numtracker
 
-            async def _update_scan_num(md: dict[str, Any]) -> int:
+            async def _update_scan_num(md: RunEngineMetadata) -> int:
                 scan = await numtracker.create_scan(
                     md["instrument_session"], md["instrument"]
                 )
@@ -217,7 +217,7 @@ class BlueskyContext:
 
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
-            self.run_engine.md |= config.metadata.model_dump()
+            self.run_engine.md.update(config.metadata.model_dump())
 
         package_map = metadata.packages_distributions()
         packages = {src.module.split(".")[0] for src in config.sources}

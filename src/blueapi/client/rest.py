@@ -16,8 +16,7 @@ from websockets.exceptions import InvalidStatus
 from websockets.sync.client import connect
 
 from blueapi import __version__
-from blueapi.client import client
-from blueapi.client.session import JWTAuth, SessionManager
+from blueapi.client.protocols import ClientObjectRef
 from blueapi.config import RestConfig
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
@@ -431,6 +430,6 @@ class ServiceUnavailableError(Exception):
 
 def _task_model_fallback(obj: Any) -> Any:
     """Fallback method for serializing TaskRequests"""
-    if isinstance(obj, client.DeviceRef):
+    if isinstance(obj, ClientObjectRef):
         return obj.name
     raise PydanticSerializationError(f"Object of type {type(obj)} not serializable")

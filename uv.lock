@@ -551,7 +551,7 @@ dev = [
 requires-dist = [
     { name = "aioca" },
     { name = "aiohttp", specifier = ">=3.13.5" },
-    { name = "bluesky", extras = ["plotting"], specifier = ">=1.14.0" },
+    { name = "bluesky", extras = ["plotting"], git = "https://github.com/bluesky/bluesky.git?rev=main" },
     { name = "bluesky-stomp", specifier = ">=0.1.6" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "dls-dodal", marker = "extra == 'demo'", specifier = ">=3.0.2" },
@@ -614,8 +614,8 @@ dev = [
 
 [[package]]
 name = "bluesky"
-version = "1.15.1"
-source = { registry = "https://pypi.org/simple" }
+version = "1.15.2.dev268+g3fb85489e"
+source = { git = "https://github.com/bluesky/bluesky.git?rev=main#3fb85489e287c8ae6b99d432ebb5a5413b7b429a" }
 dependencies = [
     { name = "cycler" },
     { name = "event-model" },
@@ -628,10 +628,6 @@ dependencies = [
     { name = "toolz" },
     { name = "tqdm" },
     { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e4/83/2e5d1956a1c4cd3d4f0bb34605cc2b11f2ce33e48249773292b27e6bba88/bluesky-1.15.1.tar.gz", hash = "sha256:956e161a8f34f698af28edcd501db118fa793a6c43241001e30ed8c6aaabd95c", size = 513978, upload-time = "2026-05-06T14:06:40.116Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/99/cc217b2a727fdf730d0c0064bc8c03473dfe5d0528f2bd0c4f59fdab4179/bluesky-1.15.1-py3-none-any.whl", hash = "sha256:7b3a0f04cf2bb0a7907771e014e59fe6fced777347df8df84adec7239f6c3d2a", size = 372701, upload-time = "2026-05-06T14:06:38.618Z" },
 ]
 
 [package.optional-dependencies]

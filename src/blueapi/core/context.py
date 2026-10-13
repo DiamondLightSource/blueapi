@@ -59,9 +59,9 @@ DEFAULT_PLAN_STUBS = [
     bps.mv,
     bps.mvr,
     bps.sleep,
+    bps.wait,
     bps.rd,
     bps.stop,
-    bps.read,
 ]
 
 if "ophyd" in sys.modules:

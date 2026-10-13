@@ -39,7 +39,7 @@ def test_device_repr():
     cache = Mock()
     model = Mock()
     model.name = "foo"
-    dev = DeviceRef(name="foo", cache=cache, model=model)
+    dev = DeviceRef(cache=cache, model=model)
     assert repr(dev) == "Device(foo)"
 
 
@@ -47,7 +47,7 @@ def test_device_ignores_underscores():
     cache = MagicMock()
     model = Mock()
     model.name = "foo"
-    dev = DeviceRef(name="foo", cache=cache, model=model)
+    dev = DeviceRef(cache=cache, model=model)
     with pytest.raises(AttributeError, match="_underscore"):
         _ = dev._underscore
     cache.__getitem__.assert_not_called()

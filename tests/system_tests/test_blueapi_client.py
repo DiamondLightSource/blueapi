@@ -14,12 +14,10 @@ from tests.system_tests.test_blueapi_system import (
 )
 
 from blueapi.client import BlueapiClient
-from blueapi.client.client import (
-    DeviceRef,
-    MissingInstrumentSessionError,
-    Plan,
-)
+from blueapi.client.client import MissingInstrumentSessionError
+from blueapi.client.device_cache import DeviceRef
 from blueapi.client.event_bus import AnyEvent
+from blueapi.client.plan_cache import Plan
 from blueapi.client.rest import ServiceUnavailableError, UnauthorisedAccessError
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
@@ -271,6 +269,7 @@ def test_active_task_while_running(bc: BlueapiClient):
 
 
 # Pause and resume are currently broken on the server, re-enable once fixed
+# See https://github.com/DiamondLightSource/blueapi/issues/1420
 # def _start_sleep(bc: BlueapiClient):
 #     return bc.create_and_start_task(
 #         TaskRequest(

@@ -94,7 +94,7 @@ def test_rest_error_code(
 
 
 @pytest.mark.parametrize(
-    ("task_request", "expected_data"),
+    "task_request",
     [
         pytest.param(
             TaskRequestV1(

@@ -34,6 +34,8 @@ from blueapi.service.model import (
     DeviceModel,
     EnvironmentResponse,
     PlanModel,
+    TaskRequest,
+    TaskRequestV1,
     TaskRequestV2,
     TaskResponse,
     TasksListResponse,
@@ -91,17 +93,35 @@ def test_rest_error_code(
         rest.get_plans()
 
 
-def test_create_task_serialization():
-    rest = Mock(spec=BlueapiRestClient)
-    request = TaskRequestV2(
-        name="demo",
-        instrument_session="cm12345-1",
-        params=TaskParametersV2(
-            kwargs={"devices": [DeviceRef(name="foo", cache=Mock(), model=Mock())]}
+@pytest.mark.parametrize(
+    ("task_request", "expected_data"),
+    [
+        pytest.param(
+            TaskRequestV1(
+                name="demo",
+                instrument_session="cm12345-1",
+                params={"devices": [DeviceRef(name="foo", cache=Mock(), model=Mock())]},
+            ),
+            id="v1",
         ),
-    )
+        pytest.param(
+            TaskRequestV2(
+                name="demo",
+                instrument_session="cm12345-1",
+                params=TaskParametersV2(
+                    kwargs={
+                        "devices": [DeviceRef(name="foo", cache=Mock(), model=Mock())]
+                    }
+                ),
+            ),
+            id="v2",
+        ),
+    ],
+)
+def test_create_task_serialization(task_request: TaskRequest):
+    rest = Mock(spec=BlueapiRestClient)
 
-    BlueapiRestClient.create_task(rest, request)
+    BlueapiRestClient.create_task(rest, task_request)
 
     rest._request_and_deserialize.assert_called_once_with(
         "/tasks",

@@ -246,10 +246,8 @@ components:
           title: Name
           type: string
         params:
-          additionalProperties: true
+          $ref: '#/components/schemas/TaskParametersV2'
           description: Values for parameters to plan, if any
-          title: Params
-          type: object
       required:
       - name
       title: Task
@@ -274,9 +272,22 @@ components:
       - message
       title: TaskError
       type: object
+    TaskParametersV2:
+      additionalProperties: false
+      properties:
+        args:
+          items: {}
+          title: Args
+          type: array
+        kwargs:
+          additionalProperties: true
+          title: Kwargs
+          type: object
+      title: TaskParametersV2
+      type: object
     TaskRequestV2:
       additionalProperties: false
-      description: Request to run a task with related info
+      description: Request to run a task with related info. Supports *args and **kwargs.
       properties:
         instrument_session:
           description: Instrument session associated with this task
@@ -287,10 +298,8 @@ components:
           title: Name
           type: string
         params:
-          additionalProperties: true
+          $ref: '#/components/schemas/TaskParametersV2'
           description: Values for parameters to plan, if any
-          title: Params
-          type: object
       required:
       - name
       - instrument_session
@@ -449,7 +458,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.5.0
+  version: 1.6.0
 openapi: 3.1.0
 paths:
   /api/v1/devices:
@@ -646,8 +655,10 @@ paths:
               - instrument_session: cm12345-1
                 name: count
                 params:
-                  detectors:
-                  - x
+                  args: []
+                  kwargs:
+                    detectors:
+                    - x
         required: true
       responses:
         '201':
@@ -1047,8 +1058,10 @@ paths:
               - instrument_session: cm12345-1
                 name: count
                 params:
-                  detectors:
-                  - x
+                  args: []
+                  kwargs:
+                    detectors:
+                    - x
         required: true
       responses:
         '201':

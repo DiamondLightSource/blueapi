@@ -13,9 +13,9 @@ from tiled.access_control.access_policies import (
     ResultHolder,
 )
 from tiled.adapters.protocols import BaseAdapter
-from tiled.queries import AccessBlobFilter
+from tiled.queries import AccessBlobFilter  # type: ignore
 from tiled.server.schemas import Principal, PrincipalType
-from tiled.type_aliases import AccessBlob, AccessTags, Filters, Scopes
+from tiled.type_aliases import AccessBlob, AccessTags, Filters, Scopes  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -64,10 +64,10 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             scopes_endpoint=scopes_endpoint,
             provider=provider,
             modify_node_endpoint=modify_node_endpoint,
-            empty_access_blob_public=empty_access_blob_public,
+            empty_access_blob_public=empty_access_blob_public,  # type: ignore
         )
 
-    async def init_node(
+    async def init_node(  # type: ignore
         self,
         principal: Principal,
         authn_access_tags: AccessTags | None,
@@ -75,8 +75,8 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
         access_blob: AccessBlob | None = None,
     ) -> tuple[bool, AccessBlob | None]:
         _check_principal(principal)
-        if access_blob is None and self._empty_access_blob_public is not None:
-            return self._empty_access_blob_public, access_blob
+        if access_blob is None and self._empty_access_blob_public is not None:  # type: ignore
+            return self._empty_access_blob_public, access_blob  # type: ignore
         decision = await self._get_external_decision(
             self._create_node,
             self.build_input(principal, authn_access_tags, authn_scopes, access_blob),
@@ -86,7 +86,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             return (True, {"tags": [decision.result]})
         raise ValueError("Permission denied not able to add the node")
 
-    async def modify_node(
+    async def modify_node(  # type: ignore
         self,
         node: BaseAdapter,
         principal: Principal,
@@ -110,7 +110,7 @@ class DiamondOpenPolicyAgentAuthorizationPolicy(ExternalPolicyDecisionPoint):
             return (decision.result, access_blob)
         raise ValueError("Permission denied not able to add the node")
 
-    def build_input(
+    def build_input(  # type: ignore
         self,
         principal: Principal,
         authn_access_tags: AccessTags | None,

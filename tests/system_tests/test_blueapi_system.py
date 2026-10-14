@@ -36,7 +36,7 @@ from blueapi.service.model import (
     TaskResponse,
     WorkerTask,
 )
-from blueapi.utils import TILED_PROPOSAL_RE
+from blueapi.utils import INSTRUMENT_SESSION_RE
 from blueapi.worker.event import (
     TaskResult,
     TaskStatus,
@@ -613,7 +613,9 @@ def test_plan_runs(
     assert stream_resource["run_start"] == start_doc["uid"]
     assert stream_resource["uri"] == f"file://localhost/tmp/adsim-{scan_id}-det.h5"
 
-    proposal = TILED_PROPOSAL_RE.match(start_doc["instrument_session"])["proposal"]  # type: ignore
+    match = INSTRUMENT_SESSION_RE.match(start_doc["instrument_session"])
+    assert match
+    proposal = match["proposal"]
     tiled_url = (
         "http://localhost:8407/api/v1/metadata/"
         f"{start_doc['instrument']}/{proposal}/{start_doc['instrument_session']}/"

@@ -1,4 +1,3 @@
-import json
 from typing import Any
 
 from pydantic import BaseModel
@@ -29,19 +28,16 @@ def serialize(obj: Any) -> Any:
         return obj
 
 
-def access_blob(instrument_session: str, beamline: str) -> str:
-    session_match = utils.INSTRUMENT_SESSION_RE.match(instrument_session)
-    proposal_match = utils.TILED_PROPOSAL_RE.match(instrument_session)
-    if session_match is None or proposal_match is None:
+def access_blob(instrument_session: str, beamline: str) -> dict[str, Any]:
+    if (match := utils.INSTRUMENT_SESSION_RE.match(instrument_session)) is None:
         raise ValueError(
             "Unable to extract proposal and visit from "
             f"instrument session {instrument_session}"
         )
-    blob = {
+    return {
         # The full proposal code (e.g. "cm12345"), not just its number - the
         # tiled access policy strips the letters itself where it needs them.
-        "proposal": proposal_match["proposal"],
-        "visit": int(session_match["visit"]),
+        "proposal": match["proposal"],
+        "visit": int(match["visit"]),
         "beamline": beamline,
     }
-    return json.dumps(blob)

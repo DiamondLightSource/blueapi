@@ -557,7 +557,7 @@ def test_begin_task_raises_for_invalid_instrument_session(worker, context, from_
         instrument_session="not-valid"
     )
 
-    with pytest.raises(ValueError, match="Invalid instrument session"):
+    with pytest.raises(ValueError, match="Unable to extract proposal and visit"):
         interface.begin_task(WorkerTask(task_id="foo_bar"))
 
 

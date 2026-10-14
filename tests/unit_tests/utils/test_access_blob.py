@@ -8,31 +8,31 @@ from blueapi.utils.serialization import access_blob
     [
         (
             "cm12345-1",
-            '{"proposal": "cm12345", "visit": 1, "beamline": "ixx"}',
+            {"proposal": "cm12345", "visit": 1, "beamline": "ixx"},
         ),
         (
             "cm12345-111",
-            '{"proposal": "cm12345", "visit": 111, "beamline": "ixx"}',
+            {"proposal": "cm12345", "visit": 111, "beamline": "ixx"},
         ),
         (
             "cv12345-1",
-            '{"proposal": "cv12345", "visit": 1, "beamline": "ixx"}',
+            {"proposal": "cv12345", "visit": 1, "beamline": "ixx"},
         ),
         (
             "cm12345678-1",
-            '{"proposal": "cm12345678", "visit": 1, "beamline": "ixx"}',
+            {"proposal": "cm12345678", "visit": 1, "beamline": "ixx"},
         ),
         (
             "cm12345678-111",
-            '{"proposal": "cm12345678", "visit": 111, "beamline": "ixx"}',
+            {"proposal": "cm12345678", "visit": 111, "beamline": "ixx"},
         ),
         (
             "cv12345678-111",
-            '{"proposal": "cv12345678", "visit": 111, "beamline": "ixx"}',
+            {"proposal": "cv12345678", "visit": 111, "beamline": "ixx"},
         ),
     ],
 )
-def test_access_blob_regex(input: str, output: str):
+def test_access_blob_regex(input: str, output: dict):
     assert access_blob(input, beamline="ixx") == output
 
 

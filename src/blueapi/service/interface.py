@@ -28,7 +28,6 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
-from blueapi.utils import TILED_PROPOSAL_RE
 from blueapi.utils.serialization import access_blob
 from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
@@ -170,7 +169,7 @@ def submit_task(
         # We raise an InvalidConfigError on setting tiled_conf if this isn't set
         assert md
         metadata["tiled_access_tags"] = [
-            access_blob(task_request.instrument_session, md.instrument)
+            json.dumps(access_blob(task_request.instrument_session, md.instrument))
         ]
     task = Task(
         name=task_request.name,
@@ -195,6 +194,9 @@ def begin_task(
     if nt := active_context.numtracker:
         nt.set_headers(pass_through_headers or {})
 
+    if task.task_id is None:
+        return task
+
     subscribers = []
     if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
@@ -209,43 +211,31 @@ def begin_task(
                 api_key=tiled_config.authentication,
                 headers=pass_through_headers,
             )
-        if task.task_id is not None:
-            task_ = get_task_by_id(task_id=task.task_id)
-            if task_ is not None:
-                task_metadata = task_.task.metadata
-                instrument = active_context.run_engine.md["instrument"]
-                instrument_session = task_metadata["instrument_session"]
-                if not (match := TILED_PROPOSAL_RE.match(instrument_session)):
-                    raise ValueError("Invalid instrument session")
-                proposal = match["proposal"]
-                # Each level's access blob is the prefix of the full
-                # (beamline, proposal, visit) one that access_blob() builds,
-                # matching the beamline/proposal/session tiers the tiled
-                # access policy expects a container to be tagged with.
-                session_blob = json.loads(access_blob(instrument_session, instrument))
-                level_access_tags = [
-                    [json.dumps({"beamline": instrument})],
-                    [json.dumps({"beamline": instrument, "proposal": proposal})],
-                    [json.dumps(session_blob)],
-                ]
-                for key, access_tags in zip(
-                    (instrument, proposal, instrument_session),
-                    level_access_tags,
-                    strict=True,
-                ):
-                    if key not in tiled_client:
-                        try:
-                            tiled_client.create_container(
-                                key=key, access_tags=access_tags
-                            )
-                        except ClientError as e:
-                            if (
-                                e.response.status_code == status.HTTP_409_CONFLICT
-                            ):  # already exists
-                                ...
-                            else:
-                                raise
-                    tiled_client = tiled_client[key]
+        if (task_ := get_task_by_id(task_id=task.task_id)) is not None:
+            instrument = active_context.run_engine.md["instrument"]
+            instrument_session = task_.task.metadata["instrument_session"]
+            session_blob = access_blob(instrument_session, instrument)
+            proposal = session_blob["proposal"]
+            # Each level's access blob is the prefix of the full
+            # (beamline, proposal, visit) one, matching the
+            # beamline/proposal/session tiers the tiled access policy
+            # expects a container to be tagged with.
+            level_access_blobs = {
+                instrument: {"beamline": instrument},
+                proposal: {"beamline": instrument, "proposal": proposal},
+                instrument_session: session_blob,
+            }
+            for key, blob in level_access_blobs.items():
+                if key not in tiled_client:
+                    try:
+                        tiled_client.create_container(
+                            key=key, access_tags=[json.dumps(blob)]
+                        )
+                    except ClientError as e:
+                        if e.response.status_code != status.HTTP_409_CONFLICT:
+                            raise
+                        # else: node already exists, continue
+                tiled_client = tiled_client[key]
         tiled_writer_token = active_context.run_engine.subscribe(
             TiledWriter(tiled_client, batch_size=1)
         )
@@ -267,13 +257,12 @@ def begin_task(
         )
         subscribers.append((active_worker.worker_events, remove_callback))
 
-    if task.task_id is not None:
-        try:
-            active_worker.begin_task(task.task_id)
-        except Exception:
-            for channel, token in subscribers:
-                channel.unsubscribe(token)
-            raise
+    try:
+        active_worker.begin_task(task.task_id)
+    except Exception:
+        for channel, token in subscribers:
+            channel.unsubscribe(token)
+        raise
     return task
 
 

@@ -85,10 +85,7 @@ class ParametersType(ParamType):
 
         # V2 parameters have the shape {"args": [...], "kwargs": {...}}.
         if value and set(value).issubset({"args", "kwargs"}):
-            try:
-                return TaskParametersV2.model_validate(value)
-            except ValueError as exc:
-                self.fail(f"Invalid V2 parameters: {exc}", param, ctx)
+            return TaskParametersV2.model_validate(value)
 
         # Otherwise, interpret the object as V1 keyword arguments.
         return TaskParametersV2.from_v1(value)

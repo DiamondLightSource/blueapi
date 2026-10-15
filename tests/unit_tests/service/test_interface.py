@@ -142,7 +142,7 @@ def test_get_plan(context_mock: MagicMock):
 class MyDevice(Stoppable):
     name: str
 
-    def stop(self, success: bool = True) -> None:
+    def stop(self, *, success: bool = True) -> None:
         pass
 
 

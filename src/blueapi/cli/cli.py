@@ -4,7 +4,7 @@ import os
 import stat
 import sys
 import textwrap
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
@@ -55,13 +55,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ParametersType(ParamType):
-    """CLI input parameter accepting V1 or V2 JSON parameters."""
+    """CLI input parameter to accept a JSON object as an argument"""
 
-    name = "parameters"
+    name = "TaskParameters"
 
     def convert(
         self,
-        value: str | dict[str, Any] | None,
+        value: str | Mapping[str, Any] | None,
         param: Parameter | None,
         ctx: Context | None,
     ) -> TaskParametersV2:
@@ -82,13 +82,9 @@ class ParametersType(ParamType):
                 param,
                 ctx,
             )
-
         # V2 parameters have the shape {"args": [...], "kwargs": {...}}.
         if value and set(value).issubset({"args", "kwargs"}):
-            try:
-                return TaskParametersV2.model_validate(value)
-            except ValueError as exc:
-                self.fail(f"Invalid V2 parameters: {exc}", param, ctx)
+            return TaskParametersV2.model_validate(value)
 
         # Otherwise, interpret the object as V1 keyword arguments.
         return TaskParametersV2.from_v1(value)

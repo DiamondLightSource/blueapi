@@ -1,0 +1,32 @@
+from typing import Protocol
+
+from blueapi.service.model import DeviceModel, DeviceResponse, TaskRequestV2
+from blueapi.worker.event import TaskStatus
+
+from .event_bus import OnAnyEvent
+
+# This module is needed to break circular dependencies. The Device and Plan cache
+# reference the Clients. The Clients reference the Device and Plan cache.
+
+
+class ClientProtocol(Protocol):
+    def run_task(
+        self,
+        task: TaskRequestV2,
+        on_event: OnAnyEvent | None = None,
+        timeout: float | None = None,
+    ) -> TaskStatus: ...
+
+    @property
+    def instrument_session(self) -> str: ...
+
+
+class RestClientProtocol(Protocol):
+    def get_devices(self) -> DeviceResponse: ...
+
+    def get_device(self, name: str) -> DeviceModel: ...
+
+
+class ClientObjectRef:
+    name: str
+    model: DeviceModel

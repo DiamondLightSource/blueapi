@@ -487,6 +487,12 @@ class BlueskyContext:
             else:
                 _type = self._convert_type(arg_type, no_default)
 
+                # # Support *args
+                # if para.kind is Parameter.VAR_POSITIONAL:
+                #     _type = tuple[_type, ...]
+                # # Support **kwargs
+                # elif para.kind is Parameter.VAR_KEYWORD:
+                #     _type = dict[str, _type]
                 match para.default:
                     case Parameter.empty:
                         if para.kind is Parameter.VAR_POSITIONAL:

@@ -1033,3 +1033,105 @@ def test_task_worker_resolves_positional_device(
     args, kwargs = task.prepare_params(context)
     assert args == [fake_device]
     assert kwargs == {}
+
+
+def test_positional_only_plan(fake_device: FakeDevice) -> None:
+    def positional_only_plan(val: int, /, device: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(positional_only_plan)
+
+    task = Task(
+        name="positional_only_plan",
+        params=TaskParametersV2(
+            args=[1],
+            kwargs={"device": fake_device.name},
+        ),
+    )
+
+    args, kwargs = task.prepare_params(context)
+    assert args == [1]
+    assert kwargs == {"device": fake_device}
+
+
+def test_var_positional_plan(fake_device: FakeDevice) -> None:
+    def positional_device_plan(val: int, *device: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(positional_device_plan)
+
+    task = Task(
+        name="positional_device_plan",
+        params=TaskParametersV2(args=[1, fake_device.name, fake_device.name]),
+    )
+    args, kwargs = task.prepare_params(context)
+    assert args == [1, fake_device, fake_device]
+    assert kwargs == {}
+
+
+def test_positional_only_and_var_positional_plan(
+    fake_device: FakeDevice,
+) -> None:
+    def positional_device_plan(val: int, /, *device: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(positional_device_plan)
+
+    task = Task(
+        name="positional_device_plan",
+        params=TaskParametersV2(
+            args=[1, fake_device.name, fake_device.name],
+        ),
+    )
+
+    args, kwargs = task.prepare_params(context)
+    assert args == [1, fake_device, fake_device]
+    assert kwargs == {}
+
+
+def test_var_keyword_plan(fake_device: FakeDevice) -> None:
+    def keyword_device_plan(val: int, **devices: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(keyword_device_plan)
+
+    task = Task(
+        name="keyword_device_plan",
+        params=TaskParametersV2(
+            args=[1],
+            kwargs={"first": fake_device.name, "second": fake_device.name},
+        ),
+    )
+    args, kwargs = task.prepare_params(context)
+    assert args == [1]
+    assert kwargs == {"first": fake_device, "second": fake_device}
+
+
+def test_positional_only_and_var_keyword_plan(
+    fake_device: FakeDevice,
+) -> None:
+    def positional_only_plan(val: int, /, **devices: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(positional_only_plan)
+
+    task = Task(
+        name="positional_only_plan",
+        params=TaskParametersV2(
+            args=[1],
+            kwargs={"first": fake_device.name, "second": fake_device.name},
+        ),
+    )
+    args, kwargs = task.prepare_params(context)
+    assert args == [1]
+    assert kwargs == {"first": fake_device, "second": fake_device}

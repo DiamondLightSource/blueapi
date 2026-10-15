@@ -15,7 +15,7 @@ TaskParametersV1 = Mapping[str, Any]
 
 
 class TaskParametersV2(BlueapiBaseModel):
-    args: Sequence[Any] = Field(default_factory=lambda: [])
+    args: Sequence[Any] = Field(default_factory=list)
     kwargs: Mapping[str, Any] = Field(default_factory=dict)
 
     @classmethod

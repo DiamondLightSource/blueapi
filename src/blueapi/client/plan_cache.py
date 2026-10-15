@@ -126,7 +126,10 @@ class Plan:
         var_keyword = any(kind == Parameter.VAR_KEYWORD.name for kind in kinds.values())
 
         if not var_positional and len(args) > len(positional_parameters):
-            raise TypeError(f"{self.name} got too many arguments")
+            raise TypeError(
+                f"{self.name}({args}) got too many arguments. "
+                f"Recieved {len(args)}. Expected {len(positional_parameters)}"
+            )
 
         # Check positional/keyword collisions.
         for name in positional_parameters[: len(args)]:

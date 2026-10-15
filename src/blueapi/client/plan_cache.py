@@ -61,9 +61,6 @@ class Plan:
     def __call__(self, *args, **kwargs) -> Any:
         """Execute the plan with the supplied arguments.
 
-        Positional arguments are mapped to parameters in the order defined by
-        the plan's parameter schema. Keyword arguments are passed by name.
-
         Returns:
             The result returned by the plan.
 
@@ -96,11 +93,10 @@ class Plan:
         return self.model.parameter_schema.get("required", [])
 
     def _build_args(self, *args: Any, **kwargs: Any) -> TaskParametersV2:
-        """Build a parameter mapping from positional and keyword arguments.
+        """Check parameters against schema and build TaskParametersV2.
 
-        Positional arguments are assigned to parameters according to their
-        order in the plan's parameter schema. Keyword arguments are then
-        added by name.
+        Returns:
+            TaskParametersV2
 
         Raises:
             TypeError: If too many positional arguments, unexpected keyword

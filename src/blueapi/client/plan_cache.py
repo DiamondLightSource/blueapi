@@ -94,7 +94,7 @@ class Plan:
     def required(self) -> list[str]:
         return self.model.parameter_schema.get("required", [])
 
-    def _build_args(self, *args, **kwargs) -> TaskParametersV2:
+    def _build_args(self, *args: Any, **kwargs: Any) -> TaskParametersV2:
         """Check parameters against schema and build TaskParametersV2.
 
         Returns:

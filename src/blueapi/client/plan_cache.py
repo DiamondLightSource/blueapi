@@ -51,6 +51,8 @@ class PlanCache:
 
 
 class Plan:
+    """Callable client-side reference to a registered BlueAPI plan."""
+
     def __init__(self, name, model: PlanModel, client: ClientProtocol):
         self.name = name
         self.model = model
@@ -59,6 +61,16 @@ class Plan:
         self.parameter_kinds = model.parameter_kinds
 
     def __call__(self, *args, **kwargs) -> Any:
+        """Execute the plan with the supplied arguments.
+
+        Returns:
+            The result returned by the plan.
+
+        Raises:
+            PlanFailedError: If plan execution fails on the server.
+            TypeError: If the supplied arguments do not match the plan
+                parameter schema.
+        """
         req = TaskRequestV2(
             name=self.name,
             params=self._build_args(*args, **kwargs),
@@ -83,6 +95,16 @@ class Plan:
         return self.model.parameter_schema.get("required", [])
 
     def _build_args(self, *args, **kwargs) -> TaskParametersV2:
+        """Check parameters against schema and build TaskParametersV2.
+
+        Returns:
+            TaskParametersV2
+
+        Raises:
+            TypeError: If too many positional arguments, unexpected keyword
+                arguments, duplicate arguments, or required arguments are
+                supplied incorrectly.
+        """
         log.info(
             "Building args for %s, using %s and %s",
             "[" + ",".join(self.properties) + "]",
@@ -137,6 +159,12 @@ class Plan:
         return TaskParametersV2(args=args, kwargs=kwargs)
 
     def __repr__(self) -> str:
+        """Return a signature-like representation of the plan.
+
+        The representation includes parameter types and defaults derived from
+        the plan's JSON schema. Short signatures are rendered on one line;
+        longer signatures are formatted across multiple lines.
+        """
         kinds = self.model.parameter_kinds
 
         def _format_arg(name: str, info: dict[str, Any]) -> str:

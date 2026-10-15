@@ -146,6 +146,10 @@ def _pretty_annotation(annotation: Any) -> str:
 
 
 class PlanModel(BlueapiBaseModel):
+    """
+    Representation of a plan
+    """
+
     name: str = Field(description="Name of the plan")
     description: str | SkipJsonSchema[None] = Field(
         description="Docstring of the plan", default=None

@@ -95,7 +95,7 @@ class TaskRequestV2(BlueapiBaseModel):
         )
 
 
-TaskRequest = TaskRequestV1 | TaskRequestV2
+TaskRequest = TaskRequestV2 | TaskRequestV1
 
 
 class DeviceRequest(BlueapiBaseModel):

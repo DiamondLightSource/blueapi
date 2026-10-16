@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 from pydantic_core import InitErrorDetails
 
-from blueapi.service.model import TaskRequestV2
+from blueapi.service.model import TaskRequestV1, TaskRequestV2
 from blueapi.service.protocol import (
     Abort,
     ArgumentError,
@@ -21,7 +21,7 @@ from blueapi.worker import TaskParametersV2
 @pytest.mark.parametrize(
     "src,res",
     [
-        (
+        pytest.param(
             """{
                 "kind": "submit",
                 "task": {
@@ -36,10 +36,29 @@ from blueapi.worker import TaskParametersV2
                     instrument_session="cm12345-1",
                 )
             ),
+            id="submit-v2",
         ),
-        ('{"kind": "pause"}', Pause()),
-        ('{"kind": "resume"}', Resume()),
-        ('{"kind": "abort"}', Abort()),
+        pytest.param(
+            """{
+                "kind": "submit",
+                "task": {
+                    "name": "foo",
+                    "params": {"one": "two"},
+                    "instrument_session": "cm12345-1"
+                }
+            }""",
+            Submit(
+                task=TaskRequestV1(
+                    name="foo",
+                    params={"one": "two"},
+                    instrument_session="cm12345-1",
+                )
+            ),
+            id="submit-v1",
+        ),
+        pytest.param('{"kind": "pause"}', Pause(), id="pause"),
+        pytest.param('{"kind": "resume"}', Resume(), id="resume"),
+        pytest.param('{"kind": "abort"}', Abort(), id="abort"),
     ],
 )
 def test_request_deserialization(src: str, res: Any):

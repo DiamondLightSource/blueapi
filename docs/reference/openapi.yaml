@@ -285,6 +285,28 @@ components:
           type: object
       title: TaskParametersV2
       type: object
+    TaskRequestV1:
+      additionalProperties: false
+      description: Request to run a task with related info. Supports **kwargs only.
+      properties:
+        instrument_session:
+          description: Instrument session associated with this task
+          title: Instrument Session
+          type: string
+        name:
+          description: Name of plan to run
+          title: Name
+          type: string
+        params:
+          additionalProperties: true
+          description: Values for parameters to plan, if any
+          title: Params
+          type: object
+      required:
+      - name
+      - instrument_session
+      title: TaskRequestV1
+      type: object
     TaskRequestV2:
       additionalProperties: false
       description: Request to run a task with related info. Supports *args and **kwargs.
@@ -650,7 +672,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskRequestV2'
+              anyOf:
+              - $ref: '#/components/schemas/TaskRequestV2'
+              - $ref: '#/components/schemas/TaskRequestV1'
               examples:
               - instrument_session: cm12345-1
                 name: count
@@ -659,6 +683,7 @@ paths:
                   kwargs:
                     detectors:
                     - x
+              title: Task Request
         required: true
       responses:
         '201':
@@ -1053,7 +1078,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskRequestV2'
+              anyOf:
+              - $ref: '#/components/schemas/TaskRequestV2'
+              - $ref: '#/components/schemas/TaskRequestV1'
               examples:
               - instrument_session: cm12345-1
                 name: count
@@ -1062,6 +1089,7 @@ paths:
                   kwargs:
                     detectors:
                     - x
+              title: Task Request
         required: true
       responses:
         '201':

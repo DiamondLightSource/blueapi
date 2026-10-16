@@ -598,7 +598,7 @@ def test_delete_current_environment(client: BlueapiClient):
         pytest.param(
             TaskRequestV2(
                 name="count",
-                params=TaskParametersV2(args=["det"], kwargs={"num": 3}),
+                params=TaskParametersV2(args=[["det"]], kwargs={"num": 3}),
                 instrument_session="",
             ),
             id="v2_args_kwargs",
@@ -607,7 +607,7 @@ def test_delete_current_environment(client: BlueapiClient):
             TaskRequestV2(
                 name="spec_scan",
                 params=TaskParametersV2(
-                    args=["det"],
+                    args=[["det"]],
                     kwargs={
                         "spec": {
                             "outer": {
@@ -732,10 +732,7 @@ def test_plan_runs(
         pytest.param(
             TaskRequestV1(
                 name="set_absolute",
-                params={
-                    "movable": "stage.x",
-                    "value": 1.0,
-                },
+                params={"movable": "stage.x", "value": 1.0},
                 instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
             id="v1",
@@ -759,12 +756,7 @@ def test_plan_runs(
         pytest.param(
             TaskRequestV2(
                 name="set_absolute",
-                params=TaskParametersV2(
-                    kwargs={
-                        "movable": "stage.x",
-                        "value": 1.0,
-                    }
-                ),
+                params=TaskParametersV2(kwargs={"movable": "stage.x", "value": 1.0}),
                 instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
             id="v2_kwargs",

@@ -55,7 +55,7 @@ class Task(BlueapiBaseModel):
         func = ctx.plan_functions[self.name]
 
         sig = signature(func)
-        bound = sig.bind(*self.params.args, **self.params.kwargs)
+        bound = sig.bind_partial(*self.params.args, **self.params.kwargs)
 
         # Only validate explicitly supplied arguments. This allows Pydantic's
         # default/default_factory to provide injected defaults.

@@ -427,6 +427,15 @@ def test_metadata_passed_to_context(context: BlueskyContext):
         assert metadata in context.run_engine.md.items()
 
 
+def test_do_task_with_invalid_parameters_raises_validation_error(
+    context: BlueskyContext,
+):
+    context.run_engine = Mock()
+    task = Task(name="sleep", params=TaskParametersV2())
+    with pytest.raises(pydantic.ValidationError):
+        task.do_task(context)
+
+
 #
 # Worker helpers
 #

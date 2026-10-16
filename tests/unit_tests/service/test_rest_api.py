@@ -58,7 +58,25 @@ COUNT = Plan(name="count", model=MockCountModel)
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
 
 
-SUBMIT_REQUEST = {
+SUBMIT_REQUEST_V1 = {
+    "kind": "submit",
+    "task": {
+        "name": "foo",
+        "params": {"one": "two"},
+        "instrument_session": "cm12345-1",
+    },
+}
+
+SUBMIT_REQUEST_V2_ARGS = {
+    "kind": "submit",
+    "task": {
+        "name": "foo",
+        "params": {"args": ["two"], "kwargs": {}},
+        "instrument_session": "cm12345-1",
+    },
+}
+
+SUBMIT_REQUEST_V2_KWARGS = {
     "kind": "submit",
     "task": {
         "name": "foo",
@@ -66,6 +84,17 @@ SUBMIT_REQUEST = {
         "instrument_session": "cm12345-1",
     },
 }
+
+
+@pytest.fixture(
+    params=[
+        pytest.param(SUBMIT_REQUEST_V1, id="v1"),
+        pytest.param(SUBMIT_REQUEST_V2_ARGS, id="v2_args"),
+        pytest.param(SUBMIT_REQUEST_V2_KWARGS, id="v2_kwargs"),
+    ]
+)
+def submit_request(request: pytest.FixtureRequest):
+    return request.param
 
 
 @pytest.fixture
@@ -1017,7 +1046,9 @@ def test_logout_when_oidc_config_invalid(
     assert response.status_code == status.HTTP_205_RESET_CONTENT
 
 
-async def test_websocket_run_plan(mock_runner: Mock, client: TestClient):
+async def test_websocket_run_plan(
+    mock_runner: Mock, client: TestClient, submit_request
+):
     mock_runner.run.side_effect = lambda req, *a, **kw: {
         interface.get_active_task: None,
         interface.submit_task: "task_id",
@@ -1047,7 +1078,7 @@ async def test_websocket_run_plan(mock_runner: Mock, client: TestClient):
     )
 
     with client.websocket_connect("/api/v2/run_plan") as ws:
-        ws.send_json(SUBMIT_REQUEST)
+        ws.send_json(submit_request)
         assert ws.receive_json() == {
             "kind": "update",
             "data": {
@@ -1120,10 +1151,11 @@ def test_websocket_run_plan_submit_error(
     reason,
     mock_runner: Mock,
     client: TestClient,
+    submit_request,
 ):
     mock_runner.run.side_effect = exc
     with client.websocket_connect("/api/v2/run_plan") as ws:
-        ws.send_json(SUBMIT_REQUEST)
+        ws.send_json(submit_request)
         assert ws.receive_json() == err_message
         with pytest.raises(WebSocketDisconnect) as disco:
             ws.receive_text()
@@ -1131,13 +1163,15 @@ def test_websocket_run_plan_submit_error(
         assert disco.value.reason == reason
 
 
-def test_websocket_run_plan_server_busy(mock_runner: Mock, client: TestClient):
+def test_websocket_run_plan_server_busy(
+    mock_runner: Mock, client: TestClient, submit_request
+):
     mock_runner.run.side_effect = [
         "task_id",  # submit_task
         Mock(name="active_task", is_complete=False),
     ]
     with client.websocket_connect("/api/v2/run_plan") as ws:
-        ws.send_json(SUBMIT_REQUEST)
+        ws.send_json(submit_request)
         assert ws.receive_json() == {"kind": "busy"}
         with pytest.raises(WebSocketDisconnect) as disco:
             ws.receive_text()
@@ -1146,7 +1180,9 @@ def test_websocket_run_plan_server_busy(mock_runner: Mock, client: TestClient):
     pass
 
 
-def test_websocket_run_plan_unrelated_events(mock_runner: Mock, client: TestClient):
+def test_websocket_run_plan_unrelated_events(
+    mock_runner: Mock, client: TestClient, submit_request
+):
     mock_runner.run.side_effect = lambda req, *a, **kw: {
         interface.get_active_task: None,
         interface.submit_task: "task_id",
@@ -1176,7 +1212,7 @@ def test_websocket_run_plan_unrelated_events(mock_runner: Mock, client: TestClie
     )
 
     with client.websocket_connect("/api/v2/run_plan") as ws:
-        ws.send_json(SUBMIT_REQUEST)
+        ws.send_json(submit_request)
         # first event is not sent
         assert ws.receive_json() == {
             "kind": "update",
@@ -1202,7 +1238,7 @@ def test_websocket_run_plan_unrelated_events(mock_runner: Mock, client: TestClie
 
 
 def test_websocket_run_plan_client_disconnect_cancels(
-    mock_runner: Mock, client: TestClient
+    mock_runner: Mock, client: TestClient, submit_request
 ):
     mock_runner.run.side_effect = ["task_id", None, None, None]
     mock_runner.event_pipe.return_value = contextlib.nullcontext(
@@ -1234,7 +1270,7 @@ def test_websocket_run_plan_client_disconnect_cancels(
 
     cast(FastAPI, client.app).add_middleware(Disconnector)
     with client.websocket_connect("/api/v2/run_plan") as ws:
-        ws.send_json(SUBMIT_REQUEST)
+        ws.send_json(submit_request)
     mock_runner.run.assert_called_with(
         interface.cancel_active_task, failure=True, reason="Client disconnected"
     )
@@ -1256,6 +1292,7 @@ def test_websocket_run_plan_needs_auth_token(
 def test_websocket_run_plan_needs_permission(
     mock_runner: Mock,
     client_with_opa: TestClient,
+    submit_request,
     mock_opa_client: Mock,
     access_token: str,
 ):
@@ -1263,7 +1300,7 @@ def test_websocket_run_plan_needs_permission(
     mock_opa_client.can_submit_task.side_effect = HTTPException(status_code=403)
     mock_runner.run.side_effect = RuntimeError("Task should not be submitted")
     with client_with_opa.websocket_connect("/api/v2/run_plan") as ws:
-        ws.send_json(SUBMIT_REQUEST)
+        ws.send_json(submit_request)
         assert ws.receive_json() == {"kind": "unauthorized"}
         with pytest.raises(WebSocketDisconnect) as discon:
             ws.receive_text()

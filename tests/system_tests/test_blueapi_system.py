@@ -33,6 +33,7 @@ from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
     TaskParametersV2,
+    TaskRequestV1,
     TaskRequestV2,
     TaskResponse,
     WorkerTask,
@@ -540,17 +541,99 @@ def test_delete_current_environment(client: BlueapiClient):
 
 
 @pytest.mark.parametrize(
-    "task,user",
+    "task",
     [
-        (
+        pytest.param(
+            TaskRequestV1(
+                name="count",
+                params={"detectors": ["det"], "num": 3},
+                instrument_session="",  # Set below
+            ),
+            id="v1",
+        ),
+        pytest.param(
+            TaskRequestV1(
+                name="spec_scan",
+                params={
+                    "detectors": ["det"],
+                    "spec": {
+                        "outer": {
+                            "axis": "stage.x",
+                            "start": 0.0,
+                            "stop": 0.4,
+                            "num": 2,
+                            "type": "Linspace",
+                        },
+                        "inner": {
+                            "axis": "stage.theta",
+                            "start": 5.0,
+                            "stop": 5.3,
+                            "num": 3,
+                            "type": "Linspace",
+                        },
+                        "gap": True,
+                        "type": "Product",
+                    },
+                },
+                instrument_session="",
+            ),
+            id="spec_scan-v1",
+        ),
+        pytest.param(
+            TaskRequestV2(
+                name="count",
+                params=TaskParametersV2(args=[["det"], 3]),
+                instrument_session="",
+            ),
+            id="v2_args",
+        ),
+        pytest.param(
             TaskRequestV2(
                 name="count",
                 params=TaskParametersV2(kwargs={"detectors": ["det"], "num": 3}),
-                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+                instrument_session="",
             ),
-            User.alice,
+            id="v2_kwargs",
         ),
-        (
+        pytest.param(
+            TaskRequestV2(
+                name="count",
+                params=TaskParametersV2(args=[["det"]], kwargs={"num": 3}),
+                instrument_session="",
+            ),
+            id="v2_args_kwargs",
+        ),
+        pytest.param(
+            TaskRequestV2(
+                name="spec_scan",
+                params=TaskParametersV2(
+                    args=[["det"]],
+                    kwargs={
+                        "spec": {
+                            "outer": {
+                                "axis": "stage.x",
+                                "start": 0.0,
+                                "stop": 0.4,
+                                "num": 2,
+                                "type": "Linspace",
+                            },
+                            "inner": {
+                                "axis": "stage.theta",
+                                "start": 5.0,
+                                "stop": 5.3,
+                                "num": 3,
+                                "type": "Linspace",
+                            },
+                            "gap": True,
+                            "type": "Product",
+                        },
+                    },
+                ),
+                instrument_session="",
+            ),
+            id="spec_scan-v2_args_kwargs",
+        ),
+        pytest.param(
             TaskRequestV2(
                 name="spec_scan",
                 params=TaskParametersV2(
@@ -576,12 +659,13 @@ def test_delete_current_environment(client: BlueapiClient):
                         },
                     }
                 ),
-                instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
+                instrument_session="",
             ),
-            User.bob,
+            id="spec_scan-v2_kwargs",
         ),
     ],
 )
+@pytest.mark.parametrize("user", [User.alice, User.bob])
 @pytest.mark.parametrize("run_method", ["run_task", "run_blocking"])
 def test_plan_runs(
     client_with_stomp: BlueapiClient,
@@ -590,6 +674,10 @@ def test_plan_runs(
     user: ValidUser,
     run_method: str,
 ):
+    # Set instrument session after creation so we can test every single task combination
+    # with every user
+    task.instrument_session = VALID_INSTRUMENT_SESSION[user]
+
     resource = Queue(maxsize=1)
     start = Queue(maxsize=1)
 
@@ -641,15 +729,37 @@ def test_plan_runs(
 @pytest.mark.parametrize(
     "task",
     [
-        TaskRequestV2(
-            name="set_absolute",
-            params=TaskParametersV2(
-                kwargs={
-                    "movable": "stage.x",
-                    "value": 1.0,
-                }
+        pytest.param(
+            TaskRequestV1(
+                name="set_absolute",
+                params={"movable": "stage.x", "value": 1.0},
+                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
-            instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+            id="v1",
+        ),
+        pytest.param(
+            TaskRequestV2(
+                name="set_absolute",
+                params=TaskParametersV2(args=["stage.x", 1.0]),
+                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+            ),
+            id="v2_args",
+        ),
+        pytest.param(
+            TaskRequestV2(
+                name="set_absolute",
+                params=TaskParametersV2(args=["stage.x"], kwargs={"value": 1.0}),
+                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+            ),
+            id="v2_args_kwargs",
+        ),
+        pytest.param(
+            TaskRequestV2(
+                name="set_absolute",
+                params=TaskParametersV2(kwargs={"movable": "stage.x", "value": 1.0}),
+                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+            ),
+            id="v2_kwargs",
         ),
     ],
 )

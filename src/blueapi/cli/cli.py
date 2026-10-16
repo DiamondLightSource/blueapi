@@ -31,7 +31,10 @@ from blueapi.client.rest import (
     UnauthorisedAccessError,
     UnknownPlanError,
 )
-from blueapi.config import ApplicationConfig, ConfigLoader
+from blueapi.config import (
+    ApplicationConfig,
+    ConfigLoader,
+)
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
@@ -41,11 +44,7 @@ from blueapi.service.model import (
     SourceInfo,
     TaskRequestV2,
 )
-from blueapi.worker import (
-    ProgressEvent,
-    TaskParametersV2,
-    WorkerEvent,
-)
+from blueapi.worker import ProgressEvent, TaskParametersV2, WorkerEvent
 from blueapi.worker.event import TaskError, TaskResult
 
 from .scratch import setup_scratch

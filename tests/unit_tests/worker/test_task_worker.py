@@ -432,6 +432,8 @@ def test_do_task_with_invalid_parameters_raises_validation_error(
 ):
     context.run_engine = Mock()
     task = Task(name="sleep", params=TaskParametersV2())
+    # Required as this is the error that blueapi/service/main:submit_task is expecting
+    # to catch.
     with pytest.raises(pydantic.ValidationError):
         task.do_task(context)
 

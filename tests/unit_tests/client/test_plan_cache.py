@@ -5,7 +5,7 @@ import pytest
 
 from blueapi.client.client import PlanCache
 from blueapi.client.plan_cache import Plan
-from blueapi.service.model import PlanModel, TaskRequest
+from blueapi.service.model import PlanModel, TaskParametersV2, TaskRequestV2
 
 FULL_PLAN = PlanModel(
     name="foobar",
@@ -132,23 +132,38 @@ p = pytest.param
 
 
 @pytest.mark.parametrize(
-    "args,kwargs,params",
+    "plan_args",
     [
-        p((1,), {}, {"one": 1}, id="required_as_positional"),
-        p((), {"one": 7}, {"one": 7}, id="required_as_keyword"),
-        p((1,), {"two": 23}, {"one": 1, "two": 23}, id="all_as_mixed_args_kwargs"),
-        p((1, 2), {}, {"one": 1, "two": 2}, id="all_as_positional"),
-        p((), {"one": 21, "two": 42}, {"one": 21, "two": 42}, id="all_as_keyword"),
+        pytest.param(
+            TaskParametersV2(args=(1,), kwargs={}),
+            id="required_as_positional",
+        ),
+        pytest.param(
+            TaskParametersV2(args=(), kwargs={"one": 7}),
+            id="required_as_keyword",
+        ),
+        pytest.param(
+            TaskParametersV2(args=(1,), kwargs={"two": 23}),
+            id="all_as_mixed_args_kwargs",
+        ),
+        p(
+            TaskParametersV2(args=(1, 2), kwargs={}),
+            id="all_as_positional",
+        ),
+        p(
+            TaskParametersV2(args=(), kwargs={"one": 21, "two": 42}),
+            id="all_as_keyword",
+        ),
     ],
 )
-def test_plan_param_mapping(args, kwargs, params):
+def test_plan_param_mapping(plan_args):
     client = Mock()
     client.instrument_session = "cm12345-1"
     plan = Plan("foobar", FULL_PLAN, client)
 
-    plan(*args, **kwargs)
+    plan(*plan_args.args, **plan_args.kwargs)
     client.run_task.assert_called_once_with(
-        TaskRequest(name="foobar", instrument_session="cm12345-1", params=params)
+        TaskRequestV2(name="foobar", instrument_session="cm12345-1", params=plan_args)
     )
 
 

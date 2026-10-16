@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from blueapi.service.model import PlanModel, TaskRequest
+from blueapi.service.model import PlanModel, TaskParametersV2, TaskRequestV2
 from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 
 from .protocols import ClientProtocol
@@ -26,8 +26,6 @@ class PlanFailedError(Exception):
 
 
 class PlanCache:
-    """Collection of plans that can be accessed by name or attribute."""
-
     def __init__(self, client: ClientProtocol, plans: list[PlanModel]):
         self._cache = {
             model.name: Plan(name=model.name, model=model, client=client)
@@ -54,7 +52,7 @@ class PlanCache:
 class Plan:
     """Callable client-side reference to a registered BlueAPI plan."""
 
-    def __init__(self, name: str, model: PlanModel, client: ClientProtocol):
+    def __init__(self, name, model: PlanModel, client: ClientProtocol):
         self.name = name
         self.model = model
         self._client = client
@@ -62,9 +60,6 @@ class Plan:
 
     def __call__(self, *args, **kwargs) -> Any:
         """Execute the plan with the supplied arguments.
-
-        Positional arguments are mapped to parameters in the order defined by
-        the plan's parameter schema. Keyword arguments are passed by name.
 
         Returns:
             The result returned by the plan.
@@ -74,7 +69,7 @@ class Plan:
             TypeError: If the supplied arguments do not match the plan
                 parameter schema.
         """
-        req = TaskRequest(
+        req = TaskRequestV2(
             name=self.name,
             params=self._build_args(*args, **kwargs),
             instrument_session=self._client.instrument_session,
@@ -97,12 +92,11 @@ class Plan:
     def required(self) -> list[str]:
         return self.model.parameter_schema.get("required", [])
 
-    def _build_args(self, *args, **kwargs) -> dict[str, Any]:
-        """Build a parameter mapping from positional and keyword arguments.
+    def _build_args(self, *args: Any, **kwargs: Any) -> TaskParametersV2:
+        """Check parameters against schema and build TaskParametersV2.
 
-        Positional arguments are assigned to parameters according to their
-        order in the plan's parameter schema. Keyword arguments are then
-        added by name.
+        Returns:
+            TaskParametersV2
 
         Raises:
             TypeError: If too many positional arguments, unexpected keyword
@@ -115,28 +109,26 @@ class Plan:
             args,
             kwargs,
         )
+        properties = list(self.properties)
 
-        if len(args) > len(self.properties):
+        if len(args) > len(properties):
             raise TypeError(f"{self.name} got too many arguments")
-        if extra := {k for k in kwargs if k not in self.properties}:
+
+        if extra := {k for k in kwargs if k not in properties}:
             raise TypeError(f"{self.name} got unexpected arguments: {extra}")
 
-        params = {}
-        # Initially fill parameters using positional args assuming the order
-        # from the parameter_schema
-        for req, arg in zip(self.properties, args, strict=False):
-            params[req] = arg
+        positional_names = properties[: len(args)]
 
-        # Then append any values given via kwargs
-        for key, value in kwargs.items():
-            # If we've already assumed a positional arg was this value, bail out
-            if key in params:
-                raise TypeError(f"{self.name} got multiple values for {key}")
-            params[key] = value
+        if duplicate := set(positional_names) & kwargs.keys():
+            name = next(iter(duplicate))
+            raise TypeError(f"{self.name} got multiple values for {name}")
 
-        if missing := {k for k in self.required if k not in params}:
+        supplied = set(positional_names) | kwargs.keys()
+
+        if missing := set(self.required) - supplied:
             raise TypeError(f"Missing argument(s) for {missing}")
-        return params
+
+        return TaskParametersV2(args=args, kwargs=kwargs)
 
     def __repr__(self) -> str:
         """Return a signature-like representation of the plan.

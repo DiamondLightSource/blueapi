@@ -28,7 +28,7 @@ from blueapi.service.model import (
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
-    TaskRequest,
+    TaskRequestV2,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
@@ -313,7 +313,7 @@ class BlueapiClient(ClientProtocol):
 
     @start_as_current_span(TRACER, "request")
     def run_blocking(
-        self, request: TaskRequest, on_event: OnAnyEvent | None = None
+        self, request: TaskRequestV2, on_event: OnAnyEvent | None = None
     ) -> TaskStatus:
         for event in self._rest.run_blocking(request):
             if on_event is not None:
@@ -335,7 +335,7 @@ class BlueapiClient(ClientProtocol):
     @start_as_current_span(TRACER, "task", "timeout")
     def run_task(
         self,
-        task: TaskRequest,
+        task: TaskRequestV2,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> TaskStatus:
@@ -403,7 +403,7 @@ class BlueapiClient(ClientProtocol):
             return complete.result(timeout=timeout)
 
     @start_as_current_span(TRACER, "task")
-    def create_and_start_task(self, task: TaskRequest) -> TaskResponse:
+    def create_and_start_task(self, task: TaskRequestV2) -> TaskResponse:
         """
         Create a new task and instruct the worker to start it
         immediately.
@@ -429,7 +429,7 @@ class BlueapiClient(ClientProtocol):
 
     @start_as_current_span(TRACER, "task")
     @deprecated("rest client")
-    def create_task(self, task: TaskRequest) -> TaskResponse:
+    def create_task(self, task: TaskRequestV2) -> TaskResponse:
         """
         Create a new task, does not start execution
 

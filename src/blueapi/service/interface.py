@@ -23,6 +23,8 @@ from blueapi.service.model import (
     PythonEnvironmentResponse,
     SourceInfo,
     TaskRequest,
+    TaskRequestV1,
+    TaskRequestV2,
     WorkerTask,
 )
 from blueapi.utils.serialization import access_blob
@@ -156,6 +158,9 @@ def submit_task(
     task_request: TaskRequest, metadata: dict[str, Any] | None = None
 ) -> str:
     """Submit a task to be run on begin_task"""
+    if isinstance(task_request, TaskRequestV1):
+        task_request = TaskRequestV2.from_v1(task_request)
+
     # Can't default arg to mutable data structure:
     if metadata is None:
         metadata = {}

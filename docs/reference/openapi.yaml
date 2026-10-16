@@ -246,10 +246,8 @@ components:
           title: Name
           type: string
         params:
-          additionalProperties: true
+          $ref: '#/components/schemas/TaskParametersV2'
           description: Values for parameters to plan, if any
-          title: Params
-          type: object
       required:
       - name
       title: Task
@@ -274,9 +272,22 @@ components:
       - message
       title: TaskError
       type: object
-    TaskRequest:
+    TaskParametersV2:
       additionalProperties: false
-      description: Request to run a task with related info
+      properties:
+        args:
+          items: {}
+          title: Args
+          type: array
+        kwargs:
+          additionalProperties: true
+          title: Kwargs
+          type: object
+      title: TaskParametersV2
+      type: object
+    TaskRequestV1:
+      additionalProperties: false
+      description: Request to run a task with related info. Supports **kwargs only.
       properties:
         instrument_session:
           description: Instrument session associated with this task
@@ -294,7 +305,27 @@ components:
       required:
       - name
       - instrument_session
-      title: TaskRequest
+      title: TaskRequestV1
+      type: object
+    TaskRequestV2:
+      additionalProperties: false
+      description: Request to run a task with related info. Supports *args and **kwargs.
+      properties:
+        instrument_session:
+          description: Instrument session associated with this task
+          title: Instrument Session
+          type: string
+        name:
+          description: Name of plan to run
+          title: Name
+          type: string
+        params:
+          $ref: '#/components/schemas/TaskParametersV2'
+          description: Values for parameters to plan, if any
+      required:
+      - name
+      - instrument_session
+      title: TaskRequestV2
       type: object
     TaskResponse:
       additionalProperties: false
@@ -449,7 +480,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.5.0
+  version: 1.6.0
 openapi: 3.1.0
 paths:
   /api/v1/devices:
@@ -641,13 +672,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskRequest'
+              anyOf:
+              - $ref: '#/components/schemas/TaskRequestV2'
+              - $ref: '#/components/schemas/TaskRequestV1'
               examples:
               - instrument_session: cm12345-1
                 name: count
                 params:
-                  detectors:
-                  - x
+                  args: []
+                  kwargs:
+                    detectors:
+                    - x
+              title: Task Request
         required: true
       responses:
         '201':
@@ -1042,13 +1078,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskRequest'
+              anyOf:
+              - $ref: '#/components/schemas/TaskRequestV2'
+              - $ref: '#/components/schemas/TaskRequestV1'
               examples:
               - instrument_session: cm12345-1
                 name: count
                 params:
-                  detectors:
-                  - x
+                  args: []
+                  kwargs:
+                    detectors:
+                    - x
+              title: Task Request
         required: true
       responses:
         '201':

@@ -11,6 +11,7 @@ from blueapi.service.model import (
 )
 from blueapi.worker import Task, TrackableTask, WorkerEvent, WorkerState
 from blueapi.worker.event import TaskError, TaskResult, TaskStatus
+from blueapi.worker.task import TaskParametersV2
 
 PLANS = PlanResponse(
     plans=[
@@ -39,7 +40,7 @@ DEVICES = DeviceResponse(
     ]
 )
 DEVICE = DeviceModel(name="foo", protocols=[])
-TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
+TASK = TrackableTask(task_id="foo", task=Task(name="bar", params=TaskParametersV2()))
 TASKS = TasksListResponse(tasks=[TASK])
 ACTIVE_TASK = WorkerTask(task_id="bar")
 ENVIRONMENT_ID = uuid.uuid4()

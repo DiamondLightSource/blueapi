@@ -47,9 +47,10 @@ from blueapi.service.model import (
     PlanModel,
     PlanResponse,
     PythonEnvironmentResponse,
-    TaskRequest,
+    TaskRequestV2,
     TaskResponse,
 )
+from blueapi.worker import TaskParametersV2
 from blueapi.worker.event import (
     ProgressEvent,
     TaskError,
@@ -210,7 +211,7 @@ def test_invalid_config_via_env(runner: CliRunner):
 def test_submit_plan(runner: CliRunner):
     body_data = {
         "name": "sleep",
-        "params": {"time": 5},
+        "params": {"args": [], "kwargs": {"time": 5}},
         "instrument_session": "cm12345-1",
     }
 
@@ -260,9 +261,18 @@ def test_submit_plan_without_stomp(runner: CliRunner):
     )
 
 
+@pytest.mark.parametrize(
+    "params, expected",
+    [
+        [{"time": 3}, {"args": [], "kwargs": {"time": 3}}],
+        [{"args": [], "kwargs": {"time": 3}}, {"args": [], "kwargs": {"time": 3}}],
+        [{"args": [3], "kwargs": {}}, {"args": [3], "kwargs": {}}],
+    ],
+    ids=["v1", "v2_kwargs", "v2_args"],
+)
 @patch("blueapi.client.client.StompClient")
 @responses.activate
-def test_run_plan(stomp_client: StompClient, runner: CliRunner):
+def test_run_plan(stomp_client: StompClient, runner: CliRunner, params, expected):
     task_id = "abcd-1234"
     submit_response = responses.post(
         url="http://a.fake.host:12345/tasks",
@@ -270,7 +280,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             matchers.json_params_matcher(
                 {
                     "name": "sleep",
-                    "params": {"time": 3},
+                    "params": expected,
                     "instrument_session": "cm12345-1",
                 }
             )
@@ -339,11 +349,11 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
             "-i",
             "cm12345-1",
             "sleep",
-            '{"time": 3}',
+            json.dumps(params),
         ],
     )
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.output
     assert submit_response.call_count == 1
     assert run_response.call_count == 1
 
@@ -386,7 +396,9 @@ def test_run_plan_feedback(
     )
     bc.add_callback.assert_called_once()
     bc.run_task.assert_called_once_with(
-        TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
+        TaskRequestV2(
+            name="name", params=TaskParametersV2(), instrument_session="cm12345-1"
+        ),
     )
     assert res.exit_code == 0
     assert res.stdout == message
@@ -400,7 +412,7 @@ def test_run_plan_background_without_stomp(runner: CliRunner):
             matchers.json_params_matcher(
                 {
                     "name": "sleep",
-                    "params": {"time": 3},
+                    "params": {"args": [], "kwargs": {"time": 3}},
                     "instrument_session": "cm12345-1",
                 }
             )
@@ -501,9 +513,9 @@ def test_can_pass_an_instrument_session_with_an_environment_variable(
         )
     assert result.exit_code == 0, result.output
     mock_create_task.assert_called_once_with(
-        TaskRequest(
+        TaskRequestV2(
             name="sleep",
-            params={"time": 5.0},
+            params=TaskParametersV2(kwargs={"time": 5.0}),
             instrument_session="cm12345-1",
         )
     )
@@ -1420,10 +1432,27 @@ def test_config_schema(
         assert json.loads(result.output) == expected
 
 
-@pytest.mark.parametrize("value,result", [({}, {}), ("{}", {}), (None, None)])
-def test_task_parameter_type(value, result):
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ({}, TaskParametersV2()),
+        ("{}", TaskParametersV2()),
+        (None, TaskParametersV2()),
+        ('{"time": 3}', TaskParametersV2(kwargs={"time": 3})),
+        (
+            '{"args": [], "kwargs": {"time": 3}}',
+            TaskParametersV2(args=[], kwargs={"time": 3}),
+        ),
+        (
+            '{"args": [3], "kwargs": {}}',
+            TaskParametersV2(args=[3], kwargs={}),
+        ),
+    ],
+    ids=["empty-dict", "empty-json", "none", "v1", "v2_kwargs", "v2_args"],
+)
+def test_task_parameter_type(value, expected):
     t = ParametersType()
-    assert t.convert(value, None, None) == result
+    assert t.convert(value, None, None) == expected
 
 
 @pytest.mark.parametrize(
@@ -1489,6 +1518,8 @@ def test_run_ws_runs_blocking_plan(mock_client: Mock, runner: CliRunner):
     bc.add_callback.assert_called_once()
     bc.run_task.assert_not_called()
     bc.run_blocking.assert_called_once_with(
-        TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
+        TaskRequestV2(
+            name="name", params=TaskParametersV2(), instrument_session="cm12345-1"
+        ),
     )
     assert res.exit_code == 0

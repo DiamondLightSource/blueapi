@@ -35,16 +35,25 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     TaskRequest,
+    TaskRequestV1,
+    TaskRequestV2,
     TaskResponse,
     TasksListResponse,
     WorkerTask,
 )
 from blueapi.worker.event import WorkerState
-from blueapi.worker.task import Task
+from blueapi.worker.task import Task, TaskParametersV2
 from blueapi.worker.task_worker import TrackableTask
 
-TASK_REQUEST = TaskRequest(
-    name="foo", params={"one": "two"}, instrument_session="cm12345-1"
+TASK_REQUEST_V1 = TaskRequestV1(
+    name="foo",
+    params={"one": "two"},
+    instrument_session="cm12345-1",
+)
+TASK_REQUEST_V2 = TaskRequestV2(
+    name="foo",
+    params=TaskParametersV2(kwargs={"one": "two"}),
+    instrument_session="cm12345-1",
 )
 
 
@@ -89,17 +98,35 @@ def test_rest_error_code(
         rest.get_plans()
 
 
-def test_create_task_serialization():
+@pytest.mark.parametrize(
+    "task_request",
+    [
+        pytest.param(
+            TaskRequestV1(
+                name="demo",
+                instrument_session="cm12345-1",
+                params={"devices": [DeviceRef(name="foo", cache=Mock(), model=Mock())]},
+            ),
+            id="v1",
+        ),
+        pytest.param(
+            TaskRequestV2(
+                name="demo",
+                instrument_session="cm12345-1",
+                params=TaskParametersV2(
+                    kwargs={
+                        "devices": [DeviceRef(name="foo", cache=Mock(), model=Mock())]
+                    }
+                ),
+            ),
+            id="v2",
+        ),
+    ],
+)
+def test_create_task_serialization(task_request: TaskRequest):
     rest = Mock(spec=BlueapiRestClient)
-    model = Mock()
-    model.name = "foo"
-    request = TaskRequest(
-        name="demo",
-        instrument_session="cm12345-1",
-        params={"devices": [DeviceRef(name="foo", cache=Mock(), model=model)]},
-    )
 
-    BlueapiRestClient.create_task(rest, request)
+    BlueapiRestClient.create_task(rest, task_request)
 
     rest._request_and_deserialize.assert_called_once_with(
         "/tasks",
@@ -109,7 +136,7 @@ def test_create_task_serialization():
         data={
             "name": "demo",
             "instrument_session": "cm12345-1",
-            "params": {"devices": ["foo"]},
+            "params": {"args": [], "kwargs": {"devices": ["foo"]}},
         },
     )
 
@@ -119,10 +146,10 @@ def test_create_task_serialization_error():
         pass
 
     rest = Mock(spec=BlueapiRestClient)
-    request = TaskRequest(
+    request = TaskRequestV2(
         name="demo",
         instrument_session="cm12345-1",
-        params={"devices": [CustomType()]},
+        params=TaskParametersV2(kwargs={"devices": [CustomType()]}),
     )
 
     with pytest.raises(PydanticSerializationError, match="not serializable"):
@@ -444,14 +471,17 @@ def test_get_missing_plan(rest: BlueapiRestClient):
         rest.get_plan("foo")
 
 
+@pytest.mark.parametrize("task_request", [TASK_REQUEST_V1, TASK_REQUEST_V2])
 @patch("blueapi.client.rest.connect")
-def test_run_blocking(mock_connect: Mock, rest: BlueapiRestClient):
+def test_run_blocking(
+    mock_connect: Mock, rest: BlueapiRestClient, task_request: TaskRequest
+):
     ws = MagicMock()
     ws.__enter__.return_value.__iter__.return_value = iter(
         ['{"kind": "update", "data": {"name": "start", "doc":{}, "task_id":"t_uid"}}']
     )
     mock_connect.return_value = ws
-    conn = rest.run_blocking(TASK_REQUEST)
+    conn = rest.run_blocking(task_request)
     next(iter(conn))
     mock_connect.assert_called_once_with(
         "ws://localhost:8000/api/v2/run_plan",
@@ -460,6 +490,7 @@ def test_run_blocking(mock_connect: Mock, rest: BlueapiRestClient):
     )
 
 
+@pytest.mark.parametrize("task_request", [TASK_REQUEST_V1, TASK_REQUEST_V2])
 @patch("blueapi.client.rest.connect")
 def test_run_blocking_auth(
     mock_connect: Mock,
@@ -467,13 +498,14 @@ def test_run_blocking_auth(
     mock_authn_server: responses.RequestsMock,
     cached_valid_token: Path,  # creates the cache file
     cached_valid_token_value: str,  # the value from the file
+    task_request: TaskRequest,
 ):
     ws = MagicMock()
     ws.__enter__.return_value.__iter__.return_value = iter(
         ['{"kind": "update", "data": {"name": "start", "doc":{}, "task_id":"t_uid"}}']
     )
     mock_connect.return_value = ws
-    conn = rest_with_auth.run_blocking(TASK_REQUEST)
+    conn = rest_with_auth.run_blocking(task_request)
     next(iter(conn))
     mock_connect.assert_called_once_with(
         "ws://localhost:8000/api/v2/run_plan",
@@ -482,6 +514,7 @@ def test_run_blocking_auth(
     )
 
 
+@pytest.mark.parametrize("task_request", [TASK_REQUEST_V1, TASK_REQUEST_V2])
 @pytest.mark.parametrize(
     "event,error,message",
     [
@@ -509,11 +542,12 @@ def test_run_blocking_errors(
     event: str,
     error: type[Exception],
     message: str,
+    task_request: TaskRequest,
 ):
     ws = MagicMock()
     ws.__enter__.return_value.__iter__.return_value = iter([event])
     mock_connect.return_value = ws
-    conn = rest.run_blocking(TASK_REQUEST)
+    conn = rest.run_blocking(task_request)
     with pytest.raises(error, match=message):
         next(iter(conn))
     mock_connect.assert_called_once_with(
@@ -523,23 +557,30 @@ def test_run_blocking_errors(
     )
 
 
+@pytest.mark.parametrize("task_request", [TASK_REQUEST_V1, TASK_REQUEST_V2])
 @pytest.mark.parametrize("status_code", [401, 403])
 @patch("blueapi.client.rest.connect")
 def test_run_blocking_ws_failures(
-    mock_connect: Mock, rest: BlueapiRestClient, status_code: int
+    mock_connect: Mock,
+    rest: BlueapiRestClient,
+    status_code: int,
+    task_request: TaskRequest,
 ):
     mock_connect.side_effect = InvalidStatus(
         response=Response(
             status_code=status_code, reason_phrase="test_error", headers=Headers()
         )
     )
-    conn = rest.run_blocking(TASK_REQUEST)
+    conn = rest.run_blocking(task_request)
     with pytest.raises(UnauthorisedAccessError):
         next(iter(conn))
 
 
+@pytest.mark.parametrize("task_request", [TASK_REQUEST_V1, TASK_REQUEST_V2])
 @patch("blueapi.client.rest.connect")
-def test_run_blocking_unauthorised(mock_connect: Mock, rest: BlueapiRestClient):
+def test_run_blocking_unauthorised(
+    mock_connect: Mock, rest: BlueapiRestClient, task_request: TaskRequest
+):
     ws = MagicMock()
     event = """{
             "kind":"unauthorized"
@@ -547,11 +588,12 @@ def test_run_blocking_unauthorised(mock_connect: Mock, rest: BlueapiRestClient):
     ws.__enter__.return_value.__iter__.return_value = iter([event])
     mock_connect.return_value = ws
 
-    conn = rest.run_blocking(TASK_REQUEST)
+    conn = rest.run_blocking(task_request)
     with pytest.raises(UnauthorisedAccessError):
         next(iter(conn))
 
 
+@pytest.mark.parametrize("task_request", [TASK_REQUEST_V1, TASK_REQUEST_V2])
 @pytest.mark.parametrize(
     "conn_err,exp_err",
     [
@@ -575,8 +617,9 @@ def test_run_blocking_connect_error(
     rest: BlueapiRestClient,
     conn_err: Exception,
     exp_err: type[Exception],
+    task_request: TaskRequest,
 ):
     mock_connect.side_effect = conn_err
-    conn = rest.run_blocking(TASK_REQUEST)
+    conn = rest.run_blocking(task_request)
     with pytest.raises(exp_err):
         next(iter(conn))

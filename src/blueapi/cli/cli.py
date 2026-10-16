@@ -4,7 +4,7 @@ import os
 import stat
 import sys
 import textwrap
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
@@ -38,16 +38,19 @@ from blueapi.config import (
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
-from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
-from blueapi.worker import ProgressEvent, WorkerEvent
+from blueapi.service.model import (
+    DeviceResponse,
+    PlanResponse,
+    SourceInfo,
+    TaskRequestV2,
+)
+from blueapi.worker import ProgressEvent, TaskParametersV2, WorkerEvent
 from blueapi.worker.event import TaskError, TaskResult
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 LOGGER = logging.getLogger(__name__)
-
-TaskParameters = dict[str, Any]
 
 
 class ParametersType(ParamType):
@@ -57,23 +60,36 @@ class ParametersType(ParamType):
 
     def convert(
         self,
-        value: str | dict[str, Any] | None,
+        value: str | Mapping[str, Any] | None,
         param: Parameter | None,
         ctx: Context | None,
-    ) -> TaskParameters:
+    ) -> TaskParametersV2:
+        if value is None:
+            return TaskParametersV2()
+
         if isinstance(value, str):
             try:
-                params = json.loads(value)
-                if is_str_dict(params):
-                    return params
-                self.fail("Parameters must be a JSON object with string keys")
+                value = json.loads(value)
             except json.JSONDecodeError as jde:
-                self.fail(f"Parameters are not valid JSON: {jde}")
-        else:
-            return super().convert(value, param, ctx)
+                self.fail(f"Parameters are not valid JSON: {jde}", param, ctx)
+
+        if not isinstance(value, dict) or not all(
+            isinstance(key, str) for key in value
+        ):
+            self.fail(
+                "Parameters must be a JSON object with string keys",
+                param,
+                ctx,
+            )
+        # V2 parameters have the shape {"args": [...], "kwargs": {...}}.
+        if value and set(value).issubset({"args", "kwargs"}):
+            return TaskParametersV2.model_validate(value)
+
+        # Otherwise, interpret the object as V1 keyword arguments.
+        return TaskParametersV2.from_v1(value)
 
 
-def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
+def is_str_dict(val: Any) -> TypeGuard[TaskParametersV2]:
     return isinstance(val, dict) and all(isinstance(k, str) for k in val)
 
 
@@ -363,7 +379,7 @@ def run_plan(
     foreground: bool,
     ws: bool,
     instrument_session: str,
-    parameters: TaskParameters,
+    parameters: TaskParametersV2,
 ) -> None:
     """Run a plan with parameters
 
@@ -371,10 +387,11 @@ def run_plan(
     configuration or the experimental --ws flag is required. Without stomp
     configuration, '--bg' can be used to start a plan in the background.
     """
-
     client = cast(BlueapiClient, obj["client"])
-    task = TaskRequest(
-        name=name, params=parameters, instrument_session=instrument_session
+    task = TaskRequestV2(
+        name=name,
+        params=parameters,
+        instrument_session=instrument_session,
     )
 
     try:

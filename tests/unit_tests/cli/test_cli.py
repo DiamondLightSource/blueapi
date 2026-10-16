@@ -262,16 +262,17 @@ def test_submit_plan_without_stomp(runner: CliRunner):
 
 
 @pytest.mark.parametrize(
-    "params",
+    "params, expected",
     [
-        {"time": 3},
-        {"args": [], "kwargs": {"time": 3}},
+        [{"time": 3}, {"args": [], "kwargs": {"time": 3}}],
+        [{"args": [], "kwargs": {"time": 3}}, {"args": [], "kwargs": {"time": 3}}],
+        [{"args": [3], "kwargs": {}}, {"args": [3], "kwargs": {}}],
     ],
-    ids=["v1", "v2"],
+    ids=["v1", "v2_kwargs", "v2_args"],
 )
 @patch("blueapi.client.client.StompClient")
 @responses.activate
-def test_run_plan(stomp_client: StompClient, runner: CliRunner, params):
+def test_run_plan(stomp_client: StompClient, runner: CliRunner, params, expected):
     task_id = "abcd-1234"
     submit_response = responses.post(
         url="http://a.fake.host:12345/tasks",
@@ -279,7 +280,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner, params):
             matchers.json_params_matcher(
                 {
                     "name": "sleep",
-                    "params": {"args": [], "kwargs": {"time": 3}},
+                    "params": expected,
                     "instrument_session": "cm12345-1",
                 }
             )
@@ -1442,8 +1443,12 @@ def test_config_schema(
             '{"args": [], "kwargs": {"time": 3}}',
             TaskParametersV2(args=[], kwargs={"time": 3}),
         ),
+        (
+            '{"args": [3], "kwargs": {}}',
+            TaskParametersV2(args=[3], kwargs={}),
+        ),
     ],
-    ids=["empty-dict", "empty-json", "none", "v1", "v2"],
+    ids=["empty-dict", "empty-json", "none", "v1", "v2_kwargs", "v2_args"],
 )
 def test_task_parameter_type(value, expected):
     t = ParametersType()

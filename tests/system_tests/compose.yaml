@@ -65,10 +65,10 @@ services:
       - label=disable
 
   tiled:
-    image: ghcr.io/bluesky/tiled:0.2.18
+    # tiled 0.2.18 plus the DLS access policy (dls_tiled.policy), as deployed
+    image: ghcr.io/zohebshaikh/dls-tiled:0.3.1-alpha
     network_mode: host # Port 8407
     environment:
-      - PYTHONPATH=/deploy/
       - VITE_LOGIN_REDIRECT=false
     volumes:
       - ./services/tiled_config:/deploy/config

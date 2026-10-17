@@ -492,6 +492,13 @@ def _existing_task(instrument_session: str = FAKE_INSTRUMENT_SESSION) -> Trackab
     )
 
 
+def _missing_session_path(key: str):
+    """__getitem__ for a client whose beamline/proposal/visit path doesn't exist."""
+    if "/" in key:
+        raise KeyError(key)
+    return MagicMock()
+
+
 @patch("blueapi.service.interface.TiledWriter")
 @patch("blueapi.service.interface.from_uri")
 @patch("blueapi.service.interface.context")
@@ -502,9 +509,10 @@ def test_begin_task_creates_tiled_containers(worker, context, from_uri, writer):
     context().run_engine.md = {"instrument": "p46"}
     worker().get_task_by_id.return_value = _existing_task()
     root_client = from_uri()
-    proposal_client = root_client.__getitem__.return_value
-    session_client = proposal_client.__getitem__.return_value
-    final_client = session_client.__getitem__.return_value
+    root_client.__getitem__.side_effect = _missing_session_path
+    proposal_client = root_client.create_container.return_value
+    session_client = proposal_client.create_container.return_value
+    final_client = session_client.create_container.return_value
 
     interface.begin_task(WorkerTask(task_id="foo_bar"))
 
@@ -528,22 +536,20 @@ def test_begin_task_creates_tiled_containers(worker, context, from_uri, writer):
 @patch("blueapi.service.interface.from_uri")
 @patch("blueapi.service.interface.context")
 @patch("blueapi.service.interface.worker")
-def test_begin_task_skips_existing_tiled_container(worker, context, from_uri, writer):
+def test_begin_task_finds_existing_session_in_one_lookup(
+    worker, context, from_uri, writer
+):
     context().numtracker = None
     context().tiled_conf = TiledConfig()
     context().run_engine.md = {"instrument": "p46"}
     worker().get_task_by_id.return_value = _existing_task()
     root_client = from_uri()
-    proposal_client = root_client.__getitem__.return_value
-    session_client = proposal_client.__getitem__.return_value
-    for client in (root_client, proposal_client, session_client):
-        client.__contains__ = MagicMock(return_value=True)
 
     interface.begin_task(WorkerTask(task_id="foo_bar"))
 
+    root_client.__getitem__.assert_called_once_with("p46/cm12345/cm12345-1")
     root_client.create_container.assert_not_called()
-    proposal_client.create_container.assert_not_called()
-    session_client.create_container.assert_not_called()
+    writer.assert_called_once_with(root_client.__getitem__.return_value, batch_size=1)
 
 
 @patch("blueapi.service.interface.from_uri")
@@ -577,6 +583,7 @@ def test_begin_task_handles_tiled_container_create_errors(
     context().run_engine.md = {"instrument": "p46"}
     worker().get_task_by_id.return_value = _existing_task()
     tiled_client = from_uri()
+    tiled_client.__getitem__.side_effect = _missing_session_path
     tiled_client.create_container.side_effect = ClientError(
         "error", request=MagicMock(), response=MagicMock(status_code=status_code)
     )
@@ -608,6 +615,30 @@ def test_begin_task_uses_service_account_auth_for_tiled(
     interface.begin_task(WorkerTask(task_id="foo_bar"))
 
     assert isinstance(from_uri.call_args.kwargs["auth"], TiledAuth)
+
+
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_service_account_tiled_client_reused_across_tasks(
+    worker, context, from_uri, writer
+):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig(
+        authentication=ServiceAccount(
+            client_id="tiled_writer",
+            client_secret=SecretStr("secret"),
+            token_url="https://example.com/token",
+        )
+    )
+    worker().get_task_by_id.return_value = None
+    from_uri.reset_mock()
+
+    interface.begin_task(WorkerTask(task_id="foo_bar"))
+    interface.begin_task(WorkerTask(task_id="baz"))
+
+    from_uri.assert_called_once()
 
 
 def test_get_oidc_config(oidc_config: OIDCConfig):

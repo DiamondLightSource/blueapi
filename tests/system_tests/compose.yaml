@@ -80,7 +80,7 @@ services:
       - label=disable
 
   opa:
-    image: openpolicyagent/opa:edge-static-debug
+    image: openpolicyagent/opa:1.21.2-static-debug  # debug: entrypoint.sh needs a shell
     network_mode: host # Port 8181
     volumes:
       - "./services/opa_config:/mnt"

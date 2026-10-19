@@ -542,15 +542,26 @@ def test_delete_current_environment(client: BlueapiClient):
 @pytest.mark.parametrize(
     "task,user",
     [
-        (
+        pytest.param(
             TaskRequest(
                 name="count",
-                params={"detectors": ["det"], "num": 3},
+                args=[["det"], 3],
                 instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
             User.alice,
+            id="all_args",
         ),
-        (
+        pytest.param(
+            TaskRequest(
+                name="count",
+                args=[["det"]],
+                params={"num": 3},
+                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+            ),
+            User.alice,
+            id="mixed_args_params",
+        ),
+        pytest.param(
             TaskRequest(
                 name="spec_scan",
                 params={
@@ -577,6 +588,7 @@ def test_delete_current_environment(client: BlueapiClient):
                 instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
             ),
             User.bob,
+            id="all_params",
         ),
     ],
 )

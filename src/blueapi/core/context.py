@@ -439,7 +439,7 @@ class BlueskyContext:
 
         Returns:
             Mapping of {name: (type, default)} to be used by pydantic for deserialising
-                    function arguments
+            function arguments
         """
         args = signature(func).parameters
         types = get_type_hints(func)
@@ -451,7 +451,16 @@ class BlueskyContext:
                     f"Type annotation is required for '{name}' in '{func.__name__}'"
                 )
 
-            no_default = para.default is Parameter.empty
+            match para.kind:
+                case Parameter.VAR_POSITIONAL:
+                    arg_type = tuple[arg_type, ...]
+                case Parameter.VAR_KEYWORD:
+                    arg_type = dict[str, arg_type]
+
+            no_default = para.default is Parameter.empty and para.kind not in (
+                Parameter.VAR_POSITIONAL,
+                Parameter.VAR_KEYWORD,
+            )
             if (
                 isclass(arg_type)
                 and (issubclass(arg_type, BaseModel) or is_dataclass(arg_type))
@@ -462,9 +471,15 @@ class BlueskyContext:
                 info = FieldInfo(default_factory=default_factory)
             else:
                 _type = self._convert_type(arg_type, no_default)
+
                 match para.default:
                     case Parameter.empty:
-                        info = FieldInfo(default_factory=None)
+                        if para.kind is Parameter.VAR_POSITIONAL:
+                            info = FieldInfo(default_factory=tuple)
+                        elif para.kind is Parameter.VAR_KEYWORD:
+                            info = FieldInfo(default_factory=dict)
+                        else:
+                            info = FieldInfo(default_factory=None)
                     case None:
                         info = FieldInfo(default_factory=lambda: None)
                     case _:

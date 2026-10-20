@@ -70,8 +70,7 @@ class TaskRequest(BlueapiBaseModel):
         exclude_if=lambda args: not args,
     )
     params: Mapping[str, Any] = Field(
-        description="Values for parameters to plan, if any",
-        default_factory=dict,
+        description="Values for parameters to plan, if any", default_factory=dict
     )
     instrument_session: str = Field(
         description="Instrument session associated with this task",

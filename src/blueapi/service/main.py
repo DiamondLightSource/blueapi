@@ -77,6 +77,7 @@ from .model import (
     PythonEnvironmentResponse,
     SourceInfo,
     StateChangeRequest,
+    TaskRequest,
     TaskRequestV2,
     TaskResponse,
     TasksListResponse,
@@ -337,7 +338,7 @@ example_task_request = TaskRequestV2(
 def submit_task(
     request: Request,
     response: Response,
-    task_request: Annotated[TaskRequestV2, Body(..., examples=[example_task_request])],
+    task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
     _: Annotated[None, Depends(submit_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
     fedid: Fedid,

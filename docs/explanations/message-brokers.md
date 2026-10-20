@@ -63,7 +63,7 @@ channel.basic_consume(
 channel.start_consuming()
 ```
 
-With this script and a local instance of RabbitMQ (see [Run BlueAPI and connect to services locally](../how-to/just-run-blueapi-and-services-locally.md)), the command `python ./client.py public.worker.event` will create a new queue bound to `amq.topic` with routing key `public.worker.event`. When a plan is run, this queue woud be populated with messages, which would in turn be consumed by and printed to console.
+With this script and a local instance of RabbitMQ (see [Run BlueAPI and connect to services locally](../how-to/just-run-blueapi-and-services-locally.md)), the command `python ./client.py public.worker.event` will create a new queue bound to `amq.topic` with routing key `public.worker.event`. When a plan is run, this queue would be populated with messages, which would in turn be consumed by and printed to console.
 
 
 The consumer created in this tutorial will capture all messages generated during its runtime. It will not have access to messages that were generated previously. If this is a requirement for your use-case, RabbitMQ can be reconfigured to generate specific queues at startup. This can be achieved through [schema definitions](https://www.rabbitmq.com/docs/definitions).

@@ -20,7 +20,7 @@ trees:
       init_if_not_exists: true
 
 access_control:
-  access_policy: "config.dls:DiamondOpenPolicyAgentAuthorizationPolicy"
+  access_policy: "dls_tiled.policy:DiamondOpenPolicyAgentAuthorizationPolicy"
   args:
     authorization_provider: "http://localhost:8181/v1/data/diamond/policy/"
     token_audience: account

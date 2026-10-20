@@ -69,7 +69,7 @@ class OpaClient:
             self._config.submit_task_check,
             {
                 "token": token,
-                "proposal": int(match["proposal"]),
+                "proposal": int(match["proposal_number"]),
                 "visit": int(match["visit"]),
             },
         ):

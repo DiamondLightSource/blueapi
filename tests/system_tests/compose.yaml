@@ -90,10 +90,12 @@ services:
       - label=disable
 
   blueapi:
-    image: blueapi-system-test # CI loads this from the container job; built locally if missing
+    image: blueapi-system-test
     build:
-      context: ../..
-      target: runtime
+      context: .
+      args:
+        # CI sets this to the image built by the container job
+        BASE_IMAGE: ${BLUEAPI_BASE_IMAGE:-ghcr.io/diamondlightsource/blueapi:latest}
     network_mode: host # Port 8000
     environment:
       - EPICS_CA_NAME_SERVERS=127.0.0.1:9064

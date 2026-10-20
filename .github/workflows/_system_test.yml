@@ -25,11 +25,8 @@ jobs:
         with:
           compose-file: "tests/system_tests/compose.yaml"
 
-      - name: Start Blueapi Server
-        env:
-          EPICS_CA_NAME_SERVERS: 127.0.0.1:9064
-          EPICS_PVA_NAME_SERVERS: 127.0.0.1:9075
-        run: uv run blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
+      - name: Wait for Blueapi Server
+        run: timeout 300 sh -c 'until [ "$(docker inspect -f {{.State.Health.Status}} $(docker compose -f tests/system_tests/compose.yaml ps -q blueapi))" = healthy ]; do sleep 5; done'
 
       - name: Run tests
         run: uv run --locked tox -e system-test

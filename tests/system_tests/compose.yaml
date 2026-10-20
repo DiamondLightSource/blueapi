@@ -89,6 +89,29 @@ services:
     security_opt:
       - label=disable
 
+  blueapi:
+    build:
+      context: ../..
+      target: runtime
+    network_mode: host # Port 8000
+    environment:
+      - EPICS_CA_NAME_SERVERS=127.0.0.1:9064
+      - EPICS_PVA_NAME_SERVERS=127.0.0.1:9075
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+    command: ["-c", "/config/config.yaml", "serve"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      configure-services:
+        condition: service_completed_successfully
+    security_opt:
+      - label=disable
+
   blueapi-oauth2-proxy:
     network_mode: host # Port 4180
     image: "quay.io/oauth2-proxy/oauth2-proxy:v7.13.0"

@@ -26,11 +26,11 @@ compose +ARGS="up -d --no-recreate": init-example-services _check-runner
 serve *OPTS:
     #!/usr/bin/env bash
     source tests/system_tests/.env
-    uv run blueapi -c tests/system_tests/config.yaml {{ OPTS }} serve
+    uv run blueapi -c tests/system_tests/services/blueapi/config.yaml {{ OPTS }} serve
 
 [doc('Run a plan using the blueapi CLI')]
 run PLAN PARAMS:
-    uv run blueapi -c tests/system_tests/config.yaml controller run -i {{ SESSION }} {{ PLAN }} '{{ PARAMS }}'
+    uv run blueapi -c tests/system_tests/services/blueapi/config.yaml controller run -i {{ SESSION }} {{ PLAN }} '{{ PARAMS }}'
 
 [doc('Regenerate schemas, run pre-commit checks and type checking')]
 lint:
@@ -58,7 +58,7 @@ repl:
     uv run --with ptpython ptpython -i <(cat << EOF
     from blueapi.client import BlueapiClient
     from blueapi.client.rest import ServiceUnavailableError
-    bc = BlueapiClient.from_config_file("tests/system_tests/config.yaml").with_instrument_session("cm12345-1")
+    bc = BlueapiClient.from_config_file("tests/system_tests/services/blueapi/config.yaml").with_instrument_session("cm12345-1")
     try:
         bc.login()
     except KeyboardInterrupt:

@@ -22,6 +22,7 @@ from opentelemetry.trace import SpanKind
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
+from blueapi.cache import DocCache
 from blueapi.core import (
     OTLP_EXPORT_ENABLED,
     BlueskyContext,
@@ -142,6 +143,7 @@ class TaskWorker:
         self._worker_events = EventPublisher()
         self._progress_events = EventPublisher()
         self._data_events = EventPublisher()
+        self.doc_cache = DocCache()
         self._status_lock = RLock()
         self._status_snapshot = {}
         self._completed_statuses = set()
@@ -381,7 +383,7 @@ class TaskWorker:
         """
         LOGGER.info("Worker starting")
         self._ctx.run_engine.state_hook = self._on_state_change  # type: ignore
-        subs = self._ctx.run_engine.subscribe(self._on_document)
+        subs = self._ctx.run_engine.subscribe(self._cache_doc)
         if self._broadcast_statuses:
             self._ctx.run_engine.waiting_hook = self._waiting_hook  # type: ignore
 
@@ -563,6 +565,16 @@ class TaskWorker:
             warnings=warnings,
         )
         self._worker_events.publish(event, correlation_id)
+
+    def _cache_doc(self, name: str, document: Mapping[str, Any]) -> None:
+        if self._current is not None:
+            self.doc_cache.push(
+                DataEvent(name=name, task_id=self._current.task_id, doc=document)
+            )
+        else:
+            raise KeyError(
+                "Trying to emit a document despite the fact that the RunEngine is idle"
+            )
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:

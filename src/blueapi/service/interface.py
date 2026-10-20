@@ -84,7 +84,7 @@ def stomp_client() -> StompClient | None:
             {
                 task_worker.worker_events: event_topic,
                 task_worker.progress_events: event_topic,
-                task_worker.data_events: event_topic,
+                task_worker.doc_cache.publisher: event_topic,
             }
         )
         client.connect()

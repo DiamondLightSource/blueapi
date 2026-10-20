@@ -114,10 +114,12 @@ class ParameterError(BaseModel):
                 return f"Missing value for {self.field()!r}"
             case "extra_forbidden":
                 return f"Unexpected field {self.field()!r}"
-            case _:
+            case _ if self.loc[2:]:
                 return (
                     f"Invalid value {self.input!r} for field {self.field()}: {self.msg}"
                 )
+            case _:
+                return self.msg or "Unknown error"
 
 
 class InvalidParametersError(Exception):

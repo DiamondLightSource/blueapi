@@ -386,7 +386,8 @@ class BlueskyContext:
                 def __get_pydantic_core_schema__(
                     cls, source_type: Any, handler: GetCoreSchemaHandler
                 ) -> CoreSchema:
-                    def valid(value):
+                    def device_lookup(value):
+                        print(f"Looking up {value}")
                         val = self.find_device(value)
                         if not val:
                             raise ValueError(f"Device {value} cannot be found")
@@ -399,7 +400,7 @@ class BlueskyContext:
                         return val
 
                     return core_schema.no_info_after_validator_function(
-                        valid, handler(str)
+                        device_lookup, handler(str)
                     )
 
                 @classmethod

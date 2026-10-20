@@ -22,12 +22,11 @@ from opentelemetry.trace import SpanKind
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
-from blueapi.cache import DocCache
+from blueapi.cache import EventCache
 from blueapi.core import (
     OTLP_EXPORT_ENABLED,
     BlueskyContext,
     DataEvent,
-    EventPublisher,
     EventStream,
     WatchableStatus,
 )
@@ -113,9 +112,7 @@ class TaskWorker:
     _status_lock: RLock
     _status_snapshot: dict[str, StatusView]
     _completed_statuses: set[str]
-    _worker_events: EventPublisher[WorkerEvent]
-    _progress_events: EventPublisher[ProgressEvent]
-    _data_events: EventPublisher[DataEvent]
+    _event_cache: EventCache
     _started: Event
     _stopping: Event
     _stopped: Event
@@ -140,10 +137,7 @@ class TaskWorker:
         self._warnings = []
         self._task_channel = Queue(maxsize=1)
         self._current = None
-        self._worker_events = EventPublisher()
-        self._progress_events = EventPublisher()
-        self._data_events = EventPublisher()
-        self.doc_cache = DocCache()
+        self._event_cache = EventCache()
         self._status_lock = RLock()
         self._status_snapshot = {}
         self._completed_statuses = set()
@@ -353,6 +347,7 @@ class TaskWorker:
             LOGGER.info("Stopping worker: nothing to do")
         self._wait_until_stopped()
         add_span_attributes({WORKER_THREAD_STATE: "STOPPED"})
+        self._event_cache.shutdown()
         LOGGER.info("Stopped")
 
     @start_as_current_span(TRACER)
@@ -491,7 +486,7 @@ class TaskWorker:
         Returns:
             EventStream[WorkerEvent, int]: Subscribable stream of events
         """
-        return self._worker_events
+        return self._event_cache.worker_events
 
     @property
     def progress_events(self) -> EventStream[ProgressEvent, int]:
@@ -500,7 +495,7 @@ class TaskWorker:
         Returns:
             EventStream[ProgressEvent, int]: Subscribable stream of events
         """
-        return self._progress_events
+        return self._event_cache.progress_events
 
     @property
     def data_events(self) -> EventStream[DataEvent, int]:
@@ -509,7 +504,7 @@ class TaskWorker:
         Returns:
             EventStream[DataEvent, int]: Subscribable stream of events
         """
-        return self._data_events
+        return self._event_cache.data_events
 
     @start_as_current_span(TRACER, "raw_new_state", "raw_old_state")
     def _on_state_change(
@@ -564,19 +559,10 @@ class TaskWorker:
             errors=errors,
             warnings=warnings,
         )
-        self._worker_events.publish(event, correlation_id)
+        id = self._current.task_id if self._current else None
+        self._event_cache.push(id, event)
 
     def _cache_doc(self, name: str, document: Mapping[str, Any]) -> None:
-        if self._current is not None:
-            self.doc_cache.push(
-                DataEvent(name=name, task_id=self._current.task_id, doc=document)
-            )
-        else:
-            raise KeyError(
-                "Trying to emit a document despite the fact that the RunEngine is idle"
-            )
-
-    def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
             if self._current_task_otel_context is not None:
                 with TRACER.start_as_current_span(
@@ -596,20 +582,17 @@ class TaskWorker:
                             "document": str(document),
                         }
                     )
-
-                    correlation_id = self._current.request_id
-                    self._data_events.publish(
+                    self._event_cache.push(
+                        self._current.task_id,
                         DataEvent(
                             name=name, task_id=self._current.task_id, doc=document
                         ),
-                        correlation_id,
                     )
             else:
                 raise ValueError(
                     "There is no context set for tracing despite the fact that a task"
                     " is running, something has gone wrong..."
                 )
-
         else:
             raise KeyError(
                 "Trying to emit a document despite the fact that the RunEngine is idle"
@@ -678,12 +661,12 @@ class TaskWorker:
         if self._current is None:
             raise ValueError("Got a status update without an active task!")
         else:
-            self._progress_events.publish(
+            self._event_cache.push(
+                self._current.task_id,
                 ProgressEvent(
                     task_id=self._current.task_id,
                     statuses=self._status_snapshot,
                 ),
-                self._current.task_id,
             )
 
 

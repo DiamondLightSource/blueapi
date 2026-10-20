@@ -1,8 +1,6 @@
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
-from pydantic_core import InitErrorDetails
 
 from blueapi.service.model import TaskRequest
 from blueapi.service.protocol import (
@@ -15,6 +13,7 @@ from blueapi.service.protocol import (
     Resume,
     Submit,
 )
+from blueapi.worker.task import InvalidTaskParameter, TaskParameterError
 
 
 @pytest.mark.parametrize(
@@ -72,19 +71,20 @@ def test_response_deserialization(src: str, res: Any):
     assert req == res
 
 
-def test_from_empty_validation_error():
-    err = InvalidArgs.from_validation_error(
-        ValidationError("Error validating request", [])
+def test_from_empty_parameter_error():
+    err = InvalidArgs.from_parameter_error(
+        TaskParameterError("Error validating request", [])
     )
     assert err == InvalidArgs(errors=[])
 
 
-def test_from_validation_error():
-    err = InvalidArgs.from_validation_error(
-        ValidationError.from_exception_data(
-            title="Error validating request",
-            line_errors=[
-                InitErrorDetails(
+def test_from_parameter_error():
+    err = InvalidArgs.from_parameter_error(
+        TaskParameterError(
+            "Error validating request",
+            [
+                InvalidTaskParameter(
+                    msg="foo.bar is missing",
                     loc=("foo", "bar"),
                     type="missing",
                     input={"foo": {"no": "bar"}},
@@ -96,7 +96,7 @@ def test_from_validation_error():
         errors=[
             ArgumentError(
                 loc=["body", "params", "foo", "bar"],
-                msg="Field required",
+                msg="foo.bar is missing",
                 type="missing",
                 input={"foo": {"no": "bar"}},
             )

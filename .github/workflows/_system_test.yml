@@ -27,7 +27,10 @@ jobs:
         run: echo "DODAL_VERSION=$(grep -A1 '^name = "dls-dodal"$' uv.lock | sed -n 's/^version = "\(.*\)"$/\1/p')" >> "$GITHUB_ENV"
 
       - name: Compose services
-        run: docker compose -f tests/system_tests/compose.yaml --profile ci up -d --wait --wait-timeout 600
+        # Wait on blueapi only: --wait on everything fails on the one-shot init container exiting
+        run: |
+          docker compose -f tests/system_tests/compose.yaml --profile ci up -d
+          docker compose -f tests/system_tests/compose.yaml --profile ci up -d --wait --wait-timeout 600 blueapi
 
       - name: Run tests
         run: uv run --locked tox -e system-test

@@ -25,7 +25,7 @@ In RabbitMQ, different queues can have the same routing key, and consequently re
 
 When Blueapi is configured to use a message broker, any service can subscribe to the broker to receive events generated during plan execution. Due to the dynamic nature of RabbitMQ, new services can subscribe to the exchange at any point, without reconfiguring the server or interfering with other consumer's subscriptions. In general, having services subscribe directly to the message broker is not recommended, as there should be a more appropriate way to access the information you want.
 
-To to connect a consumer to a RabbitMQ topic, follow RabbitMQ's [Tutorial 5: Topics](https://www.rabbitmq.com/tutorials) in your preferred language. Change the exchange name to `amq.topic` and the routing key to `public.worker.event`. For example:
+To connect a consumer to a RabbitMQ topic, follow RabbitMQ's [Tutorial 5: Topics](https://www.rabbitmq.com/tutorials) in your preferred language. Change the exchange name to `amq.topic` and the routing key to `public.worker.event`. For example:
 
 ``` python
 #!/usr/bin/env python

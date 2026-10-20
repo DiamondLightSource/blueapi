@@ -90,25 +90,23 @@ services:
       - label=disable
 
   blueapi:
-    image: blueapi-system-test
     build:
-      context: .
-      args:
-        # CI sets this to the image built by the container job
-        BASE_IMAGE: ${BLUEAPI_BASE_IMAGE:-ghcr.io/diamondlightsource/blueapi:latest}
+      context: ../..
+      target: runtime
     network_mode: host # Port 8000
     environment:
       - EPICS_CA_NAME_SERVERS=127.0.0.1:9064
       - EPICS_PVA_NAME_SERVERS=127.0.0.1:9075
     volumes:
       - ./config.yaml:/config/config.yaml:ro
-    command: ["-c", "/config/config.yaml", "serve"]
+    # dodal is not in the image, setup-scratch clones and installs it from the config
+    entrypoint: ["sh", "-c", "mkdir -p /tmp/scratch/blueapi && blueapi -c /config/config.yaml setup-scratch && exec blueapi -c /config/config.yaml serve"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 120s
     depends_on:
       configure-services:
         condition: service_completed_successfully

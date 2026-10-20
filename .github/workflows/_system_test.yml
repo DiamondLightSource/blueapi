@@ -20,21 +20,10 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
-      - name: Download blueapi image
-        uses: actions/download-artifact@v8
-        with:
-          name: blueapi-image
-          path: /tmp
-
-      - name: Load blueapi image
-        run: docker load -i /tmp/blueapi-image.tar
-
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v2
 
       - name: Compose services
-        env:
-          BLUEAPI_BASE_IMAGE: tag_for_testing
         run: docker compose -f tests/system_tests/compose.yaml up -d
 
       - name: Wait for Blueapi Server

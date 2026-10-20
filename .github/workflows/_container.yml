@@ -55,16 +55,6 @@ jobs:
       - name: Test cli works in cached runtime image
         run: docker run --rm tag_for_testing --version
 
-      - name: Save image for system tests
-        run: docker save tag_for_testing -o /tmp/blueapi-image.tar
-
-      - name: Upload image for system tests
-        uses: actions/upload-artifact@v7
-        with:
-          name: blueapi-image
-          path: /tmp/blueapi-image.tar
-          retention-days: 1
-
       - name: Create tags for publishing image
         id: meta
         uses: docker/metadata-action@v6

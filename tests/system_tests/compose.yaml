@@ -65,8 +65,7 @@ services:
       - label=disable
 
   tiled:
-    # tiled 0.2.18 plus the DLS access policy (dls_tiled.policy), as deployed
-    image: ghcr.io/zohebshaikh/dls-tiled:0.3.1-alpha
+    image: ghcr.io/diamondlightsource/dls-tiled:0.5.0
     network_mode: host # Port 8407
     environment:
       - VITE_LOGIN_REDIRECT=false

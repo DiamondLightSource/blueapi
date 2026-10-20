@@ -23,11 +23,15 @@ jobs:
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v2
 
-      - name: Compose services
-        run: docker compose -f tests/system_tests/compose.yaml up -d
+      - name: Read dodal version from uv.lock
+        run: echo "DODAL_VERSION=$(grep -A1 '^name = "dls-dodal"$' uv.lock | sed -n 's/^version = "\(.*\)"$/\1/p')" >> "$GITHUB_ENV"
 
-      - name: Wait for Blueapi Server
-        run: timeout 300 sh -c 'until [ "$(docker inspect -f {{.State.Health.Status}} $(docker compose -f tests/system_tests/compose.yaml ps -q blueapi))" = healthy ]; do sleep 5; done'
+      - name: Compose services
+        run: docker compose -f tests/system_tests/compose.yaml --profile ci up -d --wait --wait-timeout 600
 
       - name: Run tests
         run: uv run --locked tox -e system-test
+
+      - name: Compose logs
+        if: failure()
+        run: docker compose -f tests/system_tests/compose.yaml --profile ci logs

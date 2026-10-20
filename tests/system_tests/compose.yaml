@@ -89,7 +89,9 @@ services:
     security_opt:
       - label=disable
 
+  # CI only, locally run the server with `just serve` (uv) instead
   blueapi:
+    profiles: [ci]
     build:
       context: ../..
       target: runtime
@@ -97,16 +99,19 @@ services:
     environment:
       - EPICS_CA_NAME_SERVERS=127.0.0.1:9064
       - EPICS_PVA_NAME_SERVERS=127.0.0.1:9075
+      - DODAL_VERSION
     volumes:
       - ./config.yaml:/config/config.yaml:ro
-    # dodal is not in the image, setup-scratch clones and installs it from the config
-    entrypoint: ["sh", "-c", "mkdir -p /tmp/scratch/blueapi && blueapi -c /config/config.yaml setup-scratch && exec blueapi -c /config/config.yaml serve"]
+      - ./config-scratch.yaml:/config/config-scratch.yaml:ro
+    # dodal is not in the image, setup-scratch clones and installs it from config-scratch.yaml
+    entrypoint: ["sh", "-c", "mkdir -p /tmp/scratch/blueapi && blueapi -c /config/config.yaml -c /config/config-scratch.yaml setup-scratch && exec blueapi -c /config/config.yaml -c /config/config-scratch.yaml serve"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 120s
+      # setup-scratch plus device connection can take several minutes
+      start_period: 300s
     depends_on:
       configure-services:
         condition: service_completed_successfully

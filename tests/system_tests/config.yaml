@@ -27,9 +27,3 @@ oidc:
   client_audience: "ixx-blueapi"
 opa:
   root: "http://localhost:8181/v1/data/diamond/policy/"
-scratch:
-  root: /tmp/scratch/blueapi
-  repositories:
-    - name: dodal
-      remote_url: https://github.com/DiamondLightSource/dodal.git
-      target_revision: "3.0.3" # matches uv.lock

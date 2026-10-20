@@ -32,6 +32,7 @@ jobs:
       python-version: ${{ matrix.python-version }}
 
   system-test:
+    needs: container
     uses: ./.github/workflows/_system_test.yml
 
   container:

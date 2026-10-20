@@ -90,6 +90,7 @@ services:
       - label=disable
 
   blueapi:
+    image: blueapi-system-test # CI loads this from the container job; built locally if missing
     build:
       context: ../..
       target: runtime

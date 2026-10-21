@@ -57,6 +57,7 @@ from blueapi.service.protocol import (
 )
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent
+from blueapi.worker.task import TaskParameterError
 from blueapi.worker.worker_errors import WorkerBusyError
 
 from .authorization import (
@@ -347,7 +348,7 @@ def submit_task(
         task_id: str = runner.run(interface.submit_task, task_request, {"user": fedid})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
-    except ValidationError as e:
+    except TaskParameterError as e:
         # Add body/params context to location and ensure that all required
         # fields defined in the generated schema are present
         errors = [
@@ -358,7 +359,7 @@ def submit_task(
                 # Input is not listed as required but is useful to have if available
                 "input": err.get("input", None),
             }
-            for err in e.errors()
+            for err in e.errors
         ]
 
         LOGGER.info("Error submitting task: %s - %s", task_request, e)
@@ -669,9 +670,9 @@ async def run_plan(
             interface.submit_task, task_request.task, {"user": user}
         )
         LOGGER.info("Task ID: %s", task_id)
-    except ValidationError as ve:
-        LOGGER.info("Plan args not valid: %s - %s", task_request, ve)
-        await ws.send_text(InvalidArgs.from_validation_error(ve).model_dump_json())
+    except TaskParameterError as tpe:
+        LOGGER.info("Plan args not valid: %s - %s", task_request, tpe)
+        await ws.send_text(InvalidArgs.from_parameter_error(tpe).model_dump_json())
         await ws.close(code=protocol.INVALID_ARGS, reason="Invalid Args")
         return
     except KeyError as ke:

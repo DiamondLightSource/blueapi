@@ -18,7 +18,9 @@ from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
+    InvalidParametersError,
     NotFoundError,
+    ParameterError,
     ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
@@ -659,6 +661,73 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
     assert isinstance(final_event.result, TaskResult)
     assert final_event.task_complete
     assert not final_event.task_failed
+
+
+@pytest.mark.parametrize(
+    "task,param_error,user",
+    [
+        (
+            TaskRequest(
+                name="count",
+                params={"detectors": "det", "num": 3},  # detectors should be list
+                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+            ),
+            ParameterError(
+                loc=["body", "params", "detectors"],
+                msg="'str' instances are not allowed as a Sequence value",
+                type="sequence_str",
+                input="det",
+            ),
+            User.alice,
+        ),
+        (
+            TaskRequest(
+                name="spec_scan",
+                params={
+                    "detectors": ["det"],
+                    "spec": {
+                        "axis": "missing",  # doesn't exist
+                        "start": 0.0,
+                        "stop": 0.4,
+                        "num": 2,
+                        "type": "Linspace",
+                    },
+                },
+                instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
+            ),
+            ParameterError(
+                loc=["body", "params", "spec", "Linspace", "axis"],
+                msg="Value error, Device missing cannot be found",
+                type="value_error",
+                input="missing",
+            ),
+            User.bob,
+        ),
+    ],
+)
+@pytest.mark.parametrize("run_method", ["run_task", "run_blocking"])
+def test_invalid_parameters_fail_cleanly(
+    client_with_stomp: BlueapiClient,
+    task: TaskRequest,
+    user: ValidUser,
+    param_error: ParameterError,
+    run_method: str,
+):
+    resource = Queue(maxsize=1)
+    start = Queue(maxsize=1)
+
+    def on_event(event: AnyEvent) -> None:
+        if isinstance(event, DataEvent):
+            if event.name == "start":
+                start.put_nowait(event.doc)
+            if event.name == "stream_resource":
+                resource.put_nowait(event.doc)
+
+    runner = getattr(client_with_stomp, run_method)
+    with pytest.raises(InvalidParametersError) as ipe:
+        runner(task, on_event)
+
+    assert ipe.value.errors == [param_error]
 
 
 # Regression test for #1480

@@ -51,50 +51,53 @@ class Task(BlueapiBaseModel):
             tuple[list[Any], Mapping[str, Any]]: The prepared *args and **kwargs
                                                  parameters for the plan.
         """
-        plan = ctx.plans[self.name]
-        func = ctx.plan_functions[self.name]
+        try:
+            plan = ctx.plans[self.name]
+            func = ctx.plan_functions[self.name]
 
-        sig = signature(func)
-        bound = sig.bind_partial(*self.params.args, **self.params.kwargs)
+            sig = signature(func)
+            bound = sig.bind_partial(*self.params.args, **self.params.kwargs)
 
-        # Only validate explicitly supplied arguments. This allows Pydantic's
-        # default/default_factory to provide injected defaults.
-        adapter = TypeAdapter(plan.model)
-        validated = adapter.validate_python(bound.arguments)
+            # Only validate explicitly supplied arguments. This allows Pydantic's
+            # default/default_factory to provide injected defaults.
+            adapter = TypeAdapter(plan.model)
+            validated = adapter.validate_python(bound.arguments)
 
-        args: list[Any] = []
-        kwargs: dict[str, Any] = {}
+            args: list[Any] = []
+            kwargs: dict[str, Any] = {}
 
-        for name, parameter in sig.parameters.items():
-            supplied = name in bound.arguments
+            for name, parameter in sig.parameters.items():
+                supplied = name in bound.arguments
 
-            if supplied:
-                value = getattr(validated, name)
+                if supplied:
+                    value = getattr(validated, name)
 
-                match parameter.kind:
-                    case Parameter.POSITIONAL_ONLY:
-                        args.append(value)
-
-                    case Parameter.POSITIONAL_OR_KEYWORD:
-                        if name in self.params.kwargs:
-                            kwargs[name] = value
-                        else:
+                    match parameter.kind:
+                        case Parameter.POSITIONAL_ONLY:
                             args.append(value)
 
-                    case Parameter.VAR_POSITIONAL:
-                        args.extend(value)
+                        case Parameter.POSITIONAL_OR_KEYWORD:
+                            if name in self.params.kwargs:
+                                kwargs[name] = value
+                            else:
+                                args.append(value)
 
-                    case Parameter.KEYWORD_ONLY:
-                        kwargs[name] = value
+                        case Parameter.VAR_POSITIONAL:
+                            args.extend(value)
 
-                    case Parameter.VAR_KEYWORD:
-                        kwargs.update(value)
-            else:
-                # Let the generated Pydantic model provide the default.
-                value = getattr(validated, name)
-                kwargs[name] = value
+                        case Parameter.KEYWORD_ONLY:
+                            kwargs[name] = value
 
-        return args, kwargs
+                        case Parameter.VAR_KEYWORD:
+                            kwargs.update(value)
+                else:
+                    # Let the generated Pydantic model provide the default.
+                    value = getattr(validated, name)
+                    kwargs[name] = value
+
+            return args, kwargs
+        except ValidationError as ve:
+            raise TaskParameterError.from_validation_error(ve) from None
 
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(
@@ -102,10 +105,8 @@ class Task(BlueapiBaseModel):
             f"metadata {self.metadata} for all runs"
         )
         plan = ctx.plan_functions[self.name]
-        try:
-            args, kwargs = self.prepare_params(ctx)
-        except ValidationError as ve:
-            raise TaskParameterError.from_validation_error(ve) from None
+        args, kwargs = self.prepare_params(ctx)
+
         ctx.run_engine.md.update(self.metadata)
         result = ctx.run_engine(plan(*args, **kwargs))
         if isinstance(result, tuple):  # pragma: no cover

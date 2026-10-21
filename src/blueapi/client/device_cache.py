@@ -10,7 +10,7 @@ class DeviceCache:
     def __init__(self, rest: RestClientProtocol):
         self._rest = rest
         self._cache = {
-            model.name: DeviceRef(name=model.name, cache=self, model=model)
+            model.name: DeviceRef(cache=self, model=model)
             for model in rest.get_devices().devices
         }
         for name, device in self._cache.items():
@@ -37,7 +37,7 @@ class DeviceCache:
             return dev
         try:
             model = self._rest.get_device(name)
-            device = DeviceRef(name=name, cache=self, model=model)
+            device = DeviceRef(cache=self, model=model)
             self._cache[name] = device
             setattr(self, model.name, device)
             return device
@@ -63,19 +63,17 @@ class DeviceRef(ClientObjectRef):
     ``devices.my_device.child``.
     """
 
-    name: str
     model: DeviceModel
     _cache: DeviceCache
 
-    def __init__(self, name: str, cache: DeviceCache, model: DeviceModel):
-        self.name = name
+    def __init__(self, cache: DeviceCache, model: DeviceModel):
         self.model = model
         self._cache = cache
 
     def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):
             raise AttributeError(f"No child device named {name}")
-        return self._cache[f"{self.name}.{name}"]
+        return self._cache[f"{self.model.name}.{name}"]
 
     def __repr__(self):
-        return f"Device({self.name})"
+        return f"Device({self.model.name})"

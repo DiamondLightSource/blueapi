@@ -96,7 +96,7 @@ def test_create_task_serialization():
     request = TaskRequest(
         name="demo",
         instrument_session="cm12345-1",
-        params={"devices": [DeviceRef(name="foo", cache=Mock(), model=model)]},
+        params={"devices": [DeviceRef(cache=Mock(), model=model)]},
     )
 
     BlueapiRestClient.create_task(rest, request)

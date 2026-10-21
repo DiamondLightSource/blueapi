@@ -897,7 +897,6 @@ def test_run_blocking_requires_auth(
 
 # Kept last: installs packages into the environment, so it must not run
 # before (and potentially disturb) the tests above.
-@pytest.mark.timeout(600)
 @pytest.mark.parametrize(
     "repos,expected_location_name,expected_version",
     [

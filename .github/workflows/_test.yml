@@ -18,6 +18,7 @@ env:
 jobs:
   run:
     runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 15
 
     steps:
       - name: Checkout

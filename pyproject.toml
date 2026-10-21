@@ -22,7 +22,7 @@ dependencies = [
     "pydantic-settings",
     "stomp-py",
     "PyYAML>=6.0.2",
-    "click>=8.2.0",                                  # need for blueapi serve and blueapi setup-scratch
+    "click>=8.2.0",
     "requests",
     "GitPython>=3.1.58",                             #security base min https://github.com/advisories/GHSA-4gmw-gg2m-w46p - used by the server's /python_environment endpoint and the CLI's scratch setup
     "event-model==1.24.0",                           # https://github.com/DiamondLightSource/blueapi/issues/684

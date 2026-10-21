@@ -1,3 +1,4 @@
+import json
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -8,7 +9,9 @@ from typing import Any
 from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from fastapi import status
 from tiled.client import from_uri
+from tiled.client.utils import ClientError
 
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
 from blueapi.core.bluesky_types import DataEvent
@@ -103,6 +106,52 @@ def setup(config: ApplicationConfig) -> None:
     stomp_client()
 
 
+@cache
+def service_account_tiled_client():
+    """One client for every task: its auth refreshes its own token, so unlike a
+    client carrying a caller's pass-through headers it can be reused, which saves
+    the server-info and token requests from_uri makes on every task."""
+    tiled_config = context().tiled_conf
+    assert tiled_config is not None and isinstance(
+        tiled_config.authentication, ServiceAccount
+    )
+    return from_uri(
+        str(tiled_config.url), auth=TiledAuth(tiled_auth=tiled_config.authentication)
+    )
+
+
+def _tiled_session_container(tiled_client, instrument: str, instrument_session: str):
+    """The beamline/proposal/visit container runs are written under.
+
+    It almost always exists already, so it is looked up in one request; only the
+    first task for a visit walks the levels and creates what is missing.
+    """
+    session_blob = access_blob(instrument_session, instrument)
+    proposal = session_blob["proposal"]
+    try:
+        return tiled_client[f"{instrument}/{proposal}/{instrument_session}"]
+    except KeyError:
+        pass
+    # Each level's access blob is the prefix of the full (beamline, proposal,
+    # visit) one, matching the beamline/proposal/session tiers the tiled access
+    # policy expects a container to be tagged with.
+    level_access_blobs = {
+        instrument: {"beamline": instrument},
+        proposal: {"beamline": instrument, "proposal": proposal},
+        instrument_session: session_blob,
+    }
+    for key, blob in level_access_blobs.items():
+        try:
+            tiled_client = tiled_client.create_container(
+                key=key, access_tags=[json.dumps(blob)]
+            )
+        except ClientError as e:
+            if e.response.status_code != status.HTTP_409_CONFLICT:
+                raise
+            tiled_client = tiled_client[key]  # created already, e.g. by another task
+    return tiled_client
+
+
 def teardown() -> None:
     worker().stop()
     if (stomp_client_ref := stomp_client()) is not None:
@@ -110,6 +159,7 @@ def teardown() -> None:
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
+    service_account_tiled_client.cache_clear()
 
 
 def _publish_event_streams(
@@ -166,7 +216,7 @@ def submit_task(
         # We raise an InvalidConfigError on setting tiled_conf if this isn't set
         assert md
         metadata["tiled_access_tags"] = [
-            access_blob(task_request.instrument_session, md.instrument)
+            json.dumps(access_blob(task_request.instrument_session, md.instrument))
         ]
     task = Task(
         name=task_request.name,
@@ -191,21 +241,26 @@ def begin_task(
     if nt := active_context.numtracker:
         nt.set_headers(pass_through_headers or {})
 
+    if task.task_id is None:
+        return task
+
     subscribers = []
     if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
         if isinstance(tiled_config.authentication, ServiceAccount):
-            tiled_client = from_uri(
-                str(tiled_config.url),
-                auth=TiledAuth(tiled_auth=tiled_config.authentication),
-            )
+            tiled_client = service_account_tiled_client()
         else:
             tiled_client = from_uri(
                 str(tiled_config.url),
                 api_key=tiled_config.authentication,
                 headers=pass_through_headers,
             )
-
+        if (task_ := get_task_by_id(task_id=task.task_id)) is not None:
+            tiled_client = _tiled_session_container(
+                tiled_client,
+                active_context.run_engine.md["instrument"],
+                task_.task.metadata["instrument_session"],
+            )
         tiled_writer_token = active_context.run_engine.subscribe(
             TiledWriter(tiled_client, batch_size=1)
         )
@@ -227,13 +282,12 @@ def begin_task(
         )
         subscribers.append((active_worker.worker_events, remove_callback))
 
-    if task.task_id is not None:
-        try:
-            active_worker.begin_task(task.task_id)
-        except:
-            for channel, token in subscribers:
-                channel.unsubscribe(token)
-            raise
+    try:
+        active_worker.begin_task(task.task_id)
+    except Exception:
+        for channel, token in subscribers:
+            channel.unsubscribe(token)
+        raise
     return task
 
 

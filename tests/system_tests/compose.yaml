@@ -1,12 +1,14 @@
 include:
-  - ../../example-services/compose.yaml
+  - path:
+      - ../../example-services/compose.yaml
+      - ./services/example-services-override.yaml
 
 services:
   numtracker:
     image: ghcr.io/diamondlightsource/numtracker:1.0.2
     network_mode: host # Port 8406
     environment:
-      - NUMTRACKER_AUTH_HOST=http://localhost:8181/
+      - NUMTRACKER_AUTH_HOST=http://localhost:8181
       - NUMTRACKER_PORT=8406
       - NUMTRACKER_LOG_LEVEL=info
       - NUMTRACKER_AUTH_ACCESS=v1/data/diamond/policy/numtracker/write_to_beamline_visit
@@ -65,10 +67,10 @@ services:
       - label=disable
 
   tiled:
-    image: ghcr.io/bluesky/tiled:0.2.12
+    image: ghcr.io/diamondlightsource/dls-tiled:0.5.0
     network_mode: host # Port 8407
     environment:
-      - PYTHONPATH=/deploy/
+      - VITE_LOGIN_REDIRECT=false
     volumes:
       - ./services/tiled_config:/deploy/config
     command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8407"]
@@ -79,13 +81,45 @@ services:
       - label=disable
 
   opa:
-    image: openpolicyagent/opa:edge-static-debug
+    image: openpolicyagent/opa:1.21.2-static-debug  # debug: entrypoint.sh needs a shell
     network_mode: host # Port 8181
     volumes:
       - "./services/opa_config:/mnt"
     environment:
       - ISSUER=http://localhost:8081/realms/master
     entrypoint: "sh /mnt/entrypoint.sh"
+    security_opt:
+      - label=disable
+
+  # CI only, locally run the server with `just serve` (uv) instead
+  blueapi:
+    profiles: [ci]
+    build:
+      context: ../..
+      target: runtime
+    network_mode: host # Port 8000
+    environment:
+      - EPICS_CA_NAME_SERVERS=127.0.0.1:9064
+      - EPICS_PVA_NAME_SERVERS=127.0.0.1:9075
+      - DODAL_VERSION
+    # A huge default nofile limit makes the EPICS CA client spin and devices fail to connect
+    ulimits:
+      nofile: 1024
+    volumes:
+      - ./config.yaml:/blueapi/config.yaml:ro
+      - ./config-scratch.yaml:/blueapi/config-scratch.yaml:ro
+      - ./services/blueapi/start.sh:/blueapi/start.sh:ro
+    entrypoint: ["sh", "/blueapi/start.sh"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      # setup-scratch plus device connection can take several minutes
+      start_period: 300s
+    depends_on:
+      configure-services:
+        condition: service_completed_successfully
     security_opt:
       - label=disable
 

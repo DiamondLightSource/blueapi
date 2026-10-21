@@ -503,7 +503,7 @@ def _existing_task(instrument_session: str = FAKE_INSTRUMENT_SESSION) -> Trackab
         task_id="foo_bar",
         task=Task(
             name="my_plan",
-            params={},
+            params=TaskParametersV2(),
             metadata={"instrument_session": instrument_session},
         ),
     )

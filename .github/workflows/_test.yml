@@ -43,3 +43,5 @@ jobs:
         with:
           name: ${{ inputs.python-version }}/${{ inputs.runs-on }}
           files: cov.xml
+          # Tests skip push-to-main; label the merge queue commit (same SHA) as main
+          override_branch: ${{ github.event_name == 'merge_group' && 'main' || '' }}

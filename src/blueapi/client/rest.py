@@ -17,6 +17,7 @@ from websockets.sync.client import connect
 
 from blueapi import __version__
 from blueapi.client.protocols import ClientObjectRef
+from blueapi.client.session import JWTAuth, SessionManager
 from blueapi.config import RestConfig
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (

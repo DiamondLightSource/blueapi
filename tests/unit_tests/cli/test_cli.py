@@ -247,6 +247,7 @@ def test_submit_plan_without_stomp(runner: CliRunner):
             config_path,
             "controller",
             "run",
+            "--stomp",
             "-i",
             "cm12345-1",
             "sleep",
@@ -448,6 +449,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
         [
             "controller",
             "run",
+            "--stomp",
             "-i",
             "cm12345-1",
             "sleep",

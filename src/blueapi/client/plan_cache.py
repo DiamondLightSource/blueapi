@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+from blueapi.client.rest import InvalidParametersError
 from blueapi.service.model import PlanModel, TaskRequest
 from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 
@@ -80,11 +81,14 @@ class Plan:
             params=kwargs,
             instrument_session=self._client.instrument_session,
         )
-        match self._client.run_task(req):
-            case TaskStatus(result=TaskResult(result=res)):
-                return res
-            case TaskStatus(result=TaskError(type=typ, message=msg)):
-                raise PlanFailedError(typ, msg)
+        try:
+            match self._client.run_task(req):
+                case TaskStatus(result=TaskResult(result=res)):
+                    return res
+                case TaskStatus(result=TaskError(type=typ, message=msg)):
+                    raise PlanFailedError(typ, msg)
+        except InvalidParametersError as ipe:
+            raise TypeError(ipe.message()) from None
 
     @property
     def help_text(self) -> str:

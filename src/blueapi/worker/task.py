@@ -1,8 +1,8 @@
 import logging
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Self, TypedDict
 
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from blueapi.core import BlueskyContext
 from blueapi.utils import BlueapiBaseModel
@@ -25,9 +25,12 @@ class Task(BlueapiBaseModel):
     )
 
     def prepare_params(self, ctx: BlueskyContext) -> Mapping[str, Any]:
-        model = _lookup_params(ctx, self)
-        # Re-create dict manually to avoid nesting in model_dump output
-        return {field: getattr(model, field) for field in model.__pydantic_fields__}
+        try:
+            model = _lookup_params(ctx, self)
+            # Re-create dict manually to avoid nesting in model_dump output
+            return {field: getattr(model, field) for field in model.__pydantic_fields__}
+        except ValidationError as ve:
+            raise TaskParameterError.from_validation_error(ve) from None
 
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(
@@ -62,3 +65,34 @@ def _lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:
     model = plan.model
     adapter = TypeAdapter(model)
     return adapter.validate_python(task.params)
+
+
+class InvalidTaskParameter(TypedDict):
+    loc: tuple[str | int, ...]
+    msg: str | None
+    type: str | None
+    input: Any | None
+
+
+class TaskParameterError(ValueError):
+    errors: list[InvalidTaskParameter]
+
+    def __init__(self, message: str, errors: list[InvalidTaskParameter]):
+        super().__init__(message)
+        self.errors = errors
+
+    @classmethod
+    def from_validation_error(cls, error: ValidationError) -> Self:
+        errors = [
+            InvalidTaskParameter(
+                loc=e.get("loc", []),
+                msg=e.get("msg", None),
+                type=e.get("type", None),
+                input=e.get("input", None),
+            )
+            for e in error.errors()
+        ]
+        return cls(str(error), errors)
+
+    def __reduce__(self):
+        return (self.__class__, (*self.args, self.errors))

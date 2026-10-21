@@ -17,11 +17,12 @@ client when running plans via websockets
 
 from typing import Annotated, Any, Literal, Self
 
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import BaseModel, Field, TypeAdapter
 
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import TaskRequest
 from blueapi.worker.event import ProgressEvent, WorkerEvent
+from blueapi.worker.task import TaskParameterError
 
 UNKNOWN_PLAN = 4001
 INVALID_ARGS = 4002
@@ -68,7 +69,7 @@ class InvalidArgs(BaseModel):
     errors: list[ArgumentError]
 
     @classmethod
-    def from_validation_error(cls, e: ValidationError) -> Self:
+    def from_parameter_error(cls, e: TaskParameterError) -> Self:
         errors = [
             ArgumentError(
                 loc=["body", "params", *err.get("loc", [])],
@@ -77,7 +78,7 @@ class InvalidArgs(BaseModel):
                 # Input is not listed as required but is useful to have if available
                 input=err.get("input", None),
             )
-            for err in e.errors()
+            for err in e.errors
         ]
         return cls(errors=errors)
 

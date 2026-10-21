@@ -14,7 +14,7 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "tiled[client]>=0.2.4",
+    "tiled[client]==0.2.18",
     "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd-async>=0.13.5",
     "aioca",
@@ -59,7 +59,6 @@ dev = [
     "pytest-cov",
     "pytest-asyncio",
     "pytest-httpx>=0.35.0",
-    "pytest-timeout",
     "responses",
     "ruff",
     "semver",
@@ -76,10 +75,10 @@ dev = [
     "mock",
     "jwcrypto",
     "deepdiff",
-    "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
     "respx",
     "pytest-xdist[psutil]",
     "httpx2>=2.5.0",
+    "playwright>=1.63.0",
 ]
 
 [project.scripts]
@@ -107,11 +106,6 @@ filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
-# Timeout settings for pytest-timeout 
-timeout = 10
-# Timeout using thread method to make pytest-timeout work with pytest-xdist
-timeout_method = "thread"
-timeout_func_only = true
 [tool.coverage.run]
 patch = ["subprocess"]
 data_file = "/tmp/blueapi.coverage"
@@ -165,9 +159,6 @@ commands = [
         "pytest",
         "-n",
         "logical",
-        # Disable worker restarts so pytest-xdist does not rerun a test in another worker after pytest-timeout triggers     
-        "--max-worker-restart",
-        "0",
         { replace = "posargs", default = [
             "tests/unit_tests",
         ], extend = true },
@@ -190,7 +181,6 @@ commands = [
         "term",
         "--cov-report",
         "xml:cov.xml",
-        "--timeout=60",
         { replace = "posargs", default = [
         ], extend = true },
     ],

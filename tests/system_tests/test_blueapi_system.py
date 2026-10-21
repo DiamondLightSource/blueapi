@@ -249,7 +249,7 @@ def clean_existing_tasks(rest_client: BlueapiRestClient):
 
 @pytest.fixture(autouse=True, scope="module")
 def reset_numtracker():
-    server_config = load_config(_DATA_PATH / "services" / "blueapi" / "config.yaml")
+    server_config = load_config(Path(_DATA_PATH, "config.yaml"))
     nt_url = server_config.numtracker.url  # type: ignore - if numtracker is None we should fail
     response = requests.post(
         str(nt_url),

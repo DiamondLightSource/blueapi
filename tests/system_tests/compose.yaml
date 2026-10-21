@@ -106,7 +106,9 @@ services:
     ulimits:
       nofile: 1024
     volumes:
-      - ./services/blueapi:/blueapi:ro
+      - ./config.yaml:/blueapi/config.yaml:ro
+      - ./config-scratch.yaml:/blueapi/config-scratch.yaml:ro
+      - ./services/blueapi/start.sh:/blueapi/start.sh:ro
     entrypoint: ["sh", "/blueapi/start.sh"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]

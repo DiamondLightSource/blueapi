@@ -10,7 +10,7 @@ Before starting, ensure you have followed the [Installation instructions](../tut
     - A. initialise the example-services repo
     - B. launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs in detached mode
     - C. set required EPICS environmental variables
-    - D. start the BlueAPI server using the the config in `tests/system_tests/services/blueapi/config.yaml`
+    - D. start the BlueAPI server using the the config in `tests/system_tests/config.yaml`
 
 3. To run the above separately use the following commands:
     - 2A and 2B: `just compose`
@@ -29,7 +29,7 @@ Channel Access
 
 To log in through the BlueAPI CLI:
 
-1. Run `blueapi login` (if you want to run a plan with stomp config, add the `-c tests/system_tests/services/blueapi/config.yaml` parameter)
+1. Run `blueapi login` (if you want to run a plan with stomp config, add the `-c tests/system_tests/config.yaml` parameter)
 2. Follow the login prompted to Keycloak, then log in with the username `admin` and password `admin`
 3. When prompted by Keycloak, grant BlueAPI access to the listed privileges
 4. Run `blueapi controller plans` to check that the log in has succeeded

@@ -12,13 +12,13 @@ from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
 from observability_utils.tracing import get_tracer, start_as_current_span
 
+from blueapi.client.session import SessionCacheManager, SessionManager
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
     MissingStompConfigurationError,
 )
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,

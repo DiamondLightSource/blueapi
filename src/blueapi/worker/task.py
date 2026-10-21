@@ -1,9 +1,9 @@
 import logging
 from collections.abc import Mapping
-from typing import Any, Self, TypedDict
 from inspect import Parameter, signature
+from typing import Any, Self, TypedDict
 
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import Field, TypeAdapter, ValidationError
 
 from blueapi.core import BlueskyContext
 from blueapi.utils import BlueapiBaseModel
@@ -49,7 +49,14 @@ class Task(BlueapiBaseModel):
         except ValidationError as ve:
             raise TaskParameterError.from_validation_error(ve) from None
         except TypeError as te:
-            raise TaskParameterError(str(te), []) from None
+            raise TaskParameterError(
+                "Invalid arguments to plan",
+                [
+                    InvalidTaskParameter(
+                        loc=(), msg=str(te), type="TypeError", input=None
+                    )
+                ],
+            ) from None
 
     def _inner_prepare_params(
         self, ctx: BlueskyContext
@@ -127,7 +134,7 @@ class TaskParameterError(ValueError):
     def from_validation_error(cls, error: ValidationError) -> Self:
         errors = [
             InvalidTaskParameter(
-                loc=e.get("loc", []),
+                loc=e.get("loc", ()),
                 msg=e.get("msg", None),
                 type=e.get("type", None),
                 input=e.get("input", None),

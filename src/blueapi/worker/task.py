@@ -90,7 +90,14 @@ class Task(BlueapiBaseModel):
                     case Parameter.VAR_KEYWORD:
                         kwargs.update(value)
             else:
-                # Let the generated Pydantic model provide the default.
+                # Defaults need to be materialised for ordinary parameters,
+                # but variadic parameters are absent when not supplied.
+                if parameter.kind in (
+                    Parameter.VAR_POSITIONAL,
+                    Parameter.VAR_KEYWORD,
+                ):
+                    continue
+
                 value = getattr(validated, name)
                 kwargs[name] = value
 

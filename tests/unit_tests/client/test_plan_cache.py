@@ -1,3 +1,4 @@
+from inspect import Parameter
 from textwrap import dedent
 from unittest.mock import Mock
 
@@ -18,6 +19,11 @@ FULL_PLAN = PlanModel(
             "two": {},
         },
         "required": ["one"],
+    },
+    # To Do, parameter kinds should probably be part of schema
+    parameter_kinds={
+        "one": Parameter.POSITIONAL_OR_KEYWORD.name,
+        "two": Parameter.POSITIONAL_OR_KEYWORD.name,
     },
 )
 

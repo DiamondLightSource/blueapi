@@ -74,7 +74,7 @@ class ParametersType(ParamType):
 
 
 class PositionalArgType(ParamType):
-    """CLI input parameter to accept a JSON value as an argument"""
+    """CLI input parameter to accept a JSON value as a list of positional args"""
 
     name = "PositionalArg"
 
@@ -83,7 +83,10 @@ class PositionalArgType(ParamType):
     ) -> Any:
         if isinstance(value, str):
             try:
-                return json.loads(value)
+                args = json.loads(value)
+                if isinstance(args, list):
+                    return args
+                self.fail("Positional arguments should be a list of arguments")
             except json.JSONDecodeError as jde:
                 self.fail(f"Argument is not valid JSON: {jde}")
         else:
@@ -338,9 +341,7 @@ def listen_to_events(obj: dict) -> None:
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.argument("parameters", type=ParametersType(), default={}, required=False)
-@click.option(
-    "-a", "--arg", type=PositionalArgType(), multiple=True, default=[], required=False
-)
+@click.option("-a", "--args", type=PositionalArgType(), default=[], required=False)
 @click.option(
     "--ws/--stomp",
     type=bool,
@@ -386,7 +387,7 @@ def run_plan(
     foreground: bool,
     ws: bool | None,
     instrument_session: str,
-    arg: tuple[Any, ...],
+    args: tuple[Any, ...],
     parameters: TaskParameters,
 ) -> None:
     """Run a plan with parameters
@@ -398,7 +399,7 @@ def run_plan(
 
     client = cast(BlueapiClient, obj["client"])
     task = TaskRequest(
-        name=name, args=arg, params=parameters, instrument_session=instrument_session
+        name=name, args=args, params=parameters, instrument_session=instrument_session
     )
 
     try:

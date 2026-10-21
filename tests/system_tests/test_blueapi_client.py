@@ -249,7 +249,7 @@ def test_removed_callback_not_called(bc: BlueapiClient):
         pytest.param(
             lambda bc: TaskRequestV2(
                 name="sleep",
-                params=TaskParametersV2(args=[0]),
+                params=TaskParametersV2(args=[2]),
                 instrument_session=bc.instrument_session,
             ),
             id="v1",
@@ -257,7 +257,7 @@ def test_removed_callback_not_called(bc: BlueapiClient):
         pytest.param(
             lambda bc: TaskRequestV2(
                 name="sleep",
-                params=TaskParametersV2(kwargs={"time": 0}),
+                params=TaskParametersV2(kwargs={"time": 2}),
                 instrument_session=bc.instrument_session,
             ),
             id="v2",

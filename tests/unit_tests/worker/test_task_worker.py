@@ -1123,5 +1123,7 @@ def test_arg_in_args_and_kwargs():
     context.register_plan(positionals)
 
     task = Task(name="positionals", args=[1], params={"one": 2})
-    with pytest.raises(TaskParameterError, match="multiple values for argument 'one'"):
+    with pytest.raises(TaskParameterError, match="Invalid arguments to plan") as tpe:
         task.prepare_params(context)
+
+    assert tpe.value.errors[0]["msg"] == "multiple values for argument 'one'"
